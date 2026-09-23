@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
+using MoAI.Classify;
 using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
@@ -59,8 +60,20 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
             throw new BusinessException("应用名称已存在，请更换后重试.") { StatusCode = 409 };
         }
 
+        if (request.ClassifyId > 0)
+        {
+            var classifyExist = await _databaseContext.Classifies
+                .AnyAsync(x => x.Id == request.ClassifyId && x.Type == ClassifyTypes.App, cancellationToken);
+
+            if (!classifyExist)
+            {
+                throw new BusinessException("应用分类不存在.") { StatusCode = 404 };
+            }
+        }
+
         app.Name = request.Name;
         app.Description = request.Description ?? string.Empty;
+        app.ClassifyId = request.ClassifyId;
 
         // 应用类型创建后不可更改，IsExternal 以库内为准；公开（is_public）只能通过上架审核通过后由系统设置
         app.IsAuth = app.IsExternal && request.IsAuth;

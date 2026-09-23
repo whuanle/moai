@@ -366,6 +366,7 @@ export function Users() {
         open={detailOpen}
         title={t('users.detailTitle')}
         footer={null}
+        maskClosable={false}
         onCancel={() => setDetailOpen(false)}
       >
         <Skeleton loading={detailLoading} active paragraph={{ rows: 5 }}>

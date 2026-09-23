@@ -148,3 +148,12 @@
 - Then 返回 success=false，错误信息含「不支持的文件类型」
 
 @STP-S17 @manual
+
+```gherkin
+@ST-S99 @auto:vitest
+Scenario: 静态插件编辑后列表不重复渲染
+  Given 静态插件页签包含多个「内存注册表合并行」（无 DB 记录，Id=Guid.Empty）
+  When 编辑任一静态插件保存触发列表刷新
+  Then 表格行 key 取 pluginKey/pluginName（唯一），不出现重复行渲染
+  And 保存后列表数据层无重复 pluginKey（E2E PG-DUP 断言）
+```

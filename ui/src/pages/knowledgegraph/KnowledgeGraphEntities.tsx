@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { FormInstance, TableColumnsType } from 'antd'
 import { ApartmentOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { DataTable, feedback } from '@/design-system'
+import { chartColors, DataTable, feedback  } from '@/design-system'
 import { PropertyInputs, deserializePropertyValues, serializePropertyValues, toPropertyDefs, type PropertyDef } from './PropertyFields'
 import { spacing } from '@/design-system/theme'
 import {
@@ -17,7 +17,6 @@ import {
   type KnowledgeGraphNodeItem,
 } from '@/api/knowledgeGraph'
 
-const TYPE_FALLBACK_COLORS = ['#5B8FF9', '#5AD8A6', '#F6BD16', '#E8684A', '#6DC8EC', '#9270CA', '#FF9D4D', '#269A99']
 
 interface FormValues {
   entityTypeId: number
@@ -90,7 +89,7 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
     entityTypes.forEach((x, index) => {
       map.set(Number(x.entityTypeId), {
         name: x.name ?? '',
-        color: x.color || TYPE_FALLBACK_COLORS[index % TYPE_FALLBACK_COLORS.length],
+        color: x.color || chartColors[index % chartColors.length],
         properties: toPropertyDefs(x.properties),
       })
     })
@@ -278,6 +277,8 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
         />
       </Space>
       <DataTable<KnowledgeGraphNodeItem>
+        sticky
+        scroll={{ x: 'max-content' }}
         rowKey={(record) => String(record.nodeId)}
         columns={columns}
         dataSource={items}

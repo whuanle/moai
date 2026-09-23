@@ -58,6 +58,11 @@ public class QuerySkillCommandResponse
     public int ClassifyId { get; init; }
 
     /// <summary>
+    /// 技能头像的 ObjectKey（空串=未设置）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
+
+    /// <summary>
     /// 是否已上架市场公开.
     /// </summary>
     public bool IsPublic { get; init; }

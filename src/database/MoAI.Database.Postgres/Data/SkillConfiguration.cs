@@ -37,6 +37,11 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
         entity.Property(e => e.ClassifyId)
             .HasComment("分类id")
             .HasColumnName("classify_id");
+        entity.Property(e => e.AvatarPath)
+            .HasMaxLength(255)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("技能头像 objectKey，空串=未设置")
+            .HasColumnName("avatar_path");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasColumnName("create_time");

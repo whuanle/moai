@@ -42,3 +42,16 @@ a {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* 暗色主题（html[data-theme] 由 AppProviders 同步自 themeKey）：body 背景与滚动条跟随 #101828（config.ts 暗色 colorBgLayout） */
+html[data-theme='dark'] body {
+  background-color: #101828;
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background-color: rgba(240, 244, 247, 0.24);
+}
+
+html[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(240, 244, 247, 0.36);
+}

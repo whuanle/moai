@@ -5,12 +5,15 @@
 ## 色彩
 | 令牌 | 值 | 用途 |
 |---|---|---|
-| `colorPrimary` | `#4A9EFF` | 品牌主色 |
-| `brandColors.primary` | `#4A9EFF` | 主色别名 |
-| `brandColors.success` | `#00B578` | 成功 |
-| `brandColors.warning` | `#FF9500` | 警告 |
-| `brandColors.error` | `#FF3B30` | 错误 |
-| `brandColors.info` | `#4A9EFF` | 信息 |
+| `colorPrimary` | `#2970FF` | 品牌主色 |
+| `brandColors.primary` | `#2970FF` | 主色别名 |
+| `brandColors.success` | `#17B26A` | 成功 |
+| `brandColors.warning` | `#F79009` | 警告 |
+| `brandColors.error` | `#F04438` | 错误 |
+| `brandColors.info` | `#0BA5EC` | 信息 |
+| `brandGradient` | `#2A6FFF → #3D8BFF → #68A9FF` | 品牌渐变（强调面，渐变上固定白字） |
+| `chartColors` | AntV 八色 | 图表/分类回退色板（共用，勿在页面各存一份） |
+| `useNeutralColors()` | antd token 派生 | 主题感知中性色（键与 `neutralColors` 对齐）；页面取中性色一律用它，`neutralColors` 仅浅色一套 |
 
 ## 间距（基步 4px，规则值 8/16/24/32/48）
 | 令牌 | 值 |
@@ -24,7 +27,7 @@
 | `spacing.xxl` | 48 |
 
 ## 圆角 / 字号
-- `radius.sm|default|lg` = 4 / 8 / 12。
+- `radius.sm|default|lg` = 6 / 8 / 12。
 - `fontSize.xs..xxl` = 12 / 13 / 14 / 16 / 20 / 24。
 
 ## 规则

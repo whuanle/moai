@@ -126,8 +126,8 @@
     "welcomeTitle": "Build your first agent",
     "welcomeDesc": "From conversation orchestration to launch, create an AI-powered app without writing code.",
     "statApps": "Applications",
-    "statWikis": "Knowledge Bases",
-    "statTeam": "Team Members",
+    "statWikis": "My wikis",
+    "statTeam": "My teams",
     "statRequests": "API Calls",
     "quickActions": "Quick Actions",
     "quickApp": "Create Application",
@@ -138,7 +138,12 @@
     "quickTeamDesc": "Invite your colleagues to join",
     "recentTitle": "Recent Activity",
     "recentEmpty": "No recent activity",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "statGraphs": "My knowledge graphs",
+    "statPlazaApps": "Marketplace apps",
+    "myWikis": "My wikis",
+    "myGraphs": "My knowledge graphs",
+    "resourceEmpty": "No resources yet (only wikis/graphs of teams you joined)"
   },
   "settings": {
     "title": "System Settings",
@@ -257,6 +262,7 @@
     "syncNoChange": "Already up to date ({{count}} model(s))",
     "batchEnable": "Enable All",
     "batchDisable": "Disable All",
+    "batchDisableConfirm": "Disable the selected models?",
     "batchDelete": "Delete All",
     "hideUnrecognized": "Hide unrecognized",
     "save": "Save",
@@ -734,7 +740,8 @@
     "pluginsMemberHint": "This team has {{count}} owned plugins; system plugins are opened by admins",
     "knowledgeGraph": "Knowledge Graphs",
     "prompts": "Prompts",
-    "skills": "Team Skills"
+    "skills": "Team Skills",
+    "searchMemberPlaceholder": "Search members by nickname/username"
   },
   "wiki": {
     "title": "Knowledge Base",
@@ -1714,7 +1721,9 @@
     "saveInfo": "Save info",
     "saveConfig": "Save configuration",
     "notFound": "App not found",
-    "workflowGoDesign": "Open Designer"
+    "workflowGoDesign": "Open Designer",
+    "formClassify": "App category",
+    "classifyPlaceholder": "Select a category (optional)"
   },
   "accessApp": {
     "create": "New Access",
@@ -1895,7 +1904,9 @@
   },
   "appPlaza": {
     "empty": "No public apps yet",
-    "teamId": "Team #{{id}}"
+    "teamId": "Team #{{id}}",
+    "searchPlaceholder": "Search apps by name/description",
+    "classifyAll": "All categories"
   },
   "skills": {
     "searchPlaceholder": "Search by key / name / description",
@@ -1956,7 +1967,15 @@
     "view": "View",
     "empty": "No skills yet",
     "cancel": "Cancel",
-    "systemReadonlyHint": "Built-in skills are read-only; scripts ship with the platform."
+    "systemReadonlyHint": "Built-in skills are read-only; scripts ship with the platform.",
+    "avatar": "Skill avatar",
+    "avatarHint": "JPG/PNG images up to 5MB",
+    "avatarTypeError": "Only image files are allowed",
+    "avatarSizeError": "Avatar image must be under 5MB",
+    "avatarSuccess": "Avatar updated",
+    "extractSuccess": "Package extracted: {{count}} files added and skill info loaded",
+    "addFileOrZip": "Add files / upload zip",
+    "zipHint": "Supports .zip skill packages: auto-extracted on upload, with SKILL.md (name/description and instructions) filling the form"
   },
   "prompt": {
     "create": "New Prompt",
@@ -2155,6 +2174,7 @@
     "toolsEmpty": "No team tools",
     "ctxDeleteLine": "Delete Line",
     "ctxNodeDeleted": "Node deleted",
+    "ctxDeleteConfirmDesc": "This cannot be undone. The node/line and its configuration will be removed.",
     "ctxLineDeleted": "Line deleted",
     "pluginKey": "Plugin",
     "pluginKeyPlaceholder": "Select a team plugin",

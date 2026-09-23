@@ -11,12 +11,13 @@ import {
   ThunderboltOutlined,
   UndoOutlined,
 } from '@ant-design/icons'
-import { Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Typography } from 'antd'
+import { Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Typography, Avatar } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
-import { Card, Page, feedback } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { Card, Page, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { resolveStorageUrl } from '@/utils/storage'
 import { applyPublication, withdrawPublication } from '@/api/publication'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import {
@@ -41,6 +42,7 @@ const PAGE_SIZE_OPTIONS = [12, 24, 48]
 /** 技能中心：菜单单一入口，页头 Tab 切换「技能市场 / 我的技能」，卡片分页展示 */
 export function Skills() {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
   const location = useLocation()
   const tab: SkillTab = location.pathname.startsWith('/skills') ? 'mine' : 'market'
@@ -240,7 +242,7 @@ export function Skills() {
         ))}
       </Space>
       <Spin spinning={loading}>
-        {pagedItems.length === 0 ? (
+        {!loading && pagedItems.length === 0 ? (
           <Empty description={t('skills.empty')} />
         ) : (
           <Row gutter={[spacing.md, spacing.md]}>
@@ -251,7 +253,14 @@ export function Skills() {
                   <Card style={{ height: '100%' }} styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                        <ThunderboltOutlined style={{ fontSize: 22, color: 'inherit' }} />
+                        <Avatar
+                          shape="square"
+                          size={44}
+                          src={record.avatarPath ? resolveStorageUrl(record.avatarPath) : undefined}
+                          icon={!record.avatarPath ? <ThunderboltOutlined /> : undefined}
+                        >
+                          {!record.avatarPath ? null : name.slice(0, 1).toUpperCase()}
+                        </Avatar>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div
                             title={name}
@@ -290,7 +299,7 @@ export function Skills() {
                         style={{
                           marginTop: 'auto',
                           paddingTop: spacing.sm,
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',

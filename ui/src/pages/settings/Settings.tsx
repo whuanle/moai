@@ -13,7 +13,7 @@ import {
   resetSystemLogo,
   updateSystemLogo,
 } from '@/api/settings'
-import { AvatarUpload, Card, feedback, neutralColors, Page, spacing } from '@/design-system'
+import { AvatarUpload, Card, feedback, useNeutralColors, Page, spacing } from '@/design-system'
 import { DEFAULT_LOGO_SRC } from '@/layouts/useSystemLogo'
 import { useAppStore } from '@/store/app'
 import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
@@ -50,6 +50,7 @@ interface CollapsibleCardProps {
 
 function CollapsibleCard({ title, defaultExpanded = false, children }: CollapsibleCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
+  const neutral = useNeutralColors()
 
   return (
     <Card
@@ -69,7 +70,7 @@ function CollapsibleCard({ title, defaultExpanded = false, children }: Collapsib
         >
           <CaretRightOutlined
             rotate={expanded ? 90 : 0}
-            style={{ color: neutralColors.textTertiary, fontSize: 12 }}
+            style={{ color: neutral.textTertiary, fontSize: 12 }}
           />
           <span>{title}</span>
         </div>

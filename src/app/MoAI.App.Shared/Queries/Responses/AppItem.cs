@@ -48,6 +48,11 @@ public class AppItem
     public bool IsAuth { get; set; }
 
     /// <summary>
+    /// 分类 id，0=未分类.
+    /// </summary>
+    public int ClassifyId { get; set; }
+
+    /// <summary>
     /// 是否公开到平台（仅内部应用有效）.
     /// </summary>
     public bool IsPublic { get; set; }

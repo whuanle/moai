@@ -48,6 +48,11 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
     /// </summary>
     public bool IsAuth { get; init; }
 
+    /// <summary>
+    /// 分类 id，0=未分类；分类类型必须为 app.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -64,6 +69,7 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("应用描述最长 255 个字符.");
         validate.RuleFor(x => x.AppType).IsInEnum().WithMessage("应用类型不正确.");
         validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 最长 255 个字符.");
+        validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");
         validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
             .WithMessage("只有外部应用可以设置需要授权访问.");
     }

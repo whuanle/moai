@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Col, Form, Input, Modal, Popconfirm, Row, Space, Switch, Tag, Tooltip, Typography } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Alert, Button, Col, Form, Input, Modal, Popconfirm, Row, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AvatarUpload, Card as DSCard, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { updateApp, uploadAppAvatar } from '@/api/app'
 import {
   applyPublication,
@@ -19,6 +20,7 @@ interface InfoFormValues {
   name: string
   description?: string
   isAuth?: boolean
+  classifyId?: number
 }
 
 export interface AppInfoSectionProps {
@@ -39,8 +41,23 @@ export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: A
   const [savingInfo, setSavingInfo] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [infoForm] = Form.useForm<InfoFormValues>()
+  const [classifies, setClassifies] = useState<Classify[]>([])
 
   const isAgent = detail?.appType !== 'workflow'
+
+  const classifyOptions = useMemo(
+    () => classifies.map((c) => ({ value: Number(c.classifyId), label: classifyLabel(c) })),
+    [classifies],
+  )
+
+  useEffect(() => {
+    classifyApi
+      .getClassifies(ClassifyType.App)
+      .then(setClassifies)
+      .catch(() => {
+        // 错误已由全局请求中间件统一提示
+      })
+  }, [])
 
   useEffect(() => {
     if (!detail) return
@@ -48,6 +65,7 @@ export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: A
       name: detail.name ?? '',
       description: detail.description ?? undefined,
       isAuth: detail.isAuth ?? false,
+      classifyId: detail.classifyId || undefined,
     })
   }, [detail, infoForm])
 
@@ -118,6 +136,7 @@ export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: A
         description: values.description,
         isExternal: detail?.isExternal ?? false,
         isAuth: values.isAuth ?? false,
+        classifyId: values.classifyId ?? 0,
       })
       feedback.success(t('appManage.updateSuccess'))
       await onReload()
@@ -197,6 +216,9 @@ export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: A
             </Form.Item>
             <Form.Item name="description" label={t('appManage.description')} rules={[{ max: 255 }]}>
               <Input.TextArea placeholder={t('appManage.descriptionPlaceholder')} maxLength={255} rows={4} />
+            </Form.Item>
+            <Form.Item name="classifyId" label={t('appManage.formClassify')}>
+              <Select allowClear placeholder={t('appManage.classifyPlaceholder')} options={classifyOptions} />
             </Form.Item>
             {detail?.isExternal ? (
               <Form.Item

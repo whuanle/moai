@@ -103,6 +103,7 @@ export function TeamManage() {
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<TeamUserItem[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
+  const [memberKeyword, setMemberKeyword] = useState('')
   const [addForm] = Form.useForm<MemberFormValues>()
   const [settingsForm] = Form.useForm<{ name: string; description?: string }>()
   const [savingInfo, setSavingInfo] = useState(false)
@@ -259,6 +260,17 @@ export function TeamManage() {
     return <Tag>{t('team.roleMember')}</Tag>
   }
 
+  /** 成员关键字过滤（昵称/用户名，前端过滤） */
+  const filteredMembers = useMemo(() => {
+    const keyword = memberKeyword.trim().toLowerCase()
+    if (!keyword) return members
+    return members.filter(
+      (m) =>
+        (m.nickName ?? '').toLowerCase().includes(keyword)
+        || (m.userName ?? '').toLowerCase().includes(keyword),
+    )
+  }, [members, memberKeyword])
+
   const memberColumns: TableColumnsType<TeamUserItem> = useMemo(
     () => [
       {
@@ -411,39 +423,52 @@ export function TeamManage() {
           ) : activeSection === 'members' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <DataTable<TeamUserItem>
+                sticky
+                scroll={{ x: 'max-content' }}
                 rowKey="userId"
                 columns={memberColumns}
-                dataSource={members}
+                dataSource={filteredMembers}
                 loading={membersLoading}
                 onRefresh={() => void reloadMembers()}
                 refreshLoading={membersLoading}
                 toolbar={
-                  isOwner ? (
-                    <Form form={addForm} layout="inline" style={{ display: 'flex', gap: spacing.sm }}>
-                      <Form.Item
-                        name="userId"
-                        rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}
-                        style={{ marginBottom: 0, flex: 1, minWidth: 240 }}
-                      >
-                        <Select
-                          showSearch
-                          placeholder={t('team.addMemberPlaceholder')}
-                          filterOption={false}
-                          onSearch={(v) => void handleSearchCandidates(v)}
-                          onFocus={() => void handleSearchCandidates('')}
-                          notFoundContent={searching ? null : t('team.addMemberNoResult')}
-                          loading={searching}
-                          options={candidates.map((c) => ({
-                            value: Number(c.userId),
-                            label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
-                          }))}
-                        />
-                      </Form.Item>
-                      <Button type="primary" icon={<UserAddOutlined />} onClick={() => void handleAddMember()}>
-                        {t('team.addMember')}
-                      </Button>
-                    </Form>
-                  ) : undefined
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
+                    <Input.Search
+                      value={memberKeyword}
+                      onChange={(e) => setMemberKeyword(e.target.value)}
+                      onSearch={(v) => setMemberKeyword(v)}
+                      placeholder={t('team.searchMemberPlaceholder')}
+                      allowClear
+                      maxLength={50}
+                      style={{ width: 220 }}
+                    />
+                    {isOwner && (
+                      <Form form={addForm} layout="inline" style={{ display: 'flex', gap: spacing.sm }}>
+                        <Form.Item
+                          name="userId"
+                          rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}
+                          style={{ marginBottom: 0, flex: 1, minWidth: 240 }}
+                        >
+                          <Select
+                            showSearch
+                            placeholder={t('team.addMemberPlaceholder')}
+                            filterOption={false}
+                            onSearch={(v) => void handleSearchCandidates(v)}
+                            onFocus={() => void handleSearchCandidates('')}
+                            notFoundContent={searching ? null : t('team.addMemberNoResult')}
+                            loading={searching}
+                            options={candidates.map((c) => ({
+                              value: Number(c.userId),
+                              label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
+                            }))}
+                          />
+                        </Form.Item>
+                        <Button type="primary" icon={<UserAddOutlined />} onClick={() => void handleAddMember()}>
+                          {t('team.addMember')}
+                        </Button>
+                      </Form>
+                    )}
+                  </div>
                 }
               />
             </DSCard>

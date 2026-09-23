@@ -22,6 +22,8 @@ export interface AppItem {
   isAuth?: boolean | null
   /** 是否公开到平台；仅内部应用有效（平台内任意用户可用） */
   isPublic?: boolean | null
+  /** 分类 id，0=未分类 */
+  classifyId?: number | null
   /** 发布状态：0=草稿（未发布）1=已发布 */
   publishStatus?: number | null
   /** 发布时间，未发布为 null */
@@ -54,10 +56,15 @@ export async function getExternalApps(teamId: number): Promise<AppsResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
-/** 查询平台公开应用（内部且已公开、已发布、未禁用），任意登录用户可访问 */
-export async function getPublicApps(): Promise<AppItem[]> {
+/** 查询平台公开应用（内部且已公开、已发布、未禁用），任意登录用户可访问；支持名称/描述关键字与分类过滤 */
+export async function getPublicApps(filters?: { keywords?: string; classifyId?: number }): Promise<AppItem[]> {
   const client = getApiClient()
-  const res = await client.api.app.public.list.get()
+  const res = await client.api.app.public.list.get({
+    queryParameters: {
+      keywords: filters?.keywords?.trim() || undefined,
+      classifyId: filters?.classifyId && filters.classifyId > 0 ? filters.classifyId : undefined,
+    },
+  })
   return (res?.items ?? []) as AppItem[]
 }
 
@@ -73,6 +80,8 @@ export async function createApp(payload: {
   appType: AppKind
   /** 头像 objectKey：先走存储直传管线拿 key，再随创建请求一起提交（应用此时还不存在，无法调头像接口） */
   avatar?: string
+  /** 分类 id，0=未分类 */
+  classifyId?: number
   /** 是否外部应用；缺省=内部应用 */
   isExternal?: boolean
   /** 是否需要授权访问；仅外部应用有效 */
@@ -85,6 +94,7 @@ export async function createApp(payload: {
     description: payload.description,
     appType: payload.appType,
     avatar: payload.avatar,
+    classifyId: payload.classifyId ?? 0,
     isExternal: payload.isExternal,
     isAuth: payload.isAuth,
   })
@@ -92,12 +102,12 @@ export async function createApp(payload: {
 }
 
 /**
- * 基础信息更新：名称、描述、授权开关（应用类型创建后不可修改；头像走独立接口）。
+ * 基础信息更新：名称、描述、分类、授权开关（应用类型创建后不可修改；头像走独立接口）。
  * 公开（is_public）只能通过「上架审核」由系统管理员审批后设置，此处不再提供。
  */
 export async function updateApp(
   appId: string,
-  payload: { name: string; description?: string; isExternal?: boolean; isAuth?: boolean },
+  payload: { name: string; description?: string; isExternal?: boolean; isAuth?: boolean; classifyId?: number },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).put({
@@ -105,6 +115,7 @@ export async function updateApp(
     description: payload.description,
     isExternal: payload.isExternal,
     isAuth: payload.isAuth,
+    classifyId: payload.classifyId ?? 0,
   })
 }
 

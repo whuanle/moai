@@ -88,6 +88,7 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             AvatarPath = app.Avatar,
             IsExternal = app.IsExternal,
             IsAuth = app.IsAuth,
+            ClassifyId = app.ClassifyId,
             IsPublic = app.IsPublic,
             PublishStatus = app.PublishStatus,
             PublishTime = app.PublishTime,

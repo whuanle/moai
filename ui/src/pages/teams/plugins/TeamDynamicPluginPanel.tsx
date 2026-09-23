@@ -6,7 +6,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip , theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
@@ -92,6 +92,7 @@ export function TeamDynamicPluginPanel({
   reload,
 }: TeamDynamicPluginPanelProps) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [templates, setTemplates] = useState<DynamicPluginTemplate[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -268,9 +269,13 @@ export function TeamDynamicPluginPanel({
         v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>,
     },
     { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
+      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+    ) },
     { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => (
+      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+    ) },
     {
       title: t('plugins.colActions'),
       key: 'actions',
@@ -317,6 +322,7 @@ export function TeamDynamicPluginPanel({
   return (
     <>
       <DataTable<TeamDynamicPluginItem>
+        sticky
         rowKey={(r) => String(r.pluginId ?? r.pluginName ?? '')}
         columns={columns}
         dataSource={filtered}
@@ -336,7 +342,7 @@ export function TeamDynamicPluginPanel({
             {filterTags.map((item, index) => (
               <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {index > 0 && (
-                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                  <span className="classify-divider" style={{ color: token.colorTextQuaternary }}>
                     |
                   </span>
                 )}

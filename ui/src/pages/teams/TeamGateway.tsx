@@ -266,6 +266,7 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
       {canManage && (
         <DSCard title={t('gateway.keysTitle')} styles={{ body: { paddingTop: spacing.sm } }}>
           <DataTable<TeamApiKeyItem>
+            sticky
             rowKey="id"
             columns={keyColumns}
             dataSource={keys}
@@ -283,6 +284,7 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
 
       <DSCard title={t('gateway.modelsTitle')} styles={{ body: { paddingTop: spacing.sm } }}>
         <DataTable<TeamGatewayModelItem>
+          sticky
           rowKey="aiModelId"
           columns={modelColumns}
           dataSource={models}
@@ -299,6 +301,7 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
         onOk={() => void handleCreate()}
         confirmLoading={creating}
         onCancel={() => setCreateOpen(false)}
+        maskClosable={false}
         destroyOnHidden
       >
         <Form form={createForm} layout="vertical">
@@ -326,6 +329,7 @@ export function TeamGateway({ teamId, canManage }: { teamId: number; canManage: 
       <Modal
         title={t('gateway.secretTitle')}
         open={createdSecret !== null}
+        maskClosable={false}
         onCancel={() => setCreatedSecret(null)}
         footer={[
           <Button key="copy" icon={<CopyOutlined />} onClick={() => void copyText(createdSecret?.secret ?? '')}>

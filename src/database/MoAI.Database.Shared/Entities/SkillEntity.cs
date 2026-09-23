@@ -78,4 +78,9 @@ public partial class SkillEntity : IFullAudited
     /// 分类id.
     /// </summary>
     public int ClassifyId { get; set; }
+
+    /// <summary>
+    /// 技能头像 objectKey，空串=未设置.
+    /// </summary>
+    public string AvatarPath { get; set; } = string.Empty;
 }

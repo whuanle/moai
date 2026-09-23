@@ -1,4 +1,5 @@
 import { getApiClient } from '@/api/kiota'
+import { uploadImageWithKey } from '@/utils/storage'
 
 export interface SkillListItem {
   id?: string | null
@@ -15,6 +16,8 @@ export interface SkillListItem {
   isPublic?: boolean | null
   /** 待审核的上架申请 id（后端 long 序列化为字符串），无待审核申请时为 null */
   pendingPublicationId?: string | number | null
+  /** 技能头像的 ObjectKey（空串=未设置），前端用 resolveStorageUrl 转可访问地址 */
+  avatarPath?: string | null
   fileCount?: number | null
   createUserId?: number | null
   createUserName?: string | null
@@ -41,6 +44,8 @@ export interface SkillDetail {
   teamId?: number | null
   /** 分类 id，0=未分类 */
   classifyId?: number | null
+  /** 技能头像的 ObjectKey（空串=未设置） */
+  avatarPath?: string | null
   isPublic?: boolean | null
   createTime?: string | null
   updateTime?: string | null
@@ -140,6 +145,8 @@ export async function createSkill(payload: {
   instructions?: string
   files: SkillFileItem[]
   classifyId?: number
+  /** 头像 objectKey：先走存储直传管线拿 key，再随创建请求一起提交（技能此时还不存在，无法调头像接口） */
+  avatar?: string
 }): Promise<string | undefined> {
   const client = getApiClient()
   const res = await client.api.skill.post({
@@ -149,6 +156,7 @@ export async function createSkill(payload: {
     description: payload.description ?? '',
     instructions: payload.instructions ?? '',
     classifyId: payload.classifyId ?? 0,
+    avatar: payload.avatar,
     // Kiota 将后端 long 生成为 string，统一收敛为字符串
     files: payload.files.map((f) => ({
       path: f.path ?? '',
@@ -180,6 +188,19 @@ export async function updateSkill(
 export async function deleteSkill(id: string): Promise<void> {
   const client = getApiClient()
   await client.api.skill.byId(id).delete()
+}
+
+/** 设置技能头像（objectKey 为直传完成并登记的图片 key） */
+export async function setSkillAvatar(id: string, objectKey: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.skill.byId(id).avatar.post({ objectKey })
+}
+
+/** 上传图片并设为技能头像（走存储直传管线），返回公开访问地址 */
+export async function uploadSkillAvatar(id: string, file: File): Promise<string> {
+  const { objectKey, url } = await uploadImageWithKey(file)
+  await setSkillAvatar(id, objectKey)
+  return url
 }
 
 export async function setSkillDisable(id: string, isDisable: boolean): Promise<void> {
@@ -236,6 +257,36 @@ export async function uploadSkillFile(file: File): Promise<number> {
   const fileId = Number(fileIdRaw)
   await client.api.skill.file.complete.post({ fileId: String(fileId), isSuccess: true })
   return fileId
+}
+
+/** 压缩包解压结果：技能信息（来自 SKILL.md）+ 展开登记后的文件清单 */
+export interface ExtractSkillPackageResult {
+  name?: string | null
+  description?: string | null
+  instructions?: string | null
+  files?: SkillFileItem[] | null
+}
+
+/** 解压已上传的技能压缩包：服务端展开为逐文件资源并解析 SKILL.md 技能信息 */
+export async function extractSkillPackage(fileId: number): Promise<ExtractSkillPackageResult> {
+  const client = getApiClient()
+  const res = await client.api.skill.file.extract.post({ fileId: String(fileId) })
+  return {
+    name: res?.name,
+    description: res?.description,
+    instructions: res?.instructions,
+    files: (res?.files ?? []).map((f) => ({
+      path: f.path ?? '',
+      fileId: f.fileId != null ? Number(f.fileId) : 0,
+      fileName: f.fileName ?? '',
+    })),
+  }
+}
+
+/** 上传 zip 技能包并解压：三段上传后触发服务端解压，返回技能信息与文件清单 */
+export async function uploadAndExtractSkillPackage(file: File): Promise<ExtractSkillPackageResult> {
+  const fileId = await uploadSkillFile(file)
+  return extractSkillPackage(fileId)
 }
 
 /** 下载技能包：逐文件触发浏览器下载（预签名地址 1 小时有效）. */

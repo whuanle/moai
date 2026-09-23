@@ -40,6 +40,8 @@ export interface AppDetail {
   isExternal?: boolean | null
   isAuth?: boolean | null
   isPublic?: boolean | null
+  /** 分类 id，0=未分类 */
+  classifyId?: number | null
   publishStatus?: number | null
   publishTime?: string | null
   myRole?: number | null

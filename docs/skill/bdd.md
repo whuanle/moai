@@ -248,4 +248,34 @@ Feature: 技能市场与个人/团队自助维护
     Then 返回 404「技能分类不存在」
     When 技能中心（市场/我的）点击分类 chip（emoji + 名称）
     Then 列表按 classifyId 过滤
+
+  @SKM-S11 @auto:e2e
+  Scenario: 技能压缩包上传自动解压
+    Given 登录用户上传 .zip 技能包（三段直传完成）
+    When 调用 /skill/file/extract
+    Then 服务端解压：每个条目按 sha256 登记为 skill/ 前缀资源文件并返回清单
+    And 压缩包唯一顶层目录被剥离（SKILL.md 落根路径）
+    And 解析 SKILL.md frontmatter 的 name/description 与正文 instructions 随响应返回
+    When 前端在技能编辑弹窗选择 zip
+    Then 自动触发解压并回填名称/描述/使用说明，文件清单并入列表
+    When 压缩包含 ../ 路径穿越条目
+    Then 400 路径不合法
+    When 压缩包内嵌套 .zip
+    Then 400 不允许嵌套 zip
+    When 对非 zip 文件调用解压
+    Then 400 仅支持 zip
+    When 对不存在的文件 id 调用解压
+    Then 404
+    When 条目数超过 100 或解压总大小超过 50MB
+    Then 400 超出上限
+
+  @SKM-S12 @auto:e2e
+  Scenario: 技能头像
+    Given 登录用户经存储直传管线上传图片完成登记
+    When 创建技能携带 avatar objectKey
+    Then 200，my_list 列表项与详情返回 avatarPath
+    When 调用 /skill/{id}/avatar 更换头像
+    Then 200，详情反映新头像
+    When 提交未登记的伪造 objectKey
+    Then 404 头像文件不存在或未完成上传
 ```

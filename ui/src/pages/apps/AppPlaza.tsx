@@ -1,38 +1,54 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Avatar, Button, Col, Empty, Row, Spin, Tag, Typography } from 'antd'
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Input, Row, Space, Spin, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, Page } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { Card, Page, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl } from '@/utils/storage'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { getPublicApps, type AppItem } from '@/api/app'
 
 const { Text, Paragraph } = Typography
 
 /**
  * 应用广场：展示平台内所有「公开到平台」的内部应用（已发布、未禁用），
- * 任意登录用户可见并可进入对话；数据来自跨团队的公开应用列表。
+ * 任意登录用户可见并可进入对话；支持名称/描述关键字搜索与分类（带 emoji）过滤。
  */
 export function AppPlaza() {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<AppItem[]>([])
+  const [classifies, setClassifies] = useState<Classify[]>([])
+  const [searchText, setSearchText] = useState('')
+  const [keywords, setKeywords] = useState<string | undefined>(undefined)
+  const [classifyId, setClassifyId] = useState<number | undefined>(undefined)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setItems(await getPublicApps())
+      setItems(await getPublicApps({ keywords, classifyId }))
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [keywords, classifyId])
 
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    classifyApi
+      .getClassifies(ClassifyType.App)
+      .then(setClassifies)
+      .catch(() => {
+        // 错误已由全局请求中间件统一提示
+      })
+  }, [])
 
   const openChat = (item: AppItem) => {
     if (!item.appId || item.teamId == null) return
@@ -46,6 +62,40 @@ export function AppPlaza() {
 
   return (
     <Page>
+      <Space size={spacing.sm} wrap style={{ marginBottom: spacing.md }}>
+        <Input.Search
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onSearch={(value) => {
+            setKeywords(value.trim() || undefined)
+          }}
+          placeholder={t('appPlaza.searchPlaceholder')}
+          prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+          allowClear
+          maxLength={50}
+          style={{ width: 280 }}
+        />
+        <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+          {t('ds.table.refresh')}
+        </Button>
+      </Space>
+      <Space size={4} wrap style={{ marginBottom: spacing.md }}>
+        <Tag.CheckableTag
+          checked={classifyId === undefined}
+          onChange={() => setClassifyId(undefined)}
+        >
+          {t('appPlaza.classifyAll')}
+        </Tag.CheckableTag>
+        {classifies.map((c) => (
+          <Tag.CheckableTag
+            key={String(c.classifyId ?? '')}
+            checked={classifyId === Number(c.classifyId)}
+            onChange={() => setClassifyId(Number(c.classifyId) || undefined)}
+          >
+            {classifyLabel(c)}
+          </Tag.CheckableTag>
+        ))}
+      </Space>
       <Spin spinning={loading}>
         {!loading && items.length === 0 ? (
           <Empty description={t('appPlaza.empty')} />
@@ -99,10 +149,10 @@ export function AppPlaza() {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: spacing.sm,
-                          color: neutralColors.textTertiary,
+                          color: neutral.textTertiary,
                           fontSize: 12,
                           marginTop: 'auto',
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           paddingTop: spacing.sm,
                         }}
                       >

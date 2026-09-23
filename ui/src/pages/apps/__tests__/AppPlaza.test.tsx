@@ -4,6 +4,11 @@ import { MemoryRouter } from 'react-router'
 import { AppPlaza } from '../AppPlaza'
 import { getPublicApps } from '@/api/app'
 
+vi.mock('@/api/classify', () => ({
+  classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
+  classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c?.emoji, c?.name].filter(Boolean).join(' '),
+  ClassifyType: { Plugin: 'plugin', App: 'app', Kb: 'kb', Prompt: 'prompt', Skill: 'skill' },
+}))
 vi.mock('@/api/app', () => ({
   getPublicApps: vi.fn(),
 }))

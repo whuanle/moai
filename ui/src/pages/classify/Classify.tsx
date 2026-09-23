@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Col, Empty, Form, Input, Modal, Popconfirm, Popover, Row, Space, Spin, Tabs, Typography } from 'antd'
+import { Button, Col, Empty, Form, Input, Modal, Popconfirm, Popover, Row, Space, Spin, Tabs, Typography, theme } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, SmileOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
@@ -85,6 +85,7 @@ interface ClassifyCardItemProps {
 
 function ClassifyCardItem({ item, onEdit, onDelete }: ClassifyCardItemProps) {
   const { t } = useTranslation()
+    const { token } = theme.useToken()
   return (
     <Card styles={{ body: { padding: 20, display: 'flex', flexDirection: 'column', height: '100%' } }}>
       <Text strong style={{ fontSize: 16, display: 'block' }}>
@@ -94,7 +95,7 @@ function ClassifyCardItem({ item, onEdit, onDelete }: ClassifyCardItemProps) {
       <Paragraph type="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}>
         {item.description || '-'}
       </Paragraph>
-      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(16, 24, 40, 0.08)', paddingTop: spacing.sm }}>
+      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: spacing.sm }}>
         <Space>
           <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(item)}>
             {t('classify.edit')}

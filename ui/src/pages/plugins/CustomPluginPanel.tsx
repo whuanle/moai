@@ -7,7 +7,7 @@ import {
   ShareAltOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Button, Form, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography , theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { classifyLabel, type PluginClassify } from '@/api/classify'
@@ -24,6 +24,7 @@ import { OpenApiModal, type OpenApiFormValues } from './components/OpenApiModal'
 import { FunctionListModal } from './components/FunctionListModal'
 import { PluginAvatar } from './components/PluginAvatarUpload'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
+import { formatDateTime } from '@/utils/datetime'
 
 const { Text } = Typography
 
@@ -38,13 +39,6 @@ function typeLabel(t: (k: string) => string, type: string | null): string {
   return String(type ?? '-')
 }
 
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 interface KeyValueItem {
   key: string
@@ -66,6 +60,7 @@ interface CustomPluginPanelProps {
 
 export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
 
   const [items, setItems] = useState<CustomPlugin[]>([])
   const [loading, setLoading] = useState(true)
@@ -442,7 +437,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
             {classifyTags.map((item, index) => (
               <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 {index > 0 && (
-                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                  <span className="classify-divider" style={{ color: token.colorTextQuaternary }}>
                     |
                   </span>
                 )}

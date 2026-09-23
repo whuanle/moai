@@ -126,8 +126,8 @@
     "welcomeTitle": "构建你的第一个智能体",
     "welcomeDesc": "从对话编排到发布上线，无需编写代码即可创建一个基于 AI 的应用。",
     "statApps": "应用程序",
-    "statWikis": "知识库",
-    "statTeam": "团队成员",
+    "statWikis": "我的知识库",
+    "statTeam": "我的团队",
     "statRequests": "API 调用",
     "quickActions": "快捷入口",
     "quickApp": "新建应用",
@@ -138,7 +138,12 @@
     "quickTeamDesc": "邀请同事加入团队",
     "recentTitle": "最近动态",
     "recentEmpty": "暂无动态",
-    "viewAll": "查看全部"
+    "viewAll": "查看全部",
+    "statGraphs": "我的知识图谱",
+    "statPlazaApps": "市场应用",
+    "myWikis": "我的知识库",
+    "myGraphs": "我的知识图谱",
+    "resourceEmpty": "暂无资源（仅显示我加入团队的知识库/知识图谱）"
   },
   "settings": {
     "title": "系统设置",
@@ -257,6 +262,7 @@
     "syncNoChange": "已是最新（共 {{count}} 个模型）",
     "batchEnable": "批量启用",
     "batchDisable": "批量禁用",
+    "batchDisableConfirm": "确认停用选中的模型？",
     "batchDelete": "批量删除",
     "hideUnrecognized": "不显示未识别模型",
     "save": "保存",
@@ -550,7 +556,8 @@
     "pluginsMemberHint": "本团队共有 {{count}} 个私有插件；系统插件由管理员统一开放",
     "knowledgeGraph": "知识图谱",
     "prompts": "提示词",
-    "skills": "团队技能"
+    "skills": "团队技能",
+    "searchMemberPlaceholder": "搜索成员昵称/用户名"
   },
   "wiki": {
     "title": "知识库",
@@ -1714,7 +1721,9 @@
     "saveInfo": "保存信息",
     "saveConfig": "保存配置",
     "notFound": "应用不存在",
-    "workflowGoDesign": "去编排设计"
+    "workflowGoDesign": "去编排设计",
+    "formClassify": "应用分类",
+    "classifyPlaceholder": "选择应用分类（可选）"
   },
   "skills": {
     "searchPlaceholder": "搜索技能标识/名称/描述",
@@ -1775,7 +1784,15 @@
     "view": "查看",
     "empty": "暂无技能",
     "cancel": "取消",
-    "systemReadonlyHint": "系统内置技能不可修改，脚本随平台分发。"
+    "systemReadonlyHint": "系统内置技能不可修改，脚本随平台分发。",
+    "avatar": "技能头像",
+    "avatarHint": "支持 JPG/PNG 等图片，5MB 以内",
+    "avatarTypeError": "只能上传图片文件",
+    "avatarSizeError": "头像图片不能超过 5MB",
+    "avatarSuccess": "头像已更新",
+    "extractSuccess": "压缩包解压完成，展开 {{count}} 个文件并已读取技能信息",
+    "addFileOrZip": "添加文件 / 上传压缩包",
+    "zipHint": "支持 .zip 技能包：上传后自动解压，并读取 SKILL.md（name/description 与正文使用说明）回填表单"
   },
   "accessApp": {
     "create": "新建接入",
@@ -1956,7 +1973,9 @@
   },
   "appPlaza": {
     "empty": "平台暂无公开应用",
-    "teamId": "团队 #{{id}}"
+    "teamId": "团队 #{{id}}",
+    "searchPlaceholder": "搜索应用名称/描述",
+    "classifyAll": "全部分类"
   },
   "prompt": {
     "create": "新建提示词",
@@ -2155,6 +2174,7 @@
     "toolsEmpty": "暂无团队工具",
     "ctxDeleteLine": "删除连线",
     "ctxNodeDeleted": "节点已删除",
+    "ctxDeleteConfirmDesc": "删除后不可撤销，节点/连线及其配置将一并移除",
     "ctxLineDeleted": "连线已删除",
     "pluginKey": "插件",
     "pluginKeyPlaceholder": "选择团队可用插件",

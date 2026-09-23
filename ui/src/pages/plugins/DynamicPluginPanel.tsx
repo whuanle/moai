@@ -8,7 +8,7 @@ import {
   ReloadOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography , theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
@@ -24,14 +24,8 @@ import { DataTable, feedback } from '@/design-system'
 import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
+import { formatDateTime } from '@/utils/datetime'
 
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 interface DynamicPluginPanelProps {
   classifies: PluginClassify[]
@@ -48,6 +42,7 @@ interface DynamicFormValues {
 
 export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const navigate = useNavigate()
   const [items, setItems] = useState<DynamicPluginManageItem[]>([])
   const [templates, setTemplates] = useState<DynamicPluginTemplate[]>([])
@@ -201,9 +196,13 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
       },
     },
     { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
+      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+    ) },
     { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => (
+      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+    ) },
     {
       title: t('plugins.colActions'),
       key: 'actions',
@@ -257,6 +256,8 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   return (
     <>
       <DataTable<DynamicPluginManageItem>
+        sticky
+        scroll={{ x: 'max-content' }}
         rowKey="id"
         columns={columns}
         dataSource={filtered}
@@ -276,7 +277,7 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
             {filterTags.map((item, index) => (
               <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {index > 0 && (
-                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                  <span className="classify-divider" style={{ color: token.colorTextQuaternary }}>
                     |
                   </span>
                 )}

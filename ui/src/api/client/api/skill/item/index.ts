@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQuerySkillCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateSkillCommand, type BusinessValidationResult, type EmptyCommandResponse, type QuerySkillCommandResponse, type UpdateSkillCommand } from '../../../models/index.js';
 // @ts-ignore
+import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
+// @ts-ignore
 import { DisableRequestBuilderRequestsMetadata, type DisableRequestBuilder } from './disable/index.js';
 // @ts-ignore
 import { DownloadRequestBuilderRequestsMetadata, type DownloadRequestBuilder } from './download/index.js';
@@ -14,6 +16,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/skill/{id}
  */
 export interface SkillItemRequestBuilder extends BaseRequestBuilder<SkillItemRequestBuilder> {
+    /**
+     * The avatar property
+     */
+    get avatar(): AvatarRequestBuilder;
     /**
      * The disable property
      */
@@ -84,6 +90,9 @@ export const SkillItemRequestBuilderUriTemplate = "{+baseurl}/api/skill/{id}";
  * Metadata for all the navigation properties in the request builder.
  */
 export const SkillItemRequestBuilderNavigationMetadata: Record<Exclude<keyof SkillItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    avatar: {
+        requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
     disable: {
         requestsMetadata: DisableRequestBuilderRequestsMetadata,
     },

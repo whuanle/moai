@@ -10,6 +10,12 @@ export const brandColors = {
   info: '#0BA5EC',
 }
 
+/** 品牌渐变（Dashboard 欢迎横幅等强调面；渐变上固定用白字，浅/暗主题共用） */
+export const brandGradient = 'linear-gradient(124deg, #2A6FFF 0%, #3D8BFF 45%, #68A9FF 100%)'
+
+/** 图表/分类回退色板（知识图谱等场景共用，避免页面各存一份漂移） */
+export const chartColors = ['#5B8FF9', '#5AD8A6', '#F6BD16', '#E8684A', '#6DC8EC', '#9270CA', '#FF9D4D', '#269A99']
+
 export const neutralColors = {
   textPrimary: '#101828',
   textSecondary: '#475467',

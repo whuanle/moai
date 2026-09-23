@@ -58,7 +58,8 @@ public class AppController : ControllerBase
             Name = req.Name,
             Description = req.Description,
             IsExternal = req.IsExternal,
-            IsAuth = req.IsAuth
+            IsAuth = req.IsAuth,
+            ClassifyId = req.ClassifyId
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
@@ -251,9 +252,13 @@ public class AppController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryPublicAppsCommandResponse"/>.</returns>
     [HttpGet("public/list")]
-    public Task<QueryPublicAppsCommandResponse> QueryPublicApps(CancellationToken ct)
+    public Task<QueryPublicAppsCommandResponse> QueryPublicApps([FromQuery] QueryPublicAppsCommand req, CancellationToken ct)
     {
-        var cmd = new QueryPublicAppsCommand();
+        var cmd = new QueryPublicAppsCommand
+        {
+            Keywords = req.Keywords,
+            ClassifyId = req.ClassifyId
+        };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }

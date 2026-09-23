@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Avatar, Button, Form, Input, Popconfirm, Typography, Upload } from 'antd'
+import { Avatar, Button, Form, Input, Popconfirm, Typography, Upload, theme } from 'antd'
 import { LinkOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -34,6 +34,7 @@ const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$/
 
 export function AccountSettings() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const userInfo = useAppStore((state) => state.userInfo)
   const [basicForm] = Form.useForm<BasicFormValues>()
   const [passwordForm] = Form.useForm<PasswordFormValues>()
@@ -288,7 +289,7 @@ export function AccountSettings() {
                     alignItems: 'center',
                     gap: 12,
                     padding: '12px 16px',
-                    border: '1px solid rgba(16, 24, 40, 0.08)',
+                    border: `1px solid ${token.colorBorderSecondary}`,
                     borderRadius: 8,
                   }}
                 >

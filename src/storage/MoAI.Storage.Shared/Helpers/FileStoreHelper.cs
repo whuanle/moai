@@ -86,7 +86,8 @@ public static class FileStoreHelper
         ".j2",    // Jinja2 模板
         ".html",  // HTML 模板
         ".css",   // 样式
-        ".js"     // JavaScript
+        ".js",    // JavaScript
+        ".zip"    // 技能包整包上传（服务端解压展开为逐文件资源，解压白名单不含 .zip）
     };
 
     /// <summary>

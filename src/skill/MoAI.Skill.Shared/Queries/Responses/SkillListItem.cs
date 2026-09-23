@@ -61,4 +61,9 @@ public class SkillListItem : AuditsInfo
     /// 技能包文件数量.
     /// </summary>
     public int FileCount { get; init; }
+
+    /// <summary>
+    /// 技能头像的 ObjectKey（空串=未设置）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
 }

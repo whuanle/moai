@@ -9,6 +9,11 @@ vi.mock('@/api/wiki', () => ({
   createWiki: vi.fn().mockResolvedValue(1),
   updateWiki: vi.fn().mockResolvedValue(undefined),
   deleteWiki: vi.fn().mockResolvedValue(undefined),
+  setWikiAvatar: vi.fn().mockResolvedValue(undefined),
+}))
+vi.mock('@/utils/storage', () => ({
+  resolveStorageUrl: vi.fn((v: string | null | undefined) => v ?? ''),
+  uploadImageWithKey: vi.fn().mockResolvedValue({ objectKey: 'wiki/a.png', url: 'http://x/static/wiki/a.png' }),
 }))
 
 function renderWikis() {

@@ -36,6 +36,7 @@ import { getCatalogProviders, type CatalogProvider } from '@/api/models-catalog'
 import { DataTable, feedback, Page } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import { ModelAccessDrawer } from './ModelAccessDrawer'
+import { formatDateTime } from '@/utils/datetime'
 
 const kindColor: Record<string, string> = {
   conversation: 'blue',
@@ -59,13 +60,6 @@ function protocolLabel(value: string | null | undefined): string {
 }
 
 /** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 interface ChannelFormValues {
   providerKey: string
@@ -337,6 +331,7 @@ function ChannelModelsPanel({
 
   return (
     <DataTable<AIModelItem>
+      sticky
       rowKey="id"
       columns={columns}
       dataSource={visibleModels}
@@ -360,9 +355,15 @@ function ChannelModelsPanel({
           <Button disabled={selectedKeys.length === 0} loading={batchLoading} onClick={() => handleBatchToggle(true)}>
             {t('models.batchEnable')}
           </Button>
-          <Button disabled={selectedKeys.length === 0} loading={batchLoading} onClick={() => handleBatchToggle(false)}>
-            {t('models.batchDisable')}
-          </Button>
+          <Popconfirm
+            title={t('models.batchDisableConfirm')}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => void handleBatchToggle(false)}
+          >
+            <Button disabled={selectedKeys.length === 0} loading={batchLoading}>
+              {t('models.batchDisable')}
+            </Button>
+          </Popconfirm>
           <Popconfirm
             title={t('models.deleteConfirm')}
             okButtonProps={{ danger: true }}
@@ -736,6 +737,7 @@ export function Models() {
   return (
     <Page>
       <DataTable<AIChannelItem>
+        sticky
         rowKey="id"
         columns={channelColumns}
         dataSource={channels}

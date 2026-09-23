@@ -59,6 +59,7 @@ public class QuerySkillCommandHandler : IRequestHandler<QuerySkillCommand, Query
             IsDisable = skill.IsDisable,
             TeamId = skill.TeamId,
             ClassifyId = skill.ClassifyId,
+            AvatarPath = skill.AvatarPath ?? string.Empty,
             IsPublic = skill.IsPublic,
             CreateTime = skill.CreateTime,
             UpdateTime = skill.UpdateTime,

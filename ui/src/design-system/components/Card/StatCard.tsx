@@ -1,8 +1,8 @@
 import { MinusOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons'
 import { Card } from './Card'
-import { Typography } from 'antd'
+import { Typography, theme } from 'antd'
 import type { ReactNode } from 'react'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { spacing } from '@/design-system/theme'
 
 export interface StatCardProps {
   title: ReactNode
@@ -14,9 +14,10 @@ export interface StatCardProps {
 }
 
 export function StatCard({ title, value, icon, suffix, loading, trend }: StatCardProps) {
+  const { token } = theme.useToken()
   const trendNode =
     typeof trend === 'number' ? (
-      <span style={{ marginInlineStart: spacing.xs, fontSize: 13, color: neutralColors.textTertiary }}>
+      <span style={{ marginInlineStart: spacing.xs, fontSize: 13, color: token.colorTextTertiary }}>
         {trend === 0 ? <MinusOutlined /> : trend > 0 ? <RiseOutlined /> : <FallOutlined />}
         {Math.abs(trend)}%
       </span>
@@ -45,8 +46,8 @@ export function StatCard({ title, value, icon, suffix, loading, trend }: StatCar
               height: 44,
               borderRadius: 10,
               fontSize: 20,
-              color: '#2970FF',
-              background: '#EFF4FF',
+              color: token.colorPrimary,
+              background: token.colorPrimaryBg,
               flexShrink: 0,
             }}
           >

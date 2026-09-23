@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Drawer, Input, Space, Spin, Tooltip } from 'antd'
+import { App, Button, Drawer, Input, Space, Spin, Tooltip, theme } from 'antd'
 import {
   EditOutlined,
   PlusOutlined,
@@ -47,6 +47,7 @@ import { NodeLibraryPanel } from './NodePanel'
 import { SystemSettingsPanel } from './SystemSettingsPanel'
 import { RunPanel } from './RunPanel'
 import { NodeForm } from './NodeForm'
+import { designerCssVars } from './designerCssVars'
 import './workflow-designer.css'
 
 /** 左侧浮层面板：无 / 节点库 / 系统设置（互斥，画布左上工具列唤出） */
@@ -179,7 +180,7 @@ function HandIcon() {
 
 function DesignerCanvas({ canManage }: { canManage: boolean }) {
   const { t } = useTranslation()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const { playground, document, history } = useClientContext()
   const tools = usePlaygroundTools()
 
@@ -323,8 +324,17 @@ function DesignerCanvas({ canManage }: { canManage: boolean }) {
             <div
               className="wf-ctx-item wf-ctx-item-danger"
               onClick={() => {
-                removeCtxTarget()
-                message.success(ctxMenu.kind === 'node' ? t('workflowDesigner.ctxNodeDeleted') : t('workflowDesigner.ctxLineDeleted'))
+                // 删除节点/连线属危险操作：先确认再执行，避免右键误触丢失节点配置
+                modal.confirm({
+                  title: ctxMenu.kind === 'node' ? t('workflowDesigner.ctxDeleteNode') : t('workflowDesigner.ctxDeleteLine'),
+                  content: t('workflowDesigner.ctxDeleteConfirmDesc'),
+                  okButtonProps: { danger: true },
+                  maskClosable: false,
+                  onOk: () => {
+                    removeCtxTarget()
+                    message.success(ctxMenu.kind === 'node' ? t('workflowDesigner.ctxNodeDeleted') : t('workflowDesigner.ctxLineDeleted'))
+                  },
+                })
               }}
             >
               {ctxMenu.kind === 'node' ? t('workflowDesigner.ctxDeleteNode') : t('workflowDesigner.ctxDeleteLine')}
@@ -398,6 +408,7 @@ export interface WorkflowDesignerProps {
 export function WorkflowDesigner({ teamId, appId, appName, canManage }: WorkflowDesignerProps) {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
+  const { token } = theme.useToken()
   const navigate = useNavigate()
 
   const loading = useWorkflowDesignerStore((s) => s.loading)
@@ -472,11 +483,11 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
             canvasWidth: 182,
             canvasHeight: 102,
             canvasPadding: 50,
-            canvasBackground: 'rgba(245, 245, 245, 1)',
+            canvasBackground: token.colorFillTertiary,
             canvasBorderRadius: 10,
-            viewportBackground: 'rgba(235, 235, 235, 1)',
+            viewportBackground: token.colorFill,
             viewportBorderRadius: 4,
-            nodeColor: 'rgba(255, 255, 255, 1)',
+            nodeColor: token.colorBgContainer,
             nodeBorderRadius: 2,
           },
         }),
@@ -502,7 +513,7 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
         return Promise.resolve()
       },
     }
-  }, [initialData, nodeRegistries, canManage, handleContentChange])
+  }, [initialData, nodeRegistries, canManage, handleContentChange, token])
 
   // 保存前客户端校验，错误逐条提示
   const validateBefore = useCallback(
@@ -560,7 +571,7 @@ export function WorkflowDesigner({ teamId, appId, appName, canManage }: Workflow
   if (!appId) return null
 
   return (
-    <div className="wf-designer">
+    <div className="wf-designer" style={designerCssVars(token)}>
       <WorkflowAppHeader
         teamId={teamId}
         appId={appId}

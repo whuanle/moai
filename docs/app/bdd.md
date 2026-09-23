@@ -765,3 +765,36 @@ Scenario: 对话页策略自动放行工具免审批卡（前端）
   Then 工具卡片直接进入执行流转（执行中/已完成），不出现「等待审批」状态与批准/拒绝按钮
   And 不调用审批决策接口；其余工具仍按 [@AP-S52](#ap-s52) 展示审批卡
 ```
+
+```gherkin
+@AP-S69 @auto:e2e
+Scenario: 应用绑定分类（classify_id）
+  Given 管理员在分类管理创建 type=app 分类（可配 emoji）
+  When 团队 Admin+ 创建应用携带 classifyId
+  Then 200，团队列表与详情返回 classifyId
+  When 更新应用换绑另一分类
+  Then 200，详情反映新分类
+  When 创建/更新提交不存在的 app 分类 id
+  Then 404「应用分类不存在」
+```
+
+```gherkin
+@AP-S70 @auto:e2e
+Scenario: 首页应用市场搜索与分类过滤
+  Given 平台内存在已公开、已发布的内部应用
+  When GET /api/app/public/list 不带参数
+  Then 返回全部公开应用（含 classifyId）
+  When 携带 Keywords（名称/描述包含匹配）
+  Then 仅返回命中应用，未命中返回空列表
+  When 携带 ClassifyId
+  Then 仅返回该分类下的公开应用
+```
+
+```gherkin
+@AP-S71 @manual
+Scenario: 新建/编辑应用分类下拉（前端）
+  Given 分类管理存在 type=app 分类
+  When 团队 Admin+ 打开新建应用弹窗或应用信息分区
+  Then 出现「应用分类」下拉（emoji + 名称），可清空表示未分类
+```
+```

@@ -290,6 +290,8 @@ export function KnowledgeGraphRelations({ graphId, teamId, graphEnabled = true, 
         )}
       </Space>
       <DataTable<KnowledgeGraphEdgeItem>
+        sticky
+        scroll={{ x: 'max-content' }}
         rowKey={(record) => String(record.edgeId)}
         columns={columns}
         dataSource={items}

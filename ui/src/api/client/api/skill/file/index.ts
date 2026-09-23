@@ -4,6 +4,8 @@
 // @ts-ignore
 import { CompleteRequestBuilderRequestsMetadata, type CompleteRequestBuilder } from './complete/index.js';
 // @ts-ignore
+import { ExtractRequestBuilderRequestsMetadata, type ExtractRequestBuilder } from './extract/index.js';
+// @ts-ignore
 import { PreuploadRequestBuilderRequestsMetadata, type PreuploadRequestBuilder } from './preupload/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -16,6 +18,10 @@ export interface FileRequestBuilder extends BaseRequestBuilder<FileRequestBuilde
      * The complete property
      */
     get complete(): CompleteRequestBuilder;
+    /**
+     * The extract property
+     */
+    get extract(): ExtractRequestBuilder;
     /**
      * The preupload property
      */
@@ -31,6 +37,9 @@ export const FileRequestBuilderUriTemplate = "{+baseurl}/api/skill/file";
 export const FileRequestBuilderNavigationMetadata: Record<Exclude<keyof FileRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     complete: {
         requestsMetadata: CompleteRequestBuilderRequestsMetadata,
+    },
+    extract: {
+        requestsMetadata: ExtractRequestBuilderRequestsMetadata,
     },
     preupload: {
         requestsMetadata: PreuploadRequestBuilderRequestsMetadata,

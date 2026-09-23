@@ -36,6 +36,11 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
     /// </summary>
     public bool IsAuth { get; init; }
 
+    /// <summary>
+    /// 分类 id，0=未分类；分类类型必须为 app.
+    /// </summary>
+    public int ClassifyId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -50,6 +55,7 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
         // AppId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("应用名称不能为空.").MaximumLength(20).WithMessage("应用名称最长 20 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("应用描述最长 255 个字符.");
+        validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");
         validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
             .WithMessage("只有外部应用可以设置需要授权访问.");
     }

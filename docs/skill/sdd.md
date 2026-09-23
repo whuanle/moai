@@ -91,3 +91,10 @@ Agent 运行时(src/ai)                 ▼
 - **userconfig 响应自带技能目录**：`GET /app/{id}/userconfig` 返回 `promptId`（当前选择）、`skills`（当前勾选，无行时=默认集）、`defaultSkills`（技能目录，含名称/描述，删除/禁用项静默缺失）；移除 `lockedSkills`。前端应用设置面板技能数据源收敛到该响应，不再拉取全量 options；专家列表由对话页从个人+团队提示词加载。
 - **前端**：应用配置页技能区文案改为「默认技能」语义，配置分区左栏内部滚动并缩窄（lg=11）、调试对话栏加宽（lg=13）；i18n 移除 `appChat.skillLocked/skillPersonal`。
 - **Kiota**：后端契约变更（userconfig 响应新增 defaultSkills），需 `dotnet run` 后执行 `npm run syncapi` 重新生成；封装层 `api/app.ts` 已按新契约通过原始 JSON 投射兼容过渡。
+
+## 10. 增量设计（2026-09-23：技能头像 + 压缩包上传自动解压）
+
+- **技能头像**：`skill.avatar_path`（varchar 255，空串=未设置；DDL `asserts/skill_avatar.sql`，EF `SkillConfiguration`）。`CreateSkillCommand.Avatar`（创建时随请求提交，校验文件已登记，同 app 先例）+ `UpdateSkillAvatarCommand`（`POST /skill/{id}/avatar`，`SkillAccessGuard.EnsureCanManageAsync` 目标保护）；`SkillListItem`/详情响应携带 `avatarPath`，前端卡片与编辑弹窗展示/上传（`SkillEditModal` AvatarUpload）。
+- **压缩包上传自动解压**：`FileStoreHelper.SkillPackageFormats` 增加 `.zip`（整包上传形态）；新增 `ExtractSkillPackageCommand`（`POST /skill/file/extract`，登录用户）：读取已上传 zip → 条目白名单/路径校验（与 `SkillFileItem` 路径规则一致，禁 `..`/嵌套 zip）→ 逐条目 sha256 内容寻址经 `UploadStreamAsync` 登记为 `skill/` 资源文件 → 解析 `SKILL.md`（frontmatter `name:`/`description:` + 正文 instructions）。防 zip 炸弹：条目 ≤100、解压总大小 ≤50MB。唯一顶层目录自动剥离（GitHub 导出包形态）。
+- **前端**：`SkillEditModal` 上传按钮支持 `.zip`，zip 走"上传→解压→回填表单+并入文件清单"；普通文件流程不变。
+- **验证**：`local-dev/feature-batch-e2e.mjs` SK-ZIP/SK-AV 系列（HTTP 全链路）+ `Skills.test.tsx` zip 回填组件用例。

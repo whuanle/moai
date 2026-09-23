@@ -15,17 +15,10 @@ import {
   updateOAuthConnection,
   type OAuthConnectionItem,
 } from '@/api/oauthconnect'
+import { formatDateTime } from '@/utils/datetime'
 
 const { Text } = Typography
 
-/** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 interface FormValues {
   name: string

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Button, Descriptions, Drawer, Empty, Input, Modal, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, Button, Descriptions, Drawer, Empty, Input, Modal, Space, Spin, Tag, Typography, theme } from 'antd'
 import { Form, Select } from 'antd'
 import { ImportOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { Graph } from '@antv/g6'
-import { feedback } from '@/design-system'
+import { chartColors, feedback  } from '@/design-system'
 import { PropertyInputs, serializePropertyValues, toPropertyDefs } from './PropertyFields'
 import { KnowledgeGraphImportModal } from './KnowledgeGraphImportModal'
 import { spacing } from '@/design-system/theme'
@@ -21,8 +21,6 @@ import {
   type KnowledgeGraphRelationTypeItem,
 } from '@/api/knowledgeGraph'
 
-const FALLBACK_COLORS = ['#5B8FF9', '#5AD8A6', '#F6BD16', '#E8684A', '#6DC8EC', '#9270CA', '#FF9D4D', '#269A99']
-const EDGE_COLOR = 'rgba(16, 24, 40, 0.25)'
 const CANVAS_HEIGHT = 520
 const DEFAULT_LIMIT = 200
 
@@ -74,6 +72,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
   graphEnabled?: boolean
 }) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const graphRef = useRef<Graph | null>(null)
   const nodesRef = useRef(new Map<string, CanvasNode>())
@@ -104,13 +103,13 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
     entityTypes.forEach((x, index) => {
       // 托管图实体类型有 id；接入图以标签名（name）为 key
       const value = x.entityTypeId != null ? String(x.entityTypeId) : (x.name ?? '')
-      map.set(value, x.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length])
+      map.set(value, x.color || chartColors[index % chartColors.length])
     })
     return map
   }, [entityTypes])
 
   const colorFor = useCallback(
-    (typeKey: string) => colorOf.get(typeKey) ?? FALLBACK_COLORS[0],
+    (typeKey: string) => colorOf.get(typeKey) ?? chartColors[0],
     [colorOf],
   )
 
@@ -281,7 +280,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
       },
       edge: {
         style: {
-          stroke: EDGE_COLOR,
+          stroke: token.colorBorder,
           endArrow: true,
           endArrowSize: 8,
           labelText: (datum: { data?: { relationLabel?: string } }) => String(datum.data?.relationLabel ?? ''),
@@ -341,7 +340,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
       graphRef.current = null
       void graph.destroy()
     }
-  }, [colorFor, canEdit, openCreateNode, openCreateEdge, confirmDeleteNode, confirmDeleteEdge])
+  }, [colorFor, canEdit, openCreateNode, openCreateEdge, confirmDeleteNode, confirmDeleteEdge, token])
 
   const loadSchema = useCallback(async () => {
     try {
@@ -553,7 +552,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
           ref={containerRef}
           style={{
             height: CANVAS_HEIGHT,
-            border: '1px solid rgba(16, 24, 40, 0.08)',
+            border: `1px solid ${token.colorBorderSecondary}`,
             borderRadius: 8,
             background: 'transparent',
           }}

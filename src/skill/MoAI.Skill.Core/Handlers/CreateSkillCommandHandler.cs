@@ -62,6 +62,18 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
 
         await SkillFilesGuard.EnsureFilesValidAsync(_databaseContext, request.Files, cancellationToken);
 
+        // 创建时若要带头像，objectKey 必须是已完成上传并登记的文件，防止伪造（与设置头像接口同规则）
+        if (!string.IsNullOrWhiteSpace(request.Avatar))
+        {
+            var avatarFileExists = await _databaseContext.Files
+                .AnyAsync(f => f.ObjectKey == request.Avatar && f.IsUploaded, cancellationToken);
+
+            if (!avatarFileExists)
+            {
+                throw new BusinessException("头像文件不存在或未完成上传.") { StatusCode = 404 };
+            }
+        }
+
         var skill = new SkillEntity
         {
             Id = Guid.CreateVersion7(),
@@ -73,6 +85,7 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
             IsSystem = false,
             TeamId = request.TeamId,
             ClassifyId = request.ClassifyId,
+            AvatarPath = request.Avatar ?? string.Empty,
             IsPublic = false,
             IsDisable = false,
         };

@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppstoreAddOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Tag, Tooltip, Typography, Upload } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, feedback } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { Card, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
+import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createApp, getApps, type AppItem, type AppKind } from '@/api/app'
 
 const { Text, Paragraph } = Typography
@@ -26,6 +27,7 @@ interface CreateFormValues {
   appType: AppKind
   name: string
   description?: string
+  classifyId?: number
 }
 
 interface TeamAppsProps {
@@ -42,6 +44,7 @@ interface TeamAppsProps {
  */
 export function TeamApps({ teamId, canManage }: TeamAppsProps) {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
@@ -50,7 +53,22 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
   const [submitting, setSubmitting] = useState(false)
   const [createAvatar, setCreateAvatar] = useState<PendingAvatar | null>(null)
   const [uploadingCreateAvatar, setUploadingCreateAvatar] = useState(false)
+  const [classifies, setClassifies] = useState<Classify[]>([])
   const [createForm] = Form.useForm<CreateFormValues>()
+
+  const classifyOptions = useMemo(
+    () => classifies.map((c) => ({ value: Number(c.classifyId), label: classifyLabel(c) })),
+    [classifies],
+  )
+
+  useEffect(() => {
+    classifyApi
+      .getClassifies(ClassifyType.App)
+      .then(setClassifies)
+      .catch(() => {
+        // 错误已由全局请求中间件统一提示
+      })
+  }, [])
 
   const load = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
@@ -99,6 +117,7 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
         name: values.name,
         description: values.description,
         avatar: createAvatar?.objectKey,
+        classifyId: values.classifyId ?? 0,
       })
       feedback.success(t('appManage.createSuccess'))
       setCreateOpen(false)
@@ -231,10 +250,10 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: spacing.sm,
-                          color: neutralColors.textTertiary,
+                          color: neutral.textTertiary,
                           fontSize: 12,
                           marginTop: 'auto',
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           paddingTop: spacing.sm,
                         }}
                       >
@@ -316,6 +335,9 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
           </Form.Item>
           <Form.Item name="description" label={t('appManage.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('appManage.descriptionPlaceholder')} maxLength={255} rows={3} />
+          </Form.Item>
+          <Form.Item name="classifyId" label={t('appManage.formClassify')}>
+            <Select allowClear placeholder={t('appManage.classifyPlaceholder')} options={classifyOptions} />
           </Form.Item>
           <div style={{ marginTop: spacing.xs }}>
             <Text type="secondary" style={{ fontSize: 12 }}>

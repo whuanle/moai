@@ -10,6 +10,11 @@ import { getTeamPlugins } from '@/api/team-plugin'
 import { getWikis } from '@/api/wiki'
 import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
 
+vi.mock('@/api/classify', () => ({
+  classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
+  classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c?.emoji, c?.name].filter(Boolean).join(' '),
+  ClassifyType: { Plugin: 'plugin', App: 'app', Kb: 'kb', Prompt: 'prompt', Skill: 'skill' },
+}))
 vi.mock('@/api/knowledgeGraph', () => ({
   getKnowledgeGraphs: vi.fn().mockResolvedValue({ teamId: '7', myRole: 2, enabled: true, items: [] }),
   getKnowledgeGraphTemplates: vi.fn().mockResolvedValue([]),

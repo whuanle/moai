@@ -531,3 +531,13 @@ Scenario: 连续失败时提前熔断
 ```
 
 > 飞书事件订阅的成功路径依赖真实开放平台长连接，本期未纳入自动化（见 [sdd.md §6 D22](./sdd.md#6-关键决策)）。
+
+```gherkin
+@WK-S99 @manual
+Scenario: 新建知识库上传头像
+  Given 团队 Admin+ 打开新建知识库弹窗
+  When 选择图片（≤5MB）并提交
+  Then 创建成功后立即登记头像，卡片列表显示头像
+  When 编辑弹窗中更换头像
+  Then 直传后立即设置成功（avatarPath 更新）
+```

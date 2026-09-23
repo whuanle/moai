@@ -12,8 +12,8 @@ import {
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
-import { Card, Page, feedback } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { Card, Page, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
@@ -38,6 +38,7 @@ const PAGE_SIZE_OPTIONS = [12, 24, 48]
 /** 提示词中心：菜单单一入口，页头 Tab 切换「提示词市场 / 我的提示词」，分类列表 + 卡片分页展示 */
 export function PromptCenter() {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
   const location = useLocation()
   const tab: PromptTab = location.pathname.startsWith('/prompts') ? 'mine' : 'market'
@@ -259,7 +260,7 @@ export function PromptCenter() {
         ))}
       </Space>
       <Spin spinning={loading}>
-        {pagedItems.length === 0 ? (
+        {!loading && pagedItems.length === 0 ? (
           <Empty description={t('prompt.empty')} />
         ) : (
           <Row gutter={[spacing.md, spacing.md]}>
@@ -308,7 +309,7 @@ export function PromptCenter() {
                         style={{
                           marginTop: 'auto',
                           paddingTop: spacing.sm,
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',

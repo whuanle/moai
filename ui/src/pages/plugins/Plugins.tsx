@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip, Typography } from 'antd'
+import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip, Typography , theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { EditOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +18,7 @@ import { CustomPluginPanel } from './CustomPluginPanel'
 import { DynamicPluginPanel } from './DynamicPluginPanel'
 import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
+import { formatDateTime } from '@/utils/datetime'
 
 const TAB_KINDS = ['custom', 'dynamic', 'static'] as const
 
@@ -32,16 +33,10 @@ function typeLabel(t: (k: string) => string, type: number): string {
   return TYPE_LABEL_KEY[type] ? t(TYPE_LABEL_KEY[type]) : String(type)
 }
 
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
 
 function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: PluginClassify[] }) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [items, setItems] = useState<StaticPluginManageItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ClassifyFilter>('all')
@@ -172,9 +167,13 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
         v ? <Tag color="green">{t('plugins.isPublic')}</Tag> : <Tag>{t('plugins.notPublic')}</Tag>,
     },
     { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
+      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+    ) },
     { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => formatDateTime(v) },
+    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => (
+      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
+    ) },
     {
       title: t('plugins.colActions'),
       key: 'actions',
@@ -250,7 +249,9 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
   return (
     <>
       <DataTable<StaticPluginManageItem>
-        rowKey={(r) => r.id ?? r.pluginKey ?? ''}
+        sticky
+        scroll={{ x: 'max-content' }}
+        rowKey={(r) => r.pluginKey || r.pluginName || r.id || ''}
         columns={columns}
         dataSource={filtered}
         loading={loading}
@@ -263,7 +264,7 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
             {filterTags.map((item, index) => (
               <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {index > 0 && (
-                  <span className="classify-divider" style={{ color: 'rgba(0,0,0,0.25)' }}>
+                  <span className="classify-divider" style={{ color: token.colorTextQuaternary }}>
                     |
                   </span>
                 )}

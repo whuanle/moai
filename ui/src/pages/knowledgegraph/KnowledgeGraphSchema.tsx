@@ -6,7 +6,7 @@ import type { TableColumnsType } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
 import { PropertyListEditor } from './PropertyFields'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { spacing, useNeutralColors } from '@/design-system/theme'
 import {
   createEntityType,
   createRelationType,
@@ -46,6 +46,7 @@ interface KnowledgeGraphSchemaProps {
 }
 
 function ColorCell({ color }: { color?: string | null }) {
+  const neutral = useNeutralColors()
   if (!color) return <span>-</span>
   return (
     <Space size={6}>
@@ -55,7 +56,7 @@ function ColorCell({ color }: { color?: string | null }) {
           width: 14,
           height: 14,
           borderRadius: 3,
-          border: `1px solid ${neutralColors.border}`,
+          border: `1px solid ${neutral.border}`,
           backgroundColor: color,
         }}
       />
@@ -379,6 +380,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
         <div>
           <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.schemaConnected.labels')}</div>
           <DataTable<KnowledgeGraphEntityTypeItem>
+            sticky
             rowKey={(record) => String(record.entityTypeId ?? record.name)}
             columns={connectedEntityColumns}
             dataSource={entityTypes}
@@ -389,6 +391,8 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
         <div>
           <div style={{ fontWeight: 600, marginBottom: spacing.md }}>{t('knowledgegraph.schemaConnected.relationshipTypes')}</div>
           <DataTable<KnowledgeGraphRelationTypeItem>
+            sticky
+            scroll={{ x: 'max-content' }}
             rowKey={(record) => String(record.relationTypeId ?? record.name)}
             columns={connectedRelationColumns}
             dataSource={relationTypes}
@@ -427,6 +431,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
           )}
         </Space>
         <DataTable<KnowledgeGraphEntityTypeItem>
+          sticky
           rowKey={(record) => String(record.entityTypeId)}
           columns={entityColumns}
           dataSource={entityTypes}
@@ -445,6 +450,8 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
           )}
         </Space>
         <DataTable<KnowledgeGraphRelationTypeItem>
+          sticky
+          scroll={{ x: 'max-content' }}
           rowKey={(record) => String(record.relationTypeId)}
           columns={relationColumns}
           dataSource={relationTypes}

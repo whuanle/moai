@@ -3,8 +3,8 @@ import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Segmented, Space, 
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, feedback, Page } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { Card, Page, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import {
@@ -27,6 +27,7 @@ interface CreateFormValues {
 
 export function Teams() {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
   const setMyTeams = useAppStore((state) => state.setMyTeams)
 
@@ -124,7 +125,7 @@ export function Teams() {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             allowClear
-            prefix={<SearchOutlined style={{ color: neutralColors.textTertiary }} />}
+            prefix={<SearchOutlined style={{ color: neutral.textTertiary }} />}
             placeholder={t('team.searchPlaceholder')}
             style={{ width: 240 }}
           />
@@ -177,17 +178,17 @@ export function Teams() {
                       {team.description || '-'}
                     </Typography.Paragraph>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs }}>
-                      <span style={{ fontSize: 12, color: neutralColors.textTertiary }}>
+                      <span style={{ fontSize: 12, color: neutral.textTertiary }}>
                         {t('team.owner')}: {ownerName}
                       </span>
                       <div
                         style={{
                           display: 'flex',
                           gap: spacing.md,
-                          color: neutralColors.textTertiary,
+                          color: neutral.textTertiary,
                           fontSize: 12,
                           marginTop: 'auto',
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           paddingTop: spacing.sm,
                         }}
                       >

@@ -4,6 +4,11 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { TeamApps } from '../TeamApps'
 import { createApp, getApps } from '@/api/app'
 
+vi.mock('@/api/classify', () => ({
+  classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
+  classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c?.emoji, c?.name].filter(Boolean).join(' '),
+  ClassifyType: { Plugin: 'plugin', App: 'app', Kb: 'kb', Prompt: 'prompt', Skill: 'skill' },
+}))
 vi.mock('@/api/app', () => ({
   getApps: vi.fn(),
   createApp: vi.fn().mockResolvedValue('01924f5e-0000-7000-8000-000000000003'),

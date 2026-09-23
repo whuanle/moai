@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FileTextOutlined, ScissorOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import Editor, { loader } from '@monaco-editor/react'
-import { Alert, Button, Card, Checkbox, Col, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Tabs, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Checkbox, Col, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { feedback, Page } from '@/design-system'
@@ -99,6 +99,7 @@ function metadataTypeKey(type: number | null | undefined): string {
 /** 文档操作页面：内容提取 → 文档切割（普通/AI）→ 切片预览 → 向量化 */
 export function WikiDocumentDetail() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const themeKey = useAppStore((state) => state.themeKey)
   const params = useParams<{ teamId: string; wikiId: string; documentId: string }>()
   const wikiId = Number(params.wikiId)
@@ -468,9 +469,9 @@ export function WikiDocumentDetail() {
                 height: 300,
                 overflowY: 'auto',
                 padding: spacing.md,
-                border: '1px solid rgba(5, 5, 5, 0.06)',
+                border: `1px solid ${token.colorBorderSecondary}`,
                 borderRadius: 6,
-                background: 'rgba(0, 0, 0, 0.02)',
+                background: token.colorFillQuaternary,
               }}
             >
               <Typography.Paragraph type="secondary" style={{ marginBottom: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -498,7 +499,7 @@ export function WikiDocumentDetail() {
                         initialValues={getRecommendedPartitionValues(detail.embeddingDimensions)}
                         style={{ maxWidth: 960 }}
                       >
-                        <div style={{ border: '1px solid rgba(5, 5, 5, 0.06)', borderRadius: 6, padding: spacing.md, marginBottom: spacing.md }}>
+                        <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 6, padding: spacing.md, marginBottom: spacing.md }}>
                           <Space direction="vertical" size={spacing.xs} style={{ width: '100%' }}>
                             <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
                               <Typography.Text strong>{t('wiki.doc.partitionConfigTitle')}</Typography.Text>
@@ -772,13 +773,13 @@ export function WikiDocumentDetail() {
       >
         {previewChunk && (
           <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-            <div style={{ flexShrink: 0, maxHeight: 140, overflowY: 'auto', padding: spacing.md, border: '1px solid rgba(5, 5, 5, 0.06)', borderRadius: 6, background: 'rgba(0, 0, 0, 0.02)' }}>
+            <div style={{ flexShrink: 0, maxHeight: 140, overflowY: 'auto', padding: spacing.md, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 6, background: token.colorFillQuaternary }}>
               <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {previewChunk.sliceContent || '-'}
               </Typography.Paragraph>
             </div>
 
-            <div style={{ flexShrink: 0, padding: spacing.md, border: '1px solid rgba(22, 119, 255, 0.25)', borderRadius: 6, background: 'rgba(22, 119, 255, 0.06)' }}>
+            <div style={{ flexShrink: 0, padding: spacing.md, border: `1px solid ${token.colorPrimaryBorder}`, borderRadius: 6, background: token.colorPrimaryBg }}>
               <Space direction="vertical" size={spacing.sm} style={{ width: '100%' }}>
                 <Typography.Text strong>{t('wiki.doc.metadataGenerateStrategy')}</Typography.Text>
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(180px, 220px)', gap: spacing.sm }}>
@@ -820,7 +821,7 @@ export function WikiDocumentDetail() {
               {(previewChunk.metadatas ?? []).length > 0 ? (
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   {(previewChunk.metadatas ?? []).map((metadata, index) => (
-                    <div key={index} style={{ padding: spacing.sm, border: '1px solid rgba(5, 5, 5, 0.06)', borderRadius: 6, background: 'rgba(0, 0, 0, 0.02)' }}>
+                    <div key={index} style={{ padding: spacing.sm, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 6, background: token.colorFillQuaternary }}>
                       <Tag color="purple" style={{ marginBottom: spacing.xs }}>{t(metadataTypeKey(metadata.metadataType))}</Tag>
                       <Text style={{ display: 'block', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{metadata.metadataContent || '-'}</Text>
                     </div>

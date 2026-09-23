@@ -165,6 +165,21 @@ public class SkillController : ControllerBase
     }
 
     /// <summary>
+    /// 设置技能头像：个人技能归属人、团队技能团队管理员或平台管理员；objectKey 须为已完成上传并登记的文件.
+    /// </summary>
+    /// <param name="id">技能 id.</param>
+    /// <param name="req">头像请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("{id}/avatar")]
+    public Task<EmptyCommandResponse> UpdateSkillAvatar(Guid id, [FromBody] UpdateSkillAvatarCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateSkillAvatarCommand { SkillId = id, ObjectKey = req.ObjectKey };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 删除技能（软删除；系统内置技能不可删除）：个人技能归属人、团队技能团队管理员或平台管理员.
     /// </summary>
     /// <param name="id">技能 id.</param>
@@ -215,6 +230,18 @@ public class SkillController : ControllerBase
     public async Task<EmptyCommandResponse> CompleteFile([FromBody] CompleteSkillFileCommand req, CancellationToken ct)
     {
         return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 解压技能压缩包：读取已上传的 zip，逐条目登记为技能包资源文件，并解析 SKILL.md 技能信息；登录用户可调用.
+    /// </summary>
+    /// <param name="req">解压请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="ExtractSkillPackageCommandResponse"/>.</returns>
+    [HttpPost("file/extract")]
+    public Task<ExtractSkillPackageCommandResponse> ExtractPackage([FromBody] ExtractSkillPackageCommand req, CancellationToken ct)
+    {
+        return _mediator.Send(req, ct);
     }
 
     private async Task EnsureAdminAsync(CancellationToken ct)

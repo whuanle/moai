@@ -334,3 +334,10 @@
 - **调试会话残留热态**：调试会话在 Redis 的消息/快照沿用 24h TTL，注册表 2h 过期后不可再解析，键随 TTL 自然清理；不做服务端即时销毁。
 - **调试会话归属仅按 UserId 校验**：注册表未存 `UserType`，与正式会话的归属校验等价；如后续需唯一用户类型可扩展。
 - **开场白仅内部 Web 聊天页与调试面板消费**：外部悬浮组件（widget）与飞书入口尚未读取 `openingStatement`，如需一致体验需在各入口分别接入；开场白不进模型上下文，改配即时生效（下一个新会话即可见）。
+
+## 增量设计（2026-09-23：应用绑定分类 + 市场搜索/分类过滤）
+
+- **应用分类**：启用 `app.classify_id`（存量列）。`CreateAppCommand/UpdateAppCommand` 增加 `ClassifyId`（≥0，>0 校验 type=app 分类存在否则 404，`MoAI.App.Core` 新增 Classify.Shared 引用）；`AppItem` 与详情响应携带 `classifyId`（团队列表/外部列表/公开列表/详情四处映射）。
+- **市场搜索**：`QueryPublicAppsCommand` 增加 `Keywords`（名称/描述包含）与 `ClassifyId` 查询参数，`GET /api/app/public/list` FromQuery 绑定。
+- **前端**：`TeamApps` 新建弹窗与 `AppInfoSection` 编辑表单加分类下拉（ClassifyType.App + classifyLabel 带 emoji）；`AppPlaza` 首页应用市场加搜索框与分类 CheckableTag chip（emoji）。
+- **验证**：`local-dev/feature-batch-e2e.mjs` AP-CLS-01~17（含上架审批→发布→市场过滤全链路）。

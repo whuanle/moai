@@ -26,8 +26,21 @@ public class QueryPublicAppsCommandHandler : IRequestHandler<QueryPublicAppsComm
     /// <inheritdoc/>
     public async Task<QueryPublicAppsCommandResponse> Handle(QueryPublicAppsCommand request, CancellationToken cancellationToken)
     {
-        var rows = await _databaseContext.Apps
-            .Where(x => !x.IsExternal && x.IsPublic && !x.IsDisable && x.PublishStatus == 1)
+        var query = _databaseContext.Apps
+            .Where(x => !x.IsExternal && x.IsPublic && !x.IsDisable && x.PublishStatus == 1);
+
+        if (!string.IsNullOrWhiteSpace(request.Keywords))
+        {
+            var pattern = request.Keywords.Trim();
+            query = query.Where(x => x.Name.Contains(pattern) || x.Description.Contains(pattern));
+        }
+
+        if (request.ClassifyId > 0)
+        {
+            query = query.Where(x => x.ClassifyId == request.ClassifyId);
+        }
+
+        var rows = await query
             .OrderByDescending(x => x.PublishTime)
             .Select(x => new
             {
@@ -39,6 +52,7 @@ public class QueryPublicAppsCommandHandler : IRequestHandler<QueryPublicAppsComm
                 x.Avatar,
                 x.IsExternal,
                 x.IsAuth,
+                x.ClassifyId,
                 x.IsPublic,
                 x.PublishStatus,
                 x.PublishTime,
@@ -57,6 +71,7 @@ public class QueryPublicAppsCommandHandler : IRequestHandler<QueryPublicAppsComm
                 AvatarPath = x.Avatar,
                 IsExternal = x.IsExternal,
                 IsAuth = x.IsAuth,
+                ClassifyId = x.ClassifyId,
                 IsPublic = x.IsPublic,
                 PublishStatus = x.PublishStatus,
                 PublishTime = x.PublishTime,

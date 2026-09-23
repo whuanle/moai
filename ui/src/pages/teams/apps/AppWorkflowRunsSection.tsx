@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Drawer, Space, Table, Tag, Typography } from 'antd'
+import { Button, Drawer, Space, Tag, Typography, theme } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
@@ -22,6 +22,7 @@ const STATUS_COLOR: Record<number, string> = {
 export function AppWorkflowRunsSection({ teamId, appId, canManage }: { teamId: number; appId: string; canManage: boolean }) {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { token } = theme.useToken()
 
   const [items, setItems] = useState<WorkflowInstanceItem[]>([])
   const [total, setTotal] = useState(0)
@@ -161,9 +162,9 @@ export function AppWorkflowRunsSection({ teamId, appId, canManage }: { teamId: n
           <div>
             <p>
               <Tag color={STATUS_COLOR[detail.status ?? 0] ?? 'default'}>{t(`appWorkspace.workflowStatus.${detail.status}`)}</Tag>
-              {detail.errorMessage && <span style={{ color: '#ff4d4f' }}>{detail.errorMessage}</span>}
+              {detail.errorMessage && <span style={{ color: token.colorError }}>{detail.errorMessage}</span>}
             </p>
-            <Table
+            <DataTable
               size="small"
               rowKey="nodeKey"
               pagination={false}

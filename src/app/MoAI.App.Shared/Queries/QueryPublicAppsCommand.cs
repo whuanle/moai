@@ -10,6 +10,16 @@ namespace MoAI.App.Queries;
 /// </summary>
 public class QueryPublicAppsCommand : IRequest<QueryPublicAppsCommandResponse>, IUserIdContext
 {
+    /// <summary>
+    /// 名称/描述关键字，空则不过滤.
+    /// </summary>
+    public string? Keywords { get; init; }
+
+    /// <summary>
+    /// 分类 id，大于 0 时按分类过滤.
+    /// </summary>
+    public int? ClassifyId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }

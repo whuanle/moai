@@ -128,6 +128,7 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
 
       <Card title={t('appMonitor.byModelTitle')}>
         <DataTable<AppUsageModelItem>
+          sticky
           rowKey="modelId"
           columns={columns}
           dataSource={byModel}

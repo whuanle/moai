@@ -3,14 +3,15 @@ import { BookOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Space, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, feedback } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { AvatarUpload, Card, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
-import { resolveStorageUrl } from '@/utils/storage'
+import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import {
   createWiki,
   deleteWiki,
   getWikis,
+  setWikiAvatar,
   updateWiki,
   type WikiItem,
 } from '@/api/wiki'
@@ -20,9 +21,17 @@ const { Paragraph, Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024
+
 interface WikiFormValues {
   name: string
   description?: string
+}
+
+/** 新建时已上传的头像：先直传拿 objectKey，等知识库创建成功后立即登记 */
+interface PendingAvatar {
+  objectKey: string
+  url: string
 }
 
 interface TeamWikisProps {
@@ -31,6 +40,7 @@ interface TeamWikisProps {
 
 export function TeamWikis({ teamId }: TeamWikisProps) {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
@@ -39,6 +49,9 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<WikiItem | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  /** 新建模式下的待登记头像；编辑模式直传后立即登记 */
+  const [pendingAvatar, setPendingAvatar] = useState<PendingAvatar | null>(null)
   const [form] = Form.useForm<WikiFormValues>()
 
   const isAdminPlus = myRole !== null && myRole !== ROLE_MEMBER
@@ -64,6 +77,7 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
   const openCreate = () => {
     setEditing(null)
     form.resetFields()
+    setPendingAvatar(null)
     setFormOpen(true)
   }
 
@@ -73,7 +87,35 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
       name: record.name ?? '',
       description: record.description ?? undefined,
     })
+    setPendingAvatar(null)
     setFormOpen(true)
+  }
+
+  /** 编辑模式：直传完成立即登记到已存在的知识库；新建模式：暂存 objectKey 等创建后登记 */
+  const handleAvatarFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      feedback.error(t('wiki.avatarTypeError'))
+      return
+    }
+    if (file.size > AVATAR_MAX_SIZE) {
+      feedback.error(t('wiki.avatarSizeError'))
+      return
+    }
+    setUploadingAvatar(true)
+    try {
+      const { objectKey, url } = await uploadImageWithKey(file)
+      if (editing) {
+        await setWikiAvatar(Number(editing.wikiId), objectKey)
+        feedback.success(t('wiki.avatarSuccess'))
+        void load()
+      } else {
+        setPendingAvatar({ objectKey, url })
+      }
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -83,10 +125,15 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
       if (editing) {
         await updateWiki(Number(editing.wikiId), { name: values.name, description: values.description })
       } else {
-        await createWiki({ teamId, name: values.name, description: values.description })
+        const wikiId = await createWiki({ teamId, name: values.name, description: values.description })
+        // 创建成功后立即登记暂存的头像（头像接口需要已存在的知识库 id）
+        if (pendingAvatar && wikiId > 0) {
+          await setWikiAvatar(wikiId, pendingAvatar.objectKey)
+        }
       }
       feedback.success(t(editing ? 'wiki.saveSuccess' : 'wiki.createSuccess'))
       setFormOpen(false)
+      setPendingAvatar(null)
       void load()
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -173,17 +220,17 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: spacing.md }}>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{card.documentCount ?? 0}</div>
-                        <div style={{ fontSize: 11, color: neutralColors.textTertiary, lineHeight: 1.4 }}>{t('wiki.statDocuments')}</div>
+                        <div style={{ fontSize: 11, color: neutral.textTertiary, lineHeight: 1.4 }}>{t('wiki.statDocuments')}</div>
                       </div>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{card.chunkCount ?? 0}</div>
-                        <div style={{ fontSize: 11, color: neutralColors.textTertiary, lineHeight: 1.4 }}>{t('wiki.statChunks')}</div>
+                        <div style={{ fontSize: 11, color: neutral.textTertiary, lineHeight: 1.4 }}>{t('wiki.statChunks')}</div>
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, whiteSpace: 'nowrap' }}>
                           {card.lastDocumentUpdateTime ? formatDateTime(card.lastDocumentUpdateTime).slice(5) : '-'}
                         </div>
-                        <div style={{ fontSize: 11, color: neutralColors.textTertiary, lineHeight: 1.4 }}>{t('wiki.statLastUpdate')}</div>
+                        <div style={{ fontSize: 11, color: neutral.textTertiary, lineHeight: 1.4 }}>{t('wiki.statLastUpdate')}</div>
                       </div>
                     </div>
                     <div
@@ -192,10 +239,10 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: spacing.sm,
-                        color: neutralColors.textTertiary,
+                        color: neutral.textTertiary,
                         fontSize: 12,
                         marginTop: 'auto',
-                        borderTop: `1px solid ${neutralColors.border}`,
+                        borderTop: `1px solid ${neutral.border}`,
                         paddingTop: spacing.sm,
                       }}
                     >
@@ -239,6 +286,24 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
         maskClosable={false}
       >
         <Form form={form} layout="vertical">
+          <Form.Item label={t('wiki.avatar')}>
+            <Space align="start">
+              <AvatarUpload
+                src={
+                  pendingAvatar?.url
+                  ?? (editing?.avatarPath ? resolveStorageUrl(editing.avatarPath) : undefined)
+                }
+                fallback={((form.getFieldValue('name') as string | undefined) ?? '?').slice(0, 1).toUpperCase()}
+                shape="square"
+                size={64}
+                uploading={uploadingAvatar}
+                onSelect={(file) => void handleAvatarFile(file)}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t('wiki.avatarHint')}
+              </Text>
+            </Space>
+          </Form.Item>
           <Form.Item
             name="name"
             label={t('wiki.name')}

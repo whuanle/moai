@@ -4,6 +4,11 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { AppWorkspace } from '../AppWorkspace'
 import { getAppAgentConfig, getAppDetail, publishApp } from '@/api/app'
 
+vi.mock('@/api/classify', () => ({
+  classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
+  classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c?.emoji, c?.name].filter(Boolean).join(' '),
+  ClassifyType: { Plugin: 'plugin', App: 'app', Kb: 'kb', Prompt: 'prompt', Skill: 'skill' },
+}))
 vi.mock('@/api/app', () => ({
   getAppDetail: vi.fn(),
   getAppAgentConfig: vi.fn().mockResolvedValue({ appId: 'a1', appType: 'agent', prompt: '', modelId: null, wikiIds: [], plugins: [] }),
@@ -17,6 +22,7 @@ vi.mock('@/api/app', () => ({
 }))
 vi.mock('@/api/gateway', () => ({ getTeamGatewayModels: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/team-plugin', () => ({ getTeamPlugins: vi.fn().mockResolvedValue({ items: [] }) }))
+vi.mock('@/api/skills', () => ({ getSkillOptions: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/wiki', () => ({ getWikis: vi.fn().mockResolvedValue({ items: [] }) }))
 vi.mock('@/api/knowledgeGraph', () => ({ getKnowledgeGraphs: vi.fn().mockResolvedValue({ items: [] }) }))
 vi.mock('@/api/agentChat', () => ({

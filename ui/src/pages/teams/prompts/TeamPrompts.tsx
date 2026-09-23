@@ -3,8 +3,8 @@ import { DeleteOutlined, EditOutlined, EyeOutlined, SearchOutlined, SendOutlined
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { QueryBar, Card, feedback } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { Card, QueryBar, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
@@ -30,6 +30,7 @@ interface PromptFilters extends Record<string, unknown> {
 /** 团队提示词：团队管理员创建管理，团队成员全部可见可用，支持申请上架到提示词市场 */
 export function TeamPrompts({ teamId, canManage }: { teamId: number; canManage: boolean }) {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(false)
@@ -293,7 +294,7 @@ export function TeamPrompts({ teamId, canManage }: { teamId: number; canManage: 
                         style={{
                           marginTop: 'auto',
                           paddingTop: spacing.sm,
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',

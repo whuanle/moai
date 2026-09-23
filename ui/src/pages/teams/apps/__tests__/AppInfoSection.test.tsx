@@ -5,6 +5,11 @@ import type { AppDetail } from '../AppConfigSection'
 import { updateApp } from '@/api/app'
 import { applyPublication, getTeamPublicationList } from '@/api/publication'
 
+vi.mock('@/api/classify', () => ({
+  classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
+  classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c?.emoji, c?.name].filter(Boolean).join(' '),
+  ClassifyType: { Plugin: 'plugin', App: 'app', Kb: 'kb', Prompt: 'prompt', Skill: 'skill' },
+}))
 vi.mock('@/api/app', () => ({
   updateApp: vi.fn().mockResolvedValue(undefined),
   uploadAppAvatar: vi.fn().mockResolvedValue(''),
@@ -94,6 +99,7 @@ describe('AppInfoSection（应用信息分区）', () => {
         description: '售前售后问答',
         isExternal: false,
         isAuth: false,
+        classifyId: 0,
       })
       expect(onReload).toHaveBeenCalled()
     })

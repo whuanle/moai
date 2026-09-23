@@ -3,13 +3,14 @@
  */
 
 import { useState } from 'react'
-import { Alert, Button, Input, Select, Table, Typography } from 'antd'
+import { Alert, Button, Input, Select, Typography, theme } from 'antd'
 import { CaretRightOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { WorkflowDebugRunResult, WorkflowNodeExecution } from '@/api/workflow'
 import { formatDateTime } from '@/utils/datetime'
 import { getNodeTemplate } from './constants'
 import { useWorkflowDesignerStore } from './store'
+import { DataTable } from '@/design-system'
 import type { GlobalVariableDef } from './types'
 
 const { Text } = Typography
@@ -48,16 +49,18 @@ function buildInputTemplate(): string {
   return JSON.stringify(template, null, 2)
 }
 
-const STATE_COLOR: Record<string, string> = {
-  completed: '#52c41a',
-  failed: '#ff4d4f',
-  running: '#1677ff',
-  skipped: '#8c8c8c',
-  pending: '#d9d9d9',
-}
-
 export function RunPanel({ running, result, onRun }: RunPanelProps) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
+  const stateColor = (state: string) =>
+    ({
+      completed: token.colorSuccess,
+      failed: token.colorError,
+      running: token.colorPrimary,
+      skipped: token.colorTextQuaternary,
+      pending: token.colorTextQuaternary,
+    })[state] ?? token.colorTextQuaternary
+
   const variables = useWorkflowDesignerStore((s) => s.variables)
   const [inputOverride, setInputOverride] = useState<string>('')
   const [systemValues, setSystemValues] = useState<Record<string, string>>({})
@@ -74,7 +77,7 @@ export function RunPanel({ running, result, onRun }: RunPanelProps) {
       width: 110,
       render: (v: string, record: WorkflowNodeExecution) => (
         <span>
-          <span className="wf-run-dot" style={{ background: STATE_COLOR[record.state ?? ''] ?? '#d9d9d9' }} />
+          <span className="wf-run-dot" style={{ background: stateColor(record.state ?? '') }} />
           {v || record.nodeKey}
         </span>
       ),
@@ -168,7 +171,7 @@ export function RunPanel({ running, result, onRun }: RunPanelProps) {
             />
           )}
           <div className="wf-fields-title">{t('workflowDesigner.runNodes')}</div>
-          <Table
+          <DataTable
             size="small"
             rowKey={(r) => r.nodeKey ?? r.nodeName ?? 'node'}
             columns={columns}

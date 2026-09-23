@@ -46,6 +46,7 @@ internal static class QuerySkillListHelper
             IsDisable = x.IsDisable,
             TeamId = x.TeamId,
             ClassifyId = x.ClassifyId,
+            AvatarPath = x.AvatarPath ?? string.Empty,
             IsPublic = x.IsPublic,
             PendingPublicationId = pendingPublicationIds.TryGetValue(x.Id.ToString(), out var publicationId) ? publicationId : null,
             FileCount = x.IsSystem ? BuiltinSkills.GetFiles(x.Key).Count : SkillService.ParseFiles(x.Files).Count,

@@ -3,8 +3,8 @@ import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons'
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { AvatarUpload, Card, feedback } from '@/design-system'
-import { neutralColors, spacing } from '@/design-system/theme'
+import { AvatarUpload, Card, feedback, useNeutralColors } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
 import { createApp, getExternalApps, publishApp, unpublishApp, type AppItem, type AppKind } from '@/api/app'
@@ -40,6 +40,7 @@ interface TeamExternalAppsProps {
  */
 export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
@@ -244,10 +245,10 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: spacing.sm,
-                          color: neutralColors.textTertiary,
+                          color: neutral.textTertiary,
                           fontSize: 12,
                           marginTop: 'auto',
-                          borderTop: `1px solid ${neutralColors.border}`,
+                          borderTop: `1px solid ${neutral.border}`,
                           paddingTop: spacing.sm,
                         }}
                       >

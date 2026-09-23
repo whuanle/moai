@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { Skills } from '../Skills'
-import { getMySkills, getSkillMarketList } from '@/api/skills'
+import { extractSkillPackage, getMySkills, getSkillMarketList, uploadSkillFile } from '@/api/skills'
 
 vi.mock('@/api/skills', () => ({
   getMySkills: vi.fn().mockResolvedValue([]),
@@ -10,6 +10,11 @@ vi.mock('@/api/skills', () => ({
   getSkill: vi.fn().mockResolvedValue({}),
   deleteSkill: vi.fn().mockResolvedValue(undefined),
   downloadSkillFiles: vi.fn().mockResolvedValue(0),
+  createSkill: vi.fn().mockResolvedValue('skill-id'),
+  updateSkill: vi.fn().mockResolvedValue(undefined),
+  uploadSkillFile: vi.fn().mockResolvedValue(1),
+  extractSkillPackage: vi.fn().mockResolvedValue({ name: '', description: '', instructions: '', files: [] }),
+  setSkillAvatar: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/api/publication', () => ({
@@ -67,5 +72,45 @@ describe('Skills', () => {
     await waitFor(() => {
       expect(getMySkills).toHaveBeenCalledWith({ keywords: undefined, classifyId: undefined })
     })
+  })
+})
+
+describe('SkillEditModal 压缩包上传', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getMySkills).mockResolvedValue([])
+    vi.mocked(getSkillMarketList).mockResolvedValue([])
+  })
+
+  it('上传 zip 后触发解压并回填技能信息与文件清单', async () => {
+    vi.mocked(extractSkillPackage).mockResolvedValue({
+      name: '文档生成',
+      description: '生成 docx',
+      instructions: '# 用法',
+      files: [
+        { path: 'SKILL.md', fileId: 11, fileName: 'SKILL.md' },
+        { path: 'scripts/run.py', fileId: 12, fileName: 'run.py' },
+      ],
+    })
+    renderSkills('/skills')
+    fireEvent.click(await screen.findByRole('button', { name: /新建技能/ }))
+    await screen.findByRole('dialog')
+    // 弹窗内有头像与技能包两个文件输入，按 accept 锁定 zip 技能包输入
+    const zipInput = document.querySelector('input[type="file"][accept*="zip"]') as HTMLInputElement
+    expect(zipInput).toBeTruthy()
+    fireEvent.change(zipInput, {
+      target: { files: [new File(['x'], 'pack.zip', { type: 'application/zip' })] },
+    })
+    await waitFor(() => {
+      expect(uploadSkillFile).toHaveBeenCalled()
+      expect(extractSkillPackage).toHaveBeenCalledWith(1)
+    })
+    // SKILL.md 信息回填表单
+    const nameInput = document.querySelector('#name') as HTMLInputElement
+    const descInput = document.querySelector('#description') as HTMLTextAreaElement
+    await waitFor(() => {
+      expect(nameInput.value).toBe('文档生成')
+    })
+    expect(descInput.value).toBe('生成 docx')
   })
 })

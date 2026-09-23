@@ -33,7 +33,7 @@ import { useAppStore } from '@/store/app'
 import { Chat, DataTable, FormPage, QueryBar, StatCard } from '@/design-system'
 import {
   brandColors,
-  neutralColors,
+  useNeutralColors,
   radius,
   spacing,
   fontSize,
@@ -60,8 +60,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function ColorSwatch() {
+  const neutral = useNeutralColors()
   const colors = Object.entries(brandColors)
-  const neutrals = Object.entries(neutralColors)
+  const neutrals = Object.entries(neutral)
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: spacing.md }}>
@@ -72,7 +73,7 @@ function ColorSwatch() {
                 height: 48,
                 backgroundColor: value,
                 borderRadius: radius.default,
-                border: `1px solid ${neutralColors.border}`,
+                border: `1px solid ${neutral.border}`,
               }}
             />
             <div style={{ marginTop: spacing.xs }}>
@@ -92,7 +93,7 @@ function ColorSwatch() {
                 height: 48,
                 backgroundColor: value,
                 borderRadius: radius.default,
-                border: `1px solid ${neutralColors.border}`,
+                border: `1px solid ${neutral.border}`,
               }}
             />
             <div style={{ marginTop: spacing.xs }}>

@@ -213,6 +213,8 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
       <Alert type="info" showIcon message={t('accessApp.usageHint')} />
       <DSCard styles={{ body: { paddingTop: spacing.sm } }}>
         <DataTable<AccessAppItem>
+          sticky
+          scroll={{ x: 'max-content' }}
           rowKey="accessAppId"
           columns={columns}
           dataSource={items}
@@ -256,6 +258,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
       <Modal
         title={t('accessApp.keyTitle')}
         open={createdKey !== null}
+        maskClosable={false}
         onCancel={() => setCreatedKey(null)}
         footer={[
           <Button key="copy" icon={<CopyOutlined />} onClick={() => void copyText(createdKey ?? '')}>

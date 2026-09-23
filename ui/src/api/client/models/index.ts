@@ -353,6 +353,10 @@ export interface AppItem extends Parsable {
      */
     avatarPath?: string | null;
     /**
+     * 分类 id，0=未分类.
+     */
+    classifyId?: number | null;
+    /**
      * 创建时间.
      */
     createTime?: string | null;
@@ -1212,6 +1216,10 @@ export interface CreateAppCommand extends Parsable {
      */
     avatar?: string | null;
     /**
+     * 分类 id，0=未分类；分类类型必须为 app.
+     */
+    classifyId?: number | null;
+    /**
      * 应用描述，可为空.
      */
     description?: string | null;
@@ -1818,6 +1826,24 @@ export function createExtractChatAttachmentCommandFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createExtractChatAttachmentResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoExtractChatAttachmentResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExtractSkillPackageCommand}
+ */
+// @ts-ignore
+export function createExtractSkillPackageCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExtractSkillPackageCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExtractSkillPackageCommandResponse}
+ */
+// @ts-ignore
+export function createExtractSkillPackageCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExtractSkillPackageCommandResponse;
 }
 /**
  * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
@@ -3638,6 +3664,10 @@ export function createSimpleStringFromDiscriminatorValue(parseNode: ParseNode | 
  */
 export interface CreateSkillCommand extends Parsable {
     /**
+     * 技能头像 objectKey，可为空；为空表示创建时不设置头像.必须是由存储直传管线完成上传并登记的文件（与设置头像接口同规则）.
+     */
+    avatar?: string | null;
+    /**
      * 分类 id，0 表示未分类，分类类型必须为 skill.
      */
     classifyId?: number | null;
@@ -4135,6 +4165,15 @@ export function createUpdatePromptAvatarCommandFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createUpdatePromptCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdatePromptCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateSkillAvatarCommand}
+ */
+// @ts-ignore
+export function createUpdateSkillAvatarCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateSkillAvatarCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4880,6 +4919,7 @@ export function deserializeIntoAppItem(appItem: Partial<AppItem> | undefined = {
         "appId": n => { appItem.appId = n.getGuidValue(); },
         "appType": n => { appItem.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "avatarPath": n => { appItem.avatarPath = n.getStringValue(); },
+        "classifyId": n => { appItem.classifyId = n.getNumberValue(); },
         "createTime": n => { appItem.createTime = n.getStringValue(); },
         "description": n => { appItem.description = n.getStringValue(); },
         "isAuth": n => { appItem.isAuth = n.getBooleanValue(); },
@@ -5303,6 +5343,7 @@ export function deserializeIntoCreateAppCommand(createAppCommand: Partial<Create
     return {
         "appType": n => { createAppCommand.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "avatar": n => { createAppCommand.avatar = n.getStringValue(); },
+        "classifyId": n => { createAppCommand.classifyId = n.getNumberValue(); },
         "description": n => { createAppCommand.description = n.getStringValue(); },
         "isAuth": n => { createAppCommand.isAuth = n.getBooleanValue(); },
         "isExternal": n => { createAppCommand.isExternal = n.getBooleanValue(); },
@@ -5467,6 +5508,7 @@ export function deserializeIntoCreatePromptCommand(createPromptCommand: Partial<
 // @ts-ignore
 export function deserializeIntoCreateSkillCommand(createSkillCommand: Partial<CreateSkillCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatar": n => { createSkillCommand.avatar = n.getStringValue(); },
         "classifyId": n => { createSkillCommand.classifyId = n.getNumberValue(); },
         "description": n => { createSkillCommand.description = n.getStringValue(); },
         "files": n => { createSkillCommand.files = n.getCollectionOfObjectValues<SkillFileItem>(createSkillFileItemFromDiscriminatorValue); },
@@ -5702,6 +5744,29 @@ export function deserializeIntoExtractChatAttachmentResponse(extractChatAttachme
         "contentLength": n => { extractChatAttachmentResponse.contentLength = n.getNumberValue(); },
         "markdown": n => { extractChatAttachmentResponse.markdown = n.getStringValue(); },
         "truncated": n => { extractChatAttachmentResponse.truncated = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExtractSkillPackageCommand(extractSkillPackageCommand: Partial<ExtractSkillPackageCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "fileId": n => { extractSkillPackageCommand.fileId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExtractSkillPackageCommandResponse(extractSkillPackageCommandResponse: Partial<ExtractSkillPackageCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { extractSkillPackageCommandResponse.description = n.getStringValue(); },
+        "files": n => { extractSkillPackageCommandResponse.files = n.getCollectionOfObjectValues<SkillFileItem>(createSkillFileItemFromDiscriminatorValue); },
+        "instructions": n => { extractSkillPackageCommandResponse.instructions = n.getStringValue(); },
+        "name": n => { extractSkillPackageCommandResponse.name = n.getStringValue(); },
     }
 }
 /**
@@ -6620,6 +6685,7 @@ export function deserializeIntoQueryAppCommandResponse(queryAppCommandResponse: 
         "appId": n => { queryAppCommandResponse.appId = n.getGuidValue(); },
         "appType": n => { queryAppCommandResponse.appType = n.getEnumValue<AppType>(AppTypeObject); },
         "avatarPath": n => { queryAppCommandResponse.avatarPath = n.getStringValue(); },
+        "classifyId": n => { queryAppCommandResponse.classifyId = n.getNumberValue(); },
         "createTime": n => { queryAppCommandResponse.createTime = n.getStringValue(); },
         "description": n => { queryAppCommandResponse.description = n.getStringValue(); },
         "isAuth": n => { queryAppCommandResponse.isAuth = n.getBooleanValue(); },
@@ -7288,6 +7354,7 @@ export function deserializeIntoQuerySettingsCommandResponse(querySettingsCommand
 // @ts-ignore
 export function deserializeIntoQuerySkillCommandResponse(querySkillCommandResponse: Partial<QuerySkillCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { querySkillCommandResponse.avatarPath = n.getStringValue(); },
         "classifyId": n => { querySkillCommandResponse.classifyId = n.getNumberValue(); },
         "createTime": n => { querySkillCommandResponse.createTime = n.getStringValue(); },
         "description": n => { querySkillCommandResponse.description = n.getStringValue(); },
@@ -8159,6 +8226,7 @@ export function deserializeIntoSkillFileItem(skillFileItem: Partial<SkillFileIte
 export function deserializeIntoSkillListItem(skillListItem: Partial<SkillListItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(skillListItem),
+        "avatarPath": n => { skillListItem.avatarPath = n.getStringValue(); },
         "classifyId": n => { skillListItem.classifyId = n.getNumberValue(); },
         "description": n => { skillListItem.description = n.getStringValue(); },
         "fileCount": n => { skillListItem.fileCount = n.getNumberValue(); },
@@ -8546,6 +8614,7 @@ export function deserializeIntoUpdateAppAvatarCommand(updateAppAvatarCommand: Pa
 export function deserializeIntoUpdateAppCommand(updateAppCommand: Partial<UpdateAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { updateAppCommand.appId = n.getGuidValue(); },
+        "classifyId": n => { updateAppCommand.classifyId = n.getNumberValue(); },
         "description": n => { updateAppCommand.description = n.getStringValue(); },
         "isAuth": n => { updateAppCommand.isAuth = n.getBooleanValue(); },
         "isExternal": n => { updateAppCommand.isExternal = n.getBooleanValue(); },
@@ -8798,6 +8867,17 @@ export function deserializeIntoUpdatePromptCommand(updatePromptCommand: Partial<
         "description": n => { updatePromptCommand.description = n.getStringValue(); },
         "name": n => { updatePromptCommand.name = n.getStringValue(); },
         "promptClassId": n => { updatePromptCommand.promptClassId = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateSkillAvatarCommand(updateSkillAvatarCommand: Partial<UpdateSkillAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "objectKey": n => { updateSkillAvatarCommand.objectKey = n.getStringValue(); },
+        "skillId": n => { updateSkillAvatarCommand.skillId = n.getGuidValue(); },
     }
 }
 /**
@@ -9360,6 +9440,36 @@ export interface ExtractChatAttachmentResponse extends Parsable {
      * 是否发生截断.
      */
     truncated?: boolean | null;
+}
+/**
+ * 解压技能压缩包：读取已上传的 zip 文件，逐条目登记为技能包资源文件，并解析 SKILL.md 技能信息（frontmatter 名称/描述 + 正文使用说明）.
+ */
+export interface ExtractSkillPackageCommand extends Parsable {
+    /**
+     * 压缩包文件 id（file 表，须已上传完成）.
+     */
+    fileId?: string | null;
+}
+/**
+ * 解压技能压缩包响应.
+ */
+export interface ExtractSkillPackageCommandResponse extends Parsable {
+    /**
+     * 技能描述（解析自 SKILL.md frontmatter，无则为空串）.
+     */
+    description?: string | null;
+    /**
+     * 解压登记后的技能包文件清单.
+     */
+    files?: SkillFileItem[] | null;
+    /**
+     * 使用说明（SKILL.md frontmatter 之后的正文，无则为空串）.
+     */
+    instructions?: string | null;
+    /**
+     * 技能名称（解析自 SKILL.md frontmatter，无则为空串）.
+     */
+    name?: string | null;
 }
 /**
  * 飞书应用连接项.
@@ -10980,6 +11090,10 @@ export interface QueryAppCommandResponse extends Parsable {
      */
     avatarPath?: string | null;
     /**
+     * 分类 id，0=未分类.
+     */
+    classifyId?: number | null;
+    /**
      * 创建时间.
      */
     createTime?: string | null;
@@ -12089,6 +12203,10 @@ export interface QuerySettingsCommandResponse extends Parsable {
  * 技能详情响应.
  */
 export interface QuerySkillCommandResponse extends Parsable {
+    /**
+     * 技能头像的 ObjectKey（空串=未设置）.
+     */
+    avatarPath?: string | null;
     /**
      * 分类 id，0 表示未分类.
      */
@@ -13589,6 +13707,7 @@ export function serializeAppItem(writer: SerializationWriter, appItem: Partial<A
         writer.writeGuidValue("appId", appItem.appId);
         writer.writeEnumValue<AppType>("appType", appItem.appType);
         writer.writeStringValue("avatarPath", appItem.avatarPath);
+        writer.writeNumberValue("classifyId", appItem.classifyId);
         writer.writeStringValue("createTime", appItem.createTime);
         writer.writeStringValue("description", appItem.description);
         writer.writeBooleanValue("isAuth", appItem.isAuth);
@@ -14013,6 +14132,7 @@ export function serializeCreateAppCommand(writer: SerializationWriter, createApp
     if (createAppCommand) {
         writer.writeEnumValue<AppType>("appType", createAppCommand.appType);
         writer.writeStringValue("avatar", createAppCommand.avatar);
+        writer.writeNumberValue("classifyId", createAppCommand.classifyId);
         writer.writeStringValue("description", createAppCommand.description);
         writer.writeBooleanValue("isAuth", createAppCommand.isAuth);
         writer.writeBooleanValue("isExternal", createAppCommand.isExternal);
@@ -14177,6 +14297,7 @@ export function serializeCreatePromptCommand(writer: SerializationWriter, create
 // @ts-ignore
 export function serializeCreateSkillCommand(writer: SerializationWriter, createSkillCommand: Partial<CreateSkillCommand> | undefined | null = {}) : void {
     if (createSkillCommand) {
+        writer.writeStringValue("avatar", createSkillCommand.avatar);
         writer.writeNumberValue("classifyId", createSkillCommand.classifyId);
         writer.writeStringValue("description", createSkillCommand.description);
         writer.writeCollectionOfObjectValues<SkillFileItem>("files", createSkillCommand.files, serializeSkillFileItem);
@@ -14412,6 +14533,29 @@ export function serializeExtractChatAttachmentResponse(writer: SerializationWrit
         writer.writeNumberValue("contentLength", extractChatAttachmentResponse.contentLength);
         writer.writeStringValue("markdown", extractChatAttachmentResponse.markdown);
         writer.writeBooleanValue("truncated", extractChatAttachmentResponse.truncated);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExtractSkillPackageCommand(writer: SerializationWriter, extractSkillPackageCommand: Partial<ExtractSkillPackageCommand> | undefined | null = {}) : void {
+    if (extractSkillPackageCommand) {
+        writer.writeStringValue("fileId", extractSkillPackageCommand.fileId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExtractSkillPackageCommandResponse(writer: SerializationWriter, extractSkillPackageCommandResponse: Partial<ExtractSkillPackageCommandResponse> | undefined | null = {}) : void {
+    if (extractSkillPackageCommandResponse) {
+        writer.writeStringValue("description", extractSkillPackageCommandResponse.description);
+        writer.writeCollectionOfObjectValues<SkillFileItem>("files", extractSkillPackageCommandResponse.files, serializeSkillFileItem);
+        writer.writeStringValue("instructions", extractSkillPackageCommandResponse.instructions);
+        writer.writeStringValue("name", extractSkillPackageCommandResponse.name);
     }
 }
 /**
@@ -15330,6 +15474,7 @@ export function serializeQueryAppCommandResponse(writer: SerializationWriter, qu
         writer.writeGuidValue("appId", queryAppCommandResponse.appId);
         writer.writeEnumValue<AppType>("appType", queryAppCommandResponse.appType);
         writer.writeStringValue("avatarPath", queryAppCommandResponse.avatarPath);
+        writer.writeNumberValue("classifyId", queryAppCommandResponse.classifyId);
         writer.writeStringValue("createTime", queryAppCommandResponse.createTime);
         writer.writeStringValue("description", queryAppCommandResponse.description);
         writer.writeBooleanValue("isAuth", queryAppCommandResponse.isAuth);
@@ -15998,6 +16143,7 @@ export function serializeQuerySettingsCommandResponse(writer: SerializationWrite
 // @ts-ignore
 export function serializeQuerySkillCommandResponse(writer: SerializationWriter, querySkillCommandResponse: Partial<QuerySkillCommandResponse> | undefined | null = {}) : void {
     if (querySkillCommandResponse) {
+        writer.writeStringValue("avatarPath", querySkillCommandResponse.avatarPath);
         writer.writeNumberValue("classifyId", querySkillCommandResponse.classifyId);
         writer.writeStringValue("createTime", querySkillCommandResponse.createTime);
         writer.writeStringValue("description", querySkillCommandResponse.description);
@@ -16869,6 +17015,7 @@ export function serializeSkillFileItem(writer: SerializationWriter, skillFileIte
 export function serializeSkillListItem(writer: SerializationWriter, skillListItem: Partial<SkillListItem> | undefined | null = {}) : void {
     if (skillListItem) {
         serializeAuditsInfo(writer, skillListItem)
+        writer.writeStringValue("avatarPath", skillListItem.avatarPath);
         writer.writeNumberValue("classifyId", skillListItem.classifyId);
         writer.writeStringValue("description", skillListItem.description);
         writer.writeNumberValue("fileCount", skillListItem.fileCount);
@@ -17256,6 +17403,7 @@ export function serializeUpdateAppAvatarCommand(writer: SerializationWriter, upd
 export function serializeUpdateAppCommand(writer: SerializationWriter, updateAppCommand: Partial<UpdateAppCommand> | undefined | null = {}) : void {
     if (updateAppCommand) {
         writer.writeGuidValue("appId", updateAppCommand.appId);
+        writer.writeNumberValue("classifyId", updateAppCommand.classifyId);
         writer.writeStringValue("description", updateAppCommand.description);
         writer.writeBooleanValue("isAuth", updateAppCommand.isAuth);
         writer.writeBooleanValue("isExternal", updateAppCommand.isExternal);
@@ -17508,6 +17656,17 @@ export function serializeUpdatePromptCommand(writer: SerializationWriter, update
         writer.writeStringValue("description", updatePromptCommand.description);
         writer.writeStringValue("name", updatePromptCommand.name);
         writer.writeNumberValue("promptClassId", updatePromptCommand.promptClassId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateSkillAvatarCommand(writer: SerializationWriter, updateSkillAvatarCommand: Partial<UpdateSkillAvatarCommand> | undefined | null = {}) : void {
+    if (updateSkillAvatarCommand) {
+        writer.writeStringValue("objectKey", updateSkillAvatarCommand.objectKey);
+        writer.writeGuidValue("skillId", updateSkillAvatarCommand.skillId);
     }
 }
 /**
@@ -18128,6 +18287,10 @@ export interface SkillFileItem extends Parsable {
  * 技能列表项.
  */
 export interface SkillListItem extends AuditsInfo, Parsable {
+    /**
+     * 技能头像的 ObjectKey（空串=未设置）.
+     */
+    avatarPath?: string | null;
     /**
      * 分类 id，0 表示未分类.
      */
@@ -18872,6 +19035,10 @@ export interface UpdateAppCommand extends Parsable {
      */
     appId?: Guid | null;
     /**
+     * 分类 id，0=未分类；分类类型必须为 app.
+     */
+    classifyId?: number | null;
+    /**
      * 应用描述，可为空.
      */
     description?: string | null;
@@ -19286,6 +19453,19 @@ export interface UpdatePromptCommand extends Parsable {
      * 分类 id，0 表示未分类，分类类型必须为 prompt.
      */
     promptClassId?: number | null;
+}
+/**
+ * 设置技能头像；objectKey 需为已完成上传并登记的文件；个人技能归属人、团队技能团队管理员或平台管理员.
+ */
+export interface UpdateSkillAvatarCommand extends Parsable {
+    /**
+     * 头像文件的 ObjectKey.
+     */
+    objectKey?: string | null;
+    /**
+     * 技能 id，由 Controller 从路由参数回填.
+     */
+    skillId?: Guid | null;
 }
 /**
  * 更新技能：个人技能归属人、团队技能团队管理员或平台管理员可调用；技能标识不可修改.

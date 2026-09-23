@@ -24,6 +24,11 @@ export function AppProviders({ children }: AppProvidersProps) {
     void refreshServerInfo()
   }, [])
 
+  // 主题桥：把 themeKey 落到 <html data-theme>，供 index.css 等全局样式做暗色覆盖（body 背景/滚动条等 antd 管不到的地方）
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeKey
+  }, [themeKey])
+
   return (
     <ConfigProvider locale={getAntdLocale(locale)} theme={getThemeConfig(themeKey)}>
       <AntdApp>

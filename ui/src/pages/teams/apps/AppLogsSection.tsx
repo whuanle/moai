@@ -3,8 +3,8 @@ import { Button, DatePicker, Drawer, Form, Input, Select, Space, Spin, Tag, Typo
 import type { TableColumnsType } from 'antd'
 import type { Dayjs } from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { DataTable, QueryBar } from '@/design-system'
-import { neutralColors, radius, spacing } from '@/design-system/theme'
+import { DataTable, QueryBar, useNeutralColors } from '@/design-system'
+import { radius, spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import {
   getAppLogs,
@@ -87,6 +87,7 @@ export interface AppLogsSectionProps {
  */
 export function AppLogsSection({ appId }: AppLogsSectionProps) {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<AppLogItem[]>([])
   const [total, setTotal] = useState(0)
@@ -309,7 +310,7 @@ export function AppLogsSection({ appId }: AppLogsSectionProps) {
                 <div
                   key={message.messageId ?? `${message.seq ?? index}`}
                   style={{
-                    border: `1px solid ${neutralColors.border}`,
+                    border: `1px solid ${neutral.border}`,
                     borderRadius: radius.default,
                     padding: spacing.sm,
                   }}

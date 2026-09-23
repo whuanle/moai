@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
+using MoAI.Classify;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
@@ -64,6 +65,17 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, SimpleG
             }
         }
 
+        if (request.ClassifyId > 0)
+        {
+            var classifyExist = await _databaseContext.Classifies
+                .AnyAsync(x => x.Id == request.ClassifyId && x.Type == ClassifyTypes.App, cancellationToken);
+
+            if (!classifyExist)
+            {
+                throw new BusinessException("应用分类不存在.") { StatusCode = 404 };
+            }
+        }
+
         var app = new AppEntity
         {
             Id = Guid.CreateVersion7(),
@@ -74,6 +86,7 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, SimpleG
             Avatar = request.Avatar ?? string.Empty,
             IsExternal = request.IsExternal,
             IsAuth = request.IsExternal && request.IsAuth,
+            ClassifyId = request.ClassifyId,
         };
 
         _databaseContext.Apps.Add(app);

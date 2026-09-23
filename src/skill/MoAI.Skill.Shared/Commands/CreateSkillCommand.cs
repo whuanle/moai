@@ -47,6 +47,12 @@ public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSk
     /// </summary>
     public int ClassifyId { get; init; }
 
+    /// <summary>
+    /// 技能头像 objectKey，可为空；为空表示创建时不设置头像.
+    /// <para>必须是由存储直传管线完成上传并登记的文件（与设置头像接口同规则）.</para>
+    /// </summary>
+    public string? Avatar { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -64,6 +70,7 @@ public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSk
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("技能描述最长 255 个字符.");
         validate.RuleFor(x => x.TeamId).GreaterThanOrEqualTo(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");
+        validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 最长 255 个字符.");
         validate.RuleFor(x => x.Files).Must(files => files.Select(f => f.Path).Distinct().Count() == files.Count)
             .WithMessage("技能包内文件路径不能重复.");
         validate.RuleForEach(x => x.Files).ChildRules(file =>
