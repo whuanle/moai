@@ -173,10 +173,9 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - MAI_FILE=/app/configs/system.json
       - TZ=${TZ:-Asia/Shanghai}
-      # system.json 占位符替换：对外主机 / MoAI 暴露端口 / 对象存储暴露端口
-      - MOAI_HOST=${MOAI_HOST:-localhost}
-      - MOAI_PORT=${MOAI_PORT:-8080}
-      - S3_PORT=${RUSTFS_PORT:-9000}
+      # system.json 占位符替换（仅无挂载时的内置模板需要）
+      - MOAI_SERVER_URL=${MOAI_SERVER_URL:-}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
     volumes:
       # 配置穿透映射（宿主机文件必须存在，否则 docker 会创建同名目录）；
       # 源路径由 .env 的 MOAI_CONFIG_FILE 指定，默认 ./configs/system.json

@@ -8,7 +8,7 @@ set -e
 #   - docker run    ：-v $(pwd)/configs/system.json:/app/configs/system.json:ro
 # 未挂载时回退到镜像内置的 /app/configs/system.json.template
 #
-# 模板占位符（可选）：配置里可写 __MOAI_HOST__ / __MOAI_PORT__ / __S3_PORT__，
+# 模板占位符（可选）：配置里可写 __MOAI_SERVER_URL__ / __S3_ENDPOINT__，
 # 由本脚本按环境变量替换后生成运行时配置，避免手工改地址。
 # ============================================================
 
@@ -34,19 +34,17 @@ if [ ! -f "$MAI_FILE" ]; then
   fi
 fi
 
-# 占位符替换：__MOAI_HOST__=对外访问主机（IP/域名），__MOAI_PORT__=MoAI 暴露端口，__S3_PORT__=对象存储暴露端口
-if grep -q -e '__MOAI_HOST__' -e '__MOAI_PORT__' -e '__S3_PORT__' "$MAI_FILE" 2>/dev/null; then
-  MOAI_HOST="${MOAI_HOST:-localhost}"
-  MOAI_PORT="${MOAI_PORT:-8080}"
-  S3_PORT="${S3_PORT:-9000}"
+# 占位符替换：__MOAI_SERVER_URL__=MoAI 对外地址，__S3_ENDPOINT__=对象存储对外地址
+if grep -q -e '__MOAI_SERVER_URL__' -e '__S3_ENDPOINT__' "$MAI_FILE" 2>/dev/null; then
+  MOAI_SERVER_URL="${MOAI_SERVER_URL:-http://localhost:8080}"
+  S3_ENDPOINT="${S3_ENDPOINT:-http://localhost:9000}"
   RUNTIME_FILE="/app/configs/system.runtime.json"
-  sed -e "s|__MOAI_HOST__|${MOAI_HOST}|g" \
-      -e "s|__MOAI_PORT__|${MOAI_PORT}|g" \
-      -e "s|__S3_PORT__|${S3_PORT}|g" \
+  sed -e "s|__MOAI_SERVER_URL__|${MOAI_SERVER_URL}|g" \
+      -e "s|__S3_ENDPOINT__|${S3_ENDPOINT}|g" \
       "$MAI_FILE" > "$RUNTIME_FILE"
   MAI_FILE="$RUNTIME_FILE"
   export MAI_FILE
-  echo "[entrypoint] 已按 MOAI_HOST=${MOAI_HOST} 生成运行时配置 $RUNTIME_FILE"
+  echo "[entrypoint] 已按 MOAI_SERVER_URL=${MOAI_SERVER_URL} 生成运行时配置 $RUNTIME_FILE"
 fi
 
 echo "[entrypoint] 使用配置文件: $MAI_FILE"

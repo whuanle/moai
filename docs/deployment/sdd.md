@@ -17,8 +17,8 @@
 ## 配置注入链（核心设计）
 
 - **统一机制：`.env` → 生成 `configs/system.json` → 挂载**（[docker.md 第 3 节](./docker.md)）。`deploy-compose.sh` 以 `.env` 为唯一来源生成配置到 `MOAI_CONFIG_FILE`（默认 `configs/system.json`，已 gitignore；旧文件备份 `.bak`），compose 挂载进容器 `/app/configs/system.json`，后端加载器读 `MAI_FILE`（[@DEP-S15](./bdd.md#dep-s15)）。仓库 `configs/system.example.json` 为参考模板与镜像兜底。
-- **对外地址**：`Server`/`WebUI`/`Storage.Endpoint` 由 `.env` 的 `MOAI_HOST`/`MOAI_PORT`/`S3_ENDPOINT`（S3 自定义域名/外部 OSS）生成；`MOAI_HOST` 留空时脚本自动探测本机 IP。预签名 URL 与前端 `/static` 前缀都用该 host，必须是「容器与浏览器都可达」的地址（[docker.md 3.1](./docker.md)）。
-- 镜像兜底：无挂载时 entrypoint 复制内置 `system.json.template`，并替换 `__MOAI_HOST__`/`__MOAI_PORT__`/`__S3_PORT__` 占位符。
+- **对外地址**：`Server`/`WebUI` 取 `.env` 的 `MOAI_SERVER_URL`（完整 URL，含协议；留空时脚本自动探测本机 IP 生成 `http://<IP>:<MOAI_PORT>`），`Storage.Endpoint` 取 `S3_ENDPOINT`（S3 自定义域名/外部 OSS，留空时用 `http://<IP>:<RUSTFS_PORT>`）。预签名 URL 与前端 `/static` 前缀都用该地址，必须是「容器与浏览器都可达」的地址（[docker.md 3.1](./docker.md)）。
+- 镜像兜底：无挂载时 entrypoint 复制内置 `system.json.template`，并替换 `__MOAI_SERVER_URL__`/`__S3_ENDPOINT__` 占位符。
 - 未挂载时：镜像内置 `/app/configs/system.json.template`，entrypoint 复制为默认配置；宿主机缺失文件导致 docker 建目录时 entrypoint 明确报错退出。
 - **本地开发形态**：`MAI_FILE=<绝对路径>/system.local.json` 显式注入，绕过仓库内 `configs/system.json`（[@DEP-S11](./bdd.md#dep-s11)）。
 - as-built 记录：旧 entrypoint 用 heredoc 从 `.env` 生成配置（且 `Storage.LocalPath` 字段已不存在），**2026-09-23 改为 system.json 挂载 + 内置模板**，`MAI_FILE` 显式导出。

@@ -101,7 +101,7 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
 
   @DEP-S15 @manual
   Scenario: 由 .env 生成并挂载 system.json
-    Given .env 已配置 MOAI_HOST/S3_ENDPOINT 等
+    Given .env 已配置 MOAI_SERVER_URL/S3_ENDPOINT 等
     When 执行 deploy-compose.sh
     Then 按 MOAI_CONFIG_FILE（默认 configs/system.json）生成配置，Server/WebUI/Storage.Endpoint 取自 .env
     And compose 将该文件挂载到容器 /app/configs/system.json（MAI_FILE）

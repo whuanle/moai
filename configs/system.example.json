@@ -2,8 +2,8 @@
   "MoAI": {
     "Name": "MoAI",
     "Port": 8080,
-    "Server": "http://__MOAI_HOST__:__MOAI_PORT__",
-    "WebUI": "http://__MOAI_HOST__:__MOAI_PORT__",
+    "Server": "__MOAI_SERVER_URL__",
+    "WebUI": "__MOAI_SERVER_URL__",
     "AES": "please-change-this-aes-key",
     "Database": "Database=moai;Host=postgres;Password=moai123456;Port=5432;Username=postgres;Search Path=public",
     "Redis": "redis:6379",
@@ -16,7 +16,7 @@
       "RenewThresholdSeconds": 300
     },
     "Storage": {
-      "Endpoint": "http://__MOAI_HOST__:__S3_PORT__",
+      "Endpoint": "__S3_ENDPOINT__",
       "ForcePathStyle": true,
       "Bucket": "moai",
       "AccessKeyId": "moaiadmin",
