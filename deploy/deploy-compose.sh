@@ -43,14 +43,17 @@ detect_host_ip() {
   printf '%s' "$ip"
 }
 
-if [ ! -f configs/system.json ]; then
-  echo "ERROR: 缺少 configs/system.json（应用配置）。请先按 docs/deployment/docker.md 准备。" >&2
-  exit 1
-fi
-
 if [ ! -f .env ]; then
   echo "==> 未找到 .env，从 .env.example 复制"
   cp .env.example .env
+fi
+
+# 应用配置文件路径（.env 的 MOAI_CONFIG_FILE，默认 ./configs/system.json）
+MOAI_CONFIG_FILE="$(grep -E '^MOAI_CONFIG_FILE=' .env 2>/dev/null | head -n1 | cut -d= -f2-)"
+MOAI_CONFIG_FILE="${MOAI_CONFIG_FILE:-./configs/system.json}"
+if [ ! -f "${MOAI_CONFIG_FILE}" ]; then
+  echo "ERROR: 找不到应用配置文件 ${MOAI_CONFIG_FILE}（可由 .env 的 MOAI_CONFIG_FILE 指定）。请先按 docs/deployment/docker.md 准备。" >&2
+  exit 1
 fi
 
 # 若 .env 未设置 MOAI_HOST，则自动探测本机 IP 写入（可用公网域名手动覆盖）

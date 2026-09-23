@@ -26,7 +26,7 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 
 **无论哪种部署方式，都必须把 `system.json` 映射进容器**，后端通过 `MAI_FILE`（默认 `/app/configs/system.json`）加载：
 
-- **Compose**：`docker-compose.yml` 已声明 `./configs/system.json:/app/configs/system.json:ro`
+- **Compose**：`docker-compose.yml` 声明 `${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro`，源路径由 `.env` 的 `MOAI_CONFIG_FILE` 指定（默认 `./configs/system.json`，可填绝对路径）
 - **Docker run**：显式 `-v $(pwd)/configs/system.json:/app/configs/system.json:ro`
 - 未挂载时回退到镜像内置模板（`configs/system.json` 打包为 `/app/configs/system.json.template`）
 

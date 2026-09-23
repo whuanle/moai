@@ -176,8 +176,9 @@ services:
       - MOAI_PORT=${MOAI_PORT:-8080}
       - S3_PORT=${RUSTFS_PORT:-9000}
     volumes:
-      # 配置穿透映射（宿主机文件必须存在，否则 docker 会创建同名目录）
-      - ./configs/system.json:/app/configs/system.json:ro
+      # 配置穿透映射（宿主机文件必须存在，否则 docker 会创建同名目录）；
+      # 源路径由 .env 的 MOAI_CONFIG_FILE 指定，默认 ./configs/system.json
+      - ${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro
       - moai_files:/app/files
     ports:
       - "${MOAI_PORT:-8080}:8080"
