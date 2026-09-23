@@ -50,7 +50,7 @@
 | D8 | 图数据库社区版默认纯内存，容器重启丢图 | 知识图谱数据丢失 | 不内置；接入时用 `--storage-snapshot-interval-sec` + `--storage-snapshot-on-exit=true`（[docker.md 第 7 节](./docker.md)） |
 | D4 | `.env.example` 的 OTLP 示例指 `127.0.0.1:4012`，容器内 `127.0.0.1` 是容器自身 | 照抄示例则 OTLP 上报失败（[@DEP-S6](./bdd.md#dep-s6)） | 写 collector 的容器网络名或宿主机地址 |
 | D5 | README 引用的 `moai_docs/` 目录已不存在于仓库 | README 图片裂图 | 与部署无关，仅记录 |
-| D6 | aspnet:10.0 运行时无 `libgssapi_krb5.so.2`，启动时探测告警（Cannot load library） | **实测不影响功能**（容器内 e2e 41/41 全过，Negotiate 探测为非致命）；如需消除在 final 阶段加装 `libgssapi-krb5-2` | 记录，暂不处理（构建 VM 内 apt 不可用，装库需离线 .deb 方案） |
+| D6 | aspnet:10.0 运行时无 `libgssapi_krb5.so.2`，启动时探测告警（Cannot load library） | 不影响功能（Negotiate 探测为非致命） | ✅ **已消除（2026-09-23）**：final 阶段 `apt-get install -y libgssapi-krb5-2` |
 
 ## Apple Silicon 构建注意事项（2026-09-03 实测）
 

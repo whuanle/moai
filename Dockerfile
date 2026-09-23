@@ -40,6 +40,12 @@ RUN dotnet publish "./MoAI.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# aspnet:10.0 运行时缺少 Kerberos 库，启动会打印
+# "Cannot load library libgssapi_krb5.so.2"；装上以消除该告警（不影响功能）。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # 创建配置和文件目录
 RUN mkdir -p /app/configs /app/files
 

@@ -50,6 +50,7 @@ docker compose down -v && docker compose up -d
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
+| 首次建库报 `42P01 relation "external_id_seq" does not exist` | `external_user.id` 默认值 `nextval('external_id_seq')` 引用的序列未在 EF 模型声明，`EnsureCreated` 只建模型里声明过的序列 | ✅ **已修复**：`PostgresDatabaseContext` 增 `HasSequence<long>("external_id_seq")`；若已产生半套表，按第 2 节重建库 |
 | 自增主键 duplicate key | 显式 Id 种子未推进序列 | 重启后端即自愈（启动 DO 块 setval，[@DB-S7](./bdd.md#db-s7)）；诊断比对 `last_value` 与 `max(id)` |
 | 新表/新列没出现 | EnsureCreated 对存量库零动作（[@DB-S2](./bdd.md#db-s2)） | 手写 DDL → 逆向生成（第 1 节） |
 | 工具报"未找到数据库连接字符串" | 缺 appsettings.Development.json（[@DB-S22](./bdd.md#db-s22)） | 本地自建该文件（gitignore） |

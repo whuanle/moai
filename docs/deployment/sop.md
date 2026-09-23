@@ -73,7 +73,8 @@ docker run --rm -v moai_moai_files:/data -v "$PWD":/backup alpine tar czf /backu
 | moai 容器反复重启，日志含 Uri/FormatException | 历史缺陷 D2（**已修复**，空值自动跳过） | 检查是否运行旧镜像；新代码 OTLP 未配置时不再抛异常（[@DEP-S4](./bdd.md#dep-s4)） |
 | 容器上传文件不在对象存储 | 历史缺陷 D3（**已修复**：`configs/system.json` 模板携带 `Storage` 五项） | 在 `configs/system.json` 配 `Storage`；预签名 host 须同时被应用与客户端可达（见 [docker.md 3.1](./docker.md)） |
 | 容器启动后自行退出，日志 `ACCESS_REFUSED`（RabbitMQ PLAIN） | MQ 凭据与 broker 不符（默认 guest/guest 常被拒） | 传 `RABBITMQ_USER/RABBITMQ_PASSWORD`（Maomi.MQ 消费者失败会 StopHost） |
-| 启动日志 `Cannot load library libgssapi_krb5.so.2` | 缺陷 D6：aspnet:10.0 无 Kerberos 库 | 实测不影响功能，忽略；要消除需 final 加装 libgssapi-krb5-2 |
+| 启动日志 `Cannot load library libgssapi_krb5.so.2` | 缺陷 D6：aspnet:10.0 无 Kerberos 库（**已修复**：final 阶段装 `libgssapi-krb5-2`） | 若仍出现说明镜像基线过旧，忽略也不影响功能 |
+| 启动报 `42P01 relation "external_id_seq" does not exist` | 旧镜像未在模型声明该序列，`EnsureCreated` 建 `external_user` 表时默认值解析失败 | 用含修复的新镜像；并**重建数据库卷**（`docker compose down -v` 后 up），因失败可能留下半套表导致后续 `EnsureCreated` 跳过 |
 | Apple Silicon `docker build` 报 SIGSEGV/MSB4184（amd64） | QEMU 仿真伪故障 | 用原生 arm64 构建（默认平台）；见 sdd「Apple Silicon 注意事项」 |
 | 后端起在 5000 报地址占用 | 回退加载了过时 configs/system.json（macOS 5000 被 AirPlay 占用） | 显式设置 MAI_FILE（[@DEP-S11](./bdd.md#dep-s11)） |
 | 前端 4000 请求 401/跨域 | VITE_ServerUrl 与后端端口不一致 | 检查 ui/.env.local |
