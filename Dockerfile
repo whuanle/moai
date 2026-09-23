@@ -10,14 +10,13 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY ui/package*.json ./
 
-# 安装所有依赖
+# 按 lockfile 安装依赖。lockfile v3 已含各平台 @rollup/rollup-* 可选原生依赖，
+# 无需删 lock 重装；旧写法 `rm -rf node_modules package-lock.json && npm install`
+# 会在较新 npm 上触发 "Cannot read properties of null (reading 'edgesOut')" 而构建失败。
 RUN npm ci
 
 # 复制源代码
 COPY ui/ .
-
-# 重新安装依赖以解决 Rollup 可选依赖项问题
-RUN rm -rf node_modules package-lock.json && npm install
 
 # 构建应用（不注入 VITE_ServerUrl，生产走同源请求）
 RUN npm run build
