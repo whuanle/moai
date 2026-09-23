@@ -8,11 +8,15 @@
 #
 # 前置：
 #   1) 已安装 docker + docker compose v2
-#   2) 存在 configs/system.json（配置模板，按环境修改；compose 会 bind-mount 进容器）
+#   2) 存在 configs/system.json（应用配置；compose 会 bind-mount 进容器）
 #   3) 可选：cp .env.example .env 并按需修改基础设施账号/端口
 #
-# 说明：会先拉取 OpenSandbox 沙箱镜像（仅拉取，不部署），
-#       由 opensandbox-server 在运行时按需创建沙箱容器。
+# 说明：会拉取全部依赖镜像，包括
+#   - postgres 服务 = pgvector/pgvector:pg16（必须，不可用裸 postgres 镜像）
+#   - opensandbox/server（OpenSandbox 生命周期服务）
+#   - opensandbox/code-interpreter（沙箱运行时，仅拉取、不部署）
+#   - rustfs / redis / rabbitmq / aws-cli（建桶）
+# 沙箱容器由 opensandbox-server 在运行时按需创建。
 # ============================================================
 set -euo pipefail
 
@@ -20,6 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
+# 沙箱执行/网络镜像不在 compose 中（由 deploy/opensandbox/sandbox.toml 引用），单独预拉
 OPENSANDBOX_EXECD_IMAGE="${OPENSANDBOX_EXECD_IMAGE:-opensandbox/execd:v1.1.0}"
 OPENSANDBOX_EGRESS_IMAGE="${OPENSANDBOX_EGRESS_IMAGE:-opensandbox/egress:v1.1.7}"
 
@@ -33,9 +38,9 @@ if [ ! -f .env ]; then
   cp .env.example .env
 fi
 
-echo "==> [1/4] 预拉取 OpenSandbox 镜像（沙箱镜像仅拉取，不部署）"
-docker compose --profile sandbox-images pull sandbox-image
-docker compose pull opensandbox-server
+echo "==> [1/4] 拉取 Compose 全部镜像（postgres=pgvector/pgvector:pg16、opensandbox/server、沙箱镜像等）"
+docker compose --profile sandbox-images pull \
+  postgres redis rabbitmq rustfs rustfs-init opensandbox-server sandbox-image
 docker pull "${OPENSANDBOX_EXECD_IMAGE}"
 docker pull "${OPENSANDBOX_EGRESS_IMAGE}"
 
@@ -49,11 +54,8 @@ else
   }
 fi
 
-echo "==> [3/4] 拉取基础设施镜像"
-docker compose pull postgres redis rabbitmq rustfs || true
-
-echo "==> [4/4] 启动服务"
+echo "==> [3/4] 启动服务"
 docker compose up -d
 
-echo "==> 当前状态："
+echo "==> [4/4] 当前状态："
 docker compose ps

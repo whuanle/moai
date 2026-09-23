@@ -97,7 +97,7 @@ docker run -d --name moai -p 8080:8080 \
 | 服务 | 说明 | 默认端口 |
 |------|------|----------|
 | moai | MoAI 服务（前端 + 后端） | 8080 |
-| postgres | PostgreSQL + pgvector | 5432 |
+| postgres | PostgreSQL + pgvector（`pgvector/pgvector:pg16`，不可用裸 postgres） | 5432 |
 | redis | Redis 缓存 | 6379 |
 | rabbitmq | RabbitMQ 消息队列 | 5672 / 15672 |
 | rustfs | RustFS 对象存储（S3 兼容，替代 MinIO） | 9000 / 9001 |

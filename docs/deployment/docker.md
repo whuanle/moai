@@ -104,6 +104,8 @@ curl -fsS http://localhost:8080/api/common/serverinfo
 
 包含：`postgres(pgvector/pg16)` + `redis` + `rabbitmq` + `rustfs`（替代 MinIO）+ `opensandbox-server` + `moai`。
 
+> **数据库镜像硬约束**：必须用 `pgvector/pgvector:pg16`（或自带 pgvector 的镜像），**不能用官方 `postgres` 镜像**。MoAI 依赖 `CREATE EXTENSION vector`（见 `init-pgvector.sql`），裸 `postgres` 镜像无该扩展，建库即失败。形态 A 使用外部数据库时同样要求已安装 pgvector 扩展。
+
 ```bash
 cp .env.example .env          # 按需修改基础设施账号/端口
 # 按需修改 configs/system.json（Server/WebUI/AES/Storage.Endpoint 等）
