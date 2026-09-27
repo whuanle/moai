@@ -332,7 +332,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           <Form.Item name="description" label={t('accessApp.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('accessApp.descriptionPlaceholder')} maxLength={255} rows={3} />
           </Form.Item>
-          <Form.Item name="scopes" label={t('accessApp.colScopes')} extra={t('accessApp.scopesHint')}>
+          <Form.Item name="scopes" label={t('accessApp.colScopes')}>
             <ScopeGroupEditor />
           </Form.Item>
         </Form>

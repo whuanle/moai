@@ -1783,7 +1783,6 @@
     "adminOnly": "Only team admins can view app access",
     "usageHint": "Third-party systems can use an access key to reach this team's resources directly (authorized by scopes); with the model gateway scope the key can call the model gateway directly. Apps that require authorization still need an external user token for conversations. Keep the key safe and avoid leaks.",
     "colScopes": "Access scopes",
-    "scopesHint": "Restricts which team resources this key can access, grouped by resource: knowledge base (read-only/writable), app chat (exchange user tokens for external app sessions), model gateway (direct gateway calls). Scope changes apply to tokens on next refresh.",
     "scopesNone": "No resource access",
     "colLastUsed": "Last used",
     "groupKnowledge": "Knowledge base",
