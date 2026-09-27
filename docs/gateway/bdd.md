@@ -57,7 +57,7 @@ Background:
 
 @GW-S6 @auto:e2e
 Scenario: 应用接入 key 的功能范围
-  When 创建应用接入并勾选功能范围（model/wiki_read/wiki_write/wiki_mcp/kg_*/app_chat）
+  When 创建应用接入并勾选功能范围（model/wiki_read/wiki_write/wiki_mcp/kg_*/app_chat/app_acp）
   Then 列表回显范围，签发 token 的知识库读写按勾选放行，model 授权 key 直连网关
   But 勾选非法或越维代码时参数错误；不传范围默认读写全量+对话
   When 修改范围后刷新 token 或直连网关

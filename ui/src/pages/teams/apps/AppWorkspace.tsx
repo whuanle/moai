@@ -9,6 +9,7 @@ import { spacing } from '@/design-system/theme'
 import { useShellStore } from '@/store/shell'
 import { getAppDetail, publishApp, unpublishApp } from '@/api/app'
 import { AppAccessSection } from './AppAccessSection'
+import { AppAcpSection } from './AppAcpSection'
 import { AppChannelsSection } from './AppChannelsSection'
 import { AppConfigSection, type AppDetail } from './AppConfigSection'
 import { AppInfoSection } from './AppInfoSection'
@@ -25,11 +26,11 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'channels', 'debug'] as const
+const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'channels', 'debug'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 /** 流程应用「配置」Tab 承载的二级分区（与内部应用的左侧菜单一致） */
-const CONFIG_GROUP_SECTIONS = ['info', 'logs', 'monitor', 'channels'] as const
+const CONFIG_GROUP_SECTIONS = ['info', 'logs', 'monitor', 'acp', 'channels'] as const
 
 /**
  * 应用工作台外壳：
@@ -120,6 +121,8 @@ export function AppWorkspace() {
       menuItems.push(
         { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
         { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
+        // ACP：agent-to-agent 接入（Agent 与流程应用均支持）
+        { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
       )
       // 外部渠道（飞书接入等）：仅内部应用（外部应用走访问点）
       if (!isExternal) {
@@ -132,12 +135,13 @@ export function AppWorkspace() {
     }
   }
 
-  // 流程应用分区集合：设计 / 调试 / 配置（二级：信息·日志·监控·外部渠道）/ 运行历史；外部应用另有访问点
+  // 流程应用分区集合：设计 / 调试 / 配置（二级：信息·日志·监控·ACP·外部渠道）/ 运行历史；外部应用另有访问点
   const workflowSectionKeys = new Set<string>(['debug', 'runs', 'info'])
   if (canManage) {
     workflowSectionKeys.add('design')
     workflowSectionKeys.add('logs')
     workflowSectionKeys.add('monitor')
+    workflowSectionKeys.add('acp')
   }
   if (!isExternal) {
     workflowSectionKeys.add('channels')
@@ -159,12 +163,13 @@ export function AppWorkspace() {
   // 流程应用「配置」Tab：key 固定 info，激活条件是任一二级分区
   const inConfigGroup = !isAgent && (CONFIG_GROUP_SECTIONS as readonly string[]).includes(validSection)
 
-  // 「配置」分区左侧菜单：信息 / 日志 / 监控 / 外部渠道（功能与内部应用一致，复用既有分区组件）
+  // 「配置」分区左侧菜单：信息 / 日志 / 监控 / ACP / 外部渠道（功能与内部应用一致，复用既有分区组件）
   const configGroupItems: MenuProps['items'] = [{ key: 'info', icon: <InfoCircleOutlined />, label: t('appWorkspace.menuInfo') }]
   if (canManage) {
     configGroupItems.push(
       { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
       { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
+      { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
     )
   }
   if (!isExternal) {
@@ -249,6 +254,7 @@ export function AppWorkspace() {
     }
     if (validSection === 'logs') return <AppLogsSection appId={appId} />
     if (validSection === 'monitor') return <AppMonitorSection appId={appId} />
+    if (validSection === 'acp') return <AppAcpSection appId={appId} />
     if (validSection === 'channels') {
       return <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
     }

@@ -1544,7 +1544,8 @@
     "scope.wiki_mcp": "Knowledge MCP",
     "scope.kg_read": "Knowledge graph read",
     "scope.kg_write": "Knowledge graph write",
-    "scope.kg_mcp": "Knowledge graph MCP"
+    "scope.kg_mcp": "Knowledge graph MCP",
+    "scope.app_acp": "App ACP"
   },
   "appChat": {
     "title": "App Chat",
@@ -1832,6 +1833,11 @@
     "menuLogs": "Logs",
     "menuMonitor": "Monitor",
     "menuAccess": "Access",
+    "menuAcp": "ACP",
+    "acpAddress": "ACP endpoint",
+    "acpAddressPlaceholder": "Loading service address...",
+    "acpMethods": "JSON-RPC methods",
+    "acpAuthHint": "Requests must carry an app access key with the \"App ACP\" scope enabled (Authorization: Bearer <key> or the x-api-key header). The app must be published.",
     "accessComingSoon": "Access point (backend URL and embed widget) will be available in a later release.",
     "menuDesign": "Workflow Design",
     "tabDesign": "Design",

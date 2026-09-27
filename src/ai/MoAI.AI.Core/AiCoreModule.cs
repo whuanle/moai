@@ -53,6 +53,9 @@ public class AiCoreModule : IModule
         context.Services.AddKeyedSingleton<AgentSessionStore>(AppAgentConstants.AgentName, (sp, _) =>
             new AppAgentSessionStore(sp.GetRequiredService<IServiceScopeFactory>()));
 
+        // ACP 运行注册表：session/cancel 跨请求中断进行中的一轮对话（单例共享）
+        context.Services.AddSingleton<MoAI.AI.Acp.AppAcpRunRegistry>();
+
         // 沙箱回收定时任务（依赖 Hangfire，若未注册 IRecurringJobManager 则该服务不生效）
         context.Services.AddHostedService<MoAI.AI.Services.SandboxReaperRegistrationService>();
 

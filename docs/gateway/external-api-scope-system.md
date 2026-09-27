@@ -29,13 +29,14 @@
 | `kg_read` | 64 | 知识图谱读 | ✅ | ✅ |
 | `kg_write` | 128 | 知识图谱写 | ✅ | ✅ |
 | `kg_mcp` | 256 | 知识图谱 MCP（/api/external/knowledge-graph/{kgId}/mcp 四只读工具） | ✅ | ✅ |
+| `app_acp` | 512 | 应用 ACP（/api/external/app/{appId}/acp，agent-to-agent 对话） | ✅ | ✅ |
 
 > `external_token` (8) 随团队接入 key 下线一并移除（枚举与代码表已删）。
 
 关键掩码（都在 `TeamApiKeyScopeCodes`，改动位表必须同步）：
-- `ExternalDimensions`（外部资源维度 = 2|4|16|64|128|256）：token/直连上下文能携带的范围；**换 token 与直连的掩码都由它裁剪**。
-- `AccessAppAllowed`（应用接入可勾选 = 1|2|4|16|32|64|128|256）：接入 key 全集。
-- `AccessAppDefault`（接入未传 scopes 的默认 = ExternalDimensions|AppChat = 486）：「不传=存量全量」口径。
+- `ExternalDimensions`（外部资源维度 = 2|4|16|64|128|256|512）：token/直连上下文能携带的范围；**换 token 与直连的掩码都由它裁剪**。
+- `AccessAppAllowed`（应用接入可勾选 = 1|2|4|16|32|64|128|256|512）：接入 key 全集。
+- `AccessAppDefault`（接入未传 scopes 的默认 = ExternalDimensions|AppChat = 1014）：「不传=存量全量」口径。
 - `ExternalTokenContext.DefaultScopes`（无 scope claim 的旧 token 兼容 = ExternalDimensions 全量）。
 
 ## 3. 资源组 → 端点清单与分档规则
@@ -54,6 +55,9 @@
 
 ### 应用对话面（`app_chat` 在换 token 时校验，端点层无 scope 门禁）
 `POST /external/token`（用户 token）、`/external/agent/{appId}/session*`、`/external/session/{sessionId}/messages` 等——仅外部用户 token；`app_chat` 撤销后用户 token 刷新即 403。
+
+### 应用 ACP（`app_acp`，agent-to-agent）
+`POST /external/app/{appId}/acp`：把团队应用（Agent 应用与流程应用，内部/外部均可）以 ACP 协议（Agent Client Protocol，JSON-RPC 2.0）暴露给外部 agent。门禁在中间件 ACP 专属分支：外部用户语义（用户 token 或 key 直连解析出的直连会话身份）+ `app_acp` + appId 归属团队（跨团队 404）+ 已发布未禁用（不要求 `IsExternal`，不叠加 `app_chat`）；GET 405。方法面：`initialize`/`session/new`/`session/load`/`session/prompt`（SSE 流式下发 `session/update` 通知，stopReason 收口）/`session/cancel`；会话即应用会话（`app_agent_session`，归属外部用户 id），执行管线与对话面同源（见 app sdd 增量设计）。
 
 ### 其他
 `/external/app/list`（任意外部 token）、`/external/app/{appId}/access-point`（匿名）。
@@ -79,8 +83,8 @@
 
 ## 6. 兼容口径（改默认值/回填前必读）
 
-- **存量回填历史**（开发库 192.168.50.199/moai_v2 已执行，脚本在 `asserts/`）：`access_app` 6=读写 → `|=32` 补对话 → `|=192` 补知识图谱 → `|=256` 补 KG MCP；`team_api_key` 已随下线删表（asserts/team_api_key_drop.sql）。
-- **「未传 scopes」默认**：应用接入 = `AccessAppDefault`(486)。两处必须一致：DB 列 DEFAULT、handler 默认（`CreateAccessAppCommandHandler`），E2E 断言同口径（KX 曾因 38/230 不一致全红）。
+- **存量回填历史**（开发库 192.168.50.199/moai_v2 已执行，脚本在 `asserts/`）：`access_app` 6=读写 → `|=32` 补对话 → `|=192` 补知识图谱 → `|=256` 补 KG MCP → `|=512` 补应用 ACP 且列 DEFAULT 对齐 1014（app_acp.sql）；`team_api_key` 已随下线删表（asserts/team_api_key_drop.sql）。
+- **「未传 scopes」默认**：应用接入 = `AccessAppDefault`(1014)。两处必须一致：DB 列 DEFAULT、handler 默认（`CreateAccessAppCommandHandler`），E2E 断言同口径（KX 曾因 38/230 不一致全红）。
 - **旧格式 token**（无 `scope` claim）：解析侧按 `DefaultScopes` 全量处理，行为不变。
 - **已下线团队 key 的存量 token**：携带 `keyid` claim 的在途 token claims 不再解析 keyid，access 有效期内仍可用；refresh 按匿名/接入语义重验（来源 key 已随表删除，通常 401）。
 - `model`/`app_chat` 是接入层概念，**永不写入 token/直连上下文**；新资源维度默认加进 `ExternalDimensions`。
@@ -114,6 +118,7 @@
 | 知识库外部接口 | `local-dev/wiki-external-e2e.mjs`（WX-01~06） | 30/30 |
 | 知识图谱外部接口 | `local-dev/kg-external-e2e.mjs`（KX-01~14） | 101/101 |
 | 知识图谱 MCP | `local-dev/kg-mcp-e2e.mjs`（KGM-S1~S7） | 35/35 |
+| 应用 ACP | `local-dev/app-acp-e2e.mjs`（@ACP-S1~S19） | 21/21 |
 | 外部应用对话（token 体系） | `local-dev/external-app-e2e.mjs`（EA-*） | 74/74 |
 | 网关（model 范围 + keys 端点下线） | `local-dev/gateway-e2e.mjs` | 15/15 |
 | 前端范围 UI | `ui/src/pages/teams/__tests__/TeamGateway.test.tsx`、`TeamAccessApps.test.tsx` | 4/4、3/3 |

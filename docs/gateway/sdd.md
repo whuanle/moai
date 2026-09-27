@@ -19,6 +19,7 @@
 | 知识图谱·读 | `/external/knowledge-graph/*` 读面（列表/模式/节点/边查询） | `kg_read` (64) | ✅ |
 | 知识图谱·写 | `/external/knowledge-graph/*` 写面（节点/边/实体类型/关系类型增删改） | `kg_write` (128) | ✅ |
 | 知识图谱 MCP | `/external/knowledge-graph/{kgId}/mcp` | `kg_mcp` (256) | ✅ |
+| 应用 ACP | `/external/app/{appId}/acp`（agent-to-agent 对话） | `app_acp` (512) | ✅ |
 
 > 团队接入 key 专属的 `external_token` (8) 位随下线一并移除（枚举与代码表已删）。
 > 端点逐条清单、中间件分档规则、缓存键与失效钩子、**新增资源组操作清单**与踩坑，见 [外部接口与范围体系细节总账](./external-api-scope-system.md)。
@@ -32,7 +33,7 @@
 
 ## 3. 数据
 
-- `access_app.scopes int not null default 230`：应用接入允许范围 = model/wiki_read/wiki_write/app_chat/wiki_mcp/kg_read/kg_write/kg_mcp（`1=model 2=wiki_read 4=wiki_write 16=wiki_mcp 32=app_chat 64=kg_read 128=kg_write 256=kg_mcp`；位或）。DDL：[asserts/access_app_scopes.sql](../../asserts/access_app_scopes.sql)、[asserts/access_app_app_chat.sql](../../asserts/access_app_app_chat.sql)、[asserts/access_app_kg_scopes.sql](../../asserts/access_app_kg_scopes.sql)、[asserts/access_app_kg_mcp_scopes.sql](../../asserts/access_app_kg_mcp_scopes.sql)。
+- `access_app.scopes int not null default 1014`：应用接入允许范围 = model/wiki_read/wiki_write/app_chat/wiki_mcp/kg_read/kg_write/kg_mcp/app_acp（`1=model 2=wiki_read 4=wiki_write 16=wiki_mcp 32=app_chat 64=kg_read 128=kg_write 256=kg_mcp 512=app_acp`；位或）。DDL：[asserts/access_app_scopes.sql](../../asserts/access_app_scopes.sql)、[asserts/access_app_app_chat.sql](../../asserts/access_app_app_chat.sql)、[asserts/access_app_kg_scopes.sql](../../asserts/access_app_kg_scopes.sql)、[asserts/access_app_kg_mcp_scopes.sql](../../asserts/access_app_kg_mcp_scopes.sql)、[asserts/app_acp.sql](../../asserts/app_acp.sql)。
 - `team_api_key` 表已删除（[asserts/team_api_key_drop.sql](../../asserts/team_api_key_drop.sql)，存量库执行删表；新库 EnsureCreated 不再建）。
 - `access_app.last_used_time timestamptz null`：应用接入 key 直连网关调用时刷新。
 - scope 代码对内枚举、对外小写下划线串（API 请求/响应、token `scope` claim 均用代码串）。

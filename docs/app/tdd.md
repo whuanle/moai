@@ -4,6 +4,9 @@
 
 ## 自检记录
 
+- 应用 ACP 轮（agent-to-agent 协议接入，@ACP-S1~S9）：`TeamApiKeyScopes` 增 `AppAcp=512`（代码 app_acp，ExternalDimensions/AccessAppAllowed 扩位，asserts/app_acp.sql 存量 282 条 `|=512`、列 DEFAULT 对齐 1014=AccessAppDefault，开发库已执行）；`POST /api/external/app/{appId}/acp`（MoAI.AI.Core Acp/，minimal API 不进 openapi 无需 syncapi）——AppAcpServer 手写 JSON-RPC 2.0：initialize/session.new/session.load/session.prompt（SSE 流式 session/update + stopReason 收口）/session.cancel（AppAcpRunRegistry 单例按会话取消，同一会话串行）；执行管线与 AG-UI/飞书同源（AppAgentFactory 装配 + 热态快照 + Flush 落库，Agent 与 Workflow 应用通吃）；中间件 ACP 分支：先 EnsurePrincipalUserAsync 解析直连会话身份再门禁（外部用户语义 + app_acp + 团队归属 + 已发布，不要求 IsExternal，GET 405）。**实踩坑**：流程过程负载键名——C# 匿名对象 `@event` 序列化后是 `"event"`（@ 仅为关键字转义），mapper 误读 `"@event"` 致节点 tool_call 全丢（诊断日志定位 DataContent 已到达后修复）。前端：AppWorkspace「ACP」菜单（Agent 侧栏 + 流程配置二级组）、AppAcpSection（地址/复制/方法 Tag/鉴权提示）、TeamAccessApps 加 app_acp 开关、i18n gateway.scope.app_acp + appWorkspace.acp*（zh/en）。
+  - E2E：`node local-dev/app-acp-e2e.mjs` → **21/21**（认证 3/协议 3/门禁 2/Agent 对话 4/用户 token 1/隔离与 load 2/Workflow 1/cancel 1/缓存立即性 2/凭证语义 2；本地桩模型 + 确定性流程编排，零 SKIP）；前端 TeamAccessApps/AppWorkspace vitest 4/4+4/4、eslint 0、typecheck 除并行会话 KgCanvas 既有错误 0（2026-09-27）。
+
 - key 直连外部接入轮（免换 token 访问团队资源，@EA-S15~S18）：`ExternalAuthenticationMiddleware` 支持 Bearer/x-api-key 直接携带 `moai-ac-`/`moai-` key 构建外部上下文（范围取 key 勾选知识库维度）；需授权应用会话面对无用户身份凭证统一 403（`external_user_token_required`）；应用接入 key 直连会话以「直连会话身份」external_user（`access_app_id + __key_direct__`）承载归属，落库走独立子作用域防请求级用户上下文懒加载污染；`EnsureExternalUser` 放宽为「须携带已解析外部用户 id」。
   - E2E：`external-app-e2e.mjs` → **75/75**（新增 EA-30~35）、`team-apikey-scope-e2e.mjs` → **43/43**（新增 TA-32a~i，TA-25b 越维代码改 external_token）；后端 0 error、前端 typecheck/lint 0 error、vitest **438/438**（2026-09-26）。
 
@@ -151,6 +154,15 @@
 | @EA-S17 | external-app-e2e.mjs（EA-32a~d） | PASS 74/74（2026-09-27） |
 | @EA-S18 | 已随团队接入 key 下线退役（原团队 key 直连场景，编号不复用）；现状见 [@EA-S19](./bdd.md#ea-s19) | —（2026-09-27） |
 | @EA-S19 | external-app-e2e.mjs（EA-36 已下线 moai- 前缀 401）＋ team-apikey-scope-e2e.mjs（TA-32j）＋ gateway-e2e.mjs（moai- 前缀网关 401） | EA 74/74、TA 21/21、GW 15/15（2026-09-27） |
+| @ACP-S1 | app-acp-e2e.mjs（ACP-S01~S05） | PASS 21/21（2026-09-27） |
+| @ACP-S2 | app-acp-e2e.mjs（ACP-S06） | PASS（2026-09-27） |
+| @ACP-S3 | app-acp-e2e.mjs（ACP-S07/S08） | PASS（2026-09-27） |
+| @ACP-S4 | app-acp-e2e.mjs（ACP-S09a/b、S10a/b） | PASS（2026-09-27） |
+| @ACP-S5 | app-acp-e2e.mjs（ACP-S11~S13） | PASS（2026-09-27） |
+| @ACP-S6 | app-acp-e2e.mjs（ACP-S14） | PASS（2026-09-27） |
+| @ACP-S7 | app-acp-e2e.mjs（ACP-S15） | PASS（2026-09-27） |
+| @ACP-S8 | app-acp-e2e.mjs（ACP-S16/S17） | PASS（2026-09-27） |
+| @ACP-S9 | app-acp-e2e.mjs（ACP-S18/S19）＋ TeamAccessApps.test.tsx（应用 ACP 勾选） | PASS 21/21、4/4（2026-09-27） |
 | 访问点配置分区 | ui/src/pages/teams/apps/__tests__/AppAccessSection.test.tsx | PASS 5/5（2026-09-14） |
 
 ## 复验命令
@@ -163,6 +175,7 @@ cd src/MoAI && dotnet run                  # :5000
 node local-dev/app-e2e.mjs                 # 期望 172/172 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白 / AP-54 发布配置快照双轨 / AP-57 快捷输入 / AP-58 流程应用绑定 / AP-59 对话调用流程工具 / AP-60 审批策略，AP-59/AP-60 需 admin 账号否则 SKIP）
 node local-dev/chat-attachment-e2e.mjs     # 期望 12/12 PASS（@AP-S55 对话附件：直传/提取/白名单/越权防护）
 node local-dev/external-app-e2e.mjs        # 期望 74/74 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制；EA-30~34/36 key 直连 @EA-S15~S17/S19，需先执行 asserts/external_app.sql）
+node local-dev/app-acp-e2e.mjs             # 期望 21/21 PASS（@ACP-S1~S9 应用 ACP：scope 门禁 + 协议行为 + Agent/Workflow 对话 + cancel + 缓存立即性；内置桩模型，零 SKIP）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test
 ```

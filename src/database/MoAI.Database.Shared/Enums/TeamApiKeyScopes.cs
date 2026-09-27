@@ -32,7 +32,7 @@ public enum TeamApiKeyScopes
     AppChat = 32,
 
     /// <summary>
-    /// 知识库 MCP（预留，功能未上线）.
+    /// 知识库 MCP：访问 /api/external/wiki/{"{wikiId}"}/mcp 只读工具（知识库列表/文件搜索/向量召回）.
     /// </summary>
     WikiMcp = 16,
 
@@ -50,6 +50,11 @@ public enum TeamApiKeyScopes
     /// 知识图谱 MCP：访问 /api/external/knowledge-graph/{kgId}/mcp 只读工具（图谱列表/schema/节点搜索/向量召回）.
     /// </summary>
     KgMcp = 256,
+
+    /// <summary>
+    /// 应用 ACP：访问 /api/external/app/{"{appId}"}/acp，以 ACP 协议（agent-to-agent）与团队已发布应用对话.
+    /// </summary>
+    AppAcp = 512,
 }
 
 /// <summary>
@@ -60,12 +65,12 @@ public static class TeamApiKeyScopeCodes
     /// <summary>
     /// 外部资源维度掩码：token/直连上下文可携带的范围（model/app_chat 是接入层概念，不进入）.
     /// </summary>
-    public const TeamApiKeyScopes ExternalDimensions = TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp;
+    public const TeamApiKeyScopes ExternalDimensions = TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp;
 
     /// <summary>
-    /// 应用接入（access_app）允许勾选的范围：模型网关 + 知识库/知识图谱维度 + 应用对话.
+    /// 应用接入（access_app）允许勾选的范围：模型网关 + 知识库/知识图谱维度 + 应用对话 + 应用 ACP.
     /// </summary>
-    public const TeamApiKeyScopes AccessAppAllowed = TeamApiKeyScopes.Model | TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.AppChat | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp;
+    public const TeamApiKeyScopes AccessAppAllowed = TeamApiKeyScopes.Model | TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.AppChat | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp;
 
     /// <summary>
     /// 应用接入「未传 scopes」时的默认范围：外部资源全量（存量行为口径，不含需显式勾选的 model 直连）.
@@ -85,6 +90,7 @@ public static class TeamApiKeyScopeCodes
         ["kg_write"] = TeamApiKeyScopes.KgWrite,
         ["kg_mcp"] = TeamApiKeyScopes.KgMcp,
         ["wiki_mcp"] = TeamApiKeyScopes.WikiMcp,
+        ["app_acp"] = TeamApiKeyScopes.AppAcp,
     };
 
     /// <summary>

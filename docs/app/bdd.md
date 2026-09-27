@@ -849,3 +849,93 @@ Scenario: 应用对话范围门禁
   Then 来源勾选 app_chat 时签发放行
   But 未勾选时禁止，来源撤销该范围后刷新亦被拒
 ```
+
+## Feature: 应用 ACP（agent-to-agent 协议接入）
+
+```gherkin
+Background:
+  Given 团队管理员已创建应用接入 key 且勾选「应用 ACP」范围
+  And 团队存在已发布的应用（Agent 应用或流程应用）
+
+@ACP-S1 @auto:e2e
+Scenario: ACP 端点认证与范围门禁
+  When 无凭证 POST 应用 ACP 端点
+  Then 返回 401
+  When 携带未勾选 app_acp 范围的 key 访问
+  Then 返回 403 insufficient_scope
+  When 以 GET 访问端点
+  Then 返回 405（仅支持 POST JSON-RPC）
+  When 提交非法 JSON 或未知方法
+  Then 按协议返回 -32700 / -32601 错误
+```
+
+```gherkin
+@ACP-S2 @auto:e2e
+Scenario: initialize 握手
+  When 客户端发送 initialize 请求
+  Then 返回协议版本（1）与 Agent 能力（支持会话恢复）
+```
+
+```gherkin
+@ACP-S3 @auto:e2e
+Scenario: 应用门禁（团队归属与可用性）
+  When 用其他团队的应用访问本应用 ACP 端点
+  Then 返回 404（跨团队不泄露存在性）
+  When 访问未发布应用
+  Then 返回 403 应用不可用
+```
+
+```gherkin
+@ACP-S4 @auto:e2e
+Scenario: 会话创建与流式对话（Agent 应用）
+  When 客户端 session/new 创建会话
+  Then 返回会话 id，会话归属凭证外部用户
+  When session/prompt 提交文本块
+  Then 以 SSE 流式下发 agent_message_chunk 增量并以 end_turn 收口
+  When 同一会话继续 prompt
+  Then 上下文延续且两轮消息落库可在会话消息接口查询
+```
+
+```gherkin
+@ACP-S5 @auto:e2e
+Scenario: 外部用户 token 路径与会话隔离
+  When 以应用接入 key 换取的外部用户 token 调用 ACP
+  Then 同样可建会话并对话（会话归属该外部用户）
+  But 其他凭证对该会话 prompt 返回「会话不存在」（会话隔离）
+  When session/load 恢复本人会话
+  Then 成功；恢复未知会话返回「会话不存在」
+```
+
+```gherkin
+@ACP-S6 @auto:e2e
+Scenario: 流程应用 ACP 对话
+  When 对已发布流程应用 session/prompt 提交启动参数
+  Then 流程执行，节点状态以 tool_call/tool_call_update 通知下发
+  And AI 文本与最终回复以 agent_message_chunk 流式下发并 end_turn 收口
+```
+
+```gherkin
+@ACP-S7 @auto:e2e
+Scenario: session/cancel 中断进行中的一轮对话
+  When 对话进行中发送 session/cancel 通知
+  Then 该轮执行被中断，保留已产出内容并以 cancelled 收口
+  But 无进行中对话时 cancel 幂等不报错
+```
+
+```gherkin
+@ACP-S8 @auto:e2e
+Scenario: 范围勾选的缓存立即性
+  When 管理端给接入授权 app_acp 范围
+  Then 下一请求即放行（无需等待缓存过期）
+  When 吊销 app_acp 范围
+  Then 下一请求即 403 insufficient_scope
+```
+
+```gherkin
+@ACP-S9 @auto:e2e
+Scenario: 凭证语义门禁
+  When 以应用 token（无外部用户语义）调用 ACP
+  Then 返回 403 external_user_token_unsupported（会话归属需要外部用户身份）
+  When 接入创建时未传范围
+  Then 默认范围含 app_acp（「不传=存量全量」口径）
+```

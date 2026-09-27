@@ -69,6 +69,7 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /新建接入/ }))
     expect(await screen.findByRole('checkbox', { name: /知识库 MCP/ })).toBeTruthy()
+    expect(screen.getByRole('checkbox', { name: /应用 ACP/ })).toBeTruthy()
     expect(screen.queryByText(/能力建设中/)).toBeNull()
     expect(screen.queryByText(/直连知识库 MCP 服务器/)).toBeNull()
   })

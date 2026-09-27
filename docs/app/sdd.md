@@ -349,3 +349,14 @@
 - **市场搜索**：`QueryPublicAppsCommand` 增加 `Keywords`（名称/描述包含）与 `ClassifyId` 查询参数，`GET /api/app/public/list` FromQuery 绑定。
 - **前端**：`TeamApps` 新建弹窗与 `AppInfoSection` 编辑表单加分类下拉（ClassifyType.App + classifyLabel 带 emoji）；`AppPlaza` 首页应用市场加搜索框与分类 CheckableTag chip（emoji）。
 - **验证**：`local-dev/feature-batch-e2e.mjs` AP-CLS-01~17（含上架审批→发布→市场过滤全链路）。
+
+## 增量设计（2026-09-27：应用 ACP，agent-to-agent 协议接入）
+
+- **目标**：内部应用（Agent 应用与流程应用）通过 ACP 协议（Agent Client Protocol v1，JSON-RPC 2.0：initialize → session/new → session/prompt）向外部 agent 提供 agent-to-agent 访问能力；权限收敛进应用接入 scopes（`app_acp`=512），key 可限制是否可用。
+- **端点**：`POST /api/external/app/{appId}/acp`（`MoAI.AI.Core/Acp/`，minimal API——不进 NSwag 文档，无需 syncapi）。官方 ACP v1 仅定义 stdio 传输，服务端场景映射为 HTTP：`session/prompt` 以 `text/event-stream` 流式下发 `session/update` 通知（文本→agent_message_chunk、推理→agent_thought_chunk、工具→tool_call/tool_call_update、流程节点→tool_call 序列）并以最终 response（stopReason：end_turn/cancelled）收口，其余方法 application/json。
+- **执行管线同源**：AppAcpServer 复用 `AppAgentFactory` 装配（Agent 与 Workflow 应用通吃）+ `AppChatHotStore` 热态快照 + `AppChatFlushService` 落库压缩——ACP 会话即应用会话（`app_agent_session`，UserType=External，归属外部用户 id），与 AG-UI 对话面、飞书渠道同一套会话存储，各渠道互不可见对方会话（按归属隔离）。
+- **取消**：`AppAcpRunRegistry`（单例）按会话 id 登记进行中一轮的 CTS，`session/cancel`（通知）跨请求取消；同一会话同时仅允许一轮（ACP 回合制）。
+- **门禁**：`ExternalAuthenticationMiddleware` ACP 专属分支（先于通用 appId 门禁短路——不要求 `IsExternal`）：key 直连先 `EnsurePrincipalUserAsync` 解析直连会话身份（与对话面同口径）→ 外部用户语义（`ExternalId>0`，应用 token 403）+ `app_acp` 范围 + appId 归属团队（404 不泄露）+ 已发布未禁用；GET 405。
+- **scope**：`AppAcp=512`（代码 `app_acp`），进 `ExternalDimensions`（token/直连均可携带）与 `AccessAppAllowed`；`AccessAppDefault` 随之 486→1014（「不传=存量全量」），DB 列 DEFAULT 同步（asserts/app_acp.sql，存量 `|=512` 已对开发库执行）。
+- **前端**：应用工作台「ACP」菜单（Agent 应用左侧菜单、流程应用「配置」二级组，管理可见）——AppAcpSection 展示端点地址（serverinfo serviceUrl 拼接，回退 origin）+ JSON-RPC 方法 Tag + 鉴权提示；TeamAccessApps 范围编辑器加「应用 ACP」开关；i18n `gateway.scope.app_acp` 与 `appWorkspace.acp*`（zh/en）。
+- **验证**：`local-dev/app-acp-e2e.mjs`（@ACP-S1~S9）21/21 零 SKIP（本地桩模型 + 确定性流程编排）。

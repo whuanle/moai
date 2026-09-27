@@ -1,7 +1,7 @@
 import { getApiClient } from '@/api/kiota'
 
-/** 应用接入可选功能范围（模型网关 + 知识库维度） */
-export type AccessAppScope = 'model' | 'wiki_read' | 'wiki_write' | 'wiki_mcp'
+/** 应用接入可选功能范围（模型网关 + 知识库/知识图谱维度 + 应用对话 + 两域 MCP + 应用 ACP） */
+export type AccessAppScope = 'model' | 'wiki_read' | 'wiki_write' | 'wiki_mcp' | 'kg_read' | 'kg_write' | 'kg_mcp' | 'app_chat' | 'app_acp'
 
 export interface AccessAppItem {
   /** 后端 Guid 序列化为字符串 */

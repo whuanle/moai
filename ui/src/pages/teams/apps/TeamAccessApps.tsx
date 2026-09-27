@@ -65,8 +65,8 @@ interface AccessAppFormValues {
   scopes: string[]
 }
 
-/** 应用接入可选范围代码（模型网关 + 知识库读写 + 应用对话 + 知识图谱读写 + 两域 MCP） */
-const ACCESS_APP_SCOPES = ['model', 'wiki_read', 'wiki_write', 'app_chat', 'kg_read', 'kg_write', 'wiki_mcp', 'kg_mcp'] as const
+/** 应用接入可选范围代码（模型网关 + 知识库读写 + 应用对话 + 知识图谱读写 + 两域 MCP + 应用 ACP） */
+const ACCESS_APP_SCOPES = ['model', 'wiki_read', 'wiki_write', 'app_chat', 'kg_read', 'kg_write', 'wiki_mcp', 'kg_mcp', 'app_acp'] as const
 
 /** 按 读/写 两位范围代码推导三档档位 */
 type ResourceLevel = 'none' | 'read' | 'write'
@@ -107,7 +107,7 @@ function ScopeGroupEditor({ value = [], onChange }: { value?: string[]; onChange
           </Radio.Group>
         </div>
       ))}
-      {(['model', 'app_chat', 'wiki_mcp', 'kg_mcp'] as const).map((code) => (
+      {(['model', 'app_chat', 'wiki_mcp', 'kg_mcp', 'app_acp'] as const).map((code) => (
         <Checkbox key={code} checked={has(code)} onChange={(e) => toggle(code, e.target.checked)}>
           {t(`gateway.scope.${code}`)}
         </Checkbox>
