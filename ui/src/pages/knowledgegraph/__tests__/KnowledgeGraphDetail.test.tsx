@@ -61,6 +61,7 @@ describe('KnowledgeGraphDetail', () => {
     expect(screen.getByText('图览')).toBeInTheDocument()
     expect(screen.getByText('维护')).toBeInTheDocument()
     expect(screen.getByText('导入')).toBeInTheDocument()
+    expect(screen.getByText('召回测试')).toBeInTheDocument()
     expect(screen.getByText('MCP')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
     expect(screen.queryByText('实例')).toBeNull()

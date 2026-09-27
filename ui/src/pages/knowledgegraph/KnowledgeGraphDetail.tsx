@@ -3,20 +3,21 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, Layout, Menu, Tag } from 'antd'
 import type { MenuProps } from 'antd'
-import { ApartmentOutlined, ApiOutlined, ClusterOutlined, ImportOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, ApiOutlined, ClusterOutlined, ExperimentOutlined, ImportOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons'
 import { Card, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getKnowledgeGraphDetail, type KnowledgeGraphDetail as GraphDetail } from '@/api/knowledgeGraph'
 import { KnowledgeGraphCanvas } from './KnowledgeGraphCanvas'
 import { KnowledgeGraphImportPage } from './KnowledgeGraphImportPage'
 import { KnowledgeGraphMcpPage } from './KnowledgeGraphMcpPage'
+import { KnowledgeGraphRecallTest } from './KnowledgeGraphRecallTest'
 import { KnowledgeGraphMaintenance } from './KnowledgeGraphMaintenance'
 import { KnowledgeGraphSchema } from './KnowledgeGraphSchema'
 import { KnowledgeGraphSettings } from './KnowledgeGraphSettings'
 
 const { Sider, Content } = Layout
 
-const SECTION_KEYS = ['canvas', 'maintenance', 'import', 'mcp', 'schema', 'settings'] as const
+const SECTION_KEYS = ['canvas', 'maintenance', 'import', 'recall', 'mcp', 'schema', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 // 接入图只读：没有维护页，模型页为只读内省
 const CONNECTED_SECTIONS: SectionKey[] = ['canvas', 'schema', 'settings']
@@ -69,6 +70,7 @@ export function KnowledgeGraphDetail() {
             { key: 'canvas', icon: <ClusterOutlined />, label: t('knowledgegraph.menuCanvas') },
             { key: 'maintenance', icon: <ToolOutlined />, label: t('knowledgegraph.menuMaintenance') },
             { key: 'import', icon: <ImportOutlined />, label: t('knowledgegraph.menuImport') },
+            { key: 'recall', icon: <ExperimentOutlined />, label: t('knowledgegraph.menuRecall') },
             { key: 'mcp', icon: <ApiOutlined />, label: t('knowledgegraph.menuMcp') },
             { key: 'settings', icon: <SettingOutlined />, label: t('knowledgegraph.menuSettings') },
           ],
@@ -116,6 +118,8 @@ export function KnowledgeGraphDetail() {
               <KnowledgeGraphMaintenance graph={graph} />
             ) : section === 'import' ? (
               <KnowledgeGraphImportPage graph={graph} onChanged={load} />
+            ) : section === 'recall' ? (
+              <KnowledgeGraphRecallTest kgId={graphId} teamId={teamId} />
             ) : section === 'mcp' ? (
               <KnowledgeGraphMcpPage kgId={graphId} />
             ) : section === 'schema' ? (

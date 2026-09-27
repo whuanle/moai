@@ -88,7 +88,7 @@ node local-dev/wiki-recall-e2e.mjs      # WK 30（召回测试：参数校验/�
 node local-dev/wiki-source-e2e.mjs      # WS 66（外部源：权限与校验 + 爬虫真实抓取全链路 + 增量哈希比对 + 父页无变化仍发现新页面 + 强制全量 + 文档分页筛选 + 更新挡板/cron 语义 + 停用后同步 409 + 飞书源假凭证创建兜底 + 删除不删已入库文档；自带本地站点桩，无需外网）
 node local-dev/wiki-mcp-e2e.mjs         # WM 30（知识库 MCP 服务器：接入 key 鉴权/wiki_mcp 范围/wikiId 归属门禁 + 三只读工具（知识库列表/文件搜索/向量召回）+ 无状态协议行为；内置本地桩 embedding）
 node local-dev/kg-text2cypher-e2e.mjs    # KT（知识图谱 Text2Cypher：实例绑定校验/schema 自描述/只读守卫/$kgId 隔离/行数截断/接入图；依赖 Memgraph，需含 kg_cypher_query 的新构建）
-node local-dev/kg-search-e2e.mjs         # KGS（知识图谱图检索：向量化同步/语义检索/绑定校验/工作流节点；本地桩渠道，需含 SP-A 的新构建）
+node local-dev/kg-search-e2e.mjs         # KGS 46（知识图谱图检索：向量化同步/语义检索/绑定校验/工作流节点/召回测试；本地桩渠道，需含 SP-A 的新构建）
 node local-dev/kg-external-e2e.mjs       # KX 101（知识图谱外部接口：应用 token/团队隔离/类型节点边 CRUD/批量整批拒绝/kg_read·kg_write 分档/批量导入（类型名引用+业务 key 幂等 upsert+逐条失败报告）/validateOnly 预检/按 key 同步闭环（keys/list+edges/batch-delete）；依赖 Memgraph）
 node local-dev/kg-mcp-e2e.mjs            # KGM 35（知识图谱 MCP：kg_mcp 鉴权门禁/工具域隔离（wiki 端点不掺 KG 工具）/图谱列表/schema/节点搜索/向量召回（本地桩 embedding）/协议行为；依赖 Memgraph）
 node local-dev/kg-import-e2e.mjs         # KG 20（知识图谱导入：AI 导入桩模型全链路（KG-S26）+ JSON 结构化导入（KG-S29：类型名引用/业务 key upsert/预检/逐条报告/幂等/超限/疑似重复检测）；依赖 Memgraph）

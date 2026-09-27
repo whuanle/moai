@@ -68,13 +68,16 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
+/**
+ * Represents a context entry providing additional information to the agent.
+ */
 export interface AGUIContext extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the context entry.
      */
     description?: string | null;
     /**
-     * The value property
+     * Gets or sets the value of the context entry.
      */
     value?: string | null;
 }
@@ -102,21 +105,24 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
+/**
+ * Represents a tool available for the agent to use.
+ */
 export interface AGUITool extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the tool.
      */
     description?: string | null;
     /**
-     * The metadata property
+     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
      */
     metadata?: UntypedNode | null;
     /**
-     * The name property
+     * Gets or sets the name of the tool.
      */
     name?: string | null;
     /**
-     * The parameters property
+     * Gets or sets the JSON Schema describing the tool's parameters.
      */
     parameters?: UntypedNode | null;
 }
@@ -2922,6 +2928,24 @@ export function createQueryKnowledgeGraphNodesCommandFromDiscriminatorValue(pars
 // @ts-ignore
 export function createQueryKnowledgeGraphNodesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryKnowledgeGraphNodesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphRecallTestCommand}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphRecallTestCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphRecallTestCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphRecallTestCommandResponse}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphRecallTestCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphRecallTestCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -7096,6 +7120,38 @@ export function deserializeIntoQueryKnowledgeGraphNodesCommandResponse(queryKnow
     return {
         "items": n => { queryKnowledgeGraphNodesCommandResponse.items = n.getCollectionOfObjectValues<KnowledgeGraphNodeItem>(createKnowledgeGraphNodeItemFromDiscriminatorValue); },
         "total": n => { queryKnowledgeGraphNodesCommandResponse.total = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphRecallTestCommand(queryKnowledgeGraphRecallTestCommand: Partial<QueryKnowledgeGraphRecallTestCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { queryKnowledgeGraphRecallTestCommand.aiModelId = n.getGuidValue(); },
+        "contextUserId": n => { queryKnowledgeGraphRecallTestCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { queryKnowledgeGraphRecallTestCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "isAnswer": n => { queryKnowledgeGraphRecallTestCommand.isAnswer = n.getBooleanValue(); },
+        "isOptimizeQuery": n => { queryKnowledgeGraphRecallTestCommand.isOptimizeQuery = n.getBooleanValue(); },
+        "knowledgeGraphId": n => { queryKnowledgeGraphRecallTestCommand.knowledgeGraphId = n.getStringValue(); },
+        "minScore": n => { queryKnowledgeGraphRecallTestCommand.minScore = n.getNumberValue(); },
+        "query": n => { queryKnowledgeGraphRecallTestCommand.query = n.getStringValue(); },
+        "top": n => { queryKnowledgeGraphRecallTestCommand.top = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphRecallTestCommandResponse(queryKnowledgeGraphRecallTestCommandResponse: Partial<QueryKnowledgeGraphRecallTestCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "answer": n => { queryKnowledgeGraphRecallTestCommandResponse.answer = n.getStringValue(); },
+        "hits": n => { queryKnowledgeGraphRecallTestCommandResponse.hits = n.getCollectionOfObjectValues<QueryKnowledgeGraphSearchItem>(createQueryKnowledgeGraphSearchItemFromDiscriminatorValue); },
+        "optimizedQuery": n => { queryKnowledgeGraphRecallTestCommandResponse.optimizedQuery = n.getStringValue(); },
+        "query": n => { queryKnowledgeGraphRecallTestCommandResponse.query = n.getStringValue(); },
+        "skippedHints": n => { queryKnowledgeGraphRecallTestCommandResponse.skippedHints = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
 /**
@@ -11897,6 +11953,72 @@ export interface QueryKnowledgeGraphNodesCommandResponse extends Parsable {
     total?: string | null;
 }
 /**
+ * 知识图谱召回测试：在单个托管图谱内做向量召回（实体 + 一跳邻居），支持相似度阈值、AI 优化问题与 AI 生成回答，仅团队成员可访问.
+ */
+export interface QueryKnowledgeGraphRecallTestCommand extends Parsable {
+    /**
+     * AI 优化问题 / 生成回答使用的对话模型 id；开启优化或回答时必填.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 是否基于召回内容生成 AI 回答.
+     */
+    isAnswer?: boolean | null;
+    /**
+     * 是否先由 AI 将问题优化为适合图谱检索的查询文本.
+     */
+    isOptimizeQuery?: boolean | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 相似度阈值（0-1，含），null 表示不过滤.
+     */
+    minScore?: number | null;
+    /**
+     * 查询文本.
+     */
+    query?: string | null;
+    /**
+     * 召回条数，1-50，默认 5.
+     */
+    top?: number | null;
+}
+/**
+ * 知识图谱召回测试响应：命中项复用语义检索结构（实体 + 一跳邻居）.
+ */
+export interface QueryKnowledgeGraphRecallTestCommandResponse extends Parsable {
+    /**
+     * AI 基于召回内容生成的回答（未开启或无命中为空串）.
+     */
+    answer?: string | null;
+    /**
+     * 召回命中（按得分降序）.
+     */
+    hits?: QueryKnowledgeGraphSearchItem[] | null;
+    /**
+     * AI 优化后的查询文本（未开启优化为空串）.
+     */
+    optimizedQuery?: string | null;
+    /**
+     * 原始查询.
+     */
+    query?: string | null;
+    /**
+     * 检索跳过说明（未配置向量化模型等）.
+     */
+    skippedHints?: string[] | null;
+}
+/**
  * 图谱 schema 响应.
  */
 export interface QueryKnowledgeGraphSchemaCommandResponse extends Parsable {
@@ -13215,41 +13337,44 @@ export interface ReviewPublicationCommand extends Parsable {
      */
     reviewComment?: string | null;
 }
+/**
+ * Input payload for running an AG-UI agent.
+ */
 export interface RunAgentInput extends Parsable {
     /**
-     * The context property
+     * Gets or sets contextual information for the agent.
      */
     context?: AGUIContext[] | null;
     /**
-     * The forwardedProps property
+     * Gets or sets additional forwarded properties from the client.
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * The messages property
+     * Gets or sets the conversation messages.
      */
     messages?: AGUIMessage[] | null;
     /**
-     * The parentRunId property
+     * Gets or sets the parent run identifier for branching/time travel.
      */
     parentRunId?: string | null;
     /**
-     * The resume property
+     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
      */
     resume?: AGUIResume[] | null;
     /**
-     * The runId property
+     * Gets or sets the run identifier.
      */
     runId?: string | null;
     /**
-     * The state property
+     * Gets or sets the state to pass to the agent.
      */
     state?: UntypedNode | null;
     /**
-     * The threadId property
+     * Gets or sets the thread identifier.
      */
     threadId?: string | null;
     /**
-     * The tools property
+     * Gets or sets the tools available to the agent.
      */
     tools?: AGUITool[] | null;
 }
@@ -16027,6 +16152,38 @@ export function serializeQueryKnowledgeGraphNodesCommandResponse(writer: Seriali
     if (queryKnowledgeGraphNodesCommandResponse) {
         writer.writeCollectionOfObjectValues<KnowledgeGraphNodeItem>("items", queryKnowledgeGraphNodesCommandResponse.items, serializeKnowledgeGraphNodeItem);
         writer.writeStringValue("total", queryKnowledgeGraphNodesCommandResponse.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphRecallTestCommand(writer: SerializationWriter, queryKnowledgeGraphRecallTestCommand: Partial<QueryKnowledgeGraphRecallTestCommand> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphRecallTestCommand) {
+        writer.writeGuidValue("aiModelId", queryKnowledgeGraphRecallTestCommand.aiModelId);
+        writer.writeStringValue("contextUserId", queryKnowledgeGraphRecallTestCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", queryKnowledgeGraphRecallTestCommand.contextUserType);
+        writer.writeBooleanValue("isAnswer", queryKnowledgeGraphRecallTestCommand.isAnswer);
+        writer.writeBooleanValue("isOptimizeQuery", queryKnowledgeGraphRecallTestCommand.isOptimizeQuery);
+        writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphRecallTestCommand.knowledgeGraphId);
+        writer.writeNumberValue("minScore", queryKnowledgeGraphRecallTestCommand.minScore);
+        writer.writeStringValue("query", queryKnowledgeGraphRecallTestCommand.query);
+        writer.writeNumberValue("top", queryKnowledgeGraphRecallTestCommand.top);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphRecallTestCommandResponse(writer: SerializationWriter, queryKnowledgeGraphRecallTestCommandResponse: Partial<QueryKnowledgeGraphRecallTestCommandResponse> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphRecallTestCommandResponse) {
+        writer.writeStringValue("answer", queryKnowledgeGraphRecallTestCommandResponse.answer);
+        writer.writeCollectionOfObjectValues<QueryKnowledgeGraphSearchItem>("hits", queryKnowledgeGraphRecallTestCommandResponse.hits, serializeQueryKnowledgeGraphSearchItem);
+        writer.writeStringValue("optimizedQuery", queryKnowledgeGraphRecallTestCommandResponse.optimizedQuery);
+        writer.writeStringValue("query", queryKnowledgeGraphRecallTestCommandResponse.query);
+        writer.writeCollectionOfPrimitiveValues<string>("skippedHints", queryKnowledgeGraphRecallTestCommandResponse.skippedHints);
     }
 }
 /**

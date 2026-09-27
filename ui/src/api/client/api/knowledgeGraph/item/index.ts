@@ -20,6 +20,8 @@ import { ImportJsonRequestBuilderRequestsMetadata, type ImportJsonRequestBuilder
 // @ts-ignore
 import { NodesRequestBuilderNavigationMetadata, NodesRequestBuilderRequestsMetadata, type NodesRequestBuilder } from './nodes/index.js';
 // @ts-ignore
+import { RecallTestRequestBuilderRequestsMetadata, type RecallTestRequestBuilder } from './recallTest/index.js';
+// @ts-ignore
 import { RelationTypesRequestBuilderNavigationMetadata, RelationTypesRequestBuilderRequestsMetadata, type RelationTypesRequestBuilder } from './relationTypes/index.js';
 // @ts-ignore
 import { SchemaRequestBuilderRequestsMetadata, type SchemaRequestBuilder } from './schema/index.js';
@@ -64,6 +66,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      * The nodes property
      */
     get nodes(): NodesRequestBuilder;
+    /**
+     * The recallTest property
+     */
+    get recallTest(): RecallTestRequestBuilder;
     /**
      * The relationTypes property
      */
@@ -164,6 +170,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
     nodes: {
         requestsMetadata: NodesRequestBuilderRequestsMetadata,
         navigationMetadata: NodesRequestBuilderNavigationMetadata,
+    },
+    recallTest: {
+        requestsMetadata: RecallTestRequestBuilderRequestsMetadata,
     },
     relationTypes: {
         requestsMetadata: RelationTypesRequestBuilderRequestsMetadata,

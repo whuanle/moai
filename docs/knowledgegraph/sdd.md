@@ -68,6 +68,7 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 | GET | `/{id}/schema?refresh=` | 接入图 schema 走 Redis 内省缓存（TTL 5 分钟），`refresh=true` 强制重新内省并返回相对基线的 `changes`（v2.1） |
 | POST | `/{id}/avatar` | 设置图谱头像 `{objectKey}`（v2.2）：仅 Owner/Admin；objectKey 须为已登记且完成上传的文件（伪造 404）；列表/详情回显 `avatarPath`（前端经 `/static/{key}` 解析） |
 | GET | `/model-options?teamId=` | 团队可用 AI 模型选项（公开+已授权，仅团队成员）：v2.9 为 AI 导入提供对话模型，SP-A 起分桶返回 `conversationModels` / `embeddingModels` |
+| POST | `/{id}/recall-test` | **召回测试（v3.4，对齐知识库召回测试）**：`{query, top, minScore?, aiModelId?, isOptimizeQuery?, isAnswer?}`——复用 GraphSearchService 向量召回（实体 + 一跳邻居）；AI 优化问题/生成回答（对话模型解析语义同 wiki：双 Enabled + 公共或团队授权 + conversation）；团队成员级（IUserIdContext + Controller SetUserContext） |
 | POST | `/{id}/import-json` | **JSON 结构化导入（v3.2，导入页）**：`{content, mode?, autoCreateTypes?, validateOnly?}`——容错解析导入页提交的 JSON 文本（顶层 nodes/edges，解析错误带行定位），页面控件值覆盖 JSON 内同名字段；经 `KnowledgeGraphDataImportService` 与外部 /import 共用落库管线；仅托管图 Admin+；返回逐条导入结果 |
 | POST | `/{id}/import-file` | **AI 导入文件生成图谱**（v2.9）：`{objectKey, fileName, aiModelId}` → Maomi.ToMarkdown 提取（截断 1.2 万字符）→ 对话模型按图谱现有模型抽取实体/关系（JSON）→ 类型存在性与起止约束校验后写入图库；返回导入统计；仅托管图 Owner/Admin；objectKey 须为公开 chat 目录已直传文件 |
 | PUT | `/{id}/embedding-config` | 配置向量化模型 `{embeddingModelId, embeddingDimensions(1-2000)}`（SP-A，见 §5.2）：仅托管图 Owner/Admin；模型须启用、团队可用且 ModelKind=embedding（400）；接入图 409；配置变更清空旧向量集合并全量重嵌（≤5000 节点，超出告警） |

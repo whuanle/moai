@@ -570,3 +570,61 @@ export interface KnowledgeGraphDuplicateSuspect {
   matchIndex?: number | null
   matchName?: string | null
 }
+
+/** 召回测试命中项（实体 + 一跳邻居） */
+export interface KnowledgeGraphRecallTestNeighbor {
+  relationName?: string | null
+  direction?: string | null
+  name?: string | null
+  description?: string | null
+}
+
+export interface KnowledgeGraphRecallTestHit {
+  kgId?: number | string | null
+  nodeId?: string | null
+  name?: string | null
+  description?: string | null
+  entityTypeId?: number | string | null
+  entityTypeName?: string | null
+  score?: number | null
+  neighbors?: KnowledgeGraphRecallTestNeighbor[] | null
+}
+
+/** 召回测试结果 */
+export interface KnowledgeGraphRecallTestResult {
+  query?: string | null
+  optimizedQuery?: string | null
+  answer?: string | null
+  hits?: KnowledgeGraphRecallTestHit[] | null
+  skippedHints?: string[] | null
+}
+
+/** 知识图谱召回测试：向量召回 + AI 优化问题/AI 回答（语义对齐知识库召回测试） */
+export async function recallKnowledgeGraphTest(
+  kgId: number,
+  payload: {
+    query: string
+    top?: number
+    minScore?: number | null
+    aiModelId?: string | null
+    isOptimizeQuery?: boolean
+    isAnswer?: boolean
+  },
+): Promise<KnowledgeGraphRecallTestResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).recallTest.post({
+    query: payload.query,
+    top: payload.top ?? 5,
+    minScore: payload.minScore ?? null,
+    aiModelId: payload.aiModelId || null,
+    isOptimizeQuery: payload.isOptimizeQuery ?? false,
+    isAnswer: payload.isAnswer ?? false,
+  })
+  return {
+    query: res?.query ?? '',
+    optimizedQuery: res?.optimizedQuery ?? '',
+    answer: res?.answer ?? '',
+    hits: (res?.hits as KnowledgeGraphRecallTestHit[] | undefined) ?? [],
+    skippedHints: (res?.skippedHints as string[] | undefined) ?? [],
+  }
+}

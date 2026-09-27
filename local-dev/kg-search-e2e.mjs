@@ -11,6 +11,7 @@
 //   KGS-S7  embedding-config 边界：维度 0 → 400；假模型 Guid → 400；非法配置不破坏原配置
 //   KGS-S8  应用配置绑定：他团队 graphId → 400；本团队接入图 → 400；合法托管图 → 200 且回读
 //   KGS-S9  工作流 kgSearch 节点：draft 引用他团队 graphId → 400 → 改本团队 graphId → draft/publish/debug-run，count≥1 且 text 非空
+//   KGS-S10 召回测试 /recall-test：校验（空查询/阈值越界/AI 开关缺模型）→ 向量召回（topK/阈值）→ AI 优化问题与 AI 回答（桩 chat）
 //
 // 运行前置：新构建后端 + Memgraph/图数据库 + RabbitMQ + pgvector，KG_ENABLED=true；
 // 连不上后端 / list.enabled≠true / 图数据库探活失败 / 桩模型创建失败时 SKIP 并退出码 0。
@@ -82,6 +83,15 @@ function startStubServer() {
     let body = ''
     req.on('data', (chunk) => { body += chunk })
     req.on('end', () => {
+      if (String(req.url).includes('/chat/completions')) {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          id: 'chatcmpl-stub', object: 'chat.completion', created: Math.floor(Date.now() / 1000), model: 'stub',
+          choices: [{ index: 0, message: { role: 'assistant', content: 'kgs-stub-answer' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
+        }))
+        return
+      }
       if (!String(req.url).includes('/embeddings')) {
         res.writeHead(404, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'not found' }))
@@ -441,6 +451,42 @@ async function main() {
   try { parsed = kgsOut?.output ? JSON.parse(kgsOut.output) : null } catch { /* 非 JSON 输出 */ }
   check('KGS-S9e debug-run 完成', run.status === 200 && rj.status === 'completed' && kgsOut?.state === 'completed', `${run.status} ${rj.status} ${run.text.slice(0, 200)}`)
   check('KGS-S9f kgSearch 输出 count≥1 且 text 非空', parsed !== null && Number(parsed?.count) >= 1 && String(parsed?.text ?? '') !== '', String(kgsOut?.output ?? run.text.slice(0, 160)).slice(0, 200))
+
+  // ===== KGS-S10 召回测试 /recall-test（向量召回 + AI 优化/回答，桩 chat） =====
+  {
+    // 桩渠道加对话模型并授权（AI 增强）
+    const chatName = `kgs-stub-chat-${TS}`
+    await api('POST', '/api/ai/model', { token, body: { channelId: CH_ID, meta: { modelId: 'kgs-stub-chat', name: chatName, modelKind: 'conversation', description: 'kgs 桩对话模型' }, enabled: true, isPublic: false } })
+    const chatModels = await api('GET', `/api/ai/model?channelId=${CH_ID}`, { token })
+    const CHAT_ID = String((chatModels.json?.items ?? []).find((m) => m.name === chatName)?.id ?? '')
+    if (CHAT_ID) {
+      const cur = await api('GET', `/api/ai/model/${CHAT_ID}/authorization`, { token })
+      const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+      await api('PUT', `/api/ai/model/${CHAT_ID}/authorization`, { token, body: { modelId: CHAT_ID, teamIds } })
+    }
+
+    // a) 校验：空查询 400；阈值越界 400；AI 开关开但缺模型 400
+    const emptyQ = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: '  ', top: 5 } })
+    check('KGS-S10a 空查询 400', emptyQ.status === 400, `${emptyQ.status} ${emptyQ.text.slice(0, 120)}`)
+    const badScore = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 5, minScore: 1.5 } })
+    check('KGS-S10b 阈值越界 400', badScore.status === 400 && badScore.text.includes('0-1'), `${badScore.status} ${badScore.text.slice(0, 140)}`)
+    const noModel = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 5, isAnswer: true } })
+    check('KGS-S10c AI 开关缺模型 400', noModel.status === 400 && noModel.text.includes('模型'), `${noModel.status} ${noModel.text.slice(0, 140)}`)
+
+    // b) 向量召回（已知命中节点名）+ topK
+    const recall = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 5 } })
+    check('KGS-S10d 向量召回命中既有节点', recall.status === 200 && (recall.json?.hits ?? []).some((h) => h.name === nameA), `${recall.status} ${recall.text.slice(0, 200)}`)
+    const recallTop1 = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 1 } })
+    check('KGS-S10e top=1 仅 1 条', recallTop1.status === 200 && (recallTop1.json?.hits ?? []).length <= 1, `${recallTop1.status}`)
+
+    // c) AI 优化 + 回答（桩 chat 固定返回 kgs-stub-answer）
+    if (CHAT_ID) {
+      const ai = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 5, isOptimizeQuery: true, isAnswer: true, aiModelId: CHAT_ID } })
+      check('KGS-S10f AI 优化与回答生效', ai.status === 200 && String(ai.json?.answer ?? '').includes('kgs-stub-answer'), `${ai.status} ${ai.text.slice(0, 200)}`)
+    } else {
+      console.warn('WARN | KGS-S10f 跳过：对话模型创建失败')
+    }
+  }
 
   // ===== 清理：删图/桩渠道；团队禁用归档（应用无删除 API，留给台账，同 app-e2e 口径） =====
   await api('DELETE', kg(G1), { token })

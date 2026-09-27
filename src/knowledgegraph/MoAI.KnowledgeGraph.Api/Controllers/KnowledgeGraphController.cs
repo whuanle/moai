@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 using MoAI.KnowledgeGraph.Commands;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -15,14 +16,17 @@ namespace MoAI.KnowledgeGraph.Controllers;
 public class KnowledgeGraphController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KnowledgeGraphController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 实例.</param>
-    public KnowledgeGraphController(IMediator mediator)
+    /// <param name="userContextProvider">用户上下文提供者（路由回填命令的手动用户上下文注入）.</param>
+    public KnowledgeGraphController(IMediator mediator, IUserContextProvider userContextProvider)
     {
         _mediator = mediator;
+        _userContextProvider = userContextProvider;
     }
 
     /// <summary>
@@ -106,6 +110,30 @@ public class KnowledgeGraphController : ControllerBase
     [HttpPost("{id}/search")]
     public Task<QueryKnowledgeGraphSearchCommandResponse> Search(long id, [FromBody] QueryKnowledgeGraphSearchCommand req, CancellationToken ct)
         => _mediator.Send(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = id, Query = req.Query, TopK = req.TopK, MinScore = req.MinScore }, ct);
+
+    /// <summary>
+    /// 召回测试：向量召回（实体 + 一跳邻居），支持相似度阈值、AI 优化问题与 AI 生成回答，仅团队成员可访问.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">召回测试请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryKnowledgeGraphRecallTestCommandResponse"/>.</returns>
+    [HttpPost("{id}/recall-test")]
+    public Task<QueryKnowledgeGraphRecallTestCommandResponse> QueryRecallTest(long id, [FromBody] QueryKnowledgeGraphRecallTestCommand req, CancellationToken ct)
+    {
+        var cmd = new QueryKnowledgeGraphRecallTestCommand
+        {
+            KnowledgeGraphId = id,
+            Query = req.Query,
+            Top = req.Top,
+            MinScore = req.MinScore,
+            AiModelId = req.AiModelId,
+            IsOptimizeQuery = req.IsOptimizeQuery,
+            IsAnswer = req.IsAnswer,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
 
     /// <summary>
     /// 设置图谱头像，仅 Owner/Admin 可操作.
