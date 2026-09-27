@@ -51,12 +51,12 @@ node local-dev/moji-weather-e2e.mjs
 | @DYN-S26 | local-dev/dynamic-plugin-e2e.mjs（不同 JS 返回值 → 归一 ResultKind/ResultJson） | PASS（2026-09-11） |
 | @DYN-S27 | local-dev/dynamic-plugin-e2e.mjs（空 JavaScriptCode / 缺 run / 语法错误 / 运行时错误 → 可读失败） | PASS（2026-09-11） |
 | @DYN-S28 | local-dev/dynamic-plugin-e2e.mjs（Parameters 回显 / null+undefined 归一 / 不抛 500） | PASS（2026-09-11） |
-| @DYN-S29 | local-dev/dynamic-plugin-e2e.mjs（注册表含 postgres_query / mysql_query，配置示例含 `ConnectionString`、参数示例含 `Sql`、配置类型齐全） | PASS（2026-09-11） |
-| @DYN-S30 | local-dev/dynamic-plugin-e2e.mjs（`S30c` 12 类写操作/多语句被拒 + `S30d` MySQL 同样拒绝 + `S30e` 6 条合法只读放行到连接层） | PASS（2026-09-11） |
-| @DYN-S31 | local-dev/dynamic-plugin-e2e.mjs（空 `Sql` / 空 `ConnectionString` → 可读失败） | PASS（2026-09-11） |
-| @DYN-S32 | local-dev/dynamic-plugin-e2e.mjs（`PG_E2E_CONNECTION` 指向真实 PG：MaxRows 截断 / 列名与行 / 会话只读 / 同名列去重 / bytea+jsonb+时间 / 空结果集） | PASS（2026-09-11） |
-| @DYN-S33 | local-dev/dynamic-plugin-e2e.mjs（`MYSQL_E2E_CONNECTION` 指向真实 MySQL：`SELECT 1` + `SHOW VARIABLES LIKE 'transaction_read_only'`） | SKIP（2026-09-11，本机与同网段无可达 MySQL、Docker 未运行；脚本已按环境变量开关就绪） |
-| @DYN-S34 | 人工：插件管理页模板下拉选 `postgres_query` / `mysql_query`，检查配置编辑器与运行抽屉的示例文案 | 待运行（前端无改动，模板由注册表自动进入下拉） |
+| @DYN-S29 | local-dev/dynamic-plugin-e2e.mjs（注册表含 postgres_query / mysql_query，配置示例含 `Host`、参数示例含 `Sql`、配置类型齐全） | PASS（2026-09-26） |
+| @DYN-S30 | local-dev/dynamic-plugin-e2e.mjs（`S30c` 12 类写操作/多语句被拒 + `S30d` MySQL 同样拒绝 + `S30e` 6 条合法只读放行到连接层） | PASS（2026-09-26） |
+| @DYN-S31 | local-dev/dynamic-plugin-e2e.mjs（空 `Sql` / 空 `Host` → 可读失败） | PASS（2026-09-26） |
+| @DYN-S32 | local-dev/dynamic-plugin-e2e.mjs（`PG_E2E_CONNECTION` 连接串解析为 Host/Port/Database/Username/Password 离散配置，指向真实 PG：MaxRows 截断 / 列名与行 / 会话只读 / 同名列去重 / bytea+jsonb+时间 / 空结果集） | PASS（2026-09-26） |
+| @DYN-S33 | local-dev/dynamic-plugin-e2e.mjs（`MYSQL_E2E_CONNECTION` 指向真实 MySQL：`SELECT 1` + `SHOW VARIABLES LIKE 'transaction_read_only'`） | SKIP（2026-09-26，本机与同网段无可达 MySQL、Docker 未运行；脚本已按环境变量开关就绪） |
+| @DYN-S34 | 人工：插件管理页模板下拉选 `postgres_query` / `mysql_query`，检查配置编辑器与运行抽屉的示例文案 | 待运行（前端无改动，配置示例由注册表自动下发为新离散字段文案） |
 | @DYN-S36 | local-dev/paddleocr-e2e.mjs（注册表含 paddleocr_ocr / paddleocr_structure_v3 / paddleocr_vl，示例与配置类型齐全） | 待运行 |
 | @DYN-S37 | local-dev/paddleocr-e2e.mjs（S37a~f 桩 /ocr → Pages/Text/OcrImage/InputImage 解析 + 鉴权头 + 参数透传） | 待运行 |
 | @DYN-S38 | local-dev/paddleocr-e2e.mjs（S38a~f 桩 /layout-parsing StructureV3 → Pages/SealTexts/PrunedResultJson/OutputImages/InputImage + 鉴权头） | 待运行 |
@@ -163,3 +163,8 @@ node local-dev/moji-weather-e2e.mjs                                  # 墨迹天
   - 响应契约：每插件按页聚合 `Pages[]`，文本字段按行拼接（OCR `rec_texts`）；StructureV3 的 `SealTexts` 沿用旧 `NativePlugin.PaddleocrStructureV3Plugin.InvokeAsync` 的「取每条印章 `rec_texts[0]`」语义，改为按印章拆为列表；VL 直接吐 `MarkdownText` / `MarkdownImages`；`prunedResult` 一律 `JsonElement.GetRawText()` 回写为 `PrunedResultJson`。
   - 新 E2E：`local-dev/paddleocr-e2e.mjs`（自建桩服务监听 `/ocr` 与 `/layout-parsing`，对未带 `token ` 的 Authorization 一律返 401，用请求体特征字段区分 VL/StructureV3），覆盖 @DYN-S36~S42；沙箱内 `dotnet restore` 被阻断（同上），脚本待系统终端运行。
   - 沙箱内 `dotnet restore` 被 NuGet `ConfigurationDefaults` 阻断（同轮次 30/31/35~40），宿主整体 `dotnet build` 待系统终端复验；本轮改动落在 `MoAI.AIPlugin.Dynamic` 单子项目，已单独编译通过并准备换入宿主运行验证。
+
+### 2026-09-26 mysql_query/postgres_query 配置离散化复验
+
+- `dotnet build src/MoAI/MoAI.csproj`（独立输出目录，绕开运行中后端的 DLL 锁）→ 0 error。
+- `DYN_BASE=http://127.0.0.1:5100 PG_E2E_CONNECTION=<开发库连接串> node local-dev/dynamic-plugin-e2e.mjs` → **PASS 119 / FAIL 0 / SKIP 3**（SKIP：S16/S22 博查真实 Key、S33 无可达 MySQL）；S29c 改断言 Host 示例、S30a/b/S31b 改离散配置、S32a~g 在真实 PG 上全过（含 `SHOW default_transaction_read_only=on` 会话只读兜底）。

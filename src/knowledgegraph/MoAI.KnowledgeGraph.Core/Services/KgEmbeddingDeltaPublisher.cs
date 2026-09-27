@@ -46,6 +46,17 @@ public static class KgEmbeddingDeltaPublisher
     public static Task PublishNodeDeleteAsync(IMessagePublisher publisher, ILogger logger, long kgId, string nodeId)
         => PublishAsync(publisher, logger, kgId, null, [nodeId]);
 
+    /// <summary>
+    /// 发布批量删除 delta（一条消息带全部节点 id，外部按 key 批量删除用）.
+    /// </summary>
+    /// <param name="publisher">消息发布器.</param>
+    /// <param name="logger">日志.</param>
+    /// <param name="kgId">图谱 id.</param>
+    /// <param name="nodeIds">节点 id 集.</param>
+    /// <returns>异步任务.</returns>
+    public static Task PublishNodesDeleteAsync(IMessagePublisher publisher, ILogger logger, long kgId, IReadOnlyList<string> nodeIds)
+        => PublishAsync(publisher, logger, kgId, null, nodeIds);
+
     private static async Task PublishAsync(IMessagePublisher publisher, ILogger logger, long kgId, IReadOnlyList<string>? upsertNodeIds, IReadOnlyList<string>? deleteNodeIds)
     {
         try

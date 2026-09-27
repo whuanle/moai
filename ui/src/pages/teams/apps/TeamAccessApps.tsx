@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Typography } from 'antd'
+import { Alert, Button, Checkbox, Form, Input, Modal, Popconfirm, Radio, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -62,6 +62,58 @@ function KeyCell({ value }: { value: string }) {
 interface AccessAppFormValues {
   name: string
   description?: string
+  scopes: string[]
+}
+
+/** 应用接入可选范围代码（模型网关 + 知识库读写 + 应用对话 + 知识图谱读写 + 两域 MCP） */
+const ACCESS_APP_SCOPES = ['model', 'wiki_read', 'wiki_write', 'app_chat', 'kg_read', 'kg_write', 'wiki_mcp', 'kg_mcp'] as const
+
+/** 按 读/写 两位范围代码推导三档档位 */
+type ResourceLevel = 'none' | 'read' | 'write'
+
+/**
+ * 访问范围分组编辑器：按资源组授权——知识库 无/只读/可写 三档，模型网关/应用对话/MCP 为开关。
+ * value 即后端 scopes 代码列表（Form 受控）。
+ */
+function ScopeGroupEditor({ value = [], onChange }: { value?: string[]; onChange?: (v: string[]) => void }) {
+  const { t } = useTranslation()
+  const has = (code: string) => value.includes(code)
+  const toggle = (code: string, on: boolean) => onChange?.(on ? [...value, code] : value.filter((c) => c !== code))
+  const levelOf = (readCode: string, writeCode: string): ResourceLevel => (has(writeCode) ? 'write' : has(readCode) ? 'read' : 'none')
+  const setLevel = (readCode: string, writeCode: string, level: ResourceLevel) =>
+    onChange?.([
+      ...value.filter((c) => c !== readCode && c !== writeCode),
+      ...(level === 'read' ? [readCode] : level === 'write' ? [readCode, writeCode] : []),
+    ])
+
+  const resourceGroups: Array<{ label: string; read: string; write: string }> = [
+    { label: t('accessApp.groupKnowledge'), read: 'wiki_read', write: 'wiki_write' },
+    { label: t('accessApp.groupKnowledgeGraph'), read: 'kg_read', write: 'kg_write' },
+  ]
+
+  return (
+    <Space direction="vertical" size={spacing.sm} style={{ display: 'flex' }}>
+      {resourceGroups.map((group) => (
+        <div key={group.read}>
+          <Text strong style={{ fontSize: 13 }}>{group.label}</Text>
+          <Radio.Group
+            value={levelOf(group.read, group.write)}
+            onChange={(e) => setLevel(group.read, group.write, e.target.value as ResourceLevel)}
+            style={{ marginLeft: spacing.sm }}
+          >
+            <Radio value="none">{t('accessApp.wikiLevelNone')}</Radio>
+            <Radio value="read">{t('accessApp.wikiLevelRead')}</Radio>
+            <Radio value="write">{t('accessApp.wikiLevelWrite')}</Radio>
+          </Radio.Group>
+        </div>
+      ))}
+      {(['model', 'app_chat', 'wiki_mcp', 'kg_mcp'] as const).map((code) => (
+        <Checkbox key={code} checked={has(code)} onChange={(e) => toggle(code, e.target.checked)}>
+          {t(`gateway.scope.${code}`)}
+        </Checkbox>
+      ))}
+    </Space>
+  )
 }
 
 interface TeamAccessAppsProps {
@@ -106,6 +158,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
   const openCreate = () => {
     setEditing(null)
     form.resetFields()
+    form.setFieldsValue({ scopes: ['wiki_read', 'wiki_write', 'app_chat'] })
     setModalOpen(true)
   }
 
@@ -114,6 +167,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
     form.setFieldsValue({
       name: item.name ?? '',
       description: item.description ?? undefined,
+      scopes: (item.scopes ?? []).filter((s) => (ACCESS_APP_SCOPES as readonly string[]).includes(s)),
     })
     setModalOpen(true)
   }
@@ -126,6 +180,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
         await updateAccessApp(editing.accessAppId, {
           name: values.name,
           description: values.description,
+          scopes: values.scopes ?? [],
         })
         feedback.success(t('accessApp.updateSuccess'))
       } else {
@@ -133,6 +188,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           teamId,
           name: values.name,
           description: values.description,
+          scopes: values.scopes ?? [],
         })
         if (res.key) setCreatedKey(res.key)
         feedback.success(t('accessApp.createSuccess'))
@@ -176,8 +232,32 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
         render: (v: string | null) => (v ? <KeyCell value={v} /> : '-'),
       },
       {
+        title: t('accessApp.colScopes'),
+        dataIndex: 'scopes',
+        width: 220,
+        render: (v: string[] | null | undefined) => (
+          <Space size={spacing.xs} wrap>
+            {(v ?? []).length > 0 ? (
+              v!.map((code) => (
+                <Tag key={code} color="blue">
+                  {t(`gateway.scope.${code}`, { defaultValue: code })}
+                </Tag>
+              ))
+            ) : (
+              <Text type="secondary">{t('accessApp.scopesNone')}</Text>
+            )}
+          </Space>
+        ),
+      },
+      {
         title: t('accessApp.colCreateTime'),
         dataIndex: 'createTime',
+        width: 170,
+        render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+      },
+      {
+        title: t('accessApp.colLastUsed'),
+        dataIndex: 'lastUsedTime',
         width: 170,
         render: (v: string | null) => (v ? formatDateTime(v) : '-'),
       },
@@ -251,6 +331,9 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           </Form.Item>
           <Form.Item name="description" label={t('accessApp.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('accessApp.descriptionPlaceholder')} maxLength={255} rows={3} />
+          </Form.Item>
+          <Form.Item name="scopes" label={t('accessApp.colScopes')} extra={t('accessApp.scopesHint')}>
+            <ScopeGroupEditor />
           </Form.Item>
         </Form>
       </Modal>

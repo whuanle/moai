@@ -230,8 +230,8 @@ export function KnowledgeGraphRelations({ graphId, teamId, graphEnabled = true, 
       : []),
   ]
 
-  const gotoEntities = () => navigate(`/team/${teamId}/kg/${graphId}/entities`)
-  const gotoSchema = () => navigate(`/team/${teamId}/kg/${graphId}/schema`)
+  const gotoEntities = () => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=entities`)
+  const gotoSchema = () => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=schema`)
 
   return (
     <>
@@ -256,39 +256,6 @@ export function KnowledgeGraphRelations({ graphId, teamId, graphEnabled = true, 
           action={<Button size="small" type="primary" icon={<ProfileOutlined />} onClick={gotoEntities}>{t('knowledgegraph.relation.goEntities')}</Button>}
         />
       )}
-      <Space style={{ marginBottom: spacing.md }} wrap>
-        {canWrite && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            {t('knowledgegraph.relation.create')}
-          </Button>
-        )}
-        <Select
-          allowClear
-          placeholder={t('knowledgegraph.relation.filterType')}
-          style={{ width: 180 }}
-          value={relationFilter}
-          onChange={(value) => {
-            setPageNo(1)
-            const next = new URLSearchParams(value != null ? { relationTypeId: String(value) } : {})
-            if (nodeFilter) next.set('nodeId', nodeFilter)
-            setSearchParams(next, { replace: true })
-          }}
-          options={relationTypes.map((x) => ({ value: Number(x.relationTypeId), label: x.name ?? '' }))}
-        />
-        {nodeFilter && nodeName.get(nodeFilter) && (
-          <Tag
-            closable
-            onClose={() => {
-              setPageNo(1)
-              const next = new URLSearchParams()
-              if (relationFilter != null) next.set('relationTypeId', String(relationFilter))
-              setSearchParams(next, { replace: true })
-            }}
-          >
-            {t('knowledgegraph.relation.nodeFilterPrefix')}: {nodeName.get(nodeFilter)}
-          </Tag>
-        )}
-      </Space>
       <DataTable<KnowledgeGraphEdgeItem>
         sticky
         scroll={{ x: 'max-content' }}
@@ -296,6 +263,53 @@ export function KnowledgeGraphRelations({ graphId, teamId, graphEnabled = true, 
         columns={columns}
         dataSource={items}
         loading={loading}
+        toolbar={(
+          <Space size={8} wrap>
+            {canWrite && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                {t('knowledgegraph.relation.create')}
+              </Button>
+            )}
+            <Select
+              allowClear
+              placeholder={t('knowledgegraph.relation.filterType')}
+              style={{ width: 180 }}
+              value={relationFilter}
+              onChange={(value) => {
+                setPageNo(1)
+                // 保留 step 等参数，仅增删 relationTypeId 过滤（组件挂在 maintenance 路由下）
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev)
+                    if (value != null) next.set('relationTypeId', String(value))
+                    else next.delete('relationTypeId')
+                    return next
+                  },
+                  { replace: true },
+                )
+              }}
+              options={relationTypes.map((x) => ({ value: Number(x.relationTypeId), label: x.name ?? '' }))}
+            />
+            {nodeFilter && nodeName.get(nodeFilter) && (
+              <Tag
+                closable
+                onClose={() => {
+                  setPageNo(1)
+                  setSearchParams(
+                    (prev) => {
+                      const next = new URLSearchParams(prev)
+                      next.delete('nodeId')
+                      return next
+                    },
+                    { replace: true },
+                  )
+                }}
+              >
+                {t('knowledgegraph.relation.nodeFilterPrefix')}: {nodeName.get(nodeFilter)}
+              </Tag>
+            )}
+          </Space>
+        )}
         onRefresh={() => void load()}
         refreshLoading={loading}
         pagination={{

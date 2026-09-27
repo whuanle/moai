@@ -72,6 +72,8 @@ public class ImportMcpServerPluginCommandHandler : IRequestHandler<ImportMcpServ
 
         var pluginEntity = new PluginEntity
         {
+            IsSystem = true,
+            TeamId = 0,
             PluginName = request.Name,
             Title = request.Title,
             Type = (int)PluginType.MCP,

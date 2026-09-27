@@ -52,6 +52,7 @@ cd ui && npm run typecheck && npm run lint && npm run test
 | `ChatMessageMapper` 双向映射 | （待补） | 工具调用/结果/思维链 round-trip |
 | flush 压缩替换 | （待补） | 压缩后行数与 seq 连续 |
 | `AppAgentSessionStore` 归属 | （待补） | 非归属不恢复 |
+| @AI-S34 插件工具团队可用性 | 代码走查 `PluginAppToolProvider.IsAvailableToTeam`（本团队自有/公开/已授权三口径过滤）+ 授权可见性链路证据 local-dev/team-plugin-e2e.mjs TP-35 系 | PASS（2026-09-26，走查 + E2E 47/47） |
 
 > PENDING 项需后端运行且已执行 [SOP 第 1 节](./sop.md#1-应用-schema-变更) 的 DDL，再补 `local-dev/agent-chat-e2e.mjs` 后执行。
 

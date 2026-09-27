@@ -1,13 +1,17 @@
 ﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.Infra.BoCha;
+using MoAI.Infra.ClickHouse;
 using MoAI.Infra.DingTalk;
 using MoAI.Infra.Doc2x;
+using MoAI.Infra.Elasticsearch;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.MojiWeather;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.Paddleocr;
+using MoAI.Infra.Prometheus;
 using MoAI.Infra.Put;
+using MoAI.Infra.Tempo;
 using MoAI.Infra.WeixinWork;
 using Refit;
 using System.Text.Json;
@@ -95,6 +99,24 @@ public class InfraExternalHttpModule : IModule
             .SetHandlerLifetime(TimeSpan.FromSeconds(60));
 
         context.Services.AddRefitClient<IPaddleocrClient>(settings)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        // 智能运维观测服务（Prometheus / Elasticsearch / ClickHouse / Grafana Tempo）：地址来自动态插件实例配置，
+        // 每次执行前由插件设置 BaseAddress，故不注册固定 BaseAddress.
+        context.Services.AddRefitClient<IPrometheusClient>(settings)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddRefitClient<IElasticsearchClient>(settings)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddRefitClient<IClickHouseClient>(settings)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddRefitClient<ITempoClient>(settings)
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(60));
     }

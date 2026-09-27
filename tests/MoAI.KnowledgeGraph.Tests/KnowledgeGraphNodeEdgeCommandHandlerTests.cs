@@ -31,7 +31,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
             CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
-        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -255,7 +255,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
             CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
-        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        store.Verify(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -274,7 +274,7 @@ public class KnowledgeGraphNodeEdgeCommandHandlerTests
         await db.Context.SaveChangesAsync(CancellationToken.None);
 
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.CreateNodeAsync(KnowledgeGraphId, It.IsAny<long>(), "节点", string.Empty, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        store.Setup(x => x.CreateNodeAsync(KnowledgeGraphId, It.IsAny<long>(), "节点", string.Empty, It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new KnowledgeGraphNodeRecord("n1", KnowledgeGraphId, 1, "节点", string.Empty));
 
         var (publisher, messages) = CreateCapturingPublisher();

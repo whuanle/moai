@@ -70,17 +70,25 @@
 - **团队 OpenAPI 补齐**：`SaveTeamOpenApiPluginCommand` 新增 `Header`/`Query` 字段（此前团队 OpenAPI 落库恒为空数组），前端 `OpenApiModal` 增加 Query 编辑；MCP/OpenAPI 弹窗值输入提示「支持 {变量名} 引用团队变量」
 - **安全边界**：插值结果（含私密解密值）仅存在于服务端内存；错误消息沿用既有 wrap，不回显 Header 值；验证见 [bdd.md](./bdd.md) TP-S29~S32（MCP 桩校验插值后明文）
 
+## 4c. 系统插件 key 保留与被授权系统插件可用（2026-09-26）
+
+- **系统插件 key 全局保留口径**：`is_system=true AND team_id=0` 的插件 key 不允许被团队插件占用，且**无论是否授权给该团队**——否则授权后同一应用同时绑定团队插件与系统插件会出现工具重名。校验点：团队 MCP 导入 / OpenAPI 导入 / OpenAPI 预上传 / 动态实例创建四处（`SaveTeamMcpPluginCommandHandler`、`SaveTeamOpenApiPluginCommandHandler`、`PreUploadTeamOpenApiFileCommandHandler`、`SaveTeamDynamicPluginCommandHandler`）；管理员侧 `SaveDynamicPluginCommandHandler` 反向补 `plugin.plugin_name` 全局查重（与 import/update 全局口径一致）。见 [@TP-S33](./bdd.md#tp-s33)、[@TP-S34](./bdd.md#tp-s34)。
+- **管理端导入漏标 is_system 修复**：`ImportMcpServerPluginCommandHandler` / `ImportOpenApiPluginCommandHandler` 此前创建 `plugin` 记录未赋 `is_system`（默认 false），导致这些系统自定义插件永远进不了团队可用列表（授权也无济于事）。已显式 `IsSystem=true, TeamId=0`；存量数据修复脚本 `asserts/plugin_system_flag.sql`。
+- **自定义插件（MCP/OpenAPI）统一执行收口**：新增 `ICustomPluginCaller`（接口在 `MoAI.AIPlugin.Core/Services`，实现在 Custom `CustomPluginCaller`）：按插件名加载 plugin/plugin_custom/plugin_functions，团队变量插值后调用 `McpToolCallService`/`OpenApiToolCallService`；`RunPluginCommand` / `RunTeamPluginCommand` 增可选 `Function`（为空且插件多函数时报错，单函数自动执行）。`/api/team/{teamId}/plugin/run` 因此修复了自定义插件此前 404 的缺口（可用性仍由 `IsPluginAvailableAsync` 把关），流程 plugin 节点经 `RunPluginCommand` 同样可执行（节点 `config.function` 指定函数）。见 [@TP-S35](./bdd.md#tp-s35)、[@TP-S36](./bdd.md#tp-s36)。
+- **Agent 运行时团队可用性校验**：`PluginAppToolProvider.GetToolsAsync` 构建工具前按应用团队过滤插件（本团队自有 / 系统公开 / 已授权），配置残留的未授权插件不再进入工具列表（`AppAgentBuildContext.TeamId` 两处构建点均已传入）。
+- **流程设计器**：插件节点选择自定义插件时需二次选择函数（`getTeamPluginFunctions` 拉取，落 `settings.function`）；节点库工具 Tab 文案改为「可用插件（团队 / 系统）」。
+
 ## 5. 关键决策
 
 - **D1 授权对象用插件记录 Id（Guid）**：与 aiplugin 系统插件管理（`QueryPluginManageListCommand` 返回 `Id`）一致，前端 `pluginId` 直传。
 - **D2 团队插件复用既有 plugin 表 + TeamId**：不新建插件类型表，`is_system=false` 区分系统/团队，`team_id` 区分归属团队；静态插件无需团队副本（所有团队可用）。
 - **D3 角色判定在 Handler**：团队插件对齐 variable/wiki 模块，用 `ITeamService`（带 Redis 缓存）；非成员 404 不泄露团队存在性。
 - **D4 复用 aiplugin 连接器**：MCP/OpenAPI 导入复用 `McpServerConnector`/`OpenApiDocumentParser`（已由 internal 改为 public），避免重复解析逻辑。
-- **D5 团队插件实例 key/名称在团队内唯一**：`plugin.team_id + plugin_name` 唯一校验；不与系统插件注册表 key 冲突。
+- **D5 团队插件实例 key/名称在团队内唯一 + 系统插件 key 全局保留**：`plugin.team_id + plugin_name` 唯一校验；系统插件 key（`is_system=true AND team_id=0`）无论授权与否均保留（见 §4c）。
 
 ## 6. 已知问题 / 下阶段
 
-- 团队插件运行通过 `/api/team/{teamId}/plugin/run` 开放给成员：仅允许运行团队自有插件或公开/已授权的系统插件（`IsPluginAvailableAsync`），非成员 404。MCP/OpenAPI 自定义插件与管理员一致不走该运行入口（返回 404），动态实例与静态插件可运行。
+- 团队插件运行通过 `/api/team/{teamId}/plugin/run` 开放给成员：仅允许运行团队自有插件或公开/已授权的系统插件（`IsPluginAvailableAsync`），非成员 404。2026-09-26 起自定义插件（MCP/OpenAPI）经 `ICustomPluginCaller` 支持该运行入口（此前仅动态实例与静态插件可运行，自定义返回 404）。
 - 团队插件不共享到其它团队（仅支持系统插件的授权）；跨团队共享/授权留待后续。
 - `plugin_team_authorization` 仅支持系统插件，团队插件之间的授权/共享未纳入。
 - 分类列表 `/api/classify/list` 仅管理员可读：团队页仅管理员加载分类筛选/编辑，非管理员成员按列表返回的 `classifyName` 展示分类，保存时 `classifyId=0`。

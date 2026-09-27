@@ -24,14 +24,14 @@ public class WorkflowEngineExecutionTests
     private static void SetupKnowledgeSearch(WorkflowTestHarness harness, bool hasResult)
     {
         harness.PluginInvoker
-            .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
+            .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<string?>(), It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new JsonObject
             {
                 ["documents"] = new JsonArray { new JsonObject { ["title"] = "MoAI 文档" } },
                 ["hasResult"] = hasResult,
             });
         harness.PluginInvoker
-            .Setup(i => i.InvokeAsync("mock.fallback", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
+            .Setup(i => i.InvokeAsync("mock.fallback", It.IsAny<string?>(), It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new JsonObject { ["answer"] = "抱歉，没有找到相关资料。" });
     }
 
@@ -174,7 +174,7 @@ public class WorkflowEngineExecutionTests
 
         var call = 0;
         harness.PluginInvoker
-            .Setup(i => i.InvokeAsync("mock.fallback", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
+            .Setup(i => i.InvokeAsync("mock.fallback", It.IsAny<string?>(), It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
             {
                 if (call == 0)
@@ -188,7 +188,7 @@ public class WorkflowEngineExecutionTests
 
         // 强制走 false 分支：检索未命中
         harness.PluginInvoker
-            .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
+            .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<string?>(), It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new JsonObject { ["documents"] = new JsonArray(), ["hasResult"] = false });
 
         var suspended = await harness.Engine.StartAsync("doc-qa", new JsonObject { ["query"] = "问题" });

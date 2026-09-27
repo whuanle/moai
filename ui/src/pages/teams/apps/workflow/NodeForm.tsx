@@ -11,7 +11,7 @@ import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLines
 
 import { getWikis } from '@/api/wiki'
 import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
-import { getTeamPlugins } from '@/api/team-plugin'
+import { getTeamPluginFunctions, getTeamPlugins } from '@/api/team-plugin'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getMyPrompts, getPromptDetail, getTeamPrompts } from '@/api/prompt'
 import { getWorkflowAgentOptions } from '@/api/workflow'
@@ -1170,6 +1170,9 @@ interface TeamToolOption {
   value: string
   label: string
   description?: string
+  pluginId: string
+  kind: string
+  paramsSchema: { name?: string | null; fieldType?: string | null; description?: string | null }[]
   schema: { name?: string | null; fieldType?: string | null; description?: string | null }[]
 }
 
@@ -1191,6 +1194,9 @@ function useTeamTools(): { tools: TeamToolOption[]; loading: boolean } {
             value: String(item.pluginName ?? ''),
             label: String(item.title || item.pluginName || ''),
             description: item.description ?? '',
+            pluginId: String(item.pluginId ?? ''),
+            kind: String(item.kind ?? ''),
+            paramsSchema: item.paramsSchema ?? [],
             schema: item.responseSchema ?? [],
           })),
         )
@@ -1209,10 +1215,46 @@ function useTeamTools(): { tools: TeamToolOption[]; loading: boolean } {
   return { tools, loading }
 }
 
+/** 自定义插件（MCP/OpenAPI）的函数列表，静态/动态插件返回空 */
+function usePluginFunctions(pluginId: string, enabled: boolean) {
+  const teamId = useWorkflowDesignerStore((s) => s.teamId)
+  const [functions, setFunctions] = useState<{ name?: string | null; summary?: string | null }[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled || !pluginId || !teamId) {
+      setFunctions([])
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    getTeamPluginFunctions(teamId, pluginId)
+      .then((items) => {
+        if (cancelled) return
+        setFunctions(items ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setFunctions([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, pluginId, teamId])
+
+  return { functions, loading }
+}
+
 function PluginKeySelect({ data, onUpdateData }: { data: NodeData; onUpdateData: (patch: Partial<NodeData>) => void }) {
   const { t } = useTranslation()
   const { tools, loading } = useTeamTools()
   const pluginKey = String(data.settings?.pluginKey ?? '')
+  const selected = tools.find((tool) => tool.value === pluginKey)
+  // 自定义插件（MCP/OpenAPI）含多个函数，需要用户指定调用哪个函数
+  const isCustom = selected?.kind === 'custom'
+  const { functions, loading: functionsLoading } = usePluginFunctions(selected?.pluginId ?? '', isCustom)
 
   return (
     <div className="wf-node-sec">
@@ -1227,16 +1269,34 @@ function PluginKeySelect({ data, onUpdateData }: { data: NodeData; onUpdateData:
         onChange={(v) => {
           const tool = tools.find((tool2) => tool2.value === v)
           if (!tool) return
-          // 自动按请求/响应 schema 覆盖输入与输出参数（schema 为空则保留现有值）
-          const inputs = inputsFromPluginSchema(tool.schema)
+          // 自动按请求/响应 schema 覆盖输入与输出参数（schema 为空则保留现有值）；切换插件后需重选函数
+          const inputs = inputsFromPluginSchema(tool.paramsSchema)
           const outputs = outputsFromPluginSchema(tool.schema)
           onUpdateData({
-            settings: { ...data.settings, pluginKey: tool.value },
+            settings: { ...data.settings, pluginKey: tool.value, function: undefined },
             ...(Object.keys(inputs).length > 0 ? { inputs } : {}),
             ...(outputs.length > 0 ? { outputs } : {}),
           })
         }}
       />
+      {isCustom && (
+        <>
+          <SectionTitle text={t('workflowDesigner.pluginFunction')} />
+          <Select
+            size="small"
+            style={{ width: '100%' }}
+            loading={functionsLoading}
+            value={data.settings?.function || undefined}
+            placeholder={t('workflowDesigner.pluginFunctionPlaceholder')}
+            options={functions.map((fn) => ({
+              value: String(fn.name ?? ''),
+              label: String(fn.summary || fn.name || ''),
+            }))}
+            onChange={(v) => onUpdateData({ settings: { ...data.settings, function: v } })}
+            allowClear
+          />
+        </>
+      )}
       <div className="wf-config-hint">{t('workflowDesigner.pluginOutputsAuto')}</div>
     </div>
   )

@@ -2,7 +2,8 @@
 // 覆盖：实例列表/创建/编辑/运行/删除/门禁（S1~S14）+ 内置模板注册与各模板失败路径（S15/S17/S19~S21/S23~S31）
 //   + SQL 只读查询守卫（S30：拒绝写操作与多条语句、放行合法只读语句）+ 插件头像（S43~S45）。
 // S16/S22（博查真实检索成功）需真实 API Key 与外网，脚本内以 SKIP 标注；
-// S32/S33（PostgreSQL/MySQL 真实查询成功路径）用环境变量提供连接串（PG_E2E_CONNECTION / MYSQL_E2E_CONNECTION），未提供则 SKIP。
+// S32/S33（PostgreSQL/MySQL 真实查询成功路径）用环境变量提供连接串（PG_E2E_CONNECTION / MYSQL_E2E_CONNECTION），
+// 脚本内解析成 Host/Port/Database/Username/Password 离散配置后再创建实例，未提供则 SKIP。
 import crypto from 'node:crypto'
 
 const BASE = process.env.DYN_BASE ?? 'http://127.0.0.1:5000'
@@ -15,6 +16,23 @@ const skip = (name, why) => { SKIP++; console.log(`SKIP | ${name} — ${why}`) }
 // dataJson 是插件结果的 JSON 文本，其内部字符串里的引号会被序列化成 \u0022 —— 对内容断言一律解析后再比对，
 // 不要对转义形式写正则（易随序列化器行为变化而误报）。
 const safeParse = (s) => { try { return JSON.parse(s) } catch { return null } }
+// 把连接串环境变量解析成插件实例的离散配置字段（兼容 PG 与 MySQL 两种键名风格，键名大小写不敏感）。
+const parseConn = (conn) => {
+  const kv = {}
+  for (const part of String(conn).split(';')) {
+    const idx = part.indexOf('=')
+    if (idx > 0) kv[part.slice(0, idx).trim().toLowerCase()] = part.slice(idx + 1).trim()
+  }
+  const pick = (...keys) => { for (const k of keys) if (kv[k]) return kv[k]; return '' }
+  const port = Number(pick('port'))
+  return {
+    Host: pick('host', 'server', 'data source'),
+    Port: Number.isInteger(port) && port > 0 ? port : undefined,
+    Database: pick('database', 'db'),
+    Username: pick('username', 'user id', 'userid', 'uid', 'user'),
+    Password: pick('password', 'pwd'),
+  }
+}
 
 let RSA_KEY = ''
 const rsa = (plain) => {
@@ -293,15 +311,29 @@ async function main() {
   const myTpl = items.find((x) => x.key === 'mysql_query')
   check('DYN-S29a 注册表含 postgres_query 且为动态模板', Boolean(pgTpl) && pgTpl.isDynamic === true, templates.text.slice(0, 160))
   check('DYN-S29b 注册表含 mysql_query 且为动态模板', Boolean(myTpl) && myTpl.isDynamic === true, templates.text.slice(0, 160))
-  check('DYN-S29c PG 模板带连接串配置示例与 Sql 参数示例', Boolean(pgTpl) && /ConnectionString/.test(pgTpl.configExample ?? '') && /Sql/.test(pgTpl.paramsExample ?? ''), pgTpl ? pgTpl.configExample : '')
+  check('DYN-S29c PG 模板带主机地址等离散配置示例与 Sql 参数示例', Boolean(pgTpl) && /Host/.test(pgTpl.configExample ?? '') && /Sql/.test(pgTpl.paramsExample ?? ''), pgTpl ? pgTpl.configExample : '')
   check('DYN-S29d MySQL 模板配置类型已解析', (myTpl?.configType ?? '').includes('MysqlQueryConfig'), myTpl?.configType ?? '')
+
+  // ---- S49 智能运维观测四模板出现在注册表（Prometheus / Elasticsearch / ClickHouse / Tempo；成功路径由 observability-plugin-e2e.mjs 用桩服务验证） ----
+  const opsTemplates = [
+    ['prometheus_query', 'PrometheusQueryConfig', 'Query'],
+    ['elasticsearch_query', 'ElasticsearchQueryConfig', 'Dsl'],
+    ['clickhouse_query', 'ClickHouseQueryConfig', 'Sql'],
+    ['tempo_query', 'TempoQueryConfig', 'Query'],
+  ]
+  for (const [tplKey, configTypeKey, paramsKey] of opsTemplates) {
+    const tpl = items.find((x) => x.key === tplKey)
+    check('DYN-S49 注册表含 ' + tplKey + ' 且为动态模板', Boolean(tpl) && tpl.isDynamic === true, templates.text.slice(0, 200))
+    check('DYN-S49 ' + tplKey + ' 带 BaseUrl 配置示例与示例参数', Boolean(tpl) && /BaseUrl/.test(tpl.configExample ?? '') && new RegExp(paramsKey).test(tpl.paramsExample ?? ''), tpl?.paramsExample?.slice(0, 120) ?? '')
+    check('DYN-S49 ' + tplKey + ' 配置类型已解析', (tpl?.configType ?? '').includes(configTypeKey), tpl?.configType ?? '')
+  }
 
   // ---- S30 只读守卫：写操作/多条语句被拒（校验先于连接，不依赖数据库可达） ----
   const PGQ = `dyn_pg_${TS}`
   const MYQ = `dyn_my_${TS}`
-  const pgSave = await save(admin, { pluginKey: PGQ, templeteKey: 'postgres_query', title: 'E2E PG 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: 'Host=127.0.0.1;Port=1;Database=x;Username=x;Password=x;Timeout=2', MaxRows: 3, CommandTimeoutSeconds: 5 }) })
+  const pgSave = await save(admin, { pluginKey: PGQ, templeteKey: 'postgres_query', title: 'E2E PG 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ Host: '127.0.0.1', Port: 1, Database: 'x', Username: 'x', Password: 'x', MaxRows: 3, CommandTimeoutSeconds: 5 }) })
   check('DYN-S30a 创建 PG 只读实例成功', pgSave.status === 200, `${pgSave.status} ${pgSave.text.slice(0, 160)}`)
-  const mySave = await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: 'Server=127.0.0.1;Port=1;Database=x;Uid=x;Pwd=x;Connection Timeout=2', MaxRows: 3, CommandTimeoutSeconds: 5 }) })
+  const mySave = await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ Host: '127.0.0.1', Port: 1, Database: 'x', Username: 'x', Password: 'x', MaxRows: 3, CommandTimeoutSeconds: 5 }) })
   check('DYN-S30b 创建 MySQL 只读实例成功', mySave.status === 200, `${mySave.status} ${mySave.text.slice(0, 160)}`)
 
   const forbiddenSql = [
@@ -344,14 +376,14 @@ async function main() {
   // ---- S31 参数/配置不合规 ----
   const emptySql = await run(admin, PGQ, '{"Sql":"   "}')
   check('DYN-S31a 空 SQL 返回可读失败', emptySql.json?.success === false && /SQL 不能为空/.test(emptySql.json?.error ?? ''), `${emptySql.status} ${(emptySql.json?.error ?? '').slice(0, 160)}`)
-  await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: '{"ConnectionString":""}' })
+  await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: '{"Host":""}' })
   const noConn = await run(admin, MYQ, '{"Sql":"SELECT 1"}')
-  check('DYN-S31b 空连接串返回可读失败', noConn.json?.success === false && /连接字符串不能为空/.test(noConn.json?.error ?? ''), `${noConn.status} ${(noConn.json?.error ?? '').slice(0, 160)}`)
+  check('DYN-S31b 空主机地址返回可读失败', noConn.json?.success === false && /主机地址/.test(noConn.json?.error ?? ''), `${noConn.status} ${(noConn.json?.error ?? '').slice(0, 160)}`)
 
-  // ---- S32/S33 真实查询成功路径（连接串由环境变量提供，避免把凭据写进仓库） ----
+  // ---- S32/S33 真实查询成功路径（连接串由环境变量提供，解析成离散配置，避免把凭据写进仓库） ----
   const PG_CONN = process.env.PG_E2E_CONNECTION
   if (PG_CONN) {
-    await save(admin, { pluginKey: PGQ, templeteKey: 'postgres_query', title: 'E2E PG 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: PG_CONN, MaxRows: 3, CommandTimeoutSeconds: 15 }) })
+    await save(admin, { pluginKey: PGQ, templeteKey: 'postgres_query', title: 'E2E PG 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ...parseConn(PG_CONN), MaxRows: 3, CommandTimeoutSeconds: 15 }) })
 
     const okRows = await run(admin, PGQ, JSON.stringify({ Sql: 'SELECT n FROM generate_series(1, 5) AS n' }))
     const rowsJson = okRows.json?.dataJson ?? ''
@@ -379,7 +411,7 @@ async function main() {
 
   const MY_CONN = process.env.MYSQL_E2E_CONNECTION
   if (MY_CONN) {
-    await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ConnectionString: MY_CONN, MaxRows: 3, CommandTimeoutSeconds: 15 }) })
+    await save(admin, { pluginKey: MYQ, templeteKey: 'mysql_query', title: 'E2E MySQL 只读', description: 'e2e', classifyId: 0, config: JSON.stringify({ ...parseConn(MY_CONN), MaxRows: 3, CommandTimeoutSeconds: 15 }) })
     const myRows = await run(admin, MYQ, JSON.stringify({ Sql: 'SELECT 1 AS n' }))
     check('DYN-S33a MySQL 查询成功返回行', myRows.json?.success === true && /"RowCount"\s*:\s*1/.test(myRows.json?.dataJson ?? ''), `${myRows.status} ${myRows.text.slice(0, 240)}`)
     const myRo = await run(admin, MYQ, JSON.stringify({ Sql: "SHOW VARIABLES LIKE 'transaction_read_only'" }))

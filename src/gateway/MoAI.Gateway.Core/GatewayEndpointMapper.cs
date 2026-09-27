@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using MoAI.Database.Enums;
 using MoAI.Gateway.Protocols.Inbound;
 using MoAI.Gateway.Services;
 
@@ -63,6 +64,14 @@ public static class GatewayEndpointMapper
         if (routeTeamId <= 0 || keyTeamId != routeTeamId)
         {
             await WriteErrorAsync(http, 403, "API key does not belong to this team.", "permission_error", "permission_denied");
+            return false;
+        }
+
+        // 功能范围校验：模型网关端点要求 key 勾选 model 范围.
+        var scopes = TeamApiKeyScopeCodes.ParseClaimValue(result.Principal.FindFirst(GatewayApiKeyDefaults.ClaimScopes)?.Value);
+        if (!scopes.HasFlag(TeamApiKeyScopes.Model))
+        {
+            await WriteErrorAsync(http, 403, "API key does not have model gateway scope.", "permission_error", "insufficient_scope");
             return false;
         }
 

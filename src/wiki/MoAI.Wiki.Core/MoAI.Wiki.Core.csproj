@@ -25,6 +25,8 @@
 		<PackageReference Include="Maomi.ToMarkdown" />
 		<PackageReference Include="Maomi.ToMarkdown.Token" />
 		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+		<PackageReference Include="ModelContextProtocol" />
+		<PackageReference Include="ModelContextProtocol.AspNetCore" />
 		<PackageReference Include="Npgsql" />
 	</ItemGroup>
 

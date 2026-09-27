@@ -1,6 +1,11 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using MoAI;
 using MoAI.AI;
 using MoAI.Gateway;
+using MoAI.KnowledgeGraph;
+using MoAI.KnowledgeGraph.Mcp;
+using MoAI.Wiki;
 using Scalar.AspNetCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -25,6 +30,8 @@ if (app.Environment.IsDevelopment())
     {
         c.Path = "/openapi/{documentName}.json";
     });
+    // API 文档：/scalar 查看内部接口（v1 文档），/scalar/external 查看外部接口（external 文档），
+    // 原始文档分别为 /openapi/v1.json 与 /openapi/external.json
     app.MapScalarApiReference();
 }
 
@@ -85,8 +92,14 @@ app.Use(async (HttpContext context, RequestDelegate next) =>
 
 app.UseHttpLogging();
 
-//// MCP 服务器，需要放在授权之前
-//app.MapMcp("/mcp/wiki/{wikiId}");
+// 知识库 MCP 服务器（/api/external/wiki/{wikiId}/mcp）：
+// 接入 key 鉴权（含 wiki_mcp 范围与 wikiId 归属校验）由 ExternalAuthenticationMiddleware 在上方统一处理
+app.MapWikiMcp();
+
+// 知识图谱 MCP 服务器（/api/external/knowledge-graph/{kgId}/mcp）：鉴权（kg_mcp 范围与 kgId 归属）同由中间件统一处理；
+// 与知识库 MCP 共享 McpServerOptions，工具按请求路径经 KnowledgeGraphMcpToolGate 分域（启动时注入一次 HttpContextAccessor）
+KnowledgeGraphMcpToolGate.Initialize(app.Services.GetRequiredService<IHttpContextAccessor>());
+app.MapKnowledgeGraphMcp();
 
 app.MapControllers();
 

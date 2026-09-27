@@ -46,6 +46,25 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
 
         var (secret, keyPrefix) = AccessAppKeyGenerator.New();
 
+        // 不传 scopes 默认外部资源全量（读写+对话+知识图谱，与存量行为/列默认 230 一致），显式空列表=无资源权限（可仅勾 model 直连网关）；
+        // handler 侧把关代码合法性（Validate 规则作为绑定直传时的前置校验）
+        var scopes = TeamApiKeyScopeCodes.AccessAppDefault;
+        if (request.Scopes != null)
+        {
+            // 空列表合法=纯对话接入；非空列表须全部为应用接入允许代码（model/wiki_read/wiki_write/wiki_mcp）且不重复
+            scopes = TeamApiKeyScopes.None;
+            if (request.Scopes.Count > 0)
+            {
+                if (request.Scopes.Count != request.Scopes.Distinct().Count()
+                    || !TeamApiKeyScopeCodes.TryParseAccessAppCodes(request.Scopes.Distinct(), out var parsed))
+                {
+                    throw new BusinessException("功能范围代码不合法.") { StatusCode = 400 };
+                }
+
+                scopes = parsed;
+            }
+        }
+
         var entity = new AccessAppEntity
         {
             Id = Guid.CreateVersion7(),
@@ -53,6 +72,7 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             Key = secret,
+            Scopes = (int)scopes,
         };
 
         _databaseContext.AccessApps.Add(entity);

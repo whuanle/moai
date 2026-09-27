@@ -32,7 +32,7 @@ public interface IKnowledgeGraphStore
     /// <summary>
     /// 创建节点.
     /// </summary>
-    Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken);
+    Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken);
 
     /// <summary>
     /// 批量创建节点（单语句 UNWIND，单事务），返回记录顺序与输入一致.
@@ -47,7 +47,7 @@ public interface IKnowledgeGraphStore
     /// <summary>
     /// 更新节点.
     /// </summary>
-    Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken);
+    Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken);
 
     /// <summary>
     /// 删除节点（连带其边），返回是否删除成功.
@@ -68,6 +68,51 @@ public interface IKnowledgeGraphStore
     /// 批量获取指定节点的实体类型 id（仅返回存在的节点），用于批量端点预检与关系约束校验.
     /// </summary>
     Task<Dictionary<string, long>> GetNodeTypesByIdsAsync(long KnowledgeGraphId, IReadOnlyList<string> nodeIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按业务 key 批量取节点（仅返回命中的节点；同一 key 多节点取首个），用于外部导入 upsert 匹配与端点解析.
+    /// </summary>
+    Task<Dictionary<string, KnowledgeGraphNodeRecord>> GetNodesByKeysAsync(long KnowledgeGraphId, IReadOnlyList<string> keys, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按（实体类型 id, 名称）批量取节点（每对取首个命中），用于外部导入按名称 upsert 匹配与端点解析.
+    /// </summary>
+    Task<Dictionary<(long EntityTypeId, string Name), KnowledgeGraphNodeRecord>> GetNodesByTypeAndNamesAsync(long KnowledgeGraphId, IReadOnlyList<(long EntityTypeId, string Name)> pairs, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按名称精确批量取节点（不去重），用于导入端点仅按名称引用时的消歧判定.
+    /// </summary>
+    Task<IReadOnlyList<KnowledgeGraphNodeRecord>> GetNodesByNamesAsync(long KnowledgeGraphId, IReadOnlyList<string> names, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按业务 key 取单个节点.
+    /// </summary>
+    Task<KnowledgeGraphNodeRecord?> GetNodeByKeyAsync(long KnowledgeGraphId, string key, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 批量更新节点（按 id 整体覆盖 entityTypeId/name/description/propsJson；key 为 null 表示保留现有 key，非 null 收养）.
+    /// </summary>
+    Task UpdateNodesBatchAsync(long KnowledgeGraphId, IReadOnlyList<KnowledgeGraphNodeUpdateInput> items, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 查询已存在的（起点，关系类型，终点）三元组（返回 "s|rt|t" 复合键集合），用于导入 upsert 幂等去重.
+    /// </summary>
+    Task<HashSet<string>> GetExistingEdgeKeysAsync(long KnowledgeGraphId, IReadOnlyList<(string SourceNodeId, long RelationTypeId, string TargetNodeId)> triples, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按业务 key 批量删除节点（连带其边），返回实际删除的节点 id.
+    /// </summary>
+    Task<IReadOnlyList<string>> DeleteNodesByKeysAsync(long KnowledgeGraphId, IReadOnlyList<string> keys, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 分页枚举已落业务 key 的节点（按 key 排序），用于外部同步场景全量比对.
+    /// </summary>
+    Task<(IReadOnlyList<KnowledgeGraphNodeKeyRecord> Items, long Total)> ListNodeKeysAsync(long KnowledgeGraphId, int pageNo, int pageSize, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按（起点，关系类型，终点）三元组批量删除边（同一三元组的多条平行边一并删除），返回删除的边 id.
+    /// </summary>
+    Task<IReadOnlyList<string>> DeleteEdgesByTriplesAsync(long KnowledgeGraphId, IReadOnlyList<(string SourceNodeId, long RelationTypeId, string TargetNodeId)> triples, CancellationToken cancellationToken);
 
     /// <summary>
     /// 分页查询节点.

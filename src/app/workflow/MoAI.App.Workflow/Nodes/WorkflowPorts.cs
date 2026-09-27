@@ -76,10 +76,11 @@ public interface IWorkflowPluginInvoker
     /// 按插件 Key 执行插件.
     /// </summary>
     /// <param name="pluginKey">插件标识.</param>
+    /// <param name="functionName">自定义插件（MCP/OpenAPI）的函数名称；静态/动态插件传 null.</param>
     /// <param name="parameters">插件参数（节点输入）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>插件输出.</returns>
-    Task<JsonObject> InvokeAsync(string pluginKey, JsonObject parameters, CancellationToken cancellationToken);
+    Task<JsonObject> InvokeAsync(string pluginKey, string? functionName, JsonObject parameters, CancellationToken cancellationToken);
 }
 
 /// <summary>

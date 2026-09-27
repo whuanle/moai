@@ -83,4 +83,9 @@ public partial class TeamApiKeyEntity : IFullAudited
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 功能范围位标记：1=model 2=wiki_read 4=wiki_write 8=external_token 16=wiki_mcp（位或组合）.
+    /// </summary>
+    public int Scopes { get; set; }
 }

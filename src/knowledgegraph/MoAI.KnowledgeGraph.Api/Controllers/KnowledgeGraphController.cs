@@ -130,6 +130,18 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new ImportKnowledgeGraphFromFileCommand { KnowledgeGraphId = id, ObjectKey = req.ObjectKey, FileName = req.FileName, AiModelId = req.AiModelId }, ct);
 
     /// <summary>
+    /// JSON 结构化导入（导入页）：直接反序列化导入页提交的 JSON 文本（顶层 mode/autoCreateTypes/validateOnly/nodes/edges）并落库，
+    /// 与外部 /import 共用管线（类型名引用可自动创建、业务 key 幂等 upsert、边端点按引用解析、逐条失败报告）；仅托管图 Admin+.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="External.ExternalImportResponse"/>.</returns>
+    [HttpPost("{id}/import-json")]
+    public Task<External.ExternalImportResponse> ImportJson(long id, [FromBody] ImportKnowledgeGraphJsonCommand req, CancellationToken ct)
+        => _mediator.Send(new ImportKnowledgeGraphJsonCommand { KnowledgeGraphId = id, Content = req.Content, Mode = req.Mode, AutoCreateTypes = req.AutoCreateTypes, ValidateOnly = req.ValidateOnly, DetectDuplicates = req.DetectDuplicates }, ct);
+
+    /// <summary>
     /// 删除图谱.
     /// </summary>
     /// <param name="id">图谱 id.</param>

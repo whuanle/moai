@@ -5,6 +5,7 @@ using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Gateway.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -16,16 +17,19 @@ public class DeleteAccessAppCommandHandler : IRequestHandler<DeleteAccessAppComm
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly ExternalKeyCache _keyCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteAccessAppCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public DeleteAccessAppCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="keyCache">外部接入 key 缓存.</param>
+    public DeleteAccessAppCommandHandler(DatabaseContext databaseContext, ITeamService teamService, ExternalKeyCache keyCache)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _keyCache = keyCache;
     }
 
     /// <inheritdoc/>
@@ -51,6 +55,9 @@ public class DeleteAccessAppCommandHandler : IRequestHandler<DeleteAccessAppComm
         }
 
         await _databaseContext.SoftDeleteAsync(_databaseContext.AccessApps.Where(x => x.Id == entity.Id));
+
+        // 软删除后删除缓存，key 直连立即失效
+        await _keyCache.RemoveAccessKeyAsync(ApiKeyGenerator.Hash(entity.Key));
 
         return EmptyCommandResponse.Default;
     }

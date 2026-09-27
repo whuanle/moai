@@ -1,3 +1,4 @@
+using MoAI.Database.Enums;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.Models;
@@ -33,6 +34,16 @@ public class ExternalTokenContext
     public Guid? AccessAppId { get; init; }
 
     /// <summary>
+    /// 功能范围；旧格式 token（无 scope 声明）默认全量知识库范围，保持向后兼容.
+    /// </summary>
+    public TeamApiKeyScopes Scopes { get; init; } = DefaultScopes;
+
+    /// <summary>
+    /// 旧格式 token 的兼容范围：知识库读+写+MCP 预留+知识图谱读+写（旧 token 时代外部资源未分范围）.
+    /// </summary>
+    public const TeamApiKeyScopes DefaultScopes = TeamApiKeyScopeCodes.ExternalDimensions;
+
+    /// <summary>
     /// 当前绑定应用 id（用户 token），应用 token 为 null.
     /// </summary>
     public Guid? AppId { get; init; }
@@ -46,4 +57,10 @@ public class ExternalTokenContext
     /// 外部用户显示名（用户 token）.
     /// </summary>
     public string? Nickname { get; init; }
+
+    /// <summary>
+    /// 是否为 key 直连认证：请求头直接携带应用接入 key（moai-ac-），
+    /// 而非换取的外部 token；会话面端点据此为应用接入 key 解析直连会话身份.
+    /// </summary>
+    public bool IsKeyDirect { get; init; }
 }

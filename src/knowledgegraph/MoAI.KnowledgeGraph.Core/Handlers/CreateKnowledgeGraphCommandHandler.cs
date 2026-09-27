@@ -238,7 +238,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
                     continue;
                 }
 
-                var record = await _store.CreateNodeAsync(graphId, entityTypeId, seed.Name, seed.Description, KnowledgeGraphPropertyJson.WriteValues(seed.Properties), cancellationToken);
+                var record = await _store.CreateNodeAsync(graphId, entityTypeId, seed.Name, seed.Description, KnowledgeGraphPropertyJson.WriteValues(seed.Properties), key: null, cancellationToken);
                 nodeKeyToId[seed.Key] = record.Id;
             }
 

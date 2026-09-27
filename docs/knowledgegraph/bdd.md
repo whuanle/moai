@@ -108,8 +108,8 @@ Scenario: 接入图谱只读
 @KG-S13 @auto:e2e
 Scenario: 画布有界子图
   Given 托管图谱已有节点与边
-  When 查询画布子图
-  Then 返回节点与节点集内部的边
+  When 查询画布子图（limit 为加载上限，后端钳制 1-500，默认 200）
+  Then 返回节点与节点集内部的边，超出上限时 truncated=true
   When 按名称关键字过滤
   Then 仅返回命中的节点
 
@@ -143,15 +143,40 @@ Scenario: 图览交互（拖动/详情/关系信息）
   When 点击边
   Then 弹出关系详情（关系类型名与起止节点）
   And 边中段显示关系类型名标签
-  When 编辑态点击起点节点再点击终点节点
+  When 编辑态从节点连接桩拖线到另一节点（React Flow 连接桩，v3.1 起替代两段式点击）
   Then 弹出建立关系弹窗且起止节点回显正确
 
+@KG-S27 @manual
+Scenario: 图览页结构与工具栏
+  Given 进入托管图/接入图的图览页（画布引擎为 React Flow + d3-force，v3.1 起）
+  Then 头部不显示「定义模型>录入实例」步骤条，也无 AI 导入按钮
+  And 左侧为二级菜单，右侧画布占据全部剩余宽度与视口剩余高度（小屏保底 320px）
+  And 画布内置缩放/适应控件（左下）与原生全屏按钮（右上，全屏后铺满整屏，图标切换为退出全屏）
+  And 节点为卡片（类型色点 + 名称 + 类型名），边带箭头与关系名标签
+  And 初次加载与重新加载/筛选/搜索/调整上限后视口适配完整显示全图；点选展开邻接不重置视口
+  When 图库节点量超过加载上限（可选 100/200/500，默认 200）
+  Then 展示截断提示（含当前上限值），可用筛选/搜索缩小范围
+
+@KG-S28 @auto:vitest
+Scenario: 维护页步骤条承载模型/实例/关系
+  Given 托管图菜单点击「维护」进入维护页
+  Then 头部为步骤条：① 定义模型 → ② 录入实例 → ③ 连接关系
+  When 点击步骤或带 ?step= 进入
+  Then 内容区渲染对应维护组件（模型/实例/关系）
+  And 实例步骤不再提供 AI 导入入口（v3.2 起统一收敛至「导入」菜单页）
+  And 详情菜单为 图览/维护/导入/MCP/设置（v3.2 新增导入与 MCP）
+  And 页内互跳（查看实例/查看关系/去定义模型/关联）均指向维护页对应步骤并保留过滤参数
+  And 画布编辑（v3.1）：右键画布空白新建实体、右键节点/边删除、编辑态节点连接桩拖线建关系
+
 @KG-S23 @auto:vitest
-Scenario: 进入图谱默认图览
+Scenario: 进入图谱默认图览且菜单收敛
   Given 团队知识图谱列表已有图谱
   When 点击图谱卡片进入详情（未带分区路由）
   Then 默认处于图览且画布子图接口被调用
+  And 托管图菜单收敛为 图览/维护/设置（模型/实例/关系不再作为独立菜单）
   And 接入图详情同样默认图览（仅图览/模型/设置可选）
+  When 访问旧版独立菜单路径 /entities、/relations、/schema（托管图）
+  Then 重定向到维护页对应步骤（?step=entities|relations|schema），旧链接不 404
 ```
 
 ## Feature: AI 导入文件生成图谱（v2.9）
@@ -160,7 +185,7 @@ Scenario: 进入图谱默认图览
 @KG-S26 @auto:e2e
 Scenario: AI 导入文件生成图谱
   Given Owner/Admin 已为托管图定义模型（实体类型/关系类型）且团队有可用对话模型
-  When 上传文档并选择模型发起导入
+  When 在「导入」菜单页 AI 智能导入页签上传文档并选择模型发起导入
   Then 文件经 Maomi.ToMarkdown 提取内容（超上限截断）
   And 对话模型按图谱现有模型抽取实体与关系
   And 仅模型已定义的类型被写入，关系起止约束校验通过后入图
@@ -170,6 +195,39 @@ Scenario: AI 导入文件生成图谱
   When 对没有实体类型的图谱发起导入
   Then 返回冲突（409）并提示先定义模型
 ```
+
+> JSON 结构化导入场景（@KG-S29，导入页 /import-json）：与外部 /import 共用管线（类型名引用/自动建类型/业务 key upsert/端点引用/逐条报告）。
+
+```gherkin
+@KG-S29 @auto:e2e
+Scenario: JSON 结构化导入（导入页）
+  When 提交非法 JSON 文本
+  Then 返回 400 且消息含解析定位
+  When nodes 与 edges 同时为空
+  Then 返回 400
+  When 以 validateOnly 预检（含新类型名/重复 key/坏端点）
+  Then 返回预测计数与逐条结果，不建类型不落库
+  When 正式导入（autoCreateTypes）
+  Then 类型自动创建并回显、节点边落库、坏行逐条报告（类型不存在/重复 key/端点未命中）
+  When 以页面控件 mode=upsert 重复导入
+  Then 已有节点更新、等价边幂等跳过（控件值覆盖 JSON 内同名字段）
+  When 提交 501 个节点
+  Then 超限 400
+  When 点击「下载示例 JSON」
+  Then 下载包含 nodes/edges 结构（key/类型名引用/属性/端点两种引用形态）的示例文件
+  When 图谱已配置向量化模型且开启疑似重复检测
+  Then 新建节点与图谱已有节点（同名不同类型等）或本批次其他行向量相似度超阈值时，响应返回疑似重复对（名称/来源/得分）
+  But 关闭 detectDuplicates 或图谱未配置向量化时不检测（结果为空），检测失败不影响导入
+```
+
+@KG-S30 @auto:vitest
+Scenario: MCP 地址页
+  Given 托管图详情左侧菜单含「MCP」（接入图无此菜单）
+  When 进入 MCP 菜单
+  Then 展示该图谱的 MCP 端点地址（serverinfo serviceUrl + /api/external/knowledge-graph/{kgId}/mcp）并可复制
+  And 展示四个只读工具清单与鉴权提示（勾选「知识图谱 MCP」范围的接入 key）
+```
+
 
 ## Feature: 接入图动态识别（v2.1）
 
@@ -246,7 +304,7 @@ Scenario: 设置卡片折叠与图数据库类型排版
   And 用户名与密码输入框同行展示
 ```
 
-> 外部开放接口（`/api/external/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-08），不复用 KG-\*。授权模型：应用 token 即团队级授权（等价团队 Admin 作用于本团队托管图谱），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
+> 外部开放接口（`/api/external/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-14），不复用 KG-\*。授权模型：应用 token 即团队级授权（等价团队 Admin 作用于本团队托管图谱），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
 
 ## Feature: 外部开放接口（应用 token，KX-*）
 
@@ -303,6 +361,111 @@ Scenario: 接入图对外部只读
 Scenario: 外部接口仅接受应用 token
   When 无 token、伪造 token 或内部用户 JWT 调用外部接口
   Then 分别返回未认证/未认证/未认证或禁止
+
+@KX-09 @auto:e2e
+Scenario: 知识图谱读/写范围（kg_read/kg_write）
+  When 以仅勾选 kg_read 的接入 token 查询模式与节点列表
+  Then 放行
+  But 建实体类型等写接口禁止；跨资源组（知识库）亦禁止
+  When 以 kg_read key 直连或补勾 kg_write 后刷新 token
+  Then 直连读放行、直连写禁止；刷新后写放行
+
+@KX-10 @auto:e2e
+Scenario: 外部批量导入（类型名引用 + 业务 key + 名称引用 + 逐条失败报告）
+  When 以 autoCreateTypes 导入携带业务 key、实体类型名称与属性的节点行，及关系类型名称 + 端点按 key/名称引用的边行
+  Then 类型不存在时自动创建（实体类型属性定义取该类型各行属性键并集；关系类型约束为任意）并在响应回显创建清单
+  And 节点与边逐条落库，响应按 created/failed 计数并逐行回 id 或失败原因
+  But 类型不存在且未开启自动创建、key 重复、端点 key 未命中的行仅逐条失败，不阻断其他行
+  When 按 key 查询节点详情
+  Then 回显名称与属性；不存在的 key 返回 404
+
+@KX-11 @auto:e2e
+Scenario: 幂等重导与按 key 维护（upsert / key 收养 / 只读门禁 / 批删）
+  When 以相同数据重导（upsert 模式），其中一行改用新 key 但（类型+名称）与现有节点相同
+  Then 已有节点按 key 更新（updated 计数、不新建），边按（起点,关系,终点）幂等跳过
+  And 改名行整体覆盖名称与属性（未传属性视为清空）；无 key 行按（类型+名称）匹配并收养新 key
+  When 以仅勾选 kg_read 的 token 调导入或批删
+  Then 写档接口 403，按 key 查询放行
+  When 按业务 key 批量删除节点（含不存在的 key）
+  Then 实际删除数准确返回、不存在的 key 忽略，节点连带其边删除（DETACH），按 key 查询转 404
+
+@KX-12 @auto:e2e
+Scenario: 接入图外部导入只读
+  When 对接入（connected）图谱发起批量导入
+  Then 返回冲突（409，接入图只读）
+
+@KX-13 @auto:e2e
+Scenario: 按 key 同步闭环（key 收养 / keys 枚举 / 按引用删边）
+  When 单节点创建或修改时携带业务 key
+  Then 按 key 可查；对无 key 节点 PUT 附 key 即收养
+  When 分页枚举图内已落 key 的节点（keys/list）
+  Then 返回 key/nodeId/名称/类型且分页正确，可用于全量比对找删除差集
+  When 以关系类型（id/名称）+ 端点（nodeId/key/名称）引用批量删除边
+  Then 命中的边删除（含同三元组平行边）且计数准确；重复删除幂等计 0；端点 key 未命中的行失败不阻断其他行
+  When 按「先删边后删点」顺序清理同步数据
+  Then keys/list 回到空基线
+
+@KX-14 @auto:e2e
+Scenario: 导入预检（validateOnly 只读预测）
+  When 以 validateOnly=true 提交导入（含新类型名/重复 key/自环边/坏端点）
+  Then 返回与真实导入同形的预测计数与逐条结果，created 行 id 为空、将创建的类型名照常回显
+  But 不建类型（schema 不变）、不写图库（by-key 404）、不发向量增量
+  When 以同体（validateOnly=false）真实导入
+  Then 类型创建、节点边落库，坏行仍逐条报告
+```
+
+> 知识图谱 MCP 服务器场景编号沿用证据脚本 `kg-mcp-e2e.mjs` 的 KGM-\* 体系，不复用 KG-\*/KX-\*。与知识库 MCP（wiki_mcp）同构：接入 key/token + kg_mcp 范围 + kgId 归属门禁，仅托管图参与，工具域隔离。
+
+## Feature: 知识图谱 MCP 服务器（KGM-*）
+
+```gherkin
+@KGM-S1 @auto:e2e
+Scenario: 鉴权门禁
+  When 无凭证、伪造 key 调用 MCP 端点
+  Then 返回未认证（401）
+  When 以勾选 kg_mcp 的应用接入 key（Bearer/x-api-key）initialize
+  Then 握手成功
+  But 无 kg_mcp 范围 403（insufficient_scope）；kgId 不存在与跨团队一律 404
+
+@KGM-S2 @auto:e2e
+Scenario: 工具域隔离
+  When 查询 KG MCP 端点工具列表
+  Then 恰好返回四个只读工具（图谱列表/schema/节点搜索/向量召回）且不含知识库工具
+  And 知识库 MCP 端点工具列表仍恰好为三个知识库工具（反向隔离）
+  When 在 KG 端点调用知识库工具
+  Then 被门禁拒绝
+
+@KGM-S3 @auto:e2e
+Scenario: 图谱列表
+  When 调用 list_knowledge_graphs
+  Then 返回本团队托管图谱（不含他团队）
+
+@KGM-S4 @auto:e2e
+Scenario: 图谱 schema
+  When 调用 get_knowledge_graph_schema（不传 kgId 默认用接入地址中的图谱）
+  Then 返回实体类型（含属性定义与必填标记）与关系类型（含起止类型约束）
+  But 跨团队 kgId 参数拒绝
+
+@KGM-S5 @auto:e2e
+Scenario: 节点搜索
+  When 按关键字/实体类型/分页搜索节点
+  Then 返回节点 id、名称、描述与实体类型名；跨团队 kgId 拒绝
+
+@KGM-S6 @auto:e2e
+Scenario: 向量召回
+  When 空查询或非法阈值
+  Then 逐条拒绝
+  When 图谱未配置向量化模型时召回
+  Then 返回空结果与 skippedHint 可读说明（不报错）
+  When 图谱已配置向量化后召回
+  Then 命中实体带类型名/得分（降序）与一跳邻居（方向/关系名/名称）；阈值与 top 生效
+
+@KGM-S7 @auto:e2e
+Scenario: 协议行为
+  When 未知工具调用
+  Then 被拒（JSON-RPC error 或 isError 结果）
+  When GET 访问端点
+  Then 405；无状态模式免 initialize 直接调用成功；通知返回 202
 ```
 
 > Text2Cypher 查图插件消费场景编号沿用证据脚本 `kg-text2cypher-e2e.mjs` 的 KT-\* 体系（@KT-S1~S10），不复用 KG-\*/KX-\*。插件本体与安全设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)。**E2E 已通过 15/15（2026-09-22，真实后端）**。

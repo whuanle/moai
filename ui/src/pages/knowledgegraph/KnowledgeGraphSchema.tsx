@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, Button, Col, ColorPicker, Form, Input, Modal, Popconfirm, Row, Select, Space, Spin, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
@@ -22,6 +22,13 @@ import {
 } from '@/api/knowledgeGraph'
 
 const ROLE_MEMBER = 0
+
+/** ColorPicker onChange 事件归一为 hex 字符串（清除时 undefined），与后端 color 可空字符串契约对齐 */
+function colorToHex(color: unknown): string | undefined {
+  if (color == null) return undefined
+  if (typeof color === 'object' && 'toHexString' in color) return (color as { toHexString: () => string }).toHexString()
+  return typeof color === 'string' ? color : undefined
+}
 
 interface EntityTypeFormValues {
   name: string
@@ -280,7 +287,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
       width: 110,
       render: (_: unknown, record: KnowledgeGraphEntityTypeItem) =>
         record.entityTypeId != null ? (
-          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/entities?typeId=${record.entityTypeId}`)}>
+          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=entities&typeId=${record.entityTypeId}`)}>
             {t('knowledgegraph.schema.viewEntities')}
           </Button>
         ) : null,
@@ -329,7 +336,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
       width: 110,
       render: (_: unknown, record: KnowledgeGraphRelationTypeItem) =>
         record.relationTypeId != null ? (
-          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/relations?relationTypeId=${record.relationTypeId}`)}>
+          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=relations&relationTypeId=${record.relationTypeId}`)}>
             {t('knowledgegraph.schema.viewRelations')}
           </Button>
         ) : null,
@@ -420,10 +427,10 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
 
   return (
     <Space direction="vertical" size={spacing.lg} style={{ width: '100%' }}>
-      <Alert type="info" showIcon message={t('knowledgegraph.schema.introTitle')} description={t('knowledgegraph.schema.introDesc')} />
       <div>
         <Space style={{ marginBottom: spacing.md }}>
           <span style={{ fontWeight: 600 }}>{t('knowledgegraph.schema.entityTypes')}</span>
+          <Tag>{entityTypes.length}</Tag>
           {canManage && (
             <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreateEntityType}>
               {t('knowledgegraph.schema.addEntityType')}
@@ -443,6 +450,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
       <div>
         <Space style={{ marginBottom: spacing.md }}>
           <span style={{ fontWeight: 600 }}>{t('knowledgegraph.schema.relationTypes')}</span>
+          <Tag>{relationTypes.length}</Tag>
           {canManage && (
             <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreateRelationType}>
               {t('knowledgegraph.schema.addRelationType')}
@@ -468,16 +476,23 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
         confirmLoading={saving}
         destroyOnHidden
         maskClosable={false}
+        width={560}
       >
         <Form form={entityForm} layout="vertical">
-          <Form.Item name="name" label={t('knowledgegraph.schema.name')} rules={[{ required: true, message: t('knowledgegraph.schema.name') }]}>
-            <Input maxLength={50} />
-          </Form.Item>
-          <Form.Item name="color" label={t('knowledgegraph.schema.color')}>
-            <Input type="color" style={{ width: 72, padding: 2 }} />
-          </Form.Item>
+          <Row gutter={12}>
+            <Col flex="auto">
+              <Form.Item name="name" label={t('knowledgegraph.schema.name')} rules={[{ required: true, message: t('knowledgegraph.schema.name') }]}>
+                <Input maxLength={50} />
+              </Form.Item>
+            </Col>
+            <Col flex="190px">
+              <Form.Item name="color" label={t('knowledgegraph.schema.color')} getValueFromEvent={colorToHex}>
+                <ColorPicker showText disabledAlpha allowClear style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item name="description" label={t('knowledgegraph.schema.desc')}>
-            <Input.TextArea maxLength={255} rows={2} />
+            <Input.TextArea maxLength={255} rows={2} autoSize={{ minRows: 2, maxRows: 4 }} />
           </Form.Item>
           <Form.Item label={t('knowledgegraph.props.editorTitle')} tooltip={t('knowledgegraph.props.editorTooltip')}>
             <PropertyListEditor />
@@ -493,22 +508,35 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
         confirmLoading={saving}
         destroyOnHidden
         maskClosable={false}
+        width={560}
       >
         <Form form={relationForm} layout="vertical">
-          <Form.Item name="name" label={t('knowledgegraph.schema.name')} rules={[{ required: true, message: t('knowledgegraph.schema.name') }]}>
-            <Input maxLength={50} />
-          </Form.Item>
-          <Form.Item name="color" label={t('knowledgegraph.schema.color')}>
-            <Input type="color" style={{ width: 72, padding: 2 }} />
-          </Form.Item>
-          <Form.Item name="sourceTypeId" label={t('knowledgegraph.schema.sourceType')}>
-            <Select allowClear placeholder={t('knowledgegraph.schema.anyType')} options={typeOptions} />
-          </Form.Item>
-          <Form.Item name="targetTypeId" label={t('knowledgegraph.schema.targetType')}>
-            <Select allowClear placeholder={t('knowledgegraph.schema.anyType')} options={typeOptions} />
-          </Form.Item>
+          <Row gutter={12}>
+            <Col flex="auto">
+              <Form.Item name="name" label={t('knowledgegraph.schema.name')} rules={[{ required: true, message: t('knowledgegraph.schema.name') }]}>
+                <Input maxLength={50} />
+              </Form.Item>
+            </Col>
+            <Col flex="190px">
+              <Form.Item name="color" label={t('knowledgegraph.schema.color')} getValueFromEvent={colorToHex}>
+                <ColorPicker showText disabledAlpha allowClear style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="sourceTypeId" label={t('knowledgegraph.schema.sourceType')}>
+                <Select allowClear placeholder={t('knowledgegraph.schema.anyType')} options={typeOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="targetTypeId" label={t('knowledgegraph.schema.targetType')}>
+                <Select allowClear placeholder={t('knowledgegraph.schema.anyType')} options={typeOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item name="description" label={t('knowledgegraph.schema.desc')}>
-            <Input.TextArea maxLength={255} rows={2} />
+            <Input.TextArea maxLength={255} rows={2} autoSize={{ minRows: 2, maxRows: 4 }} />
           </Form.Item>
         </Form>
       </Modal>

@@ -51,7 +51,7 @@ public class CreateKnowledgeGraphNodeCommandHandler : IRequestHandler<CreateKnow
         }
 
         var propsJson = KnowledgeGraphPropertyJson.WriteValues(request.Properties ?? new Dictionary<string, string>(StringComparer.Ordinal));
-        var node = await _store.CreateNodeAsync(request.KnowledgeGraphId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, propsJson, cancellationToken);
+        var node = await _store.CreateNodeAsync(request.KnowledgeGraphId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, propsJson, key: null, cancellationToken);
         await KgEmbeddingDeltaPublisher.PublishNodeUpsertAsync(_messagePublisher, _logger, request.KnowledgeGraphId, node.Id);
         return new SimpleString { Value = node.Id };
     }

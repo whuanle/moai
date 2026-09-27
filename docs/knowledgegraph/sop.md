@@ -62,9 +62,9 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 
 1. `dotnet build src/MoAI/MoAI.csproj` → 0 错误；`dotnet test tests/MoAI.KnowledgeGraph.Tests/`。
 2. 后端运行且 Memgraph 可达、`KG_ENABLED=true` 后执行 `node local-dev/kg-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KG-S1](../knowledgegraph/bdd.md#kg-s1)…[@KG-S19](../knowledgegraph/bdd.md#kg-s19)（S15 成员只读由单测覆盖）；无图数据库时脚本 SKIP。
-3. 外部开放接口验收：`node local-dev/kg-external-e2e.mjs http://127.0.0.1:5210` → 覆盖 KX-01~KX-08（应用 token 团队级授权、类型/节点/边 CRUD 与批量导入、connected 只读；前置：至少一个团队接入 key，脚本自建）；无图数据库或能力未开启时 SKIP。
+3. 外部开放接口验收：`node local-dev/kg-external-e2e.mjs http://127.0.0.1:5210` → 覆盖 KX-01~KX-08（应用 token 团队级授权、类型/节点/边 CRUD 与批量导入、connected 只读；前置：至少一个应用接入 key，脚本自建）；无图数据库或能力未开启时 SKIP。
 4. 图检索验收（SP-A）：`node local-dev/kg-search-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KGS-S1](../knowledgegraph/bdd.md#kgs-s1)~[@KGS-S9](../knowledgegraph/bdd.md#kgs-s9)（前置：RabbitMQ + pgvector + 图数据库，脚本自建本地 embeddings 桩渠道，无需真实模型；向量化为 MQ 异步，脚本自带轮询）。
-5. 浏览器走查：`/knowledge-graph` 与团队「知识图谱」分区建托管图（含模板）→ 图览过滤 / 搜索 / 展开 → 模型 / 节点 / 边维护（Member 只读）→ 删除清库；接入外部库 → 只读内省与刷新 → 接入图图览（标签过滤 / 展开）→ 删除仅移除登记；重启 Memgraph 容器验证快照恢复。
+5. 浏览器走查：`/knowledge-graph` 与团队「知识图谱」分区建托管图（含模板）→ 图览（画布撑满 / 缩放·适应·全屏工具栏 / 加载上限选择 / 截断提示）→ 维护页步骤条切换 模型 / 实例 / 关系 维护（Member 只读）→ 删除清库；接入外部库 → 只读内省与刷新 → 接入图图览（标签过滤 / 展开）→ 删除仅移除登记；重启 Memgraph 容器验证快照恢复。
 
 ### 验收记录
 
@@ -75,6 +75,8 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 | 2026-09-15 | v2.1 动态内省 + 接入图画布：单测 **40/40**、**E2E 47/47 PASS**（新增 S17~S19）、前端 typecheck/lint 0 错误、vitest 258/258 |
 | 2026-09-15 | v2.2 图谱头像：单测 **42/42**、**E2E 52/52 PASS**（新增 S20，真实存储直传验证）、前端 typecheck/lint 0 错误、vitest 258/258 |
 | 2026-09-21 | v2.5 物流模板 + 默认图览：单测 **43/43**、**E2E 61/61 PASS**（5310 独立实例）、前端 typecheck/lint 0 错误、vitest 424/424 |
+| 2026-09-27 | v3 图览瘦身 + 维护页改版：前端 typecheck/lint 0 错误、vitest **441/441**（新增旧路径重定向、维护步骤条用例）；浏览器实测（Edge，托管图 kg104）：图览无步骤条/导入按钮、画布撑满视口、缩放/适应/全屏可用（fullscreenElement 生效、图标切换）、维护步骤条三步切换、旧 `/relations` 重定向第 3 步；后端无改动 |
+| 2026-09-27 | v3.1 图览画布引擎切换 React Flow：`@antv/g6` 卸载、新增 `@xyflow/react` ^12 + `d3-force`；前端 typecheck/lint 0 错误、vitest **441/441**（jsdom 直接渲染 React Flow，无需 mock）；浏览器实测（Edge，kg104）：11 节点/15 边渲染、卡片节点与带标签边、点节点开抽屉、类型过滤命中 4 港口、全屏 true、右键新建实体弹窗、22 连接桩、视口适配全图完整显示 |
 | 2026-09-22 | SP-A 图检索消费层：KG 单测 **81/81**、App **39/39**、Workflow **77/77**、AI.Core **73/73**；**KGS E2E 40/40 PASS**（kg-search-e2e，本地 embeddings 桩，真实后端 + Memgraph + RabbitMQ + pgvector）、KT E2E 15/15 PASS |
 
 ## 6. kg_cypher_query 插件运维（Text2Cypher）

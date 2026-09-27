@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  ApiOutlined,
   BookOutlined,
   ExperimentOutlined,
   FileTextOutlined,
@@ -17,6 +18,7 @@ import { getTeamDetail } from '@/api/team'
 import { resolveStorageUrl } from '@/utils/storage'
 import { useAppStore } from '@/store/app'
 import { WikiDocuments } from './WikiDocuments'
+import { WikiMcp } from './WikiMcp'
 import { WikiRecallTest } from './WikiRecallTest'
 import { WikiSources } from './WikiSources'
 
@@ -26,7 +28,7 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTION_KEYS = ['files', 'sources', 'recall', 'settings'] as const
+const SECTION_KEYS = ['files', 'sources', 'recall', 'mcp', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 interface WikiDetail {
@@ -201,6 +203,7 @@ export function WikiDetail() {
       { key: 'files', icon: <FileTextOutlined />, label: t('wiki.menuFiles') },
       { key: 'sources', icon: <GlobalOutlined />, label: t('wiki.menuSources') },
       { key: 'recall', icon: <ExperimentOutlined />, label: t('wiki.menuRecall') },
+      { key: 'mcp', icon: <ApiOutlined />, label: t('wiki.menuMcp') },
       { key: 'settings', icon: <SettingOutlined />, label: t('wiki.menuSettings') },
     ],
     [t],
@@ -326,6 +329,10 @@ export function WikiDetail() {
           ) : section === 'recall' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
               <WikiRecallTest wikiId={wikiId} teamId={teamId} />
+            </Card>
+          ) : section === 'mcp' ? (
+            <Card styles={{ body: { padding: spacing.lg } }}>
+              <WikiMcp wikiId={wikiId} />
             </Card>
           ) : (
             // 设置表单按设计系统 FormPage 同款 720 阅读宽度收口，输入框不铺满整屏

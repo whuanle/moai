@@ -67,6 +67,10 @@ internal partial class TeamApiKeyConfiguration : IEntityTypeConfiguration<TeamAp
             .HasMaxLength(100)
             .HasComment("密钥名称")
             .HasColumnName("name");
+        entity.Property(e => e.Scopes)
+            .HasDefaultValue(1)
+            .HasComment("功能范围位标记：1=model 2=wiki_read 4=wiki_write 8=external_token 16=wiki_mcp（位或组合）")
+            .HasColumnName("scopes");
         entity.Property(e => e.TeamId)
             .HasComment("所属团队id")
             .HasColumnName("team_id");

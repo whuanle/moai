@@ -25,12 +25,12 @@ public class DiagnosticResumeTests
             It.IsAny<AiChatRequest>(), It.IsAny<Func<string, Task>?>(), It.IsAny<CancellationToken>())).ReturnsAsync("AI 回答");
 
         harness.PluginInvoker
-            .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
+            .Setup(i => i.InvokeAsync("mock.knowledgeSearch", It.IsAny<string?>(), It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new JsonObject { ["documents"] = new JsonArray(), ["hasResult"] = false });
 
         var call = 0;
         harness.PluginInvoker
-            .Setup(i => i.InvokeAsync("mock.fallback", It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
+            .Setup(i => i.InvokeAsync("mock.fallback", It.IsAny<string?>(), It.IsAny<JsonObject>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
             {
                 if (call == 0)

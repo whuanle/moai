@@ -239,3 +239,34 @@ Scenario: 团队 OpenAPI 插件支持 Header/Query 并保留占位符
   Then 保存成功且详情回显占位符原文
   And 运行时（Agent 工具调用）按插件所属团队插值后发起请求（单测覆盖：CustomPluginVariableInterpolatorTests）
 ```
+
+## Feature: 团队插件——系统插件 key 保留与被授权系统插件可用
+
+```gherkin
+@TP-S33 @auto:e2e
+Scenario: 团队插件 key 不得与系统插件冲突（无论该系统插件是否授权给本团队）
+  Given 管理员已创建私有系统 MCP 插件（未授权任何团队）
+  When Owner 分别以该 key 创建团队动态实例、导入团队 MCP 插件、预上传团队 OpenAPI 文件
+  Then 三种创建均返回冲突（409），系统插件 key 全局保留
+
+@TP-S34 @auto:e2e
+Scenario: 管理员创建系统插件不得与已有团队插件冲突（反向保留）
+  Given 某团队已有自定义 MCP 插件
+  When 管理员以该团队插件名创建系统动态实例
+  Then 返回冲突（409）
+
+@TP-S35 @auto:e2e
+Scenario: 私有系统插件授权团队后进入团队可用插件列表
+  Given 私有系统 MCP 插件未授权时不出现在团队可用列表，成员运行返回 404
+  When 管理员将其授权给本团队
+  Then 团队可用列表出现该插件（isSystem=true、isTeamOwned=false）
+  When 管理员撤销授权
+  Then 列表不再包含该插件且成员运行返回 404
+
+@TP-S36 @auto:e2e
+Scenario: 被授权团队成员运行系统自定义插件（指定函数）
+  Given 私有系统 MCP 插件已授权本团队，插件含函数 echo_header
+  When 成员以插件 key + 函数名运行
+  Then 运行成功并返回插件输出
+```
+

@@ -80,7 +80,7 @@ public partial class SkillEntity : IFullAudited
     public int ClassifyId { get; set; }
 
     /// <summary>
-    /// 技能头像 objectKey，空串=未设置.
+    /// 头像.
     /// </summary>
-    public string AvatarPath { get; set; } = string.Empty;
+    public string AvatarPath { get; set; } = default!;
 }

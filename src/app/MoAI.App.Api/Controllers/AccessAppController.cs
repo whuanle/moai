@@ -70,6 +70,7 @@ public class AccessAppController : ControllerBase
             AccessAppId = id,
             Name = req.Name,
             Description = req.Description,
+            Scopes = req.Scopes,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

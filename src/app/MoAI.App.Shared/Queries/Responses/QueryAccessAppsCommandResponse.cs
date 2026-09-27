@@ -29,6 +29,16 @@ public class AccessAppItem
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }
+
+    /// <summary>
+    /// 最近使用时间（通过模型网关调用时刷新），未使用为 null.
+    /// </summary>
+    public DateTimeOffset? LastUsedTime { get; set; }
+
+    /// <summary>
+    /// 功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），model 授权 key 直连使用模型网关，知识库维度决定签发 token 的知识库权限.
+    /// </summary>
+    public List<string> Scopes { get; set; } = new();
 }
 
 /// <summary>

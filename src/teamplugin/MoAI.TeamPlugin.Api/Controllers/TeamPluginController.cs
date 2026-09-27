@@ -234,6 +234,7 @@ public class TeamPluginController : ControllerBase
         {
             TeamId = teamId,
             Key = req.Key,
+            Function = req.Function,
             RequestJson = req.RequestJson,
         };
         _userContextProvider.SetUserContext(cmd);

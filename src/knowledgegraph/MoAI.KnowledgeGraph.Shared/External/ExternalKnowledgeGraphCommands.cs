@@ -18,9 +18,9 @@ public class ExternalGraphCaller
     public long TeamId { get; init; }
 
     /// <summary>
-    /// 来源应用接入 id.
+    /// 来源应用接入 id；团队接入 key 换取的应用 token 与 key 直连无此值.
     /// </summary>
-    public Guid AccessAppId { get; init; }
+    public Guid? AccessAppId { get; init; }
 }
 
 /// <summary>
@@ -325,6 +325,11 @@ public class CreateExternalNodeCommand : IRequest<SimpleString>, IModelValidator
     /// </summary>
     public Dictionary<string, string>? Properties { get; init; }
 
+    /// <summary>
+    /// 业务幂等键（可选，落图库 key 属性；供导入 upsert 匹配与按 key 维护）.
+    /// </summary>
+    public string? Key { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateExternalNodeCommand> validate)
     {
@@ -335,6 +340,7 @@ public class CreateExternalNodeCommand : IRequest<SimpleString>, IModelValidator
         validate.RuleFor(x => x.Properties).Must(x => x == null || x.Count <= 50).WithMessage("属性最多 50 个.");
         validate.RuleFor(x => x.Properties).Must(x => x == null || x.Keys.All(k => !string.IsNullOrWhiteSpace(k) && k.Length <= 100)).WithMessage("属性名不能为空且最长 100 个字符.");
         validate.RuleFor(x => x.Properties).Must(x => x == null || x.Values.All(v => v == null || v.Length <= 2000)).WithMessage("属性值最长 2000 个字符.");
+        validate.RuleFor(x => x.Key).MaximumLength(200).WithMessage("key 最长 200 个字符.");
     }
 }
 
@@ -379,6 +385,11 @@ public class UpdateExternalNodeCommand : IRequest<EmptyCommandResponse>, IModelV
     /// </summary>
     public Dictionary<string, string>? Properties { get; init; }
 
+    /// <summary>
+    /// 业务幂等键（可选）：null 保留现有 key，非空收养/覆盖该 key.
+    /// </summary>
+    public string? Key { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateExternalNodeCommand> validate)
     {
@@ -389,6 +400,7 @@ public class UpdateExternalNodeCommand : IRequest<EmptyCommandResponse>, IModelV
         validate.RuleFor(x => x.Properties).Must(x => x == null || x.Count <= 50).WithMessage("属性最多 50 个.");
         validate.RuleFor(x => x.Properties).Must(x => x == null || x.Keys.All(k => !string.IsNullOrWhiteSpace(k) && k.Length <= 100)).WithMessage("属性名不能为空且最长 100 个字符.");
         validate.RuleFor(x => x.Properties).Must(x => x == null || x.Values.All(v => v == null || v.Length <= 2000)).WithMessage("属性值最长 2000 个字符.");
+        validate.RuleFor(x => x.Key).MaximumLength(200).WithMessage("key 最长 200 个字符.");
     }
 }
 

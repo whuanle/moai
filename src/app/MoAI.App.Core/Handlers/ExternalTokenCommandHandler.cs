@@ -92,12 +92,18 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
             throw new BusinessException("获取用户 token 必须指定应用 id.") { StatusCode = 400 };
         }
 
-        var app = await _databaseContext.Apps
+        // 应用对话范围：用户 token 用于外部应用会话/对话，接入未勾选 app_chat 时拒绝换取
+        if (!((Database.Enums.TeamApiKeyScopes)accessApp.Scopes).HasFlag(Database.Enums.TeamApiKeyScopes.AppChat))
+        {
+            throw new BusinessException("应用接入未勾选应用对话范围.") { StatusCode = 403 };
+        }
+
+        var targetApp = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId.Value, cancellationToken);
-        ExternalAppAccessValidator.EnsureUsable(app);
+        ExternalAppAccessValidator.EnsureUsable(targetApp);
 
         // 团队级授权：应用必须属于接入点所在团队
-        if (app!.TeamId != accessApp.TeamId)
+        if (targetApp!.TeamId != accessApp.TeamId)
         {
             throw new BusinessException("应用不属于该接入点所在团队.") { StatusCode = 403 };
         }

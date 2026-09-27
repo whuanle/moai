@@ -120,5 +120,13 @@ public class SaveDynamicPluginCommandHandler : IRequestHandler<SaveDynamicPlugin
         {
             throw new BusinessException("实例 Key 已被使用") { StatusCode = 409 };
         }
+
+        // 全局占用校验：与团队插件或其他系统插件的 key 冲突时，应用内同时使用会出现工具重名
+        var nameExists = await _databaseContext.Plugins
+            .AnyAsync(x => x.PluginName == pluginKey && x.IsDeleted == 0, cancellationToken);
+        if (nameExists)
+        {
+            throw new BusinessException("实例 Key 已被使用") { StatusCode = 409 };
+        }
     }
 }

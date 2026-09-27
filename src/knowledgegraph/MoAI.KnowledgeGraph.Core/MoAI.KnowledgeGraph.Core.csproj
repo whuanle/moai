@@ -16,6 +16,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="ModelContextProtocol" />
+		<PackageReference Include="ModelContextProtocol.AspNetCore" />
 		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
 		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 		<PackageReference Include="Maomi.ToMarkdown" />

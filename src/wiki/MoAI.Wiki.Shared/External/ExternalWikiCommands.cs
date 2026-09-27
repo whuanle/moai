@@ -19,9 +19,9 @@ public class ExternalWikiCaller
     public long TeamId { get; init; }
 
     /// <summary>
-    /// 来源应用接入 id.
+    /// 来源应用接入 id；团队接入 key 换取的应用 token 无此值.
     /// </summary>
-    public Guid AccessAppId { get; init; }
+    public Guid? AccessAppId { get; init; }
 }
 
 /// <summary>
@@ -516,6 +516,115 @@ public class EmbedExternalDocumentCommand : IRequest<EmbeddingDocumentCommandRes
             .Must(x => x.IsEmbedSourceText || x.IsEmbedMetadata)
             .WithMessage("至少需要选择一种向量化内容（原文或元数据）。");
     }
+}
+
+/// <summary>
+/// 知识库向量召回（外部接口）：在单个知识库范围内检索与查询最相关的资料切片.
+/// </summary>
+public class QueryExternalWikiRecallCommand : IRequest<QueryExternalWikiRecallCommandResponse>, IModelValidator<QueryExternalWikiRecallCommand>
+{
+    /// <summary>
+    /// 外部调用方身份，由 Controller / MCP 工具从接入凭证解析填充.
+    /// </summary>
+    [JsonIgnore]
+    public ExternalWikiCaller Caller { get; init; } = default!;
+
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
+    public long WikiId { get; init; }
+
+    /// <summary>
+    /// 查询文本.
+    /// </summary>
+    public string Query { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 返回条数，1-50，默认 5.
+    /// </summary>
+    public int Top { get; init; } = 5;
+
+    /// <summary>
+    /// 相似度阈值（0-1，含），null 表示不过滤；相似度得分低于阈值的命中项将被丢弃.
+    /// </summary>
+    public double? MinScore { get; init; }
+
+    /// <summary>
+    /// 文档范围过滤（文档 id 集合）；为空表示全部文档.
+    /// </summary>
+    public IReadOnlyCollection<long> DocumentIds { get; init; } = Array.Empty<long>();
+
+    /// <inheritdoc/>
+    public static void Validate(AbstractValidator<QueryExternalWikiRecallCommand> validate)
+    {
+        validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库 id 不正确.");
+        validate.RuleFor(x => x.Query).NotEmpty().WithMessage("请输入查询文本.").MaximumLength(1000).WithMessage("查询文本长度不能超过 1000.");
+        validate.RuleFor(x => x.Top).InclusiveBetween(1, 50).WithMessage("返回条数必须在 1-50 之间.");
+        validate.RuleFor(x => x.MinScore).InclusiveBetween(0d, 1d).WithMessage("相似度阈值必须在 0-1 之间.").When(x => x.MinScore.HasValue);
+        validate.RuleForEach(x => x.DocumentIds).GreaterThan(0).WithMessage("文档 id 无效.");
+    }
+}
+
+/// <summary>
+/// 知识库向量召回响应（外部接口）.
+/// </summary>
+public class QueryExternalWikiRecallCommandResponse
+{
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
+    public long WikiId { get; set; }
+
+    /// <summary>
+    /// 知识库名称.
+    /// </summary>
+    public string WikiName { get; set; } = default!;
+
+    /// <summary>
+    /// 实际用于检索的查询文本.
+    /// </summary>
+    public string Query { get; set; } = default!;
+
+    /// <summary>
+    /// 召回切片集合，按相似度降序.
+    /// </summary>
+    public IReadOnlyList<QueryExternalWikiRecallItem> Items { get; set; } = new List<QueryExternalWikiRecallItem>();
+}
+
+/// <summary>
+/// 知识库向量召回切片（外部接口）.
+/// </summary>
+public class QueryExternalWikiRecallItem
+{
+    /// <summary>
+    /// 文档 id.
+    /// </summary>
+    public long DocumentId { get; set; }
+
+    /// <summary>
+    /// 文档名称.
+    /// </summary>
+    public string DocumentName { get; set; } = default!;
+
+    /// <summary>
+    /// 切片 id.
+    /// </summary>
+    public long ChunkId { get; set; }
+
+    /// <summary>
+    /// 元数据类型（0 原文切片 / 1 大纲 / 2 问题 / 3 关键词 / 4 摘要 / 5 聚合），与召回测试约定一致.
+    /// </summary>
+    public int MetadataType { get; set; }
+
+    /// <summary>
+    /// 切片内容.
+    /// </summary>
+    public string Content { get; set; } = default!;
+
+    /// <summary>
+    /// 相似度得分（0-1，越大越相关）.
+    /// </summary>
+    public double Score { get; set; }
 }
 
 /// <summary>

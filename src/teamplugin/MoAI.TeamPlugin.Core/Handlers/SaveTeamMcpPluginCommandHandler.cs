@@ -209,6 +209,14 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
             throw new BusinessException("插件名称已存在") { StatusCode = 409 };
         }
 
+        // 系统插件 key 全局保留：即使尚未授权给本团队也不允许占用，避免授权后同名插件在应用内工具名冲突
+        var systemExists = await _databaseContext.Plugins
+            .AnyAsync(x => x.IsSystem && x.TeamId == 0 && x.PluginName == name && x.IsDeleted == 0, cancellationToken);
+        if (systemExists)
+        {
+            throw new BusinessException("插件名称与系统插件冲突") { StatusCode = 409 };
+        }
+
         if (_pluginRegistry.Get(name) != null)
         {
             throw new BusinessException("插件名称已被使用") { StatusCode = 409 };

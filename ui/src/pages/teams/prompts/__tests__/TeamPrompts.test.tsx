@@ -74,9 +74,10 @@ describe('TeamPrompts', () => {
     renderTeamPrompts()
 
     expect(await screen.findByText('全部')).toBeInTheDocument()
-    // 分类 chip 展示「emoji + 名称」
-    const chip = await screen.findByText('✍️ 写作')
-    fireEvent.click(chip)
+    // 分类 chip 与卡片分类列均展示「emoji + 名称」
+    const chips = await screen.findAllByText('✍️ 写作')
+    expect(chips.length).toBeGreaterThanOrEqual(2)
+    fireEvent.click(chips[0])
     await waitFor(() => {
       expect(getTeamPrompts).toHaveBeenLastCalledWith(9, { keywords: undefined, promptClassId: 3 })
     })

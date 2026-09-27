@@ -220,10 +220,10 @@ public class CreateKnowledgeGraphCommandHandlerTests
         var createdNodes = new List<KnowledgeGraphNodeRecord>();
         var createdEdges = new List<(long RelationTypeId, string SourceNodeId, string TargetNodeId)>();
         var store = new Mock<IKnowledgeGraphStore>();
-        store.Setup(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .Callback((long kgId, long entityTypeId, string name, string description, string? propsJson, CancellationToken _) =>
+        store.Setup(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Callback((long kgId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken _) =>
                 createdNodes.Add(new KnowledgeGraphNodeRecord(Guid.CreateVersion7().ToString(), kgId, entityTypeId, name, description, propsJson)))
-            .Returns((long kgId, long entityTypeId, string name, string description, string? propsJson, CancellationToken _) =>
+            .Returns((long kgId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken _) =>
                 Task.FromResult(createdNodes[^1]));
         store.Setup(x => x.CreateEdgeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Callback((long kgId, long relationTypeId, string sourceNodeId, string targetNodeId, CancellationToken _) =>
@@ -290,8 +290,8 @@ public class CreateKnowledgeGraphCommandHandlerTests
 
     private static void SetupStoreSeeding(Mock<IKnowledgeGraphStore> store)
     {
-        store.Setup(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .Returns((long kgId, long entityTypeId, string name, string description, string? propsJson, CancellationToken _) =>
+        store.Setup(x => x.CreateNodeAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Returns((long kgId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken _) =>
                 Task.FromResult(new KnowledgeGraphNodeRecord(Guid.CreateVersion7().ToString(), kgId, entityTypeId, name, description, propsJson)));
     }
 

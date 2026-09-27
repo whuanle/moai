@@ -54,7 +54,7 @@ public class UpdateExternalNodeCommandHandler : IRequestHandler<UpdateExternalNo
         }
 
         var propsJson = KnowledgeGraphPropertyJson.WriteValues(request.Properties ?? new Dictionary<string, string>(StringComparer.Ordinal));
-        await _store.UpdateNodeAsync(request.KnowledgeGraphId, request.NodeId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, propsJson, cancellationToken);
+        await _store.UpdateNodeAsync(request.KnowledgeGraphId, request.NodeId, request.EntityTypeId, request.Name, request.Description ?? string.Empty, propsJson, key: string.IsNullOrWhiteSpace(request.Key) ? null : request.Key, cancellationToken);
         await KgEmbeddingDeltaPublisher.PublishNodeUpsertAsync(_messagePublisher, _logger, request.KnowledgeGraphId, request.NodeId);
         return EmptyCommandResponse.Default;
     }

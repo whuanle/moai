@@ -71,6 +71,14 @@ public sealed class PluginAppToolProvider : IAppToolProvider
             .Where(x => context.PluginIds.Contains(x.Id))
             .ToListAsync(cancellationToken);
 
+        // 团队可用性校验：只能使用本团队自有、公开或已授权本团队的系统插件（配置残留的未授权插件不进工具列表）
+        var authorizedIds = await _databaseContext.PluginTeamAuthorizations
+            .Where(x => x.TeamId == context.TeamId)
+            .Select(x => x.PluginId)
+            .ToHashSetAsync(cancellationToken);
+
+        plugins.RemoveAll(x => !IsAvailableToTeam(x, context.TeamId, authorizedIds));
+
         var tools = new List<AppTool>();
         foreach (var plugin in plugins)
         {
@@ -94,6 +102,21 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         }
 
         return tools;
+    }
+
+    private static bool IsAvailableToTeam(PluginEntity plugin, int teamId, HashSet<Guid> authorizedIds)
+    {
+        if (plugin.TeamId == teamId)
+        {
+            return true;
+        }
+
+        if (!plugin.IsSystem)
+        {
+            return false;
+        }
+
+        return plugin.IsPublic || authorizedIds.Contains(plugin.Id);
     }
 
     private async Task<AppTool?> BuildNativeToolAsync(PluginEntity plugin, CancellationToken cancellationToken)

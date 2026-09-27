@@ -45,6 +45,7 @@
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
 | [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、所有权转让；团队不可解散，仅平台管理员可禁用 |
+| [gateway](./gateway/) | GW | 团队/应用接入 key 与外部接口范围体系（功能范围分档、key 直连、Redis 缓存、中间件拦截）；**细节总账 [external-api-scope-system.md](./gateway/external-api-scope-system.md)** |
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱维护 + 外部接入只读；Memgraph/Neo4j 双方言 Bolt 访问、单库 kgId 隔离；图览画布 + 一跳邻接；`KG_ENABLED` 门禁，Member 全只读，名称全局唯一） |

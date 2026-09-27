@@ -44,13 +44,14 @@ internal static class ExternalAppAccessValidator
     }
 
     /// <summary>
-    /// 校验 token 上下文来自外部用户（应用 token 无用户身份，不能发起会话等用户级操作）.
+    /// 校验 token 上下文携带已解析的外部用户身份（用户 token，或应用接入 key 直连解析出的会话身份；
+    /// 应用 token 无用户身份，不能发起会话等用户级操作）.
     /// </summary>
     /// <param name="context">外部 token 上下文.</param>
     /// <returns>外部用户 id.</returns>
     public static long EnsureExternalUser(ExternalTokenContext context)
     {
-        if (context.SubjectType != UserType.External || context.ExternalId <= 0)
+        if (context.ExternalId <= 0)
         {
             throw new BusinessException("需要外部用户 token（应用 token 无用户身份）.") { StatusCode = 403 };
         }

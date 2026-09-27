@@ -1,12 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Button, Descriptions, Drawer, Empty, Input, Modal, Space, Spin, Tag, Typography, theme } from 'antd'
-import { Form, Select } from 'antd'
-import { ImportOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { Graph } from '@antv/g6'
-import { chartColors, feedback  } from '@/design-system'
+import { Alert, Button, Descriptions, Drawer, Empty, Input, Modal, Select, Space, Spin, Tag, Tooltip, Typography, theme } from 'antd'
+import { Form } from 'antd'
+import { FullscreenExitOutlined, FullscreenOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import {
+  Background,
+  BackgroundVariant,
+  ConnectionMode,
+  Controls,
+  Handle,
+  MarkerType,
+  Panel,
+  Position,
+  ReactFlow,
+  ReactFlowProvider,
+  applyNodeChanges,
+  type Connection,
+  type Edge,
+  type Node,
+  type NodeChange,
+  type NodeProps,
+  type ReactFlowInstance,
+} from '@xyflow/react'
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, type SimulationLinkDatum, type SimulationNodeDatum } from 'd3-force'
+import '@xyflow/react/dist/style.css'
+import { chartColors, feedback } from '@/design-system'
 import { PropertyInputs, serializePropertyValues, toPropertyDefs } from './PropertyFields'
-import { KnowledgeGraphImportModal } from './KnowledgeGraphImportModal'
 import { spacing } from '@/design-system/theme'
 import {
   createKnowledgeGraphEdge,
@@ -21,8 +40,12 @@ import {
   type KnowledgeGraphRelationTypeItem,
 } from '@/api/knowledgeGraph'
 
-const CANVAS_HEIGHT = 520
+/** 画布最小高度：小屏/极端布局下保底可用 */
+const MIN_CANVAS_HEIGHT = 320
+/** 页面底部留白：画布撑满视口时预留 */
+const PAGE_BOTTOM_PADDING = 24
 const DEFAULT_LIMIT = 200
+const LIMIT_OPTIONS = [100, 200, 500]
 
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举）；画布写操作仅限 Admin+ 的托管图 */
 const ROLE_MEMBER = 0
@@ -47,6 +70,92 @@ interface CanvasEdge {
   relationName?: string
 }
 
+interface KgNodeData extends Record<string, unknown> {
+  label: string
+  color: string
+  typeName?: string
+  /** 控制连接桩显示（可编辑的托管图才允许拖线建边） */
+  editable: boolean
+}
+
+type KgFlowNode = Node<KgNodeData>
+type KgFlowEdge = Edge
+
+interface LayoutPos { x: number; y: number }
+
+interface SimNode extends SimulationNodeDatum { id: string }
+type SimLink = SimulationLinkDatum<SimNode>
+
+/** 力导向布局（d3-force 同步模拟）：老节点沿用上次坐标作初值保证展开时视觉连续，新节点环形落点后收敛 */
+function computeLayout(nodes: CanvasNode[], edges: CanvasEdge[], previous: Map<string, LayoutPos>): Map<string, LayoutPos> {
+  const simNodes: SimNode[] = nodes.map((n, i) => {
+    const prev = previous.get(n.id)
+    const angle = (i / Math.max(nodes.length, 1)) * Math.PI * 2
+    return {
+      id: n.id,
+      x: prev?.x ?? Math.cos(angle) * 300,
+      y: prev?.y ?? Math.sin(angle) * 300,
+    }
+  })
+  const simLinks: SimLink[] = edges
+    .filter((e) => e.source !== e.target)
+    .map((e) => ({ source: e.source, target: e.target }))
+  forceSimulation(simNodes)
+    .force('charge', forceManyBody().strength(-420))
+    .force('link', forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(150).strength(0.4))
+    .force('center', forceCenter(0, 0))
+    .force('collide', forceCollide(56))
+    .stop()
+    .tick(280)
+  const out = new Map<string, LayoutPos>()
+  for (const n of simNodes) out.set(n.id, { x: n.x ?? 0, y: n.y ?? 0 })
+  return out
+}
+
+/** 自定义节点：类型色点 + 名称 + 类型名；上下连接桩仅编辑态用于拖线建边 */
+function KgNodeCard({ data }: NodeProps<KgFlowNode>) {
+  const { token } = theme.useToken()
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 2,
+        padding: '8px 14px',
+        borderRadius: 10,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        background: token.colorBgContainer,
+        boxShadow: token.boxShadowTertiary,
+        minWidth: 84,
+        maxWidth: 220,
+        fontSize: 13,
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 8,
+          left: 10,
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          background: data.color,
+        }}
+      />
+      <Handle type="target" position={Position.Top} style={{ visibility: data.editable ? 'visible' : 'hidden' }} isConnectableStart={false} />
+      <span style={{ maxWidth: 192, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{data.label}</span>
+      {data.typeName && (
+        <span style={{ fontSize: 11, opacity: 0.65, maxWidth: 192, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data.typeName}</span>
+      )}
+      <Handle type="source" position={Position.Bottom} style={{ visibility: data.editable ? 'visible' : 'hidden' }} isConnectableEnd={false} />
+    </div>
+  )
+}
+
+const nodeTypes = { kgNode: KgNodeCard }
+
 interface NodeFormValues {
   entityTypeId: number
   name: string
@@ -63,27 +172,49 @@ interface PendingEdge {
   target: string
 }
 
-/** 图览画布：有界子图 + 类型过滤 + 关键字搜索 + 点选一跳展开；托管图 Admin+ 可画布编辑（右键建实体、拖拽连线建关系、右键删除） */
-export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, graphEnabled = true }: {
+/** 图览画布（React Flow + d3-force）：占满剩余高度与全部宽度 + 有界子图（加载上限可调）+ 类型过滤 + 关键字搜索 + 点选一跳展开 + 缩放/适应/全屏控件；托管图 Admin+ 可画布编辑（右键建实体、连接桩拖线建关系、右键删除） */
+export function KnowledgeGraphCanvas({ graphId, mode, myRole = null, graphEnabled = true }: {
   graphId: number
-  teamId?: number
+  mode?: string | null
+  myRole?: number | null
+  graphEnabled?: boolean
+}) {
+  return (
+    <ReactFlowProvider>
+      <KnowledgeGraphCanvasInner graphId={graphId} mode={mode} myRole={myRole} graphEnabled={graphEnabled} />
+    </ReactFlowProvider>
+  )
+}
+
+function KnowledgeGraphCanvasInner({ graphId, mode, myRole = null, graphEnabled = true }: {
+  graphId: number
   mode?: string | null
   myRole?: number | null
   graphEnabled?: boolean
 }) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const graphRef = useRef<Graph | null>(null)
+  const rfInstanceRef = useRef<ReactFlowInstance | null>(null)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const canvasShellRef = useRef<HTMLDivElement | null>(null)
   const nodesRef = useRef(new Map<string, CanvasNode>())
   const edgesRef = useRef(new Map<string, CanvasEdge>())
+  /** 节点布局坐标缓存：布局初值 + 拖动位置回写，展开邻接时视觉连续 */
+  const layoutPositionsRef = useRef(new Map<string, LayoutPos>())
+  /** 置位后下一次数据同步直接按布局 bounds 设视口（初次加载/重新加载/筛选/搜索/上限变化），点选展开不重置视口 */
+  const fitPendingRef = useRef(false)
   const [loading, setLoading] = useState(true)
   const [entityTypes, setEntityTypes] = useState<KnowledgeGraphEntityTypeItem[]>([])
   const [relationTypes, setRelationTypes] = useState<KnowledgeGraphRelationTypeItem[]>([])
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [limit, setLimit] = useState(DEFAULT_LIMIT)
   const [truncated, setTruncated] = useState(false)
   const [empty, setEmpty] = useState(false)
+  const [canvasHeight, setCanvasHeight] = useState(MIN_CANVAS_HEIGHT)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [flowNodes, setFlowNodes] = useState<KgFlowNode[]>([])
+  const [flowEdges, setFlowEdges] = useState<KgFlowEdge[]>([])
   const [nodeOpen, setNodeOpen] = useState(false)
   const [nodeSaving, setNodeSaving] = useState(false)
   const [edgeOpen, setEdgeOpen] = useState(false)
@@ -91,7 +222,6 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
   const [pendingEdge, setPendingEdge] = useState<PendingEdge | null>(null)
   const [detailNode, setDetailNode] = useState<CanvasNode | null>(null)
   const [detailEdge, setDetailEdge] = useState<CanvasEdge | null>(null)
-  const [importOpen, setImportOpen] = useState(false)
   const [nodeForm] = Form.useForm<NodeFormValues>()
   const [edgeForm] = Form.useForm<EdgeFormValues>()
 
@@ -139,20 +269,132 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
     [relationInfo],
   )
 
-  const syncGraph = useCallback(() => {
-    const graph = graphRef.current
-    if (!graph) return
+  const typeNameOf = useCallback(
+    (node: CanvasNode) => {
+      if (node.entityTypeId != null) return typeInfo.get(node.entityTypeId)?.name ?? ''
+      return isConnected ? node.typeKey : ''
+    },
+    [typeInfo, isConnected],
+  )
+
+  /**
+   * 按布局 bounds 直接计算并设置视口（自实现 fitView：布局坐标与节点估计外包尺寸完全已知，不依赖节点异步测量）。
+   * 必须用 onInit 下发的实例：组件内 useReactFlow 的 viewportHelper 在部分挂载时序下拿不到 panZoom（setViewport 静默失败），
+   * 而 onInit 实例与画布内部 store 绑定可靠。
+   */
+  const fitViewportToNodes = useCallback((instance: ReactFlowInstance, attempts = 0) => {
+    const positions = layoutPositionsRef.current
+    const shell = canvasShellRef.current
+    if (positions.size === 0 || !shell) return
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const p of positions.values()) {
+      minX = Math.min(minX, p.x)
+      minY = Math.min(minY, p.y)
+      maxX = Math.max(maxX, p.x)
+      maxY = Math.max(maxY, p.y)
+    }
+    const width = shell.clientWidth || 800
+    const height = shell.clientHeight || 600
+    const pad = 72
+    // 节点卡片估计外包尺寸（布局坐标为卡片中心，含两行文本与边标签余量）
+    const boundsW = maxX - minX + 260
+    const boundsH = maxY - minY + 120
+    const zoom = Math.min(Math.max(Math.min((width - pad * 2) / boundsW, (height - pad * 2) / boundsH), 0.1), 2.5)
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+    void instance.setViewport({ x: width / 2 - centerX * zoom, y: height / 2 - centerY * zoom, zoom }).then((ok) => {
+      if (ok) {
+        fitPendingRef.current = false
+      } else if (attempts < 30) {
+        // 视口底座（panZoom）尚未就绪，稍后重试
+        window.setTimeout(() => fitViewportToNodes(instance, attempts + 1), 100)
+      }
+    })
+  }, [])
+
+  /** 数据源 → React Flow 节点/边（力导向布局，fitView 由数据同步 effect 消费置位标记） */
+  const syncFlow = useCallback(() => {
     const nodes = [...nodesRef.current.values()]
     const edges = [...edgesRef.current.values()]
     setEmpty(nodes.length === 0)
-    graph.setData({
-      nodes: nodes.map((n) => ({ id: n.id, data: { label: n.label, typeKey: n.typeKey } })),
-      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, data: { relationLabel: edgeLabelOf(e) } })),
-    })
-    void graph.render()
-  }, [edgeLabelOf])
+    const positions = computeLayout(nodes, edges, layoutPositionsRef.current)
+    layoutPositionsRef.current = positions
+    setFlowNodes(nodes.map((n) => ({
+      id: n.id,
+      type: 'kgNode' as const,
+      position: positions.get(n.id) ?? { x: 0, y: 0 },
+      data: { label: n.label, color: colorFor(n.typeKey), typeName: typeNameOf(n) || undefined, editable: canEdit },
+    })))
+    setFlowEdges(edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      label: edgeLabelOf(e) || undefined,
+      markerEnd: { type: MarkerType.ArrowClosed },
+    })))
+  }, [colorFor, edgeLabelOf, typeNameOf, canEdit])
 
-  // ===== 新建实体（画布右键） =====
+  // 数据同步后消费 fitView 置位；onInit 前数据先到则保持置位，由 onInit 消费
+  useEffect(() => {
+    const inst = rfInstanceRef.current
+    if (!fitPendingRef.current || flowNodes.length === 0 || !inst) return
+    fitViewportToNodes(inst)
+  }, [flowNodes, fitViewportToNodes])
+
+  const handleCanvasInit = useCallback((instance: ReactFlowInstance) => {
+    rfInstanceRef.current = instance
+    if (fitPendingRef.current && flowNodes.length > 0) {
+      fitViewportToNodes(instance)
+    }
+  }, [fitViewportToNodes])
+
+  // ===== 画布高度自适应：撑满视口剩余高度；进入原生全屏时铺满整屏 =====
+  useEffect(() => {
+    const update = () => {
+      const shell = canvasShellRef.current
+      if (!shell) return
+      if (document.fullscreenElement === shell) {
+        setCanvasHeight(window.innerHeight)
+        return
+      }
+      const top = shell.getBoundingClientRect().top
+      setCanvasHeight(Math.max(MIN_CANVAS_HEIGHT, window.innerHeight - Math.max(top, 0) - PAGE_BOTTOM_PADDING))
+    }
+    update()
+    window.addEventListener('resize', update)
+    document.addEventListener('fullscreenchange', update)
+    const observer = new ResizeObserver(update)
+    if (wrapperRef.current) observer.observe(wrapperRef.current)
+    return () => {
+      window.removeEventListener('resize', update)
+      document.removeEventListener('fullscreenchange', update)
+      observer.disconnect()
+    }
+  }, [])
+
+  // ===== 全屏状态跟随浏览器 =====
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(document.fullscreenElement === canvasShellRef.current)
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    const shell = canvasShellRef.current
+    if (!shell) return
+    if (document.fullscreenElement === shell) {
+      void document.exitFullscreen?.()
+    } else {
+      shell.requestFullscreen?.().catch(() => {
+        // 用户拒绝或环境不支持时静默降级
+      })
+    }
+  }, [])
+
+  // ===== 新建实体（画布空白右键） =====
   const openCreateNode = useCallback(() => {
     if (entityTypes.length === 0) {
       feedback.warning(t('knowledgegraph.canvasEdit.needType'))
@@ -178,7 +420,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
       })
       setNodeOpen(false)
       setEmpty(false)
-      syncGraph()
+      syncFlow()
       feedback.success(t('knowledgegraph.createSuccess'))
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -187,7 +429,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
     }
   }
 
-  // ===== 新建关系（拖拽连线） =====
+  // ===== 新建关系（编辑态从节点连接桩拖线） =====
   const openCreateEdge = useCallback((source: string, target: string) => {
     if (source === target) return
     if (relationTypes.length === 0) {
@@ -211,7 +453,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
       })
       edgesRef.current.set(edgeId, { id: edgeId, source: pendingEdge.source, target: pendingEdge.target })
       setEdgeOpen(false)
-      syncGraph()
+      syncFlow()
       feedback.success(t('knowledgegraph.createSuccess'))
     } catch {
       // 错误已由全局请求中间件统一提示（如违反起止约束 400）
@@ -234,14 +476,14 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
           for (const [id, e] of edgesRef.current) {
             if (e.source === nodeId || e.target === nodeId) edgesRef.current.delete(id)
           }
-          syncGraph()
+          syncFlow()
           feedback.success(t('knowledgegraph.deleteSuccess'))
         } catch {
           // 错误已由全局请求中间件统一提示
         }
       },
     })
-  }, [graphId, syncGraph, t])
+  }, [graphId, syncFlow, t])
 
   const confirmDeleteEdge = useCallback((edgeId: string) => {
     Modal.confirm({
@@ -251,96 +493,14 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
         try {
           await deleteKnowledgeGraphEdge(graphId, edgeId)
           edgesRef.current.delete(edgeId)
-          syncGraph()
+          syncFlow()
           feedback.success(t('knowledgegraph.deleteSuccess'))
         } catch {
           // 错误已由全局请求中间件统一提示
         }
       },
     })
-  }, [graphId, syncGraph, t])
-
-  useEffect(() => {
-    if (!containerRef.current) return
-    const graph = new Graph({
-      container: containerRef.current,
-      autoFit: 'center',
-      padding: 24,
-      data: { nodes: [], edges: [] },
-      node: {
-        style: {
-          size: 28,
-          fill: (datum: { data?: { typeKey?: string } }) => colorFor(String(datum.data?.typeKey ?? '')),
-          labelText: (datum: { data?: { label?: string } }) => String(datum.data?.label ?? ''),
-          labelPlacement: 'bottom',
-          labelBackground: true,
-          labelMaxWidth: 120,
-        },
-        palette: undefined,
-      },
-      edge: {
-        style: {
-          stroke: token.colorBorder,
-          endArrow: true,
-          endArrowSize: 8,
-          labelText: (datum: { data?: { relationLabel?: string } }) => String(datum.data?.relationLabel ?? ''),
-          labelPlacement: 'center',
-          labelBackground: true,
-          labelBackgroundRadius: 4,
-          labelFontSize: 11,
-          labelPadding: [1, 4],
-        },
-      },
-      layout: { type: 'force', linkDistance: 120, preventOverlap: true, animated: false },
-      // 拖节点=移动位置；编辑态建关系=点击起点节点再点击终点节点（两段式，与节点拖动/点选详情互不干扰）
-      behaviors: [
-        'drag-canvas',
-        'zoom-canvas',
-        'drag-element',
-        ...(canEdit
-          ? [{
-              type: 'create-edge' as const,
-              trigger: 'click' as const,
-              enable: (event: { targetType?: string }) => event.targetType === 'node',
-              onFinish: (edge: { id?: string; source: string; target: string }) => {
-                // 先移除临时边，弹窗选关系类型确认后才以真实 id 重建
-                const id = edge.id ?? ''
-                if (id) graph.removeData({ nodes: [], edges: [id] })
-                openCreateEdge(String(edge.source), String(edge.target))
-              },
-            }]
-          : []),
-      ],
-    })
-    graphRef.current = graph
-
-    // 右键画布空白 → 新建实体；右键节点/边 → 删除（仅可编辑的托管图）
-    const onCanvasContext = (event: { targetType?: string; preventDefault?: () => void }) => {
-      if (!canEdit) return
-      event.preventDefault?.()
-      openCreateNode()
-    }
-    const onNodeContext = (event: { target?: { id?: string }; preventDefault?: () => void }) => {
-      if (!canEdit) return
-      event.preventDefault?.()
-      const id = event.target?.id
-      if (typeof id === 'string') confirmDeleteNode(id)
-    }
-    const onEdgeContext = (event: { target?: { id?: string }; preventDefault?: () => void }) => {
-      if (!canEdit) return
-      event.preventDefault?.()
-      const id = event.target?.id
-      if (typeof id === 'string') confirmDeleteEdge(id)
-    }
-    graph.on('canvas:contextmenu', onCanvasContext as never)
-    graph.on('node:contextmenu', onNodeContext as never)
-    graph.on('edge:contextmenu', onEdgeContext as never)
-
-    return () => {
-      graphRef.current = null
-      void graph.destroy()
-    }
-  }, [colorFor, canEdit, openCreateNode, openCreateEdge, confirmDeleteNode, confirmDeleteEdge, token])
+  }, [graphId, syncFlow, t])
 
   const loadSchema = useCallback(async () => {
     try {
@@ -356,12 +516,13 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
   const load = useCallback(async () => {
     if (!Number.isFinite(graphId) || graphId <= 0) return
     setLoading(true)
+    fitPendingRef.current = true
     try {
       const res = await getKnowledgeGraphCanvas(graphId, {
         entityTypeId: !isConnected && typeFilter != null ? Number(typeFilter) : null,
         label: isConnected ? typeFilter : null,
         keyword: keyword || undefined,
-        limit: DEFAULT_LIMIT,
+        limit,
       })
       nodesRef.current.clear()
       edgesRef.current.clear()
@@ -389,13 +550,13 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
         }
       }
       setTruncated(res.truncated)
-      syncGraph()
+      syncFlow()
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setLoading(false)
     }
-  }, [graphId, typeFilter, keyword, syncGraph, isConnected])
+  }, [graphId, typeFilter, keyword, limit, syncFlow, isConnected])
 
   useEffect(() => { void loadSchema() }, [loadSchema])
   useEffect(() => { void load() }, [load])
@@ -429,32 +590,38 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
         }
       }
       if (res.truncated) setTruncated(true)
-      syncGraph()
+      syncFlow()
     } catch {
       // 错误已由全局请求中间件统一提示
     }
-  }, [graphId, syncGraph])
+  }, [graphId, syncFlow])
 
-  // 点选节点展开一跳邻接并查看详情；点选边查看关系信息（G6 v5 用 targetType 判定命中元素）
-  useEffect(() => {
-    const graph = graphRef.current
-    if (!graph) return
-    const onClick = (event: { targetType?: string; target?: { id?: string } }) => {
-      const id = event.target?.id
-      if (event.targetType === 'node' && typeof id === 'string') {
-        setDetailNode(nodesRef.current.get(id) ?? null)
-        setDetailEdge(null)
-        void handleExpand(id)
-      } else if (event.targetType === 'edge' && typeof id === 'string') {
-        setDetailEdge(edgesRef.current.get(id) ?? null)
-        setDetailNode(null)
+  // 点选节点展开一跳邻接并查看详情；点选边查看关系信息
+  const handleNodeClick = useCallback((_: unknown, node: KgFlowNode) => {
+    setDetailNode(nodesRef.current.get(node.id) ?? null)
+    setDetailEdge(null)
+    void handleExpand(node.id)
+  }, [handleExpand])
+
+  const handleEdgeClick = useCallback((_: unknown, edge: KgFlowEdge) => {
+    setDetailEdge(edgesRef.current.get(edge.id) ?? null)
+    setDetailNode(null)
+  }, [])
+
+  // 拖动节点：应用位置并回写布局缓存，重布局（展开）时保持拖后位置
+  const handleNodesChange = useCallback((changes: NodeChange<KgFlowNode>[]) => {
+    setFlowNodes((nds) => applyNodeChanges(changes, nds))
+    for (const c of changes) {
+      if (c.type === 'position' && c.position) {
+        layoutPositionsRef.current.set(c.id, { x: c.position.x, y: c.position.y })
       }
     }
-    graph.on('click', onClick as never)
-    return () => {
-      graph.off('click', onClick as never)
-    }
-  }, [handleExpand])
+  }, [])
+
+  const handleConnect = useCallback((connection: Connection) => {
+    if (!canEdit || !connection.source || !connection.target) return
+    openCreateEdge(connection.source, connection.target)
+  }, [canEdit, openCreateEdge])
 
   // 新建实例弹窗：按所选实体类型渲染属性输入
   const selectedEntityTypeId = Form.useWatch('entityTypeId', nodeForm)
@@ -473,9 +640,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
     : false
 
   // 节点详情：属性按模型定义顺序优先，未定义的属性追加在后
-  const detailNodeTypeName = detailNode
-    ? (detailNode.entityTypeId != null ? typeInfo.get(detailNode.entityTypeId)?.name : null) ?? (isConnected ? detailNode.typeKey : '')
-    : ''
+  const detailNodeTypeName = detailNode ? typeNameOf(detailNode) : ''
   const detailDefs = detailNode?.entityTypeId != null ? toPropertyDefs(typeInfo.get(detailNode.entityTypeId)?.properties) : []
   const detailProps: [string, string][] = (() => {
     const props = detailNode?.properties ?? {}
@@ -499,7 +664,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
   const closeDetail = () => { setDetailNode(null); setDetailEdge(null) }
 
   return (
-    <div onContextMenu={(e) => e.preventDefault()}>
+    <div ref={wrapperRef} onContextMenu={(e) => e.preventDefault()}>
       <Space style={{ marginBottom: spacing.md }} wrap>
         {entityTypes.map((x) => {
           const value = x.entityTypeId != null ? String(x.entityTypeId) : (x.name ?? '')
@@ -533,35 +698,105 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
           onSearch={(value) => setKeyword(value)}
           style={{ width: 220 }}
         />
+        <Tooltip title={t('knowledgegraph.canvasLimitTip')}>
+          <Select
+            value={limit}
+            onChange={(value) => setLimit(value)}
+            options={LIMIT_OPTIONS.map((x) => ({ value: x, label: `${x}` }))}
+            style={{ width: 128 }}
+            popupMatchSelectWidth={false}
+          />
+        </Tooltip>
         <Button icon={<ReloadOutlined />} onClick={() => void load()}>
           {t('knowledgegraph.canvasReload')}
         </Button>
-        {canEdit && (
-          <Button type="primary" ghost icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>
-            {t('knowledgegraph.import.button')}
-          </Button>
-        )}
       </Space>
 
       {truncated && (
-        <Alert type="warning" showIcon message={t('knowledgegraph.canvasTruncated')} style={{ marginBottom: spacing.md }} />
+        <Alert type="warning" showIcon message={t('knowledgegraph.canvasTruncated', { limit })} style={{ marginBottom: spacing.md }} />
       )}
 
       <Spin spinning={loading}>
         <div
-          ref={containerRef}
+          ref={canvasShellRef}
           style={{
-            height: CANVAS_HEIGHT,
+            position: 'relative',
+            height: canvasHeight,
             border: `1px solid ${token.colorBorderSecondary}`,
             borderRadius: 8,
-            background: 'transparent',
+            background: token.colorBgLayout,
+            overflow: 'hidden',
           }}
-        />
-      </Spin>
+        >
+          <ReactFlowProvider>
+            <ReactFlow
+              onInit={handleCanvasInit}
+              nodes={flowNodes}
+              edges={flowEdges}
+              nodeTypes={nodeTypes}
+              onNodesChange={handleNodesChange}
+              onNodeClick={handleNodeClick}
+              onEdgeClick={handleEdgeClick}
+              onConnect={handleConnect}
+              connectionMode={ConnectionMode.Loose}
+              nodesConnectable={canEdit}
+              onNodeContextMenu={canEdit
+                ? (event, node) => {
+                    event.preventDefault()
+                    confirmDeleteNode(node.id)
+                  }
+                : undefined}
+              onEdgeContextMenu={canEdit
+                ? (event, edge) => {
+                    event.preventDefault()
+                    confirmDeleteEdge(edge.id)
+                  }
+                : undefined}
+              onPaneContextMenu={canEdit
+                ? (event) => {
+                    event.preventDefault()
+                    openCreateNode()
+                  }
+                : undefined}
+              fitView={false}
+              minZoom={0.1}
+              maxZoom={2.5}
+              proOptions={{ hideAttribution: true }}
+              defaultEdgeOptions={{
+                type: 'default',
+                style: { stroke: token.colorBorder },
+                labelStyle: { fontSize: 11, fill: token.colorTextSecondary },
+                labelBgStyle: { fill: token.colorBgContainer, fillOpacity: 0.9 },
+                labelBgPadding: [4, 2],
+                labelBgBorderRadius: 4,
+              }}
+            >
+              <Background variant={BackgroundVariant.Dots} gap={18} size={1} color={token.colorBorderSecondary} />
+              <Controls position="bottom-right" showInteractive={false} />
+              <Panel position="top-right">
+                <Tooltip title={t(isFullscreen ? 'knowledgegraph.canvasFullscreenExit' : 'knowledgegraph.canvasFullscreen')} placement="left">
+                  <Button size="small" icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} onClick={toggleFullscreen} />
+                </Tooltip>
+              </Panel>
+            </ReactFlow>
+          </ReactFlowProvider>
 
-      {empty && !loading && (
-        <Empty description={t('knowledgegraph.canvasEmpty')} style={{ marginTop: -CANVAS_HEIGHT / 2 - 16 }} />
-      )}
+          {empty && !loading && (
+            <Empty
+              description={t('knowledgegraph.canvasEmpty')}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                margin: 0,
+                zIndex: 1,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+        </div>
+      </Spin>
 
       <Modal
         open={nodeOpen}
@@ -645,7 +880,7 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
         ) : null}
       </Modal>
       {!canEdit && (
-        <div style={{ marginBottom: spacing.xs, opacity: 0.65 }}>{t('knowledgegraph.canvasHint')}</div>
+        <div style={{ marginTop: spacing.sm, opacity: 0.65 }}>{t('knowledgegraph.canvasHint')}</div>
       )}
 
       <Drawer
@@ -683,14 +918,6 @@ export function KnowledgeGraphCanvas({ graphId, teamId, mode, myRole = null, gra
           </Descriptions>
         ) : null}
       </Drawer>
-
-      <KnowledgeGraphImportModal
-        open={importOpen}
-        teamId={teamId ?? 0}
-        graphId={graphId}
-        onClose={() => setImportOpen(false)}
-        onImported={() => void load()}
-      />
     </div>
   )
 }

@@ -473,7 +473,7 @@ export function TeamManage() {
               />
             </DSCard>
           ) : activeSection === 'gateway' ? (
-            <TeamGateway teamId={teamId} canManage={isOwner || detail?.myRole === ROLE_ADMIN} />
+            <TeamGateway teamId={teamId} />
           ) : activeSection === 'prompts' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamPrompts teamId={teamId} canManage={isAdminPlus} />

@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using MoAI.App.Models;
 using MoAI.Database.Entities;
+using MoAI.Database.Enums;
 using MoAI.Infra;
 using MoAI.Infra.Extensions;
 using MoAI.Infra.Helpers;
@@ -52,7 +53,8 @@ public class ExternalTokenProvider : IExternalTokenProvider
             accessApp.Id,
             appId: null,
             externalUserId: null,
-            nickname: null);
+            nickname: null,
+            scopes: ToAccessAppScopes(accessApp));
     }
 
     /// <inheritdoc/>
@@ -64,9 +66,18 @@ public class ExternalTokenProvider : IExternalTokenProvider
             external.TeamId,
             external.Nickname ?? external.ExternalUserId,
             external.AccessAppId,
-            external.AppId,
+            appId: external.AppId,
             externalUserId: external.ExternalUserId,
-            nickname: external.Nickname);
+            nickname: external.Nickname,
+            scopes: accessApp == null ? Models.ExternalTokenContext.DefaultScopes : ToAccessAppScopes(accessApp));
+    }
+
+    /// <summary>
+    /// 应用接入签发的 token 范围取接入勾选的知识库维度（存量接入默认读写，行为不变）.
+    /// </summary>
+    private static TeamApiKeyScopes ToAccessAppScopes(AccessAppEntity accessApp)
+    {
+        return (TeamApiKeyScopes)accessApp.Scopes & TeamApiKeyScopeCodes.ExternalDimensions;
     }
 
     /// <inheritdoc/>
@@ -123,6 +134,11 @@ public class ExternalTokenProvider : IExternalTokenProvider
         long teamId = claimMap.TryGetValue(ExternalAuthDefaults.ClaimTeamId, out var teamIdValue) && long.TryParse(teamIdValue, out var teamIdParsed) ? teamIdParsed : 0;
         long externalId = subjectType == UserType.External && long.TryParse(subjectId, out var externalIdParsed) ? externalIdParsed : 0;
 
+        // 旧格式 token 无 scope 声明，按全量知识库范围处理保持兼容
+        var scopes = claimMap.TryGetValue(ExternalAuthDefaults.ClaimScope, out var scopeValue)
+            ? TeamApiKeyScopeCodes.ParseClaimValue(scopeValue)
+            : Models.ExternalTokenContext.DefaultScopes;
+
         return new ExternalTokenContext
         {
             SubjectType = subjectType,
@@ -130,6 +146,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
             ExternalId = externalId,
             TeamId = teamId,
             AccessAppId = accessAppId,
+            Scopes = scopes,
             AppId = appId,
             ExternalUserId = claimMap.GetValueOrDefault(ExternalAuthDefaults.ClaimExternalUserId),
             Nickname = claimMap.GetValueOrDefault(JwtRegisteredClaimNames.Nickname),
@@ -175,7 +192,8 @@ public class ExternalTokenProvider : IExternalTokenProvider
         Guid? accessAppId,
         Guid? appId,
         string? externalUserId,
-        string? nickname)
+        string? nickname,
+        TeamApiKeyScopes scopes)
     {
         var signingCredentials = new SigningCredentials(new RsaSecurityKey(_rsaProvider.GetPrivateRsa()), SecurityAlgorithms.RsaSha256);
         var audience = ExternalAuthDefaults.BuildAudience(_systemOptions.Server);
@@ -193,6 +211,8 @@ public class ExternalTokenProvider : IExternalTokenProvider
         {
             accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimAccessAppId, accessAppId.Value.ToString()));
         }
+
+        accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimScope, TeamApiKeyScopeCodes.ToClaimValue(scopes)));
 
         if (appId != null)
         {
@@ -220,7 +240,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
         };
         var accessToken = _tokenHandler.CreateToken(accessTokenDescriptor);
 
-        // refresh token 仅保留主体信息，授权在访问时按数据库团队级配置校验
+        // refresh token 仅保留主体信息，授权在访问时按数据库当前配置校验
         var refreshClaims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, subjectId),

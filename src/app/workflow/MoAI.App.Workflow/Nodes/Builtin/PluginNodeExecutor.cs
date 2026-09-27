@@ -33,7 +33,9 @@ public class PluginNodeExecutor : INodeExecutor
 
         try
         {
-            var output = await _pluginInvoker.InvokeAsync(pluginKey, context.Inputs.CloneObject(), cancellationToken);
+            // 自定义插件（MCP/OpenAPI）需指定函数；静态/动态插件为 null
+            var functionName = context.GetConfigString("function");
+            var output = await _pluginInvoker.InvokeAsync(pluginKey, string.IsNullOrWhiteSpace(functionName) ? null : functionName, context.Inputs.CloneObject(), cancellationToken);
             return NodeExecutionResult.Success(output);
         }
         catch (OperationCanceledException)

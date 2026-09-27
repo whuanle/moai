@@ -4,6 +4,9 @@
 
 ## 自检记录
 
+- key 直连外部接入轮（免换 token 访问团队资源，@EA-S15~S18）：`ExternalAuthenticationMiddleware` 支持 Bearer/x-api-key 直接携带 `moai-ac-`/`moai-` key 构建外部上下文（范围取 key 勾选知识库维度）；需授权应用会话面对无用户身份凭证统一 403（`external_user_token_required`）；应用接入 key 直连会话以「直连会话身份」external_user（`access_app_id + __key_direct__`）承载归属，落库走独立子作用域防请求级用户上下文懒加载污染；`EnsureExternalUser` 放宽为「须携带已解析外部用户 id」。
+  - E2E：`external-app-e2e.mjs` → **75/75**（新增 EA-30~35）、`team-apikey-scope-e2e.mjs` → **43/43**（新增 TA-32a~i，TA-25b 越维代码改 external_token）；后端 0 error、前端 typecheck/lint 0 error、vitest **438/438**（2026-09-26）。
+
 - 外部应用能力限制轮（沙箱与技能强制关闭，@EA-S13/S14，D46）：保存侧 `SaveAppAgentConfigCommandHandler` 对外部应用显式携带技能/启用沙箱即 400、存量技能随保存收敛为 `[]`；装配侧 `AppAgentFactory` 对外部应用克隆生效配置强制清技能/关沙箱（脱管行不污染变更跟踪，覆盖发布快照与全部对话入口）。
   - E2E：`node local-dev/external-app-e2e.mjs` → **59/59 PASS**（新增 EA-29a~e：外部应用携带技能 400、开启沙箱 400、正常保存回读技能空且沙箱未启用、内部应用开沙箱不受限；5203 独立实例 `-o .e2e-run` 绕 5000 在跑实例 bin 锁）（2026-09-21）。
   - 回归：`node local-dev/app-e2e.mjs` → **172/172 PASS**、`node local-dev/sandbox-limits-e2e.mjs` → **21/21 PASS**（2026-09-21）。
@@ -143,6 +146,11 @@
 | @EA-S12 | external-app-e2e.mjs（EA-27a-e、EA-28） | PASS（2026-09-14） |
 | @EA-S13 | external-app-e2e.mjs（EA-29a~e）+ AppConfigSection.test.tsx（外部应用不渲染技能/沙箱区、保存固定空值） | PASS 59/59、15/15（2026-09-21） |
 | @EA-S14 | 代码走查（`AppAgentFactory.CloneWithExternalRestrictions`：技能清空、沙箱关闭、脱管克隆不修改草稿/快照） | PASS（2026-09-21） |
+| @EA-S15 | external-app-e2e.mjs（EA-31a~c）＋ team-apikey-scope-e2e.mjs（TA-32c/d/h） | EA 74/74、TA 21/21（2026-09-27） |
+| @EA-S16 | external-app-e2e.mjs（EA-33a~c） | PASS 74/74（2026-09-27） |
+| @EA-S17 | external-app-e2e.mjs（EA-32a~d） | PASS 74/74（2026-09-27） |
+| @EA-S18 | 已随团队接入 key 下线退役（原团队 key 直连场景，编号不复用）；现状见 [@EA-S19](./bdd.md#ea-s19) | —（2026-09-27） |
+| @EA-S19 | external-app-e2e.mjs（EA-36 已下线 moai- 前缀 401）＋ team-apikey-scope-e2e.mjs（TA-32j）＋ gateway-e2e.mjs（moai- 前缀网关 401） | EA 74/74、TA 21/21、GW 15/15（2026-09-27） |
 | 访问点配置分区 | ui/src/pages/teams/apps/__tests__/AppAccessSection.test.tsx | PASS 5/5（2026-09-14） |
 
 ## 复验命令
@@ -154,7 +162,7 @@ cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
 node local-dev/app-e2e.mjs                 # 期望 172/172 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白 / AP-54 发布配置快照双轨 / AP-57 快捷输入 / AP-58 流程应用绑定 / AP-59 对话调用流程工具 / AP-60 审批策略，AP-59/AP-60 需 admin 账号否则 SKIP）
 node local-dev/chat-attachment-e2e.mjs     # 期望 12/12 PASS（@AP-S55 对话附件：直传/提取/白名单/越权防护）
-node local-dev/external-app-e2e.mjs        # 期望 59/59 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制，需先执行 asserts/external_app.sql）
+node local-dev/external-app-e2e.mjs        # 期望 74/74 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制；EA-30~34/36 key 直连 @EA-S15~S17/S19，需先执行 asserts/external_app.sql）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test
 ```
@@ -163,3 +171,7 @@ cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck &&
 
 - `npm run syncapi` 会 `rmSync(ui/src/api/client)` 后重建客户端；在工作区内需 `CODEBUDDY_SAFE_DELETE_ENABLED=0`，否则被 safe-delete 拦截而中止。
 - `asserts/*.sql` 已随仓库 DDL 清理移除，建表以库表现状 / 脚手架产物为准（见 SOP §4）。
+- 2026-09-26 团队接入 key 换外部 token（@AP-S72）：`/external/token` 新增 `apiKey` 凭证（与 `accessAppKey` 互斥），token 携带 `keyid`/`scope` 声明，刷新按 key 当前状态与范围重签。E2E `team-apikey-scope-e2e.mjs` **29/29**、external-app-e2e 回归 **59/59**（2026-09-26）；设计与范围模型见 [../gateway/sdd.md](../gateway/sdd.md)。
+- 2026-09-26 应用接入 key 知识库功能范围（@AP-S73）：`access_app.scopes`（asserts/access_app_scopes.sql，存量回填 6=读写），签发/刷新 token 范围取接入勾选，不传默认读写全量、空列表=纯对话接入。E2E `team-apikey-scope-e2e.mjs` **34/34**、external-app-e2e 回归 **59/59**、wiki-external-e2e 回归 **30/30**（2026-09-26）。
+- 2026-09-26 应用对话范围门禁（@AP-S74）：`access_app.scopes`/`team_api_key.scopes` 增 `app_chat`(32)，换用户 token 与用户 token 刷新按来源勾选重验（asserts/access_app_app_chat.sql，存量 |=32 补对话）。应用接入界面改按资源组授权（知识库 无/只读/可写）。E2E `team-apikey-scope-e2e.mjs` **46/46**（TA-33~35）、external-app-e2e 回归 **75/75**（2026-09-26）；分组口径见 [../gateway/sdd.md](../gateway/sdd.md) 资源分组表。
+- 2026-09-27 团队接入 key 下线（@AP-S72 改应用接入 key 换 token、@EA-S18 退役→@EA-S19）：`/external/token` 移除 `apiKey` 凭证与 `keyid` claim，key 直连仅接受 `moai-ac-`；`team_api_key` 表删除（asserts/team_api_key_drop.sql）。E2E external-app **74/74**、team-apikey-scope **21/21**、gateway **15/15**（2026-09-27）；设计见 [../gateway/sdd.md](../gateway/sdd.md)。

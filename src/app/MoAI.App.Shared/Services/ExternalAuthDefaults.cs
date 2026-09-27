@@ -46,6 +46,11 @@ public static class ExternalAuthDefaults
     public const string ClaimExternalUserId = "externaluserid";
 
     /// <summary>
+    /// 功能范围 claim，值为逗号分隔的 scope 代码（wiki_read/wiki_write/...）；缺省视为旧 token，按全量知识库范围处理.
+    /// </summary>
+    public const string ClaimScope = "scope";
+
+    /// <summary>
     /// access token 类型值.
     /// </summary>
     public const string TokenTypeAccess = "access_token";
@@ -61,9 +66,15 @@ public static class ExternalAuthDefaults
     public const string TokenContextItemKey = "MoAI.ExternalTokenContext";
 
     /// <summary>
+    /// key 直连会话身份的固定外部身份标识：按（来源应用接入 id, 此标识）唯一，
+    /// 应用接入 key 直连发起会话/对话时复用为 external_user 记录，会话归属延续 CreateUserId 语义.
+    /// </summary>
+    public const string KeyDirectExternalUserId = "__key_direct__";
+
+    /// <summary>
     /// 构造外部 token 的 audience.
     /// </summary>
     /// <param name="server">服务器地址（SystemOptions.Server）.</param>
-    /// <returns>外部 audience.</returns>
+    /// <returns>返回外部 audience.</returns>
     public static string BuildAudience(string server) => $"{server}{AudienceSuffix}";
 }

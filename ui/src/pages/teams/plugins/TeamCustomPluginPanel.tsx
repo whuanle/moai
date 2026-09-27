@@ -9,7 +9,7 @@ import {
 import { Button, Form, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { PluginClassify } from '@/api/classify'
+import { classifyLabel, type PluginClassify } from '@/api/classify'
 import type { CustomPlugin, CustomPluginDetail, CustomPluginFunction, CustomPluginType } from '@/api/plugin'
 import {
   deleteTeamPlugin,
@@ -249,7 +249,11 @@ export function TeamCustomPluginPanel({
       dataIndex: 'classifyName',
       key: 'classifyName',
       width: 110,
-      render: (v: string | null) => (v ? <Tag color="blue">{v}</Tag> : <Text type="secondary">-</Text>),
+      render: (v: string | null, record) => {
+        const classify = classifies.find((c) => c.classifyId === record.classifyId)
+        const label = classify ? classifyLabel(classify) : v
+        return label ? <Tag color="blue">{label}</Tag> : <Text type="secondary">-</Text>
+      },
     },
     {
       title: t('plugins.colServer'),
@@ -360,7 +364,7 @@ export function TeamCustomPluginPanel({
     () => [
       { value: 'all', label: t('plugins.classifyAll') },
       { value: 'uncategorized', label: t('plugins.classifyUncategorized') },
-      ...classifies.map((c) => ({ value: String(c.classifyId), label: c.name })),
+      ...classifies.map((c) => ({ value: String(c.classifyId), label: classifyLabel(c) })),
     ],
     [classifies, t],
   )
@@ -419,7 +423,7 @@ export function TeamCustomPluginPanel({
         sticky
         scroll={{ x: 1400 }}
         toolbar={
-          <Space size={4}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
             {classifyTags.map((item, index) => (
               <Fragment key={item.value}>
                 {index > 0 && <Text type="secondary">|</Text>}
@@ -428,7 +432,7 @@ export function TeamCustomPluginPanel({
                 </Tag.CheckableTag>
               </Fragment>
             ))}
-          </Space>
+          </div>
         }
       />
 

@@ -110,13 +110,13 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
     }
 
     /// <inheritdoc/>
-    public async Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken)
+    public async Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken)
     {
         await _provider.EnsureInitializedAsync(cancellationToken);
         var id = Guid.CreateVersion7().ToString();
         await WriteAsync(
-            "CREATE (n:KgNode {id: $id, kgId: $kgId, entityTypeId: $entityTypeId, name: $name, description: $description, propsJson: $propsJson})",
-            new { id, kgId = KnowledgeGraphId, entityTypeId, name, description, propsJson = propsJson ?? string.Empty },
+            "CREATE (n:KgNode {id: $id, kgId: $kgId, entityTypeId: $entityTypeId, name: $name, description: $description, propsJson: $propsJson, key: $key})",
+            new { id, kgId = KnowledgeGraphId, entityTypeId, name, description, propsJson = propsJson ?? string.Empty, key = string.IsNullOrWhiteSpace(key) ? null : key },
             cancellationToken);
         return new KnowledgeGraphNodeRecord(id, KnowledgeGraphId, entityTypeId, name, description, propsJson);
     }
@@ -137,13 +137,14 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
             entityTypeId = node.EntityTypeId,
             name = node.Name,
             description = node.Description,
-            propsJson = string.Empty,
+            propsJson = node.PropsJson ?? string.Empty,
+            key = string.IsNullOrWhiteSpace(node.Key) ? null : node.Key,
         }).ToList();
 
-        // 单语句 UNWIND + CREATE 在单事务内执行，RETURN item.idx 保证返回行与输入序号对应.
+        // 单语句 UNWIND + CREATE 在单事务内执行，RETURN item.idx 保证返回行与输入序号对应；key 为 null 时属性不落库.
         var records = await WriteReadAsync(
             "UNWIND $items AS item " +
-            "CREATE (n:KgNode {id: item.id, kgId: $kgId, entityTypeId: item.entityTypeId, name: item.name, description: item.description, propsJson: item.propsJson}) " +
+            "CREATE (n:KgNode {id: item.id, kgId: $kgId, entityTypeId: item.entityTypeId, name: item.name, description: item.description, propsJson: item.propsJson, key: item.key}) " +
             "RETURN item.idx AS idx, n.id AS id",
             new { kgId = KnowledgeGraphId, items },
             cancellationToken);
@@ -204,11 +205,12 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
     }
 
     /// <inheritdoc/>
-    public async Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, string? propsJson, CancellationToken cancellationToken)
+    public async Task UpdateNodeAsync(long KnowledgeGraphId, string nodeId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken)
     {
         await WriteAsync(
-            "MATCH (n:KgNode {kgId: $kgId, id: $id}) SET n.entityTypeId = $entityTypeId, n.name = $name, n.description = $description, n.propsJson = $propsJson",
-            new { kgId = KnowledgeGraphId, id = nodeId, entityTypeId, name, description, propsJson = propsJson ?? string.Empty },
+            "MATCH (n:KgNode {kgId: $kgId, id: $id}) SET n.entityTypeId = $entityTypeId, n.name = $name, n.description = $description, n.propsJson = $propsJson, " +
+            "n.key = CASE WHEN $key IS NULL THEN n.key ELSE $key END",
+            new { kgId = KnowledgeGraphId, id = nodeId, entityTypeId, name, description, propsJson = propsJson ?? string.Empty, key = string.IsNullOrWhiteSpace(key) ? null : key },
             cancellationToken);
     }
 
@@ -256,6 +258,214 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
             new { kgId = KnowledgeGraphId, ids = nodeIds },
             cancellationToken);
         return records.ToDictionary(x => x["id"].As<string>(), x => x["entityTypeId"].As<long>(), StringComparer.Ordinal);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Dictionary<string, KnowledgeGraphNodeRecord>> GetNodesByKeysAsync(long KnowledgeGraphId, IReadOnlyList<string> keys, CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return new Dictionary<string, KnowledgeGraphNodeRecord>(StringComparer.Ordinal);
+        }
+
+        var records = await ReadAsync(
+            $"UNWIND $keys AS k MATCH (n:KgNode {{kgId: $kgId, key: k}}) RETURN k AS queryKey, {NodeReturn} ORDER BY n.id",
+            new { kgId = KnowledgeGraphId, keys },
+            cancellationToken);
+
+        // 同一 key 理论唯一（导入 upsert 收敛）；历史脏数据出现重复时取首个，保持确定性
+        var result = new Dictionary<string, KnowledgeGraphNodeRecord>(StringComparer.Ordinal);
+        foreach (var record in records)
+        {
+            var queryKey = record["queryKey"].As<string>();
+            if (!result.ContainsKey(queryKey))
+            {
+                result[queryKey] = MapNode(record);
+            }
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Dictionary<(long EntityTypeId, string Name), KnowledgeGraphNodeRecord>> GetNodesByTypeAndNamesAsync(long KnowledgeGraphId, IReadOnlyList<(long EntityTypeId, string Name)> pairs, CancellationToken cancellationToken)
+    {
+        if (pairs.Count == 0)
+        {
+            return new Dictionary<(long, string), KnowledgeGraphNodeRecord>();
+        }
+
+        var items = pairs.Select(x => new { t = x.EntityTypeId, n = x.Name }).ToList();
+        var records = await ReadAsync(
+            $"UNWIND $items AS item MATCH (n:KgNode {{kgId: $kgId, entityTypeId: item.t, name: item.n}}) RETURN item.t AS pairType, item.n AS pairName, {NodeReturn} ORDER BY n.id",
+            new { kgId = KnowledgeGraphId, items },
+            cancellationToken);
+
+        // 图谱不强制（类型,名称）唯一：重复时取首个（ORDER BY n.id 语义），保持确定性
+        var result = new Dictionary<(long, string), KnowledgeGraphNodeRecord>();
+        foreach (var record in records)
+        {
+            var key = (record["pairType"].As<long>(), record["pairName"].As<string>());
+            if (!result.ContainsKey(key))
+            {
+                result[key] = MapNode(record);
+            }
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<KnowledgeGraphNodeRecord>> GetNodesByNamesAsync(long KnowledgeGraphId, IReadOnlyList<string> names, CancellationToken cancellationToken)
+    {
+        if (names.Count == 0)
+        {
+            return Array.Empty<KnowledgeGraphNodeRecord>();
+        }
+
+        var records = await ReadAsync(
+            $"UNWIND $names AS nm MATCH (n:KgNode {{kgId: $kgId, name: nm}}) RETURN {NodeReturn}",
+            new { kgId = KnowledgeGraphId, names },
+            cancellationToken);
+        return records.Select(MapNode).ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<KnowledgeGraphNodeRecord?> GetNodeByKeyAsync(long KnowledgeGraphId, string key, CancellationToken cancellationToken)
+    {
+        var records = await ReadAsync(
+            $"MATCH (n:KgNode {{kgId: $kgId, key: $key}}) RETURN {NodeReturn} LIMIT 1",
+            new { kgId = KnowledgeGraphId, key },
+            cancellationToken);
+        return records.Count == 0 ? null : MapNode(records[0]);
+    }
+
+    /// <inheritdoc/>
+    public async Task UpdateNodesBatchAsync(long KnowledgeGraphId, IReadOnlyList<KnowledgeGraphNodeUpdateInput> items, CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        await _provider.EnsureInitializedAsync(cancellationToken);
+        var parameters = items.Select(x => new
+        {
+            id = x.Id,
+            entityTypeId = x.EntityTypeId,
+            name = x.Name,
+            description = x.Description,
+            propsJson = x.PropsJson ?? string.Empty,
+            key = string.IsNullOrWhiteSpace(x.Key) ? null : x.Key,
+        }).ToList();
+
+        // key 为 null 表示保留现有 key（仅按名称匹配收养 key 时才携带非 null）
+        await WriteAsync(
+            "UNWIND $items AS item " +
+            "MATCH (n:KgNode {kgId: $kgId, id: item.id}) " +
+            "SET n.entityTypeId = item.entityTypeId, n.name = item.name, n.description = item.description, n.propsJson = item.propsJson, " +
+            "n.key = CASE WHEN item.key IS NULL THEN n.key ELSE item.key END",
+            new { kgId = KnowledgeGraphId, items = parameters },
+            cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<HashSet<string>> GetExistingEdgeKeysAsync(long KnowledgeGraphId, IReadOnlyList<(string SourceNodeId, long RelationTypeId, string TargetNodeId)> triples, CancellationToken cancellationToken)
+    {
+        if (triples.Count == 0)
+        {
+            return new HashSet<string>(StringComparer.Ordinal);
+        }
+
+        var items = triples.Select(x => new { s = x.SourceNodeId, rt = x.RelationTypeId, t = x.TargetNodeId }).ToList();
+        var records = await ReadAsync(
+            "UNWIND $items AS item " +
+            "MATCH (s:KgNode {kgId: $kgId, id: item.s})-[r:KG_REL {kgId: $kgId, relationTypeId: item.rt}]->(t:KgNode {kgId: $kgId, id: item.t}) " +
+            "RETURN item.s AS s, item.rt AS rt, item.t AS t",
+            new { kgId = KnowledgeGraphId, items },
+            cancellationToken);
+
+        // 同一三元组可能有多条平行边：去重为复合键集合
+        return records.Select(x => $"{x["s"].As<string>()}|{x["rt"].As<long>()}|{x["t"].As<string>()}").ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> DeleteNodesByKeysAsync(long KnowledgeGraphId, IReadOnlyList<string> keys, CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        await _provider.EnsureInitializedAsync(cancellationToken);
+
+        // 先读命中节点 id（供向量删除增量），再统一删除；删除后不可再访问节点属性（memgraph 方言会报错），故两步执行
+        var idRecords = await ReadAsync(
+            "UNWIND $keys AS k MATCH (n:KgNode {kgId: $kgId, key: k}) RETURN n.id AS id",
+            new { kgId = KnowledgeGraphId, keys },
+            cancellationToken);
+        var ids = idRecords.Select(x => x["id"].As<string>()).ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        await WriteAsync(
+            "UNWIND $ids AS id MATCH (n:KgNode {kgId: $kgId, id: id}) DETACH DELETE n",
+            new { kgId = KnowledgeGraphId, ids },
+            cancellationToken);
+        return ids;
+    }
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<KnowledgeGraphNodeKeyRecord> Items, long Total)> ListNodeKeysAsync(long KnowledgeGraphId, int pageNo, int pageSize, CancellationToken cancellationToken)
+    {
+        var countRecords = await ReadAsync(
+            "MATCH (n:KgNode {kgId: $kgId}) WHERE n.key IS NOT NULL RETURN count(n) AS c",
+            new { kgId = KnowledgeGraphId },
+            cancellationToken);
+        var total = countRecords[0]["c"].As<long>();
+
+        var records = await ReadAsync(
+            "MATCH (n:KgNode {kgId: $kgId}) WHERE n.key IS NOT NULL RETURN n.key AS key, n.id AS id, n.name AS name, n.entityTypeId AS entityTypeId ORDER BY n.key SKIP $skip LIMIT $limit",
+            new { kgId = KnowledgeGraphId, skip = (pageNo - 1) * pageSize, limit = pageSize },
+            cancellationToken);
+        var items = records
+            .Select(x => new KnowledgeGraphNodeKeyRecord(x["key"].As<string>(), x["id"].As<string>(), x["name"].As<string>(), x["entityTypeId"].As<long>()))
+            .ToList();
+        return (items, total);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> DeleteEdgesByTriplesAsync(long KnowledgeGraphId, IReadOnlyList<(string SourceNodeId, long RelationTypeId, string TargetNodeId)> triples, CancellationToken cancellationToken)
+    {
+        var distinct = triples
+            .Distinct()
+            .Select(x => new { s = x.SourceNodeId, rt = x.RelationTypeId, t = x.TargetNodeId })
+            .ToList();
+        if (distinct.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        // 先读命中边 id（同三元组平行边全收），再统一删除；删除后不可再访问边属性（memgraph 方言会报错），故两步执行
+        var idRecords = await ReadAsync(
+            "UNWIND $items AS item " +
+            "MATCH (s:KgNode {kgId: $kgId, id: item.s})-[r:KG_REL {kgId: $kgId, relationTypeId: item.rt}]->(t:KgNode {kgId: $kgId, id: item.t}) " +
+            "RETURN DISTINCT r.id AS id",
+            new { kgId = KnowledgeGraphId, items = distinct },
+            cancellationToken);
+        var ids = idRecords.Select(x => x["id"].As<string>()).ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        await WriteAsync(
+            "UNWIND $ids AS eid MATCH ()-[r:KG_REL {kgId: $kgId}]->() WHERE r.id = eid DELETE r",
+            new { kgId = KnowledgeGraphId, ids },
+            cancellationToken);
+        return ids;
     }
 
     /// <inheritdoc/>

@@ -16,6 +16,8 @@ import { EntityTypesRequestBuilderNavigationMetadata, EntityTypesRequestBuilderR
 // @ts-ignore
 import { ImportFileRequestBuilderRequestsMetadata, type ImportFileRequestBuilder } from './importFile/index.js';
 // @ts-ignore
+import { ImportJsonRequestBuilderRequestsMetadata, type ImportJsonRequestBuilder } from './importJson/index.js';
+// @ts-ignore
 import { NodesRequestBuilderNavigationMetadata, NodesRequestBuilderRequestsMetadata, type NodesRequestBuilder } from './nodes/index.js';
 // @ts-ignore
 import { RelationTypesRequestBuilderNavigationMetadata, RelationTypesRequestBuilderRequestsMetadata, type RelationTypesRequestBuilder } from './relationTypes/index.js';
@@ -54,6 +56,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      * The importFile property
      */
     get importFile(): ImportFileRequestBuilder;
+    /**
+     * The importJson property
+     */
+    get importJson(): ImportJsonRequestBuilder;
     /**
      * The nodes property
      */
@@ -151,6 +157,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
     },
     importFile: {
         requestsMetadata: ImportFileRequestBuilderRequestsMetadata,
+    },
+    importJson: {
+        requestsMetadata: ImportJsonRequestBuilderRequestsMetadata,
     },
     nodes: {
         requestsMetadata: NodesRequestBuilderRequestsMetadata,

@@ -26,11 +26,12 @@ public class WorkflowPluginInvoker : IWorkflowPluginInvoker
     }
 
     /// <inheritdoc/>
-    public async Task<JsonObject> InvokeAsync(string pluginKey, JsonObject parameters, CancellationToken cancellationToken)
+    public async Task<JsonObject> InvokeAsync(string pluginKey, string? functionName, JsonObject parameters, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new RunPluginCommand
         {
             Key = pluginKey,
+            Function = functionName,
             RequestJson = parameters.ToJsonString(),
         }, cancellationToken);
 

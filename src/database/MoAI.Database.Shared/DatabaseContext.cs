@@ -189,11 +189,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<TeamEntity> Teams { get; set; }
 
     /// <summary>
-    /// 团队模型网关API密钥，团队管理员创建并维护，团队成员使用密钥通过 /v1 开放接口调用团队已授权的模型.
-    /// </summary>
-    public virtual DbSet<TeamApiKeyEntity> TeamApiKeys { get; set; }
-
-    /// <summary>
     /// 团队成员，用户与团队多对多关联.
     /// </summary>
     public virtual DbSet<TeamUserEntity> TeamUsers { get; set; }

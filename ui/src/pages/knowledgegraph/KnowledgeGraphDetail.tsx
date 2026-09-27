@@ -1,23 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Alert, Layout, Menu, Steps, Tag } from 'antd'
+import { Alert, Layout, Menu, Tag } from 'antd'
 import type { MenuProps } from 'antd'
-import { ApartmentOutlined, ClusterOutlined, DeploymentUnitOutlined, ProfileOutlined, SettingOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, ApiOutlined, ClusterOutlined, ImportOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons'
 import { Card, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getKnowledgeGraphDetail, type KnowledgeGraphDetail as GraphDetail } from '@/api/knowledgeGraph'
 import { KnowledgeGraphCanvas } from './KnowledgeGraphCanvas'
-import { KnowledgeGraphEntities } from './KnowledgeGraphEntities'
-import { KnowledgeGraphRelations } from './KnowledgeGraphRelations'
+import { KnowledgeGraphImportPage } from './KnowledgeGraphImportPage'
+import { KnowledgeGraphMcpPage } from './KnowledgeGraphMcpPage'
+import { KnowledgeGraphMaintenance } from './KnowledgeGraphMaintenance'
 import { KnowledgeGraphSchema } from './KnowledgeGraphSchema'
 import { KnowledgeGraphSettings } from './KnowledgeGraphSettings'
 
 const { Sider, Content } = Layout
 
-const SECTION_KEYS = ['canvas', 'schema', 'entities', 'relations', 'settings'] as const
+const SECTION_KEYS = ['canvas', 'maintenance', 'import', 'mcp', 'schema', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
+// 接入图只读：没有维护页，模型页为只读内省
 const CONNECTED_SECTIONS: SectionKey[] = ['canvas', 'schema', 'settings']
+// 旧版独立菜单路径（模型/实例/关系）→ 统一重定向到维护页对应步骤，旧链接不 404
+const LEGACY_STEP: Record<string, string> = { schema: 'schema', entities: 'entities', relations: 'relations' }
 
 export function KnowledgeGraphDetail() {
   const { t } = useTranslation()
@@ -40,7 +44,11 @@ export function KnowledgeGraphDetail() {
   useEffect(() => { void load() }, [load])
 
   const isConnected = graph?.mode === 'connected'
-  // 进入图谱默认处于图览，托管图与接入图一致
+  // 旧链接（/schema、/entities、/relations 独立菜单）重定向到维护页对应步骤；接入图 schema 仍是合法菜单。
+  // 用声明式 <Navigate> 在渲染期提交，避免 effect 时序导致旧链接停留在图览
+  const legacyStep = graph !== null && !isConnected && rawSection ? LEGACY_STEP[rawSection] : undefined
+
+  // 进入图谱默认处于图览；旧路径仅作重定向中转，落到图览
   const defaultSection: SectionKey = 'canvas'
   const section: SectionKey =
     rawSection &&
@@ -59,9 +67,9 @@ export function KnowledgeGraphDetail() {
           ]
         : [
             { key: 'canvas', icon: <ClusterOutlined />, label: t('knowledgegraph.menuCanvas') },
-            { key: 'schema', icon: <ApartmentOutlined />, label: t('knowledgegraph.menuSchema') },
-            { key: 'entities', icon: <ProfileOutlined />, label: t('knowledgegraph.menuEntities') },
-            { key: 'relations', icon: <DeploymentUnitOutlined />, label: t('knowledgegraph.menuRelations') },
+            { key: 'maintenance', icon: <ToolOutlined />, label: t('knowledgegraph.menuMaintenance') },
+            { key: 'import', icon: <ImportOutlined />, label: t('knowledgegraph.menuImport') },
+            { key: 'mcp', icon: <ApiOutlined />, label: t('knowledgegraph.menuMcp') },
             { key: 'settings', icon: <SettingOutlined />, label: t('knowledgegraph.menuSettings') },
           ],
     [t, isConnected],
@@ -79,6 +87,8 @@ export function KnowledgeGraphDetail() {
       )}
       {graph === null ? (
         <Card loading styles={{ body: { padding: spacing.lg, minHeight: 160 } }} />
+      ) : legacyStep ? (
+        <Navigate to={`/team/${teamId}/kg/${graphId}/maintenance?step=${legacyStep}`} replace />
       ) : (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
           <Sider width={200} style={{ background: 'transparent' }}>
@@ -90,39 +100,26 @@ export function KnowledgeGraphDetail() {
               style={{ borderRadius: spacing.sm }}
             />
           </Sider>
-          <Content>
+          <Content style={{ minWidth: 0 }}>
             {isConnected && (
               <Tag color="blue" style={{ marginBottom: spacing.md }}>{t('knowledgegraph.connectedBadge')}</Tag>
             )}
-            {/* 托管图四步使用引导：模型 → 实体 → 关系 → 图览，点步骤可直接跳转 */}
-            {!isConnected && (
-              <Steps
-                size="small"
-                type="navigation"
-                style={{ marginBottom: spacing.md }}
-                current={section === 'schema' ? 0 : section === 'entities' ? 1 : section === 'relations' ? 2 : 3}
-                onChange={(current) => navigate(`/team/${teamId}/kg/${graphId}/${['schema', 'entities', 'relations', 'canvas'][current]}`)}
-                items={[
-                  { title: t('knowledgegraph.guide.step1') },
-                  { title: t('knowledgegraph.guide.step2') },
-                  { title: t('knowledgegraph.guide.step3') },
-                  { title: t('knowledgegraph.guide.step4') },
-                ]}
-              />
-            )}
             {section === 'canvas' ? (
-              <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphCanvas graphId={graphId} teamId={teamId} mode={graph.mode} myRole={graph?.myRole ?? null} graphEnabled={graph?.enabled !== false} />
-              </Card>
-            ) : section === 'entities' ? (
-              <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphEntities graphId={graphId} teamId={teamId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
-              </Card>
-            ) : section === 'relations' ? (
-              <Card styles={{ body: { padding: spacing.lg } }}>
-                <KnowledgeGraphRelations graphId={graphId} teamId={teamId} graphEnabled={graph?.enabled !== false} myRole={graph?.myRole ?? null} />
-              </Card>
+              // 图览：无头部步骤条与导入入口，画布占满剩余高度与全部宽度
+              <KnowledgeGraphCanvas
+                graphId={graphId}
+                mode={graph.mode}
+                myRole={graph?.myRole ?? null}
+                graphEnabled={graph?.enabled !== false}
+              />
+            ) : section === 'maintenance' ? (
+              <KnowledgeGraphMaintenance graph={graph} />
+            ) : section === 'import' ? (
+              <KnowledgeGraphImportPage graph={graph} onChanged={load} />
+            ) : section === 'mcp' ? (
+              <KnowledgeGraphMcpPage kgId={graphId} />
             ) : section === 'schema' ? (
+              // 接入图只读模型页（托管图旧路径已重定向，正常不会进入）
               <Card styles={{ body: { padding: spacing.lg } }}>
                 <KnowledgeGraphSchema graphId={graphId} teamId={teamId} myRole={graph?.myRole ?? null} mode={graph.mode} />
               </Card>

@@ -26,7 +26,7 @@ public enum AiModelUseType
     Workflow = 3,
 
     /// <summary>
-    /// 开放接口（团队网关 API Key 调用），use_resource_id 记录 team_api_key.id.
+    /// 开放接口（应用接入 key 调用模型网关），use_resource_id 记录 access_app.id.
     /// </summary>
     OpenApi = 4,
 }

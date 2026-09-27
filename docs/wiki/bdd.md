@@ -1,6 +1,6 @@
 # 知识库模块行为场景（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)、[local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)、[local-dev/wiki-source-e2e.mjs](../../local-dev/wiki-source-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)、[local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)、[local-dev/wiki-source-e2e.mjs](../../local-dev/wiki-source-e2e.mjs)、[local-dev/wiki-mcp-e2e.mjs](../../local-dev/wiki-mcp-e2e.mjs)
 
 ## Feature: 访问控制
 
@@ -97,6 +97,18 @@ Scenario: 列表项携带统计信息
   When 成员查询团队知识库列表
   Then 每个卡片项包含文件数量、切片数量与最近文档更新时间
   And 无文档的知识库统计为零且最近更新时间为空
+```
+
+## Feature: 知识库 MCP 接入页
+
+```gherkin
+@WK-S41 @auto:vitest
+Scenario: 详情页新增 MCP 菜单并展示接入地址
+  Given 团队成员打开知识库详情页
+  Then 左侧菜单包含「MCP」入口
+  When 进入 MCP 页
+  Then 页面展示该知识库的 MCP 服务器地址（服务对外地址 + /api/external/wiki/{wikiId}/mcp）且可一键复制
+  And 页面提示鉴权方式（携带勾选「知识库 MCP」范围的接入 key）
 ```
 
 ## Feature: 前端列表聚合（卡片）
@@ -391,6 +403,17 @@ Scenario: 切割与向量化全链路
 Scenario: 外部接口仅接受应用 token
   When 无 token、伪造 token 或内部用户 JWT 调用外部接口
   Then 分别返回未认证/未认证/未认证或禁止
+
+@WX-07 @auto:e2e
+Scenario: 知识库读/写功能范围
+  When 以未勾选 wiki_read 的接入 key token 查询知识库或文档
+  Then 返回禁止
+  When 以勾选 wiki_read 未勾选 wiki_write 的 token 上传文档
+  Then 返回禁止
+  When 以勾选读写的 token 三段式上传
+  Then 成功入库
+  When 以旧应用接入 key 的 token 读写
+  Then 按接入勾选范围放行（存量接入默认读写全量）
 ```
 
 ## Feature: 外部源（飞书文档 / 网页爬虫）
@@ -531,6 +554,61 @@ Scenario: 连续失败时提前熔断
 ```
 
 > 飞书事件订阅的成功路径依赖真实开放平台长连接，本期未纳入自动化（见 [sdd.md §6 D22](./sdd.md#6-关键决策)）。
+
+## Feature: 知识库 MCP 服务器（接入 key 直连，WM-*）
+
+```gherkin
+@WM-S1 @auto:e2e
+Scenario: MCP 端点鉴权门禁
+  When 未携带凭证或伪造 key 连接 MCP 端点
+  Then 返回未认证
+  When 以勾选 wiki_mcp 的应用接入 key 连接
+  Then MCP 初始化成功并返回服务器信息（两种 key 均可直连，Bearer 与 x-api-key 头均支持）
+  When 以未勾选 wiki_mcp 范围的凭证连接
+  Then 返回禁止（范围不足）
+  When 连接的知识库 id 不存在或属于其他团队
+  Then 返回不存在（不泄露存在性）
+
+@WM-S2 @auto:e2e
+Scenario: 工具清单仅含三个只读工具
+  When 查询 MCP 工具列表
+  Then 仅返回获取知识库列表、搜索知识库文件、知识库召回三个只读工具
+  And 每个工具都带输入参数 schema
+
+@WM-S3 @auto:e2e
+Scenario: 获取知识库列表
+  When 调用知识库列表工具
+  Then 返回凭证所属团队下的全部知识库（含名称、描述、文档数、切片数）
+
+@WM-S4 @auto:e2e
+Scenario: 搜索知识库文件
+  When 不传知识库 id 调用文件搜索工具
+  Then 默认检索接入地址中的知识库
+  When 传入关键字或分页参数
+  Then 按名称过滤并正确分页
+  When 传入他团队的知识库 id
+  Then 返回工具级错误（知识库不存在）
+
+@WM-S5 @auto:e2e
+Scenario: 知识库向量召回
+  When 空查询文本或非法相似度阈值调用召回工具
+  Then 返回工具级参数错误
+  When 在已向量化知识库内召回
+  Then 返回按相似度降序的内容切片（含文档名、切片 id、内容类型与得分）
+  When 限定文档范围、阈值=1、top=1
+  Then 分别得到仅指定文档命中、零命中、单条命中
+
+@WM-S6 @auto:e2e
+Scenario: MCP 协议行为与外部接口回归
+  When 调用不存在的工具
+  Then 返回未知工具协议错误
+  When 对 MCP 端点发起 GET 请求
+  Then 返回方法不允许
+  When 未初始化会话直接调用工具
+  Then 无状态模式下正常返回结果
+  When 以接入 key 换取应用 token 访问外部 REST 知识库接口
+  Then 既有外部接口行为不受 MCP 上线影响
+```
 
 ```gherkin
 @WK-S99 @manual

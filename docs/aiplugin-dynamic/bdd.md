@@ -231,7 +231,7 @@
     Given 动态插件模块已挂载宿主并完成程序集扫描
     When 管理员查询插件注册表
     Then 返回项中包含 postgres_query 与 mysql_query 且均为动态模板
-    And 两项均带 ConnectionString 配置示例、含 Sql 的请求参数示例与各自的配置类型
+    And 两项均带 Host/Port 等离散字段配置示例、含 Sql 的请求参数示例与各自的配置类型
 
   @DYN-S30 @auto:e2e
   Scenario: 只读守卫拒绝写操作与多条语句，放行合法只读语句
@@ -246,13 +246,13 @@
   @DYN-S31 @auto:e2e
   Scenario: SQL 只读实例的参数或配置不合规
     Given 管理员已创建 SQL 只读实例
-    When 请求中的 Sql 为空后运行、或配置中的 ConnectionString 为空后运行
-    Then 运行结果为失败并分别提示 SQL 不能为空、数据库连接字符串不能为空
+    When 请求中的 Sql 为空后运行、或配置中的 Host 为空后运行
+    Then 运行结果为失败并分别提示 SQL 不能为空、数据库主机地址 Host 不能为空
     And 均不经由实例化失败
 
   @DYN-S32 @auto:e2e
   Scenario: PostgreSQL 只读查询成功路径（需 PG_E2E_CONNECTION）
-    Given 环境变量提供可达的 PostgreSQL 连接串并据此创建实例（MaxRows 为 3）
+    Given 环境变量提供可达的 PostgreSQL 连接串，解析为 Host/Port/Database/Username/Password 离散配置后创建实例（MaxRows 为 3）
     When 查询 5 行数据
     Then 运行成功、返回 3 行且 Truncated 为 true，Columns 与行数据齐全
     And 会话处于只读事务（SHOW default_transaction_read_only 返回 on）
@@ -261,7 +261,7 @@
 
   @DYN-S33 @auto:e2e
   Scenario: MySQL 只读查询成功路径（需 MYSQL_E2E_CONNECTION）
-    Given 环境变量提供可达的 MySQL 连接串并据此创建实例
+    Given 环境变量提供可达的 MySQL 连接串，解析为离散配置后创建实例
     When 执行 SELECT 1 并查询会话只读变量
     Then 运行成功且返回一行
     And 会话被设为只读
@@ -270,7 +270,7 @@
   Scenario: SQL 只读插件的配置界面与运行抽屉
     Given 管理员在插件管理页用 postgres_query 或 mysql_query 新建实例
     When 打开配置编辑器与运行抽屉
-    Then 配置示例含 ConnectionString/MaxRows/CommandTimeoutSeconds 及注释说明
+    Then 配置示例含 Host/Port/Database/Username/Password/MaxRows/CommandTimeoutSeconds 及注释说明
     And 参数示例含 Sql 且提示仅允许单条只读语句
 ```
 

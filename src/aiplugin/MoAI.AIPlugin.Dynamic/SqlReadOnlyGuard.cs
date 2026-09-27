@@ -153,7 +153,7 @@ internal static class SqlReadOnlyGuard
     /// </summary>
     /// <param name="sql">原始 SQL 文本.</param>
     /// <returns>剥离后的文本（被剥离的片段替换为空格，不改变其余字符的相对位置）.</returns>
-    private static string StripLiteralsAndComments(string sql)
+    internal static string StripLiteralsAndComments(string sql)
     {
         var builder = new StringBuilder(sql.Length);
         var index = 0;
@@ -279,7 +279,7 @@ internal static class SqlReadOnlyGuard
     /// </summary>
     /// <param name="value">待判断字符.</param>
     /// <returns>字母、数字、下划线或美元符号时为 <see langword="true"/>.</returns>
-    private static bool IsKeywordChar(char value)
+    internal static bool IsKeywordChar(char value)
     {
         return char.IsLetterOrDigit(value) || value == '_' || value == '$';
     }

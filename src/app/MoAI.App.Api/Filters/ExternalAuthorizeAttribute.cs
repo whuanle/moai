@@ -20,6 +20,15 @@ public class ExternalAuthorizeAttribute : Attribute, IAsyncAuthorizationFilter
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         var httpContext = context.HttpContext;
+
+        // ExternalAuthenticationMiddleware 已完成认证（外部 token 或 key 直连）时，
+        // 身份经 Items 中的 ExternalTokenContext 与 HttpContext.User 传递，此处直接放行
+        if (httpContext.Items.TryGetValue(ExternalAuthDefaults.TokenContextItemKey, out var existing)
+            && existing is Models.ExternalTokenContext)
+        {
+            return;
+        }
+
         var authenticateResult = await httpContext.AuthenticateAsync(ExternalAuthDefaults.AuthenticationScheme);
         if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
         {

@@ -20,6 +20,7 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
     private readonly IPluginRegistry _registry;
     private readonly IPluginExecutor _executor;
     private readonly IDynamicInstanceResolver _dynamicResolver;
+    private readonly ICustomPluginCaller _customPluginCaller;
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
 
@@ -29,18 +30,21 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
     /// <param name="registry">插件注册表.</param>
     /// <param name="executor">插件执行引擎.</param>
     /// <param name="dynamicResolver">动态插件实例解析器.</param>
+    /// <param name="customPluginCaller">自定义插件（MCP/OpenAPI）调用端口.</param>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
     public RunTeamPluginCommandHandler(
         IPluginRegistry registry,
         IPluginExecutor executor,
         IDynamicInstanceResolver dynamicResolver,
+        ICustomPluginCaller customPluginCaller,
         DatabaseContext databaseContext,
         ITeamService teamService)
     {
         _registry = registry;
         _executor = executor;
         _dynamicResolver = dynamicResolver;
+        _customPluginCaller = customPluginCaller;
         _databaseContext = databaseContext;
         _teamService = teamService;
     }
@@ -65,6 +69,13 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         if (dynamic != null)
         {
             return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, cancellationToken).ConfigureAwait(false);
+        }
+
+        // 数据库中的自定义插件（MCP/OpenAPI）：团队自有、公开或已授权本团队的系统插件
+        var customResult = await _customPluginCaller.RunAsync(request.Key, request.Function, request.RequestJson, cancellationToken).ConfigureAwait(false);
+        if (customResult != null)
+        {
+            return customResult;
         }
 
         throw new BusinessException("插件不存在") { StatusCode = 404 };

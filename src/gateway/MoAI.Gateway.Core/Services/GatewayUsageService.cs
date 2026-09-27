@@ -57,12 +57,12 @@ public class GatewayUsageService
     }
 
     /// <summary>
-    /// 调用完成后记账：原子累加各额度规则余额、写入使用日志、累加 token 统计、刷新密钥最近使用时间.
+    /// 调用完成后记账：原子累加各额度规则余额、写入使用日志、累加 token 统计、刷新接入最近使用时间.
     /// </summary>
     /// <param name="modelId">模型 id.</param>
     /// <param name="teamId">团队 id.</param>
-    /// <param name="userId">密钥创建者用户 id.</param>
-    /// <param name="apiKeyId">密钥 id.</param>
+    /// <param name="userId">接入创建者用户 id.</param>
+    /// <param name="apiKeyId">应用接入 id.</param>
     /// <param name="channelProviderKey">渠道供应商标识.</param>
     /// <param name="promptTokens">输入 tokens.</param>
     /// <param name="completionTokens">输出 tokens.</param>
@@ -122,7 +122,7 @@ public class GatewayUsageService
                 Channel = TruncateChannel(channelProviderKey),
             });
 
-            await _databaseContext.TeamApiKeys
+            await _databaseContext.AccessApps
                 .Where(x => x.Id == apiKeyId)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.LastUsedTime, now), cancellationToken);
 

@@ -63,4 +63,14 @@ public partial class AccessAppEntity : IFullAudited
     /// key.
     /// </summary>
     public string Key { get; set; } = default!;
+
+    /// <summary>
+    /// 功能范围位标记（<see cref="Enums.TeamApiKeyScopes"/> 位或组合：model/wiki_read/wiki_write/app_chat/wiki_mcp），限制该接入可用模型渠道与签发 token 可访问的知识库/应用对话外部接口；默认读写+对话.
+    /// </summary>
+    public int Scopes { get; set; }
+
+    /// <summary>
+    /// 最近使用时间（通过模型网关调用时刷新），未使用为 null.
+    /// </summary>
+    public DateTimeOffset? LastUsedTime { get; set; }
 }

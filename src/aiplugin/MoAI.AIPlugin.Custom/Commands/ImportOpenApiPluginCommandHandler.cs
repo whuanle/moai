@@ -86,6 +86,8 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
 
         var pluginEntity = new PluginEntity
         {
+            IsSystem = true,
+            TeamId = 0,
             PluginName = request.Name,
             Title = request.Title,
             Type = (int)PluginType.OpenApi,

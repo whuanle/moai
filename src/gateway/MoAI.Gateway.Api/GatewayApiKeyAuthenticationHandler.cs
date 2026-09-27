@@ -6,22 +6,19 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
-using MoAI.Account.Services;
 using MoAI.Database;
-using MoAI.Gateway.Services;
-using MoAI.Team.Services;
+using MoAI.Database.Enums;
 
 namespace MoAI.Gateway;
 
 /// <summary>
 /// 网关 API Key 认证：支持 Authorization: Bearer 与 x-api-key 两种携带方式，
-/// 密钥须启用、未过期、创建者未禁用且创建者仍是团队成员.
+/// 仅接受应用接入 key（moai-ac-，access_app，团队网关页不再提供密钥管理），
+/// 是否可用模型渠道由该接入勾选的 model 范围在端点层判定.
 /// </summary>
 public class GatewayApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly ITeamService _teamService;
-    private readonly IUserAccountService _userAccountService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GatewayApiKeyAuthenticationHandler"/> class.
@@ -30,14 +27,10 @@ public class GatewayApiKeyAuthenticationHandler : AuthenticationHandler<Authenti
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        DatabaseContext databaseContext,
-        ITeamService teamService,
-        IUserAccountService userAccountService)
+        DatabaseContext databaseContext)
         : base(options, logger, encoder)
     {
         _databaseContext = databaseContext;
-        _teamService = teamService;
-        _userAccountService = userAccountService;
     }
 
     /// <inheritdoc/>
@@ -49,48 +42,25 @@ public class GatewayApiKeyAuthenticationHandler : AuthenticationHandler<Authenti
             return AuthenticateResult.NoResult();
         }
 
-        if (!apiKey.StartsWith("moai-", StringComparison.Ordinal))
+        if (!apiKey.StartsWith(GatewayApiKeyDefaults.AccessAppKeyPrefix, StringComparison.Ordinal))
         {
             return AuthenticateResult.Fail("Invalid API key.");
         }
 
-        var sha256 = ApiKeyGenerator.Hash(apiKey);
-        var entity = await _databaseContext.TeamApiKeys.FirstOrDefaultAsync(x => x.KeySha256 == sha256);
-        if (entity == null)
+        // 应用接入 key（moai-ac-）认证：key 明文比对 access_app.key；可用性沿用应用接入既有语义（存在即有效，软删除自动过滤）
+        var accessApp = await _databaseContext.AccessApps.FirstOrDefaultAsync(x => x.Key == apiKey);
+        if (accessApp == null)
         {
             return AuthenticateResult.Fail("Invalid API key.");
-        }
-
-        if (entity.IsDisable)
-        {
-            return AuthenticateResult.Fail("API key is disabled.");
-        }
-
-        if (entity.ExpireTime < DateTimeOffset.Now)
-        {
-            return AuthenticateResult.Fail("API key is expired.");
-        }
-
-        // 创建者被禁用/删除时密钥同步失效（替代全局中间件的用户状态检查）.
-        var creatorState = await _userAccountService.GetUserStateAsync(entity.CreatorUserId, Context.RequestAborted);
-        if (creatorState.IsDeleted || creatorState.IsDisable)
-        {
-            return AuthenticateResult.Fail("API key is unavailable.");
-        }
-
-        // 创建者必须仍是团队成员，移出团队即吊销其创建的密钥.
-        var role = await _teamService.GetMyRoleAsync(entity.TeamId, entity.CreatorUserId);
-        if (role == null)
-        {
-            return AuthenticateResult.Fail("API key is unavailable.");
         }
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, entity.CreatorUserId.ToString()),
-            new(ClaimTypes.Name, entity.Name),
-            new("teamid", entity.TeamId.ToString()),
-            new("keyid", entity.Id.ToString()),
+            new(ClaimTypes.NameIdentifier, accessApp.CreateUserId.ToString()),
+            new(ClaimTypes.Name, accessApp.Name),
+            new("teamid", accessApp.TeamId.ToString()),
+            new("keyid", accessApp.Id.ToString()),
+            new(GatewayApiKeyDefaults.ClaimScopes, TeamApiKeyScopeCodes.ToClaimValue((TeamApiKeyScopes)accessApp.Scopes)),
         };
 
         var identity = new ClaimsIdentity(claims, GatewayApiKeyDefaults.AuthenticationScheme);

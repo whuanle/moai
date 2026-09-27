@@ -1,6 +1,6 @@
 import { Col, Form, Input, Row, Select, Switch } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { PluginClassify } from '@/api/classify'
+import { classifyLabel, type PluginClassify } from '@/api/classify'
 
 const { TextArea } = Input
 
@@ -63,7 +63,7 @@ export function BaseFormFields({
             <Select placeholder={t('plugins.formClassifyPlaceholder')} allowClear>
               {classifies.map((item) => (
                 <Select.Option key={item.classifyId} value={item.classifyId}>
-                  {item.name}
+                  {classifyLabel(item)}
                 </Select.Option>
               ))}
             </Select>

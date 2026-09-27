@@ -151,7 +151,7 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
   }
 
   const gotoRelationsOf = (record: KnowledgeGraphNodeItem) => {
-    navigate(`/team/${teamId}/kg/${graphId}/relations?nodeId=${record.nodeId}`)
+    navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=relations&nodeId=${record.nodeId}`)
   }
 
   const columns: TableColumnsType<KnowledgeGraphNodeItem> = [
@@ -236,46 +236,12 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
           message={t('knowledgegraph.entity.needTypeTitle')}
           description={t('knowledgegraph.entity.needTypeDesc')}
           action={(
-            <Button size="small" type="primary" icon={<ApartmentOutlined />} onClick={() => navigate(`/team/${teamId}/kg/${graphId}/schema`)}>
+            <Button size="small" type="primary" icon={<ApartmentOutlined />} onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=schema`)}>
               {t('knowledgegraph.entity.goSchema')}
             </Button>
           )}
         />
       )}
-      <Space style={{ marginBottom: spacing.md }} wrap>
-        {canWrite && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={entityTypes.length === 0}
-            title={entityTypes.length === 0 ? t('knowledgegraph.entity.needTypeTitle') : undefined}
-            onClick={openCreate}
-          >
-            {t('knowledgegraph.entity.create')}
-          </Button>
-        )}
-        <Select
-          allowClear
-          placeholder={t('knowledgegraph.entity.filterType')}
-          style={{ width: 180 }}
-          value={typeFilter}
-          onChange={(value) => {
-            setPageNo(1)
-            setSearchParams(value != null ? { typeId: String(value) } : {}, { replace: true })
-          }}
-          options={entityTypes.map((x) => ({ value: Number(x.entityTypeId), label: x.name ?? '' }))}
-        />
-        <Input.Search
-          allowClear
-          placeholder={t('knowledgegraph.searchPlaceholder')}
-          prefix={<SearchOutlined style={{ color: 'inherit' }} />}
-          onSearch={(value) => {
-            setPageNo(1)
-            setKeyword(value)
-          }}
-          style={{ width: 240 }}
-        />
-      </Space>
       <DataTable<KnowledgeGraphNodeItem>
         sticky
         scroll={{ x: 'max-content' }}
@@ -283,6 +249,51 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
         columns={columns}
         dataSource={items}
         loading={loading}
+        toolbar={(
+          <Space size={8} wrap>
+            {canWrite && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                disabled={entityTypes.length === 0}
+                title={entityTypes.length === 0 ? t('knowledgegraph.entity.needTypeTitle') : undefined}
+                onClick={openCreate}
+              >
+                {t('knowledgegraph.entity.create')}
+              </Button>
+            )}
+            <Select
+              allowClear
+              placeholder={t('knowledgegraph.entity.filterType')}
+              style={{ width: 180 }}
+              value={typeFilter}
+              onChange={(value) => {
+                setPageNo(1)
+                // 保留 step 等参数，仅增删 typeId 过滤（组件挂在 maintenance 路由下）
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev)
+                    if (value != null) next.set('typeId', String(value))
+                    else next.delete('typeId')
+                    return next
+                  },
+                  { replace: true },
+                )
+              }}
+              options={entityTypes.map((x) => ({ value: Number(x.entityTypeId), label: x.name ?? '' }))}
+            />
+            <Input.Search
+              allowClear
+              placeholder={t('knowledgegraph.searchPlaceholder')}
+              prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+              onSearch={(value) => {
+                setPageNo(1)
+                setKeyword(value)
+              }}
+              style={{ width: 240 }}
+            />
+          </Space>
+        )}
         onRefresh={() => void load()}
         refreshLoading={loading}
         pagination={{

@@ -33,7 +33,7 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
 
     expect(await screen.findByText('ERP 接入')).toBeTruthy()
     expect(screen.getByText('moai-ac-abcd****')).toBeTruthy()
-    expect(screen.getByText(/第三方系统可通过应用接入 key/)).toBeTruthy()
+    expect(screen.getByText(/第三方系统可使用应用接入 key 直接访问团队资源/)).toBeTruthy()
     await waitFor(() => expect(getAccessApps).toHaveBeenCalledWith(1))
 
     fireEvent.click(screen.getByRole('button', { name: '点击查看完整 key' }))
@@ -61,5 +61,15 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
 
     expect(screen.getByText('只有团队管理员可以查看应用接入')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /新建接入/ })).toBeNull()
+  })
+
+  it('范围编辑器展示知识库 MCP 勾选且无占位提示文案', async () => {
+    render(<TeamAccessApps teamId={1} canManage />)
+    await screen.findByText('ERP 接入')
+
+    fireEvent.click(screen.getByRole('button', { name: /新建接入/ }))
+    expect(await screen.findByRole('checkbox', { name: /知识库 MCP/ })).toBeTruthy()
+    expect(screen.queryByText(/能力建设中/)).toBeNull()
+    expect(screen.queryByText(/直连知识库 MCP 服务器/)).toBeNull()
   })
 })

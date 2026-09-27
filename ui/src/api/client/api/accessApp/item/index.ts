@@ -23,7 +23,7 @@ export interface AccessAppItemRequestBuilder extends BaseRequestBuilder<AccessAp
      delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
      * 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
-     * @param body 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
+     * @param body 更新应用接入（名称、描述、功能范围；key 不可改），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -41,7 +41,7 @@ export interface AccessAppItemRequestBuilder extends BaseRequestBuilder<AccessAp
      toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
      * 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
-     * @param body 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
+     * @param body 更新应用接入（名称、描述、功能范围；key 不可改），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

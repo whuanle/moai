@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Form, Input, InputNumber, Select, Switch, DatePicker, Space, Button } from 'antd'
+import { Button, Form, Input, InputNumber, Select, Space, Switch, DatePicker, theme } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import type { KnowledgeGraphEntityTypeProperty } from '@/api/knowledgeGraph'
@@ -53,44 +53,50 @@ function PropertyValueInput({ type, disabled }: { type: string; disabled?: boole
   return <Input maxLength={2000} disabled={disabled} />
 }
 
-/** 模型页属性定义编辑器（Form.List name 由调用方指定，默认 properties） */
+/** 模型页属性定义编辑器（Form.List name 由调用方指定，默认 properties）：每行卡片式两行布局——首行 名称/类型/必填/删除，次行 说明占满 */
 export function PropertyListEditor({ listName = 'properties' }: { listName?: string }) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   return (
     <Form.List name={listName}>
       {(fields, { add, remove }) => (
-        <>
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
           {fields.map((field) => (
-            <Space key={field.key} align="baseline" style={{ display: 'flex', marginBottom: 4 }} wrap>
-              <Form.Item
-                name={[field.name, 'name']}
-                rules={[
-                  { required: true, message: t('knowledgegraph.props.nameRequired') },
-                  { max: 100, message: t('knowledgegraph.props.nameMax') },
-                ]}
-                style={{ marginBottom: 4 }}
-              >
-                <Input placeholder={t('knowledgegraph.props.namePlaceholder')} style={{ width: 140 }} maxLength={100} />
+            <div
+              key={field.key}
+              style={{ background: token.colorFillQuaternary, borderRadius: token.borderRadiusLG, padding: '10px 12px 12px' }}
+            >
+              <Space align="center" style={{ display: 'flex' }} wrap>
+                <Form.Item
+                  name={[field.name, 'name']}
+                  rules={[
+                    { required: true, message: t('knowledgegraph.props.nameRequired') },
+                    { max: 100, message: t('knowledgegraph.props.nameMax') },
+                  ]}
+                  style={{ flex: 1, minWidth: 180, marginBottom: 0 }}
+                >
+                  <Input placeholder={t('knowledgegraph.props.namePlaceholder')} maxLength={100} />
+                </Form.Item>
+                <Form.Item name={[field.name, 'type']} initialValue="string" style={{ marginBottom: 0 }}>
+                  <Select
+                    style={{ width: 96 }}
+                    options={PROPERTY_TYPE_OPTIONS.map((x) => ({ value: x.value, label: t(x.labelKey) }))}
+                  />
+                </Form.Item>
+                <Form.Item name={[field.name, 'required']} valuePropName="checked" style={{ marginBottom: 0 }}>
+                  <Switch checkedChildren={t('knowledgegraph.props.required')} unCheckedChildren={t('knowledgegraph.props.optional')} />
+                </Form.Item>
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
+              </Space>
+              <Form.Item name={[field.name, 'description']} style={{ marginBottom: 0, marginTop: 8 }}>
+                <Input placeholder={t('knowledgegraph.props.descPlaceholder')} maxLength={255} />
               </Form.Item>
-              <Form.Item name={[field.name, 'type']} initialValue="string" style={{ marginBottom: 4 }}>
-                <Select
-                  style={{ width: 100 }}
-                  options={PROPERTY_TYPE_OPTIONS.map((x) => ({ value: x.value, label: t(x.labelKey) }))}
-                />
-              </Form.Item>
-              <Form.Item name={[field.name, 'required']} valuePropName="checked" style={{ marginBottom: 4 }}>
-                <Switch checkedChildren={t('knowledgegraph.props.required')} unCheckedChildren={t('knowledgegraph.props.optional')} />
-              </Form.Item>
-              <Form.Item name={[field.name, 'description']} style={{ marginBottom: 4, flex: 1 }}>
-                <Input placeholder={t('knowledgegraph.props.descPlaceholder')} style={{ width: 160 }} maxLength={255} />
-              </Form.Item>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
-            </Space>
+            </div>
           ))}
           <Button type="dashed" size="small" icon={<PlusOutlined />} onClick={() => add({ name: '', type: 'string', required: false, description: '' })}>
             {t('knowledgegraph.props.addProperty')}
           </Button>
-        </>
+        </Space>
       )}
     </Form.List>
   )

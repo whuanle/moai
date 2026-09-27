@@ -31,3 +31,13 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 })
+
+// jsdom 未实现 ResizeObserver（画布等组件用其自适应尺寸），stub 为立即回调且不观察
+class ResizeObserverStub {
+  observe = () => {}
+  unobserve = () => {}
+  disconnect = () => {}
+}
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  Object.defineProperty(globalThis, 'ResizeObserver', { writable: true, configurable: true, value: ResizeObserverStub })
+}

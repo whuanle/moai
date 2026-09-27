@@ -38,6 +38,7 @@ export function DataTable<RecordType extends object>({
             display: 'flex',
             alignItems: 'center',
             gap: spacing.md,
+            flexWrap: 'wrap',
             marginBottom: spacing.md,
           }}
         >

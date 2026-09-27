@@ -48,7 +48,7 @@ export function TeamPrompts({ teamId, canManage }: { teamId: number; canManage: 
   const [filterForm] = Form.useForm<PromptFilters>()
 
   const classNameMap = useMemo(
-    () => new Map(classifies.map((c) => [Number(c.classifyId), c.name ?? ''])),
+    () => new Map(classifies.map((c) => [Number(c.classifyId), classifyLabel(c)])),
     [classifies],
   )
 

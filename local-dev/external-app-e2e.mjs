@@ -233,6 +233,60 @@ async function main() {
   check('EA-29d 配置回读技能为空且沙箱未启用', Array.isArray(cfgRead?.skills) && cfgRead.skills.length === 0 && cfgRead?.executionSettings?.sandbox?.enabled !== true, JSON.stringify(cfgRead)?.slice(0, 200))
   check('EA-29e 内部应用开启沙箱不受限 200', (await api('PUT', `/api/app/${internalAppId}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: true } } } })).status === 200)
 
+  // ===== key 直连（免换 token）：应用接入 key 直访团队资源 + 会话身份自动解析 + 网关 model 范围 =====
+  {
+    const acc3 = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入直连', description: 'key direct e2e', scopes: ['model', 'wiki_read', 'wiki_write'] } })
+    const KEY3 = acc3.json?.key
+    check('EA-30a 创建带 model 范围接入 200', acc3.status === 200 && typeof KEY3 === 'string', `${acc3.status} ${acc3.text.slice(0, 140)}`)
+    const acc3List = (await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })).json?.items ?? []
+    check('EA-30b 列表回显 scopes 含 model', acc3List.some((x) => x.accessAppId === acc3.json?.accessAppId && (x.scopes ?? []).includes('model')), JSON.stringify(acc3List.map((x) => x.scopes)))
+
+    const kdHeaders = (key) => ({ Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' })
+
+    // EA-31 key 直连团队资源（无需换取外部 token）
+    const kdList = await fetch(`${BASE}/api/external/app/list`, { headers: kdHeaders(KEY3) })
+    const kdListBody = await kdList.json().catch(() => null)
+    check('EA-31a key 直连查团队外部应用列表 200', kdList.status === 200 && (kdListBody?.items ?? []).some((x) => x.appId === APP_FREE), `${kdList.status}`)
+    const kdBad = await fetch(`${BASE}/api/external/app/list`, { headers: kdHeaders('moai-ac-invalid00000000000000000000000') })
+    check('EA-31b 伪造接入 key 直连 401', kdBad.status === 401, `${kdBad.status}`)
+    const kdHeader2 = await fetch(`${BASE}/api/external/app/list`, { headers: { 'x-api-key': KEY3 } })
+    check('EA-31c x-api-key 头直连 200', kdHeader2.status === 200, `${kdHeader2.status}`)
+
+    // EA-32 key 直连会话（is_auth=false 应用免用户 token；身份由接入直连身份承载）
+    const kdSession = await fetch(`${BASE}/api/external/agent/${APP_FREE}/session`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({ title: '直连会话' }) })
+    const kdSessionBody = await kdSession.json().catch(() => null)
+    const KD_SESSION = kdSessionBody?.value
+    check('EA-32a key 直连免授权应用建会话 200', kdSession.status === 200 && isGuid(KD_SESSION), `${kdSession.status} ${JSON.stringify(kdSessionBody)?.slice(0, 140)}`)
+    const kdSessionList = await fetch(`${BASE}/api/external/agent/${APP_FREE}/session/list`, { headers: kdHeaders(KEY3) })
+    const kdSessionListBody = await kdSessionList.json().catch(() => null)
+    check('EA-32b 直连身份会话列表含新会话 200', kdSessionList.status === 200 && (kdSessionListBody?.items ?? []).some((x) => x.sessionId === KD_SESSION), `${kdSessionList.status}`)
+    const kdMsgs = await fetch(`${BASE}/api/external/session/${KD_SESSION}/messages`, { headers: kdHeaders(KEY3) })
+    const kdMsgsBody = await kdMsgs.json().catch(() => null)
+    check('EA-32c 直连身份读会话消息 200', kdMsgs.status === 200 && Array.isArray(kdMsgsBody?.items), `${kdMsgs.status}`)
+    const kdChat = await fetch(`${BASE}/api/external/agent/${APP_FREE}/chat`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({ threadId: KD_SESSION, runId: 'run-kd-1', messages: [{ id: 'm1', role: 'user', content: '你好' }] }) })
+    check('EA-32d key 直连对话 SSE 200（归属校验通过）', kdChat.status === 200, `${kdChat.status}`)
+
+    // EA-33 需授权应用会话面：key 直连/应用 token 一律 403 引导换取用户 token
+    const kdAuthSession = await fetch(`${BASE}/api/external/agent/${APP_AUTH}/session`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({}) })
+    const kdAuthSessionBody = await kdAuthSession.json().catch(() => null)
+    check('EA-33a key 直连建需授权应用会话 403', kdAuthSession.status === 403 && kdAuthSessionBody?.error?.code === 'external_user_token_required', `${kdAuthSession.status}`)
+    check('EA-33b 应用 token 建需授权应用会话 403（既有语义不变）', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: appTok2.json.accessToken, body: {} })).status === 403)
+    const kdAuthList = await fetch(`${BASE}/api/external/agent/${APP_AUTH}/session/list`, { headers: kdHeaders(KEY3) })
+    check('EA-33c key 直连查需授权应用会话列表 403', kdAuthList.status === 403, `${kdAuthList.status}`)
+
+    // EA-34 网关：应用接入 key 勾选 model 即可直连调用模型渠道
+    const kdGw = await fetch(`${BASE}/api/aigateway/${TID}/v1/models`, { headers: kdHeaders(KEY3) })
+    check('EA-34a 带 model 范围接入 key 调网关 models 200', kdGw.status === 200, `${kdGw.status}`)
+    const kdGwCross = await fetch(`${BASE}/api/aigateway/${TID2}/v1/models`, { headers: kdHeaders(KEY3) })
+    check('EA-34b 网关路由团队与 key 归属不一致 403', kdGwCross.status === 403, `${kdGwCross.status}`)
+
+    // EA-35 团队接入 key 直连场景随 team_api_key 下线退役（编号不复用）
+    const legacyKey = await fetch(`${BASE}/api/external/app/list`, { headers: kdHeaders('moai-invalidinvalidinvalidinvalidinvalid') })
+    check('EA-36 已下线团队 key 前缀(moai-)直连 401', legacyKey.status === 401, `${legacyKey.status}`)
+
+    await api('DELETE', `/api/access-app/${acc3.json?.accessAppId}`, { token: owner.token })
+  }
+
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)
 }

@@ -193,6 +193,7 @@ public class ImportKnowledgeGraphFromFileCommandHandler : IRequestHandler<Import
                 draft.Name,
                 draft.Description ?? string.Empty,
                 KnowledgeGraphPropertyJson.WriteValues(values),
+                key: null,
                 cancellationToken);
             nodeKeyToId[draft.Name] = record.Id;
             nodesCreated++;

@@ -62,7 +62,7 @@ export function PromptCenter() {
     [classifies],
   )
   const classNameMap = useMemo(
-    () => new Map(classifies.map((c) => [Number(c.classifyId), c.name ?? ''])),
+    () => new Map(classifies.map((c) => [Number(c.classifyId), classifyLabel(c)])),
     [classifies],
   )
 

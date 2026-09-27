@@ -10,7 +10,7 @@ import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip , t
 import type { TableColumnsType } from 'antd'
 import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
-import type { PluginClassify } from '@/api/classify'
+import { classifyLabel, type PluginClassify } from '@/api/classify'
 import { getKnowledgeGraphs, getKnowledgeGraphSchema } from '@/api/knowledgeGraph'
 import type { DynamicPluginTemplate } from '@/api/plugin'
 import {
@@ -240,7 +240,7 @@ export function TeamDynamicPluginPanel({
     () => [
       { value: 'all', label: t('plugins.classifyAll') },
       { value: 'uncategorized', label: t('plugins.classifyUncategorized') },
-      ...classifies.map((c) => ({ value: String(c.classifyId), label: c.name })),
+      ...classifies.map((c) => ({ value: String(c.classifyId), label: classifyLabel(c) })),
     ],
     [classifies, t],
   )
@@ -265,8 +265,11 @@ export function TeamDynamicPluginPanel({
       title: t('plugins.colClassify'),
       dataIndex: 'classifyName',
       width: 130,
-      render: (v: string | null) =>
-        v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>,
+      render: (v: string | null, record) => {
+        const classify = classifies.find((c) => c.classifyId === record.classifyId)
+        if (classify) return <Tag>{classifyLabel(classify)}</Tag>
+        return v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>
+      },
     },
     { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
     { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
@@ -435,7 +438,7 @@ export function TeamDynamicPluginPanel({
             <Select
               allowClear
               placeholder={t('plugins.formClassifyPlaceholder')}
-              options={classifies.map((c) => ({ value: c.classifyId, label: c.name }))}
+              options={classifies.map((c) => ({ value: c.classifyId, label: classifyLabel(c) }))}
             />
           </Form.Item>
           <Form.Item name="config" label={t('plugins.config')} rules={[{ required: true, message: t('plugins.configRequired') }]}>

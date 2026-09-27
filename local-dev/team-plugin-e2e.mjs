@@ -61,6 +61,10 @@ function startMcpStub(expectedAuth, expectedTenant) {
         respond({ jsonrpc: '2.0', id: msg.id, result: { tools: [{ name: 'echo_header', title: 'Echo', description: 'echo tool for e2e', inputSchema: { type: 'object', properties: {} } }] } })
         return
       }
+      if (msg.method === 'tools/call') {
+        respond({ jsonrpc: '2.0', id: msg.id, result: { content: [{ type: 'text', text: JSON.stringify({ ok: true, tool: msg.params?.name ?? '', args: msg.params?.arguments ?? {} }) }] } })
+        return
+      }
       respond({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: 'method not found' } })
     })
   })
@@ -240,6 +244,96 @@ async function main() {
         check('TP-34b OpenAPI detail 回显 query 保留占位符', detail.json?.query?.[0]?.value === '{TP_TENANT}', JSON.stringify(detail.json?.query))
         await api('DELETE', `/api/team/${TID}/plugin/${oaId}`, { token: owner.token })
       }
+    }
+  }
+
+  // ===== 系统插件授权团队：可见性/可运行/撤销 + 团队插件 key 与系统插件冲突（TP-35 系）=====
+  {
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    check('TP-35z 前置：admin 登录', Boolean(adminToken))
+
+    if (adminToken) {
+      const SYS_KEY = `tpsys_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`
+      const TTEAM_KEY = `tpteam_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`
+      const stub2 = startMcpStub('Bearer sys-e2e', '')
+      await new Promise((resolve) => stub2.server.listen(0, '127.0.0.1', resolve))
+      const stub2Url = `http://127.0.0.1:${stub2.server.address().port}/mcp`
+
+      // 前置：团队自有 MCP 插件（无占位符，桩认证直接匹配）→ 用于 admin 侧反向 key 保留校验
+      const teamImp = await api('POST', `/api/team/${TID}/plugin/mcp`, {
+        token: owner.token,
+        body: {
+          teamId: TID,
+          name: TTEAM_KEY,
+          title: '团队自有插件',
+          description: 'E2E 验证系统插件 key 反向保留',
+          serverUrl: stub2Url,
+          header: [{ key: 'Authorization', value: 'Bearer sys-e2e' }],
+          query: [],
+        },
+      })
+      check('TP-35p 前置：团队导入自有 MCP 插件 200', teamImp.status === 200, teamImp.text.slice(0, 160))
+
+      // 前置：admin 导入「私有」系统 MCP 插件（isPublic=false，只有授权团队可用）
+      const imp = await api('POST', '/api/ai/plugin/custom/import_mcp', {
+        token: adminToken,
+        body: {
+          name: SYS_KEY,
+          title: '私有系统插件',
+          description: 'E2E 验证授权与 key 保留',
+          serverUrl: stub2Url,
+          header: [{ key: 'Authorization', value: 'Bearer sys-e2e' }],
+          query: [],
+          isPublic: false,
+        },
+      })
+      check('TP-35a 前置：admin 导入私有系统 MCP 插件 200', imp.status === 200, imp.text.slice(0, 160))
+      const ml = await api('GET', '/api/ai/plugin/manage/list', { token: adminToken })
+      const sysItem = (ml.json?.items ?? []).find((x) => x.pluginName === SYS_KEY)
+      check('TP-35b 前置：管理列表可查且为私有系统插件', Boolean(sysItem) && sysItem.isSystem === true && sysItem.isPublic === false)
+
+      if (sysItem) {
+        // 未授权：团队列表不可见、运行 404
+        const listBefore = await api('GET', `/api/team/${TID}/plugin/list`, { token: owner.token })
+        check('TP-35c 未授权时团队列表不含该私有系统插件', !(listBefore.json?.items ?? []).some((x) => x.pluginName === SYS_KEY && x.isTeamOwned === false))
+        check('TP-35d 未授权运行系统插件 404', (await api('POST', `/api/team/${TID}/plugin/run`, { token: owner.token, body: { teamId: TID, key: SYS_KEY, requestJson: '{}' } })).status === 404)
+
+        // 团队插件 key 不得占用系统插件 key（无论是否已授权）
+        check('TP-35e 团队动态实例 key 与系统插件冲突 409', (await api('POST', `/api/team/${TID}/plugin/dynamic`, { token: owner.token, body: { teamId: TID, instanceKey: SYS_KEY, templeteKey: 'dynamic_greet', title: 'x', description: '', config: '{}' } })).status === 409)
+        check('TP-35f 团队 MCP 插件名与系统插件冲突 409', (await api('POST', `/api/team/${TID}/plugin/mcp`, { token: owner.token, body: { teamId: TID, name: SYS_KEY, title: '冲突插件', description: 'E2E 验证与系统插件 key 冲突', serverUrl: stub2Url, header: [], query: [] } })).status === 409)
+        check('TP-35g 团队 OpenAPI 预上传与系统插件冲突 409', (await api('POST', `/api/team/${TID}/plugin/pre_upload_openapi`, { token: owner.token, body: { teamId: TID, pluginName: SYS_KEY, fileName: 'a.json', contentType: 'application/json', fileSize: 10, shA256: 'a'.repeat(64) } })).status === 409)
+
+        // admin 侧反向保留：系统动态实例 key 不得与已有团队插件冲突
+        check('TP-35k admin 动态实例 key 与团队插件冲突 409', (await api('POST', '/api/ai/plugin/dynamic/save', { token: adminToken, body: { pluginKey: TTEAM_KEY, templeteKey: 'dynamic_greet', title: 'x', description: '', classifyId: 0, config: '{}' } })).status === 409)
+
+        // 授权团队 → 列表可见（isSystem/isTeamOwned 标记）→ 成员可运行（指定函数）
+        const authPut = await api('PUT', `/api/ai/plugin/${sysItem.id}/authorization`, { token: adminToken, body: { teamIds: [TID] } })
+        check('TP-35h admin 授权团队 200', authPut.status === 200, authPut.text.slice(0, 120))
+        const listAuthed = await api('GET', `/api/team/${TID}/plugin/list`, { token: member.token })
+        const sysInView = (listAuthed.json?.items ?? []).find((x) => x.pluginName === SYS_KEY)
+        check('TP-35i 授权后团队列表含该系统插件', Boolean(sysInView) && sysInView.isSystem === true && sysInView.isTeamOwned === false)
+        const runSys = await api('POST', `/api/team/${TID}/plugin/run`, { token: member.token, body: { teamId: TID, key: SYS_KEY, function: 'echo_header', requestJson: '{"hello":"world"}' } })
+        check('TP-35j 授权后成员运行系统插件（指定函数）成功', runSys.status === 200 && runSys.json?.success === true, runSys.text.slice(0, 200))
+
+        // 撤销授权 → 列表不可见、运行 404
+        await api('PUT', `/api/ai/plugin/${sysItem.id}/authorization`, { token: adminToken, body: { teamIds: [] } })
+        const listRevoked = await api('GET', `/api/team/${TID}/plugin/list`, { token: owner.token })
+        check('TP-35l 撤销授权后列表不再包含', !(listRevoked.json?.items ?? []).some((x) => x.pluginName === SYS_KEY))
+        check('TP-35m 撤销授权后运行 404', (await api('POST', `/api/team/${TID}/plugin/run`, { token: owner.token, body: { teamId: TID, key: SYS_KEY, requestJson: '{}' } })).status === 404)
+
+        // 清理
+        check('TP-35n 清理系统插件 200', (await api('DELETE', '/api/ai/plugin/custom', { token: adminToken, body: { pluginId: sysItem.id } })).status === 200)
+      }
+
+      // 清理团队自有插件
+      const listCleanup = await api('GET', `/api/team/${TID}/plugin/list`, { token: owner.token })
+      const teamImpItem = (listCleanup.json?.items ?? []).find((x) => x.pluginName === TTEAM_KEY)
+      if (teamImpItem) {
+        await api('DELETE', `/api/team/${TID}/plugin/${teamImpItem.pluginId}`, { token: owner.token })
+      }
+
+      stub2.server.close()
     }
   }
 

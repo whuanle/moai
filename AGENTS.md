@@ -56,13 +56,14 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 ## 文档索引
 
 - [docs/README.md](./docs/README.md) — 文档地图（L0）与模块四件套索引
+- [docs/gateway/external-api-scope-system.md](./docs/gateway/external-api-scope-system.md) — 团队资源外部接口与范围体系细节总账（scope 位表、端点分档、缓存与失效、新增资源组清单、踩坑）
 - [cqrs-conventions.md](./docs/cqrs-conventions.md) ｜ [api_interface.md](./docs/api_interface.md) ｜ [DOC-STANDARD.md](./docs/DOC-STANDARD.md)
 - [aiplugin-authoring.md](./docs/aiplugin-authoring.md) ｜ [settings.md](./docs/settings.md) ｜ [storage-file-layout.md](./docs/storage-file-layout.md)
 - [ui/AGENTS.md](./ui/AGENTS.md) — 前端专属入口（动 `ui/` 时读这份）
 - [frontend-conventions.md](./ui/docs/frontend-conventions.md) ｜ [design-system](./ui/docs/design-system/README.md)
 - [rounds-log.md](./docs/rounds-log.md) — 轮次闭环台账与证据
 
-> ⚠️ `docs/README.md` 模块地图滞后于 `src/`：`aichannel`、`gateway`、`aimodel`、`ai`、`admin`、`plugin` 尚无四件套，改动以源码为准并补文档。
+> ⚠️ `docs/README.md` 模块地图滞后于 `src/`：`aichannel`、`aimodel`、`ai`、`admin`、`plugin` 尚无四件套，改动以源码为准并补文档。
 
 ## 本地开发
 
@@ -85,10 +86,14 @@ node local-dev/wiki-e2e.mjs              # WK 32
 node local-dev/wiki-workflow-e2e.mjs     # WK 27（默认工作流配置 + 多选批量工作流：切割/生成元数据/向量化三步自由组合与单步执行、错误隔离与参数校验；依赖模型渠道的场景在环境无可用模型时自动跳过）
 node local-dev/wiki-recall-e2e.mjs      # WK 30（召回测试：参数校验/团队门禁 + 向量召回/文档范围过滤/相似度阈值 + AI 优化问题与生成回答；内置本地 OpenAI 兼容桩模型，无需真实模型渠道）
 node local-dev/wiki-source-e2e.mjs      # WS 66（外部源：权限与校验 + 爬虫真实抓取全链路 + 增量哈希比对 + 父页无变化仍发现新页面 + 强制全量 + 文档分页筛选 + 更新挡板/cron 语义 + 停用后同步 409 + 飞书源假凭证创建兜底 + 删除不删已入库文档；自带本地站点桩，无需外网）
+node local-dev/wiki-mcp-e2e.mjs         # WM 30（知识库 MCP 服务器：接入 key 鉴权/wiki_mcp 范围/wikiId 归属门禁 + 三只读工具（知识库列表/文件搜索/向量召回）+ 无状态协议行为；内置本地桩 embedding）
 node local-dev/kg-text2cypher-e2e.mjs    # KT（知识图谱 Text2Cypher：实例绑定校验/schema 自描述/只读守卫/$kgId 隔离/行数截断/接入图；依赖 Memgraph，需含 kg_cypher_query 的新构建）
 node local-dev/kg-search-e2e.mjs         # KGS（知识图谱图检索：向量化同步/语义检索/绑定校验/工作流节点；本地桩渠道，需含 SP-A 的新构建）
+node local-dev/kg-external-e2e.mjs       # KX 101（知识图谱外部接口：应用 token/团队隔离/类型节点边 CRUD/批量整批拒绝/kg_read·kg_write 分档/批量导入（类型名引用+业务 key 幂等 upsert+逐条失败报告）/validateOnly 预检/按 key 同步闭环（keys/list+edges/batch-delete）；依赖 Memgraph）
+node local-dev/kg-mcp-e2e.mjs            # KGM 35（知识图谱 MCP：kg_mcp 鉴权门禁/工具域隔离（wiki 端点不掺 KG 工具）/图谱列表/schema/节点搜索/向量召回（本地桩 embedding）/协议行为；依赖 Memgraph）
+node local-dev/kg-import-e2e.mjs         # KG 20（知识图谱导入：AI 导入桩模型全链路（KG-S26）+ JSON 结构化导入（KG-S29：类型名引用/业务 key upsert/预检/逐条报告/幂等/超限/疑似重复检测）；依赖 Memgraph）
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
-node local-dev/team-plugin-e2e.mjs       # TP 31（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显）
+node local-dev/team-plugin-e2e.mjs       # TP 47（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显 + 系统插件 key 全局保留与授权团队可用）
 node local-dev/app-e2e.mjs               # AP 29
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
@@ -98,6 +103,9 @@ node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
+node local-dev/team-apikey-scope-e2e.mjs  # TA 21（应用接入 key 功能范围：范围回显/非法代码 400/网关 model 门禁/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连网关与知识库/缓存立即性；团队接入 key 已下线）
+node local-dev/gateway-e2e.mjs            # GW 15（模型网关：应用接入 key 两种鉴权头直连/路由团队校验/已下线 moai- 前缀 401/keys 端点移除）
+node local-dev/external-app-e2e.mjs       # EA 75（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 102（实例管理 + 失败路径 + 内置模板注册 dynamic_greet/bocha_web_search/bocha_ai_search/feishu_web_hook_text/javascript_executor/postgres_query/mysql_query）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/paddleocr-e2e.mjs         # DYN 36~42（PaddleOCR 三模板成功路径 + 响应解析，自建桩服务，无需真实 PaddleOCR）

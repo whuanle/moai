@@ -251,7 +251,7 @@ Scenario: 应用接入增删改查与授权校验
 @AP-S24 @auto:vitest
 Scenario: 应用接入区块顶部展示 key 用途提示
   When 团队管理员进入团队管理的应用接入区块
-  Then 区块顶部展示提示：第三方系统可通过应用接入 key 换取外部 token，接入本平台并操作该团队的资源
+  Then 区块顶部展示提示：第三方系统可使用应用接入 key 直接访问团队资源（按功能范围授权），勾选「模型网关」后可直接调用模型网关
 ```
 
 ## Feature: 外部应用接入 token（/api/external）
@@ -344,6 +344,32 @@ Scenario: 外部会话与对话端点的鉴权与范围
   Then 返回禁止
   When 外部用户 token 以会话 id 发起对话
   Then 请求被受理（会话归属校验通过，进入派发链路）
+```
+
+## Feature: key 直连外部接入（免换 token）
+
+```gherkin
+@EA-S15 @auto:e2e
+Scenario: 应用接入 key 直访团队资源
+  When 以 Bearer 或 x-api-key 直接携带应用接入 key 调用 /api/external 团队资源接口
+  Then 按该接入勾选的知识库范围放行，无需先换取外部 token
+  But 伪造 key 返回未认证
+
+@EA-S16 @auto:e2e
+Scenario: 需授权应用的会话面仅限外部用户 token
+  When 应用接入 key 直连或应用 token 访问需授权外部应用的建会话/会话列表端点
+  Then 返回禁止并提示先经 /api/external/token 换取外部用户 token
+  But 外部用户 token 不受影响
+
+@EA-S17 @auto:e2e
+Scenario: 免授权应用 key 直连会话
+  When 应用接入 key 直连对免授权外部应用创建会话、查询会话列表、读取消息并发起对话
+  Then 系统以接入「直连会话身份」承载会话归属，各端点放行且归属校验通过
+
+@EA-S19 @auto:e2e
+Scenario: 已下线团队接入 key 前缀拒绝
+  When 以 moai- 前缀（非 moai-ac-）凭证访问 /api/external 或网关
+  Then 返回未认证（团队接入 key 已下线，接入统一走应用接入 key）
 ```
 
 ## Feature: 应用工作台与调试会话
@@ -797,4 +823,29 @@ Scenario: 新建/编辑应用分类下拉（前端）
   When 团队 Admin+ 打开新建应用弹窗或应用信息分区
   Then 出现「应用分类」下拉（emoji + 名称），可清空表示未分类
 ```
+
+```gherkin
+@AP-S72 @auto:e2e
+Scenario: 应用接入 key 换取外部 token
+  When 第三方提交应用接入 key（moai-ac- 前缀）换取外部 token
+  Then 签发成功，知识库范围取接入勾选并随刷新重验
+  But 伪造 key 未认证；无凭证且无 appId 时参数错误
+```
+
+```gherkin
+@AP-S73 @auto:e2e
+Scenario: 应用接入 key 的知识库功能范围
+  When 团队 Admin 创建应用接入并勾选知识库读/写范围
+  Then 列表回显范围，接入签发 token 的知识库读写按勾选放行
+  But 越维代码参数错误；不传范围默认读写全量
+  When 修改范围并刷新 token
+  Then 新 token 范围以接入当前勾选为准
+```
+
+```gherkin
+@AP-S74 @auto:e2e
+Scenario: 应用对话范围门禁
+  When 以应用接入 key 换取外部用户 token
+  Then 来源勾选 app_chat 时签发放行
+  But 未勾选时禁止，来源撤销该范围后刷新亦被拒
 ```

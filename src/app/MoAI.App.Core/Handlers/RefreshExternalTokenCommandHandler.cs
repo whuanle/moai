@@ -52,13 +52,13 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
 
     private async Task<ExternalTokenCommandResponse> RefreshAppTokenAsync(Models.ExternalTokenContext tokenContext, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(tokenContext.SubjectId, out var accessAppId))
+        if (!Guid.TryParse(tokenContext.SubjectId, out var subjectId))
         {
             throw new BusinessException("refresh token 无效.") { StatusCode = 401 };
         }
 
         var accessApp = await _databaseContext.AccessApps
-            .FirstOrDefaultAsync(x => x.Id == accessAppId, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == subjectId, cancellationToken);
         if (accessApp == null)
         {
             throw new BusinessException("应用接入已被删除，token 已吊销.") { StatusCode = 401 };
@@ -97,6 +97,13 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
             {
                 throw new BusinessException("应用接入已被删除，token 已吊销.") { StatusCode = 401 };
             }
+        }
+
+        // 应用对话范围以来源接入当前勾选为准：撤销后刷新即拒绝（匿名身份不受限）
+        if (accessApp != null
+            && !((Database.Enums.TeamApiKeyScopes)accessApp.Scopes).HasFlag(Database.Enums.TeamApiKeyScopes.AppChat))
+        {
+            throw new BusinessException("应用接入未勾选应用对话范围.") { StatusCode = 403 };
         }
 
         if (external.AppId != null)

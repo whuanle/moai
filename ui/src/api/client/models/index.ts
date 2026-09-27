@@ -25,9 +25,17 @@ export interface AccessAppItem extends Parsable {
      */
     key?: string | null;
     /**
+     * 最近使用时间（通过模型网关调用时刷新），未使用为 null.
+     */
+    lastUsedTime?: string | null;
+    /**
      * 接入名称.
      */
     name?: string | null;
+    /**
+     * 功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），model 授权 key 直连使用模型网关，知识库维度决定签发 token 的知识库权限.
+     */
+    scopes?: string[] | null;
 }
 export type AccessPointPosition = (typeof AccessPointPositionObject)[keyof typeof AccessPointPositionObject];
 /**
@@ -60,16 +68,13 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
-/**
- * Represents a context entry providing additional information to the agent.
- */
 export interface AGUIContext extends Parsable {
     /**
-     * Gets or sets the description of the context entry.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets the value of the context entry.
+     * The value property
      */
     value?: string | null;
 }
@@ -97,24 +102,21 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
-/**
- * Represents a tool available for the agent to use.
- */
 export interface AGUITool extends Parsable {
     /**
-     * Gets or sets the description of the tool.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
+     * The metadata property
      */
     metadata?: UntypedNode | null;
     /**
-     * Gets or sets the name of the tool.
+     * The name property
      */
     name?: string | null;
     /**
-     * Gets or sets the JSON Schema describing the tool's parameters.
+     * The parameters property
      */
     parameters?: UntypedNode | null;
 }
@@ -1007,6 +1009,10 @@ export interface CreateAccessAppCommand extends Parsable {
      */
     name?: string | null;
     /**
+     * 功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），model 授权应用接入 key 直连使用模型网关，知识库维度限制该接入签发 token 的知识库范围；不传默认读写全量，空列表=纯对话接入（token 无知识库权限）.
+     */
+    scopes?: string[] | null;
+    /**
      * 所属团队 id.
      */
     teamId?: string | null;
@@ -1171,19 +1177,6 @@ export function createAIModelQuotaInfoFromDiscriminatorValue(parseNode: ParseNod
 // @ts-ignore
 export function createAiPartitionDocumentCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAiPartitionDocumentCommand;
-}
-/**
- * 创建 API Key 请求体.
- */
-export interface CreateApiKeyRequest extends Parsable {
-    /**
-     * 过期时间，null=永不过期.
-     */
-    expireTime?: string | null;
-    /**
-     * 密钥名称.
-     */
-    name?: string | null;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1542,15 +1535,6 @@ export function createCreateAIModelCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {CreateApiKeyRequest}
- */
-// @ts-ignore
-export function createCreateApiKeyRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCreateApiKeyRequest;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateAppCommand}
  */
 // @ts-ignore
@@ -1664,15 +1648,6 @@ export function createCreatePromptCommandFromDiscriminatorValue(parseNode: Parse
 // @ts-ignore
 export function createCreateSkillCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateSkillCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {CreateTeamApiKeyCommandResponse}
- */
-// @ts-ignore
-export function createCreateTeamApiKeyCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoCreateTeamApiKeyCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1812,6 +1787,24 @@ export function createEmptyCommandResponseFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalImportItemResult}
+ */
+// @ts-ignore
+export function createExternalImportItemResultFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalImportItemResult;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ExternalImportResponse}
+ */
+// @ts-ignore
+export function createExternalImportResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoExternalImportResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {ExtractChatAttachmentCommand}
  */
 // @ts-ignore
@@ -1904,6 +1897,15 @@ export function createImportAIModelCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportDuplicateSuspect}
+ */
+// @ts-ignore
+export function createImportDuplicateSuspectFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportDuplicateSuspect;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {ImportKnowledgeGraphFromFileCommand}
  */
 // @ts-ignore
@@ -1918,6 +1920,15 @@ export function createImportKnowledgeGraphFromFileCommandFromDiscriminatorValue(
 // @ts-ignore
 export function createImportKnowledgeGraphFromFileResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoImportKnowledgeGraphFromFileResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {ImportKnowledgeGraphJsonCommand}
+ */
+// @ts-ignore
+export function createImportKnowledgeGraphJsonCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoImportKnowledgeGraphJsonCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3158,15 +3169,6 @@ export function createQueryTeamAllCommandResponseItemFromDiscriminatorValue(pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {QueryTeamApiKeysCommandResponse}
- */
-// @ts-ignore
-export function createQueryTeamApiKeysCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoQueryTeamApiKeysCommandResponse;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryTeamCandidatesCommandResponse}
  */
 // @ts-ignore
@@ -3796,32 +3798,6 @@ export function createSyncWikiSourceDocumentResultFromDiscriminatorValue(parseNo
     return deserializeIntoSyncWikiSourceDocumentResult;
 }
 /**
- * 创建网关 API Key 响应，secret 仅此一次返回，服务端只保存 sha256.
- */
-export interface CreateTeamApiKeyCommandResponse extends Parsable {
-    /**
-     * 密钥 id.
-     */
-    apiKeyId?: Guid | null;
-    /**
-     * 密钥前缀，用于列表展示.
-     */
-    keyPrefix?: string | null;
-    /**
-     * 密钥原文，仅创建时返回一次.
-     */
-    secret?: string | null;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {TeamApiKeyItem}
- */
-// @ts-ignore
-export function createTeamApiKeyItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoTeamApiKeyItem;
-}
-/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TeamCandidateItem}
@@ -3967,15 +3943,6 @@ export function createUpdateAIModelQuotaCommandFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createUpdateAIModelVisibilityCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateAIModelVisibilityCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UpdateApiKeyRequest}
- */
-// @ts-ignore
-export function createUpdateApiKeyRequestFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUpdateApiKeyRequest;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4743,7 +4710,9 @@ export function deserializeIntoAccessAppItem(accessAppItem: Partial<AccessAppIte
         "createTime": n => { accessAppItem.createTime = n.getStringValue(); },
         "description": n => { accessAppItem.description = n.getStringValue(); },
         "key": n => { accessAppItem.key = n.getStringValue(); },
+        "lastUsedTime": n => { accessAppItem.lastUsedTime = n.getStringValue(); },
         "name": n => { accessAppItem.name = n.getStringValue(); },
+        "scopes": n => { accessAppItem.scopes = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
 /**
@@ -5279,6 +5248,7 @@ export function deserializeIntoCreateAccessAppCommand(createAccessAppCommand: Pa
     return {
         "description": n => { createAccessAppCommand.description = n.getStringValue(); },
         "name": n => { createAccessAppCommand.name = n.getStringValue(); },
+        "scopes": n => { createAccessAppCommand.scopes = n.getCollectionOfPrimitiveValues<string>(); },
         "teamId": n => { createAccessAppCommand.teamId = n.getStringValue(); },
     }
 }
@@ -5321,17 +5291,6 @@ export function deserializeIntoCreateAIModelCommand(createAIModelCommand: Partia
         "enabled": n => { createAIModelCommand.enabled = n.getBooleanValue(); },
         "isPublic": n => { createAIModelCommand.isPublic = n.getBooleanValue(); },
         "meta": n => { createAIModelCommand.meta = n.getObjectValue<AIChannelModelMeta>(createAIChannelModelMetaFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoCreateApiKeyRequest(createApiKeyRequest: Partial<CreateApiKeyRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "expireTime": n => { createApiKeyRequest.expireTime = n.getStringValue(); },
-        "name": n => { createApiKeyRequest.name = n.getStringValue(); },
     }
 }
 /**
@@ -5516,18 +5475,6 @@ export function deserializeIntoCreateSkillCommand(createSkillCommand: Partial<Cr
         "key": n => { createSkillCommand.key = n.getStringValue(); },
         "name": n => { createSkillCommand.name = n.getStringValue(); },
         "teamId": n => { createSkillCommand.teamId = n.getNumberValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoCreateTeamApiKeyCommandResponse(createTeamApiKeyCommandResponse: Partial<CreateTeamApiKeyCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "apiKeyId": n => { createTeamApiKeyCommandResponse.apiKeyId = n.getGuidValue(); },
-        "keyPrefix": n => { createTeamApiKeyCommandResponse.keyPrefix = n.getStringValue(); },
-        "secret": n => { createTeamApiKeyCommandResponse.secret = n.getStringValue(); },
     }
 }
 /**
@@ -5728,6 +5675,40 @@ export function deserializeIntoEmptyCommandResponse(emptyCommandResponse: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoExternalImportItemResult(externalImportItemResult: Partial<ExternalImportItemResult> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "action": n => { externalImportItemResult.action = n.getStringValue(); },
+        "id": n => { externalImportItemResult.id = n.getStringValue(); },
+        "index": n => { externalImportItemResult.index = n.getNumberValue(); },
+        "kind": n => { externalImportItemResult.kind = n.getStringValue(); },
+        "message": n => { externalImportItemResult.message = n.getStringValue(); },
+        "ok": n => { externalImportItemResult.ok = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoExternalImportResponse(externalImportResponse: Partial<ExternalImportResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createdEntityTypeNames": n => { externalImportResponse.createdEntityTypeNames = n.getCollectionOfPrimitiveValues<string>(); },
+        "createdRelationTypeNames": n => { externalImportResponse.createdRelationTypeNames = n.getCollectionOfPrimitiveValues<string>(); },
+        "duplicateSuspects": n => { externalImportResponse.duplicateSuspects = n.getCollectionOfObjectValues<ImportDuplicateSuspect>(createImportDuplicateSuspectFromDiscriminatorValue); },
+        "edgeCreatedCount": n => { externalImportResponse.edgeCreatedCount = n.getNumberValue(); },
+        "edgeFailedCount": n => { externalImportResponse.edgeFailedCount = n.getNumberValue(); },
+        "edgeSkippedCount": n => { externalImportResponse.edgeSkippedCount = n.getNumberValue(); },
+        "nodeCreatedCount": n => { externalImportResponse.nodeCreatedCount = n.getNumberValue(); },
+        "nodeFailedCount": n => { externalImportResponse.nodeFailedCount = n.getNumberValue(); },
+        "nodeUpdatedCount": n => { externalImportResponse.nodeUpdatedCount = n.getNumberValue(); },
+        "results": n => { externalImportResponse.results = n.getCollectionOfObjectValues<ExternalImportItemResult>(createExternalImportItemResultFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoExtractChatAttachmentCommand(extractChatAttachmentCommand: Partial<ExtractChatAttachmentCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "fileName": n => { extractChatAttachmentCommand.fileName = n.getStringValue(); },
@@ -5823,6 +5804,22 @@ export function deserializeIntoImportAIModelCommand(importAIModelCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoImportDuplicateSuspect(importDuplicateSuspect: Partial<ImportDuplicateSuspect> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "index": n => { importDuplicateSuspect.index = n.getNumberValue(); },
+        "kind": n => { importDuplicateSuspect.kind = n.getStringValue(); },
+        "matchIndex": n => { importDuplicateSuspect.matchIndex = n.getNumberValue(); },
+        "matchName": n => { importDuplicateSuspect.matchName = n.getStringValue(); },
+        "matchNodeId": n => { importDuplicateSuspect.matchNodeId = n.getStringValue(); },
+        "name": n => { importDuplicateSuspect.name = n.getStringValue(); },
+        "score": n => { importDuplicateSuspect.score = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoImportKnowledgeGraphFromFileCommand(importKnowledgeGraphFromFileCommand: Partial<ImportKnowledgeGraphFromFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "aiModelId": n => { importKnowledgeGraphFromFileCommand.aiModelId = n.getGuidValue(); },
@@ -5845,6 +5842,21 @@ export function deserializeIntoImportKnowledgeGraphFromFileResponse(importKnowle
         "skippedEdges": n => { importKnowledgeGraphFromFileResponse.skippedEdges = n.getNumberValue(); },
         "skippedNodes": n => { importKnowledgeGraphFromFileResponse.skippedNodes = n.getNumberValue(); },
         "truncated": n => { importKnowledgeGraphFromFileResponse.truncated = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoImportKnowledgeGraphJsonCommand(importKnowledgeGraphJsonCommand: Partial<ImportKnowledgeGraphJsonCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "autoCreateTypes": n => { importKnowledgeGraphJsonCommand.autoCreateTypes = n.getBooleanValue(); },
+        "content": n => { importKnowledgeGraphJsonCommand.content = n.getStringValue(); },
+        "detectDuplicates": n => { importKnowledgeGraphJsonCommand.detectDuplicates = n.getBooleanValue(); },
+        "knowledgeGraphId": n => { importKnowledgeGraphJsonCommand.knowledgeGraphId = n.getStringValue(); },
+        "mode": n => { importKnowledgeGraphJsonCommand.mode = n.getStringValue(); },
+        "validateOnly": n => { importKnowledgeGraphJsonCommand.validateOnly = n.getBooleanValue(); },
     }
 }
 /**
@@ -7440,16 +7452,6 @@ export function deserializeIntoQueryTeamAllCommandResponseItem(queryTeamAllComma
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoQueryTeamApiKeysCommandResponse(queryTeamApiKeysCommandResponse: Partial<QueryTeamApiKeysCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "items": n => { queryTeamApiKeysCommandResponse.items = n.getCollectionOfObjectValues<TeamApiKeyItem>(createTeamApiKeyItemFromDiscriminatorValue); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoQueryTeamCandidatesCommandResponse(queryTeamCandidatesCommandResponse: Partial<QueryTeamCandidatesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryTeamCandidatesCommandResponse.items = n.getCollectionOfObjectValues<TeamCandidateItem>(createTeamCandidateItemFromDiscriminatorValue); },
@@ -7913,6 +7915,7 @@ export function deserializeIntoRunAgentInput(runAgentInput: Partial<RunAgentInpu
 export function deserializeIntoRunPluginCommand(runPluginCommand: Partial<RunPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "configJson": n => { runPluginCommand.configJson = n.getStringValue(); },
+        "function": n => { runPluginCommand.functionEscaped = n.getStringValue(); },
         "key": n => { runPluginCommand.key = n.getStringValue(); },
         "requestJson": n => { runPluginCommand.requestJson = n.getStringValue(); },
     }
@@ -7926,6 +7929,7 @@ export function deserializeIntoRunTeamPluginCommand(runTeamPluginCommand: Partia
     return {
         "contextUserId": n => { runTeamPluginCommand.contextUserId = n.getStringValue(); },
         "contextUserType": n => { runTeamPluginCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "function": n => { runTeamPluginCommand.functionEscaped = n.getStringValue(); },
         "key": n => { runTeamPluginCommand.key = n.getStringValue(); },
         "requestJson": n => { runTeamPluginCommand.requestJson = n.getStringValue(); },
         "teamId": n => { runTeamPluginCommand.teamId = n.getStringValue(); },
@@ -8348,23 +8352,6 @@ export function deserializeIntoSyncWikiSourceDocumentResult(syncWikiSourceDocume
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoTeamApiKeyItem(teamApiKeyItem: Partial<TeamApiKeyItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "createTime": n => { teamApiKeyItem.createTime = n.getStringValue(); },
-        "expireTime": n => { teamApiKeyItem.expireTime = n.getStringValue(); },
-        "id": n => { teamApiKeyItem.id = n.getGuidValue(); },
-        "isDisable": n => { teamApiKeyItem.isDisable = n.getBooleanValue(); },
-        "isExpired": n => { teamApiKeyItem.isExpired = n.getBooleanValue(); },
-        "keyPrefix": n => { teamApiKeyItem.keyPrefix = n.getStringValue(); },
-        "lastUsedTime": n => { teamApiKeyItem.lastUsedTime = n.getStringValue(); },
-        "name": n => { teamApiKeyItem.name = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoTeamCandidateItem(teamCandidateItem: Partial<TeamCandidateItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { teamCandidateItem.avatar = n.getStringValue(); },
@@ -8517,6 +8504,7 @@ export function deserializeIntoUpdateAccessAppCommand(updateAccessAppCommand: Pa
         "accessAppId": n => { updateAccessAppCommand.accessAppId = n.getGuidValue(); },
         "description": n => { updateAccessAppCommand.description = n.getStringValue(); },
         "name": n => { updateAccessAppCommand.name = n.getStringValue(); },
+        "scopes": n => { updateAccessAppCommand.scopes = n.getCollectionOfPrimitiveValues<string>(); },
     }
 }
 /**
@@ -8582,17 +8570,6 @@ export function deserializeIntoUpdateAIModelVisibilityCommand(updateAIModelVisib
     return {
         "isPublic": n => { updateAIModelVisibilityCommand.isPublic = n.getBooleanValue(); },
         "modelId": n => { updateAIModelVisibilityCommand.modelId = n.getGuidValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoUpdateApiKeyRequest(updateApiKeyRequest: Partial<UpdateApiKeyRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "isDisable": n => { updateApiKeyRequest.isDisable = n.getBooleanValue(); },
-        "name": n => { updateApiKeyRequest.name = n.getStringValue(); },
     }
 }
 /**
@@ -9412,6 +9389,80 @@ export interface EmbeddingDocumentCommandResponse extends Parsable {
 export interface EmptyCommandResponse extends Parsable {
 }
 /**
+ * 导入逐条结果.
+ */
+export interface ExternalImportItemResult extends Parsable {
+    /**
+     * 动作：created / updated / skipped.
+     */
+    action?: string | null;
+    /**
+     * 节点/边 id（成功时有值）.
+     */
+    id?: string | null;
+    /**
+     * 请求中的行下标（从 0 开始，节点与边各自独立计数）.
+     */
+    index?: number | null;
+    /**
+     * 行类型：node / edge.
+     */
+    kind?: string | null;
+    /**
+     * 失败原因（ok=false 时有值）.
+     */
+    message?: string | null;
+    /**
+     * 是否成功.
+     */
+    ok?: boolean | null;
+}
+/**
+ * 批量导入响应（外部接口）：逐条返回结果，坏行不阻断整批，HTTP 200.
+ */
+export interface ExternalImportResponse extends Parsable {
+    /**
+     * 本次（validateOnly 模式下为「将」）自动创建的实体类型名称.
+     */
+    createdEntityTypeNames?: string[] | null;
+    /**
+     * 本次（validateOnly 模式下为「将」）自动创建的关系类型名称.
+     */
+    createdRelationTypeNames?: string[] | null;
+    /**
+     * 疑似重复实体对（向量相似度检测，detectDuplicates 开启且图谱已配置向量化时才有值）；检测失败不影响导入.
+     */
+    duplicateSuspects?: ImportDuplicateSuspect[] | null;
+    /**
+     * 新建边数.
+     */
+    edgeCreatedCount?: number | null;
+    /**
+     * 失败边数.
+     */
+    edgeFailedCount?: number | null;
+    /**
+     * 跳过边数（已存在的同（起点，关系，终点）边，仅 upsert 模式）.
+     */
+    edgeSkippedCount?: number | null;
+    /**
+     * 新建节点数.
+     */
+    nodeCreatedCount?: number | null;
+    /**
+     * 失败节点数.
+     */
+    nodeFailedCount?: number | null;
+    /**
+     * 更新节点数.
+     */
+    nodeUpdatedCount?: number | null;
+    /**
+     * 逐条结果：先节点（按请求顺序）后边（按请求顺序）；validateOnly 模式下为预测值，id 恒为 null.
+     */
+    results?: ExternalImportItemResult[] | null;
+}
+/**
  * 对话附件文本提取命令：对已上传到公开 chat 目录的文档做 Maomi.ToMarkdown 提取，结果由前端拼进用户消息文本发送给模型（AG-UI 对话链路为纯文本）.
  */
 export interface ExtractChatAttachmentCommand extends Parsable {
@@ -9572,6 +9623,39 @@ export interface ImportAIModelCommand extends Parsable {
     items?: AIChannelModelMeta[] | null;
 }
 /**
+ * 导入疑似重复项：新建节点与图谱已有节点（kind=existing）或本批次另一新建行（kind=inbatch）向量相似度超阈值.
+ */
+export interface ImportDuplicateSuspect extends Parsable {
+    /**
+     * 新建节点在请求中的行下标（从 0 开始）.
+     */
+    index?: number | null;
+    /**
+     * 匹配来源：existing（图谱已有节点）/ inbatch（本批次另一行）.
+     */
+    kind?: string | null;
+    /**
+     * 本批次另一行的行下标（kind=inbatch 时有值）.
+     */
+    matchIndex?: number | null;
+    /**
+     * 匹配节点名称.
+     */
+    matchName?: string | null;
+    /**
+     * 已有节点 id（kind=existing 时有值）.
+     */
+    matchNodeId?: string | null;
+    /**
+     * 新建节点名称.
+     */
+    name?: string | null;
+    /**
+     * 相似度得分（Cosine，0-1）.
+     */
+    score?: number | null;
+}
+/**
  * AI 导入文件生成图谱：读取已直传的文档文件，Maomi.ToMarkdown 提取内容后由对话模型按图谱现有模型抽取实体与关系写入图库，仅 Owner/Admin 的托管图可导入.
  */
 export interface ImportKnowledgeGraphFromFileCommand extends Parsable {
@@ -9624,6 +9708,35 @@ export interface ImportKnowledgeGraphFromFileResponse extends Parsable {
      * 提取文本是否因超上限被截断.
      */
     truncated?: boolean | null;
+}
+/**
+ * JSON 结构化导入（内部导入页）：直接反序列化导入页提交的 JSON 文本并落库（与外部 /import 同一管线）；仅托管图 Admin+，返回逐条导入结果.
+ */
+export interface ImportKnowledgeGraphJsonCommand extends Parsable {
+    /**
+     * 覆盖 JSON 内的 autoCreateTypes；null 以 JSON 内值为准（默认 false）.
+     */
+    autoCreateTypes?: boolean | null;
+    /**
+     * 导入 JSON 文本（顶层对象：mode/autoCreateTypes/validateOnly/nodes/edges）.
+     */
+    content?: string | null;
+    /**
+     * 覆盖 JSON 内的 detectDuplicates；null 以 JSON 内值为准（默认 true）.
+     */
+    detectDuplicates?: boolean | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 覆盖 JSON 内的 mode（upsert/create）；null 以 JSON 内值为准（JSON 未给默认 upsert）.
+     */
+    mode?: string | null;
+    /**
+     * 覆盖 JSON 内的 validateOnly；null 以 JSON 内值为准（默认 false）.
+     */
+    validateOnly?: boolean | null;
 }
 /**
  * 导入 mcp 服务，导入时会访问 mcp 服务器，可能会导致导入比较慢.
@@ -12335,15 +12448,6 @@ export interface QueryTeamAllCommandResponseItem extends Parsable {
     teamId?: string | null;
 }
 /**
- * 团队网关 API Key 列表响应.
- */
-export interface QueryTeamApiKeysCommandResponse extends Parsable {
-    /**
-     * 密钥集合.
-     */
-    items?: TeamApiKeyItem[] | null;
-}
-/**
  * 团队候选用户列表响应.
  */
 export interface QueryTeamCandidatesCommandResponse extends Parsable {
@@ -13111,44 +13215,41 @@ export interface ReviewPublicationCommand extends Parsable {
      */
     reviewComment?: string | null;
 }
-/**
- * Input payload for running an AG-UI agent.
- */
 export interface RunAgentInput extends Parsable {
     /**
-     * Gets or sets contextual information for the agent.
+     * The context property
      */
     context?: AGUIContext[] | null;
     /**
-     * Gets or sets additional forwarded properties from the client.
+     * The forwardedProps property
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * Gets or sets the conversation messages.
+     * The messages property
      */
     messages?: AGUIMessage[] | null;
     /**
-     * Gets or sets the parent run identifier for branching/time travel.
+     * The parentRunId property
      */
     parentRunId?: string | null;
     /**
-     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
+     * The resume property
      */
     resume?: AGUIResume[] | null;
     /**
-     * Gets or sets the run identifier.
+     * The runId property
      */
     runId?: string | null;
     /**
-     * Gets or sets the state to pass to the agent.
+     * The state property
      */
     state?: UntypedNode | null;
     /**
-     * Gets or sets the thread identifier.
+     * The threadId property
      */
     threadId?: string | null;
     /**
-     * Gets or sets the tools available to the agent.
+     * The tools property
      */
     tools?: AGUITool[] | null;
 }
@@ -13160,6 +13261,10 @@ export interface RunPluginCommand extends Parsable {
      * 动态插件的配置 JSON 字符串，静态插件可忽略.
      */
     configJson?: string | null;
+    /**
+     * 自定义插件（MCP/OpenAPI）的函数名称；为空时插件仅有一个函数才可执行.
+     */
+    functionEscaped?: string | null;
     /**
      * 插件 key.
      */
@@ -13181,6 +13286,10 @@ export interface RunTeamPluginCommand extends Parsable {
      * 通过上下文自动配置用户了偶像，前端不需要传递.
      */
     contextUserType?: UserType | null;
+    /**
+     * 自定义插件（MCP/OpenAPI）的函数名称；为空时插件仅有一个函数才可执行.
+     */
+    functionEscaped?: string | null;
     /**
      * 插件 key.
      */
@@ -13531,7 +13640,9 @@ export function serializeAccessAppItem(writer: SerializationWriter, accessAppIte
         writer.writeStringValue("createTime", accessAppItem.createTime);
         writer.writeStringValue("description", accessAppItem.description);
         writer.writeStringValue("key", accessAppItem.key);
+        writer.writeStringValue("lastUsedTime", accessAppItem.lastUsedTime);
         writer.writeStringValue("name", accessAppItem.name);
+        writer.writeCollectionOfPrimitiveValues<string>("scopes", accessAppItem.scopes);
     }
 }
 /**
@@ -14068,6 +14179,7 @@ export function serializeCreateAccessAppCommand(writer: SerializationWriter, cre
     if (createAccessAppCommand) {
         writer.writeStringValue("description", createAccessAppCommand.description);
         writer.writeStringValue("name", createAccessAppCommand.name);
+        writer.writeCollectionOfPrimitiveValues<string>("scopes", createAccessAppCommand.scopes);
         writer.writeStringValue("teamId", createAccessAppCommand.teamId);
     }
 }
@@ -14110,17 +14222,6 @@ export function serializeCreateAIModelCommand(writer: SerializationWriter, creat
         writer.writeBooleanValue("enabled", createAIModelCommand.enabled);
         writer.writeBooleanValue("isPublic", createAIModelCommand.isPublic);
         writer.writeObjectValue<AIChannelModelMeta>("meta", createAIModelCommand.meta, serializeAIChannelModelMeta);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeCreateApiKeyRequest(writer: SerializationWriter, createApiKeyRequest: Partial<CreateApiKeyRequest> | undefined | null = {}) : void {
-    if (createApiKeyRequest) {
-        writer.writeStringValue("expireTime", createApiKeyRequest.expireTime);
-        writer.writeStringValue("name", createApiKeyRequest.name);
     }
 }
 /**
@@ -14305,18 +14406,6 @@ export function serializeCreateSkillCommand(writer: SerializationWriter, createS
         writer.writeStringValue("key", createSkillCommand.key);
         writer.writeStringValue("name", createSkillCommand.name);
         writer.writeNumberValue("teamId", createSkillCommand.teamId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeCreateTeamApiKeyCommandResponse(writer: SerializationWriter, createTeamApiKeyCommandResponse: Partial<CreateTeamApiKeyCommandResponse> | undefined | null = {}) : void {
-    if (createTeamApiKeyCommandResponse) {
-        writer.writeGuidValue("apiKeyId", createTeamApiKeyCommandResponse.apiKeyId);
-        writer.writeStringValue("keyPrefix", createTeamApiKeyCommandResponse.keyPrefix);
-        writer.writeStringValue("secret", createTeamApiKeyCommandResponse.secret);
     }
 }
 /**
@@ -14517,6 +14606,40 @@ export function serializeEmptyCommandResponse(writer: SerializationWriter, empty
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeExternalImportItemResult(writer: SerializationWriter, externalImportItemResult: Partial<ExternalImportItemResult> | undefined | null = {}) : void {
+    if (externalImportItemResult) {
+        writer.writeStringValue("action", externalImportItemResult.action);
+        writer.writeStringValue("id", externalImportItemResult.id);
+        writer.writeNumberValue("index", externalImportItemResult.index);
+        writer.writeStringValue("kind", externalImportItemResult.kind);
+        writer.writeStringValue("message", externalImportItemResult.message);
+        writer.writeBooleanValue("ok", externalImportItemResult.ok);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeExternalImportResponse(writer: SerializationWriter, externalImportResponse: Partial<ExternalImportResponse> | undefined | null = {}) : void {
+    if (externalImportResponse) {
+        writer.writeCollectionOfPrimitiveValues<string>("createdEntityTypeNames", externalImportResponse.createdEntityTypeNames);
+        writer.writeCollectionOfPrimitiveValues<string>("createdRelationTypeNames", externalImportResponse.createdRelationTypeNames);
+        writer.writeCollectionOfObjectValues<ImportDuplicateSuspect>("duplicateSuspects", externalImportResponse.duplicateSuspects, serializeImportDuplicateSuspect);
+        writer.writeNumberValue("edgeCreatedCount", externalImportResponse.edgeCreatedCount);
+        writer.writeNumberValue("edgeFailedCount", externalImportResponse.edgeFailedCount);
+        writer.writeNumberValue("edgeSkippedCount", externalImportResponse.edgeSkippedCount);
+        writer.writeNumberValue("nodeCreatedCount", externalImportResponse.nodeCreatedCount);
+        writer.writeNumberValue("nodeFailedCount", externalImportResponse.nodeFailedCount);
+        writer.writeNumberValue("nodeUpdatedCount", externalImportResponse.nodeUpdatedCount);
+        writer.writeCollectionOfObjectValues<ExternalImportItemResult>("results", externalImportResponse.results, serializeExternalImportItemResult);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeExtractChatAttachmentCommand(writer: SerializationWriter, extractChatAttachmentCommand: Partial<ExtractChatAttachmentCommand> | undefined | null = {}) : void {
     if (extractChatAttachmentCommand) {
         writer.writeStringValue("fileName", extractChatAttachmentCommand.fileName);
@@ -14612,6 +14735,22 @@ export function serializeImportAIModelCommand(writer: SerializationWriter, impor
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeImportDuplicateSuspect(writer: SerializationWriter, importDuplicateSuspect: Partial<ImportDuplicateSuspect> | undefined | null = {}) : void {
+    if (importDuplicateSuspect) {
+        writer.writeNumberValue("index", importDuplicateSuspect.index);
+        writer.writeStringValue("kind", importDuplicateSuspect.kind);
+        writer.writeNumberValue("matchIndex", importDuplicateSuspect.matchIndex);
+        writer.writeStringValue("matchName", importDuplicateSuspect.matchName);
+        writer.writeStringValue("matchNodeId", importDuplicateSuspect.matchNodeId);
+        writer.writeStringValue("name", importDuplicateSuspect.name);
+        writer.writeNumberValue("score", importDuplicateSuspect.score);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeImportKnowledgeGraphFromFileCommand(writer: SerializationWriter, importKnowledgeGraphFromFileCommand: Partial<ImportKnowledgeGraphFromFileCommand> | undefined | null = {}) : void {
     if (importKnowledgeGraphFromFileCommand) {
         writer.writeGuidValue("aiModelId", importKnowledgeGraphFromFileCommand.aiModelId);
@@ -14634,6 +14773,21 @@ export function serializeImportKnowledgeGraphFromFileResponse(writer: Serializat
         writer.writeNumberValue("skippedEdges", importKnowledgeGraphFromFileResponse.skippedEdges);
         writer.writeNumberValue("skippedNodes", importKnowledgeGraphFromFileResponse.skippedNodes);
         writer.writeBooleanValue("truncated", importKnowledgeGraphFromFileResponse.truncated);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeImportKnowledgeGraphJsonCommand(writer: SerializationWriter, importKnowledgeGraphJsonCommand: Partial<ImportKnowledgeGraphJsonCommand> | undefined | null = {}) : void {
+    if (importKnowledgeGraphJsonCommand) {
+        writer.writeBooleanValue("autoCreateTypes", importKnowledgeGraphJsonCommand.autoCreateTypes);
+        writer.writeStringValue("content", importKnowledgeGraphJsonCommand.content);
+        writer.writeBooleanValue("detectDuplicates", importKnowledgeGraphJsonCommand.detectDuplicates);
+        writer.writeStringValue("knowledgeGraphId", importKnowledgeGraphJsonCommand.knowledgeGraphId);
+        writer.writeStringValue("mode", importKnowledgeGraphJsonCommand.mode);
+        writer.writeBooleanValue("validateOnly", importKnowledgeGraphJsonCommand.validateOnly);
     }
 }
 /**
@@ -16229,16 +16383,6 @@ export function serializeQueryTeamAllCommandResponseItem(writer: SerializationWr
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeQueryTeamApiKeysCommandResponse(writer: SerializationWriter, queryTeamApiKeysCommandResponse: Partial<QueryTeamApiKeysCommandResponse> | undefined | null = {}) : void {
-    if (queryTeamApiKeysCommandResponse) {
-        writer.writeCollectionOfObjectValues<TeamApiKeyItem>("items", queryTeamApiKeysCommandResponse.items, serializeTeamApiKeyItem);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeQueryTeamCandidatesCommandResponse(writer: SerializationWriter, queryTeamCandidatesCommandResponse: Partial<QueryTeamCandidatesCommandResponse> | undefined | null = {}) : void {
     if (queryTeamCandidatesCommandResponse) {
         writer.writeCollectionOfObjectValues<TeamCandidateItem>("items", queryTeamCandidatesCommandResponse.items, serializeTeamCandidateItem);
@@ -16702,6 +16846,7 @@ export function serializeRunAgentInput(writer: SerializationWriter, runAgentInpu
 export function serializeRunPluginCommand(writer: SerializationWriter, runPluginCommand: Partial<RunPluginCommand> | undefined | null = {}) : void {
     if (runPluginCommand) {
         writer.writeStringValue("configJson", runPluginCommand.configJson);
+        writer.writeStringValue("function", runPluginCommand.functionEscaped);
         writer.writeStringValue("key", runPluginCommand.key);
         writer.writeStringValue("requestJson", runPluginCommand.requestJson);
     }
@@ -16715,6 +16860,7 @@ export function serializeRunTeamPluginCommand(writer: SerializationWriter, runTe
     if (runTeamPluginCommand) {
         writer.writeStringValue("contextUserId", runTeamPluginCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", runTeamPluginCommand.contextUserType);
+        writer.writeStringValue("function", runTeamPluginCommand.functionEscaped);
         writer.writeStringValue("key", runTeamPluginCommand.key);
         writer.writeStringValue("requestJson", runTeamPluginCommand.requestJson);
         writer.writeStringValue("teamId", runTeamPluginCommand.teamId);
@@ -17137,23 +17283,6 @@ export function serializeSyncWikiSourceDocumentResult(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeTeamApiKeyItem(writer: SerializationWriter, teamApiKeyItem: Partial<TeamApiKeyItem> | undefined | null = {}) : void {
-    if (teamApiKeyItem) {
-        writer.writeStringValue("createTime", teamApiKeyItem.createTime);
-        writer.writeStringValue("expireTime", teamApiKeyItem.expireTime);
-        writer.writeGuidValue("id", teamApiKeyItem.id);
-        writer.writeBooleanValue("isDisable", teamApiKeyItem.isDisable);
-        writer.writeBooleanValue("isExpired", teamApiKeyItem.isExpired);
-        writer.writeStringValue("keyPrefix", teamApiKeyItem.keyPrefix);
-        writer.writeStringValue("lastUsedTime", teamApiKeyItem.lastUsedTime);
-        writer.writeStringValue("name", teamApiKeyItem.name);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeTeamCandidateItem(writer: SerializationWriter, teamCandidateItem: Partial<TeamCandidateItem> | undefined | null = {}) : void {
     if (teamCandidateItem) {
         writer.writeStringValue("avatar", teamCandidateItem.avatar);
@@ -17306,6 +17435,7 @@ export function serializeUpdateAccessAppCommand(writer: SerializationWriter, upd
         writer.writeGuidValue("accessAppId", updateAccessAppCommand.accessAppId);
         writer.writeStringValue("description", updateAccessAppCommand.description);
         writer.writeStringValue("name", updateAccessAppCommand.name);
+        writer.writeCollectionOfPrimitiveValues<string>("scopes", updateAccessAppCommand.scopes);
     }
 }
 /**
@@ -17371,17 +17501,6 @@ export function serializeUpdateAIModelVisibilityCommand(writer: SerializationWri
     if (updateAIModelVisibilityCommand) {
         writer.writeBooleanValue("isPublic", updateAIModelVisibilityCommand.isPublic);
         writer.writeGuidValue("modelId", updateAIModelVisibilityCommand.modelId);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeUpdateApiKeyRequest(writer: SerializationWriter, updateApiKeyRequest: Partial<UpdateApiKeyRequest> | undefined | null = {}) : void {
-    if (updateApiKeyRequest) {
-        writer.writeBooleanValue("isDisable", updateApiKeyRequest.isDisable);
-        writer.writeStringValue("name", updateApiKeyRequest.name);
     }
 }
 /**
@@ -18501,43 +18620,6 @@ export interface SyncWikiSourceDocumentResult extends Parsable {
     title?: string | null;
 }
 /**
- * 网关 API Key 项.
- */
-export interface TeamApiKeyItem extends Parsable {
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
-    /**
-     * 过期时间，null=永不过期.
-     */
-    expireTime?: string | null;
-    /**
-     * 密钥 id.
-     */
-    id?: Guid | null;
-    /**
-     * 是否禁用.
-     */
-    isDisable?: boolean | null;
-    /**
-     * 是否已过期.
-     */
-    isExpired?: boolean | null;
-    /**
-     * 密钥前缀，如 moai-Ab12CdEf.
-     */
-    keyPrefix?: string | null;
-    /**
-     * 最近一次调用时间，null=从未使用.
-     */
-    lastUsedTime?: string | null;
-    /**
-     * 密钥名称.
-     */
-    name?: string | null;
-}
-/**
  * 团队候选用户项.
  */
 export interface TeamCandidateItem extends Parsable {
@@ -18879,7 +18961,7 @@ export interface UnbindUserOAuthCommand extends Parsable {
     providerId?: Guid | null;
 }
 /**
- * 更新应用接入（名称、描述；key 不可改），需要团队 Admin 及以上角色.
+ * 更新应用接入（名称、描述、功能范围；key 不可改），需要团队 Admin 及以上角色.
  */
 export interface UpdateAccessAppCommand extends Parsable {
     /**
@@ -18894,6 +18976,10 @@ export interface UpdateAccessAppCommand extends Parsable {
      * 接入名称.
      */
     name?: string | null;
+    /**
+     * 新功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），null=不修改；空列表=纯对话接入.
+     */
+    scopes?: string[] | null;
 }
 /**
  * 更新 AI 渠道.
@@ -18999,19 +19085,6 @@ export interface UpdateAIModelVisibilityCommand extends Parsable {
      * 模型 id，由 Controller 从路由参数回填.
      */
     modelId?: Guid | null;
-}
-/**
- * 修改 API Key 请求体.
- */
-export interface UpdateApiKeyRequest extends Parsable {
-    /**
-     * 是否禁用.
-     */
-    isDisable?: boolean | null;
-    /**
-     * 新名称，null=不修改.
-     */
-    name?: string | null;
 }
 /**
  * 设置应用头像，需要团队 Admin 及以上角色；objectKey 需为已完成上传并登记的文件.

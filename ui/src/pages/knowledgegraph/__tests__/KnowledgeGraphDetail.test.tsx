@@ -26,27 +26,14 @@ vi.mock('@/api/knowledgeGraph', () => ({
   deleteKnowledgeGraph: vi.fn(),
   getKnowledgeGraphCanvas: vi.fn().mockResolvedValue({ nodes: [], edges: [], truncated: false }),
   getKnowledgeGraphNodeNeighbors: vi.fn().mockResolvedValue({ nodes: [], edges: [], truncated: false }),
+  getKnowledgeGraphModelOptions: vi.fn().mockResolvedValue({ conversationModels: [], embeddingModels: [] }),
+  importKnowledgeGraphFile: vi.fn(),
+  importKnowledgeGraphJson: vi.fn(),
 }))
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
-// jsdom 无真实 canvas，stub 掉 G6 的渲染管线
-vi.mock('@antv/g6', () => {
-  const graphStub = {
-    setData: vi.fn(),
-    render: vi.fn().mockResolvedValue(undefined),
-    destroy: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-  }
-  return {
-    Graph: function MockGraph() {
-      return graphStub
-    },
-  }
-})
-
-function renderShell(initialEntry = '/team/7/kg/1/entities') {
+function renderShell(initialEntry = '/team/7/kg/1/maintenance?step=entities') {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
@@ -68,21 +55,30 @@ describe('KnowledgeGraphDetail', () => {
     })
   })
 
-  it('渲染五段菜单且托管图默认进入图览', async () => {
+  it('托管图菜单收敛为图览/维护/设置且默认进入图览', async () => {
     renderShell('/team/7/kg/1')
     await screen.findByText('支付域图谱')
     expect(screen.getByText('图览')).toBeInTheDocument()
-    expect(screen.getByText('实例')).toBeInTheDocument()
-    expect(screen.getByText('关系')).toBeInTheDocument()
-    expect(screen.getByText('模型')).toBeInTheDocument()
+    expect(screen.getByText('维护')).toBeInTheDocument()
+    expect(screen.getByText('导入')).toBeInTheDocument()
+    expect(screen.getByText('MCP')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
+    expect(screen.queryByText('实例')).toBeNull()
+    expect(screen.queryByText('关系')).toBeNull()
     await waitFor(() => expect(getKnowledgeGraphCanvas).toHaveBeenCalledWith(1, expect.objectContaining({ limit: 200 })))
   })
 
   it('按 graphId 拉取详情并展示名称', async () => {
-    renderShell('/team/7/kg/1/relations')
+    renderShell('/team/7/kg/1/maintenance?step=relations')
     expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
     expect(getKnowledgeGraphDetail).toHaveBeenCalledWith(1)
+  })
+
+  it('旧独立菜单路径（/entities）重定向到维护页对应步骤', async () => {
+    renderShell('/team/7/kg/1/entities')
+    // 重定向后维护步骤条与实例维护内容出现
+    expect(await screen.findByText('录入实例')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /新建实例/ })).toBeInTheDocument()
   })
 
   it('未开启能力时显示提示', async () => {
@@ -113,6 +109,9 @@ describe('KnowledgeGraphDetail', () => {
     expect(screen.getByText('图览')).toBeInTheDocument()
     expect(screen.getByText('模型')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
+    expect(screen.queryByText('维护')).toBeNull()
+    expect(screen.queryByText('导入')).toBeNull()
+    expect(screen.queryByText('MCP')).toBeNull()
     expect(screen.queryByText('实例')).toBeNull()
     expect(screen.queryByText('关系')).toBeNull()
     await waitFor(() => expect(getKnowledgeGraphCanvas).toHaveBeenCalledWith(1, expect.objectContaining({ limit: 200 })))

@@ -41,7 +41,7 @@ export function createMoAIClient(requestAdapter: RequestAdapter) {
     }
     
     if (requestAdapter.baseUrl === undefined || requestAdapter.baseUrl === null || requestAdapter.baseUrl === "") {
-        requestAdapter.baseUrl = "http://127.0.0.1:5211";
+        requestAdapter.baseUrl = "http://127.0.0.1:5023";
     }
     const pathParameters: Record<string, unknown> = {
         "baseurl": requestAdapter.baseUrl,

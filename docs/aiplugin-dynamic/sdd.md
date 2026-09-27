@@ -88,8 +88,8 @@ ui/src/
 | `bocha_ai_search` | `BoChaAiSearchPlugin` | `ApiKey`（必填，`InitAsync` 校验） | `Query`(必填)/`Freshness`/`Include`/`Count`/`Answer` | `Query`/`ConversationId`/`Answer`/`FollowUps[]`/`WebPages[]`/`Images[]`/`ModelCards[]`/`SomeResultsRemoved` |
 | `feishu_webhook_text` | `FeishuWebhookTextPlugin` | `WebhookKey`（必填，`InitAsync` 校验）/`SignKey` | `Text`（必填，`RunAsync` 校验） | `Code`/`Msg`/`Text` |
 | `javascript_executor` | `JavaScriptExecutorPlugin` | `JavaScriptCode`（必填，`InitAsync` 校验；必须导出 `run(parameter)`） | `Parameters`（必填字符串，`RunAsync` 透传给 `run`） | `Parameters`/`ResultJson`/`ResultKind`（值类型见 `JsResultKind`） |
-| `postgres_query` | `PostgresQueryPlugin` | `ConnectionString`（必填，`InitAsync` 校验）/`MaxRows`(1-1000，默认 100)/`CommandTimeoutSeconds`(1-300，默认 30) | `Sql`（必填，`RunAsync` 校验为单条只读语句） | `Columns[]`/`Rows[]`/`RowCount`/`Truncated` |
-| `mysql_query` | `MysqlQueryPlugin` | 同 `postgres_query`（连接串为 MySQL 语法） | 同上 | 同上 |
+| `postgres_query` | `PostgresQueryPlugin` | `Host`（必填，`InitAsync` 校验）/`Port`(1-65535，默认 5432)/`Database`（可选）/`Username`（必填，`InitAsync` 校验）/`Password`（可选）/`MaxRows`(1-1000，默认 100)/`CommandTimeoutSeconds`(1-300，默认 30) | `Sql`（必填，`RunAsync` 校验为单条只读语句） | `Columns[]`/`Rows[]`/`RowCount`/`Truncated` |
+| `mysql_query` | `MysqlQueryPlugin` | 同 `postgres_query`（`Port` 默认 3306） | 同上 | 同上 |
 | `paddleocr_ocr` | `PaddleOcrPlugin` | `ApiUrl`（必填，`InitAsync` 校验；用户自有 PaddleOCR 服务地址）/`Token`（留空表示部署未开启鉴权） | `File`(必填，URL 或 Base64)/`FileType`/`UseDocOrientationClassify`/`UseDocUnwarping`/`UseTextlineOrientation` | `Pages[]`：每页含 `Text`（`rec_texts` 按行拼接）、`OcrImage`（Base64）、`InputImage`（Base64） |
 | `paddleocr_structure_v3` | `PaddleStructureV3Plugin` | 同 `paddleocr_ocr` | `File`(必填)/`FileType`/`UseDocOrientationClassify`/`UseDocUnwarping`/`UseTableRecognition`/`UseFormulaRecognition`/`UseSealRecognition`/`UseChartRecognition`/`UseRegionDetection` | `Pages[]`：每页含 `PrunedResultJson`（原文 JSON）、`OutputImages`（按名索引的 Base64 字典）、`InputImage`、`SealTexts[]`（从 `seal_res_list.rec_texts` 逐条抽取） |
 | `paddleocr_vl` | `PaddleVlPlugin` | 同 `paddleocr_ocr` | `File`(必填)/`FileType`/`UseDocOrientationClassify`/`UseDocUnwarping`/`UseLayoutDetection`/`UseChartRecognition`/`PrettifyMarkdown`/`ShowFormulaNumber` | `Pages[]`：每页含 `MarkdownText`、`MarkdownImages`（相对路径 → Base64）、`InputImage`、`PrunedResultJson` |
@@ -178,7 +178,7 @@ ui/src/
 1. **会话设置语句不含用户输入**：为固定字面量 + 参数（PG 走 `set_config` 参数化），既不触发 CA2100 也无注入面；用户 SQL 本身是插件入参，用 `#pragma warning disable CA2100` 显式标注理由（与旧 `NativePlugin` 做法一致）。
 2. **错误归一**：连接失败 → `BusinessException(400, "数据库连接失败：{驱动消息}")`；执行失败（语法/权限/超时/只读拒绝）→ `BusinessException(400, "PostgreSQL 执行失败：…" / "MySQL 执行失败：…")`，由 `PluginExecutor` 统一归一为 `Success=false`。
 3. **结果形状**：`Columns`（按查询返回顺序）+ `Rows`（每行「列名 → 值」字典）+ `RowCount` + `Truncated`。**同名列**自动追加 `_2`/`_3` 后缀（否则字典键会相互覆盖）；`DBNull` 归一为 `null`；二进制列（`bytea`/`blob`）转 Base64 文本。取值为驱动原生类型（long/decimal/string/Guid/DateTime/DateTimeOffset/TimeSpan/数组等），由 `PluginExecutor` 默认 `JsonSerializerOptions` 序列化，故 `dataJson` 字段名为 **PascalCase**（与其它动态插件一致）。
-4. **连接串只来自实例配置**（面向用户自有的业务库，不是宿主库），不打印、不落日志；配置示例与 `[Description]` 均提示「建议为插件单独创建只读账号」。
+4. **连接参数只来自实例配置**（面向用户自有的业务库，不是宿主库）：配置为离散字段 `Host`/`Port`/`Database`/`Username`/`Password`（与 ClickHouse/Prometheus 等模板一致的友好形态，用户不再手写连接串），`InitAsync` 校验 Host/Username 非空与 Port 取值（1-65535）后，经驱动 `MySqlConnectionStringBuilder` / `NpgsqlConnectionStringBuilder` 拼成连接串缓存（密码含 `;`、引号等特殊字符由 builder 自动转义），不打印、不落日志；配置示例与 `[Description]` 均提示「建议为插件单独创建只读账号」。
 5. **无状态**：每次运行由 `PluginExecutor` 创建独立 DI 作用域与实例，仅缓存 `InitAsync` clamp 后的配置；连接用后即释放（驱动连接池按连接串隔离），会话只读设置在每次运行时重新下发。
 6. **两个模板各自持有模型**：与 `bocha_*` 系列一致，分别使用 `PostgresQuery*` / `MysqlQuery*`（便于后续按数据库差异扩展）；共用的是 `SqlReadOnlyGuard`、`SqlResultReader`、`SqlQueryResult` 三个内部辅助类型（`MoAI.AIPlugin.Dynamic/` 根目录，与 `BoChaAuthorization` 同级）。
 7. **驱动与版本**：PostgreSQL 用 `Npgsql` 10.0.3、MySQL 用 `MySqlConnector` 2.5.0，版本均由 `Directory.Packages.props` 集中管理，插件项目只加 `PackageReference`（新增包引用后需重新 `dotnet restore`）。

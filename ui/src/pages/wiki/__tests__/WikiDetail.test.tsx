@@ -18,6 +18,10 @@ vi.mock('@/api/kiota', () => ({
   getApiClient: vi.fn(() => ({})),
 }))
 
+vi.mock('@/api/auth', () => ({
+  getServerInfo: vi.fn().mockResolvedValue({ serviceUrl: 'http://demo:8080' }),
+}))
+
 function renderDetail(initialPath = '/team/3/wiki/7') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
@@ -61,7 +65,15 @@ describe('WikiDetail', () => {
     expect((await screen.findAllByText('产品文档')).length).toBeGreaterThan(0)
     expect(screen.getByText('文件列表')).toBeInTheDocument()
     expect(screen.getByText('召回测试')).toBeInTheDocument()
+    expect(screen.getByText('MCP')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
+  })
+
+  it('MCP tab 展示知识库 MCP 接入地址', async () => {
+    renderDetail('/team/3/wiki/7/mcp')
+
+    expect(await screen.findByText('MCP 地址')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('http://demo:8080/api/external/wiki/7/mcp')).toBeInTheDocument()
   })
 
   it('文件列表 tab 展示文档表格与上传按钮', async () => {

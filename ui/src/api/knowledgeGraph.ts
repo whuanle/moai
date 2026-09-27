@@ -508,3 +508,65 @@ export async function importKnowledgeGraphFile(
     message: res?.message ?? null,
   }
 }
+
+/** JSON 结构化导入逐行结果 */
+export interface KnowledgeGraphJsonImportItemResult {
+  kind?: string | null
+  index?: number | null
+  ok?: boolean | null
+  id?: string | null
+  action?: string | null
+  message?: string | null
+}
+
+/** JSON 结构化导入结果（与外部 /import 同形：逐条报告，坏行不阻断） */
+export interface KnowledgeGraphJsonImportResult {
+  nodeCreatedCount?: number | null
+  nodeUpdatedCount?: number | null
+  nodeFailedCount?: number | null
+  edgeCreatedCount?: number | null
+  edgeSkippedCount?: number | null
+  edgeFailedCount?: number | null
+  createdEntityTypeNames?: string[] | null
+  createdRelationTypeNames?: string[] | null
+  results?: KnowledgeGraphJsonImportItemResult[] | null
+  duplicateSuspects?: KnowledgeGraphDuplicateSuspect[] | null
+}
+
+/** JSON 结构化导入：content 为导入页提交的 JSON 文本，validateOnly=true 仅校验不落库 */
+export async function importKnowledgeGraphJson(
+  kgId: number,
+  payload: { content: string; validateOnly: boolean; mode?: 'upsert' | 'create'; autoCreateTypes?: boolean; detectDuplicates?: boolean },
+): Promise<KnowledgeGraphJsonImportResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).importJson.post({
+    content: payload.content,
+    mode: payload.mode,
+    autoCreateTypes: payload.autoCreateTypes,
+    validateOnly: payload.validateOnly,
+    detectDuplicates: payload.detectDuplicates,
+  })
+  return {
+    nodeCreatedCount: res?.nodeCreatedCount ?? 0,
+    nodeUpdatedCount: res?.nodeUpdatedCount ?? 0,
+    nodeFailedCount: res?.nodeFailedCount ?? 0,
+    edgeCreatedCount: res?.edgeCreatedCount ?? 0,
+    edgeSkippedCount: res?.edgeSkippedCount ?? 0,
+    edgeFailedCount: res?.edgeFailedCount ?? 0,
+    createdEntityTypeNames: (res?.createdEntityTypeNames as string[] | undefined) ?? [],
+    createdRelationTypeNames: (res?.createdRelationTypeNames as string[] | undefined) ?? [],
+    results: (res?.results as KnowledgeGraphJsonImportItemResult[] | undefined) ?? [],
+    duplicateSuspects: (res?.duplicateSuspects as KnowledgeGraphDuplicateSuspect[] | undefined) ?? [],
+  }
+}
+
+/** 导入疑似重复项（新建节点与已有节点/本批次另一行向量相似） */
+export interface KnowledgeGraphDuplicateSuspect {
+  index?: number | null
+  name?: string | null
+  kind?: string | null
+  score?: number | null
+  matchNodeId?: string | null
+  matchIndex?: number | null
+  matchName?: string | null
+}

@@ -68,6 +68,8 @@ export interface NodeSettings {
   agentAppId?: string
   /** plugin：插件 key */
   pluginKey?: string
+  /** plugin：自定义插件（MCP/OpenAPI）要调用的函数名；静态/动态插件不需要 */
+  function?: string
   /** javaScript：沙箱脚本，约定 function run(inputs, sys, nodes) 返回对象 */
   code?: string
   /** condition：脚本模式脚本，约定 function condition(inputs, sys, nodes, system) 返回布尔；存在时优先于 condition 绑定 */
