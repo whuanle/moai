@@ -123,8 +123,8 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         // 所有携带 appId 路由值的外部端点（/api/external/agent/{appId}/...、access-point 等）：
         // 校验 appId 属于凭证归属团队（团队级授权）且应用可用；需要授权（is_auth）的应用会话面
         // 仅外部用户 token 可进入，key 直连/应用 token 一律 403 引导换取用户 token。
-        // 应用 ACP 端点（/api/external/app/{appId}/acp）不走此通用门禁：内部应用（非外部应用）同样
-        // 开放 ACP，由下方 ACP 专属门禁接管
+        // 应用 ACP/A2A 端点不走此通用门禁：内部应用（非外部应用）同样开放 ACP/A2A，
+        // 由下方各自专属门禁接管
         Guid? routeAppId = null;
         if (context.Request.RouteValues.TryGetValue("appId", out var appIdValue) && appIdValue != null)
         {
@@ -135,7 +135,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             }
 
             routeAppId = appId;
-            if (!IsAppAcpPath(path))
+            if (!IsAppAcpPath(path) && !IsAppA2aPath(path))
             {
                 var allowed = await IsAppAllowedAsync(context, appId, tokenContext);
                 if (!allowed)
@@ -211,6 +211,38 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             }
         }
 
+        // 应用 A2A 端点（/api/external/app/{appId}/a2a[/**]，Google Agent2Agent）：
+        // POST = JSON-RPC（message/send、message/stream、tasks/get、tasks/cancel）；GET = Agent Card 发现。
+        // 门禁与 ACP 同口径：key 直连先解析直连会话身份（会话归属需要 external_user.id），
+        // 再按 app_a2a 范围 + 应用归属团队 + 已发布放行
+        if (IsAppA2aPath(path))
+        {
+            if (!HttpMethods.IsPost(context.Request.Method) && !HttpMethods.IsGet(context.Request.Method))
+            {
+                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                return;
+            }
+
+            if (tokenContext!.IsKeyDirect)
+            {
+                var external = await _externalAccessKeyService.EnsurePrincipalUserAsync(
+                    (int)tokenContext.TeamId,
+                    tokenContext.AccessAppId!.Value,
+                    routeAppId,
+                    context.RequestAborted);
+
+                tokenContext = WithExternalUser(tokenContext, external.Id, external.ExternalUserId);
+                context.Items[ExternalAuthDefaults.TokenContextItemKey] = tokenContext;
+                context.User = BuildPrincipal(tokenContext);
+            }
+
+            var a2aAllowed = await IsAppA2aAllowedAsync(context, routeAppId, tokenContext!);
+            if (!a2aAllowed)
+            {
+                return;
+            }
+        }
+
         // key 直连的会话面端点（建会话/会话列表/对话/会话消息）：需要外部用户 id 作会话归属，
         // 应用接入 key 以「直连会话身份」外部用户承载
         if (tokenContext!.IsKeyDirect && IsConversationPath(path))
@@ -279,6 +311,21 @@ public class ExternalAuthenticationMiddleware : IMiddleware
     }
 
     /// <summary>
+    /// 是否为应用 A2A 端点：/api/external/app/{"{appId}"}/a2a（JSON-RPC）与其 Agent Card 子路径 /a2a/agent.json.
+    /// </summary>
+    private static bool IsAppA2aPath(PathString path)
+    {
+        if (!path.StartsWithSegments("/api/external/app", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var value = path.Value!;
+        return value.EndsWith("/a2a", StringComparison.OrdinalIgnoreCase)
+            || value.EndsWith("/a2a/agent.json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// 应用 ACP 端点授权：凭证须带外部用户语义（用户 token 或已解析的 key 直连身份，承载会话归属），
     /// scope 勾选 app_acp，路由 appId 存在、归属凭证团队（跨团队一律 404，不泄露存在性）且已发布可用.
     /// </summary>
@@ -295,6 +342,53 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         {
             await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "insufficient_scope",
                 "The credential does not have the app_acp scope. Enable it on the access app.");
+            return false;
+        }
+
+        if (appId == null)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status404NotFound, "not_found_error", "app_not_found", "Application not found.");
+            return false;
+        }
+
+        var databaseContext = context.RequestServices.GetRequiredService<DatabaseContext>();
+        var app = await databaseContext.Apps
+            .Where(x => x.Id == appId.Value)
+            .Select(x => new { x.TeamId, x.IsDisable, x.PublishStatus })
+            .FirstOrDefaultAsync(context.RequestAborted);
+
+        if (app == null || (long)app.TeamId != tokenContext.TeamId)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status404NotFound, "not_found_error", "app_not_found", "Application not found.");
+            return false;
+        }
+
+        if (app.IsDisable || app.PublishStatus != 1)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "Application is unavailable.");
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 应用 A2A 端点授权：凭证须带外部用户语义（用户 token 或已解析的 key 直连身份，承载会话归属），
+    /// scope 勾选 app_a2a，路由 appId 存在、归属凭证团队（跨团队一律 404，不泄露存在性）且已发布可用.
+    /// </summary>
+    private static async Task<bool> IsAppA2aAllowedAsync(HttpContext context, Guid? appId, ExternalTokenContext tokenContext)
+    {
+        if (tokenContext.ExternalId <= 0)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "external_user_token_unsupported",
+                "Application A2A only accepts an app access key (moai-ac-) or an external user token; sessions need an external user identity.");
+            return false;
+        }
+
+        if (!tokenContext.Scopes.HasFlag(TeamApiKeyScopes.AppA2a))
+        {
+            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "insufficient_scope",
+                "The credential does not have the app_a2a scope. Enable it on the access app.");
             return false;
         }
 

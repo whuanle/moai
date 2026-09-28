@@ -56,6 +56,9 @@ public class AiCoreModule : IModule
         // ACP 运行注册表：session/cancel 跨请求中断进行中的一轮对话（单例共享）
         context.Services.AddSingleton<MoAI.AI.Acp.AppAcpRunRegistry>();
 
+        // A2A 任务注册表：tasks/get 查询与 tasks/cancel 跨请求中断（单例共享，进程内尽力而为）
+        context.Services.AddSingleton<MoAI.AI.A2a.AppA2aTaskRegistry>();
+
         // 沙箱回收定时任务（依赖 Hangfire，若未注册 IRecurringJobManager 则该服务不生效）
         context.Services.AddHostedService<MoAI.AI.Services.SandboxReaperRegistrationService>();
 

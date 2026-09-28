@@ -10,6 +10,7 @@ import { useShellStore } from '@/store/shell'
 import { getAppDetail, publishApp, unpublishApp } from '@/api/app'
 import { AppAccessSection } from './AppAccessSection'
 import { AppAcpSection } from './AppAcpSection'
+import { AppA2aSection } from './AppA2aSection'
 import { AppChannelsSection } from './AppChannelsSection'
 import { AppConfigSection, type AppDetail } from './AppConfigSection'
 import { AppInfoSection } from './AppInfoSection'
@@ -26,11 +27,11 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'channels', 'debug'] as const
+const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'a2a', 'channels', 'debug'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 /** 流程应用「配置」Tab 承载的二级分区（与内部应用的左侧菜单一致） */
-const CONFIG_GROUP_SECTIONS = ['info', 'logs', 'monitor', 'acp', 'channels'] as const
+const CONFIG_GROUP_SECTIONS = ['info', 'logs', 'monitor', 'acp', 'a2a', 'channels'] as const
 
 /**
  * 应用工作台外壳：
@@ -123,6 +124,8 @@ export function AppWorkspace() {
         { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
         // ACP：agent-to-agent 接入（Agent 与流程应用均支持）
         { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
+        // A2A：Google Agent2Agent 协议接入（Agent 与流程应用均支持）
+        { key: 'a2a', icon: <ApiOutlined />, label: t('appWorkspace.menuA2a') },
       )
       // 外部渠道（飞书接入等）：仅内部应用（外部应用走访问点）
       if (!isExternal) {
@@ -142,6 +145,7 @@ export function AppWorkspace() {
     workflowSectionKeys.add('logs')
     workflowSectionKeys.add('monitor')
     workflowSectionKeys.add('acp')
+    workflowSectionKeys.add('a2a')
   }
   if (!isExternal) {
     workflowSectionKeys.add('channels')
@@ -170,6 +174,7 @@ export function AppWorkspace() {
       { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
       { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
       { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
+      { key: 'a2a', icon: <ApiOutlined />, label: t('appWorkspace.menuA2a') },
     )
   }
   if (!isExternal) {
@@ -255,6 +260,7 @@ export function AppWorkspace() {
     if (validSection === 'logs') return <AppLogsSection appId={appId} />
     if (validSection === 'monitor') return <AppMonitorSection appId={appId} />
     if (validSection === 'acp') return <AppAcpSection appId={appId} />
+    if (validSection === 'a2a') return <AppA2aSection appId={appId} />
     if (validSection === 'channels') {
       return <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
     }

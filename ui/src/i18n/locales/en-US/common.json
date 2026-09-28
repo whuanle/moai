@@ -1545,7 +1545,8 @@
     "scope.kg_read": "Knowledge graph read",
     "scope.kg_write": "Knowledge graph write",
     "scope.kg_mcp": "Knowledge graph MCP",
-    "scope.app_acp": "App ACP"
+    "scope.app_acp": "App ACP",
+    "scope.app_a2a": "App A2A"
   },
   "appChat": {
     "title": "App Chat",
@@ -1866,7 +1867,12 @@
       "3": "Completed",
       "4": "Cancelled"
     },
-    "workflowRefresh": "Refresh"
+    "workflowRefresh": "Refresh",
+    "menuA2a": "A2A",
+    "a2aAddress": "A2A address",
+    "a2aAddressPlaceholder": "Fetching server address……",
+    "a2aMethods": "JSON-RPC methods",
+    "a2aAuthHint": "POST endpoint speaks A2A JSON-RPC (message/send, message/stream, tasks/get, tasks/cancel); GET {address}/agent.json serves the Agent Card. Auth via an app access key with the \"App A2A\" scope."
   },
   "appChannels": {
     "cardTitle": "Feishu Channels",

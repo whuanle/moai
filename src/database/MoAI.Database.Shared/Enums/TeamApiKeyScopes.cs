@@ -55,6 +55,11 @@ public enum TeamApiKeyScopes
     /// 应用 ACP：访问 /api/external/app/{"{appId}"}/acp，以 ACP 协议（agent-to-agent）与团队已发布应用对话.
     /// </summary>
     AppAcp = 512,
+
+    /// <summary>
+    /// 应用 A2A：访问 /api/external/app/{"{appId}"}/a2a，以 A2A 协议（Google Agent2Agent，JSON-RPC）与团队已发布应用对话.
+    /// </summary>
+    AppA2a = 1024,
 }
 
 /// <summary>
@@ -65,12 +70,12 @@ public static class TeamApiKeyScopeCodes
     /// <summary>
     /// 外部资源维度掩码：token/直连上下文可携带的范围（model/app_chat 是接入层概念，不进入）.
     /// </summary>
-    public const TeamApiKeyScopes ExternalDimensions = TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp;
+    public const TeamApiKeyScopes ExternalDimensions = TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp | TeamApiKeyScopes.AppA2a;
 
     /// <summary>
     /// 应用接入（access_app）允许勾选的范围：模型网关 + 知识库/知识图谱维度 + 应用对话 + 应用 ACP.
     /// </summary>
-    public const TeamApiKeyScopes AccessAppAllowed = TeamApiKeyScopes.Model | TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.AppChat | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp;
+    public const TeamApiKeyScopes AccessAppAllowed = TeamApiKeyScopes.Model | TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.AppChat | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp | TeamApiKeyScopes.AppA2a;
 
     /// <summary>
     /// 应用接入「未传 scopes」时的默认范围：外部资源全量（存量行为口径，不含需显式勾选的 model 直连）.
@@ -91,6 +96,7 @@ public static class TeamApiKeyScopeCodes
         ["kg_mcp"] = TeamApiKeyScopes.KgMcp,
         ["wiki_mcp"] = TeamApiKeyScopes.WikiMcp,
         ["app_acp"] = TeamApiKeyScopes.AppAcp,
+        ["app_a2a"] = TeamApiKeyScopes.AppA2a,
     };
 
     /// <summary>

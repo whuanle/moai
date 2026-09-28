@@ -1545,7 +1545,8 @@
     "scope.kg_read": "知识图谱·读",
     "scope.kg_write": "知识图谱·写",
     "scope.kg_mcp": "知识图谱 MCP",
-    "scope.app_acp": "应用 ACP"
+    "scope.app_acp": "应用 ACP",
+    "scope.app_a2a": "应用 A2A"
   },
   "appChat": {
     "title": "应用对话",
@@ -1935,7 +1936,12 @@
       "3": "已完成",
       "4": "已取消"
     },
-    "workflowRefresh": "刷新"
+    "workflowRefresh": "刷新",
+    "menuA2a": "A2A",
+    "a2aAddress": "A2A 地址",
+    "a2aAddressPlaceholder": "正在获取服务地址……",
+    "a2aMethods": "JSON-RPC 方法",
+    "a2aAuthHint": "POST 端点为 A2A JSON-RPC（message/send、message/stream、tasks/get、tasks/cancel），GET {地址}/agent.json 为 Agent Card；鉴权携带勾选「应用 A2A」范围的应用接入 key。"
   },
   "appChannels": {
     "cardTitle": "飞书渠道",

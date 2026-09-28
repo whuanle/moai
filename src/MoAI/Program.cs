@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI;
 using MoAI.AI;
+using MoAI.AI.A2a;
 using MoAI.AI.Acp;
 using MoAI.Gateway;
 using MoAI.KnowledgeGraph;
@@ -112,6 +113,9 @@ app.MapAppAgentEndpoints();
 
 // 应用 ACP 服务器（/api/external/app/{appId}/acp，agent-to-agent）：鉴权（app_acp 范围与 appId 归属）同由中间件统一处理
 app.MapAppAcpEndpoint();
+
+// 应用 A2A 服务器（/api/external/app/{appId}/a2a，Google Agent2Agent JSON-RPC）：鉴权（app_a2a 范围与 appId 归属）同由中间件统一处理
+app.MapAppA2aEndpoint();
 
 // SPA 回退：未匹配的路由返回 index.html（放在最后，以免抢在认证分发之前）
 app.MapFallbackToFile("index.html");
