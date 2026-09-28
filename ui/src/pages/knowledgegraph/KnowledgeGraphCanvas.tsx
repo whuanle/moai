@@ -194,7 +194,7 @@ function KnowledgeGraphCanvasInner({ graphId, mode, myRole = null, graphEnabled 
 }) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
-  const rfInstanceRef = useRef<ReactFlowInstance | null>(null)
+  const rfInstanceRef = useRef<ReactFlowInstance<KgFlowNode, KgFlowEdge> | null>(null)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const canvasShellRef = useRef<HTMLDivElement | null>(null)
   const nodesRef = useRef(new Map<string, CanvasNode>())
@@ -282,7 +282,7 @@ function KnowledgeGraphCanvasInner({ graphId, mode, myRole = null, graphEnabled 
    * 必须用 onInit 下发的实例：组件内 useReactFlow 的 viewportHelper 在部分挂载时序下拿不到 panZoom（setViewport 静默失败），
    * 而 onInit 实例与画布内部 store 绑定可靠。
    */
-  const fitViewportToNodes = useCallback((instance: ReactFlowInstance, attempts = 0) => {
+  const fitViewportToNodes = useCallback((instance: ReactFlowInstance<KgFlowNode, KgFlowEdge>, attempts = 0) => {
     const positions = layoutPositionsRef.current
     const shell = canvasShellRef.current
     if (positions.size === 0 || !shell) return
@@ -344,7 +344,7 @@ function KnowledgeGraphCanvasInner({ graphId, mode, myRole = null, graphEnabled 
     fitViewportToNodes(inst)
   }, [flowNodes, fitViewportToNodes])
 
-  const handleCanvasInit = useCallback((instance: ReactFlowInstance) => {
+  const handleCanvasInit = useCallback((instance: ReactFlowInstance<KgFlowNode, KgFlowEdge>) => {
     rfInstanceRef.current = instance
     if (fitPendingRef.current && flowNodes.length > 0) {
       fitViewportToNodes(instance)
