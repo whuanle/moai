@@ -12,7 +12,7 @@
 | 角色 | 判定 | 能力 |
 |---|---|---|
 | admin（含 root） | `user.IsAdmin == true` | 连接器增删改查 |
-| member | 其余 | 接口 403，页面重定向 /dashboard |
+| member | 其余 | 接口 403，页面重定向 /apps 应用广场 |
 
 门禁在 Controller 层 `EnsureAdminAsync`（读 `IUserAccountService.GetUserStateAsync` 的 IsAdmin），不下沉 Handler（[@OC-S1](./bdd.md#oc-s1)）。
 
@@ -42,7 +42,7 @@ ui/src/                          api/oauthconnect.ts、pages/oauthconnect/OauthC
 4. **Update 语义**：Secret 为空保持原值；切换内置 Provider 重置内置 WellKnown/AuthorizeUrl；路由 id 回填 `OAuthConnectionId`（其校验规则已移除，见修复史）。
 5. **Delete 软删除**：保留 `user_oauth_connection` 历史绑定；记录不存在 400。
 6. **Query 全量**：返回 `IsDeleted==0`，不分页。
-7. 前端：非 admin 重定向 /dashboard；Provider 编辑锁定；飞书/钉钉隐藏发现端点并自动填充默认图标；图标经 `IconPicker`（URL 或上传 ObjectKey，见 [../storage/sdd.md](../storage/sdd.md)）。
+7. 前端：非 admin 重定向 /apps 应用广场；Provider 编辑锁定；飞书/钉钉隐藏发现端点并自动填充默认图标；图标经 `IconPicker`（URL 或上传 ObjectKey，见 [../storage/sdd.md](../storage/sdd.md)）。
 
 ## 与 auth 的关系（消费方契约）
 

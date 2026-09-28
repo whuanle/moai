@@ -337,7 +337,7 @@ export function OauthConnect() {
   ]
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   return (

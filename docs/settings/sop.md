@@ -8,14 +8,14 @@
 | 角色 | 能力 | 对应场景 |
 |---|---|---|
 | root | 查看 + 修改设置项（页面唯一入口） | [@SET-S4](./bdd.md#set-s4)、[@SET-S13](./bdd.md#set-s13) |
-| admin（非 root） | 接口 GET 可查，页面重定向 /dashboard；保存 403 | [@SET-S1](./bdd.md#set-s1)、[@SET-S9](./bdd.md#set-s9)、[@SET-S18](./bdd.md#set-s18) |
-| member | 无（接口 403，页面重定向 /dashboard） | [@SET-S2](./bdd.md#set-s2)、[@SET-S15](./bdd.md#set-s15) |
+| admin（非 root） | 接口 GET 可查，页面重定向 /apps 应用广场；保存 403 | [@SET-S1](./bdd.md#set-s1)、[@SET-S9](./bdd.md#set-s9)、[@SET-S18](./bdd.md#set-s18) |
+| member | 无（接口 403，页面重定向 /apps 应用广场） | [@SET-S2](./bdd.md#set-s2)、[@SET-S15](./bdd.md#set-s15) |
 
 内置项：知识图谱组 `OPEN_NEO4J`/`NEO4J_URI`/`NEO4J_USERNAME`/`NEO4J_PASSWORD`，默认 `"false"`/空（[@SET-S16](./bdd.md#set-s16)）。`key="root"` 为系统级配置，不在接口白名单内（[@SET-S6](./bdd.md#set-s6)），只能改库维护（谨慎）。root 判定与种子见 [SDD](./sdd.md)。
 
 ## 2. 知识图谱设置（Neo4j，仅 root）
 
-1. root 登录前端 → 「系统设置」；非 root 的 admin 会被重定向到仪表盘（[@SET-S18](./bdd.md#set-s18)）。
+1. root 登录前端 → 「系统设置」；非 root 的 admin 会被重定向到应用市场（[@SET-S18](./bdd.md#set-s18)）。
 2. 打开「开启 Neo4j 知识图谱」后填写连接地址、用户名、密码，点击「保存」（脏检查见 [@SET-S12](./bdd.md#set-s12)）：先写 `OPEN_NEO4J="true"`，再依次写三项连接设置（[@SET-S16](./bdd.md#set-s16)）。值无缓存，**下一个读请求即生效**。
 3. 关闭开关再保存时仅写 `OPEN_NEO4J="false"`，不覆盖已有连接信息（[@SET-S17](./bdd.md#set-s17)）。
 4. 业务侧读取统一走 `IKnowledgeGraphSettingsService`（[SDD](./sdd.md)），未开启时 `Enabled=false` 且不返回连接信息（[@SET-S19](./bdd.md#set-s19)）。

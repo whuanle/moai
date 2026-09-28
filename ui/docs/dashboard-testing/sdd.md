@@ -1,17 +1,13 @@
-# 前端 Dashboard 与测试基建（Dashboard & Testing）设计规格（SDD）
+# 前端测试基建与设计样册（Testing & Preview）设计规格（SDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../frontend-conventions.md](../frontend-conventions.md)、[../design-system/](../design-system/)（组件与 token 来源） ｜ 证据：`cd ui && npm run test`（13 文件 42 用例）
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../frontend-conventions.md](../frontend-conventions.md)、[../design-system/](../design-system/)（组件与 token 来源） ｜ 证据：`cd ui && npm run test`（65 文件 446 用例，2026-09-28）
 > 规范：[../../../docs/DOC-STANDARD.md](../../../docs/DOC-STANDARD.md)。行为场景见 BDD（@FE-DT-Sxx），本文不重复。
 
 ## 目标
 
-两块互相支撑的内容：**Dashboard**（`/dashboard`，登录后首页）与**测试基建**（Vitest + Testing Library 的配置、setup、mock 约定）；设计系统活体样册 `DesignSystemPreview`（`/design-system`）一并归档。
+两块内容：**测试基建**（Vitest + Testing Library 的配置、setup、mock 约定）与设计系统活体样册 `DesignSystemPreview`（`/design-system`）。
 
-## Dashboard（`ui/src/pages/Dashboard.tsx`）
-
-结构自上而下：`Page` 头部（title「概览」+ subtitle 插值 `nickName ?? userName ?? app.name` + extra「新建应用」按钮）→ 渐变欢迎横幅（硬编码蓝渐变 + 白字 +「开始使用」按钮**未绑定点击事件**）→ 四张 StatCard → 快捷入口卡（三行：新建应用/上传文档/邀请成员，`navigate` 分别跳 `/team` `/wiki` `/team`）→ 最近动态卡（`Empty` 空态 +「查看全部」link）。
-
-数据边界（as-built）：挂载时 `refreshUserProfile().catch(() => undefined)` 刷新档案一次；**四个统计值与趋势（12/8/24/2048 与 8/12/4/22）全部为组件内写死的静态数字，未接任何 API**（[@FE-DT-S3](./bdd.md#fe-dt-s3)）；快捷入口与「查看全部」均为**真实路由**：新建应用/邀请成员/查看全部 → `/team`（应用在团队内管理，侧边栏已无一级「应用」），上传文档 → `/wiki`（[@FE-DT-S4](./bdd.md#fe-dt-s4)）。
+> 概览页 `/dashboard`（原 `ui/src/pages/Dashboard.tsx`）已于 2026-09-28 下线删除：登录后首页改为应用市场 `/apps`，侧边栏无概览入口，`/dashboard` 仅保留重定向兜底（[@FE-DT-S1~S5](./bdd.md) 同步作废）。
 
 ## DesignSystemPreview（`/design-system`）
 
@@ -24,9 +20,10 @@
 ```
 /login /register /oauth_login /design-system  → 公开（无 RequireAuth）
 /（RequireAuth + AppLayout）                   → 受保护
-  ├ index → Navigate /dashboard
-  ├ dashboard | account | users | settings | oauthconnect
-  └ * → Navigate /dashboard                    ← /app /wiki /team /plugin 落点
+  ├ index → Navigate /apps
+  ├ dashboard → Navigate /apps                ← 概览页下线后的旧地址兜底
+  ├ apps | prompts | account | users | settings | oauthconnect | ...
+  └ * → Navigate /apps
 ```
 
 ## 测试基建设计
@@ -51,7 +48,6 @@
 
 ## 已知问题
 
-- Dashboard 统计为静态假数据；欢迎横幅「开始使用」按钮无 onClick。
 - `/design-system` 无鉴权且含大量硬编码演示文案，不得作为业务页范本、不得放真实数据。
-- **业务页测试覆盖缺口**：仅 Users 有测试（design-system 11 文件 + theme 2 文件 + users 1 文件 = 13 文件 42 用例，分布见 [TDD](./tdd.md)）；Dashboard/AccountSettings/Settings/OauthConnect/Login/Register 均无，补测试流程见 [SOP 第 2 节](./sop.md)。
+- **业务页测试覆盖**：已按「新增页面必须附 `__tests__`」约定补齐（当前 65 文件 446 用例，分布见 [TDD](./tdd.md)）。
 - 测试 setup 常驻 3.5s+（jsdom + antd 体量）属正常水位；jsdom 会打印 `getComputedStyle ... pseudo-elements` 未实现噪音，不影响断言。

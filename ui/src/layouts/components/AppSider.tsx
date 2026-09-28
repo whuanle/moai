@@ -5,7 +5,6 @@ import {
   AppstoreOutlined,
   AuditOutlined,
   CloudServerOutlined,
-  DashboardOutlined,
   LogoutOutlined,
   MoonOutlined,
   SettingOutlined,
@@ -39,7 +38,6 @@ interface NavItem {
 }
 
 const mainNav: NavItem[] = [
-  { key: 'dashboard', icon: <DashboardOutlined />, labelKey: 'nav.overview', path: '/dashboard' },
   { key: 'apps', icon: <AppstoreOutlined />, labelKey: 'nav.apps', path: '/apps' },
   { key: 'promptMarket', icon: <ShopOutlined />, labelKey: 'nav.promptMarket', path: '/prompt-market' },
   { key: 'skillMarket', icon: <ThunderboltOutlined />, labelKey: 'nav.skillMarket', path: '/skill-market' },
@@ -58,7 +56,6 @@ const adminNav: NavItem[] = [
 ]
 
 const pathToKey: Record<string, string> = {
-  '/dashboard': 'dashboard',
   '/apps': 'apps',
   '/prompts': 'promptMarket',
   '/prompt-market': 'promptMarket',
@@ -105,7 +102,7 @@ export function AppSider() {
       ? 'promptMarket'
       : location.pathname.startsWith('/skill')
         ? 'skillMarket'
-        : 'dashboard')
+        : '')
   const isDark = themeKey === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
 

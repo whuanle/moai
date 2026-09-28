@@ -149,7 +149,7 @@ Feature: 前端用户页（/users）
   Scenario: 普通用户访问用户页被重定向
     Given bob 登录
     When 直接访问 /users
-    Then 被重定向到仪表盘
+    Then 被重定向到应用市场
     And 接口层同时返回 403
 
   @UM-S25 @manual

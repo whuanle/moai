@@ -2,6 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（操作与验收流程）
 > 编号规则与标签语义见 [DOC-STANDARD](../../../docs/DOC-STANDARD.md) 第 3 节。认证语义（token 生命周期）见上游 [../../docs/auth-flow/bdd.md](../../docs/auth-flow/bdd.md)。
+> 变更：2026-09-28 概览页下线，登录后首页改为应用市场 `/apps`（S6/S7/S8/S9/S18/S23 已按现状修订；S11 随菜单项全部实现作废）。
 
 ```gherkin
 Feature: 路由守卫（RequireAuth）
@@ -39,36 +40,37 @@ Feature: 路由表与兜底
 
   @FE-LR-S6 @manual
   Scenario: 根路径与未知路径兜底
-    When 访问根路径或任意未注册路径
-    Then 均重定向到概览页
-    And 侧栏高亮回到「概览」
+    When 访问根路径、旧概览地址 /dashboard 或任意未注册路径
+    Then 均重定向到应用市场 /apps
+    And 侧栏高亮「应用广场」
 
   @FE-LR-S7 @manual
   Scenario: 业务子路由
     Given 已登录
-    When 访问 概览/账号设置/用户/系统设置/第三方登录 任一
+    When 访问 应用市场/账号设置/用户/系统设置/第三方登录 任一
     Then 经统一布局的内容区渲染对应页面
 
 Feature: 侧边栏导航（AppSider）
   @FE-LR-S8 @manual
   Scenario: 普通用户不见管理区
     Given 当前用户非管理员
-    Then 只见主导航（概览/应用/知识库/团队），无管理区
+    Then 只见主导航（应用广场/提示词市场/技能市场/团队），无管理区
 
   @FE-LR-S9 @manual
   Scenario: 管理员可见管理区
     Given 当前用户是管理员
-    Then 主导航下出现分隔线与管理区（插件/用户/第三方登录/设置）
+    Then 主导航下出现分隔线与管理区（插件/分类管理/用户/团队管理/审批上架/模型渠道/第三方登录/设置）
 
   @FE-LR-S10 @manual
   Scenario: 点击菜单导航并高亮
     When 点击「用户」菜单
     Then 跳转用户页且菜单高亮跟随
 
-  @FE-LR-S11 @manual
+  @FE-LR-S11 @manual（已作废，编号不复活）
   Scenario: 未实现菜单项兜底回概览
-    When 点击未实现的菜单项（应用/知识库/团队/插件）
-    Then 路由落到兜底规则，回到概览页并高亮「概览」（已知体验问题）
+    Given 概览页时代菜单项曾存在未实现路由（应用/知识库/团队/插件）
+    When 现菜单项均已有路由实现（知识库/知识图谱入口收敛到团队，见 S19~S21）
+    Then 本场景作废
 
   @FE-LR-S12 @manual
   Scenario: 用户卡信息展示
@@ -110,7 +112,7 @@ Feature: 页面级权限（页面内自判）
   Scenario: 非管理员访问管理页被重定向
     Given 普通用户已登录
     When 直接访问用户管理页
-    Then 被重定向到仪表盘（且不拉取数据）
+    Then 被重定向到应用市场（且不拉取数据）
 ```
 
 Feature: 知识库/知识图谱入口收敛到团队
@@ -118,7 +120,7 @@ Feature: 知识库/知识图谱入口收敛到团队
   Scenario: 一级侧边栏不展示知识库与知识图谱
     Given 任意角色用户已登录（含平台管理员/root）
     Then 一级侧边栏不出现「知识库」「知识图谱」菜单项
-    And 仪表盘快捷入口不出现「新建知识库」
+    And 概览页已下线（原「仪表盘快捷入口」一并移除）
 
   @FE-LR-S20 @manual
   Scenario: 直连全局路由被重定向
@@ -141,5 +143,5 @@ Feature: 二级页面隐藏一级侧边栏
 
   @FE-LR-S23 @manual
   Scenario: 返回一级页面时侧边栏恢复展开
-    When 从二级页面返回 团队列表/概览 等一级菜单页面
+    When 从二级页面返回 团队列表/应用市场 等一级菜单页面
     Then 一级侧边栏恢复展开显示（收起状态不复用二级页期间的隐藏）

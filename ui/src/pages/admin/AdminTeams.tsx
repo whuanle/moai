@@ -270,7 +270,7 @@ export function AdminTeams() {
   )
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   return (

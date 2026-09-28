@@ -164,5 +164,5 @@ Feature: 前端连接器页（/oauthconnect）
   Scenario: 普通用户访问被重定向
     Given member 登录
     When 直接访问 /oauthconnect
-    Then 重定向到 /dashboard（接口层同时返回 403）
+    Then 重定向到 /apps 应用广场（接口层同时返回 403）
 ```

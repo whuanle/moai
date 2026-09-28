@@ -319,7 +319,7 @@ export function Users() {
   }, [detail, t])
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   const detailUserName = String(detail?.userName ?? '')

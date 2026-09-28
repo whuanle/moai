@@ -2,6 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（操作与验收流程）
 > 编号规则与标签语义见 [../../../docs/DOC-STANDARD.md](../../../docs/DOC-STANDARD.md) 第 3 节。Settings 页有组件单测（`settings/__tests__/Settings.test.tsx`），OauthConnect 仍为浏览器走查；后端门禁与接口行为以上游 BDD 为准。
+> 变更：2026-09-28 概览页下线，页面级重定向目标改为应用市场 `/apps`（S2/S4/S5 按现状修订）；S3「插件占位导航」已过时作废（/plugin 为真实页面）。
 
 ```gherkin
 Feature: 管理菜单可见性（AppSider）
@@ -9,34 +10,34 @@ Feature: 管理菜单可见性（AppSider）
   Scenario: 管理员看到管理菜单
     Given 管理员已登录
     When 查看侧边栏
-    Then 管理组在主导航下以分隔线展示：插件、用户、第三方登录
+    Then 管理组在主导航下以分隔线展示：插件、分类管理、用户、团队管理、审批上架、模型渠道、第三方登录
     And root 额外可见「设置」，非 root 管理员不可见
 
   @FE-PG-S2 @manual
   Scenario: 普通用户看不到管理菜单
     Given 普通用户已登录
     When 查看侧边栏
-    Then 只有主导航（概览/应用/知识库/团队）
+    Then 只有主导航（应用广场/提示词市场/技能市场/团队）
     And 不出现管理组
 
-  @FE-PG-S3 @manual
+  @FE-PG-S3 @manual（已作废，编号不复活）
   Scenario: 占位菜单项的兜底
-    Given 管理员已登录
-    When 点击管理组「插件」
-    Then 被重定向回概览页（该入口为占位导航）
+    Given 概览页时代「插件」曾为占位导航
+    When 现已完成插件管理页（/plugin）
+    Then 本场景作废
 
 Feature: 页面门禁
   @FE-PG-S4 @manual
   Scenario: 非 root 访问系统设置页被重定向
     Given 普通用户或非 root 管理员已登录
     When 直接访问系统设置页
-    Then 被重定向回概览页
+    Then 被重定向回应用市场
 
   @FE-PG-S5 @manual
   Scenario: 普通用户访问渠道页被重定向
     Given 普通用户已登录
     When 直接访问第三方登录渠道页
-    Then 被重定向回概览页
+    Then 被重定向回应用市场
     And 不发起渠道列表请求
 
   @FE-PG-S6 @manual

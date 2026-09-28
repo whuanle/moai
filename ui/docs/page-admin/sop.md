@@ -10,11 +10,11 @@
 | 第三方登录渠道维护 | admin+ | 侧边栏管理组「第三方登录」 | [@FE-PG-S10](./bdd.md#fe-pg-s10)~[@FE-PG-S16](./bdd.md#fe-pg-s16) |
 | 普通用户 / 非 root 管理员 | 无（设置对非 root 重定向；渠道对 member 不可见） | 菜单不可见；直访被重定向；接口 403 | [@FE-PG-S2](./bdd.md#fe-pg-s2)/[@FE-PG-S4](./bdd.md#fe-pg-s4)~[@FE-PG-S6](./bdd.md#fe-pg-s6) |
 
-> 管理组「插件」（/plugin）为占位导航，点击回概览（[@FE-PG-S3](./bdd.md#fe-pg-s3)）；「用户」见 [../../../docs/user-management/sop.md](../../../docs/user-management/sop.md)。
+> 「插件」（/plugin）已为真实插件管理页（原占位说法过时，[@FE-PG-S3](./bdd.md#fe-pg-s3) 作废）；「用户」见 [../../../docs/user-management/sop.md](../../../docs/user-management/sop.md)。
 
 ## 2. 配置「Neo4j 知识图谱」
 
-1. root 登录 → `/settings`（非 root 会被重定向到仪表盘）→ 打开「开启 Neo4j 知识图谱」后填写连接地址/用户名/密码 → 保存（未修改前保存不可点；保存失败自动回滚为库中真值，[@FE-PG-S9](./bdd.md#fe-pg-s9)）。
+1. root 登录 → `/settings`（非 root 会被重定向到应用市场）→ 打开「开启 Neo4j 知识图谱」后填写连接地址/用户名/密码 → 保存（未修改前保存不可点；保存失败自动回滚为库中真值，[@FE-PG-S9](./bdd.md#fe-pg-s9)）。
 2. **开**：先写 `OPEN_NEO4J="true"`，再写三项连接设置，知识库可读取该能力；**关**：仅写 `OPEN_NEO4J="false"`，不覆盖已有连接信息。
 3. 等价运维直改：`setting` 表 `key='OPEN_NEO4J'`（`value='true'|'false'`）及 `NEO4J_URI`/`NEO4J_USERNAME`/`NEO4J_PASSWORD`（上游 [../../../docs/settings/sop.md](../../../docs/settings/sop.md)）。
 
@@ -42,7 +42,7 @@
 前置：root + 一个普通账号；后端已起。
 
 1. `cd ui && npm run lint && npm run test && npm run typecheck` 全绿；
-2. 双角色走查：member 无管理组、直访两页被重定向（[@FE-PG-S2](./bdd.md#fe-pg-s2)/[@FE-PG-S4](./bdd.md#fe-pg-s4)/[@FE-PG-S5](./bdd.md#fe-pg-s5)）；admin 管理组四入口可见、「插件」回概览（[@FE-PG-S3](./bdd.md#fe-pg-s3)）；
+2. 双角色走查：member 无管理组、直访两页被重定向到应用市场（[@FE-PG-S2](./bdd.md#fe-pg-s2)/[@FE-PG-S4](./bdd.md#fe-pg-s4)/[@FE-PG-S5](./bdd.md#fe-pg-s5)）；admin 管理组入口可见、「插件」进插件管理页（[@FE-PG-S3](./bdd.md#fe-pg-s3) 已作废）；
 3. Settings：改开关保存成功（[@FE-PG-S8](./bdd.md#fe-pg-s8)）；模拟断网保存 → 回滚（[@FE-PG-S9](./bdd.md#fe-pg-s9)）；
 4. OauthConnect：新建 custom 渠道（含图标上传）→ 登录页出现新图标（[@FE-PG-S11](./bdd.md#fe-pg-s11)）；编辑不改 Secret 提交成功（[@FE-PG-S15](./bdd.md#fe-pg-s15)）；删除后图标消失（[@FE-PG-S16](./bdd.md#fe-pg-s16)）。
 
@@ -59,3 +59,4 @@
 |---|---|
 | 2026-09-01 | 功能交付（轮次 19，as-built）；记录编辑接口缺陷与 /plugin 占位导航 |
 | 2026-09-02 | 后端 PUT 缺陷修复实测 200；按 [DOC-STANDARD](../../../docs/DOC-STANDARD.md) 重构：场景编号化（FE-PG）、四件互链 |
+| 2026-09-28 | 概览页下线同步：重定向目标改 `/apps`；S3「插件占位导航」过时作废 |

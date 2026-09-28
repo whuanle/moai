@@ -13,9 +13,10 @@
 |---|---|---|---|
 | /login、/register、/oauth_login、/design-system | 对应页 | 无 | 公开页；design-system 为设计系统活文档 |
 | / | RequireAuth→AppLayout | 登录态 + 60s 周期 checkToken | 子路由经 Outlet 渲染 |
-| ├ index、* | Navigate /dashboard | | 兜底重定向（replace） |
-| ├ /dashboard、/account | Dashboard、AccountSettings | | 全员 |
-| ├ /users、/settings、/oauthconnect | 对应页 | 页面内再判 isAdmin（非管理员 Navigate 回 /dashboard） | 管理员 |
+| ├ index、* | Navigate /apps | | 兜底重定向（replace） |
+| ├ /dashboard | Navigate /apps | | 概览页已下线（2026-09-28），旧地址兜底 |
+| ├ /apps、/prompt-market、/skill-market、/account | 对应页 | | 全员 |
+| ├ /users、/settings、/oauthconnect 等 | 对应页 | 页面内再判 isAdmin/isRoot（非管理员 Navigate 回 /apps） | 管理员 |
 
 约定（router 注释）：新业务页追加在 children；页面级权限在页面内 `isAdmin/isRoot` 判断 + Navigate 兜底，**接口层才是最终防线**。
 
@@ -23,10 +24,10 @@
 
 - 双栏：外层 Layout(minHeight:100vh) → AppSider + 内层 Content(padding:24, Outlet)。
 - **二级页面隐藏一级侧边栏**：AppLayout 按路径判断，`/^\/team\/[^/]+/` 命中（团队详情及其下属应用设计/应用对话/知识库/知识图谱/团队提示词编辑等）时不渲染 AppSider，内容区全宽；这些页面自带二级导航与返回入口（分区菜单/面包屑/返回按钮）。返回一级页面时 AppSider 重新挂载、恢复展开（[@FE-LR-S22](./bdd.md#fe-lr-s22)/[@FE-LR-S23](./bdd.md#fe-lr-s23)）。
-- Sider 五区（上→下）：品牌区（logo 28×28 + 「MoAI」）；用户卡（Dropdown click 触发：Avatar 34（avatar 缺省首字母/U 兜底）+ 主行 `nickName ?? userName` + 副行 `email ?? userName`；菜单「设置」→/account、divider、「退出登录」→clearUserInfo + /login）；主导航 Menu（inline，flex:1 滚动；mainNav = dashboard/app/wiki/team）；管理导航（**仅 `userInfo?.isAdmin === true`** 渲染 divider + adminNav = plugin/users/oauthconnect/settings，普通用户完全不可见）；底部双 Select（主题 light/dark 与语言 zh-CN/en-US，行为归属 [../theme/sdd.md](../theme/sdd.md) 与 [../../docs/store-i18n/sdd.md](../../docs/store-i18n/sdd.md)）。
+- Sider 五区（上→下）：品牌区（logo 28×28 + 系统名）；用户卡（Dropdown click 触发：Avatar 34（avatar 缺省首字母/U 兜底）+ 主行 `nickName ?? userName` + 副行 `email ?? userName`；菜单「设置」→/account、divider、「退出登录」→clearUserInfo + /login）；主导航 Menu（inline，flex:1 滚动；mainNav = 应用广场/提示词市场/技能市场/团队，概览项已随页面下线移除）；管理导航（**仅 `userInfo?.isAdmin === true`** 渲染 divider + adminNav = 插件/分类管理/用户/团队管理/审批上架/模型渠道/第三方登录/设置，其中设置仅 root 可见，普通用户完全不可见）；底部双 Select（主题 light/dark 与语言 zh-CN/en-US，行为归属 [../theme/sdd.md](../theme/sdd.md) 与 [../../docs/store-i18n/sdd.md](../../docs/store-i18n/sdd.md)）。
 - Sider 本体：width 232、theme 跟随明暗、sticky top:0 height:100vh、右边框按明暗切 `rgba(255,255,255,.08)` / `rgba(16,24,40,.08)`。
-- 选中态：`pathToKey` 精确映射（8 键齐全，含未实现项），未命中回 dashboard 键；点击回调在 `[...mainNav, ...adminNav]` 查 key 后 navigate。
-- 菜单文案走 `nav.*` i18n 键（overview 概览 / app 应用 / wiki 知识库 / team 团队 / plugin 插件 / users 用户 / oauthconnect 第三方登录 / settings 设置）。
+- 选中态：`pathToKey` 精确映射；`/prompts`、`/skill` 前缀归组到对应市场键；未命中不高亮任何菜单项。
+- 菜单文案走 `nav.*` i18n 键（apps 应用广场 / promptMarket 提示词市场 / skillMarket 技能市场 / team 团队 / plugin 插件 / classify 分类管理 / users 用户 / adminTeams 团队管理 / publications 审批上架 / channel 模型渠道 / oauthconnect 第三方登录 / settings 设置；`nav.overview` 已随概览下线删除）。
 
 ## 守卫链
 
@@ -45,7 +46,7 @@
 
 ## 已知问题（as-built，未改代码）
 
-1. **规划中的 /app /wiki /team /plugin 无路由实现**：菜单点击后 pathname 落到 `*` 兜底回 /dashboard（[@FE-LR-S11](./bdd.md#fe-lr-s11)），体验上「点了没反应」；建议未实现项禁用或标 coming soon。pathToKey 本身含这四个键，缺的是路由表项。
+1. ~~规划中的 /app /wiki /team /plugin 无路由实现~~：已过时——/team、/plugin 均已实现，/wiki、/knowledge-graph 收敛重定向到 /team（[@FE-LR-S19~S21](./bdd.md)）；`*` 兜底现落 /apps（2026-09-28 概览下线同步修订）。
 2. 页面级权限靠页面自判（Navigate），菜单仅按 isAdmin 折叠——root 专属菜单项（settings 对 root）无区分。
 3. [frontend-conventions.md](../frontend-conventions.md) 与现状不符：目录结构写有 `layouts/components/AppHeader.tsx` 但实际不存在；「主题切换入口统一放 AppHeader（Switch）」与现状不符（现为 Sider 底部 Select，用户菜单/语言切换也在 Sider）。行为以代码为准。
 4. `/design-system` 为**无鉴权公开路由**，演示页含 mock 数据与大量硬编码中文演示文案（仅 Alert/部分提示走 t()）；不希望对外暴露需在网关或路由层处理。

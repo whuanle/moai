@@ -253,7 +253,7 @@ export function ClassifyPage() {
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   const items = TYPE_TABS.map((tab) => ({

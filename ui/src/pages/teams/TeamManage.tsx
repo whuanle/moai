@@ -384,7 +384,7 @@ export function TeamManage() {
   return (
     <Page
       breadcrumb={[
-        { title: <Link to="/dashboard">{t('common.home')}</Link> },
+        { title: <Link to="/apps">{t('common.home')}</Link> },
         {
           title: (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>

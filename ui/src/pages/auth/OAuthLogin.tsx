@@ -70,7 +70,7 @@ export function OAuthLogin() {
         if (res?.isBindUser && res.loginCommandResponse) {
           applyLoginResponse(res.loginCommandResponse)
           feedback.success(t('auth.loginSuccess'))
-          navigate('/dashboard', { replace: true })
+          navigate('/apps', { replace: true })
           return
         }
         if (res?.tempOAuthBindId) {
@@ -96,7 +96,7 @@ export function OAuthLogin() {
     try {
       await oauthRegister(pendingBind.tempOAuthBindId)
       feedback.success(t('auth.loginSuccess'))
-      navigate('/dashboard', { replace: true })
+      navigate('/apps', { replace: true })
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {

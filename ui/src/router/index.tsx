@@ -4,7 +4,6 @@ import { RequireAuth } from '@/auth/RequireAuth'
 import { Login } from '@/pages/auth/Login'
 import { OAuthLogin } from '@/pages/auth/OAuthLogin'
 import { Register } from '@/pages/auth/Register'
-import { Dashboard } from '@/pages/Dashboard'
 import { AppPlaza } from '@/pages/apps/AppPlaza'
 import { DesignSystemPreview } from '@/pages/DesignSystemPreview'
 import { Settings } from '@/pages/settings/Settings'
@@ -41,8 +40,9 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: 'dashboard', element: <Dashboard /> },
+      { index: true, element: <Navigate to="/apps" replace /> },
+      // 概览页已下线，旧地址重定向到应用市场
+      { path: 'dashboard', element: <Navigate to="/apps" replace /> },
       { path: 'apps', element: <AppPlaza /> },
       { path: 'prompts', element: <PromptCenter /> },
       { path: 'prompts/new', element: <PromptEditor /> },
@@ -73,7 +73,7 @@ export const router = createBrowserRouter([
       { path: 'skills', element: <Skills /> },
       { path: 'classify', element: <ClassifyPage /> },
       // 其它专用页面（/xxx）在此追加
-      { path: '*', element: <Navigate to="/dashboard" replace /> },
+      { path: '*', element: <Navigate to="/apps" replace /> },
     ],
   },
 ])

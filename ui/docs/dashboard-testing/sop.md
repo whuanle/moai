@@ -1,4 +1,4 @@
-# 前端 Dashboard 与测试基建（Dashboard & Testing）操作手册（SOP）
+# 前端测试基建与设计样册（Testing & Preview）操作手册（SOP）
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md)（验收场景编号） ｜ [TDD](./tdd.md)（自动化映射） ｜ [SOP](./sop.md)
 
@@ -14,7 +14,7 @@ npm run lint
 
 - 测试配置内联于 `vite.config.ts` 的 `test` 段（**无独立 vitest.config**）。
 - 输出中 `Not implemented: Window's getComputedStyle() ... pseudo-elements` 为 jsdom 已知噪音，可忽略。
-- 基线（2026-09-01）：13 文件 42 用例全绿；分布见 [TDD 用例分布表](./tdd.md)。
+- 基线（2026-09-28）：65 文件 446 用例全绿；历史基线见[第 6 节存档](#6-历史验收存档l3-证据保留原始记录)。
 
 ## 2. 为新页面写测试（标准流程）
 
@@ -34,11 +34,10 @@ vi.mock('@/api/settings', () => ({
 4. **渲染与断言**（[@FE-DT-S16](./bdd.md#fe-dt-s16)/[@FE-DT-S17](./bdd.md#fe-dt-s17)）：`render(<MemoryRouter><X /></MemoryRouter>)`；异步等 `waitFor`/`findByText` 不 sleep；重定向断言目标 DOM 不存在；交互用 user-event。
 5. **回归**：`npm run test && npm run typecheck && npm run lint` 全绿，并在 [TDD 分布表](./tdd.md)补一行。
 
-## 3. Dashboard / 样册页维护注意
+## 3. 路由与样册页维护注意
 
-- **统计是写死占位**（12/8/24/2048 + trend）：接真实 API 时 → `api/` 建封装 → Dashboard 数据驱动 + 加载态 → 顺手补 `__tests__`（mock 新 api）。
-- 快捷入口均为**真实路由**：新建应用/邀请成员/「查看全部」→ `/team`（进入团队后选左侧「应用」分区），上传文档 → `/wiki`；新增真实页面在 `router/index.tsx` 受保护 children 注册并同步 `AppSider.pathToKey`。
-- 欢迎横幅「开始使用」按钮**无 onClick**（as-built 现状），接入动作时补。
+- 概览页 `/dashboard` 已下线（2026-09-28）：登录后首页为应用市场 `/apps`，`/dashboard` 仅保留重定向兜底；侧边栏菜单与高亮映射在 `AppSider.tsx` 的 `mainNav`/`pathToKey`。
+- 新增真实页面在 `router/index.tsx` 受保护 children 注册并同步 `AppSider.pathToKey`。
 - `/design-system` 是**公开路由**：不得放真实业务数据/敏感信息；新增演示区块可后补 `ds.*` 词条。
 
 ## 4. 排障
@@ -54,8 +53,8 @@ vi.mock('@/api/settings', () => ({
 
 ## 5. 验收流程（发布前）
 
-1. `cd ui && npm run lint && npm run test && npm run typecheck` 全绿，用例数不少于基线（当前 42）。
-2. 走查 [@FE-DT-S1](./bdd.md#fe-dt-s1)~[@FE-DT-S5](./bdd.md#fe-dt-s5)（问候语带用户名、静态统计确认、快捷入口回概览、未登录被拦）与 [@FE-DT-S6](./bdd.md#fe-dt-s6)~[@FE-DT-S8](./bdd.md#fe-dt-s8)（样册免登录、13 区块齐全、主题开关生效）。
+1. `cd ui && npm run lint && npm run test && npm run typecheck` 全绿，用例数不少于基线（2026-09-28 起 446）。
+2. 走查 [@FE-DT-S6](./bdd.md#fe-dt-s6)~[@FE-DT-S8](./bdd.md#fe-dt-s8)（样册免登录、13 区块齐全、主题开关生效）；@FE-DT-S1~S5 已随概览页下线作废。
 3. 新增页面必须附 `__tests__`（第 2 节流程）并在 [TDD](./tdd.md) 分布表补行。
 
 ## 6. 历史验收存档（L3 证据，保留原始记录）
@@ -63,6 +62,7 @@ vi.mock('@/api/settings', () => ({
 - **2026-09-01 轮次 20 交付（as-built 回溯整理）**：`npm run test` 13 文件 42 用例全绿（Duration 4.21s，含 Users.test.tsx 3 用例 422ms）；`npm run typecheck` 无输出退出码 0；`npm run lint` 通过（`**/*.html` 与 client 生成码已 ignore）；Dashboard/样册手工走查通过，如实记录静态数据与占位路由边界。
 - **2026-09-01 第二轮全系统深度测试**（存档于 [../../../docs/user-management/sop.md](../../../docs/user-management/sop.md)）：前端环境修复 `.env.development`(5000) 优先级高于 `.env.local`，新增 `ui/.env.development.local` 指向 5210；最终 Vitest 42/42。
 - **2026-09-02 第三轮回归**：全页面浏览器回归通过；最终 68/68 + 36/36 + 42/42、构建 0 错。
+- **2026-09-28 概览页下线回归**：删除 `/dashboard` 页面与侧边栏概览入口，登录后首页改为 `/apps`；`npm run test` 65 文件 446 用例通过（全量跑出的 5 个失败经单文件复跑 33/33 全过，判定为高负载抖动）；浏览器实测登录落地 `/apps`、侧边栏无概览、旧地址重定向正常。
 
 ## 7. 变更记录
 
@@ -70,3 +70,4 @@ vi.mock('@/api/settings', () => ({
 |---|---|
 | 2026-09-01 | 功能交付（轮次 20，as-built）；记录 Dashboard 静态数据与占位路由边界 |
 | 2026-09-02 | 按 [DOC-STANDARD](../../../docs/DOC-STANDARD.md) 重构：场景编号化（FE-DT）、四件互链、职责瘦身 |
+| 2026-09-28 | 概览页下线：@FE-DT-S1~S5 作废，登录后首页改为应用市场 `/apps`，文档更名「测试基建与设计样册」 |

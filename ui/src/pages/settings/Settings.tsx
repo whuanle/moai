@@ -265,7 +265,7 @@ export function Settings() {
   }
 
   if (!isRoot) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   return (

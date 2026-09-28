@@ -729,7 +729,7 @@ export function Models() {
   ]
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   const providerOptions = catalog.map((p) => ({ value: p.id, label: `${p.name} (${p.id})` }))

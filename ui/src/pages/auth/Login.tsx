@@ -42,7 +42,7 @@ export function Login() {
     try {
       await login(values.username, values.password)
       feedback.success(t('auth.loginSuccess'))
-      navigate('/dashboard', { replace: true })
+      navigate('/apps', { replace: true })
     } catch (error) {
       // 错误已由全局请求中间件统一提示
       console.error('Login failed:', error)

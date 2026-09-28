@@ -95,7 +95,7 @@ Feature: 前端设置页（/settings）
   Scenario: 普通用户访问设置页被重定向
     Given member 登录
     When 直接访问设置页
-    Then 被重定向到仪表盘
+    Then 被重定向到应用市场
     And 接口层同时返回 403
 
 Feature: 知识图谱设置（Neo4j）
@@ -120,7 +120,7 @@ Feature: 知识图谱设置（Neo4j）
   Scenario: 非 root 管理员访问设置页被重定向
     Given admin 已登录但不是 root
     When 打开系统设置页
-    Then 被重定向到仪表盘且不渲染知识图谱卡片与连接字段
+    Then 被重定向到应用市场且不渲染知识图谱卡片与连接字段
 
   @SET-S19 @manual
   Scenario: 业务读取知识图谱配置

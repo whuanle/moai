@@ -103,7 +103,7 @@ describe('AdminTeams', () => {
     expect(disabledRow).toContain('转让负责人')
   })
 
-  it('非管理员访问重定向到 dashboard', () => {
+  it('非管理员访问重定向到应用市场', () => {
     useAppStore.setState({ userInfo: { accessToken: 'token', userId: '2', isAdmin: false } })
     renderPage()
     expect(document.querySelector('table')).toBeNull()

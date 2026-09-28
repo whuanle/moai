@@ -51,7 +51,7 @@ ui/src/                    api/settings.ts（SettingKeys 常量 + get/save + upd
 3. **`key="root"` 系统级保护**：不在白名单内，不能经设置接口读写（保存得 400），只能改库维护（[@SET-S6](./bdd.md#set-s6)）。
 4. **value 约定**：字符串存储（可承载 JSON），布尔统一 `"true"`/`"false"`；`setting` 表无应用层缓存，**写入即刻生效于下一个读请求**。
 5. 门禁依赖 `IUserAccountService.GetUserStateAsync`（Redis `userstate:{userId}` 1h，[../account/sdd.md](../account/sdd.md)）；root/admin 变更后需失效缓存才即时生效（user-management 写操作已负责）。
-6. 前端**固定字段渲染**（非动态表单）：新增设置项须同步改 `Settings.tsx` 与 i18n（步骤见 [../settings.md](../settings.md)）；当前页面唯一内容为 root 专属知识图谱卡片，非 root（含普通 admin）整页重定向 /dashboard（后端 PUT 亦仅 root，为最终防线）；脏检查控制保存按钮，保存失败重新加载回滚为库值。
+6. 前端**固定字段渲染**（非动态表单）：新增设置项须同步改 `Settings.tsx` 与 i18n（步骤见 [../settings.md](../settings.md)）；当前页面唯一内容为 root 专属知识图谱卡片，非 root（含普通 admin）整页重定向 /apps 应用广场（后端 PUT 亦仅 root，为最终防线）；脏检查控制保存按钮，保存失败重新加载回滚为库值。
 7. **知识图谱组语义**：`OPEN_NEO4J="true"` 才认为能力开启；读取经 `KnowledgeGraphSettingsService` 归一（未开启直接返回 `Enabled=false`，不回传连接信息），连接项值经 `SettingDefinitions.Find` 兜底默认空串。密码明文存 `setting.value`（≤2000），与现有设置项一致，不做加解密。
 8. **能力暴露而非实现**：本模块只提供开关与连接配置的读写及 `IKnowledgeGraphSettingsService` 读取出口；Neo4j 驱动、图谱抽取与检索属知识库后续迭代，不在本模块内。
 9. **沙箱资源上限组（2026-09-19）**：`SANDBOX_MAX_TTL_SECONDS`（60~604800，默认 86400）/`SANDBOX_MAX_CPU`（K8s 数量，默认 "4"）/`SANDBOX_MAX_MEMORY`（默认 "8Gi"）。保存时 `SaveSettingAsync` 对这三项做格式校验（非法 400，防止脏上限卡住全部应用的沙箱配置保存）；业务经 `ISandboxSettingsService.GetLimitsAsync` 读取（含解析后的毫核/字节，缺失或非法回退内置默认）。K8s 数量解析器 `SandboxQuantity` 放在 `Settings.Shared/Models`，供 app 模块保存校验复用。强校验行为见 [@AP-S48](../app/bdd.md#ap-s48)。

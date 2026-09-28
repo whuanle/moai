@@ -1,47 +1,10 @@
-# 前端 Dashboard 与测试基建（Dashboard & Testing）行为规格（BDD，Gherkin）
+# 前端测试基建与设计样册（Testing & Preview）行为规格（BDD，Gherkin）
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（操作与验收流程）
 > 编号规则与标签语义见 [../../../docs/DOC-STANDARD.md](../../../docs/DOC-STANDARD.md) 第 3 节。
+> 变更：@FE-DT-S1~@FE-DT-S5（概览页）已随页面下线作废（2026-09-28，登录后首页改为应用市场 `/apps`，`/dashboard` 仅保留重定向）；编号按规范不复活。
 
 ```gherkin
-Feature: Dashboard 页面
-  @FE-DT-S1 @manual
-  Scenario: 登录后进入概览
-    Given 用户已登录
-    When 访问首页或概览页
-    Then 页面头部显示「概览」与带用户名的欢迎语
-    And 显示渐变欢迎横幅、四张统计卡、快捷入口卡、最近动态卡
-
-  @FE-DT-S2 @manual
-  Scenario: 用户档案刷新
-    Given 用户已登录
-    When 概览页挂载
-    Then 自动刷新一次用户档案并合并进全局状态
-    And 刷新失败时页面仍正常渲染（静默容错）
-
-  @FE-DT-S3 @manual
-  Scenario: 统计卡为静态展示
-    Given 用户已进入概览页
-    When 查看四张统计卡
-    Then 数值固定为 应用程序 12 / 知识库 8 / 团队成员 24 / API 调用 2048
-    And 不发起任何统计类请求（当前为占位实现）
-
-  @FE-DT-S4 @manual
-  Scenario: 快捷入口跳转落点
-    Given 用户已进入概览页
-    When 点击「新建应用」快捷条目（或头部「新建应用」、「查看全部」）
-    Then 跳转到团队列表 `/team`（应用在团队内管理，侧边栏已无一级「应用」）
-    When 点击「上传文档」快捷条目
-    Then 跳转到知识库 `/wiki`
-    When 点击「邀请成员」快捷条目
-    Then 跳转到团队列表 `/team`
-
-  @FE-DT-S5 @manual
-  Scenario: 未登录访问被拦截
-    Given 浏览器无登录态
-    When 直接访问概览页
-    Then 被登录守卫拦截并跳转登录页
-
 Feature: 设计系统样册页（/design-system）
   @FE-DT-S6 @manual
   Scenario: 免登录即可访问

@@ -16,7 +16,7 @@
 - 结构：`Page` + 单 Card「知识图谱（Neo4j）」：一行开关（名称 + 描述 + `Switch`），开启后展开连接地址/用户名/密码三个 `Input`（密码为 `Input.Password`），底部右对齐「保存」按钮（`disabled={!graphDirty || loading}`）。
 - 加载：`getSettings()` 在 items 中按 `OPEN_NEO4J` 等 key 取值，`value === 'true'` 转 bool；脏标记：开关或字段变更置 dirty，保存成功或重载后清零。
 - 保存：先写 `OPEN_NEO4J`，仅在开启时依次写 `NEO4J_URI`/`NEO4J_USERNAME`/`NEO4J_PASSWORD`；关闭不写连接项（[@SET-S16](../../../docs/settings/bdd.md#set-s16)/[@SET-S17](../../../docs/settings/bdd.md#set-s17)）。保存失败自动 `load()` 重拉，恢复为库中真值（[@FE-PG-S8](./bdd.md#fe-pg-s8)）。
-- 非 root 访问 `Navigate` 重定向 `/dashboard`（[@SET-S18](../../../docs/settings/bdd.md#set-s18)）。
+- 非 root 访问 `Navigate` 重定向 `/apps`（[@SET-S18](../../../docs/settings/bdd.md#set-s18)）。
 
 ### OauthConnect.tsx（/oauthconnect）
 
@@ -37,7 +37,7 @@
 
 ## 关键决策
 
-1. 权限分层：菜单渲染控制只是体验层，页面内 `if (!isRoot) return <Navigate to="/dashboard" replace />` 兜底，后端门禁（PUT 403）为最终防线。
+1. 权限分层：菜单渲染控制只是体验层，页面内 `if (!isRoot) return <Navigate to="/apps" replace />` 兜底，后端门禁（PUT 403）为最终防线。
 2. Settings 保存失败回滚重拉，避免界面与库中真值不一致。
 3. 渠道编辑不改类型（provider 禁用）、secret 留空不改（[@FE-PG-S15](./bdd.md#fe-pg-s15)）。
 4. 图标上传走 storage 直传，库中只存 objectKey，展示经 `resolveStorageUrl`。
@@ -45,7 +45,7 @@
 ## 已知问题
 
 - **编辑接口修复史**：`PUT /oauthconnect/connections/{id}` 曾因后端路由回填 Command 被自动验证拦截**恒 400**（2026-09-01 发现，当时以删除重建绕行）；**后端已修复（Validate 移除路由回填字段规则），2026-09-02 实测 200**，编辑功能已恢复可用。详见 [SOP 历史验收存档](./sop.md) 与上游 [../../../docs/oauthconnect/sop.md](../../../docs/oauthconnect/sop.md) 排障表。
-- **`/plugin` 是占位导航**：adminNav「插件」在路由表无对应路由，点击落入 `*` 兜底回 `/dashboard`（mainNav 的 /app、/wiki、/team 同为占位）。
+- ~~`/plugin` 是占位导航~~：已过时（2026-09-28 核实）——/plugin 等菜单项均已实现真实页面，`*` 兜底现落 `/apps`。
 - 两页 `<Page>` 均不渲染页头标题（现行规范：设置类无标题），OauthConnect 为标准写法。
 - 两页均有组件测试：Settings 见 `ui/src/pages/settings/__tests__/Settings.test.tsx`（root 开关/连接项保存/非 root 重定向）；OauthConnect 仍待补。
 - Settings 当前仅知识图谱一组设置（`SettingKeys` 四个常量）；新增需同步 `SettingKeys`、Card 字段与 i18n（`settings.*`）。

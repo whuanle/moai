@@ -25,7 +25,7 @@ function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/classify']}>
       <Routes>
-        <Route path="/dashboard" element={<div>仪表盘页面标记</div>} />
+        <Route path="/apps" element={<div>应用市场页面标记</div>} />
         <Route path="/classify" element={<ClassifyPage />} />
       </Routes>
     </MemoryRouter>,
@@ -52,10 +52,10 @@ describe('ClassifyPage', () => {
     ])
   })
 
-  it('非管理员跳转仪表盘', () => {
+  it('非管理员跳转应用市场', () => {
     useAppStore.setState({ userInfo: { accessToken: 'token', userId: '2', userName: 'user', isAdmin: false } })
     renderPage()
-    expect(screen.getByText('仪表盘页面标记')).toBeInTheDocument()
+    expect(screen.getByText('应用市场页面标记')).toBeInTheDocument()
   })
 
   it('以卡片形式展示分类的名称、表情与描述，不展示创建人/更新人及时间', async () => {

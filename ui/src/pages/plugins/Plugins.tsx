@@ -348,7 +348,7 @@ export function Plugins() {
   }, [isAdmin, loadClassifies])
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/apps" replace />
   }
 
   const tabParam = searchParams.get('tab')
