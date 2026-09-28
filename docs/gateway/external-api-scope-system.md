@@ -30,6 +30,7 @@
 | `kg_write` | 128 | 知识图谱写 | ✅ | ✅ |
 | `kg_mcp` | 256 | 知识图谱 MCP（/api/external/knowledge-graph/{kgId}/mcp 四只读工具） | ✅ | ✅ |
 | `app_acp` | 512 | 应用 ACP（/api/external/app/{appId}/acp，agent-to-agent 对话） | ✅ | ✅ |
+| `app_a2a` | 1024 | 应用 A2A（/api/external/app/{appId}/a2a，Google Agent2Agent JSON-RPC） | ✅ | ✅ |
 
 > `external_token` (8) 随团队接入 key 下线一并移除（枚举与代码表已删）。
 
@@ -59,6 +60,9 @@
 ### 应用 ACP（`app_acp`，agent-to-agent）
 `POST /external/app/{appId}/acp`：把团队应用（Agent 应用与流程应用，内部/外部均可）以 ACP 协议（Agent Client Protocol，JSON-RPC 2.0）暴露给外部 agent。门禁在中间件 ACP 专属分支：外部用户语义（用户 token 或 key 直连解析出的直连会话身份）+ `app_acp` + appId 归属团队（跨团队 404）+ 已发布未禁用（不要求 `IsExternal`，不叠加 `app_chat`）；GET 405。方法面：`initialize`/`session/new`/`session/load`/`session/prompt`（SSE 流式下发 `session/update` 通知，stopReason 收口）/`session/cancel`；会话即应用会话（`app_agent_session`，归属外部用户 id），执行管线与对话面同源（见 app sdd 增量设计）。
 
+### 应用 A2A（`app_a2a`，Google Agent2Agent）
+`POST /external/app/{appId}/a2a`：把团队应用（Agent 应用与流程应用）以 A2A 协议（JSON-RPC 2.0）暴露给外部 agent，门禁与 ACP 同口径（外部用户语义 + `app_a2a` + appId 归属团队 + 已发布）。方法面：`message/send`（同步一轮对话，返回 Task，artifacts 携带回复文本）、`message/stream`（SSE：Task working → artifact-update 文本增量 → status-update completed/failed/canceled final → 最终 Task）、`tasks/get`、`tasks/cancel`（进程内任务注册表，尽力而为）；`contextId` 承载 MoAI 会话 id（缺省自动建会话，携带即续聊，归属外部用户）。Agent Card 发现：`GET /external/app/{appId}/a2a/agent.json`（protocolVersion 0.3.0、streaming 能力、skills）。执行管线与对话面/ACP 同源。
+
 ### 其他
 `/external/app/list`（任意外部 token）、`/external/app/{appId}/access-point`（匿名）。
 
@@ -83,7 +87,7 @@
 
 ## 6. 兼容口径（改默认值/回填前必读）
 
-- **存量回填历史**（开发库 192.168.50.199/moai_v2 已执行，脚本在 `asserts/`）：`access_app` 6=读写 → `|=32` 补对话 → `|=192` 补知识图谱 → `|=256` 补 KG MCP → `|=512` 补应用 ACP 且列 DEFAULT 对齐 1014（app_acp.sql）；`team_api_key` 已随下线删表（asserts/team_api_key_drop.sql）。
+- **存量回填历史**（开发库 192.168.50.199/moai_v2 已执行，脚本在 `asserts/`）：`access_app` 6=读写 → `|=32` 补对话 → `|=192` 补知识图谱 → `|=256` 补 KG MCP → `|=512` 补应用 ACP 且列 DEFAULT 对齐 1014（app_acp.sql）→ `|=1024` 补应用 A2A 且列 DEFAULT 对齐 2038（app_a2a.sql）；`team_api_key` 已随下线删表（asserts/team_api_key_drop.sql）。
 - **「未传 scopes」默认**：应用接入 = `AccessAppDefault`(1014)。两处必须一致：DB 列 DEFAULT、handler 默认（`CreateAccessAppCommandHandler`），E2E 断言同口径（KX 曾因 38/230 不一致全红）。
 - **旧格式 token**（无 `scope` claim）：解析侧按 `DefaultScopes` 全量处理，行为不变。
 - **已下线团队 key 的存量 token**：携带 `keyid` claim 的在途 token claims 不再解析 keyid，access 有效期内仍可用；refresh 按匿名/接入语义重验（来源 key 已随表删除，通常 401）。
