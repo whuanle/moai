@@ -11,6 +11,7 @@
 | 第三方回调停在 loading | code 被消费两次或 state 解析失败 | 确认 StrictMode ref 守卫生效；检查回调 URL 的 state | [@FE-AUTH-S15](./bdd.md#fe-auth-s15) |
 | 绑定弹窗无反应 | opener 跨域 → 走了登录分支 | 保证账号设置页与弹窗同 origin | [@FE-AUTH-S19](./bdd.md#fe-auth-s19) |
 | 页面频繁闪跳 /login | checkToken 周期失败 | 检查 refresh token 是否被后端拒（用户被禁用/删除） | [@FE-AUTH-S10](./bdd.md#fe-auth-s10) |
+| 登录/刷新后看不到管理员菜单或资料陈旧 | 登录响应只带 token；资料重取失败或被跳过 | Network 确认进入应用时是否请求 `/api/account/userinfo`；失败看该接口状态码 | [@FE-AUTH-S22](./bdd.md#fe-auth-s22)/[@FE-AUTH-S23](./bdd.md#fe-auth-s23) |
 
 ## 2. 联调注意
 
@@ -29,11 +30,12 @@
 ## 4. 验收流程（认证行为改动后）
 
 1. 未登录访问：清 localStorage 后打开受路由 URL → 重定向 /login（[@FE-AUTH-S8](./bdd.md#fe-auth-s8)）。
-2. 登录/注册走查：正确凭据落 /dashboard；错误密码停留本页仅提示（[@FE-AUTH-S1](./bdd.md#fe-auth-s1)/[@FE-AUTH-S2](./bdd.md#fe-auth-s2)）；注册两次不一致被拦（[@FE-AUTH-S5](./bdd.md#fe-auth-s5)）。
+2. 登录/注册走查：正确凭据落 /apps 且立即出现管理菜单（管理员账号）；错误密码停留本页仅提示（[@FE-AUTH-S1](./bdd.md#fe-auth-s1)/[@FE-AUTH-S2](./bdd.md#fe-auth-s2)/[@FE-AUTH-S22](./bdd.md#fe-auth-s22)）；注册两次不一致被拦（[@FE-AUTH-S5](./bdd.md#fe-auth-s5)）。
 3. 续期无感：人工把 store 里 accessToken 置为过期 JWT 后等下一周期 → 出现 refresh 请求且页面不跳转（[@FE-AUTH-S10](./bdd.md#fe-auth-s10)）。
 4. 登出/失效：退出清态回 /login；改坏 refreshToken 刷新 → 清态回 /login（[@FE-AUTH-S11](./bdd.md#fe-auth-s11)）。
 5. 401 拦截：篡改 accessToken 后触发业务请求 → 整页跳 /login（[@FE-AUTH-S21](./bdd.md#fe-auth-s21)）。
-6. 回归命令见 [TDD](./tdd.md)（typecheck/lint/test + E2E）。
+6. 资料重取：篡改 localStorage `moai-web-store` 的 userInfo（isAdmin=false、改昵称）后刷新页面 → 角色与资料被服务端数据校正（[@FE-AUTH-S23](./bdd.md#fe-auth-s23)）。
+7. 回归命令见 [TDD](./tdd.md)（typecheck/lint/test + E2E）。
 
 ## 5. 历史验收存档（L3 证据，保留原始记录）
 
@@ -46,3 +48,4 @@
 |---|---|
 | 2026-09-01 | 初版（轮 11，as-built）；同日补强：新增页面接入认证、验收流程；修正 rsaEncrypt 归一化描述与 oauthBindAccount 现状 |
 | 2026-09-02 | 按 [DOC-STANDARD](../../../docs/DOC-STANDARD.md) 重构：场景编号化（@FE-AUTH-S1~S21）、四件互链、职责瘦身；E2E 证据落位 |
+| 2026-09-29 | RequireAuth 挂载首检后重取用户资料（新增 [@FE-AUTH-S22](./bdd.md#fe-auth-s22)/[@FE-AUTH-S23](./bdd.md#fe-auth-s23)，修复第三方登录绑定管理员后不显示管理菜单与刷新资料滞留）；概览页下线后 /dashboard 残留引用清理为 /apps |

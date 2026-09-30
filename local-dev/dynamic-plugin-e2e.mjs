@@ -328,6 +328,50 @@ async function main() {
     check('DYN-S49 ' + tplKey + ' 配置类型已解析', (tpl?.configType ?? '').includes(configTypeKey), tpl?.configType ?? '')
   }
 
+  // ---- S53 P1 智能运维三模板出现在注册表（http_probe / zabbix_query / redis_query；成功路径由 ops-p1-plugins-e2e.mjs 用桩服务验证） ----
+  const p1Templates = [
+    ['http_probe', 'HttpProbeConfig', 'AllowPrivateNetwork', 'Url'],
+    ['zabbix_query', 'ZabbixQueryConfig', 'UseHeaderAuth', 'SeverityMin'],
+    ['redis_query', 'RedisQueryConfig', 'MaxListItems', 'Mode'],
+  ]
+  for (const [tplKey, configTypeKey, configKey, paramsKey] of p1Templates) {
+    const tpl = items.find((x) => x.key === tplKey)
+    check('DYN-S53 注册表含 ' + tplKey + ' 且为动态模板', Boolean(tpl) && tpl.isDynamic === true, templates.text.slice(0, 200))
+    check('DYN-S53 ' + tplKey + ' 配置示例含 ' + configKey, Boolean(tpl) && new RegExp(configKey).test(tpl.configExample ?? ''), tpl?.configExample?.slice(0, 160) ?? '')
+    check('DYN-S53 ' + tplKey + ' 配置类型已解析', (tpl?.configType ?? '').includes(configTypeKey), tpl?.configType ?? '')
+    check('DYN-S53 ' + tplKey + ' 参数示例含 ' + paramsKey, new RegExp(paramsKey).test(tpl?.paramsExample ?? ''), tpl?.paramsExample?.slice(0, 160) ?? '')
+  }
+
+  // ---- S57 P2 智能运维三模板出现在注册表（ssh_executor / grafana_query / sqlserver_query；守卫与成功路径由 ops-p2-plugins-e2e.mjs 验证） ----
+  const p2Templates = [
+    ['ssh_executor', 'SshExecutorConfig', 'CommandWhitelist', 'Command'],
+    ['grafana_query', 'GrafanaQueryConfig', 'UseHeaderAuth|Token', 'Mode'],
+    ['sqlserver_query', 'SqlServerQueryConfig', 'TrustServerCertificate', 'Sql'],
+  ]
+  for (const [tplKey, configTypeKey, configKey, paramsKey] of p2Templates) {
+    const tpl = items.find((x) => x.key === tplKey)
+    check('DYN-S57 注册表含 ' + tplKey + ' 且为动态模板', Boolean(tpl) && tpl.isDynamic === true, templates.text.slice(0, 200))
+    check('DYN-S57 ' + tplKey + ' 配置示例含 ' + configKey, Boolean(tpl) && new RegExp(configKey).test(tpl.configExample ?? ''), tpl?.configExample?.slice(0, 160) ?? '')
+    check('DYN-S57 ' + tplKey + ' 配置类型已解析', (tpl?.configType ?? '').includes(configTypeKey), tpl?.configType ?? '')
+    check('DYN-S57 ' + tplKey + ' 参数示例含 ' + paramsKey, new RegExp(paramsKey).test(tpl?.paramsExample ?? ''), tpl?.paramsExample?.slice(0, 160) ?? '')
+  }
+
+  // ---- S63 P0 智能运维五模板出现在注册表（alertmanager_query / loki_query / kubernetes_query / dingtalk_webhook_text / wecom_webhook_text；成功路径由 ops-p0-plugins-e2e.mjs 用桩服务验证） ----
+  const p0Templates = [
+    ['alertmanager_query', 'AlertmanagerQueryConfig', 'BearerToken', 'State'],
+    ['loki_query', 'LokiQueryConfig', 'MaxLines', 'Direction'],
+    ['kubernetes_query', 'KubernetesQueryConfig', 'SkipTlsVerify', 'TailLines'],
+    ['dingtalk_webhook_text', 'DingTalkWebhookTextConfig', 'Secret', 'AtMobiles'],
+    ['wecom_webhook_text', 'WeixinWorkWebhookTextConfig', 'WebhookKey', 'AtAll'],
+  ]
+  for (const [tplKey, configTypeKey, configKey, paramsKey] of p0Templates) {
+    const tpl = items.find((x) => x.key === tplKey)
+    check('DYN-S63 注册表含 ' + tplKey + ' 且为动态模板', Boolean(tpl) && tpl.isDynamic === true, templates.text.slice(0, 200))
+    check('DYN-S63 ' + tplKey + ' 配置示例含 ' + configKey, Boolean(tpl) && new RegExp(configKey).test(tpl.configExample ?? ''), tpl?.configExample?.slice(0, 160) ?? '')
+    check('DYN-S63 ' + tplKey + ' 配置类型已解析', (tpl?.configType ?? '').includes(configTypeKey), tpl?.configType ?? '')
+    check('DYN-S63 ' + tplKey + ' 参数示例含 ' + paramsKey, new RegExp(paramsKey).test(tpl?.paramsExample ?? ''), tpl?.paramsExample?.slice(0, 160) ?? '')
+  }
+
   // ---- S30 只读守卫：写操作/多条语句被拒（校验先于连接，不依赖数据库可达） ----
   const PGQ = `dyn_pg_${TS}`
   const MYQ = `dyn_my_${TS}`

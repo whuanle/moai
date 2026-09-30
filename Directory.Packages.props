@@ -91,6 +91,8 @@
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
     <PackageVersion Include="RecursiveTextSplitter" Version="1.0.2" />
     <PackageVersion Include="Refit" Version="15.2.0" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" />
     <PackageVersion Include="Refit.HttpClientFactory" Version="15.2.0" />
     <PackageVersion Include="Refit.Reflection" Version="15.2.0" />
     <PackageVersion Include="RulesEngine" Version="6.0.0" />

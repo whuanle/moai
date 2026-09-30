@@ -1,6 +1,6 @@
 # 动态插件（DynamicPlugin）行为规格（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/ops-p1-plugins-e2e.mjs](../../local-dev/ops-p1-plugins-e2e.mjs) ｜ [local-dev/ops-p2-plugins-e2e.mjs](../../local-dev/ops-p2-plugins-e2e.mjs) ｜ [local-dev/ops-p0-plugins-e2e.mjs](../../local-dev/ops-p0-plugins-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。标签：`@DYN-S<n>` 为场景主键（永久不复用）；`@auto:e2e` 由脚本验证（默认 `local-dev/dynamic-plugin-e2e.mjs`，博查成功路径与响应解析为 `local-dev/bocha-search-e2e.mjs`，墨迹天气为 `local-dev/moji-weather-e2e.mjs`），`@manual` 人工走查。
 
 ## Feature: 动态插件实例列表
@@ -390,4 +390,216 @@
     When 分别以无效 AppCode 实例与错误 cityId 运行
     Then HTTP 401 归一为可读失败且带上游响应体
     And 信封错误归一为可读失败且带错误码与 msg
+```
+
+## Feature: P1 运维三模板（拨测 / Zabbix / Redis）
+
+```gherkin
+  @DYN-S50 @auto:e2e
+  Scenario: http_probe 拨测三模式与内网防护
+    Given 桩服务提供 200/500 两个拨测目标与可连通/不可连通两种端口
+    When 管理员创建 AllowPrivateNetwork=false 的实例并对 127.0.0.1 目标拨测
+    Then 运行成功但结论为 Ok=false 且错误信息说明内网防护拒绝
+    When 以 AllowPrivateNetwork=true 的实例拨测
+    Then http 200 目标返回 Ok=true、状态码、正文预览与耗时
+    And http 500 目标返回 Ok=false 且状态码即结论、无传输层错误
+    And tcp 模式连通端口返回 Ok=true 与远端地址、拒绝端口返回 Ok=false 与原因
+    And dns 模式解析 localhost 返回地址列表
+    And 非法方法（DELETE）与非法协议（ftp://）在参数校验即被拒绝
+
+  @DYN-S51 @auto:e2e
+  Scenario: zabbix_query 双鉴权形态与只读查询
+    Given Zabbix JSON-RPC 桩服务同时支持根路径与 /zabbix 子路径部署
+    When 以用户名密码实例（body auth）运行 problems
+    Then 运行成功且问题解析出严重级名、ISO 时间、持续时长、标签并经 trigger.get 富化主机名
+    And SeverityMin 过滤只返回达到级别的条目
+    And 会话以 JSON-RPC auth 属性下发且命中子路径端点
+    When 以 API 令牌实例（UseHeaderAuth=true）运行 problems
+    Then 请求以 Authorization: Bearer 头下发且命中根路径端点
+    And version 模式免鉴权返回服务端版本
+    And hosts/triggers 模式解析主机接口与问题态触发器
+    When 以错误密码实例运行 problems
+    Then 登录失败归一为可读错误（username 参数名失败后回退 user）
+
+  @DYN-S52 @auto:e2e
+  Scenario: redis_query 只读诊断六模式
+    Given Redis RESP2 桩服务实现白名单内的诊断命令
+    When 以正确密码实例依次运行 info/dbsize/slowlog/client_list/config_get/key_info
+    Then info 按节段解析出 memory/clients 键值且指定 Section 时仅解析该节段
+    And dbsize 返回键数量、slowlog 条目含命令/参数/耗时/客户端/时间
+    And client_list 每行解析为键值字典、config_get 按通配符返回键值对
+    And key_info 返回类型/TTL/长度/内存占用，不存在的键返回 Exists=false
+    When 缺失 Key 参数或以错误密码运行
+    Then 参数缺失被 400 拒绝、错误密码归一为可读的连接失败
+
+  @DYN-S53 @auto:e2e
+  Scenario: P1 三模板出现在注册表
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员查询插件注册表
+    Then http_probe/zabbix_query/redis_query 均为动态模板且配置类型已解析
+    And 配置示例分别含 AllowPrivateNetwork/UseHeaderAuth/MaxListItems
+    And 参数示例分别含 Url/SeverityMin/Mode
+```
+
+## Feature: P2 运维三模板（SSH 处置 / Grafana / SQL Server）
+
+```gherkin
+  @DYN-S54 @auto:e2e
+  Scenario: ssh_executor 白名单守卫（校验先于连接）
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 以空白名单实例运行任意命令
+    Then 命令被拒绝且提示白名单为空时不执行任何命令
+    When 以含分号或反引号的命令运行
+    Then 命令被拒绝且提示拼接/替换符号不允许
+    When 运行未命中白名单前缀的命令
+    Then 命令被拒绝且错误信息含未命中的命令段
+    When 白名单含 reboot/mkfs/rm 时分别运行 reboot、mkfs.ext4、rm -rf /
+    Then 三者均被灾难级检查拒绝（黑名单与递归删除检查压过白名单）
+    When 运行白名单内的普通命令（如 rm -rf /tmp/x、uptime）且目标不可达
+    Then 守卫放行进入连接阶段，失败归一为可读的 SSH 连接失败而非参数校验错误
+
+  @DYN-S55 @auto:e2e
+  Scenario: grafana_query 注解时间线与健康检查
+    Given Grafana HTTP 桩支持子路径部署、Bearer 令牌鉴权与 health 匿名端点
+    When 以服务账号令牌实例运行 health
+    Then 版本与数据库状态解析正确且请求以 Authorization Bearer 头命中子路径端点
+    When 运行 annotations 并以 RFC3339 给定 From、逗号分隔 Tags
+    Then 时间归一为毫秒时间戳下发、标签逐个重复下发
+    And 注解解析出文本/标签/起止时间（毫秒转 ISO）/面板归属
+    When 运行 search 并给定关键字
+    Then 请求带 type=dash-db 与 limit，仪表板解析出标题/UID/地址
+    When 以错误令牌运行 search
+    Then 上游 401 归一为可读失败且带响应体
+
+  @DYN-S56 @auto:e2e
+  Scenario: sqlserver_query 只读守卫与连接归一
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 以 Port=0 的实例运行
+    Then InitAsync 校验拒绝并提示端口取值 1-65535
+    When 运行 DELETE 或多条语句
+    Then SqlReadOnlyGuard 先于连接拒绝并提示只读
+    When 运行 SELECT 且目标不可达
+    Then 失败归一为可读的数据库连接失败
+
+  @DYN-S57 @auto:e2e
+  Scenario: P2 三模板出现在注册表
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员查询插件注册表
+    Then ssh_executor/grafana_query/sqlserver_query 均为动态模板且配置类型已解析
+    And 配置示例分别含 CommandWhitelist/Token/TrustServerCertificate
+    And 参数示例分别含 Command/Mode/Sql
+```
+
+## Feature: P0 运维五模板（Alertmanager / Loki / Kubernetes / 钉钉 / 企微）
+
+```gherkin
+  @DYN-S58 @auto:e2e
+  Scenario: alertmanager_query 告警与静默
+    Given Alertmanager v2 API 桩支持子路径部署与 Bearer 鉴权
+    When 以令牌实例运行 alerts 并给定 State=active
+    Then 请求以 Bearer 头命中子路径端点且状态过滤参数下发
+    And 告警解析出标签/注解/状态/ISO 时间
+    When 运行 silences
+    Then 静默解析出状态与匹配器（正则匹配器值带 ~ 前缀）
+    When 运行 status
+    Then 版本、集群状态与成员解析正确
+    When 以错误令牌运行 alerts
+    Then 上游 401 归一为可读失败
+
+  @DYN-S59 @auto:e2e
+  Scenario: loki_query 日志检索
+    Given Loki API 桩支持子路径部署与 Basic 鉴权
+    When 运行 query_range 并以 RFC3339 给定 Start
+    Then 时间归一为 Unix 纳秒下发且 limit 参数下发
+    And 日志流解析出流标签与日志行（纳秒转 ISO 时间）
+    When 运行 labels 与 label_values
+    Then 标签名列表解析正确且 label_values 命中 /label/{name}/values 路径
+    When 运行 series 并给定 match[] 选择器
+    Then 标签集解析正确
+    When 运行 query 且上游返回 status=error 信封
+    Then 信封错误归一为可读失败
+
+  @DYN-S60 @auto:e2e
+  Scenario: kubernetes_query 只读资源与日志
+    Given Kubernetes API 桩（HTTP）下发 Pod/事件/Deployment/节点列表与 Pod 日志文本
+    When 运行 pods 并给定 Namespace 与 labelSelector
+    Then 请求以 Bearer 头命中命名空间路径且选择器参数下发
+    And Pod 解析出阶段/IP/节点/就绪容器数/重启次数
+    When 运行 pod_logs 并给定尾部行数与容器名
+    Then 日志纯文本透传且参数下发
+    When 运行 events/deployments/nodes
+    Then 事件（类型/原因/关联对象/次数）、Deployment（副本/镜像）与节点（Ready/版本/IP）解析正确
+    When 以无权限令牌运行 pods
+    Then 403 归一为权限不足提示
+
+  @DYN-S61 @auto:e2e
+  Scenario: dingtalk_webhook_text 加签推送
+    Given 钉钉机器人桩对 access_token 与 HMAC 加签做校验
+    When 以 Webhook+Secret 实例推送文本并 @ 手机号
+    Then 桩验证 timestamp/sign 为正确 HMAC-SHA256 加签
+    And 报文为 msgtype=text 且 content/at.atMobiles 下发正确
+    When 推送时 @ 所有人
+    Then at.isAtAll 下发
+    When 以错误 access_token 实例推送
+    Then errcode=310000 归一为关键词/加签/白名单设置提示
+
+  @DYN-S62 @auto:e2e
+  Scenario: wecom_webhook_text 推送
+    Given 企业微信机器人桩按 key 校验
+    When 以 Webhook 实例推送文本并 @ 手机号
+    Then key 归一命中且 content/mentioned_mobile_list 下发正确
+    When 推送时 @ 所有人
+    Then mentioned_list 含 @all
+    When 以错误 key 实例推送
+    Then errcode!=0 归一为可读失败
+
+  @DYN-S63 @auto:e2e
+  Scenario: P0 五模板出现在注册表
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员查询插件注册表
+    Then alertmanager_query/loki_query/kubernetes_query/dingtalk_webhook_text/wecom_webhook_text 均为动态模板且配置类型已解析
+    And 配置示例分别含 BearerToken/MaxLines/SkipTlsVerify/Secret/WebhookKey
+    And 参数示例分别含 State/Query/TailLines/Text/AtMobiles
+```
+
+## Feature: ClickStack 查询模板（clickstack_query，HyperDX 对外 API）
+
+```gherkin
+  @DYN-S64 @auto:e2e
+  Scenario: sources 数据源列表与 Bearer 鉴权
+    Given ClickStack 对外 API 桩提供 /api/v2/sources（Bearer 鉴权，含 log/metric/session 三类源）
+    When 以正确 Personal API Access Key 实例运行 sources
+    Then 请求以 Authorization: Bearer 头命中端点
+    And log 源解析出 ID/名称/类型/库表/默认列
+    And metric 源在无 from.tableName 时回退第一个指标表名
+    And session 源的停用态解析为 Disabled=true
+    When 以错误 Key 实例运行 sources
+    Then 上游 401 归一为可读失败并提示需 Personal API Access Key（非 OTLP Ingestion Key）
+    When 以 ftp:// 协议 BaseUrl 的实例运行
+    Then BaseUrl 校验在运行时拒绝且提示合法 http/https 形态
+
+  @DYN-S65 @auto:e2e
+  Scenario: search 原始检索
+    Given ClickStack API 桩提供 /api/v2/search（记录请求体，支持 404/400 错误形态）
+    When 以 SourceId/Where/WhereLanguage/Select/显式时间窗运行
+    Then 请求体透传 sourceId/where/whereLanguage/select/maxResults/offset/ISO 时间窗
+    And 行集按「列名 → 值」解析（字符串/整数/小数/布尔/null/嵌套容错）且 RowCount 正确
+    And 返回行数达到上限时 Truncated=true
+    When 不传时间窗运行
+    Then 缺省窗口为 End(=now)-15 分钟
+    When 给定 MaxResults=50 与 Offset=100
+    Then 覆盖配置 MaxRows 下发且未满额不置 Truncated
+    When 缺 SourceId、WhereLanguage=regex、SourceId 无效（404）、Where 含桩标记（400）分别运行
+    Then 分别得到可读的参数校验错误与上游错误归一
+
+  @DYN-S66 @auto:e2e
+  Scenario: chart 时间线聚合
+    Given ClickStack API 桩提供 /api/v2/charts/series（记录请求体，granularity 非法返回 400 {error}）
+    When 以 SourceId/Where/Granularity/AggFn/GroupBy/显式时间窗运行
+    Then 请求体时间窗归一为 epoch 毫秒且 granularity/series（aggFn/where/groupBy 数组）按契约下发
+    And 数据点解析出毫秒时间桶（转 ISO）/聚合值/分组值
+    When 不传时间窗/AggFn/Granularity 运行
+    Then 缺省窗口为 1 小时且缺省 aggFn=count、granularity=1h
+    When AggFn=sum 缺 Field、Granularity/AggFn 非法、缺 SourceId 分别运行
+    Then 均被 400 拒绝并给出可读提示
 ```

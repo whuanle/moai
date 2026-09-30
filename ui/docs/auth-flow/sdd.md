@@ -10,15 +10,16 @@
 ## 流程总览
 
 ```
-密码登录:  Login → login() → getServerInfo(取 rsaPublic,持久缓存) → rsaEncrypt → POST /auth/login → setUserInfo → /dashboard
+密码登录:  Login → login() → getServerInfo(取 rsaPublic,持久缓存) → rsaEncrypt → POST /auth/login → setUserInfo(仅 token) → /apps
 注册:      Register → register()(RSA 密码) → POST /auth/register → 跳 /login
 第三方登录: Login 图标 → 跳后端拼好的 authorizeUrl(state={OAuthId})
            → 回调 /oauth_login?code&state → oauthLogin()
-             ├ isBindUser=true → applyLoginResponse → dashboard
+             ├ isBindUser=true → applyLoginResponse(仅 token) → /apps
              └ false → 「一键注册」卡 → oauthRegister(tempOAuthBindId)
 绑定弹窗:  AccountSettings window.open(toBindAuthorizeUrl(url))  # state 附加 :bind
            → 回调页识别 opener+bind → oauthBindByCode(code) → postMessage 通知 + window.close
 续期:      RequireAuth 每 60s checkToken() → 过期则 refresh_token 静默换新 → 失败清态跳 /login
+资料重取:  RequireAuth 挂载首检通过后 refreshUserProfile()（GET /account/userinfo 合并进登录态）→ 失败沿用本地快照
 ```
 
 ## 关键实现点（as-built）
@@ -31,22 +32,23 @@
 | expiresIn 语义 | 后端返回过期时刻 Unix 毫秒时间戳；前端原样保存但不参与过期判断，一律解码 JWT 的 exp（见 [../../../docs/auth/sdd.md](../../../docs/auth/sdd.md)） |
 | 401 全局拦截 | api/kiota.ts FilterRequestHandler：URL 不含字符串 `login` 的 401 → 清态 + 整页跳 `/login`；`/auth/login`、`/auth/oauth_login` 的 401 只提示不清态（[@FE-AUTH-S21](./bdd.md#fe-auth-s21)） |
 | UserInfo 持久化 | zustand persist 仅存 serverInfo+userInfo（localStorage `moai-web-store`）；theme/locale 另存 |
-| 权限消费 | 页面权限（AppSider adminNav、/users 操作）读 `userInfo?.isAdmin/isRoot`，由登录响应 + `refreshUserProfile()` 合并维护；前端不解 JWT claims |
+| 资料重取 | 登录/续期响应只含 token 与基本标识，不含 isAdmin/isRoot/头像昵称；RequireAuth 挂载首检通过后调 `refreshUserProfile()`（GET /account/userinfo）合并进登录态，失败静默沿用本地快照（[@FE-AUTH-S22](./bdd.md#fe-auth-s22)/[@FE-AUTH-S23](./bdd.md#fe-auth-s23)）；60s 周期复检不重取资料 |
+| 权限消费 | 页面权限（AppSider adminNav、/users 操作）读 `userInfo?.isAdmin/isRoot`，由 RequireAuth 挂载时 `refreshUserProfile()` 重取维护；前端不解 JWT claims |
 | OAuth code 一次性 | OAuthLogin 用 `useRef(started)` 防 StrictMode 双执行重复消费 code（[@FE-AUTH-S15](./bdd.md#fe-auth-s15)） |
 | state 协议 | `state={OAuthId}` 登录 / `{OAuthId}:bind` 绑定弹窗（parseOAuthState 解析；toBindAuthorizeUrl 重写） |
 | 弹窗通信 | postMessage `oauth_bind_{success|error|cancel}`（仅同源 opener），主窗口 AccountSettings 监听后刷新绑定列表 |
 
 ## 页面行为（as-built 摘要）
 
-- **Login.tsx**：400 宽 Card（品牌区：logo 48px + 标题 + 副标题；背景 `linear-gradient(colorBgLayout→colorPrimaryBg)` 跟随明暗主题，卡片 radius.lg+主题阴影），username/password 必填；成功 feedback.success 后 `navigate('/dashboard',{replace:true})`，失败依赖全局中间件提示。挂载即拉 `getOAuthProviders()`（后端路由拼写即 `oauth_prividers`）：有渠道渲染圆形图标按钮（iconUrl 经 resolveStorageUrl 解析，无图标显示名称文本），点击整页跳授权；分隔线用 `colorBorderSecondary` token。
+- **Login.tsx**：400 宽 Card（品牌区：logo 48px + 标题 + 副标题；背景 `linear-gradient(colorBgLayout→colorPrimaryBg)` 跟随明暗主题，卡片 radius.lg+主题阴影），username/password 必填；成功 feedback.success 后 `navigate('/apps',{replace:true})`，失败依赖全局中间件提示。挂载即拉 `getOAuthProviders()`（后端路由拼写即 `oauth_prividers`）：有渠道渲染圆形图标按钮（iconUrl 经 resolveStorageUrl 解析，无图标显示名称文本），点击整页跳授权；分隔线用 `colorBorderSecondary` token。
 - **Register.tsx**：420 宽 Card，与 Login 同款品牌区/主题自适应渐变背景（2026-09-02 统一）；userName 必填、nickName/phone 选填、email 必填（antd type:'email'）、password 仅 `min:6`、confirmPassword 校验两次一致（不一致报 `auth.passwordMismatch`）。强度（8-20 位含字母+数字）由后端解密后裁决。
-- **OAuthLogin.tsx**：`isPopup = opener 存在且同源`、`bindMode = isPopup && state 带 bind`。bindMode：缺参通知 cancel 关窗；否则 oauthBindByCode（鉴权客户端，绑定当前登录账号）。顶层：缺参/异常/无 tempOAuthBindId → 跳 /login；isBindUser → 落态进 dashboard；有 tempOAuthBindId → 「一键注册」确认卡。
-- **RequireAuth.tsx**：无 token 渲染期同步 `<Navigate to="/login" replace/>`；挂载执行一次 checkToken（异常按失败）；每 60 秒（TOKEN_CHECK_INTERVAL=60_000）复检；检查期间整屏 Spin；卸载清定时器。
+- **OAuthLogin.tsx**：`isPopup = opener 存在且同源`、`bindMode = isPopup && state 带 bind`。bindMode：缺参通知 cancel 关窗；否则 oauthBindByCode（鉴权客户端，绑定当前登录账号）。顶层：缺参/异常/无 tempOAuthBindId → 跳 /login；isBindUser → 落态进 /apps；有 tempOAuthBindId → 「一键注册」确认卡。
+- **RequireAuth.tsx**：无 token 渲染期同步 `<Navigate to="/login" replace/>`；挂载执行一次 checkToken（异常按失败），通过后调 `refreshUserProfile()` 重取用户资料（失败静默沿用快照）；每 60 秒（TOKEN_CHECK_INTERVAL=60_000）复检仅做 token 检查；检查期间整屏 Spin；卸载清定时器。
 
 ## 已知问题
 
 1. `getServerInfo` 持久缓存 rsaPublic：后端轮换密钥后旧缓存导致"密码解密失败"（[@FE-AUTH-S4](./bdd.md#fe-auth-s4)），需清 localStorage 或加时效。
 2. 401 跳转是 `window.location.href` 整页刷新（丢 SPA 状态）且不携带回跳参数，登录后固定进 /dashboard（[@FE-AUTH-S21](./bdd.md#fe-auth-s21)）。
 3. `oauthBindAccount()` 封装（POST /api/account/oauth_bind_account）当前无页面调用——实际绑定走 `oauthBindByCode`（POST /api/account/oauth_bind），as-built 记录为遗留封装。
-4. 登录/注册/OAuth 回调/RequireAuth 无组件级 Vitest（现有 42 用例集中在设计系统组件与 Users 页），行为验证依赖 typecheck/lint + 手工走查（见 [TDD](./tdd.md) 缺口说明）。
+4. 登录/注册/OAuth 回调/RequireAuth 无组件级 Vitest（现有用例集中在设计系统组件与 Users 等页面），行为验证依赖 typecheck/lint + 手工/浏览器走查（见 [TDD](./tdd.md) 缺口说明）。
 5. 401 豁免条件为 URL 字符串包含 `login`：`/auth/refresh_token` 若返回 401 会触发清态跳转（当前后端刷新失败返回非 401，备查；详见 [../api-layer/sdd.md](../api-layer/sdd.md)）。

@@ -7,7 +7,10 @@
 
 三个脚本分工：`dynamic-plugin-e2e.mjs` 针对**已运行的真实后端**做实例管理与失败路径断言；`bocha-search-e2e.mjs`
 自带 BoCha 桩服务并拉起一个独立后端（`MoAI__BoCha__Endpoint` 指向桩），覆盖**成功路径与响应解析**，无需真实 API Key、不消耗额度；
-`moji-weather-e2e.mjs` 同为桩服务模式（`MoAI__MojiWeather__Endpoint` 指向桩），覆盖墨迹天气模板，无需真实 AppCode。
+`moji-weather-e2e.mjs` 同为桩服务模式（`MoAI__MojiWeather__Endpoint` 指向桩），覆盖墨迹天气模板，无需真实 AppCode；
+`ops-p1-plugins-e2e.mjs` 自带 HTTP 桩（拨测目标 + Zabbix JSON-RPC）与 Redis RESP2 桩并拉起独立后端（优先 `.builds/ops-p1` 独立输出，无则回退 `dotnet run`），覆盖 P1 运维三模板（http_probe/zabbix_query/redis_query），无需真实运维系统；
+`ops-p2-plugins-e2e.mjs` 同为桩模式（Grafana HTTP 桩 + `.builds/ops-p2` 独立输出），覆盖 P2 运维三模板（ssh_executor/grafana_query/sqlserver_query）：守卫用例（校验先于连接）无条件运行，SSH 真机执行与 SQL Server 真库由 `SSH_E2E_CONNECTION` / `SQLSERVER_E2E_CONNECTION` 门控（未设置 SKIP）；
+`ops-p0-plugins-e2e.mjs` 多路桩模式（Alertmanager v2 + Loki + Kubernetes API + 钉钉/企微机器人 + `.builds/ops-p0` 独立输出，`MoAI__DingTalk__RobotEndpoint` / `MoAI__WeixinWork__RobotEndpoint` 指向桩），覆盖 P0 运维五模板（alertmanager_query/loki_query/kubernetes_query/dingtalk_webhook_text/wecom_webhook_text），其中钉钉桩复算 HMAC-SHA256 验签。
 
 ```bash
 # 1) 实例管理与失败路径（需后端 :5000 运行中）
@@ -72,6 +75,23 @@ node local-dev/moji-weather-e2e.mjs
 | @DYN-S43 | local-dev/dynamic-plugin-e2e.mjs（公开图片直传完成 → 设置头像 200 → 列表回读 avatarPath 一致） | PASS 99/99（2026-09-17） |
 | @DYN-S44 | local-dev/dynamic-plugin-e2e.mjs（未登记 objectKey → 404 头像文件不存在或未完成上传） | PASS 99/99（2026-09-17） |
 | @DYN-S45 | local-dev/dynamic-plugin-e2e.mjs（匿名 401、普通用户 403） | PASS 99/99（2026-09-17） |
+| @DYN-S50 | local-dev/ops-p1-plugins-e2e.mjs（`S50a~i` http 拨测 200/500、tcp 通/拒、dns 解析、内网防护默认拒+放行、非法方法与协议 400） | PASS 39/39（2026-09-29） |
+| @DYN-S51 | local-dev/ops-p1-plugins-e2e.mjs（`S51a~k` version 免鉴权、problems 解析+主机富化+SeverityMin、body auth 命中子路径、header auth 命中根路径、hosts/triggers、登录失败归一） | PASS 39/39（2026-09-29） |
+| @DYN-S52 | local-dev/ops-p1-plugins-e2e.mjs（`S52a~l` info 分节/指定节段、dbsize、slowlog、client_list、config_get、key_info 含不存在键、缺参 400、错误密码归一） | PASS 39/39（2026-09-29） |
+| @DYN-S53 | local-dev/dynamic-plugin-e2e.mjs（P1 三模板注册断言：isDynamic/configType/configExample/paramsExample） | 见自检记录（2026-09-29） |
+| @DYN-S54 | local-dev/ops-p2-plugins-e2e.mjs（`S54a~l` 空白名单 fail-closed/拼接替换符/未命中/灾难级黑名单压过白名单/灾难级递归删除/守卫放行进入连接；`S54m` 真机 uptime 由 SSH_E2E_CONNECTION 门控） | PASS 30/0/SKIP 2（2026-09-29） |
+| @DYN-S55 | local-dev/ops-p2-plugins-e2e.mjs（`S55a~f` health 版本+Bearer 头+子路径、annotations RFC3339→毫秒+标签逐发+解析、search type=dash-db、错误令牌 401 归一） | PASS 30/0/SKIP 2（2026-09-29） |
+| @DYN-S56 | local-dev/ops-p2-plugins-e2e.mjs（`S56a~f` Init 端口校验、写 SQL/多条语句先于连接被拒、连接失败归一；`S56g` 真库 @@VERSION 由 SQLSERVER_E2E_CONNECTION 门控） | PASS 30/0/SKIP 2（2026-09-29） |
+| @DYN-S57 | local-dev/dynamic-plugin-e2e.mjs（P2 三模板注册断言：isDynamic/configType/configExample/paramsExample） | 见自检记录（2026-09-29） |
+| @DYN-S58 | local-dev/ops-p0-plugins-e2e.mjs（`S58a~f` alerts 解析+状态过滤、silences 正则匹配器、status、401 归一） | PASS 30/0（2026-09-29） |
+| @DYN-S59 | local-dev/ops-p0-plugins-e2e.mjs（`S59a~f` query_range 纳秒归一、labels/label_values 路径、series match[]、status=error 信封归一） | PASS 30/0（2026-09-29） |
+| @DYN-S60 | local-dev/ops-p0-plugins-e2e.mjs（`S60a~h` pods+选择器、pod_logs 纯文本、events/deployments/nodes、403 权限提示） | PASS 30/0（2026-09-29） |
+| @DYN-S61 | local-dev/ops-p0-plugins-e2e.mjs（`S61a~e` HMAC 加签被桩验证、@手机号/@所有人、errcode=310000 归一） | PASS 30/0（2026-09-29） |
+| @DYN-S62 | local-dev/ops-p0-plugins-e2e.mjs（`S62a~e` key 归一、mentioned_mobile_list/@all、errcode 归一） | PASS 30/0（2026-09-29） |
+| @DYN-S63 | local-dev/dynamic-plugin-e2e.mjs（P0 五模板注册断言） | PASS 156/0（含 S63 20 条）（2026-09-29） |
+| @DYN-S64 | local-dev/clickstack-e2e.mjs（`S64a~g` sources 解析（log 字段/metric 表名回退/session 停用态）、Bearer 头命中、错误 Key 401 归一、非法协议 BaseUrl 运行时拒绝） | PASS 20/20（2026-09-29） |
+| @DYN-S65 | local-dev/clickstack-e2e.mjs（`S65a~f` 行集混合类型解析+满额 Truncated、请求体透传（select/offset/ISO 时间窗）、缺省窗口 End-15min、MaxResults/Offset 翻页、缺 SourceId/非法 WhereLanguage 400、404/400 错误归一） | PASS 20/20（2026-09-29） |
+| @DYN-S66 | local-dev/clickstack-e2e.mjs（`S66a~d` 时间线解析（ISO 桶/聚合值/分组）、epoch 毫秒透传+series 结构、缺省窗口 1h+缺省聚合、sum 缺 Field/非法 Granularity/非法 AggFn/缺 SourceId 四类 400） | PASS 20/20（2026-09-29） |
 
 ## 前端测试
 
@@ -99,6 +119,14 @@ node local-dev/dynamic-plugin-e2e.mjs                               # 实例管�
 node local-dev/bocha-search-e2e.mjs                                 # 博查成功路径 + 响应解析（自建桩服务，无需真实 Key）
 node local-dev/paddleocr-e2e.mjs                                    # PaddleOCR 成功路径 + 响应解析（自建桩服务，无需真实 PaddleOCR）
 node local-dev/moji-weather-e2e.mjs                                  # 墨迹天气成功路径 + 响应解析（自建桩服务，无需真实 AppCode）
+dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p1                 # P1 脚本前置：独立输出目录构建（bin/Debug 被运行中后端锁定时）
+node local-dev/ops-p1-plugins-e2e.mjs                               # P1 运维三插件（自建 HTTP+RESP2 双桩）
+dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p2                 # P2 脚本前置：独立输出目录构建
+node local-dev/ops-p2-plugins-e2e.mjs                               # P2 运维三插件（Grafana 桩 + 守卫用例；SSH/SqlServer 真链路按环境变量门控）
+dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p0                 # P0 脚本前置：独立输出目录构建
+node local-dev/ops-p0-plugins-e2e.mjs                               # P0 运维五插件（AM/Loki/K8s/通知四桩）
+dotnet build src/MoAI/MoAI.csproj -o .builds/clickstack             # ClickStack 脚本前置：独立输出目录构建
+node local-dev/clickstack-e2e.mjs                                   # ClickStack 查询插件（自建 HyperDX API 三端点桩）
 ```
 
 ## 自检记录
@@ -168,3 +196,40 @@ node local-dev/moji-weather-e2e.mjs                                  # 墨迹天
 
 - `dotnet build src/MoAI/MoAI.csproj`（独立输出目录，绕开运行中后端的 DLL 锁）→ 0 error。
 - `DYN_BASE=http://127.0.0.1:5100 PG_E2E_CONNECTION=<开发库连接串> node local-dev/dynamic-plugin-e2e.mjs` → **PASS 119 / FAIL 0 / SKIP 3**（SKIP：S16/S22 博查真实 Key、S33 无可达 MySQL）；S29c 改断言 Host 示例、S30a/b/S31b 改离散配置、S32a~g 在真实 PG 上全过（含 `SHOW default_transaction_read_only=on` 会话只读兜底）。
+
+### 2026-09-29 P1 运维三插件（http_probe / zabbix_query / redis_query）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p1`（独立输出目录，运行中后端锁 bin/Debug）→ **0 error**。
+- 单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **171/171**（新增 `HttpProbeGuardTests` 内网判定 20 例、`ZabbixResponseParserTests` 严重级/错误归一/时间时长/标签 11 例、`RedisResponseParserTests` INFO 分节/CLIENT LIST/SLOWLOG 组装/长度命令映射 13 例）。
+- `node local-dev/ops-p1-plugins-e2e.mjs` → **PASS 39 / FAIL 0**，覆盖 @DYN-S50~S52（内网防护默认拒+放行、http/tcp/dns 三模式、Zabbix body auth 命中子路径与 Bearer 头命中根路径、登录失败归一、Redis 六模式+错误密码归一；桩命中数佐证真实外呼）。
+- `DYN_BASE=http://127.0.0.1:5193 node local-dev/dynamic-plugin-e2e.mjs`（独立输出后端）→ **PASS 124 / FAIL 0 / SKIP 4**（SKIP：S16/S22 博查真实 Key、S32/S33 无 PG/MySQL 连接串），含新增 @DYN-S53 注册断言 12 条。
+- **实踩坑**：①Refit 方法路径必须以 `/` 开头，相对路径直接抛 `URL path must start with '/'`，且 `/` 开头又与 BaseAddress 子路径互斥 → Zabbix 客户端改 `IHttpClientFactory` 具名客户端 + 手工 Uri 拼接；②StackExchange.Redis 3.x 握手对自建桩不可对齐（`HELLO 3`/`CLIENT SETINFO`/`CONFIG GET` 探针/`ECHO` 二进制 token 校验 + `ScriptResultProcessor InternalFailure`）→ redis_query 改自研 `RedisRespClient` 并移除包依赖；E2E 桩侧对照教训：RESP2 桩解析需 latin1 字节保真（ECHO 回显经 UTF-8 模板字符串会改字节），INFO 握手探针需含 `redis_version`/`role` 与 CONFIG GET `databases` 等键。
+- 脚本环境适配：后端以「`.builds/ops-p1/MoAI.dll` + content root 指向 src/MoAI」拉起（不写被锁定的 bin/Debug），`dotnet run` 仅作无独立输出时的回退；Redis 桩支持 `OPP_REDIS_DEBUG=1` 打印握手命令序列（本轮定位 SE.Redis 握手失败的关键手段）。
+
+### 2026-09-29 P2 运维三插件（ssh_executor / grafana_query / sqlserver_query）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p2`（独立输出目录）→ **0 error**（新增包 SSH.NET 2026.0.0、Microsoft.Data.SqlClient 7.1.0，版本入 Directory.Packages.props）。
+- 单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **207/207**（新增 `SshCommandGuardTests` 21 例：白名单放行/空白名单 fail-closed/拼接替换符/管道分段校验/前缀词边界/灾难级黑名单/灾难级递归删除；`GrafanaResponseParserTests` 7 例）。
+- `node local-dev/ops-p2-plugins-e2e.mjs` → **PASS 30 / FAIL 0 / SKIP 2**，覆盖 @DYN-S54~S56（守卫用例无条件：空白名单/拼接符/未命中/黑名单压过白名单/递归删除/守卫放行进入连接；Grafana 桩全链：health+Bearer+子路径、annotations RFC3339→毫秒+标签逐发、search、401 归一；SQL Server 守卫先于连接+连接失败归一；真机/真库由 `SSH_E2E_CONNECTION`/`SQLSERVER_E2E_CONNECTION` 门控 SKIP）。
+- `DYN_BASE=http://127.0.0.1:5190 node local-dev/dynamic-plugin-e2e.mjs`（P2 独立输出后端）→ **PASS 136 / FAIL 0 / SKIP 4**，含新增 @DYN-S57 注册断言 12 条。
+- **实踩坑**：①SSH.NET 2026 的 `ConnectionInfo(host, port, user, methods)` 构造签名已变（`AuthenticationMethod` 迁出 `Renci.SshNet.Common`、端口构造重载消失）→ 改用长期稳定的 `SshClient(host, port, user, password|PrivateKeyFile)` 便捷构造；②Grafana `/api/health` 在真实服务是匿名端点，401 归一用例须打 annotations/search（桩首跑 FAIL 定位）；③桩 E2E 脚本 `KEEP_BACKEND=1` 时被保留的 dotnet 子进程 stdio 管道不关闭会让 node 进程挂住不退出（链式调用被堵）→ finally 中 destroy 管道 + `unref()` + `mock.closeAllConnections()`（P1/P2 两脚本同修）。
+- 环境门控：SSH 真机执行设置 `SSH_E2E_CONNECTION="host,port,user,password"`，SQL Server 真库设置 `SQLSERVER_E2E_CONNECTION="host,port,db,user,password"` 后重跑即覆盖对应 SKIP 用例。
+
+
+
+### 2026-09-29 P0 运维五插件（alertmanager_query / loki_query / kubernetes_query / dingtalk_webhook_text / wecom_webhook_text）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p0`（独立输出目录）→ **0 error**（零新 NuGet 包：AM/Loki/K8s 走 factory+手工 Uri，钉钉/企微走 Refit 固定域名）。
+- 单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **239/239**（新增 `LokiTimeHelperTests` 8 例：RFC3339/秒/毫秒→纳秒三态归一；`DingTalkSignHelperTests` 3 例：HMAC-SHA256 数据串复算与 URL 编码断言）。
+- `node local-dev/ops-p0-plugins-e2e.mjs` → **PASS 30 / FAIL 0 / SKIP 0**，覆盖 @DYN-S58~S62（AM alerts 状态过滤+子路径+Bearer、silences 正则匹配器 ~ 前缀、status；Loki query_range 纳秒归一+Basic、labels/label_values 路径、series、status=error 信封；K8s pods 命名空间路径+选择器、pod_logs 纯文本、events/deployments/nodes、403 权限提示；钉钉桩复算 HMAC 验签、@手机号/@所有人、errcode=310000 归一；企微 key 归一、mentioned_list）。首跑 26/4，4 个 FAIL 全部是桩/接口层问题而非插件逻辑：①桩未实现 AM state 过滤（断言期望过滤后 1 条）；②桩漏了 Loki series 路由；③④**Refit `[Query("name")]` 构造参数是分隔符不是别名**，查询参数名被 camelCase 成 `accessToken`——与既有 `IClickHouseClient` 的 `[Query, AliasAs("...")]` 写法对齐后修复。
+- `DYN_BASE=http://127.0.0.1:5188 node local-dev/dynamic-plugin-e2e.mjs`（P0 独立输出后端）→ **PASS 156 / FAIL 0 / SKIP 4**，含新增 @DYN-S63 注册断言 20 条。
+- 并行会话协作：本轮构建一度被另一会话 ClickStack 插件 WIP 的编译中间态阻断，按 30s 轮询至恢复后再跑验证（未触碰对方文件）。
+
+### 2026-09-29 ClickStack 查询插件（clickstack_query，HyperDX 对外 API）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/clickstack`（独立输出目录）→ **0 error**（零新 NuGet 包：`IClickStackClient` 走 factory+手工 Uri，同 Zabbix/Grafana 模式）。
+- 单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **239/239**（新增 `ClickStackResponseParserTests` 19 例：sources 解析含 metric 表名回退/停用态、search 行集 ToClr 归一与 rows 回退、chart 毫秒桶转 ISO/series 值提取、`{message}`/`{error}` 双错误形态、时间解析无时区按 UTC）。
+- `node local-dev/clickstack-e2e.mjs` → **PASS 20 / FAIL 0**，覆盖 @DYN-S64~S66（sources 解析+Bearer 头+错误 Key 401 归一（提示 Personal API Access Key 非 Ingestion Key）+非法协议 BaseUrl 运行时拒绝；search 请求体透传（select/offset/ISO 时间窗）+行集混合类型解析+满额 Truncated+缺省窗口 End-15min+MaxResults/Offset 翻页+404/400 归一；chart epoch 毫秒透传+series 结构+groupBy 数组+缺省窗口 1h/aggFn=count/granularity=1h+sum 缺 Field 等四类 400）。首跑 4/15：15 个 FAIL 全部源于 Infra 注册两处遗漏（`using MoAI.Infra.ClickStack;` 与 `AddTransient<IClickStackClient>`）导致 DI 解析失败——新 infra 客户端「接口/实现/注册+using」四件套缺一不可。
+- **实踩坑**：①保存实例不触发 `InitAsync`（凭证/BaseUrl 校验都在运行态，同 Zabbix 口径），非法协议用例从「保存被拒」改为「保存成功+运行被拒」；②场景号 @DYN-S58~S63 被并行 P0 轮占号，改文档前重读最新发现后改用 @DYN-S64~S66（铁律再次生效）；③并行 P0 轮 `LokiTimeHelper`（乘法优先级把 `.ToString()` 绑到字面量）与 `AlertmanagerQueryPlugin`（status 对象误当字符串取）两处编译错误由本轮顺手修复以恢复共享工作区可构建。
+- 语义备忘：chart 契约要求 epoch 毫秒且时间必填（与 search 的 ISO 可省不同），插件侧统一补缺省窗（chart=1h、search=15min）；服务端 rows 只给本次行数，Truncated 语义为「达到上限即可能还有更多」。
+- 真实实例联调（2026-09-29）：用户接入 192.168.50.199:28000 实测——28000 确认为对外 API server（`GET /api/v2/sources`、`POST /api/v2/charts/series` 无 Key 时均 401「Unauthorized」，即路由存在的正常形态；28080 为 UI，404 会剥掉 `/api` 前缀），但 `POST /api/v2/search` 返回 Express「Cannot POST」404：该 2026-07 前后构建的 `hyperdx:2` 镜像尚无 Search 端点（/api/v1/search 等变体亦 404，无 openapi.json 可查）。处置：升级 `clickstack-app` 镜像获得 Search，过渡期 sources/chart 两模式可用；插件 404 诊断据此增强（Express「Cannot …」形态→「端点不存在/版本过旧/BaseUrl 指向 UI」专属提示），增强后回归 239/239 + E2E 20/20 保持全绿。

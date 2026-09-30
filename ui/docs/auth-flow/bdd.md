@@ -10,7 +10,7 @@ Feature: 密码登录页（/login）
     Given 管理员在 /login 输入正确凭据
     When 提交表单
     Then 密码经服务器公钥 RSA 加密后提交
-    And 登录态（token 与用户资料）写入后跳转 /dashboard
+    And 登录响应（仅含 token 与基本标识）写入登录态后跳转 /apps
     And 页面挂载时已请求第三方渠道列表并渲染图标（无渠道时不渲染 OAuth 分隔区）
 
   @FE-AUTH-S2 @manual
@@ -61,6 +61,20 @@ Feature: RequireAuth 守卫（受保护路由 /）
     When 挂载执行 token 检查
     Then access token 未过期直接放行，结束加载态
 
+  @FE-AUTH-S22 @manual
+  Scenario: 进入应用时重取用户资料
+    Given 用户刚完成登录（登录响应仅含 token，不含角色与资料）
+    When 首次通过守卫进入受保护路由
+    Then 守卫在放行前向服务端重取用户资料并合并进登录态
+    And 管理员身份（含第三方登录绑定管理员的场景）立即生效，侧边栏出现管理菜单
+
+  @FE-AUTH-S23 @manual
+  Scenario: 刷新页面校正本地滞留快照
+    Given 本地持久化的用户资料已过期（如头像昵称被改、被授予或撤销管理员）
+    When 用户刷新页面进入受保护路由
+    Then 登录态以服务端重取的资料为准（角色/头像/昵称即时校正）
+    And 资料接口偶发失败时沿用本地快照进入应用（不作为登出理由）
+
   @FE-AUTH-S10 @manual
   Scenario: access 过期、refresh 有效
     When 挂载或每 60 秒周期检查
@@ -76,13 +90,13 @@ Feature: 第三方登录回调（/oauth_login）
   Scenario: 已绑定账号
     Given 回调 query 含有效 code 与 state（state={OAuthId}）
     When 页面加载执行第三方登录
-    Then 识别为已绑定用户，落登录态并跳 dashboard
+    Then 识别为已绑定用户，落登录态并跳 /apps（资料由守卫重取，见 [@FE-AUTH-S22](#fe-auth-s22)）
 
   @FE-AUTH-S13 @manual
   Scenario: 未绑定账号
     When 第三方登录返回临时绑定标识
     Then 显示「一键注册并登录」确认卡（展示第三方昵称）
-    And 确认后注册并落态跳 dashboard；失败（含临时键过期 403）提示并跳 /login
+    And 确认后注册并落态跳 /apps；失败（含临时键过期 403）提示并跳 /login
 
   @FE-AUTH-S14 @manual
   Scenario: 缺 code/state
@@ -128,5 +142,5 @@ Feature: RSA 兼容与 401 拦截边界
     Given 已登录用户的业务接口返回 401（URL 不含 "login"）
     When 中间件捕获
     Then 清空登录态并整页跳转 /login（丢失 SPA 状态）
-    And 登录后固定进 /dashboard，不回跳来源页
+    And 登录后固定进 /apps，不回跳来源页
 ```

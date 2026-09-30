@@ -19,6 +19,9 @@
 		<!-- SQL 只读查询插件（postgres_query / mysql_query）所需的 ADO.NET 驱动，版本由 Directory.Packages.props 集中管理 -->
 		<PackageReference Include="Npgsql" />
 		<PackageReference Include="MySqlConnector" />
+		<PackageReference Include="Microsoft.Data.SqlClient" />
+		<!-- SSH 命令执行插件（ssh_executor）所需的 SSH 协议栈 -->
+		<PackageReference Include="SSH.NET" />
 	</ItemGroup>
 
 	<ItemGroup>

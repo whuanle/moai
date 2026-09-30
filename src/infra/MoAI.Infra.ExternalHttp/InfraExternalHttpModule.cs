@@ -1,11 +1,16 @@
 ﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
+using MoAI.Infra.Alertmanager;
 using MoAI.Infra.BoCha;
 using MoAI.Infra.ClickHouse;
+using MoAI.Infra.ClickStack;
 using MoAI.Infra.DingTalk;
 using MoAI.Infra.Doc2x;
 using MoAI.Infra.Elasticsearch;
 using MoAI.Infra.Feishu;
+using MoAI.Infra.Grafana;
+using MoAI.Infra.Kubernetes;
+using MoAI.Infra.Loki;
 using MoAI.Infra.MojiWeather;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.Paddleocr;
@@ -13,6 +18,7 @@ using MoAI.Infra.Prometheus;
 using MoAI.Infra.Put;
 using MoAI.Infra.Tempo;
 using MoAI.Infra.WeixinWork;
+using MoAI.Infra.Zabbix;
 using Refit;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -119,5 +125,56 @@ public class InfraExternalHttpModule : IModule
         context.Services.AddRefitClient<ITempoClient>(settings)
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddHttpClient(ZabbixRpcClient.HttpClientName)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddTransient<IZabbixClient, ZabbixRpcClient>();
+
+        context.Services.AddHttpClient(GrafanaClient.HttpClientName)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddTransient<IGrafanaClient, GrafanaClient>();
+
+        // 钉钉/企业微信群机器人服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var dingTalkRobotEndpoint = context.Configuration["MoAI:DingTalk:RobotEndpoint"];
+        context.Services.AddRefitClient<IDingTalkRobotClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(dingTalkRobotEndpoint) ? "https://oapi.dingtalk.com" : dingTalkRobotEndpoint))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        var weixinWorkRobotEndpoint = context.Configuration["MoAI:WeixinWork:RobotEndpoint"];
+        context.Services.AddRefitClient<IWeixinWorkRobotClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(weixinWorkRobotEndpoint) ? "https://qyapi.weixin.qq.com" : weixinWorkRobotEndpoint))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        // 智能运维观测/告警服务（Alertmanager / Loki / Kubernetes）：地址来自动态插件实例配置，
+        // 且需要支持子路径部署，走 IHttpClientFactory 具名客户端由插件手工拼端点.
+        context.Services.AddHttpClient(AlertmanagerClient.HttpClientName)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddTransient<IAlertmanagerClient, AlertmanagerClient>();
+
+        context.Services.AddHttpClient(LokiClient.HttpClientName)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddTransient<ILokiClient, LokiClient>();
+
+        context.Services.AddHttpClient(KubernetesClient.HttpClientName)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddTransient<IKubernetesClient, KubernetesClient>();
+
+        context.Services.AddHttpClient(ClickStackApiClient.HttpClientName)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        context.Services.AddTransient<IClickStackClient, ClickStackApiClient>();
     }
 }

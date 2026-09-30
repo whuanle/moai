@@ -52,7 +52,7 @@ ui/
     ├── store/
     │   └── app.ts            # zustand store（theme/locale/serverInfo/userInfo）
     ├── auth/
-    │   └── RequireAuth.tsx   # 路由守卫 + 定时 token 续期
+    │   └── RequireAuth.tsx   # 路由守卫 + 定时 token 续期 + 进入时重取用户资料
     ├── providers/
     │   └── AppProviders.tsx  # ConfigProvider + antd App 编排
     ├── layouts/
@@ -160,7 +160,7 @@ function getServerUrl(): string {
 
 `src/auth/RequireAuth.tsx`：
 
-- 页面打开时执行一次 `checkToken()`：过期即刷新，刷新失败则清空登录态并跳转 `/login`。
+- 页面打开时执行一次 `checkToken()`：过期即刷新，刷新失败则清空登录态并跳转 `/login`；通过后调 `refreshUserProfile()` 重取用户资料（角色/头像/昵称以服务端为准，失败沿用本地快照）。
 - 每 60 秒执行一次 `checkToken()`，保持 token 新鲜；失败同样跳转 `/login`。
 - 检查期间显示加载态。
 

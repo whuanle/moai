@@ -10,6 +10,7 @@
 | @FE-AUTH-S20 | [local-dev/user-management-e2e.mjs](../../../../local-dev/user-management-e2e.mjs)（脚本以与前端一致的 JSEncrypt PKCS1 加密走登录/注册/重置链路，真实 HTTP） | PASS 34/34（2026-09-02） |
 | @FE-AUTH-S6（后端裁决段） | 同上脚本注册弱密码用例（400） | PASS（2026-09-02，随 34/34） |
 | @FE-AUTH-S8 ~ @FE-AUTH-S11 | `ui/src/auth/RequireAuth.tsx` + `ui/src/utils/jwt.ts` 代码走查（宽限 60s、checkToken 三分支、60s 周期） | PASS（2026-09-01，代码级） |
+| @FE-AUTH-S22 ~ @FE-AUTH-S23 | 浏览器走查（Playwright/Edge）：admin 登录后 store 即含 isAdmin/isRoot 且管理菜单出现；篡改 localStorage 快照（isAdmin=false/nickName=stale-name）后刷新 → 服务端资料校正回来；typecheck/lint 全绿 | PASS（2026-09-29，走查） |
 | @FE-AUTH-S12 ~ @FE-AUTH-S19 | `ui/src/pages/auth/OAuthLogin.tsx` + `ui/src/utils/oauth.ts` 走查（bindMode/未绑定/缺参/StrictMode ref） | PASS（2026-09-01，代码级） |
 | 公开路由可达性（支撑 S1/S5/S12） | `ui/src/router/index.tsx` 走查：/login、/register、/oauth_login 顶层公开；/ 由 RequireAuth 包裹 | PASS（2026-09-01，走查） |
 | @FE-AUTH-S1 ~ S5、S7、S21 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)） | PASS（2026-09-01） |
@@ -17,7 +18,7 @@
 ## 回归命令
 
 ```bash
-cd ui && npm run typecheck && npm run lint && npm run test   # 三件套（2026-09-01 实测 42/42）
+cd ui && npm run typecheck && npm run lint && npm run test   # 三件套（2026-09-29 实测 446/446）
 node local-dev/user-management-e2e.mjs                       # 需后端运行于 :5210（2026-09-02 实测 34/34）
 ```
 
