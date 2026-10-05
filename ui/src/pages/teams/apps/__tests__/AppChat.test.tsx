@@ -53,7 +53,7 @@ function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/team/3/app/a1/chat']}>
       <Routes>
-        <Route path="/team/:teamId/app/:appId/chat" element={<AppChat />} />
+        <Route path="/team/:teamId/app/:appId/chat/:sessionId?" element={<AppChat />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -390,6 +390,12 @@ describe('AppChat（Agent 应用对话页）', () => {
     fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '北京天气如何并算一道题' } })
     fireEvent.click(screen.getByRole('button', { name: '发送' }))
 
+    await waitFor(() => {
+      // 已完成工具默认收缩为折叠组摘要行
+      expect(screen.getByRole('button', { name: /已执行 2 次工具/ })).toBeInTheDocument()
+    })
+    // 展开折叠组后可见明细行
+    fireEvent.click(screen.getByRole('button', { name: /已执行 2 次工具/ }))
     await waitFor(() => {
       expect(screen.getByText('weather')).toBeInTheDocument()
       expect(screen.getByText('sandbox_run_code')).toBeInTheDocument()

@@ -56,8 +56,16 @@ public class WorkflowWikiSearchClient : IWorkflowWikiSearchClient
             DocumentId = x.DocumentId,
             DocumentName = x.DocumentName,
             ChunkId = x.ChunkId,
+            ChunkIndex = x.ChunkIndex,
+            DocumentChunkCount = x.DocumentChunkCount,
             Content = x.Content,
             Score = x.Score,
+            RerankScore = x.RerankScore,
+            Context = x.Context.Select(c => new WorkflowWikiSearchContextChunk
+            {
+                ChunkIndex = c.ChunkIndex,
+                Content = c.Content,
+            }).ToList(),
         }).ToList();
     }
 }

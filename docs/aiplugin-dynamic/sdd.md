@@ -39,7 +39,10 @@ src/aiplugin/
 
 ui/src/
 ├── api/plugin.ts                                    +getDynamicTemplates,+saveDynamicPlugin,+deleteDynamicPlugin,+updatePluginAvatar
-└── pages/plugins/DynamicPluginPanel.tsx              实例列表 + 新建/编辑弹窗（Monaco 配置 + 头像上传）+ 运行 + 列表头像展示
+└── pages/plugins/
+    ├── DynamicPluginPanel.tsx                        实例列表 + 运行 + 授权 + 新建/编辑（共享模态）+ 列表头像展示
+    ├── PluginTemplates.tsx                           模板列表页（系统/团队双模式：卡片实例数 + 卡片「新建」）
+    └── components/DynamicPluginInstanceModal.tsx     系统/团队共用创建/编辑模态（kg 绑定预填、头像上传随 scope 保留）
 ```
 
 三层依赖：`Api → Core → Shared`；Core 增 `IDynamicInstanceResolver`（供 Run 解析）。Api 引用 `MoAI.Account.Shared`、`MoAI.AIPlugin.Shared`。
@@ -74,7 +77,7 @@ ui/src/
 5. **编辑不可改实例 key**：更新只改 `templeteKey/config/title/description/classifyId`；实例 key 作为主键定位。
 6. **分类校验**：`classifyId` 非 0 需在 `classify` 表存在且 `Type=plugin`，否则 400。
 7. **删除**：软删除 `plugin_dynamic` 与该实例关联的 `plugin` 行（`IsDeleted=1`）。
-8. **前端**：动态 Tab 用 `DynamicPluginPanel`；新建/编辑弹窗内含 Monaco 配置编辑器；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。i18n zh/en 同步。
+8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 全站、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
 9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
 
 ## 内置动态模板

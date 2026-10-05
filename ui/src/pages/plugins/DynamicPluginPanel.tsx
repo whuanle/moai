@@ -8,9 +8,8 @@ import {
   ReloadOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography , theme } from 'antd'
+import { Button, Popconfirm, Space, Tag, Tooltip, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
-import Editor from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { classifyLabel, type PluginClassify } from '@/api/classify'
@@ -21,7 +20,8 @@ import {
   type DynamicPluginTemplate,
 } from '@/api/plugin'
 import { DataTable, feedback } from '@/design-system'
-import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
+import { PluginAvatar } from './components/PluginAvatarUpload'
+import { DynamicPluginInstanceModal } from './components/DynamicPluginInstanceModal'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
 import { formatDateTime } from '@/utils/datetime'
@@ -29,15 +29,6 @@ import { formatDateTime } from '@/utils/datetime'
 
 interface DynamicPluginPanelProps {
   classifies: PluginClassify[]
-}
-
-interface DynamicFormValues {
-  pluginKey: string
-  templeteKey?: string
-  title: string
-  description?: string
-  classifyId?: number
-  config: string
 }
 
 export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
@@ -48,12 +39,10 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   const [templates, setTemplates] = useState<DynamicPluginTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState<DynamicPluginManageItem | null>(null)
   const [drawerTarget, setDrawerTarget] = useState<DynamicPluginManageItem | null>(null)
   const [authPlugin, setAuthPlugin] = useState<DynamicPluginManageItem | null>(null)
   const [filter, setFilter] = useState<ClassifyFilter>('all')
-  const [form] = Form.useForm<DynamicFormValues>()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -75,61 +64,19 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
     void load()
   }, [load])
 
-  const reset = () => {
-    setEditing(null)
-    form.resetFields()
-  }
-
   const openCreate = () => {
-    reset()
+    setEditing(null)
     setModalOpen(true)
   }
 
   const openEdit = (record: DynamicPluginManageItem) => {
     setEditing(record)
-    form.setFieldsValue({
-      pluginKey: record.pluginName ?? '',
-      templeteKey: record.templeteKey ?? undefined,
-      title: record.title ?? '',
-      description: record.description ?? '',
-      classifyId: record.classifyId || undefined,
-      config: record.config ?? '{}',
-    })
     setModalOpen(true)
   }
 
-  const isDuplicateKey = (pluginKey: string) => items.some((i) => i.pluginName === pluginKey)
-
-  const handleSubmit = async () => {
-    const values = await form.validateFields()
-    const pluginKey = (values.pluginKey ?? '').trim()
-    const templeteKey = editing ? editing.templeteKey : values.templeteKey
-    if (!pluginKey || !templeteKey) return
-
-    if (!editing && isDuplicateKey(pluginKey)) {
-      feedback.error(t('plugins.dynamicKeyExists'))
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      await pluginApi.saveDynamicPlugin({
-        pluginKey,
-        templeteKey,
-        title: values.title,
-        description: values.description ?? '',
-        classifyId: values.classifyId ?? 0,
-        config: values.config ?? '{}',
-      })
-      feedback.success(t('plugins.updateSuccess'))
-      reset()
-      setModalOpen(false)
-      void load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSubmitting(false)
-    }
+  const closeModal = () => {
+    setEditing(null)
+    setModalOpen(false)
   }
 
   const handleDelete = async (record: DynamicPluginManageItem) => {
@@ -138,7 +85,7 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
     try {
       await pluginApi.deleteDynamicPlugin(pluginKey)
       feedback.success(t('plugins.deletePluginSuccess'))
-      if (editing?.pluginName === pluginKey) reset()
+      if (editing?.pluginName === pluginKey) setEditing(null)
       void load()
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -306,88 +253,16 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
         onClose={() => setAuthPlugin(null)}
       />
 
-      <Modal
+      <DynamicPluginInstanceModal
         open={modalOpen}
-        title={editing ? t('plugins.editDynamicInstance') : t('plugins.createDynamicInstance')}
-        onCancel={() => {
-          reset()
-          setModalOpen(false)
-        }}
-        onOk={handleSubmit}
-        okText={t('plugins.save')}
-        confirmLoading={submitting}
-        maskClosable={false}
-        destroyOnClose
-        width={640}
-      >
-        <Form form={form} layout="vertical">
-          {editing && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <PluginAvatarUpload
-                pluginId={editing.id ?? ''}
-                objectKey={editing.avatarPath}
-                title={editing.title}
-                onChanged={load}
-              />
-              <Typography.Text type="secondary">{t('plugins.avatarTip')}</Typography.Text>
-            </div>
-          )}
-          <Form.Item
-            name="pluginKey"
-            label={t('plugins.pluginKey')}
-            rules={[
-              { required: true, message: t('plugins.pluginKeyRequired') },
-              {
-                pattern: /^[a-z_][a-z0-9_]*$/,
-                message: t('plugins.pluginKeyRule'),
-              },
-              { max: 30, message: t('plugins.pluginKeyMax') },
-            ]}
-          >
-            <Input disabled={Boolean(editing)} maxLength={30} placeholder={t('plugins.pluginKeyPlaceholder')} />
-          </Form.Item>
-          <Form.Item
-            name="templeteKey"
-            label={t('plugins.dynamicTemplate')}
-            rules={[{ required: true, message: t('plugins.dynamicTemplateRequired') }]}
-          >
-            <Select
-              disabled={Boolean(editing)}
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              placeholder={t('plugins.dynamicTemplatePlaceholder')}
-              options={templates.map((tp) => ({ value: tp.key, label: `${tp.name} (${tp.key})` }))}
-              onChange={(v) => {
-                const tp = templates.find((x) => x.key === v)
-                if (tp) form.setFieldValue('config', tp.configExample ?? '{}')
-              }}
-            />
-          </Form.Item>
-          <Form.Item name="title" label={t('plugins.formPluginTitle')} rules={[{ required: true, message: t('plugins.pluginTitleRequired') }]}>
-            <Input maxLength={30} />
-          </Form.Item>
-          <Form.Item name="description" label={t('plugins.formDescription')}>
-            <Input.TextArea maxLength={255} />
-          </Form.Item>
-          <Form.Item name="classifyId" label={t('plugins.formClassify')}>
-            <Select
-              allowClear
-              placeholder={t('plugins.formClassifyPlaceholder')}
-              options={classifies.map((c) => ({ value: c.classifyId, label: classifyLabel(c) }))}
-            />
-          </Form.Item>
-          <Form.Item name="config" label={t('plugins.config')} rules={[{ required: true, message: t('plugins.configRequired') }]}>
-            <Editor
-              height="200px"
-              language="json"
-              value={form.getFieldValue('config') ?? '{}'}
-              onChange={(v) => form.setFieldValue('config', v ?? '{}')}
-              options={{ minimap: { enabled: false }, fontSize: 14 }}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+        scope="system"
+        templates={templates}
+        classifies={classifies}
+        existingKeys={items.map((i) => i.pluginName ?? '').filter(Boolean)}
+        editing={editing}
+        onSaved={load}
+        onClose={closeModal}
+      />
     </>
   )
 }

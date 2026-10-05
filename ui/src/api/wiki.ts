@@ -405,15 +405,29 @@ export async function getWikiModelOptions(teamId: number): Promise<WikiModelOpti
 
 // ==================== 召回测试 ====================
 
+export interface WikiRecallContextChunk {
+  /** 切片在文档中的序号（从 0 开始） */
+  chunkIndex?: number | null
+  content?: string | null
+}
+
 export interface WikiRecallTestHit {
   documentId?: number | null
   documentName?: string | null
   chunkId?: string | null
   /** 0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段 */
   metadataType?: number | null
+  /** 切片在文档中的序号（从 0 开始） */
+  chunkIndex?: number | null
+  /** 文档切片总数 */
+  documentChunkCount?: number | null
   content?: string | null
   /** 相似度得分（越大越相似） */
   score?: number | null
+  /** 重排序得分（配置了重排序模型且重排成功时才有值） */
+  rerankScore?: number | null
+  /** 相邻上下文片段（命中片段的前一个与后一个，已按全文去重） */
+  context?: WikiRecallContextChunk[] | null
 }
 
 export interface WikiRecallTestResult {
@@ -461,8 +475,15 @@ export async function recallWikiTest(wikiId: number, payload: WikiRecallTestPayl
       documentName: item.documentName,
       chunkId: item.chunkId,
       metadataType: item.metadataType,
+      chunkIndex: item.chunkIndex,
+      documentChunkCount: item.documentChunkCount,
       content: item.content,
       score: item.score,
+      rerankScore: item.rerankScore,
+      context: (item.context ?? []).map((chunk) => ({
+        chunkIndex: chunk.chunkIndex,
+        content: chunk.content,
+      })),
     })),
   }
 }

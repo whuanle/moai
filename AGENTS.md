@@ -84,9 +84,9 @@ node local-dev/user-management-e2e.mjs   # UM 37
 node local-dev/team-e2e.mjs              # TM 47
 node local-dev/wiki-e2e.mjs              # WK 32
 node local-dev/wiki-workflow-e2e.mjs     # WK 27（默认工作流配置 + 多选批量工作流：切割/生成元数据/向量化三步自由组合与单步执行、错误隔离与参数校验；依赖模型渠道的场景在环境无可用模型时自动跳过）
-node local-dev/wiki-recall-e2e.mjs      # WK 30（召回测试：参数校验/团队门禁 + 向量召回/文档范围过滤/相似度阈值 + AI 优化问题与生成回答；内置本地 OpenAI 兼容桩模型，无需真实模型渠道）
+node local-dev/wiki-recall-e2e.mjs      # WK 47（召回测试：参数校验/团队门禁 + 向量召回/文档范围过滤/相似度阈值 + AI 优化问题与生成回答 + 重排序接入与渠道故障降级 + 相邻片段上下文去重 @WK-S42；内置本地 OpenAI 兼容桩模型，无需真实模型渠道）
 node local-dev/wiki-source-e2e.mjs      # WS 66（外部源：权限与校验 + 爬虫真实抓取全链路 + 增量哈希比对 + 父页无变化仍发现新页面 + 强制全量 + 文档分页筛选 + 更新挡板/cron 语义 + 停用后同步 409 + 飞书源假凭证创建兜底 + 删除不删已入库文档；自带本地站点桩，无需外网）
-node local-dev/wiki-mcp-e2e.mjs         # WM 30（知识库 MCP 服务器：接入 key 鉴权/wiki_mcp 范围/wikiId 归属门禁 + 三只读工具（知识库列表/文件搜索/向量召回）+ 无状态协议行为；内置本地桩 embedding）
+node local-dev/wiki-mcp-e2e.mjs         # WM 33（知识库 MCP 服务器：接入 key 鉴权/wiki_mcp 范围/wikiId 归属门禁 + 三只读工具（知识库列表/文件搜索/向量召回）+ 切片序号与相邻上下文去重 @WM-S7 + 无状态协议行为；内置本地桩 embedding）
 node local-dev/kg-text2cypher-e2e.mjs    # KT（知识图谱 Text2Cypher：实例绑定校验/schema 自描述/只读守卫/$kgId 隔离/行数截断/接入图；依赖 Memgraph，需含 kg_cypher_query 的新构建）
 node local-dev/kg-search-e2e.mjs         # KGS 46（知识图谱图检索：向量化同步/语义检索/绑定校验/工作流节点/召回测试；本地桩渠道，需含 SP-A 的新构建）
 node local-dev/kg-external-e2e.mjs       # KX 101（知识图谱外部接口：应用 token/团队隔离/类型节点边 CRUD/批量整批拒绝/kg_read·kg_write 分档/批量导入（类型名引用+业务 key 幂等 upsert+逐条失败报告）/validateOnly 预检/按 key 同步闭环（keys/list+edges/batch-delete）；依赖 Memgraph）
@@ -94,7 +94,7 @@ node local-dev/kg-mcp-e2e.mjs            # KGM 35（知识图谱 MCP：kg_mcp �
 node local-dev/kg-import-e2e.mjs         # KG 20（知识图谱导入：AI 导入桩模型全链路（KG-S26）+ JSON 结构化导入（KG-S29：类型名引用/业务 key upsert/预检/逐条报告/幂等/超限/疑似重复检测）；依赖 Memgraph）
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
 node local-dev/team-plugin-e2e.mjs       # TP 47（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显 + 系统插件 key 全局保留与授权团队可用）
-node local-dev/app-e2e.mjs               # AP 29
+node local-dev/app-e2e.mjs               # AP 178（含 AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段）
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
 node local-dev/settings-logo-e2e.mjs    # SET 18（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认）

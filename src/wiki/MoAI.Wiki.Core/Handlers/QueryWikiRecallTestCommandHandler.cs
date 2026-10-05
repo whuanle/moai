@@ -138,8 +138,12 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
                 DocumentName = x.DocumentName,
                 ChunkId = x.ChunkId,
                 MetadataType = x.MetadataType,
+                ChunkIndex = x.ChunkIndex,
+                DocumentChunkCount = x.DocumentChunkCount,
                 Content = x.Content,
                 Score = x.Score ?? 0,
+                RerankScore = x.RerankScore,
+                Context = x.Context,
             }).ToList(),
         };
     }

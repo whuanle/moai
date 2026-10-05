@@ -11,8 +11,9 @@ const { Content } = Layout
 // 不渲染一级侧边栏：这些页面自带二级导航与返回入口，内容区占满全宽
 const SECONDARY_NAV_PATH = /^\/team\/[^/]+/
 // 流程设计器 design 分区：URL 即可判定真全屏（去掉全局内边距），与 FastGPT 等编排器一致；
-// 流程应用的调试/配置/运行历史分区与 Agent 应用分区同路径，URL 无法区分，由页面经 useShellStore 标记
-const FULLSCREEN_PATH = /\/app\/[^/]+\/design\/?$/
+// 应用对话 chat 分区同为整页沉浸式布局（可带会话段 /chat/:sessionId）；流程应用的调试/配置/运行历史分区
+// 与 Agent 应用分区同路径，URL 无法区分，由页面经 useShellStore 标记
+const FULLSCREEN_PATH = /\/app\/[^/]+\/(design|chat)(\/[^/]+)?\/?$/
 
 export function AppLayout() {
   const location = useLocation()

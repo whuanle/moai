@@ -100,6 +100,9 @@ node local-dev/moji-weather-e2e.mjs
 | 实例列表与模板加载 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS 3/3（2026-09-03） |
 | 新建实例弹窗 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS（2026-09-03） |
 | 删除实例 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS（2026-09-03） |
+| @DYN-S67 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（系统/团队双模式卡片与实例数、空态、刷新、返回、非 admin 重定向） | PASS 10/10（2026-10-05） |
+| @DYN-S68 | ui/src/pages/plugins/__tests__/DynamicPluginInstanceModal.test.tsx（预选模板/双 scope 提交分流/实例 key 查重拦截/编辑锁定）＋ PluginTemplates.test.tsx 卡片新建两例 | PASS 4/4＋（2026-10-05） |
+| @DYN-S69 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（团队自有计数排除系统实例、canManage=false 重定向团队插件） | PASS（含上两行）（2026-10-05） |
 
 > 博查两轮（全网搜索、AI 搜索）与墨迹天气轮**均无前端改动**：新模板由后端注册表自动进入模板下拉与运行抽屉，无需改 `DynamicPluginPanel`，也无需 `npm run syncapi`。
 
@@ -233,3 +236,9 @@ node local-dev/clickstack-e2e.mjs                                   # ClickStack
 - **实踩坑**：①保存实例不触发 `InitAsync`（凭证/BaseUrl 校验都在运行态，同 Zabbix 口径），非法协议用例从「保存被拒」改为「保存成功+运行被拒」；②场景号 @DYN-S58~S63 被并行 P0 轮占号，改文档前重读最新发现后改用 @DYN-S64~S66（铁律再次生效）；③并行 P0 轮 `LokiTimeHelper`（乘法优先级把 `.ToString()` 绑到字面量）与 `AlertmanagerQueryPlugin`（status 对象误当字符串取）两处编译错误由本轮顺手修复以恢复共享工作区可构建。
 - 语义备忘：chart 契约要求 epoch 毫秒且时间必填（与 search 的 ISO 可省不同），插件侧统一补缺省窗（chart=1h、search=15min）；服务端 rows 只给本次行数，Truncated 语义为「达到上限即可能还有更多」。
 - 真实实例联调（2026-09-29）：用户接入 192.168.50.199:28000 实测——28000 确认为对外 API server（`GET /api/v2/sources`、`POST /api/v2/charts/series` 无 Key 时均 401「Unauthorized」，即路由存在的正常形态；28080 为 UI，404 会剥掉 `/api` 前缀），但 `POST /api/v2/search` 返回 Express「Cannot POST」404：该 2026-07 前后构建的 `hyperdx:2` 镜像尚无 Search 端点（/api/v1/search 等变体亦 404，无 openapi.json 可查）。处置：升级 `clickstack-app` 镜像获得 Search，过渡期 sources/chart 两模式可用；插件 404 诊断据此增强（Express「Cannot …」形态→「端点不存在/版本过旧/BaseUrl 指向 UI」专属提示），增强后回归 239/239 + E2E 20/20 保持全绿。
+
+### 2026-10-05 模板列表页（实例数与卡片新建）
+
+- `cd ui && npm run typecheck` → 0 error；`npm run lint` → 0 error（9 警告均为既有文件）；`npm run test` → **455/455**（新增 `PluginTemplates.test.tsx` 10 例 + `DynamicPluginInstanceModal.test.tsx` 4 例；`DynamicPluginPanel.test.tsx`/`TeamPlugins.test.tsx` 适配共享模态）；`npm run build` → ✓。
+- 实现要点：**零后端改动、零 syncapi**——实例数由前端聚合（系统侧 `GET /ai/plugin/manage/list?kind=dynamic` 全站平铺按 `templeteKey` 计数；团队侧 `GET /team/{id}/plugin/list` 过滤 `kind=dynamic && isTeamOwned`）；三处入口（动态 Tab 原有 + 静态/系统插件 Tab + 团队动态面板）指向 `/plugin/templates`，团队模式带 `?teamId=`；系统/团队两份内联创建表单合并为共享 `DynamicPluginInstanceModal`（`kg_cypher_query` 绑定预填与头像上传随 scope 保留）。
+- **实踩坑**：①`feedback` 在 vitest 未注册 antd App 实例时是 no-op（仅 console.warn）→ 查重拦截用例断言「不调保存」的行为而非消息文案；②`vi.mock` 工厂必须覆盖被测模块图引用的**全部**具名导出（共享模态引入 `classifyLabel` 后，旧 classify mock 缺该导出直接报错）；③antd Modal `onOk` 内 `validateFields()` 拒绝需自捕获；创建分支 config 补默认 `'{}'`，顺手修掉「Monaco 显示 `{}` 但表单值实为空导致校验拦截」的隐性怪癖。

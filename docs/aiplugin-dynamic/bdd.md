@@ -603,3 +603,27 @@
     When AggFn=sum 缺 Field、Granularity/AggFn 非法、缺 SourceId 分别运行
     Then 均被 400 拒绝并给出可读提示
 ```
+
+## Feature: 模板列表页（实例数与卡片新建）
+
+```gherkin
+  @DYN-S67 @auto:vitest
+  Scenario: 模板列表入口与卡片实例数
+    Given 动态插件页、系统插件页与团队插件页的工具栏均提供「模板列表」入口
+    When 注册表存在动态插件模板且部分模板已创建实例
+    Then 模板列表页以卡片展示全部动态插件模板的 key、名称与描述
+    And 每张卡片展示该模板已有实例数（系统侧为全站实例，团队侧仅本团队自有实例）
+
+  @DYN-S68 @auto:vitest
+  Scenario: 卡片「新建」创建实例
+    Given 用户在模板列表页点击某张模板卡片的「新建」
+    When 弹出创建实例模态，已预选该模板并预填配置示例
+    Then 填入实例 Key 与标题提交后，按当前上下文保存实例（管理员建系统实例、团队可管理成员建团队实例）
+    And 保存成功后实例数刷新
+
+  @DYN-S69 @auto:vitest
+  Scenario: 团队模板列表门禁
+    Given 团队模式模板列表按本团队自有实例计数
+    When 不可管理成员或非成员访问团队模板列表
+    Then 重定向回该团队插件分区
+```

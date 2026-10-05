@@ -2,8 +2,8 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)
 
-- 日期：2026-09-02（一期）/ 2026-09-07（重做：卡片聚合 + 公开开关 + 占位详情页）/ 2026-09-08（向量化设置）/ 2026-09-08（修：元数据/切片参数下沉到文档级）/ 2026-09-09（重排序模型设置）/ 2026-09-10（向量化只做向量化，元数据生成独立）/ 2026-09-21（移除公开概念 + 卡片统计）
-- 状态：知识库 CRUD、团队级 embedding 模型绑定、可选 rerank 模型绑定已实现；元数据生成模型在切片预览区独立选择，切片大小/重叠由切割步骤动态传入；公开概念已于 2026-09-21 整体移除
+- 日期：2026-09-02（一期）/ 2026-09-07（重做：卡片聚合 + 公开开关 + 占位详情页）/ 2026-09-08（向量化设置）/ 2026-09-08（修：元数据/切片参数下沉到文档级）/ 2026-09-09（重排序模型设置）/ 2026-09-10（向量化只做向量化，元数据生成独立）/ 2026-09-21（移除公开概念 + 卡片统计）/ 2026-10-05（rerank 接入召回 + 相邻上下文 + 片段获取工具 D36）
+- 状态：知识库 CRUD、团队级 embedding 模型绑定、可选 rerank 模型绑定**并已接入检索链路（重排 + 失败降级，D36）**已实现；元数据生成模型在切片预览区独立选择，切片大小/重叠由切割步骤动态传入；公开概念已于 2026-09-21 整体移除
 - 领域：`src/wiki`（Shared/Core/Api），前端 `ui/src/pages/wiki`
 
 ## 1. 目标
@@ -142,11 +142,12 @@
 - **D33** 爬虫与飞书的校验口径分离：`CreateWikiSourceCommand`/`UpdateWikiSourceCommand` 各自 `ValidateCrawler`/`ValidateFeishu`，**爬虫相关规则的 `When` 守卫一律判 `Crawler != null`**（而非 `SourceType == Crawler`），因为 Update 命令的 `SourceType` 是 `[JsonIgnore]` 且不可变更；`Crawler` 配置内的每一条规则都必须有守卫，否则非爬虫源提交会抛 `NullReferenceException`（2026-09-21 E2E 暴露并修正）。**仅当爬虫配置非空时才校验其字段**，同理飞书源更新不下发 `crawler`
 - **D34** 外部源前端权限取自 props 的初始角色并只接受后端 `myRole` 的升级：`WikiSources` 以 `myRole` prop 初始化 `role` 状态，避免接口返回前把管理按钮渲染成可点；`getWikiSources` 返回 `myRole` 时覆盖。**注意 antd 5.28 的 `Button` 用原生 `disabled` 属性表达禁用态，不再挂 `ant-btn-disabled` 类名**（前端断言需按属性判定）
 - **D35** 知识库 MCP 服务器（2026-09-26）：端点 `GET/POST /api/external/wiki/{wikiId}/mcp`（`MapWikiMcp` 挂载于宿主 Program.cs，`ModelContextProtocol[.AspNetCore] 0.6.0-preview.1` streamable HTTP）。**无状态模式**（`Stateless = true`）：不签发/不校验 Mcp-Session-Id、无会话表，每个 JSON-RPC 请求独立经 `ExternalAuthenticationMiddleware` 鉴权（须接入 key/应用 token、勾选 `wiki_mcp` scope、路由 wikiId 归属凭证团队；外部用户 token 拒绝；非 POST 按协议 405），鉴权上下文经 `HttpContext.Items` 传入工具。三个只读工具（snake_case 显式命名）：`list_knowledge_bases`（复用 `QueryExternalWikisCommand`）、`search_knowledge_base_files`（复用外部文档列表命令，支持关键字/分页）、`search_knowledge_base_recall`（新增 `QueryExternalWikiRecallCommand`，`IExternalWikiAuthorizer` + `IWikiSearchService.SearchInWikiAsync`，不做 AI 优化/回答）；工具参数可显式传 `wikiId`，缺省用路径 wikiId（路径仅作默认锚点，不做工具间隔离）。输出模型以 `JsonPropertyName` 固化字段名，`MetadataType` 映射为内容类型标签（source/outline/question/keyword/summary/aggregated）。**踩坑**：①SDK 把无默认值参数一律按必填，可选参数必须带 `= null`；②工具实例每次调用在请求 DI 作用域内构造，可安全注入 scoped 服务；③业务异常统一转 `McpException`（消息透传到 isError 结果，普通异常消息会被 SDK 泛化）
+- **D36** rerank 接入检索 + 相邻上下文 + 片段获取工具（2026-10-05）：①通用重排序客户端 `IRerankClient`（aichannel Shared 接口 + Core `RerankClient` 单例，复用模块 30s HttpClient）：OpenAI 协议族 `POST {BaseUrl}/rerank`（Cohere/Jina 风格 snake_case），响应兼容顶层 `results` 与 BoCha `data.results` 两种包装，非 2xx/超时/解析失败抛 BusinessException。②`WikiSearchService` 统一消费（召回测试/外部召回/MCP/应用工具/工作流节点自动生效）：`TryRerankAsync` 读 `wiki.RerankModelId`，模型缺失/未授权**静默跳过**，调用异常**catch 全部落 log warning 并保持向量序**（渠道故障不阻断检索）；多库版按各自库的 rerank 模型先重排再归并（排序键 `RerankScore ?? Score`），单次候选 >50 截断（供应商上限）。③相邻上下文：`FillChunkInfoAsync` 按命中 ChunkId 反查 `wiki_document_chunk_content.SliceOrder`（0 起）回填 `ChunkIndex/DocumentChunkCount`，邻居取 ±1 序号，**跨命中项按 chunkId 全局去重**（主命中优先，已作为主命中或他人邻居的片段不再重复输出；命中已覆盖全部切片时 context 为空属预期）；`WikiSearchHit` 扩展 `ChunkIndex/DocumentChunkCount/RerankScore/Context`，四路响应透传（召回测试/外部召回/MCP `WikiMcpRecallItem`/工作流节点 hits）。④AI 工具：`search_knowledge_base` 输出升级（documentId/chunkId/chunkIndex/totalChunks/score/rerankScore/content/context），新增 `get_knowledge_base_chunk`（`{documentId, chunkIndexes[]≤10}` → `GetDocumentChunksAsync`，校验文档属于绑定 wikiIds 否则 404），供模型在上下文不足时补取同文档其它片段；单测 `WikiAppToolProviderTests` 同步；前端召回测试展示序号/重排分/相邻上下文（i18n zh/en 同步）。**踩坑**：top ≥ 文档切片总数时全部切片皆为主命中，邻居按去重设计不会重复出现——E2E 上下文断言须用小 top（@WK-S42b 用 top=2）
 
 ## 7. 已知问题 / 下阶段
 
 - 内容/文档层：`wiki_document` 等实体已重做为文件接入模型（ObjectKey/FileName/向量化），相关 API 与前端已落地
 - 旧文本文档接口（`/documents`、`/document/{id}`）及前端文档页/编辑器已移除
 - `wiki-e2e.mjs` 覆盖知识库 CRUD + 文档 CRUD；`wiki-embedding-e2e.mjs` 覆盖 提取→切割→向量化（WK-S15/S16/S19/S21/S22）已加脚本，待后端可运行时联调
-- 文档操作页（提取/切割/切片预览/向量化）已落地；召回测试已落地（2026-09-21，`POST /wiki/{id}/recall-test` + 详情页召回测试 tab，证据 `local-dev/wiki-recall-e2e.mjs` PASS 30/0/0）；文档检索接口（供应用引用的独立查询端点）与 rerank 模型接入召回为下阶段工作（D16/D23）
+- 文档操作页（提取/切割/切片预览/向量化）已落地；召回测试已落地（2026-09-21，`POST /wiki/{id}/recall-test` + 详情页召回测试 tab，证据 `local-dev/wiki-recall-e2e.mjs` PASS 30/0/0）；rerank 模型已接入召回（2026-10-05，D36，含失败降级）；供应用引用的独立文档检索端点为下阶段工作（D23）
 - **D11/D12/D13** 抽取 → `wiki_document_content` → `wiki_document_chunk_content` → `wiki_embedding_{wikiId}` 的整条流水线已拆分为三步独立操作，抽取/切割在 `WikiDocumentProcessingService`，向量化在 `WikiEmbeddingService`

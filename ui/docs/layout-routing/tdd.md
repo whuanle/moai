@@ -13,7 +13,7 @@
 | @FE-LR-S5 ~ @FE-LR-S7 | curl 路由 HTTP 200（dev server :5199，Vite SPA 回退 index.html）：/login /register /oauth_login /design-system /dashboard /account /users /settings /oauthconnect /app 共 10 路由 | PASS 10/10（2026-09-01） |
 | @FE-LR-S1 ~ @FE-LR-S4 | @manual 代码走查：RequireAuth.tsx（无 token 同步 Navigate / mount 一次 + 60s 周期 / 失败清态跳转 / Spin）+ api/kiota.ts 401 拦截；认证语义见 [../../docs/auth-flow/](../../docs/auth-flow/tdd.md) | PASS（2026-09-01） |
 | @FE-LR-S8 ~ @FE-LR-S17 | @manual 浏览器走查（[SOP 第 3 节](./sop.md)） | PASS（2026-09-01，见 SOP 存档） |
-| @FE-LR-S22 | @manual 浏览器实测（dev :4000）：/team/1、/team/1/apps、/team/1/knowledge、/team/1/app/:id（应用设计）、/team/1/app/:id/chat（应用对话）均无一级侧边栏（展开/收起按钮 0 个），页面二级导航与返回入口正常 | PASS 5/5（2026-09-17） |
+| @FE-LR-S22 | @manual 浏览器实测（dev :4000）：/team/1、/team/1/apps、/team/1/knowledge、/team/1/app/:id（应用设计）、/team/1/app/:id/chat（应用对话）均无一级侧边栏（展开/收起按钮 0 个），页面二级导航与返回入口正常 | PASS 5/5（2026-09-17）；2026-10-05 复核 /chat 命中 FULLSCREEN_PATH 真全屏（Content padding 0），对话页满屏无四周留白 |
 | @FE-LR-S23 | @manual 浏览器实测：/team 列表与一级菜单页下一级侧边栏恢复展开（收起菜单按钮存在） | PASS（2026-09-17；2026-09-28 复核） |
 
 ## 回归命令

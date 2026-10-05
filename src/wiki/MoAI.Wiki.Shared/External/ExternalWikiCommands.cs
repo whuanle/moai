@@ -617,6 +617,16 @@ public class QueryExternalWikiRecallItem
     public int MetadataType { get; set; }
 
     /// <summary>
+    /// 切片在文档中的序号（从 0 开始）；未回填时为 null.
+    /// </summary>
+    public int? ChunkIndex { get; set; }
+
+    /// <summary>
+    /// 文档切片总数.
+    /// </summary>
+    public int? DocumentChunkCount { get; set; }
+
+    /// <summary>
     /// 切片内容.
     /// </summary>
     public string Content { get; set; } = default!;
@@ -625,6 +635,16 @@ public class QueryExternalWikiRecallItem
     /// 相似度得分（0-1，越大越相关）.
     /// </summary>
     public double Score { get; set; }
+
+    /// <summary>
+    /// 重排序得分（知识库配置了重排序模型且重排成功时才有值）.
+    /// </summary>
+    public double? RerankScore { get; set; }
+
+    /// <summary>
+    /// 相邻上下文片段（命中片段的前一个与后一个，已按全文去重）.
+    /// </summary>
+    public IReadOnlyList<WikiSearchContextChunk> Context { get; set; } = new List<WikiSearchContextChunk>();
 }
 
 /// <summary>

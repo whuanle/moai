@@ -122,7 +122,9 @@
 | @AP-S49 | AppInfoSection.test.tsx（信息分区回显/申请上架/保存/成员只读）+ AppWorkspace.test.tsx（Agent 菜单含 信息 项且位于 配置 之后、Member 可见）+ AppConfigSection.test.tsx（配置区不再含应用信息） | PASS 4/4、3/3、9/9（2026-09-19，全仓 vitest 352/352、typecheck 0、lint 0 error） |
 | @AP-S54 | app-e2e.mjs（AP-54a~i：发布快照/草稿隔离/重新发布生效/未发布实时） | PASS 130/130（2026-09-20） |
 | @AP-S55 | chat-attachment-e2e.mjs（CA-01~08：直传/提取/白名单/大小上限/目录越权/404/未登录） | PASS 12/12（2026-09-20） |
-| @AP-S56 | AppChat.test.tsx（附件上传提取拼接/图片不提取带 objectKey 裸 URL 块/输入卡图片缩略图与文档类型图标/气泡缩略图/处理中禁发） | PASS 17/17（2026-09-20 复跑，图片块格式随 @AP-S64 调整、chip 展示随 122 轮缩略图/类型图标调整；全仓 vitest 397/397、typecheck 0、lint 0 error；浏览器实测缩略图 32px/Word·Markdown 图标正常） |
+| @AP-S56 | AppChat.test.tsx（附件上传提取拼接/图片不提取带 objectKey 裸 URL 块/输入卡图片缩略图与文档类型图标/气泡缩略图/处理中禁发） | PASS 17/17（2026-09-20 复跑，图片块格式随 @AP-S64 调整、chip 展示随 122 轮缩略图/类型图标调整；全仓 vitest 397/397、typecheck 0、lint 0 error；浏览器实测缩略图 32px/Word·Markdown 图标正常）；2026-10-05 复跑 17/17 |
+| @AP-S50 @AP-S53 | 对话页满屏扁平布局（2026-10-05）：`app-chat.css` 去外框卡片/分组间水平分隔线/用户消息无气泡/工具调用行扁平化 + `AppLayout.tsx` FULLSCREEN_PATH 纳入 /chat + `ChatMessageList.tsx` 连续助手消息分组（单头像、组内无分隔线）；同日第二轮：历史 toolCalls 回放（`historyToolCalls.ts` 解析 + selectSession 保留）、工具折叠组（摘要行「已执行 N 次工具」，单条直出明细）、执行中/待审批工具行固定内容底部、「调用参数」收紧紧跟状态、i18n `toolCallCount`（zh/en）；同日第三轮：**会话路由同步**——路由 `chat/:sessionId?` + FULLSCREEN_PATH 兼容会话段 + AppChat URL 副作用（prev/active 双 ref 防重选竞态）；同日第四轮：**工具组默认收缩** + 回合间距 12px + 复制按钮绝对定位悬浮右上角（消除「已执行工具」上方空白）；typecheck 0、lint 0 error、teams/apps vitest 14 files 139/139；浏览器实测（:4000，应用 aa 真实沙箱对话）：刷新后各回合工具折叠组回放且默认收缩、点开正常、行内无右侧大片空白、整段会话收进一屏；点会话 URL 带 /chat/:id → 刷新恢复同一会话（侧栏高亮+消息完整）→ 新对话回 /chat 欢迎态 → 新会话首条消息 URL 即时更新且流式不断 | PASS |
+| @AP-S76 | 会话标题 AI 提炼（2026-10-05）：`AppChatFlushService` 注入 `IAiChatCompletionService`+`IAiModelResolver`，首轮落库用应用绑定对话模型提炼标题（限 12s、剔除附件标记块、失败回退原文截断）；`dotnet build` 0 error（AI.Core 无新警告）；独立实例（.builds/title-check :5150）+ 内嵌 OpenAI 兼容桩实测：无标题会话首轮对话后标题=桩提炼结果「网站分析咨询」≠ 提问原文，桩渠道/模型/应用/团队全链路 7/7 PASS（临时脚本已删） | PASS |
 | @AP-S57 | app-e2e.mjs（AP-57a~k：权限/保存回读/详情下发/规范化/条数与长度上限/不携带保持原值/空数组清空/发布快照） | PASS 141/141（2026-09-20） |
 | @AP-S58 | AppChat.test.tsx（欢迎态快捷输入展示、副标题移除、点击即发送）+ AppConfigSection.test.tsx（快捷输入编辑回显与提交） | PASS 14/14、10/10（2026-09-20，全仓 vitest 373/373、typecheck 0、lint 0 error） |
 | @AP-S59 | AppWorkspace.test.tsx（头部重新发布入口、确认后草稿上线并清除警告）+ AppConfigSection.test.tsx（警告条 action 重新发布） | PASS 4/4、11/11（2026-09-20，typecheck 0、lint 0 error） |
@@ -135,6 +137,7 @@
 | @AP-S66 | app-e2e.mjs（AP-60e~h：审批模式白名单插件直接执行决策 missing/非白名单沙箱挂起拒绝收敛/自动模式全放行/userconfig 下发自动放行工具名与沙箱前缀） | PASS 172/172（2026-09-20） |
 | @AP-S67 | AppConfigSection.test.tsx（审批策略区渲染回显、随保存提交并收敛为绑定插件子集） | PASS 14/14（2026-09-20） |
 | @AP-S68 | AppChat.test.tsx（策略自动放行的插件名与沙箱前缀工具不展示审批卡、不调决策接口） | PASS 17/17（2026-09-20） |
+| @AP-S75 | app-e2e.mjs（AP-61a~f：绑定知识库的 Agent 对话中 call_tool(search_knowledge_base) 返回片段序号/上下文 → call_tool(get_knowledge_base_chunk) 按 documentId/chunkIndex 补取片段并回显；不存在文档返回工具级错误说明）；配套 `WikiAppToolProviderTests`（[tests/MoAI.AI.Core.Tests](../../tests/MoAI.AI.Core.Tests/)，工具 8 例） | PASS 178/178 + AI.Core 77/77（2026-10-05；本地桩模型状态机驱动，场景见 [../wiki/bdd.md](../wiki/bdd.md) @AP-S75、设计见 [../wiki/sdd.md](../wiki/sdd.md) D36） |
 | @EA-S1 | external-app-e2e.mjs（EA-01、EA-02） | PASS 28/28（2026-09-14） |
 | @EA-S2 | external-app-e2e.mjs（EA-03~EA-06） | PASS（2026-09-14） |
 | @EA-S3 | external-app-e2e.mjs（EA-07） | PASS（2026-09-14） |

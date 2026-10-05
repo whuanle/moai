@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { TeamPlugins } from '../TeamPlugins'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { useAppStore } from '@/store/app'
@@ -21,6 +22,7 @@ vi.mock('@/api/team-plugin', () => ({
 
 vi.mock('@/api/classify', () => ({
   classifyApi: { getPluginClassifies: vi.fn().mockResolvedValue([]) },
+  classifyLabel: (c: { name?: string | null }) => c.name ?? '',
 }))
 
 const CUSTOM_ITEM = {
@@ -71,8 +73,17 @@ describe('TeamPlugins', () => {
     })
   })
 
+  function renderTeamPlugins() {
+    // TeamDynamicPluginPanel 的「模板列表」入口依赖 useNavigate
+    return render(
+      <MemoryRouter>
+        <TeamPlugins teamId={7} />
+      </MemoryRouter>,
+    )
+  }
+
   it('分为自定义与动态两个 tab', async () => {
-    render(<TeamPlugins teamId={7} />)
+    renderTeamPlugins()
 
     await waitFor(() => {
       expect(getTeamPlugins).toHaveBeenCalledWith(7)
@@ -83,7 +94,7 @@ describe('TeamPlugins', () => {
 
   it('自定义 tab 展示自定义插件，动态 tab 展示动态实例', async () => {
     const user = userEvent.setup()
-    render(<TeamPlugins teamId={7} />)
+    renderTeamPlugins()
 
     expect(await screen.findByText('weather')).toBeInTheDocument()
     expect(screen.queryByText('greet')).not.toBeInTheDocument()
@@ -93,7 +104,7 @@ describe('TeamPlugins', () => {
   })
 
   it('可管理时展示导入/新建入口', async () => {
-    render(<TeamPlugins teamId={7} />)
+    renderTeamPlugins()
     await screen.findByText('weather')
 
     expect(screen.getByRole('button', { name: /导入 MCP/ })).toBeInTheDocument()

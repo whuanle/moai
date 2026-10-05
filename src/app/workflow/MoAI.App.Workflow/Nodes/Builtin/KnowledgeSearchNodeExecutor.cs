@@ -9,7 +9,7 @@ namespace MoAI.App.Workflow.Nodes.Builtin;
 /// 配置：{ "wikiId": 1, "topK": 5 }（wikiId 为单个知识库 id，topK 为召回条数，默认 5、上限 50）.
 /// 输入：query（必填，检索查询文本）；wikiId（可选，变量绑定的知识库 id，运行时优先于配置的静态知识库）.
 /// 兼容旧版复数形式 wikiIds（输入/配置均可，数组或逗号分隔）.
-/// 输出：{ query, count, hits: [{wikiId, documentId, documentName, chunkId, content, score}], contents: [string], text }.
+/// 输出：{ query, count, hits: [{wikiId, documentId, documentName, chunkId, chunkIndex, documentChunkCount, content, score, rerankScore, context}], contents: [string], text }.
 /// </summary>
 public class KnowledgeSearchNodeExecutor : INodeExecutor
 {
@@ -66,14 +66,28 @@ public class KnowledgeSearchNodeExecutor : INodeExecutor
             var textBuilder = new System.Text.StringBuilder();
             foreach (var hit in hits)
             {
+                var contextArray = new JsonArray();
+                foreach (var neighbor in hit.Context)
+                {
+                    contextArray.Add(new JsonObject
+                    {
+                        ["chunkIndex"] = neighbor.ChunkIndex,
+                        ["content"] = neighbor.Content,
+                    });
+                }
+
                 hitsArray.Add(new JsonObject
                 {
                     ["wikiId"] = hit.WikiId,
                     ["documentId"] = hit.DocumentId,
                     ["documentName"] = hit.DocumentName,
                     ["chunkId"] = hit.ChunkId,
+                    ["chunkIndex"] = hit.ChunkIndex.HasValue ? JsonValue.Create(hit.ChunkIndex.Value) : null,
+                    ["documentChunkCount"] = hit.DocumentChunkCount.HasValue ? JsonValue.Create(hit.DocumentChunkCount.Value) : null,
                     ["content"] = hit.Content,
                     ["score"] = hit.Score.HasValue ? JsonValue.Create(hit.Score.Value) : null,
+                    ["rerankScore"] = hit.RerankScore.HasValue ? JsonValue.Create(hit.RerankScore.Value) : null,
+                    ["context"] = contextArray,
                 });
                 contentsArray.Add(hit.Content);
                 if (textBuilder.Length > 0)

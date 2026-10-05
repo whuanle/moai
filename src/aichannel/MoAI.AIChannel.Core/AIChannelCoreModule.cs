@@ -23,6 +23,7 @@ public class AIChannelCoreModule : IModule
         context.Services.AddSingleton<AIClientProvider>();
         context.Services.AddSingleton<IEmbeddingGeneratorProvider>(sp => sp.GetRequiredService<AIClientProvider>());
         context.Services.AddSingleton<IChatClientProvider>(sp => sp.GetRequiredService<AIClientProvider>());
+        context.Services.AddSingleton<IRerankClient, RerankClient>();
         context.Services.AddSingleton<IAiChatCompletionService, AIChatCompletionService>();
         context.Services.AddScoped<IAiModelUsageCounter, AiModelUsageCounter>();
         context.Services.AddScoped<ICounterActivatorJob, AiModelUsageCounterActivatorJob>();

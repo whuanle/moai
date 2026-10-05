@@ -22,7 +22,8 @@
 
 ## AppLayout / AppSider
 
-- 双栏：外层 Layout(minHeight:100vh) → AppSider + 内层 Content(padding:24, Outlet)。
+- 双栏：外层 Layout(minHeight:100vh) → AppSider + 内层 Content(Outlet)。
+- **真全屏分区去全局内边距**：`FULLSCREEN_PATH = /\/app\/[^/]+\/(design|chat)\/?$/` 按 URL 命中时 Content `padding:0`（流程设计器 design 分区与应用对话 chat 分区均为整页沉浸布局）；流程应用的调试/配置/运行历史分区与 Agent 应用分区同路径、URL 无法区分，由页面经 `useShellStore.fullscreen` 标记补充。
 - **二级页面隐藏一级侧边栏**：AppLayout 按路径判断，`/^\/team\/[^/]+/` 命中（团队详情及其下属应用设计/应用对话/知识库/知识图谱/团队提示词编辑等）时不渲染 AppSider，内容区全宽；这些页面自带二级导航与返回入口（分区菜单/面包屑/返回按钮）。返回一级页面时 AppSider 重新挂载、恢复展开（[@FE-LR-S22](./bdd.md#fe-lr-s22)/[@FE-LR-S23](./bdd.md#fe-lr-s23)）。
 - Sider 五区（上→下）：品牌区（logo 28×28 + 系统名）；用户卡（Dropdown click 触发：Avatar 34（avatar 缺省首字母/U 兜底）+ 主行 `nickName ?? userName` + 副行 `email ?? userName`；菜单「设置」→/account、divider、「退出登录」→clearUserInfo + /login）；主导航 Menu（inline，flex:1 滚动；mainNav = 应用广场/提示词市场/技能市场/团队，概览项已随页面下线移除）；管理导航（**仅 `userInfo?.isAdmin === true`** 渲染 divider + adminNav = 插件/分类管理/用户/团队管理/审批上架/模型渠道/第三方登录/设置，其中设置仅 root 可见，普通用户完全不可见）；底部双 Select（主题 light/dark 与语言 zh-CN/en-US，行为归属 [../theme/sdd.md](../theme/sdd.md) 与 [../../docs/store-i18n/sdd.md](../../docs/store-i18n/sdd.md)）。
 - Sider 本体：width 232、theme 跟随明暗、sticky top:0 height:100vh、右边框按明暗切 `rgba(255,255,255,.08)` / `rgba(16,24,40,.08)`。

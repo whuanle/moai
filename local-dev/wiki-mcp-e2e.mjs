@@ -3,7 +3,7 @@
 // 覆盖：鉴权门禁（无凭证 401 / 伪造 key 401 / 无 wiki_mcp 范围 403 / wikiId 不存在与跨团队 404）
 //       → tools/list 三个只读工具 → list_knowledge_bases（团队知识库列表）
 //       → search_knowledge_base_files（默认路径 wikiId / 显式 wikiId / 关键字 / 分页 / 跨团队拒绝）
-//       → search_knowledge_base_recall（向量召回 / 文档范围 / 阈值 / top / 参数校验）
+//       → search_knowledge_base_recall（向量召回 / 文档范围 / 阈值 / top / 参数校验 / 切片序号与相邻上下文去重 @WM-S7）
 //       → 协议行为（未知工具 -32602 / GET 405 / 无 initialize 直接调用 / 通知 202 / 外部 REST 回归）。
 // 模型策略：与 wiki-recall-e2e 一致——本地 OpenAI 兼容桩（确定性哈希向量）自举渠道与模型，
 //       桩不可用时不影响鉴权/文件搜索/协议场景，仅召回正 向用例跳过。
@@ -328,6 +328,21 @@ async function main() {
     check('WM-S5d 得分降序', scores.every((s, i) => i === 0 || scores[i - 1] >= s), JSON.stringify(scores))
     check('WM-S5e 命中项带文档名与切片 id', items.every((x) => String(x.documentName ?? '') !== '' && Number(x.chunkId ?? 0) > 0), JSON.stringify(items[0] ?? {}).slice(0, 160))
     check('WM-S5f 命中项带内容类型标签', items.every((x) => typeof x.contentType === 'string' && x.contentType.length > 0), JSON.stringify(items[0] ?? {}).slice(0, 120))
+    check('WM-S7a 命中项带切片序号与文档切片总数', items.every((x) => Number.isInteger(x.chunkIndex) && x.chunkIndex >= 0 && Number(x.documentChunkCount ?? 0) > 0), JSON.stringify(items[0] ?? {}).slice(0, 200))
+    // 上下文断言用小 top：top=10 时两文档全部切片都是主命中，邻居按去重设计不会重复出现
+    const recallSmall = await mcp(mcpOf(W1), rpc('tools/call', { name: 'search_knowledge_base_recall', arguments: { queryText: '退货政策 运费', top: 2 } }), TEAM_KEY)
+    const smItems = toolPayload(recallSmall).data?.items ?? []
+    const withCtx = smItems.filter((x) => (x.context ?? []).length > 0)
+    check('WM-S7b 命中项带相邻上下文且序号 ±1', smItems.length > 0 && withCtx.length > 0 && withCtx.every((x) => (x.context ?? []).every((c) => Math.abs(c.chunkIndex - x.chunkIndex) === 1)), `withCtx=${withCtx.length}/${smItems.length}`)
+    const seenChunks = new Set()
+    let dupChunk = false
+    for (const x of smItems) {
+      for (const k of [`${x.documentId}#${x.chunkIndex}`, ...(x.context ?? []).map((c) => `${x.documentId}#${c.chunkIndex}`)]) {
+        if (seenChunks.has(k)) dupChunk = true
+        seenChunks.add(k)
+      }
+    }
+    check('WM-S7c 命中与上下文按片段去重', !dupChunk, `unique=${seenChunks.size}`)
 
     const scoped = await mcp(mcpOf(W1), rpc('tools/call', { name: 'search_knowledge_base_recall', arguments: { queryText: '退货政策 运费', documentIds: [doc2Id], top: 10 } }), TEAM_KEY)
     const scopedItems = toolPayload(scoped).data?.items ?? []

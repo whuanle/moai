@@ -976,6 +976,197 @@ async function main() {
     }
   }
 
+  // AP-61 知识库工具链路：Agent 对话中 call_tool(search_knowledge_base) 返回片段序号/上下文，
+  // 随后 call_tool(get_knowledge_base_chunk) 按文档 id 与序号补取片段；含不存在文档的错误路径。
+  // 桩模型状态机：无工具结果 → search；hits → 按 documentId/chunkIndex 调 chunk 工具；chunks → 回显片段内容。
+  {
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    if (!adminToken) {
+      console.log('SKIP | AP-61 无 admin 账号（admin/abcd123456），跳过知识库工具链路验证')
+    } else {
+      // 确定性哈希向量（同 wiki-recall 桩），保证「退货政策」查询能命中上传文档
+      const stubEmbed = (text, dims = 1024) => {
+        const v = new Array(dims).fill(0)
+        const tokens = String(text).match(/[\u4e00-\u9fa5A-Za-z0-9]+|./g) ?? [String(text)]
+        for (const token of tokens) {
+          for (const ch of token) {
+            const h = crypto.createHash('md5').update(ch).digest()
+            const idx = ((h[0] << 8) | h[1]) % dims
+            v[idx] += (h[2] & 1) ? 1 : -1
+          }
+        }
+        const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1
+        return v.map((x) => x / norm)
+      }
+
+      const stub = http.createServer((req, res) => {
+        let body = ''
+        req.on('data', (chunk) => { body += chunk })
+        req.on('end', () => {
+          let payload = {}
+          try { payload = JSON.parse(body || '{}') } catch { /* 按无指令处理 */ }
+          if (String(req.url).includes('/embeddings')) {
+            const inputs = Array.isArray(payload.input) ? payload.input : [String(payload.input ?? '')]
+            const dims = Math.min(Number(payload.dimensions) || 1024, 1024)
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({
+              object: 'list',
+              model: payload.model ?? 'stub-embedding',
+              data: inputs.map((text, index) => ({ object: 'embedding', index, embedding: stubEmbed(text, dims) })),
+              usage: { prompt_tokens: 10, total_tokens: 10 },
+            }))
+            return
+          }
+
+          const toolMsgs = (payload.messages ?? []).filter((m) => m.role === 'tool')
+          // 工具结果内容可能被二次 JSON 编码（带引号的字符串），先解一层再判断
+          let lastTool = String(toolMsgs[toolMsgs.length - 1]?.content ?? '')
+          try {
+            const unwrapped = JSON.parse(lastTool)
+            if (typeof unwrapped === 'string') lastTool = unwrapped
+          } catch { /* 保持原文 */ }
+          const lastUser = [...(payload.messages ?? [])].reverse().find((m) => m.role === 'user')
+          const badDoc = String(lastUser?.content ?? '').includes('BADDOC:')
+          const base = { id: 'chatcmpl-stub61', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'stub61' }
+          const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n')
+          res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+          const callTool = (toolName, args) => {
+            const fnArgs = JSON.stringify({ toolName, argumentsJson: JSON.stringify(args) })
+            send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: null, tool_calls: [{ index: 0, id: 'call_stub61_' + Math.floor(Math.random() * 1e6), type: 'function', function: { name: 'call_tool', arguments: fnArgs } }] }, finish_reason: null }] })
+            send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })
+          }
+          const reply = (text) => {
+            send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: text }, finish_reason: null }] })
+            send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })
+          }
+          if (toolMsgs.length) {
+            // 已有工具结果：按结果类型推进/收敛，避免同一指令反复发起调用
+            if (lastTool.includes('"chunks"')) {
+              reply('片段回显:' + lastTool.slice(0, 400))
+            } else if (lastTool.includes('"hits"')) {
+              let docId = 0
+              let chunkIndex = 0
+              try {
+                const parsed = JSON.parse(lastTool)
+                docId = Number(parsed.hits?.[0]?.documentId ?? 0)
+                chunkIndex = Number(parsed.hits?.[0]?.chunkIndex ?? 0)
+              } catch { /* 保持 0 */ }
+
+              if (docId > 0) callTool('get_knowledge_base_chunk', { documentId: docId, chunkIndexes: [chunkIndex, chunkIndex + 1] })
+              else reply('search 未返回 documentId')
+            } else {
+              reply('工具失败回显:' + lastTool.slice(0, 200))
+            }
+          } else if (badDoc) {
+            callTool('get_knowledge_base_chunk', { documentId: 999999999, chunkIndexes: [0] })
+          } else {
+            callTool('search_knowledge_base', { query: '退货政策 运费' })
+          }
+          res.write('data: [DONE]\n\n')
+          res.end()
+        })
+      })
+      await new Promise((resolve) => stub.listen(0, '127.0.0.1', resolve))
+      stub.unref()
+      const stubPort = stub.address().port
+
+      // 桩渠道 + embedding/对话模型，授权给团队
+      const chName = `ap61-mock渠道-${TS}`
+      const embName = `ap61-embed-mock-${TS}`
+      const chatName = `ap61-chat-mock-${TS}`
+      const crc = await api('POST', '/api/ai/channel', { token: adminToken, body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: `http://127.0.0.1:${stubPort}/v1`, apiKey: 'ap61-mock-key', enabled: true, description: 'app-e2e AP-61 桩渠道' } })
+      const channels = await api('GET', '/api/ai/channel', { token: adminToken })
+      const CH_ID = (channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? ''
+      await api('POST', '/api/ai/model', { token: adminToken, body: { channelId: CH_ID, meta: { modelId: embName, name: embName, modelKind: 'embedding', description: 'app-e2e AP-61 桩向量模型' }, enabled: true, isPublic: false } })
+      await api('POST', '/api/ai/model', { token: adminToken, body: { channelId: CH_ID, meta: { modelId: chatName, name: chatName, modelKind: 'conversation', description: 'app-e2e AP-61 桩对话模型' }, enabled: true, isPublic: false } })
+      const models = await api('GET', `/api/ai/model?channelId=${CH_ID}`, { token: adminToken })
+      const EMB_ID = String((models.json?.items ?? []).find((m) => m.name === embName)?.id ?? '')
+      const MODEL_ID = String((models.json?.items ?? []).find((m) => m.name === chatName)?.id ?? '')
+      const authOk = await [EMB_ID, MODEL_ID].reduce(async (prev, modelId) => {
+        await prev
+        const cur = await api('GET', `/api/ai/model/${modelId}/authorization`, { token: adminToken })
+        const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+        return (await api('PUT', `/api/ai/model/${modelId}/authorization`, { token: adminToken, body: { teamIds } })).status === 200
+      }, Promise.resolve(true))
+      check('AP-61a 前置：桩渠道/模型创建并授权 200', crc.status === 200 && EMB_ID !== '' && MODEL_ID !== '' && authOk, `${crc.status} emb=${EMB_ID} chat=${MODEL_ID}`)
+
+      // 知识库 + 绑定向量化 + 上传文档 + 切割 + 向量化
+      const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'ap61-wiki-' + TS, description: 'ap61' } })).json?.value ?? 0)
+      const bind = await api('PUT', `/api/wiki/${WID}/embedding-config`, { token: owner.token, body: { wikiId: WID, embeddingModelId: EMB_ID, embeddingDimensions: 1024 } })
+      const docContent = Buffer.from('# 退货政策说明\n\n' + '商品签收后 7 天内可无理由退货，退货运费由买家承担，需保证商品完好。'.repeat(12), 'utf8')
+      const sha256 = crypto.createHash('sha256').update(docContent).digest('hex')
+      const pre = await api('POST', `/api/wiki/${WID}/documents/preupload`, { token: owner.token, body: { wikiId: WID, fileName: `ap61-return-${TS}.md`, contentType: 'text/markdown', fileSize: docContent.length, sha256 } })
+      await fetch(pre.json?.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'text/markdown' }, body: docContent })
+      const complete = await api('POST', `/api/wiki/${WID}/documents/complete`, { token: owner.token, body: { wikiId: WID, isSuccess: true, fileId: pre.json?.fileId, fileName: `ap61-return-${TS}.md` } })
+      const docList = await api('POST', `/api/wiki/${WID}/documents/list`, { token: owner.token, body: { wikiId: WID, pageNo: 1, pageSize: 50 } })
+      const DOC_ID = Number((docList.json?.items ?? []).find((i) => Number(i.fileId) === Number(pre.json?.fileId))?.documentId ?? 0)
+      await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [DOC_ID], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' } })
+      await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [DOC_ID], isEmbedding: true, embedSourceText: true, embedMetadata: false } })
+      let embedded = false
+      for (let i = 0; i < 80 && !embedded; i++) {
+        await new Promise((r) => setTimeout(r, 1500))
+        const list = await api('POST', `/api/wiki/${WID}/documents/list`, { token: owner.token, body: { wikiId: WID, pageNo: 1, pageSize: 50 } })
+        embedded = (list.json?.items ?? []).some((x) => Number(x.documentId) === DOC_ID && x.isEmbedding === true)
+      }
+      check('AP-61b 前置：知识库文档向量化完成', WID > 0 && bind.status === 200 && DOC_ID > 0 && embedded, `wiki=${WID} bind=${bind.status} doc=${DOC_ID} embedded=${embedded}`)
+
+      // Agent 应用：绑定知识库 + 模型 → 发布
+      const app = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '知识库工具宿主' + TS, appType: 'agent' } })
+      const APP_ID = String(app.json?.value ?? '')
+      const cfgSave = await api('PUT', `/api/app/${APP_ID}/agent-config`, { token: owner.token, body: { prompt: '你会检索知识库', wikiIds: [WID], plugins: [], modelId: MODEL_ID } })
+      check('AP-61c 宿主应用绑定知识库与模型 200', app.status === 200 && cfgSave.status === 200, `${cfgSave.status} ${cfgSave.text.slice(0, 140)}`)
+      check('AP-61d 宿主应用发布 200', (await api('POST', `/api/app/${APP_ID}/publish`, { token: owner.token })).status === 200)
+
+      const chatSse = async (sessionId, text) => {
+        const res = await fetch(`${BASE}/api/agent/${APP_ID}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner.token}` },
+          body: JSON.stringify({
+            threadId: sessionId,
+            runId: crypto.randomUUID(),
+            state: {},
+            messages: [{ id: crypto.randomUUID(), role: 'user', content: text }],
+            tools: [],
+            context: [],
+            forwardedProps: {},
+          }),
+        })
+        const raw = await res.text()
+        const events = raw.split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => { try { return JSON.parse(l.slice(5).trim()) } catch { return null } })
+          .filter(Boolean)
+        const reply = events
+          .filter((e) => e.type === 'TEXT_MESSAGE_CONTENT' && typeof e.delta === 'string')
+          .map((e) => e.delta)
+          .join('')
+        const runError = events.find((e) => e.type === 'RUN_ERROR')?.message ?? null
+        return { status: res.status, reply, runError }
+      }
+
+      const sess = await api('POST', `/api/app/${APP_ID}/session`, { token: owner.token, body: { title: 'ap61' } })
+      const SID = String(sess.json?.value ?? '')
+      const chat1 = await chatSse(SID, '帮我查一下退货政策')
+      check('AP-61e search 后按 documentId/chunkIndex 补取片段并回显',
+        chat1.status === 200 && chat1.reply.includes('片段回显:') && chat1.reply.includes('"chunkIndex"') && !chat1.runError,
+        `${chat1.status} reply=${chat1.reply.slice(0, 200)} err=${chat1.runError}`)
+
+      const sess2 = await api('POST', `/api/app/${APP_ID}/session`, { token: owner.token, body: { title: 'ap61-baddoc' } })
+      const chat2 = await chatSse(String(sess2.json?.value ?? ''), 'BADDOC:取一个不存在的文档')
+      // 工具结果 JSON 中文可能被转义（\u6587\u6863=文档、\u4E0D\u5C5E\u4E8E=不属于），两种形态都认
+      const badDocHint = chat2.reply.includes('文档不存在') || chat2.reply.includes('不属于')
+        || chat2.reply.includes('\\u6587\\u6863') || chat2.reply.includes('\\u4E0D\\u5C5E\\u4E8E')
+      check('AP-61f 不存在文档取片段返回错误说明', chat2.status === 200 && badDocHint,
+        `${chat2.status} reply=${chat2.reply.slice(0, 200)}`)
+
+      // 清理桩模型/渠道（应用与知识库留给台账）
+      await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [EMB_ID, MODEL_ID] } })
+      await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
+      stub.close()
+    }
+  }
+
   console.log(`\n===== 应用管理 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)
   process.exit(FAIL > 0 ? 1 : 0)
 }

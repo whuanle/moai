@@ -1,8 +1,9 @@
-// 知识库召回测试 E2E（场景 @WK-S37 ~ @WK-S39；后端 127.0.0.1:5210）
+// 知识库召回测试 E2E（场景 @WK-S37 ~ @WK-S42；后端 127.0.0.1:5210）
 // 覆盖：参数校验（空查询/越界 topK/越界阈值/AI 优化缺模型/非法文档 id）→ 团队门禁（非成员 404）
-//       → 向量召回（得分降序）→ 文档范围过滤 → 相似度阈值 → AI 优化问题 → AI 生成回答。
-// 模型策略：优先使用本地 OpenAI 兼容桩（/v1/embeddings 确定性哈希向量 + /v1/chat/completions 固定文案，
-//       与 bocha/paddleocr E2E 的自建桩模式一致），无需真实模型渠道；桩创建失败时回退到平台既有模型
+//       → 向量召回（得分降序）→ 文档范围过滤 → 相似度阈值 → AI 优化问题 → AI 生成回答
+//       → 重排序接入 @WK-S42（rerankScore 降序、顺序重排）→ 重排序渠道故障降级 → 相邻片段上下文与去重。
+// 模型策略：优先使用本地 OpenAI 兼容桩（/v1/embeddings 确定性哈希向量 + /v1/chat/completions 固定文案
+//       + /v1/rerank 反向打分），无需真实模型渠道；桩创建失败时回退到平台既有模型
 //       （admin 自举授权 + 探针挑选），仍不可用则依赖模型的场景标记 SKIP（不计入 FAIL）。
 import crypto from 'node:crypto'
 import http from 'node:http'
@@ -37,6 +38,9 @@ const TS = Date.now().toString().slice(-8)
 let seq = 0
 const uname = (p) => `${p}${TS}${String(seq++).padStart(2, '0')}`
 const phone = () => `15${Date.now().toString().slice(-8)}${String(seq++).padStart(2, '0')}`.slice(0, 11)
+
+/** rerank 桩行为：normal 正常反向打分 / error 返回 500（模拟渠道故障降级） */
+let rerankMode = 'normal'
 
 async function mkuser(p) {
   const name = uname(p)
@@ -132,6 +136,23 @@ function startStubServer() {
         return
       }
 
+      // rerank：反向打分（输入越靠后得分越高）→ 重排后顺序应为输入序的倒序，便于断言顺序确实被重排
+      if (String(req.url).includes('/rerank')) {
+        if (rerankMode === 'error') {
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ code: 500, message: 'stub rerank failure' }))
+          return
+        }
+
+        const docs = Array.isArray(payload.documents) ? payload.documents : []
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          model: payload.model ?? 'stub-rerank',
+          results: docs.map((_, index) => ({ index, relevance_score: docs.length <= 1 ? 0.9 : index / docs.length })),
+        }))
+        return
+      }
+
       // chat completions：优化问题桩返回提取到的关键词；回答桩返回固定结论
       const userMsgs = (payload.messages ?? []).filter((m) => m.role === 'user').map((m) => String(m.content ?? ''))
       const last = userMsgs[userMsgs.length - 1] ?? ''
@@ -202,16 +223,17 @@ async function createStubModels(adminToken, TID, stubPort) {
 
   const embeddingModelId = await mkModel(`recall-stub-embed-${TS}`, 'embedding')
   const conversationModelId = await mkModel(`recall-stub-chat-${TS}`, 'conversation')
-  if (!embeddingModelId || !conversationModelId) return null
+  const rerankModelId = await mkModel(`recall-stub-rerank-${TS}`, 'rerank')
+  if (!embeddingModelId || !conversationModelId || !rerankModelId) return null
 
-  for (const modelId of [embeddingModelId, conversationModelId]) {
+  for (const modelId of [embeddingModelId, conversationModelId, rerankModelId]) {
     const cur = await api('GET', `/api/ai/model/${modelId}/authorization`, { token: adminToken })
     const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
     const put = await api('PUT', `/api/ai/model/${modelId}/authorization`, { token: adminToken, body: { modelId, teamIds } })
     if (put.status !== 200) { console.log(`INFO | 桩模型授权失败：${put.status}`); return null }
   }
 
-  return { channelId: CH_ID, embeddingModelId, conversationModelId }
+  return { channelId: CH_ID, embeddingModelId, conversationModelId, rerankModelId }
 }
 
 /** 清理桩渠道（级联删模型） */
@@ -418,6 +440,66 @@ async function main() {
       && String(bothOn.json?.answer ?? '') !== '', `${bothOn.status}`)
   } else {
     skip('WK-S39 AI 优化问题/生成回答（环境无可用对话模型或 embedding 模型）')
+  }
+
+  // ===== @WK-S42：重排序接入与降级 + 相邻片段上下文（依赖 embedding + rerank 桩） =====
+  const baseKey = (list) => (list ?? []).map((x) => `${x.documentId}#${x.chunkIndex}`)
+  if (hasEmb && doc1Id && stubModels?.rerankModelId) {
+    const baseline = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const baseItems = baseline.json?.items ?? []
+    check('WK-S42 前置：基线召回 200 且 ≥2 命中', baseline.status === 200 && baseItems.length >= 2, `${baseline.status} items=${baseItems.length}`)
+    check('WK-S42a 未绑定重排序时无 rerankScore', baseItems.every((x) => x.rerankScore == null), JSON.stringify(baseItems.map((x) => x.rerankScore)))
+
+    const bindRerank = await api('PUT', `/api/wiki/${WID}/rerank-model`, {
+      token: owner.token,
+      body: { wikiId: WID, rerankModelId: stubModels.rerankModelId },
+    })
+    check('WK-S42 前置：绑定重排序模型 200', bindRerank.status === 200, `${bindRerank.status} ${bindRerank.text.slice(0, 120)}`)
+
+    rerankMode = 'normal'
+    const reranked = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const rrItems = reranked.json?.items ?? []
+    check('WK-S42a 重排序召回 200 且带 rerankScore', reranked.status === 200 && rrItems.length > 0 && rrItems.every((x) => x.rerankScore != null), `${reranked.status} rerankScores=${JSON.stringify(rrItems.map((x) => x.rerankScore))}`)
+    const rrScores = rrItems.map((x) => Number(x.rerankScore))
+    check('WK-S42a 重排序得分降序', rrScores.every((s, i) => i === 0 || rrScores[i - 1] >= s), JSON.stringify(rrScores))
+    check('WK-S42a 顺序与向量基线相反（桩反向打分）', baseKey(rrItems).join('|') === [...baseKey(baseItems)].reverse().join('|'), `base=${baseKey(baseItems).join(',')} reranked=${baseKey(rrItems).join(',')}`)
+
+    // 上下文断言用小 top：top=10 时两文档全部切片都是主命中，邻居按去重设计不会重复出现
+    const rerankedSmall = await recall(member.token, WID, { query: '退货政策 运费', top: 2 })
+    const smItems = rerankedSmall.json?.items ?? []
+    check('WK-S42b 小规模召回 200（top=2）', rerankedSmall.status === 200 && smItems.length === 2, `${rerankedSmall.status} items=${smItems.length}`)
+    check('WK-S42b 命中项带切片序号', smItems.every((x) => Number.isInteger(x.chunkIndex) && x.chunkIndex >= 0), JSON.stringify(smItems.map((x) => x.chunkIndex)))
+    check('WK-S42b 命中项带文档切片总数', smItems.every((x) => Number(x.documentChunkCount ?? 0) > 0), JSON.stringify(smItems.map((x) => x.documentChunkCount)))
+    const withContext = smItems.filter((x) => (x.context ?? []).length > 0)
+    check('WK-S42b 至少一个命中带相邻上下文', smItems.length > 0 && withContext.length > 0, `withContext=${withContext.length}/${smItems.length}`)
+    const seenKeys = new Set()
+    let dup = false
+    for (const x of smItems) {
+      const keys = [`${x.documentId}#${x.chunkIndex}`, ...(x.context ?? []).map((c) => `${x.documentId}#${c.chunkIndex}`)]
+      for (const k of keys) {
+        if (seenKeys.has(k)) dup = true
+        seenKeys.add(k)
+      }
+    }
+    check('WK-S42b 命中与上下文按片段去重', !dup, `unique=${seenKeys.size}`)
+    check('WK-S42b 上下文为相邻片段（序号 ±1）', withContext.every((x) => (x.context ?? []).every((c) => Math.abs(c.chunkIndex - x.chunkIndex) === 1)), JSON.stringify(withContext[0]))
+    check('WK-S42b 上下文片段非空', withContext.every((x) => (x.context ?? []).every((c) => String(c.content ?? '') !== '')), '')
+
+    rerankMode = 'error'
+    const degraded = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const dgItems = degraded.json?.items ?? []
+    check('WK-S42c 重排序渠道 500 时召回仍 200', degraded.status === 200 && dgItems.length > 0, `${degraded.status}`)
+    check('WK-S42c 降级后无 rerankScore', dgItems.every((x) => x.rerankScore == null), JSON.stringify(dgItems.map((x) => x.rerankScore)))
+    check('WK-S42c 降级后保持向量召回顺序', baseKey(dgItems).join('|') === baseKey(baseItems).join('|'), `degraded=${baseKey(dgItems).join(',')}`)
+
+    rerankMode = 'normal'
+    const unbind = await api('PUT', `/api/wiki/${WID}/rerank-model`, { token: owner.token, body: { wikiId: WID, rerankModelId: null } })
+    const unbound = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    check('WK-S42d 解绑后无 rerankScore 且顺序恢复', unbind.status === 200
+      && (unbound.json?.items ?? []).every((x) => x.rerankScore == null)
+      && baseKey(unbound.json?.items ?? []).join('|') === baseKey(baseItems).join('|'), `${unbind.status}`)
+  } else {
+    skip('WK-S42 重排序接入/降级与相邻片段上下文（无桩 rerank 模型或未向量化）')
   }
 
   if (stub) {

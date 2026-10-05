@@ -68,16 +68,13 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
-/**
- * Represents a context entry providing additional information to the agent.
- */
 export interface AGUIContext extends Parsable {
     /**
-     * Gets or sets the description of the context entry.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets the value of the context entry.
+     * The value property
      */
     value?: string | null;
 }
@@ -105,24 +102,21 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
-/**
- * Represents a tool available for the agent to use.
- */
 export interface AGUITool extends Parsable {
     /**
-     * Gets or sets the description of the tool.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
+     * The metadata property
      */
     metadata?: UntypedNode | null;
     /**
-     * Gets or sets the name of the tool.
+     * The name property
      */
     name?: string | null;
     /**
-     * Gets or sets the JSON Schema describing the tool's parameters.
+     * The parameters property
      */
     parameters?: UntypedNode | null;
 }
@@ -4429,6 +4423,15 @@ export function createWikiModelOptionItemFromDiscriminatorValue(parseNode: Parse
     return deserializeIntoWikiModelOptionItem;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiSearchContextChunk}
+ */
+// @ts-ignore
+export function createWikiSearchContextChunkFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiSearchContextChunk;
+}
+/**
  * 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源支持两种绑定方式：选择团队已有的飞书应用连接（FeishuAppId），或直接填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
  */
 export interface CreateWikiSourceCommand extends Parsable {
@@ -7781,10 +7784,14 @@ export function deserializeIntoQueryWikiRecallTestCommandResponse(queryWikiRecal
 export function deserializeIntoQueryWikiRecallTestItem(queryWikiRecallTestItem: Partial<QueryWikiRecallTestItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "chunkId": n => { queryWikiRecallTestItem.chunkId = n.getStringValue(); },
+        "chunkIndex": n => { queryWikiRecallTestItem.chunkIndex = n.getNumberValue(); },
         "content": n => { queryWikiRecallTestItem.content = n.getStringValue(); },
+        "context": n => { queryWikiRecallTestItem.context = n.getCollectionOfObjectValues<WikiSearchContextChunk>(createWikiSearchContextChunkFromDiscriminatorValue); },
+        "documentChunkCount": n => { queryWikiRecallTestItem.documentChunkCount = n.getNumberValue(); },
         "documentId": n => { queryWikiRecallTestItem.documentId = n.getStringValue(); },
         "documentName": n => { queryWikiRecallTestItem.documentName = n.getStringValue(); },
         "metadataType": n => { queryWikiRecallTestItem.metadataType = n.getNumberValue(); },
+        "rerankScore": n => { queryWikiRecallTestItem.rerankScore = n.getNumberValue(); },
         "score": n => { queryWikiRecallTestItem.score = n.getNumberValue(); },
     }
 }
@@ -9243,6 +9250,18 @@ export function deserializeIntoWikiModelOptionItem(wikiModelOptionItem: Partial<
         "id": n => { wikiModelOptionItem.id = n.getGuidValue(); },
         "modelKind": n => { wikiModelOptionItem.modelKind = n.getStringValue(); },
         "name": n => { wikiModelOptionItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiSearchContextChunk(wikiSearchContextChunk: Partial<WikiSearchContextChunk> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "chunkId": n => { wikiSearchContextChunk.chunkId = n.getStringValue(); },
+        "chunkIndex": n => { wikiSearchContextChunk.chunkIndex = n.getNumberValue(); },
+        "content": n => { wikiSearchContextChunk.content = n.getStringValue(); },
     }
 }
 /**
@@ -13096,9 +13115,21 @@ export interface QueryWikiRecallTestItem extends Parsable {
      */
     chunkId?: string | null;
     /**
+     * 切片在文档中的序号（从 0 开始）；未回填时为 null.
+     */
+    chunkIndex?: number | null;
+    /**
      * 命中内容.
      */
     content?: string | null;
+    /**
+     * 相邻上下文片段（命中片段的前一个与后一个，已按全文去重）.
+     */
+    context?: WikiSearchContextChunk[] | null;
+    /**
+     * 文档切片总数.
+     */
+    documentChunkCount?: number | null;
     /**
      * 文档 id.
      */
@@ -13111,6 +13142,10 @@ export interface QueryWikiRecallTestItem extends Parsable {
      * 命中内容的元数据类型：0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段.
      */
     metadataType?: number | null;
+    /**
+     * 重排序得分（配置了重排序模型且重排成功时才有值）.
+     */
+    rerankScore?: number | null;
     /**
      * 相似度得分（越大越相似）.
      */
@@ -13337,44 +13372,41 @@ export interface ReviewPublicationCommand extends Parsable {
      */
     reviewComment?: string | null;
 }
-/**
- * Input payload for running an AG-UI agent.
- */
 export interface RunAgentInput extends Parsable {
     /**
-     * Gets or sets contextual information for the agent.
+     * The context property
      */
     context?: AGUIContext[] | null;
     /**
-     * Gets or sets additional forwarded properties from the client.
+     * The forwardedProps property
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * Gets or sets the conversation messages.
+     * The messages property
      */
     messages?: AGUIMessage[] | null;
     /**
-     * Gets or sets the parent run identifier for branching/time travel.
+     * The parentRunId property
      */
     parentRunId?: string | null;
     /**
-     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
+     * The resume property
      */
     resume?: AGUIResume[] | null;
     /**
-     * Gets or sets the run identifier.
+     * The runId property
      */
     runId?: string | null;
     /**
-     * Gets or sets the state to pass to the agent.
+     * The state property
      */
     state?: UntypedNode | null;
     /**
-     * Gets or sets the thread identifier.
+     * The threadId property
      */
     threadId?: string | null;
     /**
-     * Gets or sets the tools available to the agent.
+     * The tools property
      */
     tools?: AGUITool[] | null;
 }
@@ -16813,10 +16845,14 @@ export function serializeQueryWikiRecallTestCommandResponse(writer: Serializatio
 export function serializeQueryWikiRecallTestItem(writer: SerializationWriter, queryWikiRecallTestItem: Partial<QueryWikiRecallTestItem> | undefined | null = {}) : void {
     if (queryWikiRecallTestItem) {
         writer.writeStringValue("chunkId", queryWikiRecallTestItem.chunkId);
+        writer.writeNumberValue("chunkIndex", queryWikiRecallTestItem.chunkIndex);
         writer.writeStringValue("content", queryWikiRecallTestItem.content);
+        writer.writeCollectionOfObjectValues<WikiSearchContextChunk>("context", queryWikiRecallTestItem.context, serializeWikiSearchContextChunk);
+        writer.writeNumberValue("documentChunkCount", queryWikiRecallTestItem.documentChunkCount);
         writer.writeStringValue("documentId", queryWikiRecallTestItem.documentId);
         writer.writeStringValue("documentName", queryWikiRecallTestItem.documentName);
         writer.writeNumberValue("metadataType", queryWikiRecallTestItem.metadataType);
+        writer.writeNumberValue("rerankScore", queryWikiRecallTestItem.rerankScore);
         writer.writeNumberValue("score", queryWikiRecallTestItem.score);
     }
 }
@@ -18275,6 +18311,18 @@ export function serializeWikiModelOptionItem(writer: SerializationWriter, wikiMo
         writer.writeGuidValue("id", wikiModelOptionItem.id);
         writer.writeStringValue("modelKind", wikiModelOptionItem.modelKind);
         writer.writeStringValue("name", wikiModelOptionItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiSearchContextChunk(writer: SerializationWriter, wikiSearchContextChunk: Partial<WikiSearchContextChunk> | undefined | null = {}) : void {
+    if (wikiSearchContextChunk) {
+        writer.writeStringValue("chunkId", wikiSearchContextChunk.chunkId);
+        writer.writeNumberValue("chunkIndex", wikiSearchContextChunk.chunkIndex);
+        writer.writeStringValue("content", wikiSearchContextChunk.content);
     }
 }
 /**
@@ -20277,6 +20325,23 @@ export interface WikiModelOptionItem extends Parsable {
      * 模型名称.
      */
     name?: string | null;
+}
+/**
+ * 检索命中片段的相邻上下文片段.
+ */
+export interface WikiSearchContextChunk extends Parsable {
+    /**
+     * 切片 id.
+     */
+    chunkId?: string | null;
+    /**
+     * 切片在文档中的序号（从 0 开始）.
+     */
+    chunkIndex?: number | null;
+    /**
+     * 切片内容.
+     */
+    content?: string | null;
 }
 /**
  * 网页爬虫外部源配置（存于 wiki_source.config）.抓取范围采用「同站点 + 路径前缀限定」策略：仅抓取与起始地址同 host 且以 PathPrefix 开头的链接，并以 MaxDepth、MaxPages 双重兜底，避免抓取失控.

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip, Typography , theme } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { EditOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
+import { EditOutlined, AppstoreOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useSearchParams } from 'react-router'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { classifyApi, classifyLabel, type PluginClassify } from '@/api/classify'
 import {
   pluginApi,
@@ -37,6 +37,7 @@ function typeLabel(t: (k: string) => string, type: number): string {
 function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: PluginClassify[] }) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const navigate = useNavigate()
   const [items, setItems] = useState<StaticPluginManageItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ClassifyFilter>('all')
@@ -261,6 +262,11 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
               {t('plugins.refresh')}
             </Button>
+            {isStatic && (
+              <Button icon={<AppstoreOutlined />} onClick={() => navigate('/plugin/templates')}>
+                {t('plugins.templateList')}
+              </Button>
+            )}
             {filterTags.map((item, index) => (
               <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {index > 0 && (

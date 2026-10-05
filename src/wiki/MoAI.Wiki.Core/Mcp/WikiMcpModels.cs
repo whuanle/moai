@@ -168,6 +168,24 @@ public record WikiMcpDocumentSearchResult
 }
 
 /// <summary>
+/// 知识库召回切片的相邻上下文片段（MCP 工具输出）.
+/// </summary>
+public record WikiMcpRecallContextChunk
+{
+    /// <summary>
+    /// 切片在文档中的序号（从 0 开始）.
+    /// </summary>
+    [JsonPropertyName("chunkIndex")]
+    public int ChunkIndex { get; init; }
+
+    /// <summary>
+    /// 切片内容（原文切片）.
+    /// </summary>
+    [JsonPropertyName("content")]
+    public string Content { get; init; } = default!;
+}
+
+/// <summary>
 /// 知识库召回切片（MCP 工具输出）.
 /// </summary>
 public record WikiMcpRecallItem
@@ -191,6 +209,18 @@ public record WikiMcpRecallItem
     public long ChunkId { get; init; }
 
     /// <summary>
+    /// 切片在文档中的序号（从 0 开始）；未回填时为 null.
+    /// </summary>
+    [JsonPropertyName("chunkIndex")]
+    public int? ChunkIndex { get; init; }
+
+    /// <summary>
+    /// 文档切片总数.
+    /// </summary>
+    [JsonPropertyName("documentChunkCount")]
+    public int? DocumentChunkCount { get; init; }
+
+    /// <summary>
     /// 内容类型标签：source 原文切片 / outline 大纲 / question 问题 / keyword 关键词 / summary 摘要 / aggregated 聚合.
     /// </summary>
     [JsonPropertyName("contentType")]
@@ -207,6 +237,18 @@ public record WikiMcpRecallItem
     /// </summary>
     [JsonPropertyName("score")]
     public double Score { get; init; }
+
+    /// <summary>
+    /// 重排序得分（知识库配置了重排序模型且重排成功时才有值，越大越相关）.
+    /// </summary>
+    [JsonPropertyName("rerankScore")]
+    public double? RerankScore { get; init; }
+
+    /// <summary>
+    /// 相邻上下文片段（命中片段的前一个与后一个，已按全文去重）.
+    /// </summary>
+    [JsonPropertyName("context")]
+    public IReadOnlyList<WikiMcpRecallContextChunk> Context { get; init; } = Array.Empty<WikiMcpRecallContextChunk>();
 }
 
 /// <summary>

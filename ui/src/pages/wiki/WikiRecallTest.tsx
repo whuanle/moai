@@ -340,12 +340,34 @@ export function WikiRecallTest({ wikiId, teamId }: WikiRecallTestProps) {
             >
               <Space wrap size={spacing.xs} style={{ marginBottom: spacing.xs }}>
                 <Tag color={scoreColor(hit.score ?? 0)}>{index + 1} · {t('wiki.recall.scoreLabel')} {(hit.score ?? 0).toFixed(4)}</Tag>
+                {hit.rerankScore != null && (
+                  <Tag color="purple">{t('wiki.recall.rerankScoreLabel')} {hit.rerankScore.toFixed(4)}</Tag>
+                )}
                 <Tag>{hit.documentName || t('wiki.recall.unknownDocument')}</Tag>
+                {hit.chunkIndex != null && (
+                  <Tag>{t('wiki.recall.chunkIndexLabel', { index: hit.chunkIndex })}{hit.documentChunkCount != null ? ` · ${hit.documentChunkCount}` : ''}</Tag>
+                )}
                 <Tag>{t(METADATA_TYPE_KEYS[hit.metadataType ?? 0] ?? METADATA_TYPE_KEYS[0])}</Tag>
               </Space>
               <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }} ellipsis={{ rows: 4, expandable: true, symbol: t('wiki.recall.expand') }}>
                 {hit.content}
               </Paragraph>
+              {(hit.context ?? []).length > 0 && (
+                <div style={{ marginTop: spacing.sm, borderLeft: `2px solid ${token.colorBorderSecondary}`, paddingLeft: spacing.md }}>
+                  {(hit.context ?? []).map((chunk) => (
+                    <div key={chunk.chunkIndex}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.recall.contextChunkLabel', { index: chunk.chunkIndex ?? '' })}</Text>
+                      <Paragraph
+                        type="secondary"
+                        style={{ whiteSpace: 'pre-wrap', marginBottom: spacing.xs, fontSize: 12 }}
+                        ellipsis={{ rows: 2, expandable: true, symbol: t('wiki.recall.expand') }}
+                      >
+                        {chunk.content}
+                      </Paragraph>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))
         )}

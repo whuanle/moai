@@ -185,9 +185,17 @@ public class WikiMcpTools
                     DocumentId = x.DocumentId,
                     DocumentName = x.DocumentName,
                     ChunkId = x.ChunkId,
+                    ChunkIndex = x.ChunkIndex,
+                    DocumentChunkCount = x.DocumentChunkCount,
                     ContentType = MetadataTypeLabel(x.MetadataType),
                     Content = x.Content,
                     Score = x.Score,
+                    RerankScore = x.RerankScore,
+                    Context = x.Context.Select(c => new WikiMcpRecallContextChunk
+                    {
+                        ChunkIndex = c.ChunkIndex,
+                        Content = c.Content,
+                    }).ToList(),
                 }).ToList(),
             };
         }, cancellationToken);

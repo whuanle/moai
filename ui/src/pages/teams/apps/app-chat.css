@@ -28,13 +28,10 @@
 
   display: flex;
   position: relative;
-  height: calc(100vh - 48px);
+  height: 100vh;
   min-height: 520px;
   overflow: hidden;
-  border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
   background: var(--mc-bg);
-  box-shadow: var(--mc-shadow);
 }
 
 /* ---------------- 侧边栏 ---------------- */
@@ -44,7 +41,7 @@
   flex-direction: column;
   width: 288px;
   flex-shrink: 0;
-  background: var(--mc-bg-layout);
+  background: var(--mc-bg);
   border-right: 1px solid var(--mc-border);
 }
 
@@ -768,10 +765,24 @@
 
 /* ---------------- 消息 ---------------- */
 
+/* 消息分组之间的分隔线只用于隔开上一轮回答与新的提问；
+   提问与其回答之间不加线（一问一答视为一体），首行无线 */
 .moai-chat__row {
   display: flex;
   gap: 14px;
-  margin-bottom: 26px;
+  padding: 18px 0;
+}
+
+.moai-chat__row + .moai-chat__row--user {
+  border-top: 1px solid var(--mc-border);
+}
+
+.moai-chat__turn {
+  position: relative;
+}
+
+.moai-chat__turn + .moai-chat__turn {
+  margin-top: 12px;
 }
 
 .moai-chat__row--user {
@@ -814,13 +825,11 @@
   max-width: 76%;
 }
 
+/* 用户消息：无气泡卡片，纯文本靠右，与助手消息同样以分隔线隔离 */
 .moai-chat__bubble {
-  padding: 11px 15px;
-  border-radius: 16px 16px 4px 16px;
-  background: var(--mc-primary);
-  color: #fff;
   font-size: 14.5px;
   line-height: 1.6;
+  color: var(--mc-text);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -832,28 +841,69 @@
   color: var(--mc-text);
 }
 
-/* 工具调用卡片（含审批交互） */
+/* 已完成工具调用折叠组（头部摘要行，点击展开明细） */
+.moai-chat__tool-group {
+  margin: 0 0 10px;
+  max-width: 720px;
+}
+
+.moai-chat__tool-group-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mc-text-tertiary);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.moai-chat__tool-group-head:hover {
+  background: var(--mc-fill);
+  color: var(--mc-text);
+}
+
+.moai-chat__tool-group-title {
+  font-weight: 500;
+}
+
+.moai-chat__tool-group-caret {
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.moai-chat__tool-group-caret.is-open {
+  transform: rotate(90deg);
+}
+
+.moai-chat__tool-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+/* 执行中/待审批的工具调用：固定在内容底部，始终可见 */
 .moai-chat__tools {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 6px;
-  margin-bottom: 6px;
-  max-width: 640px;
+  gap: 2px;
+  margin-top: 8px;
 }
 
 .moai-chat__tool-card {
-  border: 1px solid var(--mc-border);
-  border-radius: 12px;
-  background: var(--mc-bg-elevated);
-  overflow: hidden;
+  background: transparent;
 }
 
 .moai-chat__tool-card-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 5px 0;
 }
 
 .moai-chat__tool-status-icon {
@@ -877,11 +927,7 @@
   color: var(--mc-danger);
 }
 
-.moai-chat__tool-card.is-awaiting {
-  border-color: var(--mc-warning-border);
-  background: var(--mc-warning-bg);
-}
-
+/* 待审批行：仅以警示色图标/文案醒目，不加底色容器 */
 .moai-chat__tool-card-name {
   font-size: 13px;
   font-weight: 500;
@@ -919,7 +965,7 @@
 }
 
 .moai-chat__tool-card-toggle {
-  margin-left: auto;
+  margin-left: 4px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -940,9 +986,9 @@
 }
 
 .moai-chat__tool-card-args {
-  margin: 0;
-  padding: 10px 12px;
-  border-top: 1px dashed var(--mc-border);
+  margin: 2px 0 6px 22px;
+  padding: 8px 12px;
+  border-radius: 8px;
   background: var(--mc-code-bg);
   font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   font-size: 12px;
@@ -958,18 +1004,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px 10px;
+  padding: 2px 0 6px 22px;
 }
 
+/* 复制按钮悬浮于回合右上角，不占布局空间（悬停该消息块时浮现） */
 .moai-chat__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
   gap: 2px;
-  margin-top: 4px;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 
-.moai-chat__row:hover .moai-chat__actions {
+/* 悬停单条消息块才亮出复制按钮（分组后一行内可能有多条消息） */
+.moai-chat__msg:hover .moai-chat__actions {
   opacity: 1;
 }
 
@@ -1140,7 +1190,6 @@
   border: 1px solid var(--mc-border-strong);
   border-radius: 20px;
   background: var(--mc-bg-elevated);
-  box-shadow: var(--mc-shadow);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -1359,7 +1408,7 @@
   cursor: not-allowed;
 }
 
-/* 用户气泡内的附件 chips（蓝底半透明白） */
+/* 用户消息内附件 chips（浅色描边样式，随气泡拍扁同步调整） */
 .moai-chat__bubble-attachments {
   display: flex;
   flex-direction: column;
@@ -1383,10 +1432,11 @@
   gap: 6px;
   max-width: 100%;
   padding: 4px 6px 4px 10px;
+  border: 1px solid var(--mc-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--mc-fill-secondary);
   font-size: 12px;
-  color: #fff;
+  color: var(--mc-text-secondary);
 }
 
 .moai-chat__bubble-attachment-chip .anticon {
@@ -1394,7 +1444,7 @@
   opacity: 0.85;
 }
 
-/* 用户气泡图片附件缩略图 */
+/* 用户消息图片附件缩略图 */
 .moai-chat__bubble-attachment-thumb {
   flex-shrink: 0;
   width: 22px;
@@ -1412,7 +1462,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--mc-text);
   font-size: 12px;
   cursor: pointer;
 }
@@ -1431,13 +1481,13 @@ a.moai-chat__bubble-attachment-name:hover {
   border: none;
   border-radius: 5px;
   background: transparent;
-  color: #fff;
+  color: var(--mc-text-tertiary);
   font-size: 10px;
   cursor: pointer;
 }
 
 .moai-chat__bubble-attachment-toggle:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--mc-fill);
 }
 
 .moai-chat__bubble-attachment-toggle .anticon {
@@ -1455,8 +1505,8 @@ a.moai-chat__bubble-attachment-name:hover {
   overflow: auto;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(16, 24, 40, 0.22);
-  color: rgba(255, 255, 255, 0.92);
+  background: var(--mc-code-bg);
+  color: var(--mc-text-secondary);
   font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   font-size: 11.5px;
   line-height: 1.55;

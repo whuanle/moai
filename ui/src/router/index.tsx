@@ -58,7 +58,7 @@ export const router = createBrowserRouter([
       { path: 'team/:teamId/prompt/new', element: <PromptEditor /> },
       { path: 'team/:teamId/prompt/:promptId/edit', element: <PromptEditor /> },
       { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
-      { path: 'team/:teamId/app/:appId/chat', element: <AppChat /> },
+      { path: 'team/:teamId/app/:appId/chat/:sessionId?', element: <AppChat /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },

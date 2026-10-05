@@ -42,6 +42,7 @@ import {
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts, type PromptItem } from '@/api/prompt'
 import { abortAppChat, createAppChatAgent, runAppChat, type ToolApprovalMode } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage, type ToolCallDisplay } from './chat/ChatMessageList'
+import { parseHistoryToolCalls } from './chat/historyToolCalls'
 import { useWorkflowRunSteps } from './chat/useWorkflowRunSteps'
 import { WorkflowRunSteps } from './chat/WorkflowRunSteps'
 import { AppUserSettings } from './chat/AppUserSettings'
@@ -98,9 +99,12 @@ interface ApprovalExemptRef {
 export function AppChat() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const params = useParams<{ teamId: string; appId: string }>()
+  const params = useParams<{ teamId: string; appId: string; sessionId?: string }>()
   const teamId = Number(params.teamId)
   const appId = params.appId ?? ''
+  // 当前会话写入路由（/chat/:sessionId）：刷新/深链恢复会话；无会话段即新对话态
+  const urlSessionId = params.sessionId ?? ''
+  const chatBase = `/team/${teamId}/app/${appId}/chat`
   const { token } = theme.useToken()
   const userInfo = useAppStore((state) => state.userInfo)
 
@@ -242,21 +246,51 @@ export function AppChat() {
     setSelectedPromptId(promptId ?? 0)
     setAttachments([])
     setSidebarOpen(false)
+    if (urlSessionId !== sessionId) {
+      navigate(`${chatBase}/${sessionId}`)
+    }
     try {
       const items = await getAppSessionMessages(sessionId)
       setMessages(
         items
-          .filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content ?? '').trim().length > 0))
+          .filter((m) => m.role === 'user' || (m.role === 'assistant' && ((m.content ?? '').trim().length > 0 || parseHistoryToolCalls(m.toolCalls))))
           .map((m) => ({
             id: String(m.messageId ?? crypto.randomUUID()),
             role: m.role === 'user' ? 'user' : 'assistant',
             content: m.content ?? '',
+            toolCalls: parseHistoryToolCalls(m.toolCalls),
           })),
       )
     } catch {
       // 错误已由全局请求中间件统一提示
     }
-  }, [])
+  }, [chatBase, navigate, urlSessionId])
+
+  // 当前会话 ref（渲染期同步）：供 URL 会话段副作用比较，避免依赖 activeSessionId 状态造成
+  // 「新对话清空 active 但 URL 尚未更新」的一帧误判而把旧会话又选回来
+  const activeSessionRef = useRef('')
+  activeSessionRef.current = activeSessionId
+  const prevUrlSessionRef = useRef('')
+
+  // 地址栏会话段变化（刷新/深链/前进后退）且不是当前会话时恢复该会话
+  useEffect(() => {
+    const prev = prevUrlSessionRef.current
+    prevUrlSessionRef.current = urlSessionId
+    if (!urlSessionId || urlSessionId === prev) return
+    if (urlSessionId === activeSessionRef.current) return
+    const match = sessions.find((s) => String(s.sessionId) === urlSessionId)
+    void selectSession(urlSessionId, match?.promptId ?? 0)
+  }, [urlSessionId, selectSession, sessions])
+
+  // 深链进入时会话列表可能晚于消息到达：列表就绪后按会话绑定的专家回显高亮
+  useEffect(() => {
+    if (!urlSessionId || sessions.length === 0) return
+    const match = sessions.find((s) => String(s.sessionId) === urlSessionId)
+    const promptId = match?.promptId ?? 0
+    if (promptId > 0) {
+      setSelectedPromptId((prev) => (prev === 0 ? promptId : prev))
+    }
+  }, [sessions, urlSessionId])
 
   const newSession = useCallback(async () => {
     setActiveSessionId('')
@@ -265,8 +299,11 @@ export function AppChat() {
     // 新会话默认使用用户配置的专家（应用设置中保存的偏好）
     setSelectedPromptId(savedPromptId)
     setSidebarOpen(false)
+    if (urlSessionId) {
+      navigate(chatBase)
+    }
     inputRef.current?.focus()
-  }, [savedPromptId])
+  }, [chatBase, navigate, savedPromptId, urlSessionId])
 
   // 应用详情加载完成（或当前会话被删除）回到新会话态时，补展示开场白；不覆盖已有消息/历史
   useEffect(() => {
@@ -304,13 +341,17 @@ export function AppChat() {
         if (sessionId === activeSessionId) {
           setActiveSessionId('')
           setMessages([])
+          // 删除的是地址栏所指会话：回到新对话态地址
+          if (urlSessionId === sessionId) {
+            navigate(chatBase, { replace: true })
+          }
         }
         await loadSessions()
       } catch {
         // 错误已由全局请求中间件统一提示
       }
     },
-    [activeSessionId, loadSessions],
+    [activeSessionId, chatBase, loadSessions, navigate, urlSessionId],
   )
 
   /** 审批模式下无需审批卡的工具：只读/技能装载豁免，以及审批策略自动放行（白名单插件/沙箱） */
@@ -362,6 +403,9 @@ export function AppChat() {
         // 首轮消息：会话与会话绑定的专家提示词一并创建，避免首条消息丢失专家设定
         sessionId = await createAppSession(appId, undefined, selectedPromptId)
         setActiveSessionId(sessionId)
+        if (urlSessionId !== sessionId) {
+          navigate(`${chatBase}/${sessionId}`)
+        }
       } catch {
         return
       }
@@ -423,7 +467,7 @@ export function AppChat() {
       runFinish()
       void loadSessions()
     }
-  }, [activeSessionId, addToolCall, appId, approvalMode, attachments, input, isExemptTool, loadSessions, resolveToolCalls, selectedPromptId, sending, t, runFinish, runHandleEvent, runReset])
+  }, [activeSessionId, addToolCall, appId, approvalMode, attachments, chatBase, input, isExemptTool, loadSessions, resolveToolCalls, selectedPromptId, sending, t, runFinish, runHandleEvent, runReset, navigate, urlSessionId])
 
   // 选择附件：直传存储 →（文档）文本提取 → 就绪；失败标记在 chip 上由用户移除
   const handleFiles = useCallback(
