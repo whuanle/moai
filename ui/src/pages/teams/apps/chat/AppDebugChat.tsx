@@ -86,12 +86,12 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
           const content = buffer.split(SESSION_NOT_FOUND_MARKER).join('')
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content } : m)))
         },
-        onToolCall: (name) => {
-          if (name === 'call_tool') return
+        onToolCall: (info) => {
+          if (info.name === 'call_tool') return
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
-                ? { ...m, toolCalls: [...(m.toolCalls ?? []), { id: crypto.randomUUID(), name, status: 'running' as const }] }
+                ? { ...m, toolCalls: [...(m.toolCalls ?? []), { id: info.id || crypto.randomUUID(), name: info.name, status: 'running' as const }] }
                 : m,
             ))
         },

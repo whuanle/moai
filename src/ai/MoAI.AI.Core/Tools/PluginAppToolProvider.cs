@@ -91,7 +91,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                     tools.AddRange(await BuildCustomToolsAsync(plugin, isMcp: false, cancellationToken));
                     break;
                 case (int)PluginType.NativePlugin:
-                    var native = await BuildNativeToolAsync(plugin, cancellationToken);
+                    var native = await BuildNativeToolAsync(plugin, context, cancellationToken);
                     if (native != null)
                     {
                         tools.Add(native);
@@ -119,7 +119,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         return plugin.IsPublic || authorizedIds.Contains(plugin.Id);
     }
 
-    private async Task<AppTool?> BuildNativeToolAsync(PluginEntity plugin, CancellationToken cancellationToken)
+    private async Task<AppTool?> BuildNativeToolAsync(PluginEntity plugin, AppAgentBuildContext buildContext, CancellationToken cancellationToken)
     {
         // 动态插件实例：PluginId → plugin_dynamics.Id，经模板 key 解析模板与配置
         var dynamic = await _databaseContext.PluginDynamics
@@ -142,7 +142,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                 Kind = "dynamic",
                 SourceId = plugin.Id,
                 ParametersExample = PluginTypeHelper.GetStaticExample(template.PluginType, PluginParamsExampleMethod),
-                InvokeAsync = (argsJson, ct) => ExecutePluginAsync(template, argsJson, resolved.ConfigJson, ct),
+                InvokeAsync = (argsJson, ct) => ExecutePluginAsync(template, argsJson, resolved.ConfigJson, buildContext, ct),
             };
         }
 
@@ -165,13 +165,19 @@ public sealed class PluginAppToolProvider : IAppToolProvider
             Kind = "static",
             SourceId = plugin.Id,
             ParametersExample = PluginTypeHelper.GetStaticExample(info.PluginType, PluginParamsExampleMethod),
-            InvokeAsync = (argsJson, ct) => ExecutePluginAsync(info, argsJson, null, ct),
+            InvokeAsync = (argsJson, ct) => ExecutePluginAsync(info, argsJson, null, buildContext, ct),
         };
     }
 
-    private async Task<AppToolResult> ExecutePluginAsync(PluginInfo info, string? argsJson, string? configJson, CancellationToken cancellationToken)
+    private async Task<AppToolResult> ExecutePluginAsync(PluginInfo info, string? argsJson, string? configJson, AppAgentBuildContext buildContext, CancellationToken cancellationToken)
     {
-        var result = await _executor.ExecuteAsync(info, argsJson ?? "{}", configJson, cancellationToken).ConfigureAwait(false);
+        var runContext = new PluginRunContext
+        {
+            UserId = buildContext.UserId,
+            TeamId = buildContext.TeamId,
+            Source = PluginRunSource.Agent,
+        };
+        var result = await _executor.ExecuteAsync(info, argsJson ?? "{}", configJson, runContext, cancellationToken).ConfigureAwait(false);
         return result.Success
             ? AppToolResult.Ok(result.DataJson ?? "{}")
             : AppToolResult.Fail(result.Error ?? "插件执行失败.");

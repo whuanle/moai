@@ -153,6 +153,44 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
+    /// 查询应用安全配置（内容脱敏规则，Agent 应用与流程应用通用），仅团队成员可访问；未保存过配置时返回默认值.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppSecurityCommandResponse"/>.</returns>
+    [HttpGet("{id:guid}/security")]
+    public Task<QueryAppSecurityCommandResponse> QueryAppSecurity([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new QueryAppSecurityCommand { AppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="req">安全配置请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id:guid}/security")]
+    public async Task<EmptyCommandResponse> SaveAppSecurity([FromRoute] Guid id, [FromBody] SaveAppSecurityCommand req, CancellationToken ct)
+    {
+        var cmd = new SaveAppSecurityCommand
+        {
+            AppId = id,
+            Enabled = req.Enabled,
+            MaskToolResult = req.MaskToolResult,
+            MaskToolArgs = req.MaskToolArgs,
+            MaskModelOutput = req.MaskModelOutput,
+            Rules = req.Rules,
+            ModelOutputRules = req.ModelOutputRules,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 查询沙箱资源上限（每个应用可配置的存活时间 / CPU / 内存最大值，由超级管理员在系统设置调整），登录用户即可访问.
     /// </summary>
     /// <param name="ct">取消令牌.</param>

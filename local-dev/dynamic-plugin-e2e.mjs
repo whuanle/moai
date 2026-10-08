@@ -497,6 +497,25 @@ async function main() {
   check('DYN-S45 门禁：匿名 401、普通用户 403', avAnon.status === 401 && avMember.status === 403, `anon=${avAnon.status} member=${avMember.status}`)
   await del(admin, AV)
 
+  // ---- S70 系统插件页不含团队自有插件（团队隔离过滤）----
+  const TP_KEY = `dyn_tp_${TS}`
+  const tpOwner = await mkuser('dyntowner')
+  const TP_TID = Number((await api('POST', '/api/team', { token: tpOwner.token, body: { name: 'dyn-team-' + TS } })).json.value)
+  const tpCreate = await api('POST', `/api/team/${TP_TID}/plugin/dynamic`, { token: tpOwner.token, body: { teamId: TP_TID, instanceKey: TP_KEY, templeteKey: 'dynamic_greet', title: 'Team', description: '', config: '{"Prefix":"Team"}' } })
+  check('DYN-S70a 团队侧创建动态实例成功', tpCreate.status === 200, `${tpCreate.status} ${tpCreate.text.slice(0, 160)}`)
+  check('DYN-S70b 系统插件管理列表不含团队自有实例', !(await instances(admin)).some((x) => x.pluginName === TP_KEY), TP_KEY)
+  const tpList = await api('GET', `/api/team/${TP_TID}/plugin/list`, { token: tpOwner.token })
+  const tpRow = (tpList.json?.items ?? []).find((x) => x.pluginName === TP_KEY)
+  check('DYN-S70c 团队插件列表仍可见该实例且标记团队自有', Boolean(tpRow) && tpRow.isTeamOwned === true && tpRow.kind === 'dynamic', JSON.stringify(tpRow ?? {}).slice(0, 160))
+  check('DYN-S70d 管理员从系统侧删除团队实例被拒 403', (await del(admin, TP_KEY)).status === 403)
+  check('DYN-S70e 管理员从系统侧编辑团队实例被拒 403', (await save(admin, { pluginKey: TP_KEY, templeteKey: 'dynamic_greet', title: 'Hijack', description: '', classifyId: 0, config: '{}' })).status === 403)
+  const tpTeamList2 = await api('GET', `/api/team/${TP_TID}/plugin/list`, { token: tpOwner.token })
+  const tpRow2 = (tpTeamList2.json?.items ?? []).find((x) => x.pluginName === TP_KEY)
+  check('DYN-S70f 系统侧拒绝后团队实例原样保留', Boolean(tpRow2) && tpRow2.title === 'Team', JSON.stringify(tpRow2 ?? {}).slice(0, 160))
+  if (tpRow?.pluginId) await api('DELETE', `/api/team/${TP_TID}/plugin/${tpRow.pluginId}`, { token: tpOwner.token })
+  // 兜底清理：若用例中途失败导致系统侧误建同名实例，按系统侧删除
+  await del(admin, TP_KEY)
+
   console.log(`\n=== 动态插件 E2E: PASS ${PASS} / FAIL ${FAIL} / SKIP ${SKIP} ===`)
   if (FAIL > 0) process.exitCode = 1
 }

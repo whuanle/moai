@@ -37,8 +37,8 @@ export interface WorkflowChatEventPayload {
  */
 export interface AgentChatHandlers {
   onDelta?: (text: string) => void
-  /** 工具调用开始（此时参数未必完整），保留供简单标记场景 */
-  onToolCall?: (name: string) => void
+  /** 工具调用开始（此时参数未必完整）：id 用于流式占位卡与参数流结束后的更新去重 */
+  onToolCall?: (info: { id: string; name: string }) => void
   /** 工具调用参数流结束：args 为完整解析对象（call_tool 时含真实 toolName/argumentsJson） */
   onToolCallEnd?: (info: AgentToolCallInfo) => void
   /** 流程应用执行过程事件（仅流程应用产生；Agent 应用对话不触发） */
@@ -51,7 +51,7 @@ export interface AgentChatHandlers {
 export function createAppChatAgent(
   appId: string,
   threadId: string,
-  options?: { toolApprovalMode?: ToolApprovalMode; workflowDraft?: boolean },
+  options?: { toolApprovalMode?: ToolApprovalMode; workflowDraft?: boolean; uiTools?: boolean },
 ): HttpAgent {
   const token = useAppStore.getState().userInfo?.accessToken
   const url = `${Env.serverUrl}/api/agent/${appId}/chat`
@@ -65,6 +65,8 @@ export function createAppChatAgent(
       'X-Moai-Tool-Approval': options?.toolApprovalMode ?? 'auto',
       // 流程应用「调试」Tab 携带：按最新草稿执行（免发布，仅团队管理员；未携带按已发布快照）
       ...(options?.workflowDraft ? { 'X-Moai-Workflow-Draft': '1' } : {}),
+      // 前端展示工具（ui_ 前缀，侧边栏渲染）：默认启用；嵌入组件未适配侧边栏前不携带即关闭
+      ...(options?.uiTools !== false ? { 'X-Moai-Ui-Tools': '1' } : {}),
     },
   })
 }
@@ -97,7 +99,7 @@ export async function runAppChat(
         segments.set(event.messageId, textMessageBuffer)
         emit()
       },
-      onToolCallStartEvent: ({ event }) => handlers.onToolCall?.(event.toolCallName),
+      onToolCallStartEvent: ({ event }) => handlers.onToolCall?.({ id: event.toolCallId, name: event.toolCallName }),
       onToolCallEndEvent: ({ event, toolCallName, toolCallArgs }) =>
         handlers.onToolCallEnd?.({ id: event.toolCallId, name: toolCallName, args: toolCallArgs }),
       onCustomEvent: ({ event }) => {

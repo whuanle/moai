@@ -50,7 +50,7 @@
 | @WF-S44 | ui/src/pages/apps/__tests__/AppPlaza.test.tsx（公开已发布流程应用展示进入对话） | PASS 3/3（2026-09-20） |
 | @WF-S45 | @manual（浏览器走查：结束节点「输出收集」绑定行增删改 + 删除残留引用） | 待走查（2026-09-20） |
 | @WF-S46 | ui/src/pages/teams/apps/workflow/__tests__/utils.test.ts（删除节点后残留引用报错文案含节点名） | PASS 46/46（2026-09-20） |
-| @WF-S47 | @manual（浏览器走查：AI 对话节点模型选择/系统提示词/温度 + 未配模型保存拦截） | 待走查（2026-09-20） |
+| @WF-S47 | @manual（浏览器走查：AI 对话节点模型选择/系统提示词/温度 + 未配模型保存拦截）+ NodeForm.tsx ModelSelectSection 全零 Guid 归一（2026-10-08，源码级守卫覆盖 AI 对话/问题分类节点，回归见 app/tdd 自检记录） | 待走查（2026-09-20） |
 | @WF-S48 | tests/MoAI.App.Workflow.Tests/AiChatNodeTests.cs（aiModelId 契约/旧键 model 兼容/输入覆盖优先级/温度归一化/缺 prompt）+ 真实模型端到端（debug-run：DeepSeek + systemPrompt + temperature completed） | PASS 5/5 / PASS（2026-09-20） |
 | @WF-S49 | @manual（浏览器走查：专家提示词下拉选择填入 + 技能多选 + 沙箱开关） | 待走查（2026-09-20） |
 | @WF-S50 | tests/MoAI.App.Workflow.Tests/AiChatNodeTests.cs（62/62，skillIds/sandboxEnabled 契约已移除）+ ui utils.test（历史残留键清洗丢弃）+ local-dev/workflow-e2e.mjs（118/118 回归；agentApp 节点 WF-26a~k 覆盖复杂 Agent 能力编排） | PASS 62/62 / PASS 54/54 / PASS 118/118（2026-09-21） |
@@ -73,3 +73,5 @@
 3. 执行：`node local-dev/workflow-e2e.mjs`。
 | @WF-S54 | tests/MoAI.AI.Core.Tests/WorkflowAppChatClientTests.cs（事件映射/AI 节点文本过滤/classifier 过滤/回复去重/嵌套实例过滤/失败传播/退订 10 例）+ WorkflowAppChatMafIntegrationTests.cs（MAF 包装慢速 invoker 流式 + AGUI MapContent DataContent→CUSTOM 直连）+ local-dev/workflow-e2e.mjs（WF-27a~g：CUSTOM started/node/completed 序列、instanceId、AI 正文 TEXT_MESSAGE_CONTENT、回复不重复、事件先于正文） | PASS 65/65 / PASS 118/118（2026-09-20） |
 | @WF-S55 | PluginNodeExecutor/WorkflowPluginInvoker 透传 config.function（单测回归 Workflow.Tests 77/77，mock 签名含 functionName）+ 运行链路证据 team-plugin-e2e.mjs TP-35j（同一 RunPluginCommand→ICustomPluginCaller 链路）+ 浏览器走查 | PASS 77/77 / PASS（2026-09-26）/ 待走查 |
+| @WF-S56 | tests/MoAI.App.Workflow.Tests/WorkflowNodeSanitizerTests.cs（引擎净化器接线：检查点/事件/最终输出均为净化后数据） | PASS 1/1（2026-10-06） |
+| @WF-S57 | tests/MoAI.AI.Core.Tests/AppSecurityAgentMiddlewareTests.cs（函数调用中间件结果脱敏）+ WorkflowNodeSecuritySanitizer（aiChat/agentApp 输出叠加模型回复范围，代码走查） | PASS 4/4（2026-10-06） |

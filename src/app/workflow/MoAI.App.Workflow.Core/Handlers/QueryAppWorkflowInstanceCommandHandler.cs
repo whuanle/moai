@@ -1,6 +1,8 @@
 using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.AI.Services;
+using MoAI.App.Workflow.Definition;
 using MoAI.App.Workflow.Queries;
 using MoAI.App.Workflow.Queries.Responses;
 using MoAI.Database;
@@ -18,16 +20,19 @@ public class QueryAppWorkflowInstanceCommandHandler : IRequestHandler<QueryAppWo
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly AppSecurityService _appSecurityService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAppWorkflowInstanceCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public QueryAppWorkflowInstanceCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
+    public QueryAppWorkflowInstanceCommandHandler(DatabaseContext databaseContext, ITeamService teamService, AppSecurityService appSecurityService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _appSecurityService = appSecurityService;
     }
 
     /// <inheritdoc/>
@@ -64,6 +69,11 @@ public class QueryAppWorkflowInstanceCommandHandler : IRequestHandler<QueryAppWo
 
         var instance = JsonSerializer.Deserialize<Instance.WorkflowInstance>(entity.InstanceData, WorkflowJson.Options);
 
+        // 读侧脱敏兜底：新实例数据已由引擎净化器脱敏，此处覆盖启用安全策略之前的存量实例
+        var policy = await _appSecurityService.GetPolicyAsync(app.Id, cancellationToken);
+        var output = entity.Output is null ? null : policy.MaskModelText(policy.MaskToolResultText(entity.Output));
+        var errorMessage = entity.ErrorMessage is null ? null : policy.MaskToolResultText(entity.ErrorMessage);
+
         return new QueryAppWorkflowInstanceCommandResponse
         {
             InstanceId = entity.Id,
@@ -72,8 +82,8 @@ public class QueryAppWorkflowInstanceCommandHandler : IRequestHandler<QueryAppWo
             IsDebug = entity.IsDebug,
             Version = entity.Version,
             Input = entity.Input,
-            Output = entity.Output,
-            ErrorMessage = entity.ErrorMessage,
+            Output = output,
+            ErrorMessage = errorMessage,
             StartTime = entity.StartTime,
             EndTime = entity.EndTime,
             Nodes = instance?.NodeStates.Values
@@ -84,14 +94,33 @@ public class QueryAppWorkflowInstanceCommandHandler : IRequestHandler<QueryAppWo
                     NodeType = n.NodeType,
                     NodeName = n.NodeName,
                     State = n.State.ToString().ToLowerInvariant(),
-                    Input = n.Input?.ToJsonString(),
-                    Output = n.Output?.ToJsonString(),
-                    ErrorMessage = n.ErrorMessage,
+                    Input = n.Input is null ? null : policy.MaskToolArgsText(n.Input.ToJsonString()),
+                    Output = MaskNodeOutput(policy, n),
+                    ErrorMessage = n.ErrorMessage is null ? null : policy.MaskToolResultText(n.ErrorMessage),
                     Attempts = n.Attempts,
                     StartedAt = n.StartedAt,
                     EndedAt = n.EndedAt,
                 })
                 .ToList() ?? new List<WorkflowNodeExecution>(),
         };
+    }
+
+    /// <summary>
+    /// 节点输出脱敏：按「工具结果」范围，AI 对话/Agent 应用节点（输出即模型回复）额外叠加「模型回复」范围.
+    /// </summary>
+    private static string? MaskNodeOutput(MoAI.Database.Aggregates.AppSecurityPolicy policy, Instance.NodeExecutionState n)
+    {
+        if (n.Output is null)
+        {
+            return null;
+        }
+
+        var output = policy.MaskToolResultText(n.Output.ToJsonString());
+        if (policy.ModelOutputEnabled && n.NodeType is NodeTypes.AiChat or NodeTypes.AgentApp)
+        {
+            output = policy.MaskModelText(output);
+        }
+
+        return output;
     }
 }

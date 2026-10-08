@@ -38,6 +38,7 @@
 | `static_text_extract` | 下载 http/https 文件并提取文本 | `{"FileName":"a.pdf","Url":"https://.../a.pdf"}` |
 | `static_file_to_markdown` | 下载 http/https 文件转 Markdown，FileName 留空时从 Url 自动识别文件名 | `{"Url":"https://.../report.pdf"}` |
 | `static_web_content_fetch` | 抓取网页（默认提取纯文本，AngleSharp） | `{"Url":"https://example.com","ExtractText":true}` |
+| `static_current_user` | 获取当前调用者用户信息（执行上下文注入，无需传参） | `{}` |
 
 > 文本提取与文件转 Markdown 依赖 `Maomi.ToMarkdown`（由 `WikiCoreModule` 的 `AddTextExtraction()` 注册），网页抓取依赖 `AngleSharp`，二者包引用在 `MoAI.AIPlugin.Static.csproj`。外部下载复用 infra `IPutClient`。
 
@@ -50,4 +51,6 @@
 | 文件转 Markdown 报「无法从 Url 识别文件扩展名」 | Url 路径末段无扩展名且未传 `FileName` | 传带扩展名的 `FileName`，或换可直接指向文件的地址 |
 | 文件转 Markdown 报「不支持的文件类型: .xxx」 | 后缀不在 `Maomi.ToMarkdown` 支持范围 | 换受支持格式（pdf/docx/xlsx/pptx/html/md/txt/json）或先转格式 |
 | 网页抓取报「抓取网页内容失败/超时」 | 目标站点拒绝、网络不通或超过 10 秒 | 换可达的静态页面；动态渲染页面不做脚本执行 |
+| 获取当前用户信息返回 isContextInjected=false | 执行入口未注入上下文（绕过三个标准入口的调用） | 走 `/ai/plugin/run`、团队插件运行或应用 AI 工具调用执行（见 [@STP-S18](./bdd.md#stp-s18)） |
+| 获取当前用户信息返回 userName 为空 | 上下文未认证（UserId=0，如外部应用直连会话）或用户已被删除 | 属预期降级；需要用户维度信息时先确认调用方为已认证用户 |
 | 运行报「请求参数解析失败」 | requestJson 与请求模型不匹配 | 以 Monaco 示例为准修改参数 |

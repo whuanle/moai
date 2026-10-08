@@ -46,61 +46,65 @@ Feature: 飞书应用连接管理
     And 禁用连接的在线状态为 false
     And 更新时 AppSecret 留空则保持原值
 
-Feature: 应用渠道绑定互斥
+Feature: 应用渠道接入（创建即绑定）
+  应用渠道不提供独立的绑定/解绑操作：接入 = 创建连接即绑定到目标应用（单次调用、同一事务）；移除 = 删除连接（级联解绑、彻底移除）。
+
   @FS-S6 @auto:e2e
-  Scenario: 绑定目标校验
-    When owner 将连接绑定到不存在的应用渠道
+  Scenario: 创建即绑定的渠道校验
+    When owner 创建连接并绑定到不存在的应用渠道
     Then 返回 404
-    When owner 将连接绑定到其它团队的应用渠道
+    When owner 创建连接并绑定到其它团队的应用渠道
     Then 返回 403
-    When owner 以格式错误的渠道 id 绑定应用渠道
+    When owner 以格式错误的渠道 id 创建即绑定
     Then 返回 400
-    When owner 以不支持的渠道类型发起绑定
+    When owner 以非法或不支持的渠道类型创建即绑定
+    Then 返回 400
+    When owner 只传渠道 id 不传渠道类型
     Then 返回 400
 
   @FS-S7 @auto:e2e
-  Scenario: 绑定成功
-    When owner 将连接绑定到本团队应用 A
-    Then 绑定成功
-    And 列表回显该连接的绑定渠道类型与渠道 id
+  Scenario: 创建即绑定成功
+    When owner 创建连接并携带应用 A 的渠道信息
+    Then 创建成功，连接与绑定同一事务生效
+    And 列表回显该连接的绑定渠道类型、渠道 id 与绑定时间
 
   @FS-S8 @auto:e2e
-  Scenario: 同一飞书应用只能绑定一个渠道
-    Given 连接已绑定应用 A
-    When owner 将同一连接再绑定到应用 B
+  Scenario: 同一飞书应用不可重复接入
+    Given 连接已创建并绑定应用 A
+    When owner 以相同飞书 AppID 再次创建连接（带任意渠道）
     Then 返回 409
+    And 应用渠道互斥由此结构性保证：新接入必然是全新连接，不存在把已有连接改绑到其它应用的路径
 
   @FS-S9 @auto:e2e
-  Scenario: 不同飞书应用可分别绑定不同渠道
-    Given 连接一已绑定应用 A，owner 又创建了连接二
-    When owner 将连接二绑定到应用 B
-    Then 绑定成功
+  Scenario: 不同飞书应用可分别接入不同应用
+    Given 连接一已接入应用 A，owner 又创建了连接二并携带应用 B 的渠道信息
+    Then 创建即绑定成功
+    And 列表回显连接二绑定应用 B
 
   @FS-S10 @auto:e2e
-  Scenario: 普通成员不能操作绑定
-    When member 解除连接绑定
+  Scenario: 普通成员不能创建渠道接入
+    When member 创建连接并携带渠道信息
     Then 返回 403
 
   @FS-S11 @auto:e2e
-  Scenario: 解除绑定
-    When owner 解除连接绑定
-    Then 解绑成功
-    When owner 再次解除同一连接绑定
-    Then 返回 404
+  Scenario: 绑定/解绑 HTTP 端点已下线
+    When owner 对连接发起 POST /api/feishu_app/{id}/bind 或 /unbind
+    Then 返回 405（路由不再提供该动作）
+    And 绑定仅随创建发生、解绑仅随删除发生；绑定/解绑命令保留给知识库外部源等业务模块内部复用
 
   @FS-S13 @auto:e2e
-  Scenario: 删除连接释放渠道
-    Given 连接二已绑定应用 B
+  Scenario: 删除即彻底移除
+    Given 连接二已接入应用 B
     When owner 删除连接二
     Then 删除成功，再次删除返回 404
-    And 应用 B 的渠道可立即被其它连接绑定
+    And 以相同飞书 AppID 重新创建并接入应用 B 成功（不保留可复用的连接）
 
   @FS-S14 @auto:e2e
   Scenario: 删除带绑定的连接同时解除绑定
-    Given 连接一已绑定应用 B
+    Given 连接一已接入应用 A
     When owner 删除连接一
-    Then 删除成功
-    And 对已删除连接发起绑定返回 404
+    Then 删除成功，列表不再包含该连接
+    And 应用 A 的渠道可立即被新连接接入
 
 Feature: 事件接收与转发
   @FS-S15 @manual
@@ -164,6 +168,8 @@ Feature: 群聊/私聊消息回复
     And 会话消息与用量与站内对话一致落库
 
 Feature: 应用工作台外部渠道页
+  # @FS-S26（绑定已有连接与解除绑定）已随 2026-10-08 外部渠道简化下线，编号永久退役不复用。
+
   @FS-S24 @auto:vitest
   Scenario: 外部渠道菜单可见性
     Given 团队管理员打开内部 Agent 应用的应用工作台
@@ -174,22 +180,15 @@ Feature: 应用工作台外部渠道页
   Scenario: 从应用页接入飞书应用
     Given 管理员打开内部 Agent 应用的外部渠道页
     When 填写连接名称、飞书 AppID 与 AppSecret 后提交接入
-    Then 平台创建飞书应用连接并直接绑定到当前应用
-    And 渠道表格只回显绑定到当前应用的连接（名称、AppID、状态、绑定时间）
-
-  @FS-S26 @auto:vitest
-  Scenario: 绑定已有连接与解除绑定
-    Given 团队内存在未绑定渠道的飞书连接
-    When 管理员在外部渠道页选择该连接绑定到当前应用
-    Then 绑定成功且团队内无可绑定连接时绑定入口不可用
-    When 管理员对该连接发起解绑
-    Then 二次确认后解绑生效
+    Then 平台创建飞书应用连接即绑定到当前应用（单次调用，创建与绑定原子生效）
+    And 渠道表格只回显接入到当前应用的连接（名称、AppID、状态、接入时间）
+    And 页面不提供「绑定已有连接」与「解绑」入口
 
   @FS-S27 @auto:vitest
   Scenario: 渠道连接管理操作
-    Given 外部渠道页存在绑定到当前应用的飞书连接
+    Given 外部渠道页存在接入到当前应用的飞书连接
     When 管理员停用或删除该连接
-    Then 均需二次确认后生效
+    Then 均需二次确认后生效（删除即彻底移除，不保留可复用连接）
     When 管理员启用已停用的连接
     Then 直接生效无需确认
     But 普通成员进入页面时不可见任何操作入口

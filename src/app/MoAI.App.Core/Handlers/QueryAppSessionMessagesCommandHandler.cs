@@ -28,7 +28,7 @@ public class QueryAppSessionMessagesCommandHandler : IRequestHandler<QueryAppSes
     {
         var session = await _databaseContext.AppAgentSessions
             .Where(x => x.Id == request.SessionId)
-            .Select(x => new { x.Id, x.Title, x.CreateUserId })
+            .Select(x => new { x.Id, x.Title, x.CreateUserId, x.AppId })
             .FirstOrDefaultAsync(cancellationToken);
 
         // 非归属用户按不存在处理，避免泄露会话存在性
@@ -68,6 +68,10 @@ public class QueryAppSessionMessagesCommandHandler : IRequestHandler<QueryAppSes
                 CreateTime = x.CreateTime
             })
             .ToList();
+
+        // 读侧脱敏兜底：覆盖启用安全策略之前的存量消息
+        var policy = await AppMessageSecurityMasker.LoadPolicyAsync(_databaseContext, session.AppId, cancellationToken);
+        AppMessageSecurityMasker.Mask(policy, items);
 
         return new QueryAppSessionMessagesCommandResponse
         {

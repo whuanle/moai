@@ -507,7 +507,7 @@ public enum AIProtocolFamily
 
 数据库所有字段都必须是 not null。
 
-每个字段都需要注释。
+每个字段都需要注释，注释不可以为空。
 
 
 

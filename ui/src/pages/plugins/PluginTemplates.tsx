@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Col, Empty, Row, Spin, Tag, Typography } from 'antd'
+import { Button, Col, Empty, Row, Space, Spin, Tag, Typography } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
@@ -98,16 +98,16 @@ export function PluginTemplates() {
         { title: t('plugins.templateList') },
       ]}
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}>
-          {t('plugins.backToPlugins')}
-        </Button>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
+            {t('plugins.refresh')}
+          </Button>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}>
+            {t('plugins.backToPlugins')}
+          </Button>
+        </Space>
       }
     >
-      <div style={{ marginBottom: spacing.md }}>
-        <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-          {t('plugins.refresh')}
-        </Button>
-      </div>
       {loading ? (
         <div style={{ textAlign: 'center', padding: spacing.xxl * 2 }}>
           <Spin />

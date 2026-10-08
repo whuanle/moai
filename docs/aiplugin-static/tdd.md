@@ -22,6 +22,8 @@
 | @STP-S15 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 | @STP-S16 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 | @STP-S17 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
+| @STP-S18 | tests/MoAI.AIPlugin.Static.Tests/CurrentUserPluginTests.cs（单测）+ 实测：独立端口实例 admin 登录运行返回 UserId=1/UserName=admin/IsAdmin=true/Source=admin | PASS 单测 3/3 + 实测 200（2026-10-08） |
+| @STP-S19 | tests/MoAI.AIPlugin.Static.Tests/CurrentUserPluginTests.cs + PluginExecutorContextInjectionTests.cs（执行器不传上下文时插件读到 null） | PASS 7/7（2026-10-08） |
 
 ## 前端测试
 
@@ -34,6 +36,7 @@
 
 ```bash
 dotnet build src/MoAI/MoAI.csproj                                   # 后端 0 error
+dotnet test tests/MoAI.AIPlugin.Static.Tests                        # 静态插件单测（含上下文注入）
 cd ui && npm run typecheck && npm run lint && npm run test          # 前端全绿
 node local-dev/static-plugin-e2e.mjs                                # 静态插件 e2e（需后端 5210 运行中）
 ```

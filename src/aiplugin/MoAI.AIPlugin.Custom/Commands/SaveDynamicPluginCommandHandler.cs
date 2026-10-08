@@ -91,6 +91,12 @@ public class SaveDynamicPluginCommandHandler : IRequestHandler<SaveDynamicPlugin
                 .FirstOrDefaultAsync(x => x.PluginId == existing.Id && x.IsDeleted == 0, cancellationToken)
                 ?? throw new BusinessException("动态插件实例记录不存在") { StatusCode = 404 };
 
+            // 系统管理端点只允许操作系统侧实例；团队自有实例走团队插件保存链路
+            if (pluginEntity.TeamId != 0)
+            {
+                throw new BusinessException("团队插件不能在系统插件页编辑") { StatusCode = 403 };
+            }
+
             existing.TempleteKey = request.TempleteKey;
             existing.Config = request.Config;
 

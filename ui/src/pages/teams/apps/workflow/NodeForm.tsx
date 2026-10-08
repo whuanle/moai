@@ -25,6 +25,9 @@ import { RefValueInput, SectionTitle, TypeSelect } from './node-form-widgets'
 import { HttpNodeForm } from './HttpNodeForm'
 import type { ClassifierClassDef, FieldBinding, NodeSettings, OutputField, SwitchBranchDef } from './types'
 
+/** 全零 Guid：后端「未选择」的占位值，展示前须归一为未选择 */
+const EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
+
 /** 条件脚本模式默认脚本 */
 const CONDITION_DEFAULT_SCRIPT = `function condition(inputs, sys, nodes, system) {
   // 返回 true 走「真」分支，false 走「假」分支
@@ -394,7 +397,7 @@ function ModelSelectSection({
         loading={loading}
         showSearch
         optionFilterProp="label"
-        value={data.settings?.aiModelId || undefined}
+        value={data.settings?.aiModelId && data.settings.aiModelId !== EMPTY_GUID ? data.settings.aiModelId : undefined}
         placeholder={t(placeholderKey)}
         notFoundContent={t('workflowDesigner.aiModelEmpty')}
         options={models}

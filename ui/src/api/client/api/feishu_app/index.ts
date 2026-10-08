@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleGuidFromDiscriminatorValue, serializeCreateFeishuAppCommand, serializeSimpleGuid, type BusinessValidationResult, type CreateFeishuAppCommand, type SimpleGuid } from '../../models/index.js';
 // @ts-ignore
-import { Feishu_appItemRequestBuilderNavigationMetadata, Feishu_appItemRequestBuilderRequestsMetadata, type Feishu_appItemRequestBuilder } from './item/index.js';
+import { Feishu_appItemRequestBuilderRequestsMetadata, type Feishu_appItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -25,8 +25,8 @@ export interface Feishu_appRequestBuilder extends BaseRequestBuilder<Feishu_appR
      */
      byId(id: Guid) : Feishu_appItemRequestBuilder;
     /**
-     * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
-     * @param body 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
+     * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；携带渠道信息（channelType=app + channelId=应用 id）时创建即绑定，连接与绑定同一事务落库.
+     * @param body 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；可携带渠道信息创建即绑定（当前仅应用渠道），连接与绑定在同一事务内落库.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleGuid>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -37,8 +37,8 @@ export interface Feishu_appRequestBuilder extends BaseRequestBuilder<Feishu_appR
      */
      post(body: CreateFeishuAppCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SimpleGuid | undefined>;
     /**
-     * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
-     * @param body 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
+     * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；携带渠道信息（channelType=app + channelId=应用 id）时创建即绑定，连接与绑定同一事务落库.
+     * @param body 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；可携带渠道信息创建即绑定（当前仅应用渠道），连接与绑定在同一事务内落库.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -54,7 +54,6 @@ export const Feishu_appRequestBuilderUriTemplate = "{+baseurl}/api/feishu_app";
 export const Feishu_appRequestBuilderNavigationMetadata: Record<Exclude<keyof Feishu_appRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
         requestsMetadata: Feishu_appItemRequestBuilderRequestsMetadata,
-        navigationMetadata: Feishu_appItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
     list: {

@@ -40,6 +40,7 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
     private readonly Stores.DatabaseWorkflowDefinitionStore _definitionStore;
     private readonly WorkflowExecutionContext _executionContext;
     private readonly AppCompactionStrategyFactory _compactionStrategyFactory;
+    private readonly AppSecurityService _appSecurityService;
     private readonly ILogger<WorkflowAppChatInvoker> _logger;
 
     /// <summary>
@@ -50,6 +51,7 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
     /// <param name="definitionStore">工作流定义存储.</param>
     /// <param name="executionContext">工作流执行上下文.</param>
     /// <param name="compactionStrategyFactory">上下文压缩策略工厂（MAF 压缩组件单独使用）.</param>
+    /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
     /// <param name="logger">日志.</param>
     public WorkflowAppChatInvoker(
         DatabaseContext databaseContext,
@@ -57,6 +59,7 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
         Stores.DatabaseWorkflowDefinitionStore definitionStore,
         WorkflowExecutionContext executionContext,
         AppCompactionStrategyFactory compactionStrategyFactory,
+        AppSecurityService appSecurityService,
         ILogger<WorkflowAppChatInvoker> logger)
     {
         _databaseContext = databaseContext;
@@ -64,6 +67,7 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
         _definitionStore = definitionStore;
         _executionContext = executionContext;
         _compactionStrategyFactory = compactionStrategyFactory;
+        _appSecurityService = appSecurityService;
         _logger = logger;
     }
 
@@ -118,6 +122,9 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
         // 草稿调试实例在运行历史中按「调试」类型记录（与设计器调试运行一致）
         _executionContext.IsDebug = request.UseDraft;
 
+        // 应用内容脱敏策略：引擎节点数据净化器与最终回复脱敏共用（同一作用域记忆化）
+        var securityPolicy = await _appSecurityService.GetPolicyAsync(request.AppId, cancellationToken).ConfigureAwait(false);
+
         var systemContext = new JsonObject
         {
             ["userId"] = request.UserId.ToString(),
@@ -162,7 +169,8 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
         {
             Success = true,
             InstanceId = instance.Id,
-            Reply = ExtractReply(instance.Output) ?? string.Empty,
+            // 最终回复按「模型回复」范围脱敏（节点级数据脱敏已在引擎净化器完成）
+            Reply = securityPolicy.MaskModelText(ExtractReply(instance.Output) ?? string.Empty),
         };
     }
 

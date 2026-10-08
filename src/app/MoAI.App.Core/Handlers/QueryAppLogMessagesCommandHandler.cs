@@ -94,6 +94,10 @@ public class QueryAppLogMessagesCommandHandler : IRequestHandler<QueryAppLogMess
             })
             .ToList();
 
+        // 读侧脱敏兜底：覆盖启用安全策略之前的存量消息
+        var policy = await AppMessageSecurityMasker.LoadPolicyAsync(_databaseContext, app.Id, cancellationToken);
+        AppMessageSecurityMasker.Mask(policy, items);
+
         return new QueryAppLogMessagesCommandResponse
         {
             SessionId = session.Id,

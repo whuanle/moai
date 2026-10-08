@@ -4,6 +4,17 @@
 
 ## 自检记录
 
+- 模型下拉全零 Guid 归一（@AP-S17 更新，2026-10-08）：后端未选择模型时 `QueryAppAgentConfig` 回 `Guid.Empty`、清空保存亦落库全零，前端原样入 Select 无匹配选项即渲染裸串；`AppConfigSection` 加载时与流程设计器 `ModelSelectSection`（AI 对话/问题分类节点共用）取值处统一把全零 Guid 归一为未选择（显示占位符），并兜住存量库全零数据。
+  - 前端：`AppConfigSection.test.tsx` **17/17**（新增：全零 Guid 显示占位符不渲染裸串、保存按 `modelId: null` 提交）、workflow `utils.test.ts` **58/58**、typecheck **0 error**、lint **0 error（既有 9 warning）**（2026-10-08）。
+
+- 应用安全轮（内容脱敏，@AP-S76~S80，2026-10-06）：新表 `app_security_config`（1:1 app、Agent/流程通用，asserts/app_security.sql 已对开发库执行）；聚合 `AppSecurityPolicy`（Database.Shared/Aggregates，内置 phone/idCard/email/bankCard + custom 正则、500ms 匹配超时护院、JSON 节点级脱敏含数字字面量）；CQRS：`GET/PUT /api/app/{id}/security`（保存 Admin+，Handler 兜底重放校验防 Controller 手动重建 Command 绕过 MVC 校验）。**运行时挂点（MAF 官方 AIAgentBuilder.Use 装饰器）**：①函数调用中间件——工具结果在 FunctionResultContent 生成源头脱敏（模型可见/流式事件/落库同源生效；MEAI 会把工具返回值编组为 JsonElement，中间件按 string/JsonElement 归一取文本处理）；②Run 级中间件——流式产出**新 update 实例**脱敏参数与正文（不就地改 FunctionCallContent，防污染 FunctionInvokingChatClient 未执行的原始参数），非流式按官方 PIIMiddleware 模式就地改写响应消息；③`PostgresChatHistoryProvider` 落库前对 ToolCalls JSON/assistant 正文与思维链脱敏（工具消息 Content 为 TextContent 聚合不含函数结果，结果脱敏由①兜住）；④读侧兜底——会话消息/日志消息/流程运行历史查询按当前规则脱敏（覆盖启用前存量）。前端：AppWorkspace「安全」菜单（Agent 侧栏 + 流程配置二级组）、`AppSecuritySection`（总开关/三范围/规则行编辑）、i18n appSecurity.*（zh/en）、syncapi 对 5031 独立实例重生成。
+  - 后端：`dotnet build src/MoAI/MoAI.csproj -o obj/verify-security` → **0 error**；`dotnet test` MoAI.AI.Core.Tests **91/91**（新增 AppSecurityPolicyTests 10 + AppSecurityAgentMiddlewareTests 4：模型第二轮请求只见脱敏结果/工具拿到原始参数/范围关闭旁路/流式克隆）、MoAI.App.Tests **44/44**（新增 SaveAppSecurityCommandHandlerTests 5）、MoAI.App.Workflow.Tests **79/79**（新增 WorkflowNodeSanitizerTests 1）（2026-10-06）。
+  - 前端：typecheck / lint **0 error（既有 warning）**；AppSecuritySection.test.tsx **5/5**、AppWorkspace.test.tsx **4/4**（antd 两汉字按钮自动插空格，「保 存」断言用 /保\s*存/）（2026-10-06）。
+
+- 安全分区改版轮（@AP-S78/@AP-S80 更新，2026-10-08）：应用安全配置拆**两套独立规则**——`app_security_config` 增列 `model_output_rules`（模型回复专属规则，asserts 增量 ALTER 已对开发库 moai_v2 执行）；聚合 `AppSecurityPolicy` 重构为内容规则（`rules`，作用工具结果/参数范围、受 `enabled` 门控）+ 模型规则（`model_output_rules`，仅作用模型回复、**不依赖总开关**），各 Mask 方法按作用域路由到对应规则集，`IsActive` = 两者任一生效；`WorkflowNodeSecuritySanitizer` AI 节点输出叠加改走 `MaskModelJson`（模型规则）；CQRS Save/Query 增 `modelOutputRules` 字段（两组规则同套校验，随保存原样持久化——关闭开关不清空规则）。前端：`AppSecuritySection` 四组独立卡片常显，内容脱敏/模型回复卡片各自内嵌规则编辑器（开关关闭仅隐藏编辑器），模型回复开关开启显示自己专属规则；syncapi 对 5031 独立实例（obj/verify-security2 独立输出绕 DLL 锁 + configs/system.json 指定端口）重生成 Kiota client。
+  - 后端：`dotnet build src/MoAI/MoAI.csproj -o obj/verify-security2` → **0 error 0 warning**；MoAI.AI.Core.Tests **103/103**（AppSecurityPolicyTests 新增 3：模型规则独立于总开关生效/两套规则互不干扰/坏模型规则静默降级）、MoAI.App.Tests **45/45**（SaveAppSecurityCommandHandlerTests 新增 1：关闭总开关保存两组规则不清空 + 回显断言 modelOutputRules）、MoAI.App.Workflow.Tests **78/78**（2026-10-08）。
+  - 前端：typecheck / lint **0 error（既有 warning）**；AppSecuritySection.test.tsx **7/7**（四组常显/总开关关闭规则保留/模型回复规则独立维护/两组自定义正则分别阻断保存/双规则载荷）、AppWorkspace.test.tsx **4/4**（2026-10-08）。
+
 - 应用 ACP 轮（agent-to-agent 协议接入，@ACP-S1~S9）：`TeamApiKeyScopes` 增 `AppAcp=512`（代码 app_acp，ExternalDimensions/AccessAppAllowed 扩位，asserts/app_acp.sql 存量 282 条 `|=512`、列 DEFAULT 对齐 1014=AccessAppDefault，开发库已执行）；`POST /api/external/app/{appId}/acp`（MoAI.AI.Core Acp/，minimal API 不进 openapi 无需 syncapi）——AppAcpServer 手写 JSON-RPC 2.0：initialize/session.new/session.load/session.prompt（SSE 流式 session/update + stopReason 收口）/session.cancel（AppAcpRunRegistry 单例按会话取消，同一会话串行）；执行管线与 AG-UI/飞书同源（AppAgentFactory 装配 + 热态快照 + Flush 落库，Agent 与 Workflow 应用通吃）；中间件 ACP 分支：先 EnsurePrincipalUserAsync 解析直连会话身份再门禁（外部用户语义 + app_acp + 团队归属 + 已发布，不要求 IsExternal，GET 405）。**实踩坑**：流程过程负载键名——C# 匿名对象 `@event` 序列化后是 `"event"`（@ 仅为关键字转义），mapper 误读 `"@event"` 致节点 tool_call 全丢（诊断日志定位 DataContent 已到达后修复）。前端：AppWorkspace「ACP」菜单（Agent 侧栏 + 流程配置二级组）、AppAcpSection（地址/复制/方法 Tag/鉴权提示）、TeamAccessApps 加 app_acp 开关、i18n gateway.scope.app_acp + appWorkspace.acp*（zh/en）。
   - E2E：`node local-dev/app-acp-e2e.mjs` → **21/21**（认证 3/协议 3/门禁 2/Agent 对话 4/用户 token 1/隔离与 load 2/Workflow 1/cancel 1/缓存立即性 2/凭证语义 2；本地桩模型 + 确定性流程编排，零 SKIP）；前端 TeamAccessApps/AppWorkspace vitest 4/4+4/4、eslint 0、typecheck 除并行会话 KgCanvas 既有错误 0（2026-09-27）。
 
@@ -97,7 +108,7 @@
 | @AP-S24 | TeamAccessApps.test.tsx（区块顶部 key 用途提示） | PASS 3/3（2026-09-21） |
 | @AP-S15 | TeamApps.test.tsx（卡片 + 卡片右上角「管理」点击进入管理页；Member 只读） | PASS 6/6（2026-09-11） |
 | @AP-S16 | AppConfigSection.test.tsx（工作台配置分区「Agent 配置」；2026-09-19 起应用信息拆至「信息」分区 @AP-S49。原单页分栏已被工作台取代，见 @AP-S40） | PASS 9/9（2026-09-19） |
-| @AP-S17 | app-e2e.mjs（AP-15a-c、AP-16b/c、AP-19a） | PASS（2026-09-11） |
+| @AP-S17 | app-e2e.mjs（AP-15a-c、AP-16b/c、AP-19a）+ AppConfigSection.test.tsx（全零 Guid 模型归一为占位符并按 null 保存，2026-10-08） | PASS（2026-09-11） |
 | @AP-S18 | app-e2e.mjs（AP-16a/d/e、AP-17a/b/d、AP-20a-e）+ AppConfigSection.test.tsx（选项来自团队模型/团队插件/本团队知识库） | PASS（2026-09-14） |
 | @AP-S19 | app-e2e.mjs（AP-17c、AP-18、AP-19a/b） | PASS 121/121（2026-09-17，AP-18 契约更新：流程应用保存只写开场白字段返回 200） |
 | 团队内应用分区（卡片） | ui/src/pages/teams/apps/__tests__/TeamApps.test.tsx | PASS 6/6（2026-09-11） |
@@ -191,3 +202,16 @@ cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck &&
 - 2026-09-26 应用接入 key 知识库功能范围（@AP-S73）：`access_app.scopes`（asserts/access_app_scopes.sql，存量回填 6=读写），签发/刷新 token 范围取接入勾选，不传默认读写全量、空列表=纯对话接入。E2E `team-apikey-scope-e2e.mjs` **34/34**、external-app-e2e 回归 **59/59**、wiki-external-e2e 回归 **30/30**（2026-09-26）。
 - 2026-09-26 应用对话范围门禁（@AP-S74）：`access_app.scopes`/`team_api_key.scopes` 增 `app_chat`(32)，换用户 token 与用户 token 刷新按来源勾选重验（asserts/access_app_app_chat.sql，存量 |=32 补对话）。应用接入界面改按资源组授权（知识库 无/只读/可写）。E2E `team-apikey-scope-e2e.mjs` **46/46**（TA-33~35）、external-app-e2e 回归 **75/75**（2026-09-26）；分组口径见 [../gateway/sdd.md](../gateway/sdd.md) 资源分组表。
 - 2026-09-27 团队接入 key 下线（@AP-S72 改应用接入 key 换 token、@EA-S18 退役→@EA-S19）：`/external/token` 移除 `apiKey` 凭证与 `keyid` claim，key 直连仅接受 `moai-ac-`；`team_api_key` 表删除（asserts/team_api_key_drop.sql）。E2E external-app **74/74**、team-apikey-scope **21/21**、gateway **15/15**（2026-09-27）；设计见 [../gateway/sdd.md](../gateway/sdd.md)。
+| @AP-S76 | tests/MoAI.App.Tests/SaveAppSecurityCommandHandlerTests.cs（权限/校验/回显/默认值 5 例） | PASS 5/5（2026-10-06） |
+| @AP-S77 | tests/MoAI.AI.Core.Tests/AppSecurityAgentMiddlewareTests.cs（RunAsync/RunStreamingAsync 两轮脚本客户端） | PASS 4/4（2026-10-06） |
+| @AP-S78 | tests/MoAI.AI.Core.Tests/AppSecurityPolicyTests.cs（范围门控 + 两套规则独立性）+ AppSecurityAgentMiddlewareTests（范围关闭旁路） | PASS（2026-10-08 复验） |
+| @AP-S79 | AppMessageSecurityMasker（读侧兜底，代码走查 + AppSecurityPolicyTests Mask 语义） | PASS（2026-10-06） |
+| @AP-S80 | ui/src/pages/teams/apps/__tests__/AppSecuritySection.test.tsx + AppWorkspace.test.tsx | PASS 7/7、4/4（2026-10-08：四组独立常显 + 双套规则内嵌改版） |
+| @AP-S81 | tests/MoAI.AI.Core.Tests/FrontendToolContextProviderTests.cs（三工具注册/桩执行/漏传参数/请求头开关/前缀判定） | PASS 9/9（2026-10-08） |
+| @AP-S82 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（ui_show_chart 流式折叠卡 + 侧边栏自动打开/关闭重开） | PASS 19/19（2026-10-08） |
+| @AP-S83 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（历史回放渲染折叠卡，点击打开不自动展开） | PASS 19/19（2026-10-08） |
+| @AP-S84 | UiToolCard.test.tsx（降级态/点击/高亮）+ ChatSidePanel.test.tsx（三渲染器/复制/关闭/多标签/拖宽手柄）+ UiTools.test.ts（解析层含 option 字符串/围栏/顶层回退/畸形对象拦截归一化）+ EChart.test.tsx（容器常驻/抛后同实例恢复/不重复 init） | PASS 4/4、8/8、14/14、5/5（2026-10-08 复验：畸形 option 解析层拦截 + 渲染实例脱钩空白修复） |
+| @AP-S85 | ChatSidePanel.test.tsx（多标签切换/单关回调/收起/拖宽手柄）+ AppChat.test.tsx（一轮双图表多标签端到端：切换/关当前切相邻/收起重开保留） | PASS 8/8、20/20（2026-10-08） |
+| @AP-S86 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（悬浮显示的红色删除入口 + 确认后调删除接口并刷新列表 + 删除当前会话回欢迎态） | PASS 21/21（2026-10-08：含 Popconfirm 弹层点击沿 React 树冒泡误触发行的修复回归） |
+| @AP-S87 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（头部返回按钮跳转 /apps，公开应用非团队成员不落入团队应用列表） | PASS 22/22（2026-10-08） |
+| @AP-S88 | AppChat.test.tsx（多会话并行：A 流式中点「新对话」立即创建会话 B 且各自独立 agent；侧栏呼吸点标识进行中会话；切回流式中会话恢复实时现场不回拉历史；停止仅中止当前会话） | PASS 24/24（2026-10-08，typecheck/lint 0 error） |

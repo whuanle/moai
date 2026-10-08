@@ -39,6 +39,12 @@ public class DeleteDynamicPluginCommandHandler : IRequestHandler<DeleteDynamicPl
         var pluginEntity = await _databaseContext.Plugins
             .FirstOrDefaultAsync(x => x.PluginId == dynamicEntity.Id && x.IsDeleted == 0, cancellationToken);
 
+        // 系统管理端点只允许操作系统侧实例；团队自有实例走团队插件删除链路
+        if (pluginEntity != null && pluginEntity.TeamId != 0)
+        {
+            throw new BusinessException("团队插件不能在系统插件页删除") { StatusCode = 403 };
+        }
+
         if (pluginEntity != null)
         {
             pluginEntity.IsDeleted = 1;

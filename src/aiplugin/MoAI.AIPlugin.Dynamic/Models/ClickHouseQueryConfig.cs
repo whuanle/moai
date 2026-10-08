@@ -10,7 +10,7 @@ public class ClickHouseQueryConfig
     /// <summary>
     /// ClickHouse HTTP 接口地址.
     /// </summary>
-    [Description("ClickHouse HTTP 接口地址（默认 8123 端口），例如 http://clickhouse:8123；可含路径前缀")]
+    [Description("ClickHouse HTTP 接口地址（默认 8123 端口），例如 http://192.168.50.199:8123；可含路径前缀")]
     public string BaseUrl { get; set; } = string.Empty;
 
     /// <summary>
@@ -30,12 +30,6 @@ public class ClickHouseQueryConfig
     /// </summary>
     [Description("默认数据库（可选）：未指定库名的表按该库解析；留空用服务端默认库")]
     public string Database { get; set; } = string.Empty;
-
-    /// <summary>
-    /// OpenTelemetry 数据所在数据库（默认 otel）.
-    /// </summary>
-    [Description("OpenTelemetry 数据所在的库名（默认 otel，对应 ClickHouse OTel Collector 导出的默认库）")]
-    public string OtelDatabase { get; set; } = "otel";
 
     /// <summary>
     /// 单次请求超时秒数（1-300）.

@@ -36,7 +36,7 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 
 ### 前端入口：应用工作台「外部渠道」分区
 
-`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部 Agent 应用的 Admin+ 可见（流程应用暂不支持对话渠道、外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；支持「接入飞书应用」（创建连接并直接绑定，新建连接必然未绑定故绑定不会 409）、「绑定已有连接」（仅列未绑定连接）、停用/启用、解绑、删除；应用未发布时提示消息不会被处理（对应消费侧发布门禁）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
+`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部 Agent 应用的 Admin+ 可见（流程应用暂不支持对话渠道、外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；**只提供「接入飞书应用」（创建连接即绑定到当前应用，`channelType=app` + `channelId=appId` 随创建命令单次调用、连接与绑定同一事务落库）、停用/启用、删除三种操作**——不提供「绑定已有连接」与「解绑」，删除即彻底移除连接（级联解绑，不保留可复用连接，删除后同 AppID 可重新接入）；应用未发布时提示消息不会被处理（对应消费侧发布门禁）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
 
 ## 应用渠道回复链路（AppFeishuMessageHandler）
 
@@ -56,15 +56,15 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
   - `FeishuChannelType.App`（0，**独占型**）：`(feishu_app_id) WHERE is_deleted=0 AND channel_type=0` 唯一——同一飞书应用只能绑定一个团队应用，否则同一条对话消息会被两个应用同时消费。
   - 其余**订阅型**渠道（当前为 `FeishuChannelType.WikiSource`（1），知识库外部源，见 [../wiki/sdd.md](../wiki/sdd.md) D27）：同一飞书应用可绑定多条；仅 `(feishu_app_id, channel_type, channel_id)` 唯一防重复绑定同一条记录。
 - 渠道用 `(FeishuChannelType, string ChannelId)` 弱关联（`app` → app.id；`wikiSource` → wiki_source.id），绑定 Handler 校验渠道存在且与连接同团队。
-- 权限模型沿用团队资源：连接属于团队，写操作（增删改/绑定/解绑）Admin+，读列表 Member+。**订阅型渠道的绑定由业务模块在自身 Handler 内完成**（如创建/更新/删除外部源时），飞书模块不感知业务语义。
+- 权限模型沿用团队资源：连接属于团队，写操作（增删改）Admin+，读列表 Member+。应用渠道无独立绑定/解绑操作——`POST /api/feishu_app` 携带渠道字段即创建即绑定，删除即级联解绑；`bind`/`unbind` HTTP 端点已下线，`BindFeishuAppCommand`/`UnbindFeishuAppCommand` 仅保留给业务模块内部 MediatR 复用。**订阅型渠道的绑定由业务模块在自身 Handler 内完成**（如创建/更新/删除外部源时），飞书模块不感知业务语义。
 
 ## 关键决策
 
 1. **连接复用而非转发总线**：每 AppID 一条连接由飞书模块独占；业务模块不感知 WSS，只消费 `IFeishuEventHandler`。
-2. **绑定互斥在 Handler + 数据库双层兜底**：Handler 查重返回 409，唯一过滤索引防并发窗口；应用渠道为**独占**、订阅型渠道（外部源）为**一对多**（同一条长连接的事件广播给所有绑定渠道，`FeishuEventForwarder` 按渠道类型分组投递）。
+2. **应用渠道创建即绑定、订阅渠道 Handler 查重**：应用渠道随创建命令在同一事务内写入绑定（新建连接无存量绑定，互斥天然满足），不暴露独立绑定操作；订阅型渠道仍由 `BindFeishuAppCommand` 查重返回 409，唯一过滤索引防并发窗口——应用渠道为**独占**、订阅型渠道（外部源）为**一对多**（同一条长连接的事件广播给所有绑定渠道，`FeishuEventForwarder` 按渠道类型分组投递）。
 3. **收帧线程零阻塞**：转发器立即 ack，业务处理转线程池；飞书侧重发由 event_id 去重器吸收。
 4. **禁用即断连**：`is_disable=true` 断开且不重连；事件到达时若应用已禁用/删除，转发器二次校验后丢弃。
-5. **删连接级联解绑**：删除 feishu_app 同时软删其绑定，渠道可立即被其它连接绑定。
+5. **删连接级联解绑、删除即彻底移除**：删除 feishu_app 同时软删其绑定；应用渠道体系下删除不留存可复用连接，同 AppID 可立即重建并接入原渠道。
 6. **回复走既有 Agent 会话管线**：飞书会话与 AG-UI 会话同构（热态/落库/压缩/工具全复用），不另建存储；chat↔session 映射放 Redis（30 天滑动）而非加列。
 7. **飞书用户不映射内部用户**：`userId=0`，会话 `UserType=External`；用量计入团队/应用维度。
 

@@ -62,13 +62,13 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         var plugin = _registry.Get(request.Key);
         if (plugin != null)
         {
-            return await _executor.ExecuteAsync(plugin, request.RequestJson, null, cancellationToken).ConfigureAwait(false);
+            return await _executor.ExecuteAsync(plugin, request.RequestJson, null, BuildRunContext(request), cancellationToken).ConfigureAwait(false);
         }
 
         var dynamic = _dynamicResolver.Resolve(request.Key);
         if (dynamic != null)
         {
-            return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, cancellationToken).ConfigureAwait(false);
+            return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, BuildRunContext(request), cancellationToken).ConfigureAwait(false);
         }
 
         // 数据库中的自定义插件（MCP/OpenAPI）：团队自有、公开或已授权本团队的系统插件
@@ -79,6 +79,17 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         }
 
         throw new BusinessException("插件不存在") { StatusCode = 404 };
+    }
+
+    private static PluginRunContext BuildRunContext(RunTeamPluginCommand request)
+    {
+        return new PluginRunContext
+        {
+            UserId = request.ContextUserId,
+            UserType = request.ContextUserType,
+            TeamId = request.TeamId,
+            Source = PluginRunSource.Team,
+        };
     }
 
     private async Task<bool> IsPluginAvailableAsync(long teamId, string key, CancellationToken cancellationToken)

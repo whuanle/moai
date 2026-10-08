@@ -108,14 +108,15 @@ node local-dev/gateway-e2e.mjs            # GW 15（模型网关：应用接入 
 node local-dev/external-app-e2e.mjs       # EA 75（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话）
 node local-dev/app-acp-e2e.mjs            # ACP 21（应用 ACP：app_acp scope 门禁 + JSON-RPC initialize/session/* + Agent/Workflow 应用 ACP 对话 + cancel 中断 + 范围缓存立即性；内置桩模型与确定性流程编排，零 SKIP）
 node local-dev/app-a2a-e2e.mjs          # A2A 20（应用 A2A 协议：app_a2a 门禁/Agent Card/message-send 与 stream（SSE 事件序列）/tasks-get·cancel/会话续聊与落库/用户 token/范围立即性）
-node local-dev/dynamic-plugin-e2e.mjs    # DYN 102（实例管理 + 失败路径 + 内置模板注册 dynamic_greet/bocha_web_search/bocha_ai_search/feishu_web_hook_text/javascript_executor/postgres_query/mysql_query）
+node local-dev/dynamic-plugin-e2e.mjs    # DYN 162（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70；真实 Key/真库用例环境门控 SKIP）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/paddleocr-e2e.mjs         # DYN 36~42（PaddleOCR 三模板成功路径 + 响应解析，自建桩服务，无需真实 PaddleOCR）
 node local-dev/ops-p1-plugins-e2e.mjs    # DYN 39（P1 运维插件：http_probe 拨测 http/tcp/dns+内网防护 / zabbix_query 双鉴权+主机富化 / redis_query 六模式只读诊断；自建 HTTP+RESP2 双桩，无需真实运维系统；前置 dotnet build -o .builds/ops-p1）
 node local-dev/ops-p2-plugins-e2e.mjs    # DYN 30+2SKIP（P2 运维插件：ssh_executor 白名单守卫+处置执行 / grafana_query 注解时间线 / sqlserver_query 只读查询；Grafana 桩+守卫用例无条件，SSH 真机/SqlServer 真库按 SSH_E2E_CONNECTION/SQLSERVER_E2E_CONNECTION 门控；前置 dotnet build -o .builds/ops-p2）
 node local-dev/ops-p0-plugins-e2e.mjs    # DYN 30（P0 运维插件：alertmanager_query 告警静默 / loki_query LogQL 纳秒归一 / kubernetes_query 资源与日志 / 钉钉企微机器人 HMAC 加签；四桩全链路，无需真实运维系统；前置 dotnet build -o .builds/ops-p0）
-node local-dev/clickstack-e2e.mjs        # DYN 20（ClickStack 查询：sources 数据源 / search 原始检索 / chart 时间线聚合，走 HyperDX 对外 API（Personal API Access Key，ClickHouse 8123 不公开时的唯一查询面）；自建三端点桩，无需真实 ClickStack；前置 dotnet build -o .builds/clickstack）
-node local-dev/feishu-e2e.mjs            # FS 28（飞书应用连接 CRUD + 渠道绑定互斥，假凭证即可）
+node local-dev/observability-plugin-e2e.mjs # DYN 61（观测四插件：Prometheus/ES/Tempo 桩全链路 + clickhouse_query 自由只读 SQL @DYN-S71~S72（摸库摸表/SHOW CREATE/FORMAT JSON meta/三层只读防护）；自建四段路由桩，无需真实观测服务；前置 dotnet build -o .builds/observability）
+node local-dev/clickstack-e2e.mjs        # DYN 20（ClickStack 查询：sources 数据源 / search 原始检索 / chart 时间线聚合，走 HyperDX 对外 API（Personal API Access Key，ClickHouse 8123 不公开时的唯一查询面，与 clickhouse_query 分立）；自建三端点桩，无需真实 ClickStack；前置 dotnet build -o .builds/clickstack）
+node local-dev/feishu-e2e.mjs            # FS 32（飞书应用连接 CRUD + 应用渠道创建即绑定/删除即彻底移除/绑定解绑端点下线，假凭证即可）
 node local-dev/audit-345.mjs node local-dev/audit-storage.mjs node local-dev/auth-lockout-check.mjs
 ```
 

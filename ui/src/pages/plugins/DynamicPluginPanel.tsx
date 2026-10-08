@@ -108,6 +108,13 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
     [classifies, t],
   )
 
+  /** 实例引用的模板已不在注册表（模板被下线）：运行与编辑都不可用，仅保留删除. */
+  const isTemplateMissing = useCallback(
+    (record: DynamicPluginManageItem) =>
+      Boolean(record.templeteKey) && !templates.some((tpl) => tpl.key === record.templeteKey),
+    [templates],
+  )
+
   const columns: TableColumnsType<DynamicPluginManageItem> = [
     {
       title: t('plugins.colPluginName'),
@@ -124,8 +131,18 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
     {
       title: t('plugins.dynamicTemplate'),
       dataIndex: 'templeteKey',
-      width: 160,
-      render: (v: string | null) => (v ? <Tag color="blue">{v}</Tag> : '-'),
+      width: 200,
+      render: (v: string | null, record) => {
+        if (!v) return '-'
+        return isTemplateMissing(record) ? (
+          <Space size={4} wrap>
+            <Tag>{v}</Tag>
+            <Tag color="red">{t('plugins.templateMissing')}</Tag>
+          </Space>
+        ) : (
+          <Tag color="blue">{v}</Tag>
+        )
+      },
     },
     {
       title: t('plugins.colClassify'),
@@ -157,12 +174,13 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
       fixed: 'right',
       render: (_: unknown, record: DynamicPluginManageItem) => (
         <Space size={0}>
-          <Tooltip title={t('plugins.run')}>
+          <Tooltip title={isTemplateMissing(record) ? t('plugins.templateMissing') : t('plugins.run')}>
             <Button
               type="text"
               size="small"
               icon={<PlayCircleOutlined />}
               aria-label={t('plugins.run')}
+              disabled={isTemplateMissing(record)}
               onClick={() => setDrawerTarget(record)}
             />
           </Tooltip>
@@ -183,6 +201,7 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
               size="small"
               icon={<EditOutlined />}
               aria-label={t('plugins.editPlugin')}
+              disabled={isTemplateMissing(record)}
               onClick={() => openEdit(record)}
             />
           </Tooltip>

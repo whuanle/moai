@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { attachmentImageSrc, getAttachmentFileIcon, parseAttachmentMessage, type ParsedAttachment } from './attachment'
 import { ToolCallCard, type ToolCallDisplay, type ToolCallStatus } from './ToolCallCard'
+import { UiToolCard } from './UiToolCard'
+import { isUiToolName } from './uiTools'
 
 export type { ToolCallDisplay, ToolCallStatus } from './ToolCallCard'
 
@@ -31,6 +33,10 @@ export interface ChatMessageListProps {
   onToolApprove?: (messageId: string, toolCall: ToolCallDisplay) => void
   /** 审批卡「拒绝」回调 */
   onToolReject?: (messageId: string, toolCall: ToolCallDisplay) => void
+  /** 前端展示工具（ui_ 前缀）卡片点击：在右侧侧边栏打开内容 */
+  onOpenUiTool?: (messageId: string, toolCall: ToolCallDisplay) => void
+  /** 当前侧边栏展示的 ui 工具调用 id（对应卡片高亮） */
+  activeUiToolId?: string
   style?: CSSProperties
 }
 
@@ -132,6 +138,8 @@ export function ChatMessageList({
   emptyState,
   onToolApprove,
   onToolReject,
+  onOpenUiTool,
+  activeUiToolId,
   style,
 }: ChatMessageListProps) {
   const { t } = useTranslation()
@@ -186,12 +194,26 @@ export function ChatMessageList({
               ) : (
                 group.map((m) => {
                   const streaming = sending && m.id === lastMessageId
-                  const toolCalls = m.toolCalls ?? []
+                  // 前端展示工具（ui_ 前缀）单独走折叠卡渲染，其余工具调用维持折叠组/活跃卡逻辑
+                  const uiCalls = (m.toolCalls ?? []).filter((tc) => isUiToolName(tc.name))
+                  const toolCalls = (m.toolCalls ?? []).filter((tc) => !isUiToolName(tc.name))
                   const completed = toolCalls.filter((tc) => !ACTIVE_TOOL_STATUSES.has(tc.status))
                   const active = toolCalls.filter((tc) => ACTIVE_TOOL_STATUSES.has(tc.status))
                   return (
                     <div key={m.id} className="moai-chat__turn">
                       {completed.length > 0 && <ToolCallGroup calls={completed} />}
+                      {uiCalls.length > 0 && (
+                        <div className="moai-chat__ui-tools">
+                          {uiCalls.map((toolCall) => (
+                            <UiToolCard
+                              key={toolCall.id}
+                              toolCall={toolCall}
+                              active={toolCall.id === activeUiToolId}
+                              onOpen={onOpenUiTool ? () => onOpenUiTool(m.id, toolCall) : undefined}
+                            />
+                          ))}
+                        </div>
+                      )}
                       <div className="moai-chat__assistant">
                         {m.content ? (
                           <div className="moai-chat__markdown">

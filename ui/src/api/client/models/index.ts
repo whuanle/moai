@@ -491,6 +491,27 @@ export interface AppMessageItem extends Parsable {
     toolCalls?: string | null;
 }
 /**
+ * 脱敏规则存储/传输契约（app_security_config.rules 数组元素）.
+ */
+export interface AppSecurityRule extends Parsable {
+    /**
+     * 规则名称（展示用）.
+     */
+    name?: string | null;
+    /**
+     * 自定义正则（type=custom 时必填，内置类型忽略）.
+     */
+    pattern?: string | null;
+    /**
+     * 命中后替换文本，空为 ***.
+     */
+    replacement?: string | null;
+    /**
+     * 规则类型代码，见 AppSecurityRuleTypes.
+     */
+    type?: string | null;
+}
+/**
  * 会话项.
  */
 export interface AppSessionItem extends Parsable {
@@ -821,23 +842,6 @@ export interface BatchUpdateAIModelCommand extends Parsable {
      * 模型 id 集合.
      */
     modelIds?: Guid[] | null;
-}
-/**
- * 绑定飞书应用到渠道（应用/知识库等），需要团队 Admin 及以上角色；同一飞书应用同时只能绑定一个渠道，绑定冲突时返回 409.
- */
-export interface BindFeishuAppCommand extends Parsable {
-    /**
-     * 渠道记录 id 字符串，应用为 app.id（uuid），知识库为 wiki.id（数字）.
-     */
-    channelId?: string | null;
-    /**
-     * 渠道类型.
-     */
-    channelType?: FeishuChannelType | null;
-    /**
-     * 飞书应用记录 id（来自路由）.
-     */
-    feishuAppId?: Guid | null;
 }
 /**
  * 已绑定的第三方账号信息.
@@ -1270,6 +1274,15 @@ export function createAppMessageItemFromDiscriminatorValue(parseNode: ParseNode 
     return deserializeIntoAppMessageItem;
 }
 /**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppSecurityRule}
+ */
+// @ts-ignore
+export function createAppSecurityRuleFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppSecurityRule;
+}
+/**
  * 创建 Agent 应用会话；团队成员可创建，Member 仅能对已发布应用创建会话.
  */
 export interface CreateAppSessionCommand extends Parsable {
@@ -1384,15 +1397,6 @@ export function createBatchRunWikiDocumentWorkflowDocumentItemFromDiscriminatorV
 // @ts-ignore
 export function createBatchUpdateAIModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoBatchUpdateAIModelCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {BindFeishuAppCommand}
- */
-// @ts-ignore
-export function createBindFeishuAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoBindFeishuAppCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1839,7 +1843,7 @@ export function createExtractSkillPackageCommandResponseFromDiscriminatorValue(p
     return deserializeIntoExtractSkillPackageCommandResponse;
 }
 /**
- * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
+ * 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；可携带渠道信息创建即绑定（当前仅应用渠道），连接与绑定在同一事务内落库.
  */
 export interface CreateFeishuAppCommand extends Parsable {
     /**
@@ -1850,6 +1854,14 @@ export interface CreateFeishuAppCommand extends Parsable {
      * 飞书开放平台 AppSecret.
      */
     appSecret?: string | null;
+    /**
+     * 创建即绑定的渠道记录 id 字符串，应用渠道为 app.id（uuid）；与 ChannelType 必须同时提供或同时缺省.
+     */
+    channelId?: string | null;
+    /**
+     * 创建即绑定的渠道类型，可为空（不绑定）；当前仅支持应用渠道 app，外部源等订阅型渠道由业务模块自行绑定.
+     */
+    channelType?: FeishuChannelType | null;
     /**
      * 描述，可为空.
      */
@@ -2692,6 +2704,15 @@ export function createQueryAppsCommandResponseFromDiscriminatorValue(parseNode: 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppSecurityCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppSecurityCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppSecurityCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAppSessionMessagesCommandResponse}
  */
 // @ts-ignore
@@ -3516,6 +3537,15 @@ export function createSaveAppAccessPointCommandFromDiscriminatorValue(parseNode:
 // @ts-ignore
 export function createSaveAppAgentConfigCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSaveAppAgentConfigCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SaveAppSecurityCommand}
+ */
+// @ts-ignore
+export function createSaveAppSecurityCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSaveAppSecurityCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4980,6 +5010,19 @@ export function deserializeIntoAppMessageItem(appMessageItem: Partial<AppMessage
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAppSecurityRule(appSecurityRule: Partial<AppSecurityRule> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "name": n => { appSecurityRule.name = n.getStringValue(); },
+        "pattern": n => { appSecurityRule.pattern = n.getStringValue(); },
+        "replacement": n => { appSecurityRule.replacement = n.getStringValue(); },
+        "type": n => { appSecurityRule.type = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAppSessionItem(appSessionItem: Partial<AppSessionItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { appSessionItem.appId = n.getGuidValue(); },
@@ -5142,18 +5185,6 @@ export function deserializeIntoBatchUpdateAIModelCommand(batchUpdateAIModelComma
     return {
         "enabled": n => { batchUpdateAIModelCommand.enabled = n.getBooleanValue(); },
         "modelIds": n => { batchUpdateAIModelCommand.modelIds = n.getCollectionOfPrimitiveValues<Guid>(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
-export function deserializeIntoBindFeishuAppCommand(bindFeishuAppCommand: Partial<BindFeishuAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "channelId": n => { bindFeishuAppCommand.channelId = n.getStringValue(); },
-        "channelType": n => { bindFeishuAppCommand.channelType = n.getEnumValue<FeishuChannelType>(FeishuChannelTypeObject); },
-        "feishuAppId": n => { bindFeishuAppCommand.feishuAppId = n.getGuidValue(); },
     }
 }
 /**
@@ -5371,6 +5402,8 @@ export function deserializeIntoCreateFeishuAppCommand(createFeishuAppCommand: Pa
     return {
         "appId": n => { createFeishuAppCommand.appId = n.getStringValue(); },
         "appSecret": n => { createFeishuAppCommand.appSecret = n.getStringValue(); },
+        "channelId": n => { createFeishuAppCommand.channelId = n.getStringValue(); },
+        "channelType": n => { createFeishuAppCommand.channelType = n.getEnumValue<FeishuChannelType>(FeishuChannelTypeObject); },
         "description": n => { createFeishuAppCommand.description = n.getStringValue(); },
         "domain": n => { createFeishuAppCommand.domain = n.getStringValue(); },
         "name": n => { createFeishuAppCommand.name = n.getStringValue(); },
@@ -6783,6 +6816,23 @@ export function deserializeIntoQueryAppsCommandResponse(queryAppsCommandResponse
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAppSecurityCommandResponse(queryAppSecurityCommandResponse: Partial<QueryAppSecurityCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { queryAppSecurityCommandResponse.appId = n.getGuidValue(); },
+        "enabled": n => { queryAppSecurityCommandResponse.enabled = n.getBooleanValue(); },
+        "maskModelOutput": n => { queryAppSecurityCommandResponse.maskModelOutput = n.getBooleanValue(); },
+        "maskToolArgs": n => { queryAppSecurityCommandResponse.maskToolArgs = n.getBooleanValue(); },
+        "maskToolResult": n => { queryAppSecurityCommandResponse.maskToolResult = n.getBooleanValue(); },
+        "modelOutputRules": n => { queryAppSecurityCommandResponse.modelOutputRules = n.getCollectionOfObjectValues<AppSecurityRule>(createAppSecurityRuleFromDiscriminatorValue); },
+        "myRole": n => { queryAppSecurityCommandResponse.myRole = n.getNumberValue(); },
+        "rules": n => { queryAppSecurityCommandResponse.rules = n.getCollectionOfObjectValues<AppSecurityRule>(createAppSecurityRuleFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAppSessionMessagesCommandResponse(queryAppSessionMessagesCommandResponse: Partial<QueryAppSessionMessagesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAppSessionMessagesCommandResponse.items = n.getCollectionOfObjectValues<AppMessageItem>(createAppMessageItemFromDiscriminatorValue); },
@@ -8037,6 +8087,22 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
         "skills": n => { saveAppAgentConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "wikiIds": n => { saveAppAgentConfigCommand.wikiIds = n.getCollectionOfPrimitiveValues<string>(); },
         "workflowApps": n => { saveAppAgentConfigCommand.workflowApps = n.getCollectionOfPrimitiveValues<Guid>(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSaveAppSecurityCommand(saveAppSecurityCommand: Partial<SaveAppSecurityCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { saveAppSecurityCommand.appId = n.getGuidValue(); },
+        "enabled": n => { saveAppSecurityCommand.enabled = n.getBooleanValue(); },
+        "maskModelOutput": n => { saveAppSecurityCommand.maskModelOutput = n.getBooleanValue(); },
+        "maskToolArgs": n => { saveAppSecurityCommand.maskToolArgs = n.getBooleanValue(); },
+        "maskToolResult": n => { saveAppSecurityCommand.maskToolResult = n.getBooleanValue(); },
+        "modelOutputRules": n => { saveAppSecurityCommand.modelOutputRules = n.getCollectionOfObjectValues<AppSecurityRule>(createAppSecurityRuleFromDiscriminatorValue); },
+        "rules": n => { saveAppSecurityCommand.rules = n.getCollectionOfObjectValues<AppSecurityRule>(createAppSecurityRuleFromDiscriminatorValue); },
     }
 }
 /**
@@ -11394,6 +11460,43 @@ export interface QueryAppsCommandResponse extends Parsable {
     teamId?: string | null;
 }
 /**
+ * 应用安全配置响应.
+ */
+export interface QueryAppSecurityCommandResponse extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 是否启用内容脱敏；启用且存在至少一条规则时生效.
+     */
+    enabled?: boolean | null;
+    /**
+     * 是否对模型回复文本（对话正文）脱敏.
+     */
+    maskModelOutput?: boolean | null;
+    /**
+     * 是否对工具调用参数（调用记录展示、流程节点输入）脱敏.
+     */
+    maskToolArgs?: boolean | null;
+    /**
+     * 是否对工具调用结果（含错误信息、流程节点输出）脱敏.
+     */
+    maskToolResult?: boolean | null;
+    /**
+     * 模型回复专属脱敏规则列表，与 Rules 相互独立维护，未配置为空列表.
+     */
+    modelOutputRules?: AppSecurityRule[] | null;
+    /**
+     * 当前用户在应用所属团队中的角色（0=成员 1=管理员 2=所有者）.
+     */
+    myRole?: number | null;
+    /**
+     * 内容脱敏规则列表（工具调用结果/工具调用参数范围共用），未配置为空列表.
+     */
+    rules?: AppSecurityRule[] | null;
+}
+/**
  * 会话消息响应.
  */
 export interface QueryAppSessionMessagesCommandResponse extends Parsable {
@@ -13563,6 +13666,39 @@ export interface SaveAppAgentConfigCommand extends Parsable {
     workflowApps?: Guid[] | null;
 }
 /**
+ * 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；Agent 应用与流程应用通用.
+ */
+export interface SaveAppSecurityCommand extends Parsable {
+    /**
+     * 应用 id，由 Controller 从路由参数回填.
+     */
+    appId?: Guid | null;
+    /**
+     * 是否启用内容脱敏；启用且存在至少一条规则时生效.
+     */
+    enabled?: boolean | null;
+    /**
+     * 是否对模型回复文本（对话正文）脱敏.
+     */
+    maskModelOutput?: boolean | null;
+    /**
+     * 是否对工具调用参数（调用记录展示、流程节点输入）脱敏.
+     */
+    maskToolArgs?: boolean | null;
+    /**
+     * 是否对工具调用结果（含错误信息、流程节点输出）脱敏.
+     */
+    maskToolResult?: boolean | null;
+    /**
+     * 模型回复专属脱敏规则列表，与 Rules 相互独立维护；条数与校验规则同 Rules.
+     */
+    modelOutputRules?: AppSecurityRule[] | null;
+    /**
+     * 内容脱敏规则列表（工具调用结果/工具调用参数范围共用），最多 50 条；type 取 AppSecurityRuleTypes（phone/idCard/email/bankCard/custom），custom 须携带可编译正则.
+     */
+    rules?: AppSecurityRule[] | null;
+}
+/**
  * 保存用户级应用配置：用户对某个应用的个性化定制（默认专家/默认技能的勾选），跨会话复用.
  */
 export interface SaveAppUserConfigCommand extends Parsable {
@@ -14040,6 +14176,19 @@ export function serializeAppMessageItem(writer: SerializationWriter, appMessageI
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAppSecurityRule(writer: SerializationWriter, appSecurityRule: Partial<AppSecurityRule> | undefined | null = {}) : void {
+    if (appSecurityRule) {
+        writer.writeStringValue("name", appSecurityRule.name);
+        writer.writeStringValue("pattern", appSecurityRule.pattern);
+        writer.writeStringValue("replacement", appSecurityRule.replacement);
+        writer.writeStringValue("type", appSecurityRule.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAppSessionItem(writer: SerializationWriter, appSessionItem: Partial<AppSessionItem> | undefined | null = {}) : void {
     if (appSessionItem) {
         writer.writeGuidValue("appId", appSessionItem.appId);
@@ -14203,18 +14352,6 @@ export function serializeBatchUpdateAIModelCommand(writer: SerializationWriter, 
     if (batchUpdateAIModelCommand) {
         writer.writeBooleanValue("enabled", batchUpdateAIModelCommand.enabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("modelIds", batchUpdateAIModelCommand.modelIds);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
-export function serializeBindFeishuAppCommand(writer: SerializationWriter, bindFeishuAppCommand: Partial<BindFeishuAppCommand> | undefined | null = {}) : void {
-    if (bindFeishuAppCommand) {
-        writer.writeStringValue("channelId", bindFeishuAppCommand.channelId);
-        writer.writeEnumValue<FeishuChannelType>("channelType", bindFeishuAppCommand.channelType);
-        writer.writeGuidValue("feishuAppId", bindFeishuAppCommand.feishuAppId);
     }
 }
 /**
@@ -14432,6 +14569,8 @@ export function serializeCreateFeishuAppCommand(writer: SerializationWriter, cre
     if (createFeishuAppCommand) {
         writer.writeStringValue("appId", createFeishuAppCommand.appId);
         writer.writeStringValue("appSecret", createFeishuAppCommand.appSecret);
+        writer.writeStringValue("channelId", createFeishuAppCommand.channelId);
+        writer.writeEnumValue<FeishuChannelType>("channelType", createFeishuAppCommand.channelType);
         writer.writeStringValue("description", createFeishuAppCommand.description);
         writer.writeStringValue("domain", createFeishuAppCommand.domain);
         writer.writeStringValue("name", createFeishuAppCommand.name);
@@ -15844,6 +15983,23 @@ export function serializeQueryAppsCommandResponse(writer: SerializationWriter, q
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAppSecurityCommandResponse(writer: SerializationWriter, queryAppSecurityCommandResponse: Partial<QueryAppSecurityCommandResponse> | undefined | null = {}) : void {
+    if (queryAppSecurityCommandResponse) {
+        writer.writeGuidValue("appId", queryAppSecurityCommandResponse.appId);
+        writer.writeBooleanValue("enabled", queryAppSecurityCommandResponse.enabled);
+        writer.writeBooleanValue("maskModelOutput", queryAppSecurityCommandResponse.maskModelOutput);
+        writer.writeBooleanValue("maskToolArgs", queryAppSecurityCommandResponse.maskToolArgs);
+        writer.writeBooleanValue("maskToolResult", queryAppSecurityCommandResponse.maskToolResult);
+        writer.writeCollectionOfObjectValues<AppSecurityRule>("modelOutputRules", queryAppSecurityCommandResponse.modelOutputRules, serializeAppSecurityRule);
+        writer.writeNumberValue("myRole", queryAppSecurityCommandResponse.myRole);
+        writer.writeCollectionOfObjectValues<AppSecurityRule>("rules", queryAppSecurityCommandResponse.rules, serializeAppSecurityRule);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAppSessionMessagesCommandResponse(writer: SerializationWriter, queryAppSessionMessagesCommandResponse: Partial<QueryAppSessionMessagesCommandResponse> | undefined | null = {}) : void {
     if (queryAppSessionMessagesCommandResponse) {
         writer.writeCollectionOfObjectValues<AppMessageItem>("items", queryAppSessionMessagesCommandResponse.items, serializeAppMessageItem);
@@ -17098,6 +17254,22 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppAgentConfigCommand.skills);
         writer.writeCollectionOfPrimitiveValues<string>("wikiIds", saveAppAgentConfigCommand.wikiIds);
         writer.writeCollectionOfPrimitiveValues<Guid>("workflowApps", saveAppAgentConfigCommand.workflowApps);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSaveAppSecurityCommand(writer: SerializationWriter, saveAppSecurityCommand: Partial<SaveAppSecurityCommand> | undefined | null = {}) : void {
+    if (saveAppSecurityCommand) {
+        writer.writeGuidValue("appId", saveAppSecurityCommand.appId);
+        writer.writeBooleanValue("enabled", saveAppSecurityCommand.enabled);
+        writer.writeBooleanValue("maskModelOutput", saveAppSecurityCommand.maskModelOutput);
+        writer.writeBooleanValue("maskToolArgs", saveAppSecurityCommand.maskToolArgs);
+        writer.writeBooleanValue("maskToolResult", saveAppSecurityCommand.maskToolResult);
+        writer.writeCollectionOfObjectValues<AppSecurityRule>("modelOutputRules", saveAppSecurityCommand.modelOutputRules, serializeAppSecurityRule);
+        writer.writeCollectionOfObjectValues<AppSecurityRule>("rules", saveAppSecurityCommand.rules, serializeAppSecurityRule);
     }
 }
 /**

@@ -103,4 +103,16 @@ describe('DynamicPluginPanel', () => {
       expect(pluginApi.deleteDynamicPlugin).toHaveBeenCalledWith('greet_cn')
     })
   })
+
+  it('模板已下线的实例标记红 Tag 且禁用运行与编辑', async () => {
+    vi.mocked(pluginApi.getManagePlugins).mockResolvedValue([
+      { ...MOCK_INSTANCES[0]!, id: 'i-orphan', pluginName: 'orphan_ch', templeteKey: 'clickstack_removed' },
+    ])
+    renderPanel()
+    await screen.findByText('orphan_ch')
+
+    expect(screen.getByText('模板已下线')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '运行' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '编辑插件' })).toBeDisabled()
+  })
 })

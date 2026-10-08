@@ -1,13 +1,15 @@
 ﻿using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
+using MoAI.Database.Enums;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
 namespace MoAI.Feishu.Commands;
 
 /// <summary>
-/// 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
+/// 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；
+/// 可携带渠道信息创建即绑定（当前仅应用渠道），连接与绑定在同一事务内落库.
 /// </summary>
 public class CreateFeishuAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelValidator<CreateFeishuAppCommand>
 {
@@ -41,6 +43,16 @@ public class CreateFeishuAppCommand : IRequest<SimpleGuid>, IUserIdContext, IMod
     /// </summary>
     public string? Domain { get; init; }
 
+    /// <summary>
+    /// 创建即绑定的渠道类型，可为空（不绑定）；当前仅支持应用渠道 app，外部源等订阅型渠道由业务模块自行绑定.
+    /// </summary>
+    public FeishuChannelType? ChannelType { get; init; }
+
+    /// <summary>
+    /// 创建即绑定的渠道记录 id 字符串，应用渠道为 app.id（uuid）；与 <see cref="ChannelType"/> 必须同时提供或同时缺省.
+    /// </summary>
+    public string? ChannelId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -58,5 +70,8 @@ public class CreateFeishuAppCommand : IRequest<SimpleGuid>, IUserIdContext, IMod
         validate.RuleFor(x => x.AppId).NotEmpty().WithMessage("飞书 AppID 不能为空.").MaximumLength(64).WithMessage("飞书 AppID 最长 64 个字符.");
         validate.RuleFor(x => x.AppSecret).NotEmpty().WithMessage("飞书 AppSecret 不能为空.").MaximumLength(128).WithMessage("飞书 AppSecret 最长 128 个字符.");
         validate.RuleFor(x => x.Domain).MaximumLength(100).WithMessage("接入域名最长 100 个字符.");
+        validate.RuleFor(x => x.ChannelType).IsInEnum().WithMessage("渠道类型不正确.").When(x => x.ChannelType.HasValue);
+        validate.RuleFor(x => x.ChannelId).NotEmpty().WithMessage("渠道 id 不能为空.").MaximumLength(64).WithMessage("渠道 id 最长 64 个字符.").When(x => x.ChannelType.HasValue);
+        validate.RuleFor(x => x.ChannelType).NotNull().WithMessage("渠道类型与渠道 id 必须同时提供.").When(x => !string.IsNullOrWhiteSpace(x.ChannelId));
     }
 }

@@ -72,6 +72,12 @@ public sealed class AppAgentBuildContext
     /// 工具审批模式（auto/approval，来自对话 SSE 请求头），approval 时重要工具执行前需人工批准.
     /// </summary>
     public string ToolApprovalMode { get; init; } = MoAI.AI.AppToolApprovalContract.ModeAuto;
+
+    /// <summary>
+    /// 是否注册前端展示工具（X-Moai-Ui-Tools=1，前端已适配侧边栏渲染时携带）：
+    /// ui_ 前缀工具后端桩执行，内容由前端 AG-UI 消费端渲染.
+    /// </summary>
+    public bool EnableUiTools { get; init; }
 }
 
 /// <summary>

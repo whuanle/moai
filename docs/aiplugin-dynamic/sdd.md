@@ -57,7 +57,7 @@ ui/src/
 | DELETE | `/api/ai/plugin/dynamic` | admin | `{pluginKey}` → `EmptyCommandResponse`，软删除实例 |
 | POST | `/api/ai/plugin/run`（沿用 `PluginController`） | admin | `{key=实例key,requestJson}` → `PluginRunResult`，运行实例 |
 | GET | `/api/ai/plugin`（`QueryAll`） | admin | 返回注册表模板列表，含 `configExample/paramsExample/isDynamic`（前端模板下拉） |
-| GET | `/api/ai/plugin/manage/list` | admin | 动态实例列表（`kind=dynamic`），带 `templeteKey/config/configExample` |
+| GET | `/api/ai/plugin/manage/list` | admin | 动态实例列表（`kind=dynamic`），带 `templeteKey/config/configExample`；**仅系统侧记录**（`team_id=0`），团队自有实例不进此列表（@DYN-S70） |
 | POST | `/api/ai/plugin/manage/{id}/avatar` | admin | `{objectKey}` → `EmptyCommandResponse`，设置插件头像（`plugin.avatar_path`，custom/dynamic/static 共用） |
 
 > 控制器 `[Route("/ai/plugin/...")]` 之上还有全局 `/api` 路由前缀，实际路径以 `/api/ai/plugin/...` 为准（早期文档漏写 `/api`，2026-09-11 依 OpenAPI 实测修正）。
@@ -74,10 +74,10 @@ ui/src/
 2. **key 唯一性**：实例 key 全小写+下划线（`^[a-z_][a-z0-9_]*$`），≤30。`save` 是 **upsert**：同实例 key 再次提交按更新处理（不新建、不报冲突，见 @DYN-S5）；仅当实例 key 与**注册表 key**（静态/动态模板 key）重名时 409「实例 Key 已被使用」。
 3. **模板校验**：`templeteKey` 必须在注册表且 `IsDynamic`，否则 404「动态插件模板不存在」。
 4. **运行解析**：`RunPluginCommand` 的 `key` 先查注册表；未命中则用 `IDynamicInstanceResolver.Resolve(key)` 由 `plugin_dynamic.plugin_key`→`templete_key`→`registry.Get(templete_key)`，取该实例 `config` 初始化；`configJson` 无需前端传。
-5. **编辑不可改实例 key**：更新只改 `templeteKey/config/title/description/classifyId`；实例 key 作为主键定位。
+5. **编辑不可改实例 key**：更新只改 `templeteKey/config/title/description/classifyId`；实例 key 作为主键定位。系统侧 save/delete 只允许操作 `team_id=0` 的系统实例，命中团队自有实例（`team_id≠0`）时 403（@DYN-S70，团队实例走 teamplugin 链路）。
 6. **分类校验**：`classifyId` 非 0 需在 `classify` 表存在且 `Type=plugin`，否则 400。
 7. **删除**：软删除 `plugin_dynamic` 与该实例关联的 `plugin` 行（`IsDeleted=1`）。
-8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 全站、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
+8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 系统侧实例、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
 9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
 
 ## 内置动态模板
@@ -108,6 +108,7 @@ ui/src/
 | `kubernetes_query` | `KubernetesQueryPlugin` | `BaseUrl`(必填)/`Token`(Bearer)/`SkipTlsVerify`(默认 true)/`TimeoutSeconds`/`MaxListItems`/`MaxLogChars` | `Mode`(pods/pod_logs/events/deployments/nodes)/`Namespace`/`LabelSelector`/`Pod`/`Container`/`TailLines`/`Previous` | `Pods[]`/`LogText`/`Events[]`/`Deployments[]`/`Nodes[]`/`Truncated` |
 | `dingtalk_webhook_text` | `DingTalkWebhookTextPlugin` | `WebhookKey`(必填，完整地址或裸 access_token)/`Secret`(加签可选) | `Text`(必填)/`AtMobiles`/`AtAll` | `Errcode`/`Errmsg`/`Text` |
 | `wecom_webhook_text` | `WeixinWorkWebhookTextPlugin` | `WebhookKey`(必填，完整地址或裸 key) | `Text`(必填)/`AtMobiles`/`AtAll` | `Errcode`/`Errmsg`/`Text` |
+| `clickhouse_query` | `ClickHouseQueryPlugin` | `BaseUrl`(必填，ClickHouse HTTP 8123)/`Username`/`Password`(Basic，建议只读账号)/`Database`/`TimeoutSeconds`(1-300)/`MaxRows`(1-1000，默认 100) | `Sql`(必填，单条只读：SHOW DATABASES/SHOW TABLES/DESCRIBE/SHOW CREATE/SELECT 均可) | `Columns[]`/`ColumnTypes[]`(FORMAT JSON meta)/`Rows[]`（列名→值）/`RowCount`/`Truncated` |
 | `clickstack_query` | `ClickStackQueryPlugin` | `BaseUrl`(必填，API server 端口)/`ApiKey`(Personal API Access Key)/`TimeoutSeconds`/`MaxRows`(1-500，默认 100) | `Mode`(sources/search/chart)/`SourceId`/`Where`/`WhereLanguage`(lucene/sql)/`Select`/`OrderBy`/`StartTime`/`EndTime`/`MaxResults`(≤2000)/`Offset`(≤10000)/`Granularity`/`AggFn`/`Field`/`GroupBy` | `Sources[]`/`Rows[]`（列名→值）/`RowCount`/`Truncated`/`Points[]` |
 
 `bocha_web_search` 细节：
@@ -218,6 +219,13 @@ ui/src/
 2. **kubernetes_query 的 TLS 按请求生效**：API Server 证书几乎总是私有 CA，`SkipTlsVerify` 无法用共享具名客户端承载——`KubernetesClient` 按调用注入 transient `ExternalHttpMessageHandler`（保留统一外部请求日志与遥测）并在其下挂按次创建的 `HttpClientHandler`（`disposeHandler: false` 防止 double-dispose）。鉴权 Bearer 令牌；非 2xx 的 401/403 翻译成「令牌无效/权限不足」可读提示；列表 `limit` 服务端+客户端双重截断（不翻页）；`pod_logs` 是纯文本端点（非 JSON）直读透传。
 3. **钉钉/企微机器人与飞书同构**：`WebhookKey` 归一化（完整地址截取 `access_token=` / `key=` 之后，或裸值直用）；报文模型复用基础设施层（`MoAI.Infra.DingTalk.Models` / `MoAI.Infra.WeixinWork.Models`）；客户端走 Refit 固定域名 + `MoAI:DingTalk:RobotEndpoint` / `MoAI:WeixinWork:RobotEndpoint` 配置覆盖（E2E 桩注入）。钉钉「加签」安全设置经 `DingTalkSignHelper`（HMAC-SHA256(secret, "{ms}\n{secret}")→base64→URL 编码，timestamp/sign 放查询串）；企微无加签（IP 白名单），文本按 2048 字节截断（mentioned_list `@all` / mentioned_mobile_list）。
 4. **业务错误兜底**：钉钉/企微把关键词未命中/签名失败/token 无效等业务错误也放 HTTP 200，按 `errcode!=0` 兜底（310000 归一为「关键词/加签/白名单」设置提示）。
+
+`clickhouse_query` 细节（ClickHouse 自由只读 SQL 模板，证据 `local-dev/observability-plugin-e2e.mjs` ClickHouse 段，@DYN-S71~S72；2026-10-08 改版）：
+
+1. **自由 SQL 而非固定模板**：请求仅 `Sql` 一个参数，AI 自行完成「`SHOW DATABASES` 摸库 → `SHOW TABLES FROM 库名` 摸表 → `DESCRIBE TABLE` / `SHOW CREATE TABLE` / 查 `system.columns` 看结构 → `SELECT ... LIMIT n` 查询」全流程；工具 Description 与 `Sql` 参数 Description 内置该工作流指引。旧 traces/logs/metrics 三套便捷模板与 `OtelDatabase` 配置已删——固定过滤参数对 AI 过死板，模型自己写 SQL 更灵活。
+2. **只读三层防护**：文本层 `SqlReadOnlyGuard` + `ClickHouseReadOnlyGuard`（拒写操作/DDL/会话与事务控制/多语句/SYSTEM 等服务器命令/url()、s3()、remote() 等外部源表函数）；连接层 HTTP 请求固定 `readonly=1` 服务端兜底（文本校验被绕过也写不进）；资源层 `max_execution_time` + `max_result_rows`(MaxRows+1) + `result_overflow_mode=break` + 客户端按行截断置 `Truncated`。守卫放行面：首关键字为 SHOW 的语句跳过全句关键字扫描——`SHOW CREATE TABLE/VIEW` 是摸结构最有用的语句，原扫描会因对象名必然携带的 CREATE 等词误杀（SHOW 全部为元数据读取；该放行对 mysql/postgres/sqlserver 守卫同样生效）。
+3. **出参 FORMAT JSON**（自 JSONEachRow 切换）：列名/列类型取响应 `meta`（**空结果集也带列信息**，AI 摸结构时不会因零行丢失 schema），行取 `data` 并经 `ObservabilityJson.ToClr` 归一（Map/嵌套→对象、Int64 裸数字、NaN/Inf 文本）；用户 SQL 末尾 FORMAT 子句剥离（`StripTrailingFormatClause`），出参格式由请求 `default_format=JSON` 统一控制。错误归一：Refit `ApiException` → `BusinessException(状态码, "ClickHouse 调用失败（HTTP x）：正文")`，网络层 `HttpRequestException` → 502 可读失败。
+4. **与 clickstack_query 分离**（用户澄清 2026-10-08）：ClickStack 部署里内置 ClickHouse 的 8123/9000 通常不发布到宿主机，HyperDX 对外 API 是其唯一查询面且无 SQL 直通端点，故 `clickstack_query`（sources/search/chart 三模式 + Personal API Access Key）原样保留，两模板在工具描述里互相指路——可直连的 ClickHouse 用本模板自由 SQL，ClickStack 观测数据用 `clickstack_query`。
 
 `clickstack_query` 细节（ClickStack 观测查询模板，证据 `local-dev/clickstack-e2e.mjs`，@DYN-S64~S66）：
 

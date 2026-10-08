@@ -43,12 +43,6 @@ public class ClickHouseQueryPluginParamsTests
         Assert.Null(error);
     }
 
-    [Fact]
-    public async Task RunAsync_UnknownMode_Rejected()
-    {
-        await Assert.ThrowsAsync<BusinessException>(() => _plugin.RunAsync(new ClickHouseQueryRequest { Mode = "update" }, CancellationToken.None));
-    }
-
     [Theory]
     [InlineData("UPDATE demo SET x = 1")]
     [InlineData("SYSTEM RELOAD CONFIG")]
@@ -56,7 +50,7 @@ public class ClickHouseQueryPluginParamsTests
     [InlineData("SELECT 1; DROP TABLE demo")]
     public async Task RunAsync_WriteOrExternalSource_RejectedBeforeConnection(string sql)
     {
-        var exception = await Assert.ThrowsAsync<BusinessException>(() => _plugin.RunAsync(new ClickHouseQueryRequest { Mode = "sql", Sql = sql }, CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<BusinessException>(() => _plugin.RunAsync(new ClickHouseQueryRequest { Sql = sql }, CancellationToken.None));
 
         Assert.Equal(400, exception.StatusCode);
         Assert.Contains("只允许", exception.Message, System.StringComparison.Ordinal);
@@ -65,9 +59,19 @@ public class ClickHouseQueryPluginParamsTests
     [Fact]
     public async Task RunAsync_EmptySql_RejectedReadable()
     {
-        var exception = await Assert.ThrowsAsync<BusinessException>(() => _plugin.RunAsync(new ClickHouseQueryRequest { Mode = "sql", Sql = "   " }, CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<BusinessException>(() => _plugin.RunAsync(new ClickHouseQueryRequest { Sql = "   " }, CancellationToken.None));
 
         Assert.Equal(400, exception.StatusCode);
         Assert.Equal("SQL 不能为空", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("SHOW CREATE TABLE otel.otel_traces")]
+    [InlineData("SHOW DATABASES")]
+    [InlineData("DESCRIBE TABLE otel.otel_logs")]
+    public async Task RunAsync_DiscoverySql_PassesGuard(string sql)
+    {
+        // 摸库表/看结构语句能通过守卫进到执行层（客户端为 null，走到连接即抛 NRE 属预期外的成功路径标志）
+        await Assert.ThrowsAnyAsync<NullReferenceException>(() => _plugin.RunAsync(new ClickHouseQueryRequest { Sql = sql }, CancellationToken.None));
     }
 }

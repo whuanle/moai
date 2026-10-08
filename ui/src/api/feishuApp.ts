@@ -35,6 +35,10 @@ export interface CreateFeishuAppPayload {
   appSecret: string
   /** 为空表示飞书默认 https://open.feishu.cn */
   domain?: string
+  /** 创建即绑定的渠道类型（当前仅 'app'），不传表示不绑定 */
+  channelType?: 'app'
+  /** 创建即绑定的渠道记录 id（应用渠道为应用 id），与 channelType 同时提供 */
+  channelId?: string
 }
 
 export interface UpdateFeishuAppPayload {
@@ -78,7 +82,7 @@ export async function getFeishuApps(teamId: number, keyword?: string): Promise<F
   }
 }
 
-/** 创建飞书应用连接（Admin+），返回连接 id */
+/** 创建飞书应用连接（Admin+），携带渠道信息时创建即绑定；返回连接 id */
 export async function createFeishuApp(payload: CreateFeishuAppPayload): Promise<string> {
   const client = getApiClient()
   const res = await client.api.feishu_app.post({
@@ -88,6 +92,8 @@ export async function createFeishuApp(payload: CreateFeishuAppPayload): Promise<
     appId: payload.appId,
     appSecret: payload.appSecret,
     domain: payload.domain ?? null,
+    channelType: payload.channelType,
+    channelId: payload.channelId ?? null,
   })
   return res?.value as unknown as string
 }
@@ -104,20 +110,8 @@ export async function updateFeishuApp(feishuAppId: string, payload: UpdateFeishu
   })
 }
 
-/** 删除飞书应用连接（级联解除绑定） */
+/** 删除飞书应用连接（创建即绑定体系下删除即彻底移除，级联解除绑定） */
 export async function deleteFeishuApp(feishuAppId: string): Promise<void> {
   const client = getApiClient()
   await client.api.feishu_app.byId(toGuid(feishuAppId)).delete()
-}
-
-/** 绑定飞书应用到渠道（同一飞书应用同时只能绑定一个渠道） */
-export async function bindFeishuApp(feishuAppId: string, channelType: 'app', channelId: string): Promise<void> {
-  const client = getApiClient()
-  await client.api.feishu_app.byId(toGuid(feishuAppId)).bind.post({ channelType, channelId })
-}
-
-/** 解除飞书应用的渠道绑定 */
-export async function unbindFeishuApp(feishuAppId: string): Promise<void> {
-  const client = getApiClient()
-  await client.api.feishu_app.byId(toGuid(feishuAppId)).unbind.post()
 }

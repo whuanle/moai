@@ -35,6 +35,7 @@ public sealed class AppAgentFactory
     private readonly IWorkflowAppChatInvoker _workflowChatInvoker;
     private readonly IWorkflowChatEventSource _workflowChatEventSource;
     private readonly IStorageService _storageService;
+    private readonly AppSecurityService _appSecurityService;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -49,6 +50,7 @@ public sealed class AppAgentFactory
     /// <param name="workflowChatInvoker">流程应用对话执行端口（Workflow 应用对话时使用）.</param>
     /// <param name="workflowChatEventSource">流程执行事件源（Workflow 应用对话流式过程推送）.</param>
     /// <param name="storageService">存储服务（对话图片附件多模态注入读取字节）.</param>
+    /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
         DatabaseContext databaseContext,
@@ -60,6 +62,7 @@ public sealed class AppAgentFactory
         IWorkflowAppChatInvoker workflowChatInvoker,
         IWorkflowChatEventSource workflowChatEventSource,
         IStorageService storageService,
+        AppSecurityService appSecurityService,
         ILoggerFactory loggerFactory)
     {
         _databaseContext = databaseContext;
@@ -71,6 +74,7 @@ public sealed class AppAgentFactory
         _workflowChatInvoker = workflowChatInvoker;
         _workflowChatEventSource = workflowChatEventSource;
         _storageService = storageService;
+        _appSecurityService = appSecurityService;
         _loggerFactory = loggerFactory;
     }
 
@@ -86,8 +90,9 @@ public sealed class AppAgentFactory
     /// <param name="cancellationToken">取消令牌.</param>
     /// <param name="toolApprovalMode">工具审批模式（auto/approval，来自对话 SSE 请求头），approval 时重要工具执行前需人工批准.</param>
     /// <param name="workflowDraft">流程应用是否按最新草稿执行（工作台「调试」Tab 请求头 X-Moai-Workflow-Draft）.</param>
+    /// <param name="enableUiTools">是否注册前端展示工具（X-Moai-Ui-Tools=1）：ui_ 前缀工具后端桩执行、前端侧边栏渲染.</param>
     /// <returns>内层 Agent.</returns>
-    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false)
+    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false, bool enableUiTools = false)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == appId, cancellationToken).ConfigureAwait(false);
         if (app == null || app.TeamId != teamId)
@@ -107,7 +112,9 @@ public sealed class AppAgentFactory
                 UseDraft = workflowDraft,
             };
             var workflowClient = new WorkflowAppChatClient(_workflowChatInvoker, request, _workflowChatEventSource);
-            var workflowHistory = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
+            // 脱敏策略作用于消息落库（工具结果在源头由流程引擎/中间件脱敏，此处覆盖正文与参数记录）
+            var workflowPolicy = await _appSecurityService.GetPolicyAsync(appId, cancellationToken).ConfigureAwait(false);
+            var workflowHistory = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId, workflowPolicy);
             return new ChatClientAgent(
                 workflowClient,
                 new ChatClientAgentOptions
@@ -159,7 +166,9 @@ public sealed class AppAgentFactory
             ? innerWithImages
             : new UsageCapturingChatClient(innerWithImages, _usageCounter, _hotStore, pair.Value.Model.Id, teamId, userId, appId, sessionId);
 
-        var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId);
+        // 内容脱敏：加载应用安全策略，作用于会话历史落库与 Agent 中间件（工具结果/参数/模型正文）
+        var policy = await _appSecurityService.GetPolicyAsync(appId, cancellationToken).ConfigureAwait(false);
+        var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId, policy);
 
         // 应用默认技能由管理员配置，用户可在应用设置中取消勾选（勾选集为默认集的子集）；
         // 未保存过用户配置时默认全部启用；调试会话不查用户配置（保持应用默认视角）.
@@ -194,6 +203,7 @@ public sealed class AppAgentFactory
             ToolApprovalMode = MoAI.AI.AppToolApprovalContract.IsValidMode(toolApprovalMode)
                 ? toolApprovalMode!
                 : MoAI.AI.AppToolApprovalContract.ModeAuto,
+            EnableUiTools = enableUiTools,
         };
         var contextProviders = await _contextProviderFactory.BuildAsync(buildContext, cancellationToken).ConfigureAwait(false);
 
@@ -223,7 +233,8 @@ public sealed class AppAgentFactory
             ChatHistoryProvider = history,
             AIContextProviders = contextProviders,
         };
-        return new ChatClientAgent(chatClient, options, _loggerFactory);
+        // MAF 官方推荐拦截点（AIAgentBuilder.Use）：工具结果在函数调用中间件源头脱敏，参数与正文在 Run 级中间件脱敏
+        return AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy);
     }
 
     private static IReadOnlyList<long> ParseWikiIds(string? json)    {

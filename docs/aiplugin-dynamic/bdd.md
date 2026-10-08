@@ -564,6 +564,8 @@
 
 ## Feature: ClickStack 查询模板（clickstack_query，HyperDX 对外 API）
 
+> 与 `clickhouse_query`（自由只读 SQL，@DYN-S71~S72）保持分离：ClickStack 部署里内置 ClickHouse 的 8123/9000 通常不发布到宿主机，HyperDX 对外 API 是其唯一查询面，故本模板保留 sources/search/chart 三模式（@DYN-S64~S66），不走自由 SQL。
+
 ```gherkin
   @DYN-S64 @auto:e2e
   Scenario: sources 数据源列表与 Bearer 鉴权
@@ -612,7 +614,7 @@
     Given 动态插件页、系统插件页与团队插件页的工具栏均提供「模板列表」入口
     When 注册表存在动态插件模板且部分模板已创建实例
     Then 模板列表页以卡片展示全部动态插件模板的 key、名称与描述
-    And 每张卡片展示该模板已有实例数（系统侧为全站实例，团队侧仅本团队自有实例）
+    And 每张卡片展示该模板已有实例数（系统侧为系统侧实例、不含团队自有实例，团队侧仅本团队自有实例）
 
   @DYN-S68 @auto:vitest
   Scenario: 卡片「新建」创建实例
@@ -626,4 +628,56 @@
     Given 团队模式模板列表按本团队自有实例计数
     When 不可管理成员或非成员访问团队模板列表
     Then 重定向回该团队插件分区
+```
+
+## Feature: 系统插件页与团队插件的隔离
+
+```gherkin
+  @DYN-S70 @auto:e2e
+  Scenario: 系统插件页与团队插件的隔离
+    Given 团队可管理成员在团队插件页创建了动态插件实例
+    When 管理员查询系统插件管理列表
+    Then 列表中不出现该团队自有实例
+    And 团队插件列表仍可见该实例且标记为团队自有
+    And 管理员在系统插件页删除该实例被拒绝
+    And 管理员在系统插件页编辑该实例被拒绝
+    And 拒绝后团队侧实例保持原样
+```
+
+## Feature: ClickHouse 自由只读 SQL（clickhouse_query）
+
+```gherkin
+  @DYN-S71 @auto:e2e
+  Scenario: 自由只读 SQL 与库表发现工作流
+    Given ClickHouse HTTP 桩（8123 形态）以 FORMAT JSON 信封响应（meta 列名/列类型 + data 行）
+    When 以单条 SELECT 查询运行
+    Then 行集按「列名 → 值」解析且 Columns/ColumnTypes 来自 meta（空结果集仍返回列信息）
+    And 返回行数达到 MaxRows 上限时截断丢弃剩余行并置 Truncated
+    And 请求强制 readonly=1、max_result_rows=MaxRows+1、result_overflow_mode=break 并带 Basic 鉴权头
+    When 以 SHOW DATABASES / SHOW TABLES FROM 库名 / DESCRIBE TABLE / SHOW CREATE TABLE 逐个运行
+    Then 摸库、摸表、看列结构与建表语句全部可用（SHOW CREATE 不再被全句 CREATE 关键字扫描误杀）
+    When SQL 末尾自带 FORMAT 子句运行
+    Then 末尾 FORMAT 被剥离，请求固定 default_format=JSON 且出参解析不受影响
+
+  @DYN-S72 @auto:e2e
+  Scenario: 只读防护与错误归一
+    Given ClickHouse 实例已配置（BaseUrl/Username/Password/MaxRows）
+    When 以 INSERT/UPDATE/DELETE/CREATE/DROP/SET/SYSTEM 语句、url() 等外部源表函数、多语句分别运行
+    Then 均在文本守卫层被 400 拒绝且不触达上游（连接层另有 readonly=1 服务端兜底）
+    When 上游返回 500（SQL 错误）或 401（凭据错误）
+    Then 归一为带 HTTP 状态码与上游正文摘要的可读失败
+    When 以空 BaseUrl 实例运行
+    Then 运行时返回可读校验失败
+```
+
+## Feature: 动态实例的模板下线降级
+
+```gherkin
+  @DYN-S73 @auto:vitest
+  Scenario: 模板已下线实例的降级展示
+    Given 动态插件实例引用的模板已不在注册表（templeteKey 不在模板列表中）
+    When 用户查看动态插件实例列表（系统侧与团队侧）
+    Then 该行模板列在模板 key 旁显示红色「模板已下线」标记
+    And 运行与编辑按钮禁用（不再打开参数示例为空的运行抽屉）
+    And 删除按钮仍可用
 ```

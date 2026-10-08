@@ -26,6 +26,7 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
     private readonly IAiModelResolver _modelResolver;
     private readonly IChatClientProvider _chatClientProvider;
     private readonly AppContextProviderFactory _contextProviderFactory;
+    private readonly AppSecurityService _appSecurityService;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -34,16 +35,19 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
     /// <param name="modelResolver">团队模型解析器.</param>
     /// <param name="chatClientProvider">对话客户端提供者.</param>
     /// <param name="contextProviderFactory">Agent 上下文提供者工厂（Agent 应用节点的工具链装配）.</param>
+    /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public WorkflowNodeAiInvoker(
         IAiModelResolver modelResolver,
         IChatClientProvider chatClientProvider,
         AppContextProviderFactory contextProviderFactory,
+        AppSecurityService appSecurityService,
         ILoggerFactory loggerFactory)
     {
         _modelResolver = modelResolver;
         _chatClientProvider = chatClientProvider;
         _contextProviderFactory = contextProviderFactory;
+        _appSecurityService = appSecurityService;
         _loggerFactory = loggerFactory;
     }
 
@@ -114,8 +118,12 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
             },
             _loggerFactory);
 
+        // 应用安全策略：Agent 应用节点内的工具调用结果/参数同样脱敏（流程节点级输入输出脱敏见引擎净化器）
+        var policy = await _appSecurityService.GetPolicyAsync(request.App.Id, cancellationToken).ConfigureAwait(false);
+        var securedAgent = AppSecurityAgentMiddleware.Wrap(agent, policy);
+
         var result = new StringBuilder();
-        await foreach (var update in agent.RunStreamingAsync(request.Prompt, cancellationToken: cancellationToken).ConfigureAwait(false))
+        await foreach (var update in securedAgent.RunStreamingAsync(request.Prompt, cancellationToken: cancellationToken).ConfigureAwait(false))
         {
             var delta = update.Text;
             if (string.IsNullOrEmpty(delta))

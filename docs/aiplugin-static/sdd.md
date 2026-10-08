@@ -31,6 +31,7 @@ src/aiplugin/
 │   ├── Plugins/TextExtractPlugin.cs               static_text_extract（下载 + TextExtractionService）
 │   ├── Plugins/FileToMarkdownPlugin.cs            static_file_to_markdown（Url 下载 + 自动识别文件名 + TextExtractionService）
 │   ├── Plugins/WebContentFetchPlugin.cs           static_web_content_fetch（下载 + AngleSharp）
+│   ├── Plugins/CurrentUserPlugin.cs          static_current_user（执行上下文注入取当前用户）
 │   └── Helpers/AngleSharpHelper.cs                网页正文提取
 └── MoAI.AIPlugin.Api/
     └── Controllers/StaticPluginController.cs      [Route("/ai/plugin/static")]，门禁在 Controller
@@ -77,6 +78,35 @@ ui/src/
 - 文本提取只接受 http/https 文件地址（旧实现 `new Uri(url)` 亦只支持绝对地址），不支持本地路径。
 - 迁移清单之外新增 `static_file_to_markdown`：与 `static_text_extract` 同源（`TextExtractionService` + `IPutClient`），差异是只需 `Url`（`FileName` 留空时从 Url 路径末段自动识别并 URL 解码，传了 FileName 则要求带扩展名），并在**下载前**按扩展名预检 MIME（`MimeTypesDetection.TryGetFileType`），响应返回 `markdown` + `fileName` + `fileType`。
 - 行为场景见 [BDD @STP-S10~S17](./bdd.md#feature-内置静态插件)；验证见 [TDD](./tdd.md)。
+
+## 执行上下文注入（@STP-S18~S19）
+
+插件执行引擎支持把**调用方身份**注入插件（静态/动态通用），首个消费方为 `static_current_user`：
+
+```
+MoAI.AIPlugin.Shared/
+├── Models/PluginRunContext.cs        上下文模型：UserId/UserType/TeamId/Source(admin|team|agent)/IsAuthenticated
+├── Models/PluginRunUser.cs           用户详细信息（UserName/NickName/Email/Phone/AvatarPath/IsAdmin）
+└── Contracts/IPluginRunContextAccessor.cs   Context 读 + Set 写（引擎专用）+ GetUserAsync 懒加载
+MoAI.AIPlugin.Custom/Services/PluginRunContextAccessor.cs   默认实现（DatabaseContext 查 user 表，单次执行内缓存），CustomPluginModule 注册 scoped
+MoAI.AIPlugin.Core/Services/PluginExecutor.cs              ExecuteAsync 增加 context 参数：建作用域后、实例化插件前 Set 进访问器
+```
+
+注入链路（三个执行入口 → 引擎）：
+
+| 入口 | 上下文来源 | Source |
+|---|---|---|
+| `POST /ai/plugin/run`（管理页） | `RunPluginCommand : IUserIdContext`（`AutoAssignUserIdFilter` 自动填） | `admin` |
+| 团队插件运行 `RunTeamPluginCommandHandler` | 命令自带 `ContextUserId` + `TeamId` | `team` |
+| 应用 AI 工具调用 `PluginAppToolProvider` | `AppAgentBuildContext.UserId/TeamId`（闭包捕获） | `agent` |
+
+关键决策：
+
+1. **上下文经引擎显式传参而非读 HttpContext**：工作流/外部会话等非 HTTP 环境没有 HttpContext，UserId 必须由执行入口显式携带；引擎建独立作用域后先 `Set` 再 `ActivatorUtilities.CreateInstance`，插件构造注入访问器即可读到。
+2. **用户名/邮箱等详细信息由访问器懒加载查库**：上下文只带轻量身份（id/类型/团队），`GetUserAsync` 按需查 `user` 表并在单次执行内缓存，避免每个工具调用都多一次查询。
+3. **匿名/外部应用身份不查库**：`UserId<=0` 时 `GetUserAsync` 直接返回 null，插件返回 `IsAuthenticated=false`。
+4. **未传上下文的历史路径兼容**：context 为 null 时插件读到 null，`static_current_user` 以 `IsContextInjected=false` 降级，不失败。
+5. agent 来源 `UserType` 恒为 `none`（`AppAgentBuildContext` 不携带用户类型）；如需精确类型须先扩展 build context。
 
 ## 已知问题
 

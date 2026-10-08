@@ -89,9 +89,13 @@ node local-dev/moji-weather-e2e.mjs
 | @DYN-S61 | local-dev/ops-p0-plugins-e2e.mjs（`S61a~e` HMAC 加签被桩验证、@手机号/@所有人、errcode=310000 归一） | PASS 30/0（2026-09-29） |
 | @DYN-S62 | local-dev/ops-p0-plugins-e2e.mjs（`S62a~e` key 归一、mentioned_mobile_list/@all、errcode 归一） | PASS 30/0（2026-09-29） |
 | @DYN-S63 | local-dev/dynamic-plugin-e2e.mjs（P0 五模板注册断言） | PASS 156/0（含 S63 20 条）（2026-09-29） |
-| @DYN-S64 | local-dev/clickstack-e2e.mjs（`S64a~g` sources 解析（log 字段/metric 表名回退/session 停用态）、Bearer 头命中、错误 Key 401 归一、非法协议 BaseUrl 运行时拒绝） | PASS 20/20（2026-09-29） |
-| @DYN-S65 | local-dev/clickstack-e2e.mjs（`S65a~f` 行集混合类型解析+满额 Truncated、请求体透传（select/offset/ISO 时间窗）、缺省窗口 End-15min、MaxResults/Offset 翻页、缺 SourceId/非法 WhereLanguage 400、404/400 错误归一） | PASS 20/20（2026-09-29） |
-| @DYN-S66 | local-dev/clickstack-e2e.mjs（`S66a~d` 时间线解析（ISO 桶/聚合值/分组）、epoch 毫秒透传+series 结构、缺省窗口 1h+缺省聚合、sum 缺 Field/非法 Granularity/非法 AggFn/缺 SourceId 四类 400） | PASS 20/20（2026-09-29） |
+| @DYN-S64 | local-dev/clickstack-e2e.mjs（`S64a~g` sources 解析（log 字段/metric 表名回退/session 停用态）、Bearer 头命中、错误 Key 401 归一、非法协议 BaseUrl 运行时拒绝） | PASS 20/20（2026-09-29；2026-10-08 恢复验证 20/20） |
+| @DYN-S65 | local-dev/clickstack-e2e.mjs（`S65a~f` 行集混合类型解析+满额 Truncated、请求体透传（select/offset/ISO 时间窗）、缺省窗口 End-15min、MaxResults/Offset 翻页、缺 SourceId/非法 WhereLanguage 400、404/400 错误归一） | PASS 20/20（2026-09-29；2026-10-08 恢复验证 20/20） |
+| @DYN-S66 | local-dev/clickstack-e2e.mjs（`S66a~d` 时间线解析（ISO 桶/聚合值/分组）、epoch 毫秒透传+series 结构、缺省窗口 1h+缺省聚合、sum 缺 Field/非法 Granularity/非法 AggFn/缺 SourceId 四类 400） | PASS 20/20（2026-09-29；2026-10-08 恢复验证 20/20） |
+| @DYN-S70 | local-dev/dynamic-plugin-e2e.mjs（团队自有实例不进系统管理列表、团队列表可见且 isTeamOwned、系统侧删/改 403、拒绝后团队实例原样） | PASS（2026-10-08） |
+| @DYN-S71 | local-dev/observability-plugin-e2e.mjs ClickHouse 段（`S71a~j` 自由 SELECT 行/列/列类型解析（FORMAT JSON meta，空结果仍带列信息）+ MaxRows 截断、readonly=1/max_result_rows/result_overflow_mode/Basic 下发、SHOW DATABASES/SHOW TABLES/DESCRIBE/SHOW CREATE 摸底工作流、末尾 FORMAT 剥离） | PASS 61/61（2026-10-08） |
+| @DYN-S72 | local-dev/observability-plugin-e2e.mjs ClickHouse 段（`S72a~d` INSERT/UPDATE/DELETE/CREATE/DROP/SET/SYSTEM/url() 表函数/多语句守卫拒绝且未触达桩、上游 500/401 归一、空 BaseUrl 运行时拒绝） | PASS 61/61（2026-10-08） |
+| @DYN-S73 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx（模板已下线实例：红 Tag 标记 + 运行/编辑禁用；系统侧与团队侧面板同逻辑） | PASS 498/498（2026-10-08） |
 
 ## 前端测试
 
@@ -128,8 +132,10 @@ dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p2                 # P2 脚本�
 node local-dev/ops-p2-plugins-e2e.mjs                               # P2 运维三插件（Grafana 桩 + 守卫用例；SSH/SqlServer 真链路按环境变量门控）
 dotnet build src/MoAI/MoAI.csproj -o .builds/ops-p0                 # P0 脚本前置：独立输出目录构建
 node local-dev/ops-p0-plugins-e2e.mjs                               # P0 运维五插件（AM/Loki/K8s/通知四桩）
-dotnet build src/MoAI/MoAI.csproj -o .builds/clickstack             # ClickStack 脚本前置：独立输出目录构建
-node local-dev/clickstack-e2e.mjs                                   # ClickStack 查询插件（自建 HyperDX API 三端点桩）
+dotnet build src/MoAI/MoAI.csproj -o .builds/observability   # 观测四插件脚本前置：独立输出目录构建
+node local-dev/observability-plugin-e2e.mjs                   # 观测四插件（Prometheus/ES/ClickHouse/Tempo，自建四段路由桩；ClickHouse 段为自由只读 SQL @DYN-S71~S72）
+dotnet build src/MoAI/MoAI.csproj -o .builds/clickstack       # ClickStack 脚本前置：独立输出目录构建
+node local-dev/clickstack-e2e.mjs                             # ClickStack 查询插件（自建 HyperDX API 三端点桩，@DYN-S64~S66）
 ```
 
 ## 自检记录
@@ -242,3 +248,19 @@ node local-dev/clickstack-e2e.mjs                                   # ClickStack
 - `cd ui && npm run typecheck` → 0 error；`npm run lint` → 0 error（9 警告均为既有文件）；`npm run test` → **455/455**（新增 `PluginTemplates.test.tsx` 10 例 + `DynamicPluginInstanceModal.test.tsx` 4 例；`DynamicPluginPanel.test.tsx`/`TeamPlugins.test.tsx` 适配共享模态）；`npm run build` → ✓。
 - 实现要点：**零后端改动、零 syncapi**——实例数由前端聚合（系统侧 `GET /ai/plugin/manage/list?kind=dynamic` 全站平铺按 `templeteKey` 计数；团队侧 `GET /team/{id}/plugin/list` 过滤 `kind=dynamic && isTeamOwned`）；三处入口（动态 Tab 原有 + 静态/系统插件 Tab + 团队动态面板）指向 `/plugin/templates`，团队模式带 `?teamId=`；系统/团队两份内联创建表单合并为共享 `DynamicPluginInstanceModal`（`kg_cypher_query` 绑定预填与头像上传随 scope 保留）。
 - **实踩坑**：①`feedback` 在 vitest 未注册 antd App 实例时是 no-op（仅 console.warn）→ 查重拦截用例断言「不调保存」的行为而非消息文案；②`vi.mock` 工厂必须覆盖被测模块图引用的**全部**具名导出（共享模态引入 `classifyLabel` 后，旧 classify mock 缺该导出直接报错）；③antd Modal `onOk` 内 `validateFields()` 拒绝需自捕获；创建分支 config 补默认 `'{}'`，顺手修掉「Monaco 显示 `{}` 但表单值实为空导致校验拦截」的隐性怪癖。
+
+### 2026-10-08 系统插件页团队隔离修复（@DYN-S70）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/dyn-teamfilter`（独立输出目录，绕开运行中后端 DLL 锁）→ **0 error**（宿主 bin/Debug 直写构建被 VS+MoAI 进程锁阻断属文件锁非代码错误）。
+- `DYN_BASE=http://127.0.0.1:5195 node local-dev/dynamic-plugin-e2e.mjs`（`.builds/dyn-teamfilter` 独立后端）→ **PASS 162 / FAIL 0 / SKIP 4**，新增 @DYN-S70 断言 6 条（a 团队侧创建 / b 系统管理列表不含团队自有实例 / c 团队列表可见且 isTeamOwned / d 系统侧删 403 / e 系统侧改 403 / f 拒绝后团队实例原样保留），存量场景无回归。
+- 修复点：`QueryPluginManageListCommandHandler` 原先平铺全量 `plugin` 行（含 `team_id<>0` 的团队自有插件），系统插件页因此看到团队创建的 `postgres_query_test` 等实例（DB 实据：`moai_v2.plugin` 中该行 `team_id=1`）；加 `TeamId == 0` 过滤，`SaveDynamicPluginCommandHandler`/`DeleteDynamicPluginCommandHandler` 更新/删除路径补 `TeamId != 0 → 403` 守卫（防直连 API 越界改写团队实例；团队实例只能走 teamplugin 链路）。模板列表页系统侧实例数口径随之从「全站」变为「系统侧」。
+
+### 2026-10-08 ClickHouse 自由只读 SQL 改版 + clickstack_query 保留分离 + 模板下线降级（@DYN-S71~S73）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/observability` / `-o .builds/clickstack`（独立输出目录）→ 均 **0 error**。
+- 单测 `dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **244/244**（`ClickHouseQueryPluginParamsTests` 去 Mode 用例、新增发现类语句过守卫 3 例；`ClickHouseReadOnlyGuardTests` 补 SHOW DATABASES/SHOW CREATE TABLE/SHOW CREATE VIEW 放行断言）。
+- `node local-dev/observability-plugin-e2e.mjs` → **PASS 61 / FAIL 0**，ClickHouse 段重写为自由 SQL 断言（`S71a~j` + `S72a~d`，编号自 @DYN-S71 起避开与 ops/clickstack 存量编号冲突）；脚本后端拉起改为优先 `.builds/observability/MoAI.dll`（同 ops-p1 模式，绕运行中后端 DLL 锁）。
+- 改版要点：`clickhouse_query` 砍掉 traces/logs/metrics 三套固定模板与 `OtelDatabase` 配置，仅剩 `{ "Sql": ... }` 一个参数；出参从 JSONEachRow 换 **FORMAT JSON**（Columns/ColumnTypes 来自 meta，空结果集也有列信息，利于 AI 摸结构）。
+- 守卫变更：`SqlReadOnlyGuard` 对首关键字为 SHOW 的语句跳过全句关键字扫描——`SHOW CREATE TABLE/VIEW` 是摸结构最有用的语句，原全句扫描会因对象名里的 CREATE/INSERT 误杀（该放行对 MySQL/PG/SqlServer 守卫同样生效，SHOW 均为纯元数据读取）。
+- **clickstack_query 保留并与 clickhouse_query 分离**（用户澄清：ClickStack 部署里内置 ClickHouse 的 8123/9000 通常不发布到宿主机，HyperDX 对外 API 是唯一查询面，无 SQL 直通端点）：`clickstack_query`（sources/search/chart 三模式 + Personal API Access Key）原样保留，`node local-dev/clickstack-e2e.mjs` 恢复验证 **PASS 20/20**；两模板在描述里互相指路（ClickStack 观测数据 → clickstack_query，可直连的 ClickHouse → clickhouse_query 自由 SQL）。
+- **模板下线降级（@DYN-S73，vitest 498/498 + typecheck/lint 0 error）**：起因是用户点开旧实例的运行抽屉「请求参数」为空——实例的 `templeteKey` 不在注册表时 `paramsExample` 为 null，抽屉空 editor 极易误导；`DynamicPluginPanel`/`TeamDynamicPluginPanel` 用已加载的模板列表判缺失（`templeteKey` 不在 `templates` 中），模板列显示红 Tag「模板已下线」（`plugins.templateMissing`，zh/en 同步），运行/编辑按钮禁用、删除保留。

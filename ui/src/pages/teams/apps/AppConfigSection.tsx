@@ -117,7 +117,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setSandboxLimits(limits)
         setLocalConfigStatus(config.status ?? 0)
         onConfigStatusChange?.(config.status ?? 0)
-        setModelId(config.modelId ?? undefined)
+        // 后端未选择模型时返回全零 Guid，归一为未选择以显示占位符而非裸串
+        setModelId(config.modelId && config.modelId !== EMPTY_GUID ? config.modelId : undefined)
         setPrompt(config.prompt ?? '')
         setOpeningEnabled(Boolean(config.openingStatementEnabled))
         setOpeningStatement(config.openingStatement ?? '')

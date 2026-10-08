@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LinkOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Tag } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
+import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import {
-  bindFeishuApp,
   createFeishuApp,
   deleteFeishuApp,
   getFeishuApps,
-  unbindFeishuApp,
   updateFeishuApp,
   type FeishuAppItemView,
 } from '@/api/feishuApp'
@@ -33,7 +31,7 @@ interface CreateFormValues {
 
 /**
  * 应用工作台「外部渠道」分区：把已发布内部 Agent 应用接入飞书（用户在飞书发消息即与本应用对话）。
- * 数据复用团队级飞书连接列表：绑定到当前应用的连接进入渠道表格，未绑定连接可通过「绑定已有连接」复用。
+ * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、停用/启用、删除；删除即彻底移除连接，不保留可复用的连接。
  */
 export function AppChannelsSection({ teamId, appId, canManage, isPublished }: AppChannelsSectionProps) {
   const { t } = useTranslation()
@@ -42,9 +40,6 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
   const [items, setItems] = useState<FeishuAppItemView[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [bindOpen, setBindOpen] = useState(false)
-  const [bindTarget, setBindTarget] = useState<string | undefined>()
-  const [binding, setBinding] = useState(false)
   const [actionKey, setActionKey] = useState<string>()
 
   const load = useCallback(async () => {
@@ -63,12 +58,11 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     load()
   }, [load])
 
-  // 同一飞书应用只能绑定一个渠道，故绑定到本应用的连接 = bindChannelId 命中当前 appId
+  // 同一飞书应用只能接入一个渠道，故接入本应用的连接 = bindChannelId 命中当前 appId
   const boundItems = useMemo(
     () => items.filter((x) => x.bindChannelType === 'app' && x.bindChannelId === appId),
     [items, appId],
   )
-  const unboundItems = useMemo(() => items.filter((x) => !x.bindChannelType), [items])
 
   const runAction = async (key: string, action: () => Promise<void>) => {
     setActionKey(key)
@@ -86,16 +80,17 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
   const handleCreate = async (values: CreateFormValues) => {
     setCreating(true)
     try {
-      // 新建连接必然未绑定，创建后直接绑定到当前应用
-      const feishuAppId = await createFeishuApp({
+      // 创建连接即绑定到当前应用，连接与绑定后端同一事务落库
+      await createFeishuApp({
         teamId,
         name: values.name,
         description: values.description || undefined,
         appId: values.appId,
         appSecret: values.appSecret,
         domain: values.domain || undefined,
+        channelType: 'app',
+        channelId: appId,
       })
-      await bindFeishuApp(feishuAppId, 'app', appId)
       feedback.success(t('appChannels.operateSuccess'))
       setCreateOpen(false)
       form.resetFields()
@@ -104,22 +99,6 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
       // 错误已由全局请求中间件统一提示（如 AppID 已建过连接返回 409）
     } finally {
       setCreating(false)
-    }
-  }
-
-  const handleBindExisting = async () => {
-    if (!bindTarget) return
-    setBinding(true)
-    try {
-      await bindFeishuApp(bindTarget, 'app', appId)
-      feedback.success(t('appChannels.operateSuccess'))
-      setBindOpen(false)
-      setBindTarget(undefined)
-      await load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setBinding(false)
     }
   }
 
@@ -163,7 +142,7 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     columns.push({
       title: t('appChannels.columnActions'),
       key: 'actions',
-      width: 220,
+      width: 150,
       render: (_, record) => (
         <Space size={spacing.sm}>
           {record.isDisable ? (
@@ -187,16 +166,6 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
               </Button>
             </Popconfirm>
           )}
-          <Popconfirm
-            title={t('appChannels.unbindConfirm')}
-            okText={t('appManage.confirm')}
-            cancelText={t('appManage.cancel')}
-            onConfirm={() => void runAction(`unbind:${record.feishuAppId}`, () => unbindFeishuApp(record.feishuAppId))}
-          >
-            <Button type="link" size="small" loading={actionKey === `unbind:${record.feishuAppId}`}>
-              {t('appChannels.unbind')}
-            </Button>
-          </Popconfirm>
           <Popconfirm
             title={t('appChannels.deleteConfirm')}
             okText={t('appManage.confirm')}
@@ -230,9 +199,6 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
               <Space>
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
                   {t('appChannels.addFeishu')}
-                </Button>
-                <Button icon={<LinkOutlined />} disabled={unboundItems.length === 0} onClick={() => setBindOpen(true)}>
-                  {t('appChannels.bindExisting')}
                 </Button>
               </Space>
             ) : undefined
@@ -278,36 +244,6 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
           </Form.Item>
           <Form.Item name="description" label={t('appChannels.fieldDescription')} rules={[{ max: 255 }]}>
             <Input.TextArea rows={2} maxLength={255} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('appChannels.bindTitle')}
-        open={bindOpen}
-        onCancel={() => {
-          setBindOpen(false)
-          setBindTarget(undefined)
-        }}
-        maskClosable={false}
-        confirmLoading={binding}
-        okButtonProps={{ disabled: !bindTarget }}
-        okText={t('appChannels.bindOk')}
-        cancelText={t('appManage.cancel')}
-        onOk={() => void handleBindExisting()}
-        destroyOnClose
-      >
-        <Form layout="vertical" style={{ marginTop: spacing.md }}>
-          <Form.Item label={t('appChannels.bindSelect')} required>
-            <Select
-              value={bindTarget}
-              placeholder={t('appChannels.bindSelectPlaceholder')}
-              onChange={setBindTarget}
-              options={unboundItems.map((x) => ({
-                value: x.feishuAppId,
-                label: `${x.name}（${x.appId}）`,
-              }))}
-            />
           </Form.Item>
         </Form>
       </Modal>

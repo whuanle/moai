@@ -5,6 +5,7 @@ import { AppChat } from '../AppChat'
 import {
   createAppSession,
   decideAppSessionToolApproval,
+  deleteAppSession,
   extractChatAttachment,
   getAppDetail,
   getAppSessionMessages,
@@ -14,7 +15,7 @@ import {
   updateAppSessionPrompt,
 } from '@/api/app'
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts } from '@/api/prompt'
-import { runAppChat } from '@/api/agentChat'
+import { abortAppChat, createAppChatAgent, runAppChat, type AgentChatHandlers } from '@/api/agentChat'
 import { uploadChatFile } from '@/utils/storage'
 
 vi.mock('@/api/app', () => ({
@@ -49,11 +50,16 @@ vi.mock('@/utils/storage', () => ({
   uploadChatFile: vi.fn(),
 }))
 
+vi.mock('../chat/EChart', () => ({
+  EChart: (props: { option: unknown }) => <div data-testid="echart-mock">{JSON.stringify(props.option)}</div>,
+}))
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/team/3/app/a1/chat']}>
       <Routes>
         <Route path="/team/:teamId/app/:appId/chat/:sessionId?" element={<AppChat />} />
+        <Route path="/apps" element={<div data-testid="apps-market" />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -116,6 +122,34 @@ describe('AppChat（Agent 应用对话页）', () => {
     expect(screen.queryByText('应用对话')).not.toBeInTheDocument()
     expect(document.querySelector('.ant-breadcrumb')).toBeNull()
     expect(document.querySelector('.moai-chat__main.is-landing')).not.toBeNull()
+  })
+
+  it('删除会话：悬浮显示删除入口，确认后删除当前会话并回到欢迎态', async () => {
+    vi.mocked(getAppSessionMessages).mockResolvedValue([
+      { messageId: 'm1', seq: 1, role: 'user', content: '你好' },
+      { messageId: 'm2', seq: 2, role: 'assistant', content: '你好，请问有什么可以帮你？' },
+    ] as never)
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    // 删除入口存在于每个会话项（悬浮显示、红色由 CSS 控制，jsdom 不加载样式表）
+    expect(document.querySelector('.moai-chat__session-del')?.getAttribute('aria-label')).toBe('删除会话')
+
+    // 先进入该会话（有消息，非欢迎态）
+    fireEvent.click(screen.getByText('第一段对话'))
+    await waitFor(() => expect(getAppSessionMessages).toHaveBeenCalledWith('s1'))
+    await waitFor(() => expect(screen.getByText('你好，请问有什么可以帮你？')).toBeInTheDocument())
+    expect(document.querySelector('.moai-chat__main.is-landing')).toBeNull()
+
+    // 点击删除（选中会话会引起重渲染，须重新查询节点）→ Popconfirm 确认 → 调删除接口并刷新列表
+    fireEvent.click(document.querySelector('.moai-chat__session-del') as HTMLElement)
+    expect(await screen.findByText('确定删除该会话？')).toBeTruthy()
+    fireEvent.click(document.querySelector('.ant-popconfirm-buttons .ant-btn-primary') as HTMLElement)
+    await waitFor(() => expect(deleteAppSession).toHaveBeenCalledWith('s1'))
+    await waitFor(() => expect(getAppSessions).toHaveBeenCalledTimes(2))
+    // 删除的是当前会话：清空消息回到欢迎态
+    await waitFor(() => expect(document.querySelector('.moai-chat__main.is-landing')).not.toBeNull())
   })
 
   it('欢迎态点击快捷输入：直接发送（创建会话并携带快捷问题，无需手动点发送）', async () => {
@@ -283,7 +317,7 @@ describe('AppChat（Agent 应用对话页）', () => {
     })
     let finishRun: (() => void) | undefined
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
-      handlers.onToolCall?.('call_tool')
+      handlers.onToolCall?.({ id: 'tc-1', name: 'call_tool' })
       handlers.onToolCallEnd?.({
         id: 'tc-1',
         name: 'call_tool',
@@ -600,5 +634,256 @@ describe('AppChat（Agent 应用对话页）', () => {
       expect(screen.getByText('流程执行完成')).toBeInTheDocument()
     })
     expect(updateAppSessionPrompt).not.toHaveBeenCalled()
+  })
+
+  it('前端展示工具：ui_show_chart 参数流结束后折叠为卡片并自动打开侧边栏，关闭后可再点击打开', async () => {
+    vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
+      handlers.onToolCall?.({ id: 'ui-1', name: 'ui_show_chart' })
+      handlers.onToolCallEnd?.({
+        id: 'ui-1',
+        name: 'ui_show_chart',
+        // 线上实测形态：部分模型会把 option 序列化成 JSON 字符串（前端解析层归一化）
+        args: {
+          title: '销量分析',
+          option: JSON.stringify({ series: [{ type: 'bar', data: [3, 5] }] }),
+        },
+      })
+      handlers.onDelta?.('图表已生成，点击卡片查看。')
+      handlers.onDone?.()
+    })
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '画个销量图表' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
+
+    // 卡片折叠在消息流：类型标签 + 标题，不在正文展开 option
+    await waitFor(() => {
+      expect(screen.getAllByText('销量分析').length).toBeGreaterThanOrEqual(1)
+    })
+    expect(screen.getAllByText('图表').length).toBeGreaterThanOrEqual(1)
+    // option JSON 不进对话正文（仅存在于侧边栏渲染器）
+    const stream = document.querySelector('.moai-chat__stream')
+    expect(stream?.textContent).not.toContain('"type":"bar"')
+
+    // 参数流结束自动打开右侧侧边栏渲染图表
+    await waitFor(() => {
+      expect(document.querySelector('.moai-chat__panel')).not.toBeNull()
+    })
+    expect(screen.getByTestId('echart-mock')).toBeInTheDocument()
+
+    // 关闭侧边栏后，点击卡片可重新打开
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+    await waitFor(() => {
+      expect(document.querySelector('.moai-chat__panel')).toBeNull()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /销量分析/ }))
+    await waitFor(() => {
+      expect(document.querySelector('.moai-chat__panel')).not.toBeNull()
+    })
+  })
+
+  it('前端展示工具：历史会话回放渲染折叠卡片（点击打开，不自动展开）', async () => {
+    vi.mocked(getAppSessionMessages).mockResolvedValue([
+      { messageId: 'm1', role: 'user', content: '写份报告' },
+      {
+        messageId: 'm2',
+        role: 'assistant',
+        content: '报告已生成，点击卡片查看。',
+        toolCalls: JSON.stringify([
+          { id: 'ui-h1', name: 'ui_show_document', arguments: { title: '季度报告', content: '# 摘要\n正文' } },
+        ]),
+      },
+    ] as never)
+    vi.mocked(runAppChat).mockResolvedValue(undefined)
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    // 切入历史会话：折叠卡渲染（类型标签 + 标题），侧边栏不自动展开
+    fireEvent.click(screen.getByText('第一段对话'))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /季度报告/ })).toBeInTheDocument()
+    })
+    expect(screen.getByText('文档')).toBeInTheDocument()
+    expect(document.querySelector('.moai-chat__panel')).toBeNull()
+
+    // 点击卡片打开侧边栏渲染文档
+    fireEvent.click(screen.getByRole('button', { name: /季度报告/ }))
+    await waitFor(() => {
+      expect(document.querySelector('.moai-chat__panel')).not.toBeNull()
+    })
+    expect(screen.getByRole('heading', { name: '摘要' })).toBeInTheDocument()
+  })
+
+  it('前端展示工具：一轮多个图表收敛为多标签，可切换、单独关闭，收起后卡片重开保留剩余标签', async () => {
+    vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
+      handlers.onToolCallEnd?.({
+        id: 'ui-a',
+        name: 'ui_show_chart',
+        args: { title: '销量图表', option: JSON.stringify({ series: [{ type: 'bar', data: [1] }] }) },
+      })
+      handlers.onToolCallEnd?.({
+        id: 'ui-b',
+        name: 'ui_show_chart',
+        args: { title: '流量图表', option: JSON.stringify({ series: [{ type: 'line', data: [2] }] }) },
+      })
+      handlers.onDelta?.('两个图表已生成。')
+      handlers.onDone?.()
+    })
+
+    // 标签与消息卡片同名，按容器区分
+    const tabOf = (title: string) =>
+      screen.getAllByText(title).map((x) => x.closest('.moai-chat__panel-tab')).find(Boolean) ?? null
+    const cardOf = (title: string) =>
+      screen.getAllByText(title).map((x) => x.closest('button.moai-chat__ui-tool')).find(Boolean) ?? null
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '画两个图' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
+
+    // 两个标签都出现，面板自动打开并展示最新一项（流量图表 line）
+    await waitFor(() => {
+      expect(tabOf('流量图表')).not.toBeNull()
+    })
+    expect(tabOf('销量图表')).not.toBeNull()
+    expect(screen.getByTestId('echart-mock').textContent).toContain('"type":"line"')
+
+    // 点击第一个标签：正文切到销量图表（bar）
+    fireEvent.click(tabOf('销量图表') as HTMLElement)
+    await waitFor(() => {
+      expect(screen.getByTestId('echart-mock').textContent).toContain('"type":"bar"')
+    })
+
+    // 关闭当前标签（销量图表）：自动切回相邻标签（流量图表），标签移除
+    fireEvent.click((tabOf('销量图表') as HTMLElement).querySelector('.moai-chat__panel-tab-close') as HTMLElement)
+    await waitFor(() => {
+      expect(screen.getByTestId('echart-mock').textContent).toContain('"type":"line"')
+    })
+    expect(tabOf('销量图表')).toBeNull()
+
+    // 收起面板后再点消息卡片：剩余标签仍在并可展开
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+    await waitFor(() => {
+      expect(document.querySelector('.moai-chat__panel')).toBeNull()
+    })
+    fireEvent.click(cardOf('流量图表') as HTMLElement)
+    await waitFor(() => {
+      expect(document.querySelector('.moai-chat__panel')).not.toBeNull()
+    })
+    expect(tabOf('流量图表')).not.toBeNull()
+  })
+
+  it('头部返回按钮：返回应用市场（公开应用的非团队成员不落入团队应用列表）', async () => {
+    renderPage()
+    await waitFor(() => expect(screen.getAllByText('客服助手').length).toBeGreaterThanOrEqual(1))
+    fireEvent.click(screen.getByLabelText('返回'))
+    expect(await screen.findByTestId('apps-market')).toBeInTheDocument()
+  })
+
+  it('多会话并行：会话 A 流式中点「新对话」可立即发送新会话，A 不受影响继续流式', async () => {
+    // 两轮对话均挂起（手动收尾），模拟长时间流式回复
+    const finishers: Array<() => void> = []
+    vi.mocked(runAppChat).mockImplementation(
+      async () => new Promise<void>((resolve) => { finishers.push(resolve) }),
+    )
+    vi.mocked(createAppChatAgent).mockImplementation(() => ({ agent: crypto.randomUUID() }) as never)
+    vi.mocked(createAppSession).mockResolvedValueOnce('s2').mockResolvedValueOnce('s3')
+    // 侧栏随创建即时刷新：挂载 → 建会话 s2 → 建会话 s3 → A 收尾各一次
+    const s1 = { sessionId: 's1', title: '第一段对话', lastMessageTime: '2026-09-11T10:00:00Z' }
+    const s2 = { sessionId: 's2', title: '并行会话 A', lastMessageTime: '2026-10-08T10:00:00Z' }
+    const s3 = { sessionId: 's3', title: '并行会话 B', lastMessageTime: '2026-10-08T10:01:00Z' }
+    vi.mocked(getAppSessions)
+      .mockResolvedValueOnce([s1] as never)
+      .mockResolvedValueOnce([s1, s2] as never)
+      .mockResolvedValueOnce([s1, s2, s3] as never)
+      .mockResolvedValue([s1, s2, s3] as never)
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    // 会话 A：发出第一条问题（流式挂起中）
+    fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '问题 A' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(runAppChat).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(screen.getByText('并行会话 A')).toBeInTheDocument())
+
+    // 流式中点「新对话」：输入卡立即可用（显示发送而非停止），可立即发送第二个会话
+    fireEvent.click(screen.getByRole('button', { name: /新对话/ }))
+    expect(screen.queryByRole('button', { name: '停止' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '问题 B' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(createAppSession).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(runAppChat).toHaveBeenCalledTimes(2))
+    // 两个会话各自持有独立 agent（threadId 不同）
+    expect(vi.mocked(createAppChatAgent).mock.calls[0][1]).toBe('s2')
+    expect(vi.mocked(createAppChatAgent).mock.calls[1][1]).toBe('s3')
+
+    // 并行进行中的会话在侧栏以呼吸点标识
+    await waitFor(() => expect(screen.getByText('并行会话 B')).toBeInTheDocument())
+    expect(document.querySelectorAll('.moai-chat__session.is-streaming').length).toBe(2)
+
+    // A 收尾后：仅 B 保持流式标识
+    finishers[0]()
+    await waitFor(() => {
+      expect(document.querySelectorAll('.moai-chat__session.is-streaming').length).toBe(1)
+    })
+    finishers[1]()
+  })
+
+  it('多会话并行：切回流式中的会话恢复实时现场（不回拉历史），停止只中止当前会话', async () => {
+    const finishers: Array<() => void> = []
+    const calls: Array<{ handlers: AgentChatHandlers }> = []
+    vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
+      calls.push({ handlers })
+      return new Promise<void>((resolve) => { finishers.push(resolve) })
+    })
+    vi.mocked(createAppChatAgent).mockImplementation(() => ({ agent: crypto.randomUUID() }) as never)
+    vi.mocked(createAppSession).mockResolvedValueOnce('s2').mockResolvedValueOnce('s3')
+    const s1 = { sessionId: 's1', title: '第一段对话', lastMessageTime: '2026-09-11T10:00:00Z' }
+    const s2 = { sessionId: 's2', title: '并行会话 A', lastMessageTime: '2026-10-08T10:00:00Z' }
+    const s3 = { sessionId: 's3', title: '并行会话 B', lastMessageTime: '2026-10-08T10:01:00Z' }
+    vi.mocked(getAppSessions)
+      .mockResolvedValueOnce([s1] as never)
+      .mockResolvedValueOnce([s1, s2] as never)
+      .mockResolvedValue([s1, s2, s3] as never)
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '问题 A' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(runAppChat).toHaveBeenCalledTimes(1))
+    calls[0].handlers.onDelta?.('A 的部分回答')
+
+    // 切到新对话发第二个会话 B，再切回流式中的 A
+    fireEvent.click(screen.getByRole('button', { name: /新对话/ }))
+    fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '问题 B' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
+    await waitFor(() => expect(runAppChat).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.getByText('并行会话 A')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByText('并行会话 A'))
+
+    // 恢复 A 的实时现场：未回拉服务端历史，A 的提问与已到达内容在，B 的不在
+    await waitFor(() => expect(screen.getByText('问题 A')).toBeInTheDocument())
+    expect(screen.getByText('A 的部分回答')).toBeInTheDocument()
+    expect(screen.queryByText('问题 B')).not.toBeInTheDocument()
+    expect(getAppSessionMessages).not.toHaveBeenCalledWith('s2')
+
+    // 切回后流继续推进（onDelta 持续更新 A 的现场）
+    calls[0].handlers.onDelta?.('A 的完整回答')
+    await waitFor(() => expect(screen.getByText('A 的完整回答')).toBeInTheDocument())
+
+    // 停止只中止当前查看的会话 A（第一个 agent），后台 B 不受影响
+    fireEvent.click(screen.getByRole('button', { name: '停止' }))
+    await waitFor(() => expect(abortAppChat).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(abortAppChat).mock.calls[0][0]).toBe(vi.mocked(createAppChatAgent).mock.results[0].value)
+
+    finishers[0]()
+    finishers[1]()
   })
 })

@@ -43,7 +43,7 @@ describe('runAppChat', () => {
     await runAppChat(agent, 'hi', { onDelta, onToolCall })
 
     expect(onDelta).toHaveBeenLastCalledWith('我先查一下。答案如下。')
-    expect(onToolCall).toHaveBeenCalledWith('search_knowledge_base')
+    expect(onToolCall).toHaveBeenCalledWith({ id: undefined, name: 'search_knowledge_base' })
   })
 
   it('call_tool 参数流结束时回调解析后的完整参数（含真实工具名）', async () => {

@@ -16,6 +16,8 @@ import { LogsRequestBuilderNavigationMetadata, LogsRequestBuilderRequestsMetadat
 // @ts-ignore
 import { PublishRequestBuilderRequestsMetadata, type PublishRequestBuilder } from './publish/index.js';
 // @ts-ignore
+import { SecurityRequestBuilderRequestsMetadata, type SecurityRequestBuilder } from './security/index.js';
+// @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, SessionRequestBuilderRequestsMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
 import { type UnpublishRequestBuilder, UnpublishRequestBuilderRequestsMetadata } from './unpublish/index.js';
@@ -54,6 +56,10 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * The publish property
      */
     get publish(): PublishRequestBuilder;
+    /**
+     * The security property
+     */
+    get security(): SecurityRequestBuilder;
     /**
      * The session property
      */
@@ -133,6 +139,9 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     },
     publish: {
         requestsMetadata: PublishRequestBuilderRequestsMetadata,
+    },
+    security: {
+        requestsMetadata: SecurityRequestBuilderRequestsMetadata,
     },
     session: {
         requestsMetadata: SessionRequestBuilderRequestsMetadata,

@@ -14,6 +14,9 @@ vi.mock('@/api/app', () => ({
   getAppAgentConfig: vi.fn().mockResolvedValue({ appId: 'a1', appType: 'agent', prompt: '', modelId: null, wikiIds: [], plugins: [] }),
   getSandboxLimits: vi.fn().mockResolvedValue({ maxTtlSeconds: 86400, maxCpu: '4', maxMemory: '8Gi' }),
   saveAppAgentConfig: vi.fn(),
+  getAppSecurity: vi.fn().mockResolvedValue({ appId: 'a1', enabled: false, maskToolResult: true, maskToolArgs: false, maskModelOutput: false, rules: [], myRole: 2 }),
+  saveAppSecurity: vi.fn(),
+  SECURITY_RULE_TYPES: ['phone', 'idCard', 'email', 'bankCard', 'custom'],
   updateApp: vi.fn(),
   uploadAppAvatar: vi.fn(),
   publishApp: vi.fn(),
@@ -56,10 +59,11 @@ describe('AppWorkspace（应用工作台）', () => {
     } as never)
   })
 
-  it('内部应用展示配置/信息/日志/监控/外部渠道菜单项，无访问点', async () => {
+  it('内部应用展示配置/信息/安全/日志/监控/外部渠道菜单项，无访问点', async () => {
     renderPage()
     expect(await screen.findByRole('menuitem', { name: /配置/ })).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: /信息/ })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: /安全/ })).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: /日志/ })).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: /监控/ })).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: /外部渠道/ })).toBeTruthy()

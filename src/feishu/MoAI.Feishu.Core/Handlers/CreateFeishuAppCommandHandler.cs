@@ -78,6 +78,43 @@ public class CreateFeishuAppCommandHandler : IRequestHandler<CreateFeishuAppComm
         };
 
         _databaseContext.FeishuApps.Add(entity);
+
+        // 创建即绑定：应用渠道（独占型）随连接一并落库；新建连接必然没有存量绑定，互斥约束天然满足
+        if (request.ChannelType.HasValue)
+        {
+            if (request.ChannelType.Value != FeishuChannelType.App)
+            {
+                throw new BusinessException("创建连接仅支持绑定应用渠道.") { StatusCode = 400 };
+            }
+
+            if (!Guid.TryParse(request.ChannelId, out var appId))
+            {
+                throw new BusinessException("渠道 id 不正确，应用渠道需为应用 id.") { StatusCode = 400 };
+            }
+
+            var channelTeamId = await _databaseContext.Apps
+                .Where(x => x.Id == appId)
+                .Select(x => (int?)x.TeamId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (channelTeamId == null)
+            {
+                throw new BusinessException("绑定的渠道不存在.") { StatusCode = 404 };
+            }
+
+            if (channelTeamId.Value != entity.TeamId)
+            {
+                throw new BusinessException("渠道与飞书应用连接不属于同一团队.") { StatusCode = 403 };
+            }
+
+            _databaseContext.FeishuAppBindings.Add(new FeishuAppBindingEntity
+            {
+                FeishuAppId = entity.Id,
+                ChannelType = (int)FeishuChannelType.App,
+                ChannelId = request.ChannelId!,
+            });
+        }
+
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         _connectionManager.ApplyCreate(entity.Id, entity.AppId, entity.AppSecret, entity.Domain);

@@ -83,6 +83,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppAgentSessionEntity> AppAgentSessions { get; set; }
 
     /// <summary>
+    /// 应用安全配置（内容脱敏），与 app 一一对应（Agent/流程应用通用）.
+    /// </summary>
+    public virtual DbSet<AppSecurityConfigEntity> AppSecurityConfigs { get; set; }
+
+    /// <summary>
     /// 用户级应用配置，(app_id, user_id) 唯一，跨会话复用.
     /// </summary>
     public virtual DbSet<AppUserConfigEntity> AppUserConfigs { get; set; }

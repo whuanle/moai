@@ -158,6 +158,34 @@ describe('AppConfigSection（应用配置分区）', () => {
     await waitFor(() => expect(getTeamGatewayModels).toHaveBeenCalledWith(3))
   })
 
+  it('未选择模型（后端全零 Guid）显示占位符而非裸串，保存按未选择提交', async () => {
+    // 新建应用/清空模型时后端回 Guid.Empty 全零串，界面须归一为未选择
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: '00000000-0000-0000-0000-000000000000',
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('请选择对话模型')).toBeTruthy())
+    expect(screen.queryByText('00000000-0000-0000-0000-000000000000')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({ modelId: null }),
+      ),
+    )
+  })
+
   it('开启沙箱后展示存活时间、资源与网络等参数', async () => {
     vi.mocked(getAppAgentConfig).mockResolvedValue({
       appId: 'a1',

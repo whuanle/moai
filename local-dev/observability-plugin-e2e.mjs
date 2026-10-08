@@ -7,6 +7,7 @@
 import { createServer } from 'node:http'
 import { spawn } from 'node:child_process'
 import crypto from 'node:crypto'
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -70,8 +71,6 @@ const CH_TRACES_ROWS = [
   { Timestamp: '2026-09-26 07:59:00.000000000', TraceId: 'abcdef1234567890', SpanId: 'span-2', ServiceName: 'api', Name: 'INTERNAL', StatusCode: 0, Duration: 80, ResourceAttributes: { 'service.name': 'api' } },
   { Timestamp: '2026-09-26 07:50:00.000000000', TraceId: 'other', SpanId: 'span-3', ServiceName: 'web', Name: 'GET /', StatusCode: 1, Duration: 15, ResourceAttributes: { 'service.name': 'web' } },
 ]
-const CH_METRIC_TABLES = [{ name: 'otel_metrics_gauge' }, { name: 'otel_metrics_sum' }]
-
 const TEMPO_SEARCH = { traces: [{ traceID: 'abcdef1234567890', rootServiceName: 'frontend', rootTraceName: 'GET /checkout', startTimeUnixNano: '1719000000000000000', durationMs: '1.2' }, { traceID: '1112223334', rootServiceName: 'payment', rootTraceName: 'GRPC Pay', startTimeUnixNano: '1719000005000000000', durationMs: '80' }] }
 const TEMPO_TRACE = {
   batches: [{
@@ -92,10 +91,6 @@ let promHits = 0, esHits = 0, chHits = 0, tempoHits = 0
 let lastProm = null, lastES = null, lastCH = null, lastTempo = null
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
-function ndjson(rows) {
-  return rows.map((r) => JSON.stringify(r)).join('\n') + '\n'
-}
 
 function startMock() {
   const server = createServer((req, res) => {
@@ -148,32 +143,21 @@ function startMock() {
         return send(404, `no es mock for ${pathName}`)
       }
 
-      // ---- ClickHouse 挂在桩服务根路径：POST /?query=...&readonly=1...，JSONEachRow 输出 ----
+      // ---- ClickHouse 挂在桩服务根路径：POST /?query=...&readonly=1...，FORMAT JSON（meta/data 信封）输出 ----
       if (pathName === '/') {
         chHits++
         const sql = query.searchParams.get('query')?.trim() ?? ''
-        const db = query.searchParams.get('param_pDb') ?? ''
-        lastCH = { path: pathName, sql, db, readonly: query.searchParams.get('readonly'), maxExec: query.searchParams.get('max_execution_time'), maxRows: query.searchParams.get('max_result_rows'), overflow: query.searchParams.get('result_overflow_mode'), format: query.searchParams.get('default_format'), traceParams: query.searchParams.get('param_pTraceId'), auth, tableName: query.searchParams.get('param_pTable') }
-        if (!ok(CH_AUTH)) return send(401, 'Unauthorized', 'text/plain')
-        if (sql.startsWith('SELECT name, type FROM system.columns')) {
-          if (db === 'ops_empty') return send(200, '')
-          return sql.includes('table = $pTable') && lastCH.tableName === 'otel_logs'
-            ? send(200, ndjson(CH_COLUMNS.filter((x) => x.name !== 'StatusCode')))
-            : send(200, ndjson(CH_COLUMNS))
-        }
-        if (sql.startsWith('SELECT name FROM system.tables')) {
-          if (db === 'ops_empty') return send(200, '')
-          return send(200, ndjson(CH_METRIC_TABLES))
-        }
-        if (sql.startsWith('SELECT Timestamp') || sql.startsWith('SELECT name')) {
-          // traces/logs：返回真实查询样例行
-          return send(200, ndjson(CH_TRACES_ROWS), 'application/x-ndjson')
-        }
-        if (sql.startsWith('SELECT MetricName') || sql.startsWith('SELECT MetricName,')) {
-          return send(200, ndjson([{ MetricName: 'http_requests', ServiceName: 'api', Timestamp: '2026-09-26 08:00:00', Value: 7, ResourceAttributes: { 'service.name': 'api' } }]), 'application/x-ndjson')
-        }
-        if (sql.startsWith('SELECT 1')) return send(200, '{"expr": "SELECT 1"}\n')
-        return send(500, `ClickHouse 桩未覆盖：${sql.slice(0, 60)}`, 'text/plain')
+        lastCH = { path: pathName, sql, readonly: query.searchParams.get('readonly'), maxExec: query.searchParams.get('max_execution_time'), maxRows: query.searchParams.get('max_result_rows'), overflow: query.searchParams.get('result_overflow_mode'), format: query.searchParams.get('default_format'), auth }
+        if (!ok(CH_AUTH)) return send(401, 'Unauthorized.\n', 'text/plain')
+        const chJson = (meta, data) => send(200, JSON.stringify({ meta, data, rows: data.length, statistics: { elapsed: 0.005, rows_read: 100, bytes_read: 4096 } }))
+        if (sql === 'SHOW DATABASES') return chJson([{ name: 'database', type: 'String' }], [{ database: 'otel' }, { database: 'default' }])
+        if (sql === 'SHOW TABLES FROM otel') return chJson([{ name: 'name', type: 'String' }], [{ name: 'otel_traces' }, { name: 'otel_logs' }, { name: 'otel_metrics_gauge' }])
+        if (sql.startsWith('DESCRIBE TABLE otel.otel_traces')) return chJson([{ name: 'name', type: 'String' }, { name: 'type', type: 'String' }], [{ name: 'Timestamp', type: "DateTime64(9, 'UTC')" }, { name: 'TraceId', type: 'String' }, { name: 'ServiceName', type: 'LowCardinality(String)' }])
+        if (sql.startsWith('SHOW CREATE TABLE otel.otel_traces')) return chJson([{ name: 'statement', type: 'String' }], [{ statement: 'CREATE TABLE otel.otel_traces (...) ENGINE = MergeTree ORDER BY (ServiceName, Timestamp)' }])
+        if (sql.startsWith('SELECT Timestamp')) return chJson(CH_COLUMNS, CH_TRACES_ROWS)
+        if (sql === 'SELECT 1') return chJson([{ name: '1', type: 'UInt8' }], [{ 1: 1 }])
+        if (sql.includes('WHERE 0')) return chJson([{ name: 'TraceId', type: 'String' }], [])
+        return send(500, 'Code: 60. DB::Exception: Unknown expression identifier (version 24.3.1.2671)', 'text/plain')
       }
 
       // ---- Tempo：/tempo/api/* ----
@@ -203,7 +187,30 @@ function startMock() {
   return new Promise((resolve) => server.listen(MOCK_PORT, '127.0.0.1', () => resolve(server)))
 }
 
+// ---------------- 后端：优先用独立输出目录 DLL（绕开运行中后端的 DLL 锁），否则回退 dotnet run ----------------
 function startBackend() {
+  const dll = path.join(REPO_ROOT, '.builds', 'observability', 'MoAI.dll')
+  if (!fs.existsSync(dll)) {
+    console.log('WARN | 未找到 .builds/observability/MoAI.dll，回退 dotnet run（默认 bin/Debug；若后端正被运行会因 DLL 锁失败）')
+    return startBackendDotnetRun()
+  }
+  const child = spawn('dotnet', [dll], {
+    cwd: path.join(REPO_ROOT, 'src', 'MoAI'),
+    env: {
+      ...process.env,
+      ASPNETCORE_ENVIRONMENT: 'Development',
+      MoAI__Port: String(BACKEND_PORT),
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  let log = ''
+  child.stdout.on('data', (d) => { log += d })
+  child.stderr.on('data', (d) => { log += d })
+  child.getLog = () => log
+  return child
+}
+
+function startBackendDotnetRun() {
   const child = spawn('dotnet', ['run', '--project', 'src/MoAI/MoAI.csproj', '--no-build', '--no-restore'], {
     cwd: REPO_ROOT,
     env: {
@@ -284,7 +291,7 @@ async function main() {
     const keys = {
       prom: `ops_prom_${TS}`, promBad: `ops_prombad_${TS}`, promBadBase: `ops_prombase_${TS}`,
       es: `ops_es_${TS}`, esAgg: `ops_esagg_${TS}`, esBadBase: `ops_esbase_${TS}`,
-      ch: `ops_ch_${TS}`, chEmpty: `ops_chempty_${TS}`, chBadBase: `ops_chbase_${TS}`,
+      ch: `ops_ch_${TS}`, chBadAuth: `ops_chbadauth_${TS}`, chBadBase: `ops_chbase_${TS}`,
       tempo: `ops_tempo_${TS}`, tempoBadBase: `ops_tempobase_${TS}`,
     }
 
@@ -361,47 +368,58 @@ async function main() {
     const esBadBase = await run(admin, keys.esBadBase, JSON.stringify({ Mode: 'search' }))
     check('@DYN-S60a 空 BaseUrl 返回可读失败', esBadBase.json?.success === false && /BaseUrl/.test(esBadBase.json?.error ?? ''), esBadBase.json?.error)
 
-    // ================= ClickHouse =================
+    // ================= ClickHouse（自由只读 SQL） =================
     check('创建 ClickHouse 实例', (await save(admin, { pluginKey: keys.ch, templeteKey: 'clickhouse_query', title: '桩服务 CH', description: 'mock', classifyId: 0, config: JSON.stringify({ BaseUrl: `${MOCK}/`, Username: 'chuser', Password: 'chsecret', TimeoutSeconds: 5, MaxRows: 2 }) })).status === 200)
 
-    const chq = await run(admin, keys.ch, JSON.stringify({ Mode: 'sql', Sql: 'SELECT Timestamp, TraceId, ServiceName, Duration FROM otel_traces' }))
-    check('@DYN-S61a ClickHouse sql 查询成功并解析 JSONEachRow', chq.json?.success === true && chq.data?.RowCount === 2 && chq.data?.Truncated === true, `${chq.status} ${chq.text.slice(0, 240)}`)
-    check('@DYN-S61b 行/列解析（Timestamp 字符串 + Duration 大整数）', chq.data?.Columns?.[0] === 'Timestamp' && chq.data?.Rows?.[0]?.TraceId === 'abcdef1234567890' && chq.data?.Rows?.[0]?.Duration === 120 && typeof chq.data?.Rows?.[0]?.ResourceAttributes === 'object', JSON.stringify(chq.data?.Rows?.[0] ?? {}))
-    check('@DYN-S61c 请求强制 readonly=1 + max_result_rows（MaxRows+1）', lastCH?.readonly === '1' && lastCH?.maxRows === '3' && lastCH?.format === 'JSONEachRow', JSON.stringify(lastCH ?? {}))
-    check('@DYN-S61d 鉴权头为 Basic', lastCH?.auth === CH_AUTH, lastCH?.auth ?? '')
+    const chq = await run(admin, keys.ch, JSON.stringify({ Sql: 'SELECT Timestamp, TraceId, ServiceName, Duration FROM otel.otel_traces ORDER BY Timestamp DESC' }))
+    check('@DYN-S71a 自由 SELECT 成功并按 MaxRows 截断', chq.json?.success === true && chq.data?.RowCount === 2 && chq.data?.Rows?.length === 2 && chq.data?.Truncated === true, `${chq.status} ${chq.text.slice(0, 240)}`)
+    check('@DYN-S71b 列与列类型来自 FORMAT JSON meta', chq.data?.Columns?.[0] === 'Timestamp' && chq.data?.Columns?.includes('Duration') && chq.data?.ColumnTypes?.[0]?.includes('DateTime64') && chq.data?.ColumnTypes?.includes('Int64'), JSON.stringify({ c: chq.data?.Columns, t: chq.data?.ColumnTypes }))
+    check('@DYN-S71c 行值归一（字符串/整数/Map 对象）', chq.data?.Rows?.[0]?.TraceId === 'abcdef1234567890' && chq.data?.Rows?.[0]?.Duration === 120 && typeof chq.data?.Rows?.[0]?.ResourceAttributes === 'object' && chq.data?.Rows?.[0]?.ResourceAttributes?.['service.name'] === 'api', JSON.stringify(chq.data?.Rows?.[0] ?? {}))
+    check('@DYN-S71d 连接层强制只读与资源上限（readonly=1 + max_result_rows=MaxRows+1 + FORMAT JSON + Basic）', lastCH?.readonly === '1' && lastCH?.maxRows === '3' && lastCH?.format === 'JSON' && lastCH?.overflow === 'break' && lastCH?.auth === CH_AUTH, JSON.stringify(lastCH ?? {}))
+
+    const chDbs = await run(admin, keys.ch, JSON.stringify({ Sql: 'SHOW DATABASES' }))
+    check('@DYN-S71e SHOW DATABASES 摸库', chDbs.json?.success === true && chDbs.data?.Rows?.length === 2 && chDbs.data?.Rows?.[0]?.database === 'otel', JSON.stringify(chDbs.data?.Rows))
+    const chTables = await run(admin, keys.ch, JSON.stringify({ Sql: 'SHOW TABLES FROM otel' }))
+    check('@DYN-S71f SHOW TABLES 摸表（同样受 MaxRows 截断）', chTables.json?.success === true && chTables.data?.Rows?.length === 2 && chTables.data?.Rows?.[0]?.name === 'otel_traces' && chTables.data?.Rows?.[1]?.name === 'otel_logs' && chTables.data?.Truncated === true, JSON.stringify(chTables.data))
+    const chDesc = await run(admin, keys.ch, JSON.stringify({ Sql: 'DESCRIBE TABLE otel.otel_traces' }))
+    check('@DYN-S71g DESCRIBE TABLE 看列结构', chDesc.json?.success === true && chDesc.data?.Rows?.[0]?.name === 'Timestamp' && (chDesc.data?.Rows?.[0]?.type ?? '').includes('DateTime64'), JSON.stringify(chDesc.data?.Rows?.[0] ?? {}))
+    const chCreate = await run(admin, keys.ch, JSON.stringify({ Sql: 'SHOW CREATE TABLE otel.otel_traces' }))
+    check('@DYN-S71h SHOW CREATE TABLE 放行（对象名含 CREATE 不再被误杀）', chCreate.json?.success === true && (chCreate.data?.Rows?.[0]?.statement ?? '').includes('MergeTree'), chCreate.json?.error ?? JSON.stringify(chCreate.data?.Rows?.[0]))
+    const chEmpty = await run(admin, keys.ch, JSON.stringify({ Sql: 'SELECT TraceId FROM otel.otel_traces WHERE 0' }))
+    check('@DYN-S71i 空结果集仍返回列信息', chEmpty.json?.success === true && chEmpty.data?.Rows?.length === 0 && chEmpty.data?.Columns?.includes('TraceId') && chEmpty.data?.ColumnTypes?.[0] === 'String', JSON.stringify(chEmpty.data))
+    const chForm = await run(admin, keys.ch, JSON.stringify({ Sql: 'SELECT 1 FORMAT JSON ;' }))
+    check('@DYN-S71j 末尾 FORMAT 子句被剥离（出参固定 JSON）', chForm.json?.success === true && lastCH?.sql === 'SELECT 1' && lastCH?.format === 'JSON', `${lastCH?.sql ?? ''} | ${lastCH?.format ?? ''}`)
 
     const chForbidden = [
-      ['UPDATE', 'UPDATE demo SET x = 1'],
-      ['SYSTEM', "SYSTEM RELOAD CONFIG"],
+      ['INSERT', 'INSERT INTO otel.otel_traces VALUES (1)'],
+      ['UPDATE', 'UPDATE otel.otel_traces SET Duration = 1'],
+      ['DELETE', 'DELETE FROM otel.otel_traces'],
+      ['DDL-DROP', 'DROP TABLE otel.otel_traces'],
+      ['DDL-CREATE', 'CREATE TABLE demo (x UInt8) ENGINE = Memory'],
+      ['会话变更', 'SET max_threads = 1'],
+      ['SYSTEM', 'SYSTEM RELOAD CONFIG'],
       ['url 表函数', "SELECT * FROM url('http://x')"],
       ['多语句', 'SELECT 1; SELECT 2'],
     ]
+    const chHitsBeforeGuard = chHits
     let chForbiddenBlocked = true
     for (const [label, forbiddenSql] of chForbidden) {
-      const r = await run(admin, keys.ch, JSON.stringify({ Mode: 'sql', Sql: forbiddenSql }))
+      const r = await run(admin, keys.ch, JSON.stringify({ Sql: forbiddenSql }))
       chForbiddenBlocked = chForbiddenBlocked && r.json?.success === false && (r.json?.error ?? '').includes('只允许')
       if (r.json?.success !== false) console.log(`INFO | ${label} 未被拒：${r.json?.error}`)
     }
-    check('@DYN-S62a 写操作/服务器命令/外部源函数/多语句被拒（未触达桩）', chForbiddenBlocked, JSON.stringify(chHits))
+    check('@DYN-S72a 写操作/DDL/会话/外部源函数/多语句全部被拒且未触达桩', chForbiddenBlocked && chHits === chHitsBeforeGuard, JSON.stringify({ blocked: chForbiddenBlocked, hits: [chHitsBeforeGuard, chHits] }))
 
-    const chForm = await run(admin, keys.ch, JSON.stringify({ Mode: 'sql', Sql: 'SELECT 1 FORMAT JSON ;' }))
-    check('@DYN-S62b FORMAT 子句被剥离且按 JSONEachRow 查询', chForm.json?.success === true && lastCH?.sql === 'SELECT 1', lastCH?.sql ?? '')
+    const chErr = await run(admin, keys.ch, JSON.stringify({ Sql: 'SELECT no_such_column FROM otel.otel_traces' }))
+    check('@DYN-S72b 上游 500 归一为可读失败', chErr.json?.success === false && /HTTP 500/.test(chErr.json?.error ?? '') && /Exception/.test(chErr.json?.error ?? ''), chErr.json?.error)
 
-    const chTr = await run(admin, keys.ch, JSON.stringify({ Mode: 'traces', ServiceName: 'api', MinStatusCode: 2, Limit: 2 }))
-    check('@DYN-S63a otel traces 自适配列（含 StatusCode）并按 MaxRows 截断', chTr.json?.success === true && chTr.data?.Rows?.length === 2 && chTr.data?.Rows?.[0]?.SpanId === 'span-1' && (chTr.data?.Columns ?? []).includes('StatusCode') && (chTr.data?.ColumnTypes ?? []).some((t) => (t ?? '').includes('Int32')), `${chTr.status} ${chTr.text.slice(0, 240)}`)
-    check('@DYN-S63b 过滤经 $name 参数绑定下发', (lastCH?.sql ?? '').includes('$pServiceName') && (lastCH?.sql ?? '').includes('$pStatusCode') && lastCH?.readonly === '1', lastCH?.sql ?? '')
-    const chLogs = await run(admin, keys.ch, JSON.stringify({ Mode: 'logs', SearchText: 'kill', SeverityText: 'ERROR' }))
-    check('@DYN-S63c logs 模式支持正文子串搜索与严重级过滤', chLogs.json?.success === true && (lastCH?.sql ?? '').includes('positionCaseInsensitive'), lastCH?.sql ?? '')
-
-    await save(admin, { pluginKey: keys.chEmpty, templeteKey: 'clickhouse_query', title: '桩服务 CH 空库', description: 'mock', classifyId: 0, config: JSON.stringify({ BaseUrl: `${MOCK}/`, Username: 'chuser', Password: 'chsecret', OtelDatabase: 'ops_empty', TimeoutSeconds: 5, MaxRows: 2 }) })
-    const chEmpty = await run(admin, keys.chEmpty, JSON.stringify({ Mode: 'traces' }))
-    check('@DYN-S64a otel 库缺表返回可读失败', chEmpty.json?.success === false && /不存在/.test(chEmpty.json?.error ?? ''), chEmpty.json?.error)
-    const chMetrics = await run(admin, keys.ch, JSON.stringify({ Mode: 'metrics', MetricName: 'http_requests' }))
-    check('@DYN-S64b 多张指标表要求指定 Table', chMetrics.json?.success === false && /Table 参数/.test(chMetrics.json?.error ?? '') && /otel_metrics_gauge/.test(chMetrics.json?.error ?? ''), chMetrics.json?.error)
+    await save(admin, { pluginKey: keys.chBadAuth, templeteKey: 'clickhouse_query', title: '桩服务 CH 错误凭据', description: 'mock', classifyId: 0, config: JSON.stringify({ BaseUrl: `${MOCK}/`, Username: 'chuser', Password: 'wrong', TimeoutSeconds: 5, MaxRows: 2 }) })
+    const ch401 = await run(admin, keys.chBadAuth, JSON.stringify({ Sql: 'SELECT 1' }))
+    check('@DYN-S72c 上游 401 归一为可读失败', ch401.json?.success === false && /HTTP 401/.test(ch401.json?.error ?? ''), ch401.json?.error)
 
     await save(admin, { pluginKey: keys.chBadBase, templeteKey: 'clickhouse_query', title: '桩服务 CH 空地址', description: 'mock', classifyId: 0, config: JSON.stringify({ BaseUrl: '' }) })
-    const chBadBase = await run(admin, keys.chBadBase, JSON.stringify({ Mode: 'sql', Sql: 'SELECT 1' }))
-    check('@DYN-S65a 空 BaseUrl 返回可读失败', chBadBase.json?.success === false && /BaseUrl/.test(chBadBase.json?.error ?? ''), chBadBase.json?.error)
+    const chBadBase = await run(admin, keys.chBadBase, JSON.stringify({ Sql: 'SELECT 1' }))
+    check('@DYN-S72d 空 BaseUrl 返回可读失败', chBadBase.json?.success === false && /BaseUrl/.test(chBadBase.json?.error ?? ''), chBadBase.json?.error)
 
     // ================= Tempo =================
     check('创建 Tempo 实例', (await save(admin, { pluginKey: keys.tempo, templeteKey: 'tempo_query', title: '桩服务 Tempo', description: 'mock', classifyId: 0, config: JSON.stringify({ BaseUrl: `${MOCK}/tempo`, Username: 'opsuser', Password: 'opssecret', TenantId: TEMPO_TENANT, TimeoutSeconds: 5, MaxTraces: 1, MaxSpans: 2 }) })).status === 200)

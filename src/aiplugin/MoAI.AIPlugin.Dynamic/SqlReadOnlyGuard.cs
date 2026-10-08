@@ -14,8 +14,10 @@ namespace MoAI.AIPlugin.Dynamic;
 /// <item><description>**连接层**：各 SQL 插件在连接上执行会话级只读设置（PostgreSQL <c>SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY</c>、MySQL <c>SET SESSION TRANSACTION READ ONLY</c>），即使文本校验被绕过，服务端也会拒绝写操作。</description></item>
 /// <item><description>**资源层**：行数上限与语句超时，避免超大结果集与长事务。</description></item>
 /// </list>
-/// 关键字扫描前会剥离注释、字符串字面量、双引号/反引号标识符与 PostgreSQL 美元引用串，因此「字符串或引号标识符里出现关键字」不会误判；
-/// 唯一的例外是 MySQL 的**可执行注释** <c>/*! ... */</c>（其内容会被服务端真正执行），其内容会被保留并参与扫描。
+    /// 关键字扫描前会剥离注释、字符串字面量、双引号/反引号标识符与 PostgreSQL 美元引用串，因此「字符串或引号标识符里出现关键字」不会误判；
+    /// 唯一的例外是 MySQL 的**可执行注释** <c>/*! ... */</c>（其内容会被服务端真正执行），其内容会被保留并参与扫描。
+    /// 首关键字为 <c>SHOW</c> 的语句只做前缀与单条校验、不做全句关键字扫描：SHOW 全部为元数据读取，
+    /// 而 <c>SHOW CREATE TABLE/VIEW/DICTIONARY</c> 这类结构分析语句的对象名部分必然携带 CREATE 等词。
 /// </remarks>
 internal static class SqlReadOnlyGuard
 {
@@ -136,12 +138,16 @@ internal static class SqlReadOnlyGuard
             return $"只允许执行只读 SQL：不支持以 {leading} 开头的语句（仅允许 SELECT、WITH、TABLE、VALUES、SHOW、EXPLAIN、DESCRIBE）";
         }
 
-        // 3) 任意位置不得出现写操作/DDL/会话与事务控制关键字（覆盖 WITH ... DELETE、EXPLAIN ANALYZE <DML>、SELECT ... INTO 等形态）
-        foreach (var keyword in ReadKeywords(text))
+        // 3) 任意位置不得出现写操作/DDL/会话与事务控制关键字（覆盖 WITH ... DELETE、EXPLAIN ANALYZE <DML>、SELECT ... INTO 等形态）；
+        //    SHOW 语句是纯元数据读取，且 SHOW CREATE TABLE 等对象名里必然出现 CREATE/INSERT 等词，跳过全句扫描
+        if (leading != "SHOW")
         {
-            if (ForbiddenKeywords.Contains(keyword))
+            foreach (var keyword in ReadKeywords(text))
             {
-                return $"只允许执行只读 SQL：语句中不允许出现 {keyword}";
+                if (ForbiddenKeywords.Contains(keyword))
+                {
+                    return $"只允许执行只读 SQL：语句中不允许出现 {keyword}";
+                }
             }
         }
 

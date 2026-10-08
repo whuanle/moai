@@ -1,6 +1,7 @@
 ﻿using Maomi;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.AIPlugin;
+using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Services;
 
 namespace MoAI.AIPlugin.Custom;
@@ -14,6 +15,7 @@ public class CustomPluginModule : IModule
     /// <inheritdoc/>
     public void ConfigureServices(ServiceContext context)
     {
+        context.Services.AddScoped<IPluginRunContextAccessor, PluginRunContextAccessor>();
         context.Services.AddScoped<IDynamicInstanceResolver, DynamicInstanceResolver>();
         context.Services.AddScoped<McpToolCallService>();
         context.Services.AddScoped<OpenApiToolCallService>();

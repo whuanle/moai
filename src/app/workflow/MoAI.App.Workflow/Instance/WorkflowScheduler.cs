@@ -18,6 +18,7 @@ public class WorkflowScheduler
     private readonly InputResolver _inputResolver;
     private readonly IWorkflowEventPublisher _eventPublisher;
     private readonly IWorkflowInstanceStore _instanceStore;
+    private readonly INodeDataSanitizer? _nodeDataSanitizer;
     private readonly SemaphoreSlim _checkpointLock = new(1, 1);
 
     /// <summary>
@@ -27,12 +28,14 @@ public class WorkflowScheduler
         INodeExecutorRegistry nodeExecutorRegistry,
         InputResolver inputResolver,
         IWorkflowEventPublisher eventPublisher,
-        IWorkflowInstanceStore instanceStore)
+        IWorkflowInstanceStore instanceStore,
+        INodeDataSanitizer? nodeDataSanitizer = null)
     {
         _nodeExecutorRegistry = nodeExecutorRegistry;
         _inputResolver = inputResolver;
         _eventPublisher = eventPublisher;
         _instanceStore = instanceStore;
+        _nodeDataSanitizer = nodeDataSanitizer;
     }
 
     /// <summary>
@@ -215,6 +218,13 @@ public class WorkflowScheduler
             state.State = NodeState.Completed;
             state.Output = result.Output;
             state.EndedAt = DateTimeOffset.Now;
+
+            // 节点数据净化（内容脱敏）：在检查点落库、事件推送、下游节点引用与结束节点输出克隆之前就地脱敏
+            if (_nodeDataSanitizer != null)
+            {
+                await _nodeDataSanitizer.SanitizeAsync(instance, node, state, cancellationToken);
+            }
+
             await SaveCheckpointAsync(instance, cancellationToken);
             stopwatch.Stop();
             await PublishAsync(new NodeStateChangedEvent
@@ -269,9 +279,16 @@ public class WorkflowScheduler
         state.State = NodeState.Failed;
         state.ErrorMessage = errorMessage;
         state.EndedAt = DateTimeOffset.Now;
+
+        // 失败路径同样净化（错误消息常包含 URL/上游报文等敏感内容），净化后再落检查点与推送事件
+        if (_nodeDataSanitizer != null)
+        {
+            await _nodeDataSanitizer.SanitizeAsync(instance, node, state, CancellationToken.None);
+        }
+
         await SaveCheckpointAsync(instance, CancellationToken.None);
         stopwatch.Stop();
-        instance.ErrorMessage = $"节点 {node.Key}({node.Name}) 执行失败：{errorMessage}";
+        instance.ErrorMessage = $"节点 {node.Key}({node.Name}) 执行失败：{state.ErrorMessage}";
         await PublishAsync(new NodeStateChangedEvent
         {
             InstanceId = instance.Id,
@@ -280,7 +297,7 @@ public class WorkflowScheduler
             NodeName = node.Name,
             State = NodeState.Failed,
             Input = state.Input,
-            ErrorMessage = errorMessage,
+            ErrorMessage = state.ErrorMessage,
             Attempt = state.Attempts,
             ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
         }, CancellationToken.None);

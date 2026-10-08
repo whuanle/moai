@@ -40,7 +40,9 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
     /// <inheritdoc/>
     public async Task<QueryPluginManageListCommandResponse> Handle(QueryPluginManageListCommand request, CancellationToken cancellationToken)
     {
+        // 系统插件管理页只看系统侧记录（TeamId=0）；团队自有插件（TeamId=团队ID）只在团队插件页管理
         var plugins = await _databaseContext.Plugins
+            .Where(x => x.TeamId == 0)
             .ToListAsync(cancellationToken);
 
         var classifies = await _databaseContext.Classifies

@@ -154,7 +154,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                 throw new BusinessException("会话不存在.") { StatusCode = 404 };
             }
 
-            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider)).ConfigureAwait(false);
+            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider)).ConfigureAwait(false);
         }
 
         // 无正式会话行：回落调试会话注册表（Redis）；命中且本人时按调试装配，不落库、不计数
@@ -165,7 +165,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }
 
-        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider)).ConfigureAwait(false);
+        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -191,5 +191,17 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
     {
         var httpContext = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
         return httpContext?.Request.Headers[AppAgentConstants.WorkflowDraftHeaderName].ToString() == "1";
+    }
+
+    /// <summary>
+    /// 从对话 SSE 请求头解析前端展示工具开关（X-Moai-Ui-Tools=1，前端已适配侧边栏渲染时携带），
+    /// 未携带按关闭处理（嵌入组件/外部渠道不注册 ui_ 前缀工具）.
+    /// </summary>
+    /// <param name="serviceProvider">请求作用域服务.</param>
+    /// <returns>是否注册前端展示工具.</returns>
+    private static bool ResolveUiToolsEnabled(IServiceProvider serviceProvider)
+    {
+        var httpContext = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+        return httpContext?.Request.Headers[FrontendToolContract.HeaderName].ToString() == "1";
     }
 }

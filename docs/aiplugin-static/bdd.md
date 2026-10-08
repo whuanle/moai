@@ -149,6 +149,22 @@
 
 @STP-S17 @manual
 
+### Scenario: 获取当前用户信息（上下文注入）
+
+- Given 我是管理员，且内置静态插件「static_current_user」已注册
+- When 我请求运行{key:"static_current_user",requestJson:"{}"}
+- Then 返回 success=true，且 dataJson 的 userId 为我的用户 id、userName 为我的用户名、isAdmin 为 true、source 为「admin」
+
+@STP-S18 @auto:unit
+
+### Scenario: 未注入上下文时降级为未注入
+
+- Given 内置静态插件「static_current_user」已注册，且执行入口未传入调用方上下文（历史调用路径）
+- When 插件运行
+- Then 返回 success=true，且 dataJson 的 isContextInjected 为 false、isAuthenticated 为 false，不查询用户信息
+
+@STP-S19 @auto:unit
+
 ```gherkin
 @ST-S99 @auto:vitest
 Scenario: 静态插件编辑后列表不重复渲染

@@ -4,26 +4,14 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateFeishuAppCommand, type BusinessValidationResult, type EmptyCommandResponse, type UpdateFeishuAppCommand } from '../../../models/index.js';
 // @ts-ignore
-import { BindRequestBuilderRequestsMetadata, type BindRequestBuilder } from './bind/index.js';
-// @ts-ignore
-import { type UnbindRequestBuilder, UnbindRequestBuilderRequestsMetadata } from './unbind/index.js';
-// @ts-ignore
-import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/feishu_app/{id}
  */
 export interface Feishu_appItemRequestBuilder extends BaseRequestBuilder<Feishu_appItemRequestBuilder> {
     /**
-     * The bind property
-     */
-    get bind(): BindRequestBuilder;
-    /**
-     * The unbind property
-     */
-    get unbind(): UnbindRequestBuilder;
-    /**
-     * 删除飞书应用连接，需要团队 Admin 及以上角色；删除时同时解除全部绑定并断开长连接.
+     * 删除飞书应用连接，需要团队 Admin 及以上角色；删除即彻底移除（同时解除全部绑定并断开长连接），不保留可复用的连接.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -46,7 +34,7 @@ export interface Feishu_appItemRequestBuilder extends BaseRequestBuilder<Feishu_
      */
      put(body: UpdateFeishuAppCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 删除飞书应用连接，需要团队 Admin 及以上角色；删除时同时解除全部绑定并断开长连接.
+     * 删除飞书应用连接，需要团队 Admin 及以上角色；删除即彻底移除（同时解除全部绑定并断开长连接），不保留可复用的连接.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -63,17 +51,6 @@ export interface Feishu_appItemRequestBuilder extends BaseRequestBuilder<Feishu_
  * Uri template for the request builder.
  */
 export const Feishu_appItemRequestBuilderUriTemplate = "{+baseurl}/api/feishu_app/{id}";
-/**
- * Metadata for all the navigation properties in the request builder.
- */
-export const Feishu_appItemRequestBuilderNavigationMetadata: Record<Exclude<keyof Feishu_appItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
-    bind: {
-        requestsMetadata: BindRequestBuilderRequestsMetadata,
-    },
-    unbind: {
-        requestsMetadata: UnbindRequestBuilderRequestsMetadata,
-    },
-};
 /**
  * Metadata for all the requests in the request builder.
  */

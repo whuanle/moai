@@ -583,3 +583,94 @@ export async function extractChatAttachment(
     truncated: res?.truncated ?? false,
   }
 }
+
+/** 脱敏规则类型代码（对齐后端 AppSecurityRuleTypes） */
+export const SECURITY_RULE_TYPES = ['phone', 'idCard', 'email', 'bankCard', 'custom'] as const
+export type SecurityRuleType = (typeof SECURITY_RULE_TYPES)[number]
+
+/** 应用安全脱敏规则 */
+export interface AppSecurityRuleItem {
+  name: string
+  type: SecurityRuleType
+  pattern?: string | null
+  replacement?: string | null
+}
+
+/** 应用安全配置（内容脱敏） */
+export interface AppSecurityConfig {
+  appId: string
+  enabled: boolean
+  maskToolResult: boolean
+  maskToolArgs: boolean
+  maskModelOutput: boolean
+  /** 内容脱敏规则（工具调用结果/工具调用参数范围共用） */
+  rules: AppSecurityRuleItem[]
+  /** 模型回复专属脱敏规则，与 rules 相互独立维护 */
+  modelOutputRules: AppSecurityRuleItem[]
+  myRole: number | null
+}
+
+/** 规则响应归一化：非法类型代码兜底为 custom，空值补默认 */
+function normalizeRule(r: {
+  name?: string | null
+  type?: string | null
+  pattern?: string | null
+  replacement?: string | null
+}): AppSecurityRuleItem {
+  return {
+    name: r?.name ?? '',
+    type: (SECURITY_RULE_TYPES as readonly string[]).includes(r?.type ?? '') ? (r?.type as SecurityRuleType) : 'custom',
+    pattern: r?.pattern ?? null,
+    replacement: r?.replacement ?? null,
+  }
+}
+
+/**
+ * 查询应用安全配置（内容脱敏）；未保存过配置时返回默认值（关闭 + 空规则）。
+ */
+export async function getAppSecurity(appId: string): Promise<AppSecurityConfig> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).security.get()
+  return {
+    appId: res?.appId ?? appId,
+    enabled: res?.enabled ?? false,
+    maskToolResult: res?.maskToolResult ?? true,
+    maskToolArgs: res?.maskToolArgs ?? false,
+    maskModelOutput: res?.maskModelOutput ?? false,
+    rules: (res?.rules ?? []).map(normalizeRule),
+    modelOutputRules: (res?.modelOutputRules ?? []).map(normalizeRule),
+    myRole: res?.myRole ?? null,
+  }
+}
+
+/**
+ * 保存应用安全配置（内容脱敏），需要团队管理员及以上角色；自定义规则须携带可编译正则（后端校验）。
+ */
+export async function saveAppSecurity(
+  appId: string,
+  payload: {
+    enabled: boolean
+    maskToolResult: boolean
+    maskToolArgs: boolean
+    maskModelOutput: boolean
+    rules: AppSecurityRuleItem[]
+    modelOutputRules: AppSecurityRuleItem[]
+  },
+): Promise<void> {
+  const client = getApiClient()
+  const serializeRules = (rules: AppSecurityRuleItem[]) =>
+    rules.map((r) => ({
+      name: r.name,
+      type: r.type,
+      pattern: r.type === 'custom' ? r.pattern ?? '' : null,
+      replacement: r.replacement ?? null,
+    }))
+  await client.api.app.byId(appId).security.put({
+    enabled: payload.enabled,
+    maskToolResult: payload.maskToolResult,
+    maskToolArgs: payload.maskToolArgs,
+    maskModelOutput: payload.maskModelOutput,
+    rules: serializeRules(payload.rules),
+    modelOutputRules: serializeRules(payload.modelOutputRules),
+  })
+}

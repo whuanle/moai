@@ -9,7 +9,8 @@ using MoAI.Infra.Services;
 namespace MoAI.Feishu.Controllers;
 
 /// <summary>
-/// 飞书应用连接接口；飞书应用是团队下的产物，创建/更新/删除/绑定需要团队 Admin 及以上角色，查看仅需团队成员.
+/// 飞书应用连接接口；飞书应用是团队下的产物，创建/更新/删除需要团队 Admin 及以上角色，查看仅需团队成员.
+/// 应用渠道接入走「创建即绑定」（创建命令携带渠道信息）；绑定/解绑命令仅供知识库外部源等业务模块内部复用，不对 HTTP 暴露.
 /// </summary>
 [ApiController]
 [Route("/feishu_app")]
@@ -43,7 +44,8 @@ public class FeishuAppController : ControllerBase
     }
 
     /// <summary>
-    /// 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接.
+    /// 创建飞书应用连接，需要团队 Admin 及以上角色；AppID 全局唯一，创建后立即建立长连接；
+    /// 携带渠道信息（channelType=app + channelId=应用 id）时创建即绑定，连接与绑定同一事务落库.
     /// </summary>
     /// <param name="req">创建请求.</param>
     /// <param name="ct">取消令牌.</param>
@@ -79,7 +81,7 @@ public class FeishuAppController : ControllerBase
     }
 
     /// <summary>
-    /// 删除飞书应用连接，需要团队 Admin 及以上角色；删除时同时解除全部绑定并断开长连接.
+    /// 删除飞书应用连接，需要团队 Admin 及以上角色；删除即彻底移除（同时解除全部绑定并断开长连接），不保留可复用的连接.
     /// </summary>
     /// <param name="id">飞书应用记录 id.</param>
     /// <param name="ct">取消令牌.</param>
@@ -88,40 +90,6 @@ public class FeishuAppController : ControllerBase
     public async Task<EmptyCommandResponse> DeleteFeishuApp([FromRoute] Guid id, CancellationToken ct)
     {
         var cmd = new DeleteFeishuAppCommand { FeishuAppId = id };
-        _userContextProvider.SetUserContext(cmd);
-        return await _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 绑定飞书应用到渠道（应用/知识库等），需要团队 Admin 及以上角色；同一飞书应用同时只能绑定一个渠道.
-    /// </summary>
-    /// <param name="id">飞书应用记录 id.</param>
-    /// <param name="req">绑定请求.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPost("{id:guid}/bind")]
-    public async Task<EmptyCommandResponse> BindFeishuApp([FromRoute] Guid id, [FromBody] BindFeishuAppCommand req, CancellationToken ct)
-    {
-        var cmd = new BindFeishuAppCommand
-        {
-            FeishuAppId = id,
-            ChannelType = req.ChannelType,
-            ChannelId = req.ChannelId
-        };
-        _userContextProvider.SetUserContext(cmd);
-        return await _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 解除飞书应用绑定，需要团队 Admin 及以上角色.
-    /// </summary>
-    /// <param name="id">飞书应用记录 id.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPost("{id:guid}/unbind")]
-    public async Task<EmptyCommandResponse> UnbindFeishuApp([FromRoute] Guid id, CancellationToken ct)
-    {
-        var cmd = new UnbindFeishuAppCommand { FeishuAppId = id };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }
