@@ -58,10 +58,16 @@ describe('AppAccessSection', () => {
     expect(screen.queryByText(/data-key=/)).not.toBeInTheDocument()
   })
 
-  it('需授权应用时嵌入代码提示 data-key', async () => {
+  it('需授权应用嵌入代码默认推荐后端签发 token，可切换快速验证 data-key', async () => {
     renderSection(true, true)
     await screen.findByText('访问点配置')
-    await waitFor(() => expect(screen.getByText(/data-key="&lt;应用接入key&gt;"|data-key="/)).toBeInTheDocument())
+    // 默认展示推荐接入：MoaiWidget.mount + tokenProvider（key 不落前端）
+    await waitFor(() => expect(screen.getByText(/MoaiWidget\.mount/)).toBeInTheDocument())
+    expect(screen.getByText(/tokenProvider/)).toBeInTheDocument()
+    expect(screen.queryByText(/data-key=/)).not.toBeInTheDocument()
+    // 切到快速验证签页签才出现 data-key 片段
+    fireEvent.click(screen.getByRole('tab', { name: '快速验证（data-key）' }))
+    await waitFor(() => expect(screen.getByText(/data-key="/)).toBeInTheDocument())
   })
 
   it('保存访问点配置', async () => {

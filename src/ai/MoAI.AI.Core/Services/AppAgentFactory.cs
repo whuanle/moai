@@ -13,6 +13,7 @@ using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
+using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.AI.Models;
 using MoAI.Storage.Services;
@@ -36,6 +37,7 @@ public sealed class AppAgentFactory
     private readonly IWorkflowChatEventSource _workflowChatEventSource;
     private readonly IStorageService _storageService;
     private readonly AppSecurityService _appSecurityService;
+    private readonly SystemOptions _systemOptions;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -51,6 +53,7 @@ public sealed class AppAgentFactory
     /// <param name="workflowChatEventSource">流程执行事件源（Workflow 应用对话流式过程推送）.</param>
     /// <param name="storageService">存储服务（对话图片附件多模态注入读取字节）.</param>
     /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
+    /// <param name="systemOptions">系统配置（Debug=true 时挂 OpenTelemetry 调试埋点）.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
         DatabaseContext databaseContext,
@@ -63,6 +66,7 @@ public sealed class AppAgentFactory
         IWorkflowChatEventSource workflowChatEventSource,
         IStorageService storageService,
         AppSecurityService appSecurityService,
+        SystemOptions systemOptions,
         ILoggerFactory loggerFactory)
     {
         _databaseContext = databaseContext;
@@ -75,6 +79,7 @@ public sealed class AppAgentFactory
         _workflowChatEventSource = workflowChatEventSource;
         _storageService = storageService;
         _appSecurityService = appSecurityService;
+        _systemOptions = systemOptions;
         _loggerFactory = loggerFactory;
     }
 
@@ -115,7 +120,7 @@ public sealed class AppAgentFactory
             // 脱敏策略作用于消息落库（工具结果在源头由流程引擎/中间件脱敏，此处覆盖正文与参数记录）
             var workflowPolicy = await _appSecurityService.GetPolicyAsync(appId, cancellationToken).ConfigureAwait(false);
             var workflowHistory = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId, workflowPolicy);
-            return new ChatClientAgent(
+            var workflowAgent = new ChatClientAgent(
                 workflowClient,
                 new ChatClientAgentOptions
                 {
@@ -124,6 +129,7 @@ public sealed class AppAgentFactory
                     ChatHistoryProvider = workflowHistory,
                 },
                 _loggerFactory);
+            return _systemOptions.Debug ? AiObservabilityMiddleware.WrapAgent(workflowAgent) : workflowAgent;
         }
 
         var config = await _databaseContext.AppAgentConfigs.FirstOrDefaultAsync(x => x.AppId == appId, cancellationToken).ConfigureAwait(false);
@@ -155,6 +161,12 @@ public sealed class AppAgentFactory
         }
 
         var inner = await _chatClientProvider.GetChatClientAsync(pair.Value.Model, pair.Value.Channel, cancellationToken).ConfigureAwait(false);
+
+        // Debug 埋点挂最内层：每次模型调用产生携带正文的 Span 与 gen_ai 指标
+        if (_systemOptions.Debug)
+        {
+            inner = AiObservabilityMiddleware.WrapChatClient(inner);
+        }
 
         // 图片附件多模态注入：发给模型前把用户消息中的图片标记块转为 ImageContent（内层最贴近 SDK）；
         // 调试会话不计入用量，避免污染应用的监控统计
@@ -234,7 +246,9 @@ public sealed class AppAgentFactory
             AIContextProviders = contextProviders,
         };
         // MAF 官方推荐拦截点（AIAgentBuilder.Use）：工具结果在函数调用中间件源头脱敏，参数与正文在 Run 级中间件脱敏
-        return AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy);
+        var securedAgent = AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy);
+        // Debug 埋点包在脱敏中间件之外，Span 只记录脱敏后内容
+        return _systemOptions.Debug ? AiObservabilityMiddleware.WrapAgent(securedAgent) : securedAgent;
     }
 
     private static IReadOnlyList<long> ParseWikiIds(string? json)    {

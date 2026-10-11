@@ -41,8 +41,8 @@ ui/src/
 ├── api/plugin.ts                                    +getDynamicTemplates,+saveDynamicPlugin,+deleteDynamicPlugin,+updatePluginAvatar
 └── pages/plugins/
     ├── DynamicPluginPanel.tsx                        实例列表 + 运行 + 授权 + 新建/编辑（共享模态）+ 列表头像展示
-    ├── PluginTemplates.tsx                           模板列表页（系统/团队双模式：卡片实例数 + 卡片「新建」）
-    └── components/DynamicPluginInstanceModal.tsx     系统/团队共用创建/编辑模态（kg 绑定预填、头像上传随 scope 保留）
+    ├── PluginTemplates.tsx                           模板列表页（系统/团队双页面：/plugin/templates 与 /team/{teamId}/plugin/templates；卡片实例数 + 卡片「新建」+ 面包屑返回）
+    └── components/DynamicPluginInstanceModal.tsx     系统/团队共用创建/编辑模态（kg 绑定预填、头像上传随 scope 保留；团队新建实例 key 自动填「模板key_团队id」）
 ```
 
 三层依赖：`Api → Core → Shared`；Core 增 `IDynamicInstanceResolver`（供 Run 解析）。Api 引用 `MoAI.Account.Shared`、`MoAI.AIPlugin.Shared`。

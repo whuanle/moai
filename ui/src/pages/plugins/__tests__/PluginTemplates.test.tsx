@@ -37,6 +37,7 @@ function renderPage(initialEntry = '/plugin/templates') {
       <Routes>
         <Route path="/plugin" element={<div>动态插件页面标记</div>} />
         <Route path="/plugin/templates" element={<PluginTemplates />} />
+        <Route path="/team/:teamId/plugin/templates" element={<PluginTemplates />} />
         <Route path="/team/7/plugins" element={<div>团队插件页面标记</div>} />
         <Route path="/apps" element={<div>应用页面标记</div>} />
       </Routes>
@@ -134,6 +135,15 @@ describe('PluginTemplates（系统模式）', () => {
 
     expect(await screen.findByText('应用页面标记')).toBeInTheDocument()
   })
+
+  it('点击面包屑「动态插件」回到系统插件页', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('dynamic_greet')
+
+    await user.click(screen.getByText('动态插件'))
+    expect(await screen.findByText('动态插件页面标记')).toBeInTheDocument()
+  })
 })
 
 describe('PluginTemplates（团队模式）', () => {
@@ -161,13 +171,16 @@ describe('PluginTemplates（团队模式）', () => {
 
   it('实例数只统计团队自有实例，提交走团队实例保存', async () => {
     const user = userEvent.setup()
-    renderPage('/plugin/templates?teamId=7')
+    renderPage('/team/7/plugin/templates')
     await screen.findByText('dynamic_greet')
 
     expect(screen.getByText('已有实例：1')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /新建/ }))
     expect(await screen.findByText('新建实例')).toBeInTheDocument()
+    // 团队模式实例 key 自动填充「模板key_团队id」，仍允许手改
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('dynamic_greet_7')
+    await user.clear(screen.getByLabelText('实例 Key'))
     await user.type(screen.getByLabelText('实例 Key'), 'team_greet')
     await user.type(screen.getByLabelText('插件标题'), '团队问候')
     await user.click(screen.getByRole('button', { name: /保 存|保存/ }))
@@ -182,10 +195,19 @@ describe('PluginTemplates（团队模式）', () => {
 
   it('返回按钮回到团队插件分区', async () => {
     const user = userEvent.setup()
-    renderPage('/plugin/templates?teamId=7')
+    renderPage('/team/7/plugin/templates')
     await screen.findByText('dynamic_greet')
 
     await user.click(screen.getByRole('button', { name: /返回插件/ }))
+    expect(await screen.findByText('团队插件页面标记')).toBeInTheDocument()
+  })
+
+  it('点击面包屑「动态插件」回到团队插件分区', async () => {
+    const user = userEvent.setup()
+    renderPage('/team/7/plugin/templates')
+    await screen.findByText('dynamic_greet')
+
+    await user.click(screen.getByText('动态插件'))
     expect(await screen.findByText('团队插件页面标记')).toBeInTheDocument()
   })
 
@@ -196,7 +218,7 @@ describe('PluginTemplates（团队模式）', () => {
       canManage: false,
       items: [],
     } as never)
-    renderPage('/plugin/templates?teamId=7')
+    renderPage('/team/7/plugin/templates')
 
     expect(await screen.findByText('团队插件页面标记')).toBeInTheDocument()
   })

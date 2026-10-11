@@ -62,6 +62,8 @@ export const router = createBrowserRouter([
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },
+      // 团队模板列表页独立路由，与系统模板页（/plugin/templates）互不混用
+      { path: 'team/:teamId/plugin/templates', element: <PluginTemplates /> },
       // 知识库/知识图谱入口统一收敛到团队详情分区，全局路由重定向到团队列表
       { path: 'wiki', element: <Navigate to="/team" replace /> },
       { path: 'knowledge-graph', element: <Navigate to="/team" replace /> },

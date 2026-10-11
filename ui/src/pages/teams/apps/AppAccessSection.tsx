@@ -1,6 +1,6 @@
-import { Alert, Button, Col, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Typography } from 'antd'
-import { CopyOutlined } from '@ant-design/icons'
-import { useCallback, useEffect, useState } from 'react'
+import { Alert, Button, Col, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tabs, Typography } from 'antd'
+import { CopyOutlined, DownloadOutlined } from '@ant-design/icons'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card as DSCard, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -40,6 +40,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
   const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState<AppAccessPointConfig | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [embedTab, setEmbedTab] = useState<'backend' | 'quickKey'>('backend')
 
   const isAdmin = (userRole ?? -1) > ROLE_MEMBER
 
@@ -76,13 +77,44 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
   // 嵌入代码用站点自身源（开发期即前端 dev server，生产为同源部署）；widget 默认以 script 源调用 API，
   // 开发期由 Vite 代理 /api 到后端，分离部署可在 script 上加 data-server 指向后端
   const siteOrigin = window.location.origin
-  const embedSnippet = [
+  const preStyle: CSSProperties = {
+    margin: 0,
+    padding: spacing.sm,
+    background: 'rgba(128,128,128,0.08)',
+    borderRadius: 8,
+    fontSize: 12,
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-all',
+  }
+  const basicSnippet = [
     `<!-- 可选：data-external-user-id 绑定外部身份以继承会话；data-nickname 外部用户显示名；data-server 后端地址（分离部署时） -->`,
     `<script src="${siteOrigin}/embed/moai-widget.js"`,
     `        data-app-id="${appId}"`,
-    ...(isAuth ? [`        data-key="<应用接入key>"`] : []),
     `></script>`,
   ].join('\n')
+  // 需授权应用推荐接入：业务后端持 key 签发外部用户 token，组件经 tokenProvider 注入，key 不落前端
+  const backendIssuedSnippet = [
+    `<script src="${serverUrl}/embed/moai-widget.js"></script><!-- 可下载后自托管到业务站点 -->`,
+    `<script>`,
+    `  MoaiWidget.mount({`,
+    `    appId: '${appId}',`,
+    `    server: '${serverUrl}',`,
+    `    tokenProvider: function () {`,
+    `      // 业务后端持应用接入 key 调 POST ${serverUrl}/api/external/token 签发外部用户 token`,
+    `      return fetch('/your-backend/moai-token').then(function (r) { return r.json() })`,
+    `        .then(function (d) { return d.accessToken })`,
+    `    }`,
+    `  })`,
+    `</script>`,
+  ].join('\n')
+  const quickKeySnippet = [
+    `<!-- key 暴露在宿主页 HTML 中，仅快速验证使用 -->`,
+    `<script src="${siteOrigin}/embed/moai-widget.js"`,
+    `        data-app-id="${appId}"`,
+    `        data-key="<应用接入key>"`,
+    `></script>`,
+  ].join('\n')
+  const activeSnippet = isAuth ? (embedTab === 'quickKey' ? quickKeySnippet : backendIssuedSnippet) : basicSnippet
 
   const copyText = async (text: string, message: string) => {
     await navigator.clipboard.writeText(text)
@@ -232,22 +264,27 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
               {isAdmin && config ? (
                 <>
                   {isAuth && <Alert type="warning" showIcon message={t('accessPoint.keyHint')} style={{ marginBottom: spacing.md }} />}
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: spacing.sm,
-                      background: 'rgba(128,128,128,0.08)',
-                      borderRadius: 8,
-                      fontSize: 12,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                    }}
-                  >
-                    {embedSnippet}
-                  </pre>
-                  <Button icon={<CopyOutlined />} style={{ marginTop: spacing.sm }} onClick={() => copyText(embedSnippet, t('accessPoint.copied'))}>
-                    {t('accessPoint.copySnippet')}
-                  </Button>
+                  {isAuth ? (
+                    <Tabs
+                      size="small"
+                      activeKey={embedTab}
+                      onChange={(key) => setEmbedTab(key as 'backend' | 'quickKey')}
+                      items={[
+                        { key: 'backend', label: t('accessPoint.embedTabBackend'), children: <pre style={preStyle}>{backendIssuedSnippet}</pre> },
+                        { key: 'quickKey', label: t('accessPoint.embedTabQuickKey'), children: <pre style={preStyle}>{quickKeySnippet}</pre> },
+                      ]}
+                    />
+                  ) : (
+                    <pre style={preStyle}>{basicSnippet}</pre>
+                  )}
+                  <Space style={{ marginTop: spacing.sm }}>
+                    <Button icon={<CopyOutlined />} onClick={() => copyText(activeSnippet, t('accessPoint.copied'))}>
+                      {t('accessPoint.copySnippet')}
+                    </Button>
+                    <Button icon={<DownloadOutlined />} href={`${serverUrl}/embed/moai-widget.js`} download="moai-widget.js">
+                      {t('accessPoint.downloadJs')}
+                    </Button>
+                  </Space>
                 </>
               ) : (
                 <Typography.Text type="secondary">{t('accessPoint.adminOnly')}</Typography.Text>

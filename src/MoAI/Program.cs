@@ -32,9 +32,13 @@ if (app.Environment.IsDevelopment())
     {
         c.Path = "/openapi/{documentName}.json";
     });
-    // API 文档：/scalar 查看内部接口（v1 文档），/scalar/external 查看外部接口（external 文档），
-    // 原始文档分别为 /openapi/v1.json 与 /openapi/external.json
-    app.MapScalarApiReference();
+    // API 文档：/scalar 同页下拉切换 v1（内部接口）与 external（外部接口）两份文档，
+    // 原始文档分别为 /openapi/v1.json 与 /openapi/external.json（外部文档也可直接访问 /scalar/external）
+    app.MapScalarApiReference(options =>
+    {
+        options.AddDocument("v1", "AI API", isDefault: true);
+        options.AddDocument("external", "AI External API");
+    });
 }
 
 // 私有网络访问（PNA）：浏览器对「公网/受限来源页面 → 本机服务」的请求会在预检中携带

@@ -40,13 +40,20 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
     /// <inheritdoc/>
     public async Task<PluginRunResult> Handle(RunPluginCommand request, CancellationToken cancellationToken)
     {
+        var context = new PluginRunContext
+        {
+            UserId = request.ContextUserId,
+            UserType = request.ContextUserType,
+            Source = PluginRunSource.Admin,
+        };
+
         var plugin = _registry.Get(request.Key);
         if (plugin == null)
         {
             var dynamic = _dynamicResolver.Resolve(request.Key);
             if (dynamic != null)
             {
-                return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, cancellationToken).ConfigureAwait(false);
+                return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, context, cancellationToken).ConfigureAwait(false);
             }
 
             // 数据库中的自定义插件（团队 MCP/OpenAPI 与系统导入的 MCP/OpenAPI）
@@ -59,6 +66,6 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
-        return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, cancellationToken).ConfigureAwait(false);
+        return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken).ConfigureAwait(false);
     }
 }

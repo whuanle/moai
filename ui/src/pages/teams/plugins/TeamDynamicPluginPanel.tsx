@@ -221,7 +221,7 @@ export function TeamDynamicPluginPanel({
             {canManage && (
               <Button
                 icon={<AppstoreOutlined />}
-                onClick={() => navigate(`/plugin/templates?teamId=${teamId}`)}
+                onClick={() => navigate(`/team/${teamId}/plugin/templates`)}
               >
                 {t('plugins.templateList')}
               </Button>

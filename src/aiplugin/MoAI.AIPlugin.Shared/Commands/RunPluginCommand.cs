@@ -1,14 +1,21 @@
 ﻿using FluentValidation;
 using MediatR;
 using MoAI.AIPlugin.Models;
+using MoAI.Infra.Models;
 
 namespace MoAI.AIPlugin.Commands;
 
 /// <summary>
 /// 执行插件，由执行引擎按 key 解析并运行.
 /// </summary>
-public class RunPluginCommand : IRequest<PluginRunResult>, IModelValidator<RunPluginCommand>
+public class RunPluginCommand : IRequest<PluginRunResult>, IModelValidator<RunPluginCommand>, IUserIdContext
 {
+    /// <inheritdoc/>
+    public long ContextUserId { get; init; }
+
+    /// <inheritdoc/>
+    public UserType ContextUserType { get; init; }
+
     /// <summary>
     /// 插件 key.
     /// </summary>

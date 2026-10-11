@@ -2004,7 +2004,10 @@
     "endpointTitle": "Chat endpoint",
     "endpointHint": "Custom frontends POST to this endpoint via the AG-UI protocol. An external token is required even for apps without authorization: exchange one via POST /api/external/token (body {\"appId\": \"<id>\"}); the embed widget handles this automatically",
     "embedTitle": "Embed snippet",
-    "keyHint": "This app requires authorization: fill data-key with a team \"app access\" key",
+    "keyHint": "For authorized apps, issue the external user token from your backend holding the app access key (key never exposed in the host page); the data-key variant exposes the key in page source, for quick tests only",
+    "embedTabBackend": "Backend-issued token (recommended)",
+    "embedTabQuickKey": "Quick test (data-key)",
+    "downloadJs": "Download widget JS",
     "copySnippet": "Copy embed snippet",
     "copied": "Copied",
     "adminOnly": "The embed snippet is visible to team administrators only"

@@ -105,7 +105,7 @@ node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + �
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
 node local-dev/team-apikey-scope-e2e.mjs  # TA 21（应用接入 key 功能范围：范围回显/非法代码 400/网关 model 门禁/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连网关与知识库/缓存立即性；团队接入 key 已下线）
 node local-dev/gateway-e2e.mjs            # GW 15（模型网关：应用接入 key 两种鉴权头直连/路由团队校验/已下线 moai- 前缀 401/keys 端点移除）
-node local-dev/external-app-e2e.mjs       # EA 75（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话）
+node local-dev/external-app-e2e.mjs       # EA 76（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话/悬浮组件 tokenProvider·onRequest 拦截器与全局 mount）
 node local-dev/app-acp-e2e.mjs            # ACP 21（应用 ACP：app_acp scope 门禁 + JSON-RPC initialize/session/* + Agent/Workflow 应用 ACP 对话 + cancel 中断 + 范围缓存立即性；内置桩模型与确定性流程编排，零 SKIP）
 node local-dev/app-a2a-e2e.mjs          # A2A 20（应用 A2A 协议：app_a2a 门禁/Agent Card/message-send 与 stream（SSE 事件序列）/tasks-get·cancel/会话续聊与落库/用户 token/范围立即性）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 162（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70；真实 Key/真库用例环境门控 SKIP）

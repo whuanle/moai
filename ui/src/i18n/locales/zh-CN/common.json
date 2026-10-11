@@ -2073,7 +2073,10 @@
     "endpointTitle": "对话端点",
     "endpointHint": "第三方自建前端按 AG-UI 协议 POST 此端点；即使未开启授权也需先 POST /api/external/token 换外部 token（body 仅传 appId 即可）；悬浮组件已自动处理",
     "embedTitle": "嵌入代码",
-    "keyHint": "该应用需要授权访问：请在 data-key 中填入团队「应用接入」的 key",
+    "keyHint": "需授权应用建议由业务后端持应用接入 key 签发外部用户 token（key 不暴露在宿主页）；data-key 方式 key 会出现在页面源码中，仅适合快速验证",
+    "embedTabBackend": "后端签发 token（推荐）",
+    "embedTabQuickKey": "快速验证（data-key）",
+    "downloadJs": "下载组件 JS",
     "copySnippet": "复制嵌入代码",
     "copied": "已复制",
     "adminOnly": "嵌入代码仅团队管理员可见"

@@ -395,3 +395,4 @@ local-dev/backend-*.log
 # 由 deploy/deploy-compose.sh 从 .env 生成的运行时配置（模板见 configs/system.example.json）
 /configs/system.json
 /configs/system.runtime.json
+/.playwright-cli

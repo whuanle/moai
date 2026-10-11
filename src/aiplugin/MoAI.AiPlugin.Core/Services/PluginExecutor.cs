@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Models;
 using MoAI.Infra.Exceptions;
 
@@ -42,9 +43,13 @@ public class PluginExecutor : IPluginExecutor
     }
 
     /// <inheritdoc/>
-    public async Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, CancellationToken cancellationToken)
+    public async Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
+
+        // 注入执行上下文须先于插件实例化：插件在构造注入 IPluginRunContextAccessor 时即可读到
+        scope.ServiceProvider.GetService<IPluginRunContextAccessor>()?.Set(context);
+
         object instance;
         try
         {
@@ -95,7 +100,7 @@ public class PluginExecutor : IPluginExecutor
     }
 
     /// <inheritdoc/>
-    public async Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, CancellationToken cancellationToken)
+    public async Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken)
     {
         var plugin = _registry.Get(key);
         if (plugin == null)
@@ -103,7 +108,7 @@ public class PluginExecutor : IPluginExecutor
             return new PluginRunResult { Key = key, Success = false, Error = "插件不存在" };
         }
 
-        return await ExecuteAsync(plugin, requestJson, configJson, cancellationToken).ConfigureAwait(false);
+        return await ExecuteAsync(plugin, requestJson, configJson, context, cancellationToken);
     }
 
     private static async Task<string?> InitDynamicAsync(object instance, PluginInfo plugin, string configJson, CancellationToken cancellationToken)

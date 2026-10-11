@@ -62,6 +62,14 @@ function parseKgIdFromConfig(config: string | null | undefined): number | undefi
   }
 }
 
+/** 团队模式新建：实例 key 缺省取「模板key_{团队id}」，模板段超长时截断以保留完整团队后缀；系统模式不自动填. */
+function buildTeamInstanceKey(scope: 'system' | 'team', teamId: number | undefined, templateKey: string): string | null {
+  if (scope !== 'team' || !teamId) return null
+  const suffix = `_${teamId}`
+  const base = templateKey.slice(0, Math.max(1, 30 - suffix.length))
+  return `${base}${suffix}`
+}
+
 /**
  * kg_cypher_query：按选中图谱预填描述与配置（模型写对 Cypher 的第一喂养位）.
  */
@@ -112,6 +120,8 @@ export function DynamicPluginInstanceModal({
   const [kgEnabled, setKgEnabled] = useState(true)
   const [kgGraphsLoading, setKgGraphsLoading] = useState(false)
   const kgGraphsLoadedRef = useRef(false)
+  /** 最近一次自动生成的实例 key（团队模式）：用户手改过（当前值不等于它）后切换模板不再覆盖. */
+  const lastAutoKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -129,12 +139,18 @@ export function DynamicPluginInstanceModal({
     } else if (presetTemplateKey) {
       const tp = templates.find((x) => x.key === presetTemplateKey)
       form.resetFields()
-      form.setFieldsValue({ templeteKey: presetTemplateKey, config: tp?.configExample ?? '{}' })
+      const autoKey = buildTeamInstanceKey(scope, teamId, presetTemplateKey)
+      form.setFieldsValue({
+        templeteKey: presetTemplateKey,
+        config: tp?.configExample ?? '{}',
+        ...(autoKey ? { instanceKey: autoKey } : {}),
+      })
+      lastAutoKeyRef.current = autoKey
     } else {
       form.resetFields()
       form.setFieldValue('config', '{}')
     }
-  }, [open, editing, presetTemplateKey, templates, form])
+  }, [open, editing, presetTemplateKey, templates, form, scope, teamId])
 
   const loadKgGraphOptions = async () => {
     if (scope !== 'team' || !teamId) return
@@ -277,6 +293,15 @@ export function DynamicPluginInstanceModal({
             onChange={(v) => {
               const tp = templates.find((x) => x.key === v)
               if (tp) form.setFieldValue('config', tp.configExample ?? '{}')
+              // 团队模式新建：切换模板联动刷新实例 key；用户已手改（不等于上次自动值）则不覆盖
+              if (!editing && typeof v === 'string') {
+                const autoKey = buildTeamInstanceKey(scope, teamId, v)
+                const current = String(form.getFieldValue('instanceKey') ?? '').trim()
+                if (autoKey && (!current || current === lastAutoKeyRef.current)) {
+                  form.setFieldValue('instanceKey', autoKey)
+                  lastAutoKeyRef.current = autoKey
+                }
+              }
             }}
           />
         </Form.Item>

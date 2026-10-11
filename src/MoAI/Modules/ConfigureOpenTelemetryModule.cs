@@ -44,6 +44,12 @@ public class ConfigureOpenTelemetryModule : IModule
                   .AddHttpClientInstrumentation()
                   .AddRedisInstrumentation();
 
+                  // Debug=true 时监听 AI 应用埋点事件源（AiObservabilityMiddleware 的 UseOpenTelemetry sourceName 配对）
+                  if (_systemOptions.Debug)
+                  {
+                      tracing.AddSource(AppConst.AiTraceSourceName);
+                  }
+
                   // OTLP 为可选项：未配置或地址非法时跳过导出，避免空地址 new Uri 崩溃
                   if (traceEndpoint != null)
                   {
@@ -61,6 +67,12 @@ public class ConfigureOpenTelemetryModule : IModule
                   .AddHttpClientInstrumentation()
                   .AddAspNetCoreInstrumentation()
                   .AddRuntimeInstrumentation();
+
+                  // Debug=true 时收集 MEAI 对话层 gen_ai 指标（调用耗时与 token 用量）；MEAI 10.9 的 meter 名即 sourceName
+                  if (_systemOptions.Debug)
+                  {
+                      metrices.AddMeter(AppConst.AiTraceSourceName);
+                  }
 
                   if (metricsEndpoint != null)
                   {

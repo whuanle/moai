@@ -221,6 +221,10 @@ async function main() {
   // EA-28 悬浮组件静态托管
   const widget = await fetch(`${BASE}/embed/moai-widget.js`)
   check('EA-28 组件脚本 /embed/moai-widget.js 200', widget.status === 200 && (widget.headers.get('content-type') ?? '').includes('javascript'), `${widget.status}`)
+  // EA-28b/c 自托管改造面：tokenProvider（业务后端签发 token，key 不落前端）与 onRequest 中间件 + 全局 mount
+  const widgetSrc = await widget.text()
+  check('EA-28b 组件暴露 tokenProvider 拦截器（授权应用推荐接入）', widgetSrc.includes('tokenProvider'))
+  check('EA-28c 组件暴露 onRequest 中间件与全局 mount', widgetSrc.includes('onRequest') && widgetSrc.includes('mount'))
 
   // ===== 外部应用沙箱/技能限制 =====
   // EA-29 外部应用不允许技能与沙箱：保存显式携带即 400，正常保存后技能落空、沙箱关闭

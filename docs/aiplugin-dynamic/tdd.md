@@ -104,9 +104,11 @@ node local-dev/moji-weather-e2e.mjs
 | 实例列表与模板加载 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS 3/3（2026-09-03） |
 | 新建实例弹窗 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS（2026-09-03） |
 | 删除实例 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx | PASS（2026-09-03） |
-| @DYN-S67 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（系统/团队双模式卡片与实例数、空态、刷新、返回、非 admin 重定向） | PASS 10/10（2026-10-05） |
-| @DYN-S68 | ui/src/pages/plugins/__tests__/DynamicPluginInstanceModal.test.tsx（预选模板/双 scope 提交分流/实例 key 查重拦截/编辑锁定）＋ PluginTemplates.test.tsx 卡片新建两例 | PASS 4/4＋（2026-10-05） |
-| @DYN-S69 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（团队自有计数排除系统实例、canManage=false 重定向团队插件） | PASS（含上两行）（2026-10-05） |
+| @DYN-S67 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（系统/团队双模式卡片与实例数、空态、刷新、返回、非 admin 重定向） | PASS 12/12（2026-10-11） |
+| @DYN-S68 | ui/src/pages/plugins/__tests__/DynamicPluginInstanceModal.test.tsx（预选模板/双 scope 提交分流/实例 key 查重拦截/编辑锁定）＋ PluginTemplates.test.tsx 卡片新建两例 | PASS（含下两行）（2026-10-11） |
+| @DYN-S69 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（团队自有计数排除系统实例、canManage=false 重定向团队插件） | PASS（含上下行）（2026-10-11） |
+| @DYN-S74 | ui/src/pages/plugins/__tests__/PluginTemplates.test.tsx（团队模板页路由 /team/7/plugin/templates、面包屑「动态插件」团队回团队分区/系统回系统插件页） | PASS 12/12（2026-10-11） |
+| @DYN-S75 | ui/src/pages/plugins/__tests__/DynamicPluginInstanceModal.test.tsx（团队自动填「模板key_团队id」+ 自动值直提 + 手改后切模板不覆盖 + 未手改切模板联动刷新 + 系统 scope 不填） | PASS 7/7（2026-10-11） |
 
 > 博查两轮（全网搜索、AI 搜索）与墨迹天气轮**均无前端改动**：新模板由后端注册表自动进入模板下拉与运行抽屉，无需改 `DynamicPluginPanel`，也无需 `npm run syncapi`。
 

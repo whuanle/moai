@@ -20,6 +20,7 @@ vi.mock('@/api/classify', () => ({
 
 const TEMPLATES = [
   { key: 'dynamic_greet', name: '动态问候', description: '', isDynamic: true, configExample: '{"Prefix":"Hello"}' },
+  { key: 'postgres_query', name: 'Postgres 查询', description: '', isDynamic: true, configExample: '{}' },
 ]
 
 function renderModal(overrides: Partial<Parameters<typeof DynamicPluginInstanceModal>[0]> = {}) {
@@ -109,6 +110,10 @@ describe('DynamicPluginInstanceModal', () => {
     const user = userEvent.setup()
     renderModal({ scope: 'team', teamId: 7, presetTemplateKey: 'dynamic_greet' })
 
+    // 实例 key 自动填充「模板key_{团队id}」，仍允许用户手改
+    expect(await screen.findByText('动态问候 (dynamic_greet)')).toBeInTheDocument()
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('dynamic_greet_7')
+    await user.clear(screen.getByLabelText('实例 Key'))
     await user.type(screen.getByLabelText('实例 Key'), 'team_greet')
     await user.type(screen.getByLabelText('插件标题'), '团队问候')
     await user.click(screen.getByRole('button', { name: /保 存|保存/ }))
@@ -119,5 +124,51 @@ describe('DynamicPluginInstanceModal', () => {
       )
     })
     expect(pluginApi.saveDynamicPlugin).not.toHaveBeenCalled()
+  })
+
+  it('团队 scope 自动填充保留自动值提交，系统 scope 不自动填充', async () => {
+    const user = userEvent.setup()
+    const { onSaved } = renderModal({ scope: 'team', teamId: 652, presetTemplateKey: 'dynamic_greet' })
+
+    await screen.findByText('动态问候 (dynamic_greet)')
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('dynamic_greet_652')
+    await user.type(screen.getByLabelText('插件标题'), '团队问候')
+    await user.click(screen.getByRole('button', { name: /保 存|保存/ }))
+
+    await waitFor(() => {
+      expect(saveTeamDynamicPlugin).toHaveBeenCalledWith(
+        expect.objectContaining({ teamId: 652, instanceKey: 'dynamic_greet_652', templeteKey: 'dynamic_greet' }),
+      )
+    })
+    expect(onSaved).toHaveBeenCalled()
+  })
+
+  it('团队 scope 用户手改实例 key 后切换模板不覆盖', async () => {
+    const user = userEvent.setup()
+    renderModal({ scope: 'team', teamId: 7, presetTemplateKey: 'dynamic_greet' })
+
+    await screen.findByText('动态问候 (dynamic_greet)')
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('dynamic_greet_7')
+
+    // 用户手改后切换模板，实例 key 保持手改值
+    await user.clear(screen.getByLabelText('实例 Key'))
+    await user.type(screen.getByLabelText('实例 Key'), 'my_own_key')
+    await user.click(screen.getByLabelText('模板'))
+    await user.click(await screen.findByText('Postgres 查询 (postgres_query)'))
+
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('my_own_key')
+  })
+
+  it('团队 scope 未手改时切换模板联动刷新实例 key', async () => {
+    const user = userEvent.setup()
+    renderModal({ scope: 'team', teamId: 7, presetTemplateKey: 'dynamic_greet' })
+
+    await screen.findByText('动态问候 (dynamic_greet)')
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('dynamic_greet_7')
+
+    await user.click(screen.getByLabelText('模板'))
+    await user.click(await screen.findByText('Postgres 查询 (postgres_query)'))
+
+    expect(screen.getByLabelText('实例 Key')).toHaveValue('postgres_query_7')
   })
 })

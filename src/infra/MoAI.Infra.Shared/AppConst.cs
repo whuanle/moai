@@ -31,4 +31,9 @@ public static class AppConst
     /// 源.
     /// </summary>
     public static readonly ActivitySource ActivitySource = new ActivitySource("MoAI");
+
+    /// <summary>
+    /// AI 应用调试埋点事件源名（系统设置 Debug=true 时，AI 侧 UseOpenTelemetry 与可观察性 AddSource 必须配对使用）.
+    /// </summary>
+    public const string AiTraceSourceName = "AAA";
 }

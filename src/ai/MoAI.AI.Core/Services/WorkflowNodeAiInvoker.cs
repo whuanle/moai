@@ -10,6 +10,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using MoAI.AIChannel.Services;
 using MoAI.Database.Entities;
+using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.AI.Services;
@@ -27,6 +28,7 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
     private readonly IChatClientProvider _chatClientProvider;
     private readonly AppContextProviderFactory _contextProviderFactory;
     private readonly AppSecurityService _appSecurityService;
+    private readonly SystemOptions _systemOptions;
     private readonly ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -36,18 +38,21 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
     /// <param name="chatClientProvider">对话客户端提供者.</param>
     /// <param name="contextProviderFactory">Agent 上下文提供者工厂（Agent 应用节点的工具链装配）.</param>
     /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
+    /// <param name="systemOptions">系统配置（Debug=true 时挂 OpenTelemetry 调试埋点）.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public WorkflowNodeAiInvoker(
         IAiModelResolver modelResolver,
         IChatClientProvider chatClientProvider,
         AppContextProviderFactory contextProviderFactory,
         AppSecurityService appSecurityService,
+        SystemOptions systemOptions,
         ILoggerFactory loggerFactory)
     {
         _modelResolver = modelResolver;
         _chatClientProvider = chatClientProvider;
         _contextProviderFactory = contextProviderFactory;
         _appSecurityService = appSecurityService;
+        _systemOptions = systemOptions;
         _loggerFactory = loggerFactory;
     }
 
@@ -58,6 +63,12 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
             ?? throw new BusinessException($"模型 {request.ModelId} 不存在或该团队不可用") { StatusCode = 400 };
 
         var chatClient = await _chatClientProvider.GetChatClientAsync(resolved.Model, resolved.Channel, cancellationToken).ConfigureAwait(false);
+
+        // Debug 埋点：每次模型调用产生携带正文的 Span 与 gen_ai 指标
+        if (_systemOptions.Debug)
+        {
+            chatClient = AiObservabilityMiddleware.WrapChatClient(chatClient);
+        }
 
         var options = request.Temperature.HasValue ? new ChatOptions { Temperature = request.Temperature.Value } : null;
         var result = new StringBuilder();
@@ -85,6 +96,10 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
         var resolved = await _modelResolver.ResolveByIdAsync(request.Config.ModelId, request.App.TeamId, cancellationToken).ConfigureAwait(false)
             ?? throw new BusinessException("Agent 应用的对话模型不可用，请重新配置") { StatusCode = 400 };
         var chatClient = await _chatClientProvider.GetChatClientAsync(resolved.Model, resolved.Channel, cancellationToken).ConfigureAwait(false);
+        if (_systemOptions.Debug)
+        {
+            chatClient = AiObservabilityMiddleware.WrapChatClient(chatClient);
+        }
 
         var buildContext = new AppAgentBuildContext
         {
@@ -121,6 +136,11 @@ public sealed class WorkflowNodeAiInvoker : IWorkflowNodeAiInvoker
         // 应用安全策略：Agent 应用节点内的工具调用结果/参数同样脱敏（流程节点级输入输出脱敏见引擎净化器）
         var policy = await _appSecurityService.GetPolicyAsync(request.App.Id, cancellationToken).ConfigureAwait(false);
         var securedAgent = AppSecurityAgentMiddleware.Wrap(agent, policy);
+        // Debug 埋点包在脱敏中间件之外，Span 只记录脱敏后内容
+        if (_systemOptions.Debug)
+        {
+            securedAgent = AiObservabilityMiddleware.WrapAgent(securedAgent);
+        }
 
         var result = new StringBuilder();
         await foreach (var update in securedAgent.RunStreamingAsync(request.Prompt, cancellationToken: cancellationToken).ConfigureAwait(false))

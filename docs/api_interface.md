@@ -23,9 +23,8 @@ ui/src/api/client/ 重新生成
 后端不需要单独维护接口文档。Controller 写完后，NSwag 自动扫描生成 OpenAPI 文档（`src/MoAI/Modules/OpenApiModule.cs`）。
 
 - 文档地址：`http://127.0.0.1:5000/openapi/v1.json`（内部接口，前端 Kiota 默认源）
-- 外部接口单独成文档：`http://127.0.0.1:5000/openapi/external.json`（`/api/external` 全部外部接口，前端 Kiota 不消费）；Scalar 查看：`/scalar`（内部）与 `/scalar/external`（外部）
-- 外部接口文档：`http://127.0.0.1:5000/openapi/external.json`（仅 `/api/external` 前缀的外部接入接口，单独成组，不混入主文档）
-- 可视化页面（Scalar）：`http://127.0.0.1:5000/scalar/v1`，外部接口为 `/scalar/external`
+- 外部接口单独成文档：`http://127.0.0.1:5000/openapi/external.json`（`/api/external` 全部外部接口，前端 Kiota 不消费）
+- 可视化页面（Scalar）：`http://127.0.0.1:5000/scalar`，页面左上角下拉切换 `AI API`（v1 内部）与 `AI External API`（外部）两份文档；外部文档也可直达 `/scalar/external`
 - **仅在 Development 环境暴露**（`Program.cs` 中 `UseOpenApi` 包在 `IsDevelopment()` 分支里）
 - 文档的 `servers` 会写入 `MoAI:Server` 配置与实际监听地址，前端同步后 baseUrl 自动一致
 

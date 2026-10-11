@@ -82,6 +82,7 @@
 - 前端（访问点轮）：`npm run typecheck`/`npm run lint` → **0 error**；`npm run test` 全量 **263/263（50 文件，含新增 `AppAccessSection.test.tsx` 5/5）**；`npm run build:embed` 产物 `src/MoAI/wwwroot/embed/moai-widget.js`（IIFE ~240KB）
 - 悬浮组件修复轮（2026-09-21）：`npm run typecheck`/`npm run lint` → **0 error**；`npm run test` 全量 **430/430（62 文件）**；`npm run build:embed` 重建产物（`emptyOutDir` 改 false——该目录还有 logo/models.json/monaco，防误删）；`embed.vite.config` 产物源不变，开发期由 Vite 中间件在 4000 端口托管 `/embed/moai-widget.js` 并代理 `/api`。浏览器走查见 sop「常见问题」与 sdd 已知问题（2026-09-21）。回归 `external-app-e2e.mjs` **58/59**：EA-29b 失败系 5000 运行中后端为旧构建、未含外部禁沙箱规则（该规则与 EA-29 用例同属 @EA-S13 轮 WIP，新构建下已录 59/59），非本轮改动。
 - 悬浮组件 null 源兼容轮（2026-09-21）：`file://`/`about:blank`（`Origin: null`、非安全上下文）宿主页修复验证——Vite `server.cors:false` 后预检穿透到后端（curl 断言经 4000 的 OPTIONS 带 `access-control-allow-origin: *`）；后端 PNA 预检支持（宿主 `dotnet build -o` 独立输出 **0 error**）；widget `randomUUID` 全量降级（重建产物）。`about:blank` 页面注入组件浏览器走查：按钮渲染→开面板→匿名 token 200→建会话 200→AG-UI 流式回复到达，全链路通过；typecheck/lint 0 error。
+- 悬浮组件 token 拦截器轮（2026-10-10）：`npm run typecheck`/`npm run lint` → **0 error**（lint 既有 9 warning）；`npm run test` 全量 **504/504（72 文件，含新增 `embed/__tests__/widget.test.ts` 5/5）**；`npm run build:embed` 重建产物并经 node vm 冒烟验证全局绑定 `window.MoaiWidget = { mount, MoaiWidget }`；`external-app-e2e.mjs` **76/76**（新增 EA-28b/c：产物含 tokenProvider/onRequest/mount）。零后端改动（/external/token 三种换法与 refresh 既有端点直接复用）。
 
 ## 映射表
 
@@ -168,6 +169,7 @@
 | @EA-S17 | external-app-e2e.mjs（EA-32a~d） | PASS 74/74（2026-09-27） |
 | @EA-S18 | 已随团队接入 key 下线退役（原团队 key 直连场景，编号不复用）；现状见 [@EA-S19](./bdd.md#ea-s19) | —（2026-09-27） |
 | @EA-S19 | external-app-e2e.mjs（EA-36 已下线 moai- 前缀 401）＋ team-apikey-scope-e2e.mjs（TA-32j）＋ gateway-e2e.mjs（moai- 前缀网关 401） | EA 74/74、TA 21/21、GW 15/15（2026-09-27） |
+| @EA-S20 | embed/__tests__/widget.test.ts（5 例：tokenProvider 优先/onRequest 改写/refresh_token 换新/provider 重新获取/无凭证提示）＋ external-app-e2e.mjs（EA-28b/c 产物含 tokenProvider·onRequest·mount） | EA 76/76、embed 5/5（2026-10-10） |
 | @ACP-S1 | app-acp-e2e.mjs（ACP-S01~S05） | PASS 21/21（2026-09-27） |
 | @ACP-S2 | app-acp-e2e.mjs（ACP-S06） | PASS（2026-09-27） |
 | @ACP-S3 | app-acp-e2e.mjs（ACP-S07/S08） | PASS（2026-09-27） |
@@ -188,7 +190,7 @@ cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
 node local-dev/app-e2e.mjs                 # 期望 172/172 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白 / AP-54 发布配置快照双轨 / AP-57 快捷输入 / AP-58 流程应用绑定 / AP-59 对话调用流程工具 / AP-60 审批策略，AP-59/AP-60 需 admin 账号否则 SKIP）
 node local-dev/chat-attachment-e2e.mjs     # 期望 12/12 PASS（@AP-S55 对话附件：直传/提取/白名单/越权防护）
-node local-dev/external-app-e2e.mjs        # 期望 74/74 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制；EA-30~34/36 key 直连 @EA-S15~S17/S19，需先执行 asserts/external_app.sql）
+node local-dev/external-app-e2e.mjs        # 期望 76/76 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制 + EA-28b/c 组件拦截器 @EA-S20；EA-30~34/36 key 直连 @EA-S15~S17/S19，需先执行 asserts/external_app.sql）
 node local-dev/app-acp-e2e.mjs             # 期望 21/21 PASS（@ACP-S1~S9 应用 ACP：scope 门禁 + 协议行为 + Agent/Workflow 对话 + cancel + 缓存立即性；内置桩模型，零 SKIP）
 # 3) 前端（syncapi 需要后端运行中）
 cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test

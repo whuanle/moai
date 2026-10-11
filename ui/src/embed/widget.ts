@@ -26,22 +26,55 @@ interface TokenResponse {
   externalUserId?: string | null
 }
 
+/** tokenProvider 可返回 accessToken 字符串，或附带 refresh_token 的对象 */
+export interface WidgetToken {
+  accessToken: string
+  refreshToken?: string
+}
+
+/**
+ * 请求中间件的改写上下文：组件发出的所有 API 请求（换 token / 建会话 / 对话）
+ * 在发出前先经 onRequest 改写，url / headers / body 均可替换（如代理到业务系统自己的后端）.
+ */
+export interface WidgetRequestContext {
+  url: string
+  method: string
+  headers: Record<string, string>
+  body?: unknown
+}
+
+export type WidgetTokenProvider = () => Promise<string | WidgetToken | null | undefined>
+export type WidgetRequestInterceptor = (ctx: WidgetRequestContext) => WidgetRequestContext | Promise<WidgetRequestContext>
+
 export interface WidgetOptions {
   appId: string
   server: string
+  /** 应用接入 key：直接在前端换取 token，仅建议快速验证使用（key 会暴露在宿主页 HTML 中） */
   accessAppKey?: string
   externalUserId?: string
   nickname?: string
+  /**
+   * token 拦截器（需授权应用推荐接入方式）：向业务系统自己的后端要 token（后端持 key 调
+   * POST /api/external/token 签发外部用户 token），组件不再自己换 token，也不需要 accessAppKey。
+   * 返回 accessToken 字符串或 { accessToken, refreshToken }；每次调用应返回当前可用凭证.
+   */
+  tokenProvider?: WidgetTokenProvider
+  /** 请求中间件：所有 API 请求发出前经此改写，可加头或整条代理到业务后端 */
+  onRequest?: WidgetRequestInterceptor
 }
 
 const TEXT_FALLBACK = {
   inputPlaceholder: '输入消息… / Type a message…',
-  needKey: '此应用需要访问密钥 / This app requires an access key',
+  needKey: '此应用需要授权访问：请配置应用接入 key 或接入 tokenProvider 由业务后端签发 token / This app requires authorization: provide an access key or a tokenProvider',
+  tokenFailed: '获取访问凭证失败 / Failed to obtain access token',
   sendFailed: '发送失败 / Failed to send',
   initFailed: '初始化失败，请稍后重试 / Initialization failed',
 }
 
 const LOG_TAG = '[moai-widget]'
+
+/** access token 剩余寿命不足该值时提前刷新（毫秒） */
+const TOKEN_REFRESH_AHEAD_MS = 60_000
 
 /** 受限嵌入环境（沙箱 iframe 等）访问 localStorage 会抛 SecurityError，降级为内存态（仅当次页面存活） */
 const memoryStore = new Map<string, string>()
@@ -78,22 +111,40 @@ function resolveExternalUserId(appId: string, provided?: string): string {
   return generated
 }
 
+/** 粗解析 JWT exp（不验签，仅用于临近过期提前刷新）；非 JWT 或无 exp 返回 undefined */
+function tokenExpiresAt(token: string): number | undefined {
+  const parts = token.split('.')
+  if (parts.length !== 3) return undefined
+  try {
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export class MoaiWidget {
   private config?: AccessPointConfig
   private token?: string
+  private refreshCredential?: string
   private sessionId?: string
   private root?: HTMLDivElement
   private shadow?: ShadowRoot
   private messagesEl?: HTMLDivElement
   private inputEl?: HTMLTextAreaElement
   private running = false
+  private refreshing?: Promise<string | undefined>
 
   constructor(private readonly opts: WidgetOptions) {}
 
   /** 拉取公开配置；enabled=false 时不渲染任何内容（console.warn 说明原因，便于宿主页排查） */
   async init(): Promise<void> {
     try {
-      const res = await fetch(`${this.opts.server}/api/external/app/${this.opts.appId}/access-point`)
+      const res = await this.runRequest({
+        url: `${this.opts.server}/api/external/app/${this.opts.appId}/access-point`,
+        method: 'GET',
+        headers: {},
+      })
       if (!res.ok) {
         console.warn(`${LOG_TAG} 拉取访问点配置失败 status=${res.status}，组件未渲染 / access-point fetch failed, widget not rendered`)
         return
@@ -105,10 +156,79 @@ export class MoaiWidget {
       }
       this.render()
       if (this.config.defaultOpen) {
-        void this.open()
+        await this.open()
       }
     } catch (error) {
       console.error(`${LOG_TAG} 初始化失败，组件未渲染 / initialization failed, widget not rendered`, error)
+    }
+  }
+
+  /** 组件发出的所有 API 请求统一走此管线：先经 onRequest 中间件改写，再发出 */
+  private async runRequest(ctx: WidgetRequestContext): Promise<Response> {
+    const next = this.opts.onRequest ? await this.opts.onRequest({ ...ctx, headers: { ...ctx.headers } }) : ctx
+    return fetch(next.url, {
+      method: next.method,
+      headers: next.headers,
+      body: next.body === undefined ? undefined : JSON.stringify(next.body),
+    })
+  }
+
+  /** 经 tokenProvider 获取凭证；返回 null 表示提供方未产出可用 token */
+  private async acquireViaProvider(): Promise<WidgetToken | null> {
+    if (!this.opts.tokenProvider) return null
+    try {
+      const result = await this.opts.tokenProvider()
+      if (!result) return null
+      const normalized = typeof result === 'string' ? { accessToken: result } : result
+      return normalized.accessToken ? { accessToken: normalized.accessToken, refreshToken: normalized.refreshToken } : null
+    } catch (error) {
+      console.error(`${LOG_TAG} tokenProvider 执行失败 / tokenProvider failed`, error)
+      return null
+    }
+  }
+
+  /** 取当前可用 access token：临近过期时先刷新（tokenProvider 重新获取，否则用 refresh_token 换新） */
+  private async getToken(): Promise<string | undefined> {
+    if (!this.token) return undefined
+    const expiresAt = tokenExpiresAt(this.token)
+    if (expiresAt === undefined || expiresAt - Date.now() > TOKEN_REFRESH_AHEAD_MS) return this.token
+    this.refreshing ??= this.refreshAccessToken().finally(() => {
+      this.refreshing = undefined
+    })
+    return this.refreshing
+  }
+
+  /** 刷新失败时保留旧 token 返回，让请求自行失败并可重试 */
+  private async refreshAccessToken(): Promise<string | undefined> {
+    if (this.opts.tokenProvider) {
+      const refreshed = await this.acquireViaProvider()
+      if (refreshed) {
+        this.token = refreshed.accessToken
+        this.refreshCredential = refreshed.refreshToken
+        return this.token
+      }
+      return this.token
+    }
+
+    if (!this.refreshCredential) return this.token
+    try {
+      const res = await this.runRequest({
+        url: `${this.opts.server}/api/external/token/refresh`,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: { refreshToken: this.refreshCredential },
+      })
+      if (!res.ok) {
+        console.warn(`${LOG_TAG} 刷新外部 token 失败 status=${res.status} / token refresh failed`)
+        return this.token
+      }
+      const data = (await res.json()) as TokenResponse
+      this.token = data.accessToken
+      this.refreshCredential = data.refreshToken
+      return this.token
+    } catch (error) {
+      console.warn(`${LOG_TAG} 刷新外部 token 请求失败 / token refresh request failed`, error)
+      return this.token
     }
   }
 
@@ -220,49 +340,23 @@ export class MoaiWidget {
     }
   }
 
-  private authHeaders(): Record<string, string> {
-    return this.token ? { Authorization: `Bearer ${this.token}` } : {}
-  }
-
   private async ensureSession(): Promise<boolean> {
     if (this.token && this.sessionId) return true
-    const cfg = this.config!
-    const server = this.opts.server
-    const externalUserId = resolveExternalUserId(this.opts.appId, this.opts.externalUserId)
-
-    if (cfg.isAuth && !this.opts.accessAppKey) {
-      this.appendMessage('assistant', TEXT_FALLBACK.needKey)
-      return false
-    }
+    if (!(await this.ensureToken())) return false
 
     try {
-      const tokenRes = await fetch(`${server}/api/external/token`, {
+      const res = await this.runRequest({
+        url: `${this.opts.server}/api/external/agent/${this.opts.appId}/session`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          cfg.isAuth
-            ? { accessAppKey: this.opts.accessAppKey, appId: this.opts.appId, externalUserId, nickname: this.opts.nickname }
-            : { appId: this.opts.appId, externalUserId, nickname: this.opts.nickname },
-        ),
+        headers: { 'Content-Type': 'application/json', ...(await this.authHeaders()) },
+        body: {},
       })
-      if (!tokenRes.ok) {
-        console.warn(`${LOG_TAG} 换取外部 token 失败 status=${tokenRes.status} / token exchange failed`)
+      if (!res.ok) {
+        console.warn(`${LOG_TAG} 创建会话失败 status=${res.status} / create session failed`)
         this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
         return false
       }
-      this.token = ((await tokenRes.json()) as TokenResponse).accessToken
-
-      const sessionRes = await fetch(`${server}/api/external/agent/${this.opts.appId}/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
-        body: JSON.stringify({}),
-      })
-      if (!sessionRes.ok) {
-        console.warn(`${LOG_TAG} 创建会话失败 status=${sessionRes.status} / create session failed`)
-        this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
-        return false
-      }
-      const session = (await sessionRes.json()) as { value: string }
+      const session = (await res.json()) as { value: string }
       this.sessionId = session.value
       return true
     } catch (error) {
@@ -270,6 +364,57 @@ export class MoaiWidget {
       this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
       return false
     }
+  }
+
+  /**
+   * 确保持有外部 token：tokenProvider 优先（业务后端签发，key 不落前端）；
+   * 否则组件自己换 token——需授权应用带 accessAppKey（快速验证），免授权应用匿名换取。
+   * 需授权应用无 key 时也发起请求，给 onRequest 代理/中间件留下接管机会，失败再提示.
+   */
+  private async ensureToken(): Promise<boolean> {
+    if (this.token) return true
+    const cfg = this.config!
+
+    if (this.opts.tokenProvider) {
+      const token = await this.acquireViaProvider()
+      if (!token) {
+        this.appendMessage('assistant', TEXT_FALLBACK.tokenFailed)
+        return false
+      }
+      this.token = token.accessToken
+      this.refreshCredential = token.refreshToken
+      return true
+    }
+
+    const externalUserId = resolveExternalUserId(this.opts.appId, this.opts.externalUserId)
+    try {
+      const res = await this.runRequest({
+        url: `${this.opts.server}/api/external/token`,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: cfg.isAuth
+          ? { accessAppKey: this.opts.accessAppKey, appId: this.opts.appId, externalUserId, nickname: this.opts.nickname }
+          : { appId: this.opts.appId, externalUserId, nickname: this.opts.nickname },
+      })
+      if (!res.ok) {
+        console.warn(`${LOG_TAG} 换取外部 token 失败 status=${res.status} / token exchange failed`)
+        this.appendMessage('assistant', cfg.isAuth ? TEXT_FALLBACK.needKey : TEXT_FALLBACK.initFailed)
+        return false
+      }
+      const data = (await res.json()) as TokenResponse
+      this.token = data.accessToken
+      this.refreshCredential = data.refreshToken
+      return true
+    } catch (error) {
+      console.error(`${LOG_TAG} 换取外部 token 网络请求失败 / token exchange request failed`, error)
+      this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
+      return false
+    }
+  }
+
+  private async authHeaders(): Promise<Record<string, string>> {
+    const token = await this.getToken()
+    return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
   private appendMessage(role: 'user' | 'assistant', text: string): HTMLDivElement {
@@ -293,11 +438,20 @@ export class MoaiWidget {
     const bubble = this.appendMessage('assistant', '')
 
     try {
+      // 对话请求同样先经 onRequest 中间件改写（可代理/加头），再交给 AG-UI 客户端
+      const routed = this.opts.onRequest
+        ? await this.opts.onRequest({
+            url: `${this.opts.server}/api/external/agent/${this.opts.appId}/chat`,
+            method: 'POST',
+            headers: await this.authHeaders(),
+          })
+        : { url: `${this.opts.server}/api/external/agent/${this.opts.appId}/chat`, headers: await this.authHeaders() }
+
       const { HttpAgent } = await import('@ag-ui/client')
       const agent = new HttpAgent({
-        url: `${this.opts.server}/api/external/agent/${this.opts.appId}/chat`,
+        url: routed.url,
         threadId: this.sessionId!,
-        headers: { ...this.authHeaders() },
+        headers: routed.headers,
       })
       const buffers = new Map<string, string>()
       agent.setMessages([{ id: randomId(), role: 'user', content: text }])

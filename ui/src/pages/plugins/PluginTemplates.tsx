@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Button, Col, Empty, Row, Space, Spin, Tag, Typography } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { classifyApi, type PluginClassify } from '@/api/classify'
 import { pluginApi, type DynamicPluginTemplate } from '@/api/plugin'
 import { getTeamDynamicTemplates, getTeamPlugins } from '@/api/team-plugin'
@@ -13,12 +13,11 @@ import { DynamicPluginInstanceModal } from './components/DynamicPluginInstanceMo
 
 const { Text, Paragraph } = Typography
 
-/** 模板列表页：无 teamId 为系统模式（管理员）；带 teamId 为团队模式（可管理成员），实例数分别按全站/本团队统计. */
+/** 模板列表页：无 teamId 路由参数为系统模式（管理员 /plugin/templates）；带 teamId 为团队模式（/team/{teamId}/plugin/templates），实例数分别按全站/本团队统计. */
 export function PluginTemplates() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const teamIdParam = searchParams.get('teamId')
+  const { teamId: teamIdParam } = useParams()
   const parsedTeamId = teamIdParam != null ? Number(teamIdParam) : NaN
   const isTeamMode = Number.isInteger(parsedTeamId) && parsedTeamId > 0
   const teamId = isTeamMode ? parsedTeamId : undefined
@@ -94,7 +93,7 @@ export function PluginTemplates() {
       title={t('plugins.templateList')}
       subtitle={t('plugins.templateListSubtitle')}
       breadcrumb={[
-        { title: t('plugins.tabDynamic') },
+        { title: t('plugins.tabDynamic'), onClick: () => navigate(backPath) },
         { title: t('plugins.templateList') },
       ]}
       extra={

@@ -505,6 +505,18 @@ Scenario: 悬浮组件的公开配置与脚本托管
   Then 返回不存在
   When 匿名请求 /embed/moai-widget.js
   Then 返回 200 的 JavaScript 脚本
+
+@EA-S20 @auto:unit @auto:e2e
+Scenario: 悬浮组件 token 拦截器与请求中间件（需授权应用自托管接入）
+  When 需授权应用（is_auth=true）由业务系统自托管组件 JS 并配置 tokenProvider
+  Then 组件经 tokenProvider 获取业务后端签发的外部用户 token（业务后端持应用接入 key 调 /api/external/token），组件不再自己换 token、不需要也不发送应用接入 key
+  When 组件发出换 token、建会话或对话请求
+  Then 请求先经 onRequest 中间件改写（url/headers/body 可替换，可整体代理到业务后端）
+  When 缓存的 access token 临近过期
+  Then 优先重新调用 tokenProvider 获取新 token，否则以 refresh_token 调 /api/external/token/refresh 换新后继续使用，生效期内不重复刷新
+  When 需授权应用未提供 key 与 tokenProvider 且无中间件接管换 token
+  Then 换 token 失败，组件提示需要配置 key 或接入 tokenProvider
+  And 组件暴露全局 MoaiWidget.mount（window.MoaiWidget = { mount, MoaiWidget }）供下载后的 JS 在业务站点编程挂载；无 data-app-id 的 script 引入静默跳过自动引导
 ```
 
 ## Feature: 外部应用能力限制（沙箱与技能）

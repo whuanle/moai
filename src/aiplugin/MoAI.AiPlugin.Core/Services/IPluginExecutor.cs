@@ -5,7 +5,7 @@ using MoAI.AIPlugin.Models;
 namespace MoAI.AIPlugin.Services;
 
 /// <summary>
-/// 插件执行引擎。负责在隔离的 DI 作用域中实例化插件、应用配置并调用运行方法.
+/// 插件执行引擎。负责在隔离的 DI 作用域中实例化插件、注入执行上下文、应用配置并调用运行方法.
 /// </summary>
 public interface IPluginExecutor
 {
@@ -15,9 +15,10 @@ public interface IPluginExecutor
     /// <param name="plugin">插件元数据.</param>
     /// <param name="requestJson">请求参数 JSON.</param>
     /// <param name="configJson">动态插件配置 JSON，静态插件忽略.</param>
+    /// <param name="context">执行上下文（调用方用户/团队身份），插件经 <see cref="Contracts.IPluginRunContextAccessor"/> 读取；可为 null.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>执行结果.</returns>
-    Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, CancellationToken cancellationToken);
+    Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken);
 
     /// <summary>
     /// 按插件 key 执行插件.
@@ -25,7 +26,8 @@ public interface IPluginExecutor
     /// <param name="key">插件 key.</param>
     /// <param name="requestJson">请求参数 JSON.</param>
     /// <param name="configJson">动态插件配置 JSON，静态插件忽略.</param>
+    /// <param name="context">执行上下文（调用方用户/团队身份），可为 null.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>执行结果.</returns>
-    Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, CancellationToken cancellationToken);
+    Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken);
 }
