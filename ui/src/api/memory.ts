@@ -40,7 +40,7 @@ export async function getMyMemories(appId: string, page = 1, pageSize = 20): Pro
 /** 删除本人的一条长期记忆 */
 export async function deleteMyMemory(appId: string, memoryId: string): Promise<void> {
   const client = getApiClient()
-  await client.api.app.byId(appId).memory.mine.byId(memoryId).delete()
+  await client.api.app.byId(appId).memory.mine.byMemoryId(memoryId).delete()
 }
 
 /** 清空本人在该应用内的全部长期记忆 */

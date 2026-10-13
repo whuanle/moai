@@ -157,7 +157,7 @@ export function Settings() {
   const [compactionSummarizeTokens, setCompactionSummarizeTokens] = useState<number>(AgentCompactionDefaults.summarizeTriggerTokens)
   const [compactionPreserveTurns, setCompactionPreserveTurns] = useState<number>(AgentCompactionDefaults.preserveTurns)
   const [compactionHardLimit, setCompactionHardLimit] = useState<number>(AgentCompactionDefaults.hardTokenLimit)
-  const [compactionSummarization, setCompactionSummarization] = useState(AgentCompactionDefaults.enableSummarization)
+  const [compactionSummarization, setCompactionSummarization] = useState<boolean>(AgentCompactionDefaults.enableSummarization)
   const [compactionDirty, setCompactionDirty] = useState(false)
 
   useEffect(() => {

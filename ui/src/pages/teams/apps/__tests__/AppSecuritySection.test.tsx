@@ -159,7 +159,7 @@ describe('AppSecuritySection（应用安全设置）', () => {
         {
           id: 'e1',
           sessionId: 's1',
-          userId: 1,
+          userId: '1',
           scope: 'toolResult',
           ruleName: '',
           ruleType: 'bankCard',

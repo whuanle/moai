@@ -679,7 +679,8 @@ export interface AppSecurityConfig {
 export interface AppSecurityEventItem {
   id: string
   sessionId: string | null
-  userId: number | null
+  /** 后端 long 按 long→string 约定序列化 */
+  userId: string | null
   scope: string
   ruleName: string
   ruleType: string
@@ -736,7 +737,9 @@ export async function getAppSecurityEvents(
   pageSize = 20,
 ): Promise<{ items: AppSecurityEventItem[]; total: number; pageNo: number; pageSize: number }> {
   const client = getApiClient()
-  const res = await client.api.app.byId(appId).security.events.get({ pageNo, pageSize })
+  const res = await client.api.app.byId(appId).security.events.get({
+    queryParameters: { pageNo, pageSize },
+  })
   return {
     items: (res?.items ?? []).map((e) => ({
       id: e?.id ?? '',
