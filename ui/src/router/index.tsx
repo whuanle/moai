@@ -17,6 +17,7 @@ import { Teams } from '@/pages/teams/Teams'
 import { TeamManage } from '@/pages/teams/TeamManage'
 import { AppWorkspace } from '@/pages/teams/apps/AppWorkspace'
 import { AppChat } from '@/pages/teams/apps/AppChat'
+import { MyMemoryPage } from '@/pages/teams/apps/MyMemoryPage'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
 import { KnowledgeGraphDetail } from '@/pages/knowledgegraph/KnowledgeGraphDetail'
@@ -59,6 +60,8 @@ export const router = createBrowserRouter([
       { path: 'team/:teamId/prompt/:promptId/edit', element: <PromptEditor /> },
       { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
       { path: 'team/:teamId/app/:appId/chat/:sessionId?', element: <AppChat /> },
+      // 我的记忆管理页（当前用户在本应用下的长期记忆，仅删除/清空）
+      { path: 'team/:teamId/app/:appId/memory/mine', element: <MyMemoryPage /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },

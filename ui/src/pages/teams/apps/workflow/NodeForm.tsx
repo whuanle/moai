@@ -347,17 +347,19 @@ function SwitchBranchesEditor({
 // ==================== 问题分类节点：模型选择 + 背景知识/聊天记录 + 分类列表（动态端口） ====================
 
 /** 问题分类节点的 AI 模型选择（团队网关可用模型） */
-/** AI 模型选择（通用）：选项来自团队网关可用模型，写 settings.aiModelId */
+/** AI 模型选择（通用）：选项来自团队网关可用模型，写 settings.aiModelId；visionOnly 时仅列出支持视觉的模型 */
 function ModelSelectSection({
   data,
   onUpdateData,
   titleKey,
   placeholderKey,
+  visionOnly,
 }: {
   data: NodeData
   onUpdateData: (patch: Partial<NodeData>) => void
   titleKey: string
   placeholderKey: string
+  visionOnly?: boolean
 }) {
   const { t } = useTranslation()
   const teamId = useWorkflowDesignerStore((s) => s.teamId)
@@ -373,7 +375,7 @@ function ModelSelectSection({
         if (cancelled) return
         setModels(
           res
-            .filter((m) => m.aiModelId)
+            .filter((m) => m.aiModelId && (!visionOnly || m.supportsVision === true))
             .map((m) => ({ value: String(m.aiModelId), label: m.name || m.modelId || '-' })),
         )
       })
@@ -386,7 +388,7 @@ function ModelSelectSection({
     return () => {
       cancelled = true
     }
-  }, [teamId])
+  }, [teamId, visionOnly])
 
   return (
     <div className="wf-node-sec">
@@ -399,7 +401,7 @@ function ModelSelectSection({
         optionFilterProp="label"
         value={data.settings?.aiModelId && data.settings.aiModelId !== EMPTY_GUID ? data.settings.aiModelId : undefined}
         placeholder={t(placeholderKey)}
-        notFoundContent={t('workflowDesigner.aiModelEmpty')}
+        notFoundContent={t(visionOnly ? 'workflowDesigner.visionModelEmpty' : 'workflowDesigner.aiModelEmpty')}
         options={models}
         onChange={(v) => onUpdateData({ settings: { ...data.settings, aiModelId: v } })}
       />
@@ -546,29 +548,37 @@ function AiChatSettingsSection({
           onChange={(e) => onUpdateData({ settings: { ...data.settings, systemPrompt: e.target.value } })}
         />
       </div>
-      <div className="wf-node-sec">
-        <SectionTitle text={t('workflowDesigner.temperatureTitle')} />
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
-          min={0}
-          max={2}
-          step={0.1}
-          precision={2}
-          value={typeof data.settings?.temperature === 'number' ? data.settings.temperature : undefined}
-          placeholder={t('workflowDesigner.temperaturePlaceholder')}
-          onChange={(v) =>
-            onUpdateData({
-              settings: {
-                ...data.settings,
-                temperature: typeof v === 'number' ? v : undefined,
-              },
-            })
-          }
-        />
-        <div className="wf-config-hint">{t('workflowDesigner.temperatureHint')}</div>
-      </div>
+      <TemperatureSection data={data} onUpdateData={onUpdateData} />
     </>
+  )
+}
+
+/** 采样温度（0-2，空=渠道/模型默认） */
+function TemperatureSection({ data, onUpdateData }: { data: NodeData; onUpdateData: (patch: Partial<NodeData>) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="wf-node-sec">
+      <SectionTitle text={t('workflowDesigner.temperatureTitle')} />
+      <InputNumber
+        size="small"
+        style={{ width: '100%' }}
+        min={0}
+        max={2}
+        step={0.1}
+        precision={2}
+        value={typeof data.settings?.temperature === 'number' ? data.settings.temperature : undefined}
+        placeholder={t('workflowDesigner.temperaturePlaceholder')}
+        onChange={(v) =>
+          onUpdateData({
+            settings: {
+              ...data.settings,
+              temperature: typeof v === 'number' ? v : undefined,
+            },
+          })
+        }
+      />
+      <div className="wf-config-hint">{t('workflowDesigner.temperatureHint')}</div>
+    </div>
   )
 }
 
@@ -1611,6 +1621,29 @@ export function NodeForm({ nodeId, nodeType, readonly }: { nodeId: string; nodeT
             />
             <OutputsSection outputs={nodeData.outputs ?? []} />
             <div className="wf-config-hint">{t('workflowDesigner.agentAppPromptHint')}</div>
+          </>
+        )
+      case 'imageUnderstanding':
+        return (
+          <>
+            <NodeKeySection data={nodeData} nodeId={nodeId} nodeType={nodeType} onUpdateData={patch} />
+            <ModelSelectSection
+              data={nodeData}
+              onUpdateData={patch}
+              titleKey="workflowDesigner.visionModel"
+              placeholderKey="workflowDesigner.visionModelPlaceholder"
+              visionOnly
+            />
+            <TemperatureSection data={nodeData} onUpdateData={patch} />
+            <BindingsSection
+              data={nodeData}
+              nodeId={nodeId}
+              onUpdateData={patch}
+              titleKey="workflowDesigner.inputFields"
+              addLabelKey="workflowDesigner.addInput"
+            />
+            <OutputsSection outputs={nodeData.outputs ?? []} />
+            <div className="wf-config-hint">{t('workflowDesigner.imageUnderstandingHint')}</div>
           </>
         )
       case 'questionClassifier':

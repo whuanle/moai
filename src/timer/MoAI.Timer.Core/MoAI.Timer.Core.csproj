@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Timer</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Hangfire.Core" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+		<ProjectReference Include="..\..\ai\MoAI.AI.Core\MoAI.AI.Core.csproj" />
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
+		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Timer.Api\MoAI.Timer.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Handlers\" />
+		<Folder Include="Jobs\" />
+		<Folder Include="Services\" />
+	</ItemGroup>
+
+</Project>

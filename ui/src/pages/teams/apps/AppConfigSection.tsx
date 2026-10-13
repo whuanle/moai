@@ -8,9 +8,11 @@ import { spacing } from '@/design-system/theme'
 import {
   getAppAgentConfig,
   getApps,
+  getCompactionDefaults,
   getSandboxLimits,
   publishApp,
   saveAppAgentConfig,
+  type AgentCompactionDefaults,
   type AppKind,
   type AppItem,
   type SandboxLimits,
@@ -91,6 +93,18 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   // 审批策略：审批模式下自动放行的插件白名单与沙箱开关（存于 executionSettings.toolApproval）
   const [autoApprovePluginIds, setAutoApprovePluginIds] = useState<string[]>([])
   const [sandboxAutoApproved, setSandboxAutoApproved] = useState(false)
+  // 上下文压缩参数（存于 executionSettings 顶层字段；null=未配置，按平台系统默认执行）
+  const [compactionToolResult, setCompactionToolResult] = useState<number | null>(null)
+  const [compactionSummarizeTokens, setCompactionSummarizeTokens] = useState<number | null>(null)
+  const [compactionPreserveTurns, setCompactionPreserveTurns] = useState<number | null>(null)
+  const [compactionHardLimit, setCompactionHardLimit] = useState<number | null>(null)
+  const [compactionSummarization, setCompactionSummarization] = useState(false)
+  const [compactionSummarizerModelId, setCompactionSummarizerModelId] = useState<string>()
+  const [compactionDefaults, setCompactionDefaults] = useState<AgentCompactionDefaults | null>(null)
+  // 子代理协作（存于 executionSettings.subAgent）
+  const [subAgentEnabled, setSubAgentEnabled] = useState(false)
+  const [subAgentTimeout, setSubAgentTimeout] = useState<number | null>(null)
+  const [subAgentResultMaxChars, setSubAgentResultMaxChars] = useState<number | null>(null)
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
   const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
@@ -113,8 +127,9 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     if (loading || !appId || !isAgent) return
     const loadConfig = async () => {
       try {
-        const [config, limits] = await Promise.all([getAppAgentConfig(appId), getSandboxLimits()])
+        const [config, limits, defaults] = await Promise.all([getAppAgentConfig(appId), getSandboxLimits(), getCompactionDefaults()])
         setSandboxLimits(limits)
+        setCompactionDefaults(defaults)
         setLocalConfigStatus(config.status ?? 0)
         onConfigStatusChange?.(config.status ?? 0)
         // 后端未选择模型时返回全零 Guid，归一为未选择以显示占位符而非裸串
@@ -134,6 +149,17 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setSandboxEnabled(Boolean(sandbox.enabled))
         setSandboxTimeout(typeof sandbox.timeoutSeconds === 'number' ? (sandbox.timeoutSeconds as number) : null)
         setSandboxRenew(sandbox.renewOnAccess !== false)
+        // 输入框预填生效值：应用显式配置优先，未配置的字段写平台默认值（可继续调整）
+        setCompactionToolResult(typeof settings.toolResultTriggerMessages === 'number' ? (settings.toolResultTriggerMessages as number) : defaults.toolResultTriggerMessages)
+        setCompactionSummarizeTokens(typeof settings.summarizeTriggerTokens === 'number' ? (settings.summarizeTriggerTokens as number) : defaults.summarizeTriggerTokens)
+        setCompactionPreserveTurns(typeof settings.preserveTurns === 'number' ? (settings.preserveTurns as number) : defaults.preserveTurns)
+        setCompactionHardLimit(typeof settings.hardTokenLimit === 'number' ? (settings.hardTokenLimit as number) : defaults.hardTokenLimit)
+        setCompactionSummarization(typeof settings.enableSummarization === 'boolean' ? (settings.enableSummarization as boolean) : defaults.enableSummarization)
+        setCompactionSummarizerModelId(typeof settings.summarizerModelId === 'string' && settings.summarizerModelId ? settings.summarizerModelId : undefined)
+        const subAgent = (settings.subAgent ?? {}) as Record<string, unknown>
+        setSubAgentEnabled(subAgent.enabled === true)
+        setSubAgentTimeout(typeof subAgent.timeoutSeconds === 'number' ? (subAgent.timeoutSeconds as number) : null)
+        setSubAgentResultMaxChars(typeof subAgent.resultMaxChars === 'number' ? (subAgent.resultMaxChars as number) : null)
         const toolApproval = (settings.toolApproval ?? {}) as Record<string, unknown>
         const autoPlugins = toolApproval.autoApprovePlugins
         setAutoApprovePluginIds(Array.isArray(autoPlugins) ? autoPlugins.map((x) => String(x)) : [])
@@ -271,6 +297,24 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         sandboxAutoApproved: isExternal ? false : sandboxAutoApproved,
       }
 
+      // 压缩参数：表单预填生效值，保存即写入显式配置（随发布快照生效）
+      const mergedSettings: Record<string, unknown> = { ...executionSettings }
+      mergedSettings.toolResultTriggerMessages = compactionToolResult ?? compactionDefaults?.toolResultTriggerMessages ?? 16
+      mergedSettings.summarizeTriggerTokens = compactionSummarizeTokens ?? compactionDefaults?.summarizeTriggerTokens ?? 16000
+      mergedSettings.preserveTurns = compactionPreserveTurns ?? compactionDefaults?.preserveTurns ?? 8
+      mergedSettings.hardTokenLimit = compactionHardLimit ?? compactionDefaults?.hardTokenLimit ?? 64000
+      mergedSettings.enableSummarization = compactionSummarization
+      mergedSettings.summarizerModelId = compactionSummarization ? (compactionSummarizerModelId ?? '') : ''
+
+      // 子代理协作：外部应用固定关闭（后端保存强校验 + 装配兜底）
+      const subAgent: Record<string, unknown> = isExternal
+        ? { enabled: false }
+        : { enabled: subAgentEnabled }
+      if (!isExternal && subAgentEnabled) {
+        if (subAgentTimeout != null && subAgentTimeout > 0) subAgent.timeoutSeconds = subAgentTimeout
+        if (subAgentResultMaxChars != null && subAgentResultMaxChars > 0) subAgent.resultMaxChars = subAgentResultMaxChars
+      }
+
       await saveAppAgentConfig(appId, {
         modelId: modelId ?? null,
         prompt,
@@ -283,8 +327,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         openingStatement,
         openingStatementEnabled: openingEnabled,
         quickInputs: quickInputs.map((x) => x.trim()).filter(Boolean),
-        // 与已加载的执行参数合并，避免覆盖压缩等其他扩展配置
-        executionSettings: { ...executionSettings, sandbox, toolApproval },
+        // 与已加载的执行参数合并，避免覆盖其他扩展配置
+        executionSettings: { ...mergedSettings, sandbox, toolApproval, subAgent },
       })
       feedback.success(t(detail?.publishStatus === 1 ? 'appManage.configSaveDraftSuccess' : 'appManage.configSaveSuccess'))
       setLocalConfigStatus(0)
@@ -636,6 +680,124 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
               )}
               <Divider style={{ margin: `${spacing.md}px 0` }} />
               <Form layout="vertical" disabled={!canManage}>
+                <Form.Item label={t('appManage.compactionSection')} extra={t('appManage.compactionHint')} style={{ marginBottom: spacing.sm }}>
+                  <Row gutter={spacing.md}>
+                    <Col xs={24} md={12}>
+                      <Form.Item label={t('appManage.compactionToolResult')} style={{ marginBottom: spacing.sm }}>
+                        <InputNumber
+                          min={1}
+                          max={500}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          value={compactionToolResult ?? undefined}
+                          onChange={(value) => setCompactionToolResult(typeof value === 'number' ? value : null)}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item label={t('appManage.compactionPreserveTurns')} style={{ marginBottom: spacing.sm }}>
+                        <InputNumber
+                          min={1}
+                          max={10000}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          value={compactionPreserveTurns ?? undefined}
+                          onChange={(value) => setCompactionPreserveTurns(typeof value === 'number' ? value : null)}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item label={t('appManage.compactionSummarizeTokens')} style={{ marginBottom: spacing.sm }}>
+                        <InputNumber
+                          min={200}
+                          max={2000000}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          value={compactionSummarizeTokens ?? undefined}
+                          onChange={(value) => setCompactionSummarizeTokens(typeof value === 'number' ? value : null)}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item label={t('appManage.compactionHardLimit')} style={{ marginBottom: spacing.sm }}>
+                        <InputNumber
+                          min={500}
+                          max={4000000}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          value={compactionHardLimit ?? undefined}
+                          onChange={(value) => setCompactionHardLimit(typeof value === 'number' ? value : null)}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Form.Item>
+                <Form.Item
+                  label={t('appManage.compactionSummarization')}
+                  valuePropName="checked"
+                  extra={t('appManage.compactionSummarizationHint')}
+                >
+                  <Switch checked={compactionSummarization} onChange={setCompactionSummarization} />
+                </Form.Item>
+                {compactionSummarization && (
+                  <Form.Item label={t('appManage.compactionSummarizerModel')} extra={t('appManage.compactionSummarizerModelHint')}>
+                    <Select
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      style={{ width: '100%', maxWidth: 360 }}
+                      placeholder={t('appManage.compactionSummarizerModelPlaceholder')}
+                      value={compactionSummarizerModelId}
+                      onChange={(value) => setCompactionSummarizerModelId(value)}
+                      options={modelOptions}
+                    />
+                  </Form.Item>
+                )}
+              </Form>
+              <Divider style={{ margin: `${spacing.md}px 0` }} />
+              <Form layout="vertical" disabled={!canManage}>
+                <Form.Item
+                  label={t('appManage.subAgentSection')}
+                  valuePropName="checked"
+                  extra={t('appManage.subAgentHint')}
+                  style={{ marginBottom: spacing.sm }}
+                >
+                  <Switch checked={subAgentEnabled} onChange={setSubAgentEnabled} disabled={isExternal} />
+                </Form.Item>
+                {subAgentEnabled && !isExternal && (
+                  <Row gutter={spacing.md}>
+                    <Col xs={24} md={12}>
+                      <Form.Item label={t('appManage.subAgentTimeout')} style={{ marginBottom: spacing.sm }}>
+                        <InputNumber
+                          min={30}
+                          max={1800}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          value={subAgentTimeout ?? undefined}
+                          onChange={(value) => setSubAgentTimeout(typeof value === 'number' ? value : null)}
+                          placeholder="180"
+                          addonAfter={t('appManage.sandboxSeconds')}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item label={t('appManage.subAgentResultMaxChars')} style={{ marginBottom: spacing.sm }}>
+                        <InputNumber
+                          min={500}
+                          max={100000}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          value={subAgentResultMaxChars ?? undefined}
+                          onChange={(value) => setSubAgentResultMaxChars(typeof value === 'number' ? value : null)}
+                          placeholder="8000"
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                )}
+              </Form>
+              <Divider style={{ margin: `${spacing.md}px 0` }} />
+              <Form layout="vertical" disabled={!canManage}>
                 <Form.Item label={t('appManage.toolApprovalSection')} extra={t('appManage.toolApprovalHint')}>
                   {!isExternal && (
                     <Form.Item
@@ -677,18 +839,24 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
           )}
         </DSCard>
       </Col>
-      <Col xs={24} lg={13} xxl={13}>
-        <DSCard title={t('appDebug.title')}>
-          {isAgent && canManage ? (
+      {/* 右栏调试对话与左栏同一高度基准（视口 - 页头），卡片内部弹性布局：消息区滚动、输入区停靠底部 */}
+      <Col xs={24} lg={13} xxl={13} style={{ height: 'calc(100vh - 160px)', minHeight: 480 }}>
+        {isAgent && canManage ? (
+          <DSCard
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            styles={{ body: { padding: 20, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } }}
+          >
             <AppDebugChat
               appId={appId}
               appAvatar={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
               openingStatement={openingEnabled ? openingStatement.trim() : ''}
             />
-          ) : (
+          </DSCard>
+        ) : (
+          <DSCard title={t('appDebug.title')}>
             <Alert type="info" showIcon message={t('appDebug.adminOnly')} />
-          )}
-        </DSCard>
+          </DSCard>
+        )}
       </Col>
     </Row>
   )

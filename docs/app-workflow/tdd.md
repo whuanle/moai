@@ -75,3 +75,5 @@
 | @WF-S55 | PluginNodeExecutor/WorkflowPluginInvoker 透传 config.function（单测回归 Workflow.Tests 77/77，mock 签名含 functionName）+ 运行链路证据 team-plugin-e2e.mjs TP-35j（同一 RunPluginCommand→ICustomPluginCaller 链路）+ 浏览器走查 | PASS 77/77 / PASS（2026-09-26）/ 待走查 |
 | @WF-S56 | tests/MoAI.App.Workflow.Tests/WorkflowNodeSanitizerTests.cs（引擎净化器接线：检查点/事件/最终输出均为净化后数据） | PASS 1/1（2026-10-06） |
 | @WF-S57 | tests/MoAI.AI.Core.Tests/AppSecurityAgentMiddlewareTests.cs（函数调用中间件结果脱敏）+ WorkflowNodeSecuritySanitizer（aiChat/agentApp 输出叠加模型回复范围，代码走查） | PASS 4/4（2026-10-06） |
+| @WF-S58 | tests/MoAI.App.Workflow.Tests/ImageUnderstandingNodeTests.cs（契约/温度归一/必填/失败 6 例）+ local-dev/workflow-e2e.mjs（WF-28a~h：桩视觉模型多模态全链路——指令+图片 URL 到桩、模型/温度配置、answer 输出） | PASS 6/6 / 新增 WF-28 12/12 全过（2026-10-13） |
+| @WF-S59 | local-dev/workflow-e2e.mjs（WF-28i~l：非视觉模型执行期拒绝、未配置模型、私有/越权 objectKey 来源防护） | PASS（2026-10-13） |

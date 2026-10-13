@@ -34,13 +34,18 @@ internal partial class KnowledgeGraphEntityTypeConfiguration : IEntityTypeConfig
             .HasColumnName("color");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("创建时间")
             .HasColumnName("create_time");
-        entity.Property(e => e.CreateUserId).HasColumnName("create_user_id");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
             .HasDefaultValueSql("''::character varying")
             .HasColumnName("description");
-        entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除，0=未删除")
+            .HasColumnName("is_deleted");
         entity.Property(e => e.KnowledgeGraphId).HasColumnName("knowledge_graph_id");
         entity.Property(e => e.Name)
             .HasMaxLength(50)
@@ -53,8 +58,11 @@ internal partial class KnowledgeGraphEntityTypeConfiguration : IEntityTypeConfig
         entity.Property(e => e.Sort).HasColumnName("sort");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
-        entity.Property(e => e.UpdateUserId).HasColumnName("update_user_id");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnName("update_user_id");
 
         OnConfigurePartial(entity);
     }

@@ -21,6 +21,8 @@ export interface TeamGatewayModelItem {
   modelId?: string | null
   channelName?: string | null
   providerKey?: string | null
+  /** 是否支持视觉（图片输入） */
+  supportsVision?: boolean | null
   quota?: TeamGatewayModelQuota | null
   totalUsedTokens?: number | string | null
 }

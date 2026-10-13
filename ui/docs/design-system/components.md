@@ -12,6 +12,8 @@
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |
 | `Card` | 通用卡片 | - |
+
+> `Card` 传入的 `style`/`styles` 与组件默认值（边框/阴影/body padding 20/header 加粗底线）**合并**而非整体替换，覆盖同名属性即可定制。
 | `StatCard` | 统计/指标卡 | `title`, `value` |
 | `Chat` | 对话布局 | `messages` |
 | `useFeedback` | 消息/通知统一出口 | -（hook） |

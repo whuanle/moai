@@ -7,7 +7,8 @@
 //       启动参数校验、运行历史与详情、角色门禁、核心节点不变量（无开始/双开始/无结束草稿 400）。
 //       开始节点固定 question 契约（对话注入 + 对话/调试 query 镜像兼容旧编排）、对话历史 MAF 压缩有界、
 //       调试 Tab 按最新草稿执行（免发布，仅管理员，X-Moai-Workflow-Draft 头）、
-//       Agent 应用节点（agentApp）调用已发布 Agent + 流程↔Agent 循环嵌套防护。
+//       Agent 应用节点（agentApp）调用已发布 Agent + 流程↔Agent 循环嵌套防护、
+//       图片理解节点（imageUnderstanding）：桩视觉模型多模态全链路/非视觉模型拒绝/来源防护。
 import crypto from 'node:crypto'
 import http from 'node:http'
 
@@ -950,6 +951,137 @@ async function main() {
     check('WF-27e AI 正文经 TEXT_MESSAGE_CONTENT 下发（多片依赖模型流式能力，单测覆盖）', deltas.length >= 1 && streamChat.reply.length > 0, `deltas=${deltas.length} reply=${streamChat.reply.slice(0, 160)}`)
     check('WF-27f 最终回复不重复（等于流式正文拼接）', deltas.map((d) => d.delta).join('') === streamChat.reply, `reply=${streamChat.reply.slice(0, 200)}`)
     check('WF-27g 过程事件先于正文且 completed 收口', firstCustomIdx > -1 && firstCustomIdx < firstTextIdx && !!completedEvt, `firstCustom=${firstCustomIdx} firstText=${firstTextIdx} completed=${!!completedEvt}`)
+  }
+
+  // ==================== WF-28 图片理解节点（imageUnderstanding） ====================
+  // 本地 OpenAI 兼容桩视觉模型：断言请求为多模态消息（text + image_url），返回固定理解文案。
+  // 覆盖：URL 直传全链路（含模型/温度参数）、非视觉模型执行期拒绝、未配置模型节点失败、
+  //       图片来源防护（私有 objectKey / 越权路径不可读）。
+  {
+    const visionHits = []
+    const visionStub = http.createServer((req, res) => {
+      let body = ''
+      req.on('data', (chunk) => { body += chunk })
+      req.on('end', () => {
+        let payload = {}
+        try { payload = JSON.parse(body || '{}') } catch { /* 空载荷 */ }
+        const userMsg = (payload.messages ?? []).filter((m) => m.role === 'user').pop() ?? {}
+        const parts = Array.isArray(userMsg.content) ? userMsg.content : []
+        const textParts = parts.filter((p) => p.type === 'text').map((p) => String(p.text ?? ''))
+        const imageParts = parts.filter((p) => p.type === 'image_url').map((p) => String(p.image_url?.url ?? ''))
+        visionHits.push({ model: payload.model, temperature: payload.temperature, prompt: textParts.join('|'), images: imageParts })
+        const reply = imageParts.length > 0 ? 'VISION-OK 图片中有一只橘猫' : 'NO-IMAGE'
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+        const base = { id: 'chatcmpl-vision', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'vision-stub' }
+        res.write('data: ' + JSON.stringify({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: reply }, finish_reason: null }] }) + '\n\n')
+        res.write('data: ' + JSON.stringify({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] }) + '\n\n')
+        res.write('data: [DONE]\n\n')
+        res.end()
+      })
+    })
+    await new Promise((resolve) => visionStub.listen(0, '127.0.0.1', resolve))
+    visionStub.unref()
+    const VISION_PORT = visionStub.address().port
+
+    // 桩渠道 + 视觉/非视觉两个对话模型，授权给测试团队
+    let visionModelId = ''
+    let plainModelId = ''
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    const chName = `vision-stub渠道-${TS}`
+    const chRc = await api('POST', '/api/ai/channel', {
+      token: adminToken,
+      body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: `http://127.0.0.1:${VISION_PORT}/v1`, apiKey: 'vision-stub-key', enabled: true, description: 'workflow E2E 视觉桩渠道' },
+    })
+    check('WF-28a 桩视觉渠道创建 200', chRc.status === 200, `${chRc.status} ${chRc.text.slice(0, 120)}`)
+    const channels = await api('GET', '/api/ai/channel', { token: adminToken })
+    const CH_ID = String((channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? '')
+    if (CH_ID) {
+      const mkModel = async (modelId, supportsVision) => {
+        const meta = { modelId, name: modelId, modelKind: 'conversation', description: 'workflow E2E 桩模型' }
+        if (supportsVision) meta.supportsVision = true
+        const rc = await api('POST', '/api/ai/model', { token: adminToken, body: { channelId: CH_ID, meta, enabled: true, isPublic: false } })
+        if (rc.status !== 200) return ''
+        const created = (await api('GET', '/api/ai/model', { token: adminToken })).json?.items ?? []
+        const model = created.find((m) => m.modelId === modelId)
+        if (!model) return ''
+        const cur = await api('GET', `/api/ai/model/${model.id}/authorization`, { token: adminToken })
+        const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+        const grant = await api('PUT', `/api/ai/model/${model.id}/authorization`, { token: adminToken, body: { teamIds } })
+        return grant.status === 200 ? String(model.id) : ''
+      }
+      visionModelId = await mkModel(`vision-stub-${TS}`, true)
+      plainModelId = await mkModel(`plain-stub-${TS}`, false)
+    }
+    check('WF-28b 视觉/非视觉桩模型创建并授权团队', !!visionModelId && !!plainModelId, `vision=${visionModelId} plain=${plainModelId}`)
+
+    // 图片理解流程：start(question=图片地址) → vision(图片理解) → end
+    const buildVisionFlow = (modelId) => ({
+      id: '', name: 'wf-vision', version: 0, status: 'draft',
+      nodes: [
+        { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true }] },
+        {
+          key: 'vision', name: '图片理解', type: 'imageUnderstanding',
+          config: { aiModelId: modelId ?? '', temperature: 0.2 },
+          inputs: {
+            image: { expressionType: 'variable', value: 'start.question', required: true },
+            prompt: { expressionType: 'fixed', value: '描述图片内容并输出标记 VISIONOK', required: true },
+          },
+          outputs: [{ name: 'answer', fieldType: 'string' }],
+        },
+        { key: 'end', name: '结束', type: 'end', inputs: { reply: { expressionType: 'variable', value: 'vision.answer', required: true } }, outputs: [] },
+      ],
+      connections: [{ id: 'v1', source: 'start', target: 'vision' }, { id: 'v2', source: 'vision', target: 'end' }],
+      ui: {},
+    })
+    const w5 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '图片理解' + TS, appType: 'workflow' } })
+    const W5 = String(w5.json?.value ?? '')
+    check('WF-28c 图片理解流程应用创建', w5.status === 200 && isGuid(W5), `${w5.status} ${w5.text.slice(0, 120)}`)
+
+    if (visionModelId) {
+      const imageUrl = `http://127.0.0.1:${VISION_PORT}/img/cat-${TS}.png`
+      await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: W5, teamId: TID, definition: JSON.stringify(buildVisionFlow(visionModelId)), editorData: '{}' } })
+      const visionRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: W5, teamId: TID, inputJson: JSON.stringify({ question: imageUrl }) } })
+      const rv = visionRun.json ?? {}
+      const visionNode = (rv.nodes ?? []).find((n) => n.nodeKey === 'vision')
+      const hit = visionHits[visionHits.length - 1]
+      check('WF-28d 图片理解节点调试执行完成', visionRun.status === 200 && rv.status === 'completed', `${visionRun.status} ${visionRun.text.slice(0, 200)}`)
+      check('WF-28e 桩收到多模态消息（指令文本 + 图片 URL）', hit && hit.images.length === 1 && hit.images[0] === imageUrl && hit.prompt.includes('VISIONOK'), JSON.stringify(hit ?? {}).slice(0, 240))
+      check('WF-28f 桩收到视觉模型与温度配置', hit && hit.model === `vision-stub-${TS}` && Math.abs(Number(hit.temperature) - 0.2) < 0.01, JSON.stringify(hit ?? {}).slice(0, 160))
+      check('WF-28g 理解结果进入流程输出', rv.output && JSON.parse(rv.output).reply === 'VISION-OK 图片中有一只橘猫', rv.output ?? '')
+      check('WF-28h 图片理解节点完成态', visionNode?.state === 'completed', JSON.stringify(visionNode ?? {}).slice(0, 200))
+
+      // 非视觉模型：执行期拒绝（节点失败，流程不中断实例）
+      await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: W5, teamId: TID, definition: JSON.stringify(buildVisionFlow(plainModelId)), editorData: '{}' } })
+      const plainRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: W5, teamId: TID, inputJson: JSON.stringify({ question: imageUrl }) } })
+      const rp = plainRun.json ?? {}
+      const plainNode = (rp.nodes ?? []).find((n) => n.nodeKey === 'vision')
+      check('WF-28i 非视觉模型节点失败并提示不支持视觉', plainRun.status === 200 && rp.status === 'suspended' && plainNode?.state === 'failed' && (plainNode.errorMessage ?? '').includes('不支持视觉'), JSON.stringify(plainNode ?? {}).slice(0, 240))
+    }
+
+    // 未配置模型：节点失败提示选择视觉模型
+    await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: W5, teamId: TID, definition: JSON.stringify(buildVisionFlow('')), editorData: '{}' } })
+    const noModelRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: W5, teamId: TID, inputJson: JSON.stringify({ question: 'http://127.0.0.1/x.png' }) } })
+    const noModelNode = ((noModelRun.json ?? {}).nodes ?? []).find((n) => n.nodeKey === 'vision')
+    check('WF-28j 未配置视觉模型节点失败', noModelRun.status === 200 && (noModelNode?.errorMessage ?? '').includes('未配置视觉模型'), JSON.stringify(noModelNode ?? {}).slice(0, 240))
+
+    // 图片来源防护：私有 objectKey 前缀与越权路径均不可读
+    const buildBadImageFlow = (imageExpr) => {
+      const def = buildVisionFlow(visionModelId)
+      def.nodes.find((n) => n.key === 'vision').inputs.image = imageExpr
+      return def
+    }
+    await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: W5, teamId: TID, definition: JSON.stringify(buildBadImageFlow({ expressionType: 'fixed', value: 'private/secret.png', required: true })), editorData: '{}' } })
+    const privateRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: W5, teamId: TID, inputJson: JSON.stringify({ question: 'ignored' }) } })
+    const privateNode = ((privateRun.json ?? {}).nodes ?? []).find((n) => n.nodeKey === 'vision')
+    check('WF-28k 私有 objectKey 来源被拒', privateRun.status === 200 && (privateNode?.errorMessage ?? '').includes('无法识别'), JSON.stringify(privateNode ?? {}).slice(0, 240))
+
+    await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: W5, teamId: TID, definition: JSON.stringify(buildBadImageFlow({ expressionType: 'fixed', value: 'public/../anchor.png', required: true })), editorData: '{}' } })
+    const traversalRun = await api('POST', '/api/app/workflow/debug-run', { token: owner.token, body: { appId: W5, teamId: TID, inputJson: JSON.stringify({ question: 'ignored' }) } })
+    const traversalNode = ((traversalRun.json ?? {}).nodes ?? []).find((n) => n.nodeKey === 'vision')
+    check('WF-28l 越权路径 objectKey 被拒', traversalRun.status === 200 && (traversalNode?.errorMessage ?? '').includes('无法识别'), JSON.stringify(traversalNode ?? {}).slice(0, 240))
+
+    visionStub.close()
   }
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)

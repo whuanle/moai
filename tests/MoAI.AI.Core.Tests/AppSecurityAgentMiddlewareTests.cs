@@ -179,3 +179,124 @@ public class AppSecurityAgentMiddlewareTests
         Assert.Same(agent, AppSecurityAgentMiddleware.Wrap(agent, AppSecurityPolicy.Disabled));
     }
 }
+
+/// <summary>
+/// 二期扩展：模型回复 block 的流式缓冲窗拦截与非流式整条替换.
+/// </summary>
+public class AppSecurityAgentMiddlewarePhase2Tests
+{
+    /// <summary>可控分片的纯文本对话客户端.</summary>
+    private sealed class ScriptedTextChatClient : IChatClient
+    {
+        private readonly string[] _chunks;
+
+        public ScriptedTextChatClient(params string[] chunks)
+        {
+            _chunks = chunks;
+        }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, string.Concat(_chunks))));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            foreach (var chunk in _chunks)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, chunk);
+                await Task.Yield();
+            }
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private static AppSecurityPolicy CreateModelBlockPolicy() =>
+        AppSecurityPolicy.Parse(new AppSecurityConfigEntity
+        {
+            Enabled = true,
+            MaskToolResult = true,
+            MaskToolArgs = true,
+            MaskModelOutput = true,
+            Rules = "[]",
+            ModelOutputRules = """[{"name":"敏感词","type":"custom","pattern":"机密","strategy":"block"}]""",
+        });
+
+    [Fact]
+    public async Task RunStreamingAsync_ModelBlock_TruncatesAndEmitsNotice()
+    {
+        // 敏感词出现在首屏（>缓冲阈值）之后：释放首段后尾段命中被截断
+        var client = new ScriptedTextChatClient(new string('甲', 150) + "机密" + new string('乙', 60));
+        var agent = new ChatClientAgent(client, new ChatClientAgentOptions());
+        var wrapped = AppSecurityAgentMiddleware.Wrap(agent, CreateModelBlockPolicy());
+
+        var text = string.Empty;
+        await foreach (var update in wrapped.RunStreamingAsync("讲个故事"))
+        {
+            text += update.Text;
+        }
+
+        // MAF ChatClientAgent 可能把相邻文本 chunk 合并为单个 update：整段进缓冲、检测命中后整体截断
+        Assert.DoesNotContain("机密", text);
+        Assert.Equal(AppSecurityAgentMiddleware.BlockedModelOutputNotice, text);
+    }
+
+    [Fact]
+    public async Task RunStreamingAsync_ModelBlock_MultiUpdateTextStillCaught()
+    {
+        // 敏感词分片在多个 update 中（中间件按累积缓冲整段检测，跨 update 边界同样命中）
+        var client = new ScriptedTextChatClient(new string('甲', 130) + "机", "密" + new string('乙', 40));
+        var agent = new ChatClientAgent(client, new ChatClientAgentOptions());
+        var wrapped = AppSecurityAgentMiddleware.Wrap(agent, CreateModelBlockPolicy());
+
+        var text = string.Empty;
+        await foreach (var update in wrapped.RunStreamingAsync("讲个故事"))
+        {
+            text += update.Text;
+        }
+
+        Assert.DoesNotContain("机密", text);
+        Assert.Contains(AppSecurityAgentMiddleware.BlockedModelOutputNotice, text);
+    }
+
+    [Fact]
+    public async Task RunStreamingAsync_ModelBlockCleanText_FlushesFully()
+    {
+        // 无命中：缓冲全量释放，不追加拦截提示
+        var client = new ScriptedTextChatClient(new string('甲', 200), "结尾");
+        var agent = new ChatClientAgent(client, new ChatClientAgentOptions());
+        var wrapped = AppSecurityAgentMiddleware.Wrap(agent, CreateModelBlockPolicy());
+
+        var text = string.Empty;
+        await foreach (var update in wrapped.RunStreamingAsync("讲个故事"))
+        {
+            text += update.Text;
+        }
+
+        Assert.Equal(new string('甲', 200) + "结尾", text);
+        Assert.DoesNotContain(AppSecurityAgentMiddleware.BlockedModelOutputNotice, text);
+    }
+
+    [Fact]
+    public async Task RunAsync_ModelBlock_ReplacesWholeResponse()
+    {
+        var client = new ScriptedTextChatClient("手机号 13812345678，机密资料");
+        var agent = new ChatClientAgent(client, new ChatClientAgentOptions());
+        var wrapped = AppSecurityAgentMiddleware.Wrap(agent, AppSecurityPolicy.Parse(new AppSecurityConfigEntity
+        {
+            Enabled = true,
+            MaskModelOutput = true,
+            Rules = "[]",
+            ModelOutputRules = """[{"name":"敏感词","type":"custom","pattern":"机密","strategy":"block"},{"name":"手机","type":"phone","strategy":"mask"}]""",
+        }));
+
+        var response = await wrapped.RunAsync("讲个故事");
+
+        Assert.Equal(AppSecurityPolicy.BlockPlaceholder, response.Text);
+    }
+}

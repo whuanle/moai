@@ -164,7 +164,7 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
   )
 
   return (
-    <div style={{ ...chatCssVars(token), display: 'flex', flexDirection: 'column', height: '100%', minHeight: 420 }}>
+    <div style={{ ...chatCssVars(token), display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.sm }}>
         <div>
           <Text strong>{t('appDebug.title')}</Text>

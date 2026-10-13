@@ -14,9 +14,11 @@ import { DebugRequestBuilderNavigationMetadata, type DebugRequestBuilder } from 
 // @ts-ignore
 import { LogsRequestBuilderNavigationMetadata, LogsRequestBuilderRequestsMetadata, type LogsRequestBuilder } from './logs/index.js';
 // @ts-ignore
+import { MemoryRequestBuilderNavigationMetadata, MemoryRequestBuilderRequestsMetadata, type MemoryRequestBuilder } from './memory/index.js';
+// @ts-ignore
 import { PublishRequestBuilderRequestsMetadata, type PublishRequestBuilder } from './publish/index.js';
 // @ts-ignore
-import { SecurityRequestBuilderRequestsMetadata, type SecurityRequestBuilder } from './security/index.js';
+import { SecurityRequestBuilderNavigationMetadata, SecurityRequestBuilderRequestsMetadata, type SecurityRequestBuilder } from './security/index.js';
 // @ts-ignore
 import { SessionRequestBuilderNavigationMetadata, SessionRequestBuilderRequestsMetadata, type SessionRequestBuilder } from './session/index.js';
 // @ts-ignore
@@ -52,6 +54,10 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * The logs property
      */
     get logs(): LogsRequestBuilder;
+    /**
+     * The memory property
+     */
+    get memory(): MemoryRequestBuilder;
     /**
      * The publish property
      */
@@ -137,11 +143,16 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
         requestsMetadata: LogsRequestBuilderRequestsMetadata,
         navigationMetadata: LogsRequestBuilderNavigationMetadata,
     },
+    memory: {
+        requestsMetadata: MemoryRequestBuilderRequestsMetadata,
+        navigationMetadata: MemoryRequestBuilderNavigationMetadata,
+    },
     publish: {
         requestsMetadata: PublishRequestBuilderRequestsMetadata,
     },
     security: {
         requestsMetadata: SecurityRequestBuilderRequestsMetadata,
+        navigationMetadata: SecurityRequestBuilderNavigationMetadata,
     },
     session: {
         requestsMetadata: SessionRequestBuilderRequestsMetadata,

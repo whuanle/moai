@@ -57,7 +57,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         {
             var rows = await _databaseContext.Skills.AsNoTracking()
                 .Where(x => defaultSkillIds.Contains(x.Id) && !x.IsDisable)
-                .Select(x => new { x.Id, x.Key, x.Name, x.Description, x.IsSystem, x.TeamId })
+                .Select(x => new { x.Id, x.Key, x.Name, x.Description, x.IsSystem, x.TeamId, x.UseCount })
                 .ToDictionaryAsync(x => x.Id, cancellationToken);
             defaultSkills = defaultSkillIds
                 .Where(rows.ContainsKey)
@@ -69,6 +69,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
                     Description = rows[id].Description,
                     IsSystem = rows[id].IsSystem,
                     TeamId = rows[id].TeamId,
+                    UseCount = rows[id].UseCount,
                 })
                 .ToList();
         }
@@ -93,9 +94,24 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         // 审批策略按发布快照解析（与对话闸口一致）：白名单插件与沙箱在审批模式下自动放行，前端据此免展示审批卡
         var (autoNames, autoPrefixes) = await ResolveAutoApprovedToolsAsync(app, config?.PublishedConfig, config?.ExecutionSettings, cancellationToken);
 
+        // 记忆偏好：按发布快照（已发布应用）解析应用记忆配置，返回用户存储模式与应用开启状态
+        int memoryMode = userConfig?.MemoryMode ?? 0;
+        var memoryEnabled = false;
+        var memoryConfigRow = await _databaseContext.AppAgentConfigs.AsNoTracking()
+            .Where(x => x.AppId == request.AppId)
+            .Select(x => new { x.ExecutionSettings, x.PublishedConfig })
+            .FirstOrDefaultAsync(cancellationToken);
+        var memoryEffectiveSettings = app.PublishStatus == 1
+            ? AppAgentConfigSnapshot.TryParse(memoryConfigRow?.PublishedConfig)?.ExecutionSettings ?? memoryConfigRow?.ExecutionSettings
+            : memoryConfigRow?.ExecutionSettings;
+        var memorySettings = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(memoryEffectiveSettings);
+        memoryEnabled = memorySettings is { Enabled: true };
+
         return new QueryAppUserConfigCommandResponse
         {
             PromptId = userConfig?.PromptId ?? 0,
+            MemoryMode = memoryMode,
+            MemoryEnabled = memoryEnabled,
             Skills = selectedSkills,
             DefaultSkills = defaultSkills,
             ToolApprovalMode = string.IsNullOrWhiteSpace(userConfig?.ToolApprovalMode)

@@ -245,6 +245,33 @@ export async function saveAppAgentConfig(
   })
 }
 
+// ==================== Agent 压缩默认参数 ====================
+
+/** Agent 上下文压缩生效默认参数（系统设置，应用配置页输入框预填值） */
+export interface AgentCompactionDefaults {
+  toolResultTriggerMessages: number
+  summarizeTriggerTokens: number
+  preserveTurns: number
+  hardTokenLimit: number
+  enableSummarization: boolean
+  summarizerModelId: string
+}
+
+/** 查询 Agent 上下文压缩生效默认参数（登录用户可用） */
+export async function getCompactionDefaults(): Promise<AgentCompactionDefaults> {
+  const client = getApiClient()
+  const res = await client.api.app.agent.compactionDefaults.get()
+  const raw = res as unknown as Partial<AgentCompactionDefaults> | undefined
+  return {
+    toolResultTriggerMessages: raw?.toolResultTriggerMessages ?? 16,
+    summarizeTriggerTokens: raw?.summarizeTriggerTokens ?? 16000,
+    preserveTurns: raw?.preserveTurns ?? 8,
+    hardTokenLimit: raw?.hardTokenLimit ?? 64000,
+    enableSummarization: raw?.enableSummarization === true,
+    summarizerModelId: raw?.summarizerModelId ?? '',
+  }
+}
+
 // ==================== 应用发布 ====================
 
 /** 发布应用（发布后团队成员可进入对话），仅团队 Admin+ 且仅 Agent 应用 */
@@ -436,9 +463,18 @@ export interface AppUsageModelItem {
   totalTokens: number
 }
 
+/** 应用使用活动统计（会话/用户/消息维度） */
+export interface AppUsageActivityStats {
+  sessionCount: number
+  userCount: number
+  messageCount: number
+  lastActiveTime?: string | null
+}
+
 export interface AppUsageResult {
   summary: AppUsageSummary
   byModel: AppUsageModelItem[]
+  stats: AppUsageActivityStats
 }
 
 /** 查询应用用量统计（汇总 + 按模型分布）；后端 long 以字符串下发，此处归一化为 number */
@@ -446,7 +482,14 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
   const client = getApiClient()
   const res = await client.api.app.byId(appId).usage.get()
   const summary = res?.summary
+  const stats = res?.stats
   return {
+    stats: {
+      sessionCount: toFiniteNumber(stats?.sessionCount),
+      userCount: toFiniteNumber(stats?.userCount),
+      messageCount: toFiniteNumber(stats?.messageCount),
+      lastActiveTime: stats?.lastActiveTime ?? null,
+    },
     summary: {
       callCount: toFiniteNumber(summary?.callCount),
       promptTokens: toFiniteNumber(summary?.promptTokens),
@@ -476,6 +519,8 @@ export interface AppUserSkillOption {
   isSystem?: boolean | null
   /** 所属团队 id，0=系统内置或市场公开 */
   teamId?: number | null
+  /** 使用次数（技能装载工具被模型调用时自增），热门排序依据 */
+  useCount?: number | null
 }
 
 export interface AppUserConfig {
@@ -495,6 +540,10 @@ export interface AppUserConfig {
   toolApprovalAutoApprovedNames: string[]
   /** 审批策略自动放行的工具名前缀（沙箱工具 sandbox_），审批模式下后端直接执行 */
   toolApprovalAutoApprovedPrefixes: string[]
+  /** 用户长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用 */
+  memoryMode: number
+  /** 应用是否开启长期记忆（未开启时前端隐藏记忆偏好区） */
+  memoryEnabled: boolean
 }
 
 /** userconfig.get 响应的原始 JSON 形状（新契约字段经原始 JSON 投射读取，regen 后行为一致） */
@@ -507,6 +556,8 @@ interface RawAppUserConfigResponse {
   toolApprovalExemptPrefixes?: string[] | null
   toolApprovalAutoApprovedNames?: string[] | null
   toolApprovalAutoApprovedPrefixes?: string[] | null
+  memoryMode?: number | null
+  memoryEnabled?: boolean | null
 }
 
 /**
@@ -524,19 +575,22 @@ export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
     toolApprovalExemptPrefixes: res?.toolApprovalExemptPrefixes ?? [],
     toolApprovalAutoApprovedNames: res?.toolApprovalAutoApprovedNames ?? [],
     toolApprovalAutoApprovedPrefixes: res?.toolApprovalAutoApprovedPrefixes ?? [],
+    memoryMode: res?.memoryMode ?? 0,
+    memoryEnabled: res?.memoryEnabled === true,
   }
 }
 
 /** 保存当前用户在某应用下的个性化配置，跨会话复用；技能仅能在应用默认范围内勾选 */
 export async function saveAppUserConfig(
   appId: string,
-  payload: { promptId: number; skills: string[]; toolApprovalMode?: 'auto' | 'approval' },
+  payload: { promptId: number; skills: string[]; toolApprovalMode?: 'auto' | 'approval'; memoryMode?: number },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).userconfig.put({
     promptId: payload.promptId,
     skills: payload.skills as Guid[],
     toolApprovalMode: payload.toolApprovalMode,
+    memoryMode: payload.memoryMode,
   })
 }
 
@@ -585,15 +639,24 @@ export async function extractChatAttachment(
 }
 
 /** 脱敏规则类型代码（对齐后端 AppSecurityRuleTypes） */
-export const SECURITY_RULE_TYPES = ['phone', 'idCard', 'email', 'bankCard', 'custom'] as const
+export const SECURITY_RULE_TYPES = ['phone', 'idCard', 'email', 'bankCard', 'injection', 'custom'] as const
 export type SecurityRuleType = (typeof SECURITY_RULE_TYPES)[number]
+
+/** 规则处理策略代码（对齐后端 AppSecurityStrategies） */
+export const SECURITY_STRATEGIES = ['redact', 'mask', 'hash', 'block', 'flag'] as const
+export type SecurityStrategy = (typeof SECURITY_STRATEGIES)[number]
 
 /** 应用安全脱敏规则 */
 export interface AppSecurityRuleItem {
   name: string
   type: SecurityRuleType
   pattern?: string | null
+  /** 命中后替换文本，仅 redact 策略生效 */
   replacement?: string | null
+  /** 处理策略，存量数据缺省 redact */
+  strategy: SecurityStrategy
+  /** mask 策略保留末位（custom/银行卡），0~18 */
+  keepLast?: number | null
 }
 
 /** 应用安全配置（内容脱敏） */
@@ -603,25 +666,45 @@ export interface AppSecurityConfig {
   maskToolResult: boolean
   maskToolArgs: boolean
   maskModelOutput: boolean
-  /** 内容脱敏规则（工具调用结果/工具调用参数范围共用） */
+  /** 是否处理用户输入文本（内容脱敏总开关开启时生效） */
+  maskInput: boolean
+  /** 内容脱敏规则（用户输入/工具调用结果/工具调用参数范围共用） */
   rules: AppSecurityRuleItem[]
   /** 模型回复专属脱敏规则，与 rules 相互独立维护 */
   modelOutputRules: AppSecurityRuleItem[]
   myRole: number | null
 }
 
-/** 规则响应归一化：非法类型代码兜底为 custom，空值补默认 */
+/** 应用安全事件（规则命中审计聚合行） */
+export interface AppSecurityEventItem {
+  id: string
+  sessionId: string | null
+  userId: number | null
+  scope: string
+  ruleName: string
+  ruleType: string
+  strategy: string
+  action: string
+  hitCount: number
+  createTime: string
+}
+
+/** 规则响应归一化：非法类型代码兜底为 custom、非法策略兜底为 redact，空值补默认 */
 function normalizeRule(r: {
   name?: string | null
   type?: string | null
   pattern?: string | null
   replacement?: string | null
+  strategy?: string | null
+  keepLast?: number | null
 }): AppSecurityRuleItem {
   return {
     name: r?.name ?? '',
     type: (SECURITY_RULE_TYPES as readonly string[]).includes(r?.type ?? '') ? (r?.type as SecurityRuleType) : 'custom',
     pattern: r?.pattern ?? null,
     replacement: r?.replacement ?? null,
+    strategy: (SECURITY_STRATEGIES as readonly string[]).includes(r?.strategy ?? '') ? (r?.strategy as SecurityStrategy) : 'redact',
+    keepLast: r?.keepLast ?? null,
   }
 }
 
@@ -637,6 +720,7 @@ export async function getAppSecurity(appId: string): Promise<AppSecurityConfig> 
     maskToolResult: res?.maskToolResult ?? true,
     maskToolArgs: res?.maskToolArgs ?? false,
     maskModelOutput: res?.maskModelOutput ?? false,
+    maskInput: res?.maskInput ?? false,
     rules: (res?.rules ?? []).map(normalizeRule),
     modelOutputRules: (res?.modelOutputRules ?? []).map(normalizeRule),
     myRole: res?.myRole ?? null,
@@ -644,7 +728,37 @@ export async function getAppSecurity(appId: string): Promise<AppSecurityConfig> 
 }
 
 /**
- * 保存应用安全配置（内容脱敏），需要团队管理员及以上角色；自定义规则须携带可编译正则（后端校验）。
+ * 分页查询应用安全事件（规则命中审计），需要团队管理员及以上角色。
+ */
+export async function getAppSecurityEvents(
+  appId: string,
+  pageNo = 1,
+  pageSize = 20,
+): Promise<{ items: AppSecurityEventItem[]; total: number; pageNo: number; pageSize: number }> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).security.events.get({ pageNo, pageSize })
+  return {
+    items: (res?.items ?? []).map((e) => ({
+      id: e?.id ?? '',
+      sessionId: e?.sessionId ?? null,
+      userId: e?.userId ?? null,
+      scope: e?.scope ?? '',
+      ruleName: e?.ruleName ?? '',
+      ruleType: e?.ruleType ?? '',
+      strategy: e?.strategy ?? '',
+      action: e?.action ?? '',
+      hitCount: e?.hitCount ?? 0,
+      createTime: e?.createTime ?? '',
+    })),
+    total: res?.total ?? 0,
+    pageNo: res?.pageNo ?? pageNo,
+    pageSize: res?.pageSize ?? pageSize,
+  }
+}
+
+/**
+ * 保存应用安全配置（内容脱敏），需要团队管理员及以上角色；自定义规则须携带可编译正则、
+ * 模型回复规则不支持 block 策略（后端校验）。
  */
 export async function saveAppSecurity(
   appId: string,
@@ -653,6 +767,7 @@ export async function saveAppSecurity(
     maskToolResult: boolean
     maskToolArgs: boolean
     maskModelOutput: boolean
+    maskInput: boolean
     rules: AppSecurityRuleItem[]
     modelOutputRules: AppSecurityRuleItem[]
   },
@@ -663,13 +778,16 @@ export async function saveAppSecurity(
       name: r.name,
       type: r.type,
       pattern: r.type === 'custom' ? r.pattern ?? '' : null,
-      replacement: r.replacement ?? null,
+      replacement: r.strategy === 'redact' ? r.replacement ?? null : null,
+      strategy: r.strategy,
+      keepLast: r.strategy === 'mask' ? r.keepLast ?? null : null,
     }))
   await client.api.app.byId(appId).security.put({
     enabled: payload.enabled,
     maskToolResult: payload.maskToolResult,
     maskToolArgs: payload.maskToolArgs,
     maskModelOutput: payload.maskModelOutput,
+    maskInput: payload.maskInput,
     rules: serializeRules(payload.rules),
     modelOutputRules: serializeRules(payload.modelOutputRules),
   })

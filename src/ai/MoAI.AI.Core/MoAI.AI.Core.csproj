@@ -8,6 +8,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\memory\MoAI.Memory.Shared\MoAI.Memory.Shared.csproj" />
+		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\aichannel\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
 		<ProjectReference Include="..\..\wiki\MoAI.Wiki.Shared\MoAI.Wiki.Shared.csproj" />
@@ -25,6 +27,7 @@
 		<PackageReference Include="Alibaba.OpenSandbox.CodeInterpreter" />
 		<PackageReference Include="Hangfire.Core" />
 		<PackageReference Include="Microsoft.Agents.AI.Hosting.AGUI.AspNetCore" />
+		<PackageReference Include="Microsoft.Extensions.Http" />
 	</ItemGroup>
 
 	<ItemGroup>

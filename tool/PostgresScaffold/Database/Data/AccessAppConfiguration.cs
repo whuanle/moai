@@ -47,10 +47,17 @@ internal partial class AccessAppConfiguration : IEntityTypeConfiguration<AccessA
             .HasMaxLength(255)
             .HasComment("key")
             .HasColumnName("key");
+        entity.Property(e => e.LastUsedTime)
+            .HasComment("最近使用时间（通过模型网关调用时刷新）")
+            .HasColumnName("last_used_time");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("应用名称")
             .HasColumnName("name");
+        entity.Property(e => e.Scopes)
+            .HasDefaultValue(2038)
+            .HasComment("功能范围位标记：1=model 2=wiki_read 4=wiki_write 16=wiki_mcp 32=app_chat 64=kg_read 128=kg_write 256=kg_mcp 512=app_acp 1024=app_a2a（位或组合），限制可用模型渠道与签发 token 可访问的知识库/应用对话/知识图谱/应用 ACP/A2A 范围")
+            .HasColumnName("scopes");
         entity.Property(e => e.TeamId)
             .HasComment("团队id")
             .HasColumnName("team_id");

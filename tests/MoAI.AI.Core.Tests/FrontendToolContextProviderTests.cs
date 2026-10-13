@@ -49,7 +49,7 @@ public class FrontendToolContextProviderTests
             ["content"] = "# 内容",
             ["code"] = "print(1)",
             ["language"] = "python",
-            ["option"] = """{"series":[{"type":"bar","data":[1,2]}]}""",
+            ["chart"] = """{"type":"bar","data":[{"category":"A","value":1}]}""",
         });
         Assert.Equal(FrontendToolContract.StubResultJson, resultByString?.ToString());
 
@@ -57,7 +57,7 @@ public class FrontendToolContextProviderTests
         {
             ["title"] = "标题",
             ["content"] = new[] { 1, 2 },
-            ["option"] = new { series = new[] { new { type = "bar", data = new[] { 1, 2 } } } },
+            ["chart"] = new { type = "bar", data = new[] { new { category = "A", value = 1 } } },
         });
         Assert.Equal(FrontendToolContract.StubResultJson, resultByObject?.ToString());
 

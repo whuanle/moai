@@ -7,6 +7,7 @@ import {
   ApiOutlined,
   BookOutlined,
   ClusterOutlined,
+  ClockCircleOutlined,
   GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
@@ -26,6 +27,7 @@ import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import { Variables } from '@/pages/variables/Variables'
+import { TeamTimers } from '@/pages/teams/timers/TeamTimers'
 import { TeamPrompts } from '@/pages/teams/prompts/TeamPrompts'
 import { TeamSkills } from '@/pages/teams/skills/TeamSkills'
 import { TeamApps } from '@/pages/teams/apps/TeamApps'
@@ -58,7 +60,7 @@ const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
 /** 分区顺序：成员可见的使用分区在前，Owner/Admin 管理分区在后 */
-const SECTION_KEYS = ['apps', 'prompts', 'skills', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'settings'] as const
+const SECTION_KEYS = ['apps', 'prompts', 'skills', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'timers', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /** 进入团队默认落在内部应用 */
@@ -68,7 +70,7 @@ const DEFAULT_SECTION: SectionKey = 'apps'
  * 仅团队 Owner/Admin 可见的管理分区。
  * 普通成员进入团队只能「使用」：可见 内部应用 / 提示词 / 技能 / 知识库 / 知识图谱，看不到团队管理与应用配置入口。
  */
-const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'settings']
+const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'timers', 'settings']
 
 interface MemberFormValues {
   userId: number
@@ -378,6 +380,7 @@ export function TeamManage() {
     { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
+    { key: 'timers', icon: <ClockCircleOutlined />, label: t('team.timers') },
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
   ].filter((item) => visibleSections.includes(item.key as SectionKey))
 
@@ -497,6 +500,10 @@ export function TeamManage() {
           ) : activeSection === 'variables' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
               <Variables teamId={teamId} />
+            </DSCard>
+          ) : activeSection === 'timers' ? (
+<DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamTimers teamId={teamId} canManage={isAdminPlus} />
             </DSCard>
           ) : (
             <DSCard styles={{ body: { padding: spacing.lg } }}>

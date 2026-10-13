@@ -62,7 +62,9 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
         entity.Property(e => e.IsPublic)
             .HasComment("公开访问")
             .HasColumnName("is_public");
-        entity.Property(e => e.IsSystem).HasColumnName("is_system");
+        entity.Property(e => e.IsSystem)
+            .HasComment("是否系统插件，true=系统内置插件（team_id=0 全局可用），false=团队自定义插件")
+            .HasColumnName("is_system");
         entity.Property(e => e.PluginId)
             .HasComment("对应的实际插件的id，不同类型的插件表不一样")
             .HasColumnName("plugin_id");

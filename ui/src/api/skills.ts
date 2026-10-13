@@ -65,6 +65,8 @@ export interface SkillOption {
   isSystem?: boolean | null
   /** 所属团队 id，0=系统内置或个人技能 */
   teamId?: number | null
+  /** 使用次数（技能装载工具被模型调用时自增），热门排序依据 */
+  useCount?: number | null
 }
 
 export interface GetSkillsParams {

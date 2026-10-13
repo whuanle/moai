@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MoAI.Database.Audits;
 
 #pragma warning disable CA1051
@@ -9,23 +10,14 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 应用安全配置（内容脱敏），与 app 一一对应（Agent/流程应用通用），未配置行的应用视为未启用脱敏.
+/// 应用安全配置（内容脱敏），与 app 一一对应（Agent/流程应用通用）.
 /// </summary>
 public partial class AppSecurityConfigEntity : IFullAudited
 {
-    /// <summary>
-    /// 配置ID.
-    /// </summary>
     public Guid Id { get; set; }
 
-    /// <summary>
-    /// 所属团队ID，逻辑关联app.team_id，冗余用于团队维度过滤.
-    /// </summary>
     public int TeamId { get; set; }
 
-    /// <summary>
-    /// 所属应用ID，逻辑关联app.id（1:1，不建物理外键）.
-    /// </summary>
     public Guid AppId { get; set; }
 
     /// <summary>
@@ -49,14 +41,9 @@ public partial class AppSecurityConfigEntity : IFullAudited
     public bool MaskModelOutput { get; set; }
 
     /// <summary>
-    /// 内容脱敏规则列表（工具调用结果/工具调用参数范围共用），JSON 数组文本，元素为 {name,type,pattern,replacement}，type 见 AppSecurityRuleTypes，空为 &apos;[]&apos;.
+    /// 脱敏规则列表，JSON 数组文本，元素为 {name,type,pattern,replacement}，type 见 AppSecurityRuleTypes（phone/idCard/email/bankCard/custom），空为 &apos;[]&apos;.
     /// </summary>
     public string Rules { get; set; } = default!;
-
-    /// <summary>
-    /// 模型回复专属脱敏规则列表，与 Rules 相互独立维护，JSON 数组文本，元素同 Rules，空为 &apos;[]&apos;.
-    /// </summary>
-    public string ModelOutputRules { get; set; } = default!;
 
     /// <summary>
     /// 创建人.
@@ -79,7 +66,14 @@ public partial class AppSecurityConfigEntity : IFullAudited
     public DateTimeOffset UpdateTime { get; set; }
 
     /// <summary>
-    /// 软删除，0=未删除（legacy bigint 约定）.
+    /// 软删除，0=未删除.
     /// </summary>
     public long IsDeleted { get; set; }
+
+    /// <summary>
+    /// 模型回复专属脱敏规则列表，与 rules 相互独立维护，元素同 rules，空为 &apos;[]&apos;.
+    /// </summary>
+    public string ModelOutputRules { get; set; } = default!;
+
+    public bool MaskInput { get; set; }
 }

@@ -78,6 +78,12 @@ public sealed class AppAgentBuildContext
     /// ui_ 前缀工具后端桩执行，内容由前端 AG-UI 消费端渲染.
     /// </summary>
     public bool EnableUiTools { get; init; }
+
+    /// <summary>
+    /// 是否为子代理装配（主代理 spawn_subagent 创建的实例）：子代理不再注册 spawn 工具（深度固定 1），
+    /// 也不注入长期记忆（保持独立干净上下文）.
+    /// </summary>
+    public bool IsSubAgent { get; init; }
 }
 
 /// <summary>

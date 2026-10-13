@@ -18,6 +18,7 @@ using MoAI.Gateway;
 using MoAI.Hangfire;
 using MoAI.Infra;
 using MoAI.KnowledgeGraph;
+using MoAI.Memory;
 using MoAI.Modules;
 using MoAI.OauthConnect;
 using MoAI.Publication;
@@ -27,6 +28,7 @@ using MoAI.Skill;
 using MoAI.Storage;
 using MoAI.Team;
 using MoAI.TeamPlugin;
+using MoAI.Timer;
 using MoAI.Variable;
 using MoAI.Wiki;
 
@@ -50,8 +52,10 @@ namespace MoAI;
 [InjectModule<TeamCoreModule>]
 [InjectModule<WikiCoreModule>]
 [InjectModule<KnowledgeGraphCoreModule>]
+[InjectModule<MemoryCoreModule>]
 [InjectModule<VariableCoreModule>]
 [InjectModule<SkillCoreModule>]
+[InjectModule<TimerCoreModule>]
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<AiCoreModule>]

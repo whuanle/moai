@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Memory</RootNamespace>
+		<NoWarn>$(NoWarn);MAAI001</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\aichannel\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Memory.Api\MoAI.Memory.Api.csproj" />
+		<ProjectReference Include="..\MoAI.Memory.Shared\MoAI.Memory.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
+		<PackageReference Include="Maomi.MQ.RabbitMQ" />
+		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+		<PackageReference Include="StackExchange.Redis.Extensions.Core" />
+	</ItemGroup>
+
+</Project>

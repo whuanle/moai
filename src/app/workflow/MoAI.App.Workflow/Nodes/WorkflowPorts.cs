@@ -50,6 +50,48 @@ public interface IAiChatClient
 }
 
 /// <summary>
+/// 图片理解请求（imageUnderstanding 节点执行入参的端口契约）.
+/// </summary>
+public sealed class VisionRequest
+{
+    /// <summary>
+    /// 理解/提取指令（随图片一起发给视觉模型的用户消息文本）.
+    /// </summary>
+    public required string Prompt { get; init; }
+
+    /// <summary>
+    /// 图片来源：http(s) 图片地址、data: URI 或平台文件 objectKey（实现方解析）.
+    /// </summary>
+    public required string Image { get; init; }
+
+    /// <summary>
+    /// 模型标识（视觉模型，可为空时由实现方决定默认模型）.
+    /// </summary>
+    public string? Model { get; init; }
+
+    /// <summary>
+    /// 采样温度 0-2（可为空，用渠道/模型默认）.
+    /// </summary>
+    public float? Temperature { get; init; }
+}
+
+/// <summary>
+/// 视觉模型客户端抽象 - 图片理解节点通过此接口把图片交给视觉模型理解/提取.
+/// 实现方负责视觉模型校验（不支持的模型报错）与图片来源解析（URL 直传/objectKey 读字节内联）.
+/// </summary>
+public interface IWorkflowVisionClient
+{
+    /// <summary>
+    /// 发起一次视觉模型调用（图片 + 指令 → 理解/提取文本）.
+    /// </summary>
+    /// <param name="request">图片理解请求.</param>
+    /// <param name="onProgress">流式输出回调（可为空）.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>模型对图片的理解/提取文本.</returns>
+    Task<string> UnderstandAsync(VisionRequest request, Func<string, Task>? onProgress, CancellationToken cancellationToken);
+}
+
+/// <summary>
 /// Agent 应用调用端口 - agentApp 节点通过此接口驱动一次已发布 Agent 应用对话（一轮）.
 /// 实现方负责应用归属校验与循环嵌套防护（当前流程 → Agent → 流程工具的回环）.
 /// </summary>

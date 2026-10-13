@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleGuidFromDiscriminatorValue, serializeCreateAppCommand, serializeSimpleGuid, type BusinessValidationResult, type CreateAppCommand, type SimpleGuid } from '../../models/index.js';
 // @ts-ignore
+import { AgentRequestBuilderNavigationMetadata, type AgentRequestBuilder } from './agent/index.js';
+// @ts-ignore
 import { ChatAttachmentRequestBuilderNavigationMetadata, type ChatAttachmentRequestBuilder } from './chatAttachment/index.js';
 // @ts-ignore
 import { ExternalRequestBuilderNavigationMetadata, type ExternalRequestBuilder } from './external/index.js';
@@ -26,6 +28,10 @@ import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMeta
  * Builds and executes requests for operations under /api/app
  */
 export interface AppRequestBuilder extends BaseRequestBuilder<AppRequestBuilder> {
+    /**
+     * The agent property
+     */
+    get agent(): AgentRequestBuilder;
     /**
      * The chatAttachment property
      */
@@ -92,6 +98,9 @@ export const AppRequestBuilderNavigationMetadata: Record<Exclude<keyof AppReques
         requestsMetadata: AppItemRequestBuilderRequestsMetadata,
         navigationMetadata: AppItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
+    },
+    agent: {
+        navigationMetadata: AgentRequestBuilderNavigationMetadata,
     },
     chatAttachment: {
         navigationMetadata: ChatAttachmentRequestBuilderNavigationMetadata,

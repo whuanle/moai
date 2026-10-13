@@ -46,7 +46,7 @@ public class AiCoreModule : IModule
                 new ChatClientAgentOptions { Name = AppAgentConstants.AgentName },
                 loggerFactory);
 
-            return new AppAgentDispatcher(shell, sp.GetRequiredService<IServiceScopeFactory>());
+            return new AppAgentDispatcher(shell, sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Services.AppAgentDispatcher>>());
         });
 
         // 会话存储：热态 Redis + 完成后落库（与 Agent 名称同 key）
@@ -58,6 +58,10 @@ public class AiCoreModule : IModule
 
         // A2A 任务注册表：tasks/get 查询与 tasks/cancel 跨请求中断（单例共享，进程内尽力而为）
         context.Services.AddSingleton<MoAI.AI.A2a.AppA2aTaskRegistry>();
+
+        // 应用安全审计：单例事件通道 + 后台批量落库（app_security_event）
+        context.Services.AddSingleton<MoAI.AI.Services.AppSecurityAuditChannel>();
+        context.Services.AddHostedService<MoAI.AI.Services.AppSecurityAuditStoreService>();
 
         // 沙箱回收定时任务（依赖 Hangfire，若未注册 IRecurringJobManager 则该服务不生效）
         context.Services.AddHostedService<MoAI.AI.Services.SandboxReaperRegistrationService>();

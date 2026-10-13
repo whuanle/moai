@@ -55,7 +55,7 @@ public sealed class WorkflowNodeSecuritySanitizer : INodeDataSanitizer
             // AI 对话/Agent 应用节点的输出即模型回复，额外按模型回复专属规则叠加脱敏
             policy.MaskToolArgsJson(state.Input);
             policy.MaskToolResultJson(state.Output);
-            if (node.Type is NodeTypes.AiChat or NodeTypes.AgentApp)
+            if (node.Type is NodeTypes.AiChat or NodeTypes.AgentApp or NodeTypes.ImageUnderstanding)
             {
                 policy.MaskModelJson(state.Output);
             }

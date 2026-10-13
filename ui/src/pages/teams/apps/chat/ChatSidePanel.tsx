@@ -6,13 +6,15 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons'
 import { Button, Tooltip } from 'antd'
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { feedback } from '@/design-system'
-import { EChart } from './EChart'
 import type { UiPanelItem } from './uiTools'
+
+// 图表渲染依赖 gpt-vis（拖 G2/G6 全家桶），懒加载成独立 chunk，只在首个图表标签渲染时拉取
+const VisChart = lazy(() => import('./VisChart').then((m) => ({ default: m.VisChart })))
 
 export interface ChatSidePanelProps {
   /** 已打开的侧边栏内容项（标签页） */
@@ -51,7 +53,7 @@ function loadStoredWidth(): number | null {
 }
 
 /**
- * 对话右侧侧边栏：承载前端展示工具（ui_ 前缀）产出的内容——markdown 文档 / 代码 / ECharts 图表。
+ * 对话右侧侧边栏：承载前端展示工具（ui_ 前缀）产出的内容——markdown 文档 / 代码 / GPT-Vis 图表。
  * 作为 .moai-chat 横向 flex 的第三列停靠（非浮层），主对话区自适应收窄；
  * 头部为标签栏（多份产出可切换、可单个关闭），左缘手柄可拖拽调节宽度（持久化到本地）.
  */
@@ -187,7 +189,11 @@ export function ChatSidePanel({ items, activeKey, onSelect, onCloseTab, onClose 
             <pre className="moai-chat__panel-code">{active.code ?? ''}</pre>
           </div>
         )}
-        {active.kind === 'chart' && active.option && <EChart option={active.option} />}
+        {active.kind === 'chart' && active.chart && (
+          <Suspense fallback={null}>
+            <VisChart chart={active.chart} />
+          </Suspense>
+        )}
       </div>
     </aside>
   )

@@ -603,7 +603,7 @@ export function AppChat() {
             const argsJson = info.args == null ? undefined : JSON.stringify(info.args)
             upsertToolCall({ id: info.id || crypto.randomUUID(), name: info.name, argsJson, status: 'done' })
             const item = parseUiToolPayload(info.name, argsJson)
-            if (item && (item.content ?? item.code ?? item.option) != null) {
+            if (item && (item.content ?? item.code ?? item.chart) != null) {
               openUiPanelItem({ key: info.id, ...item })
             }
             return
@@ -1036,6 +1036,7 @@ export function AppChat() {
       {!isWorkflow && (
         <AppUserSettings
           open={settingsOpen}
+          teamId={teamId}
           appId={appId}
           experts={experts}
           currentPromptId={selectedPromptId}

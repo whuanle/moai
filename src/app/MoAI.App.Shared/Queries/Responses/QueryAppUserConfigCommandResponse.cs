@@ -11,6 +11,17 @@ public class QueryAppUserConfigCommandResponse
     public int PromptId { get; init; }
 
     /// <summary>
+    /// 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用.
+    /// </summary>
+    public int MemoryMode { get; init; }
+
+    /// <summary>
+    /// 应用是否开启长期记忆（未开启时用户无需调整记忆偏好）.
+    /// </summary>
+    public bool MemoryEnabled { get; init; }
+
+
+    /// <summary>
     /// 用户当前勾选的技能 id 列表（应用默认技能的子集）；
     /// 无用户配置行时返回应用默认技能全集（默认全部启用）.
     /// </summary>
@@ -82,4 +93,9 @@ public class AppUserSkillOption
     /// 所属团队 id，0=系统内置或市场公开.
     /// </summary>
     public int TeamId { get; init; }
+
+    /// <summary>
+    /// 使用次数（技能装载工具被模型调用时自增），面板技能卡片热门排序依据.
+    /// </summary>
+    public int? UseCount { get; init; }
 }

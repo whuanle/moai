@@ -53,6 +53,18 @@ public static class ChatAttachmentImageRewriter
         => text?.Contains('<' + AttachmentTag, StringComparison.Ordinal) == true;
 
     /// <summary>
+    /// 读取公开图片对象为多模态 <see cref="DataContent"/>（工作流图片理解节点等非对话附件场景复用）.
+    /// 调用方自行负责 objectKey 目录白名单校验；超限/读取失败/未知媒体类型返回 null.
+    /// </summary>
+    /// <param name="objectKey">存储对象 key.</param>
+    /// <param name="storageService">存储服务.</param>
+    /// <param name="logger">日志.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>图片内容；不可用返回 null.</returns>
+    public static Task<DataContent?> TryLoadPublicImageAsync(string objectKey, IStorageService storageService, ILogger logger, CancellationToken cancellationToken)
+        => TryLoadImageAsync(objectKey, objectKey, storageService, new Dictionary<string, (string MediaType, byte[] Data)>(), logger, cancellationToken);
+
+    /// <summary>
     /// 重写消息列表：用户消息中的图片附件标记块 → 文本占位 + 追加 <see cref="ImageContent"/>；其余消息原样返回.
     /// </summary>
     /// <param name="messages">待发送消息.</param>

@@ -52,6 +52,7 @@ internal partial class SettingConfiguration : IEntityTypeConfiguration<SettingEn
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasDefaultValueSql("''::character varying")
+            .HasComment("设置项显示名称")
             .HasColumnName("name");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")

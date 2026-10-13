@@ -39,9 +39,17 @@ internal partial class AppUserConfigConfiguration : IEntityTypeConfiguration<App
             .HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .HasComment("创建时间")
             .HasColumnName("create_time");
-        entity.Property(e => e.CreateUserId).HasColumnName("create_user_id");
-        entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnName("create_user_id");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除，0=未删除")
+            .HasColumnName("is_deleted");
+        entity.Property(e => e.MemoryMode)
+            .HasComment("长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）")
+            .HasColumnName("memory_mode");
         entity.Property(e => e.PromptId)
             .HasComment("用户为新会话选择的专家提示词 id，0=未设置")
             .HasColumnName("prompt_id");
@@ -59,8 +67,11 @@ internal partial class AppUserConfigConfiguration : IEntityTypeConfiguration<App
             .HasColumnName("tool_approval_mode");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
-        entity.Property(e => e.UpdateUserId).HasColumnName("update_user_id");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnName("update_user_id");
         entity.Property(e => e.UserId)
             .HasComment("用户 id，逻辑关联 user.id")
             .HasColumnName("user_id");

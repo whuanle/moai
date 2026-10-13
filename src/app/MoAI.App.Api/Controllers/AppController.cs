@@ -30,6 +30,19 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
+    /// 查询 Agent 上下文压缩的生效默认参数（系统设置，应用配置页输入框预填值），登录用户可用.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAgentCompactionDefaultsResponse"/>.</returns>
+    [HttpGet("agent/compaction-defaults")]
+    public Task<QueryAgentCompactionDefaultsResponse> QueryCompactionDefaults(CancellationToken ct)
+    {
+        var cmd = new QueryAgentCompactionDefaultsCommand();
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 创建应用（Agent 应用/流程应用），需要团队 Admin 及以上角色；可选携带头像 objectKey 与「允许外部使用」开关.
     /// </summary>
     /// <param name="req">创建请求.</param>
@@ -167,7 +180,7 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
-    /// 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则.
+    /// 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则；模型回复 block 策略走流式缓冲窗拦截.
     /// </summary>
     /// <param name="id">应用 id.</param>
     /// <param name="req">安全配置请求.</param>
@@ -183,11 +196,29 @@ public class AppController : ControllerBase
             MaskToolResult = req.MaskToolResult,
             MaskToolArgs = req.MaskToolArgs,
             MaskModelOutput = req.MaskModelOutput,
+            MaskInput = req.MaskInput,
             Rules = req.Rules,
             ModelOutputRules = req.ModelOutputRules,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 分页查询应用安全事件（规则命中审计，按时间倒序），需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="pageNo">页码，从 1 开始.</param>
+    /// <param name="pageSize">每页数量.</param>
+    /// <param name="scope">按作用域过滤（input/toolResult/toolArgs/modelOutput），可空.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppSecurityEventsCommandResponse"/>.</returns>
+    [HttpGet("{id:guid}/security/events")]
+    public Task<QueryAppSecurityEventsCommandResponse> QueryAppSecurityEvents([FromRoute] Guid id, [FromQuery] int pageNo = 1, [FromQuery] int pageSize = 20, [FromQuery] string? scope = null, CancellationToken ct = default)
+    {
+        var cmd = new QueryAppSecurityEventsCommand { AppId = id, PageNo = pageNo, PageSize = pageSize, Scope = scope };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>

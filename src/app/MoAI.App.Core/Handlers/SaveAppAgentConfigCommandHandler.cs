@@ -1,9 +1,11 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Validation;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
@@ -84,6 +86,16 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             {
                 throw new BusinessException("外部应用不能开启沙箱.") { StatusCode = 400 };
             }
+
+            if (SubAgentSettingsValidator.IsSubAgentEnabled(request.ExecutionSettings))
+            {
+                throw new BusinessException("外部应用不能开启子代理协作.") { StatusCode = 400 };
+            }
+
+            if (MemorySettingsValidator.IsMemoryEnabled(request.ExecutionSettings))
+            {
+                throw new BusinessException("外部应用不能开启长期记忆.") { StatusCode = 400 };
+            }
         }
 
         // 对话模型须在该团队可用；执行参数含沙箱等扩展配置，启用沙箱时受系统上限约束
@@ -96,6 +108,14 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
 
         // 审批策略（execution_settings.toolApproval）：自动放行插件白名单必须是本次绑定插件的子集
         ValidateToolApprovalPolicy(request.ExecutionSettings, pluginIds);
+
+        // 子代理协作（execution_settings.subAgent）：取值范围限幅校验
+        if (request.ExecutionSettings != null)
+        {
+            SubAgentSettingsValidator.Validate(request.ExecutionSettings.Value);
+            MemorySettingsValidator.Validate(request.ExecutionSettings.Value);
+        }
+
 
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
@@ -112,6 +132,13 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         {
             var sandboxLimits = await _sandboxSettingsService.GetLimitsAsync(cancellationToken);
             SandboxSettingsLimitValidator.Validate(request.ExecutionSettings!.Value, sandboxLimits);
+        }
+
+        // 长期记忆（execution_settings.memory）：开启时校验模型可用性；已有用户记忆后模型/维度锁定，
+        // 并把生效配置的模型/维度补齐进落库 JSON（请求未携带或关闭时也保留，作为锁定参照系）
+        if (executionJson != null)
+        {
+            executionJson = await ValidateAndNormalizeMemoryAsync(app, config, executionJson, cancellationToken);
         }
 
         if (config == null)
@@ -425,6 +452,127 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         }
 
         return ids;
+    }
+
+    /// <summary>
+    /// 校验并规范化长期记忆配置（execution_settings.memory）：开启时模型必须为该团队可用的 embedding 模型；
+    /// 应用内已有用户记忆后向量化模型与维度锁定（不同模型/维度的向量完全不可比，混写即破坏检索），
+    /// 参照系为生效配置（发布快照优先，即向量本体的实际写入口径）——关闭再开启、换模型、改维度同责，需先清空应用全部记忆；
+    /// 请求未携带模型/维度时沿用生效配置补齐落库，关闭或未携带 memory 节时同样保留生效模型/维度，保证运行时解析口径与既有向量一致.
+    /// </summary>
+    /// <param name="app">应用行.</param>
+    /// <param name="config">当前配置行（草稿，可能为 null）.</param>
+    /// <param name="executionJson">本次保存的执行参数 JSON 文本.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>规范化后的执行参数 JSON 文本.</returns>
+    private async Task<string> ValidateAndNormalizeMemoryAsync(AppEntity app, AppAgentConfigEntity? config, string executionJson, CancellationToken cancellationToken)
+    {
+        var root = JsonNode.Parse(executionJson) as JsonObject;
+        if (root == null)
+        {
+            return executionJson;
+        }
+
+        var memory = root.TryGetPropertyValue("memory", out var memoryNode) && memoryNode is JsonObject memoryObject
+            ? memoryObject
+            : null;
+        var requestEnabled = memory?["enabled"] is JsonValue enabledNode && enabledNode.TryGetValue<bool>(out var enabledFlag) && enabledFlag;
+
+        // 生效配置（发布快照优先）是向量本体的实际写入口径，作为变更锁定参照系
+        var effective = AppAgentConfigSnapshot.ResolveEffectiveConfig(
+            app,
+            config ?? new AppAgentConfigEntity { TeamId = app.TeamId, AppId = app.Id },
+            preferPublished: true);
+        var effectiveMemory = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(effective.ExecutionSettings);
+        var effectiveModelId = effectiveMemory?.EmbeddingModelId ?? Guid.Empty;
+        var effectiveDimensions = effectiveMemory is { EmbeddingDimensions: > 0 } ? effectiveMemory.EmbeddingDimensions : 0;
+
+        var hasMemories = await _databaseContext.AppMemoryShards.AsNoTracking()
+            .AnyAsync(x => x.AppId == app.Id && x.MemoryCount > 0, cancellationToken);
+
+        if (requestEnabled)
+        {
+            var modelId = memory!["embeddingModelId"] is JsonValue modelNode && modelNode.TryGetValue<string>(out var modelText)
+                && Guid.TryParse(modelText, out var parsedModel)
+                ? parsedModel
+                : Guid.Empty;
+            if (modelId == Guid.Empty)
+            {
+                throw new BusinessException("开启长期记忆必须选择向量化模型.") { StatusCode = 400 };
+            }
+
+            var requestDimensions = memory["embeddingDimensions"] is JsonValue dimsNode && dimsNode.TryGetValue<int>(out var parsedDims) && parsedDims > 0
+                ? parsedDims
+                : 0;
+
+            // 已有用户记忆后模型/维度锁定：与生效配置不一致即拒绝（无论草稿此前是否处于关闭态）
+            if (hasMemories && effectiveModelId != Guid.Empty
+                && (effectiveModelId != modelId || (requestDimensions > 0 && requestDimensions != effectiveDimensions)))
+            {
+                throw new BusinessException("应用内已有用户记忆，向量化模型与维度不可更换，请先清空应用全部记忆.") { StatusCode = 400 };
+            }
+
+            await ValidateMemoryModelAvailableAsync(app, modelId, cancellationToken);
+        }
+
+        // 落库补齐：保留生效模型/维度，避免关闭或字段缺失后运行时口径漂移（如维度缺失回落默认 1024 而既有向量为其他维度）
+        if (memory == null && hasMemories && effectiveModelId != Guid.Empty)
+        {
+            memory = new JsonObject
+            {
+                ["enabled"] = false,
+                ["embeddingModelId"] = effectiveModelId.ToString(),
+            };
+            if (effectiveDimensions > 0)
+            {
+                memory["embeddingDimensions"] = effectiveDimensions;
+            }
+
+            root["memory"] = memory;
+        }
+        else if (memory != null && effectiveModelId != Guid.Empty && (requestEnabled || hasMemories))
+        {
+            if (memory["embeddingModelId"] == null)
+            {
+                memory["embeddingModelId"] = effectiveModelId.ToString();
+            }
+
+            if (memory["embeddingDimensions"] == null && effectiveDimensions > 0)
+            {
+                memory["embeddingDimensions"] = effectiveDimensions;
+            }
+        }
+
+        return root.ToJsonString();
+    }
+
+    /// <summary>
+    /// 校验记忆向量化模型：须为启用中的 embedding 模型（公共或已授权该团队）.
+    /// </summary>
+    private async Task ValidateMemoryModelAvailableAsync(AppEntity app, Guid modelId, CancellationToken cancellationToken)
+    {
+        var row = await _databaseContext.AiModels.AsNoTracking()
+            .Where(x => x.Id == modelId && x.Enabled && x.ModelKind == "embedding")
+            .Join(
+                _databaseContext.AiChannels.Where(c => c.Enabled),
+                m => m.ChannelId,
+                c => c.Id,
+                (m, c) => new { m.Id, m.IsPublic })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (row == null)
+        {
+            throw new BusinessException("记忆向量化模型不可用，请选择启用中的 embedding 模型.") { StatusCode = 400 };
+        }
+
+        if (!row.IsPublic)
+        {
+            var authorized = await _databaseContext.AiModelAuthorizations.AsNoTracking()
+                .AnyAsync(x => x.TeamId == app.TeamId && x.AiModelId == modelId, cancellationToken);
+            if (!authorized)
+            {
+                throw new BusinessException("记忆向量化模型该团队无权使用.") { StatusCode = 400 };
+            }
+        }
     }
 
     /// <summary>

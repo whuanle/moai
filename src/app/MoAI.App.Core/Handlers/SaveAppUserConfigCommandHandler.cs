@@ -66,6 +66,26 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
             throw new BusinessException("存在应用未开放的技能，请在应用设置中重新选择.") { StatusCode = 400 };
         }
 
+        // 长期记忆模式：应用开启记忆时才允许用户调整；跨应用选项须应用授权（ScopeDefault=crossApp），关闭记忆时仅允许 0/1
+        if (request.MemoryMode.HasValue)
+        {
+            var configRow = await _databaseContext.AppAgentConfigs.AsNoTracking()
+                .Where(x => x.AppId == request.AppId)
+                .Select(x => new { x.ExecutionSettings, x.PublishedConfig })
+                .FirstOrDefaultAsync(cancellationToken);
+            var effectiveSettings = app.PublishStatus == 1
+                ? MoAI.Database.Aggregates.AppAgentConfigSnapshot.TryParse(configRow?.PublishedConfig)?.ExecutionSettings ?? configRow?.ExecutionSettings
+                : configRow?.ExecutionSettings;
+            var memorySettings = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(effectiveSettings);
+            // 应用开启记忆时用户可自由选择模式（跨应用为用户自主设置，无应用级授权闸门）；未开启仅允许 0/1
+            var memoryEnabled = memorySettings is { Enabled: true };
+            var mode = request.MemoryMode.Value;
+            if (!memoryEnabled && mode != MoAI.AI.Models.AgentMemorySettings.UserModeFollowApp && mode != MoAI.AI.Models.AgentMemorySettings.UserModeOff)
+            {
+                throw new BusinessException("该应用未开启长期记忆.") { StatusCode = 400 };
+            }
+        }
+
         var userConfig = await _databaseContext.AppUserConfigs
             .FirstOrDefaultAsync(x => x.AppId == request.AppId && x.UserId == request.ContextUserId, cancellationToken);
 
@@ -82,6 +102,7 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
                 ToolApprovalMode = MoAI.AI.AppToolApprovalContract.IsValidMode(request.ToolApprovalMode)
                     ? request.ToolApprovalMode!
                     : MoAI.AI.AppToolApprovalContract.ModeAuto,
+                MemoryMode = (short)(request.MemoryMode ?? MoAI.AI.Models.AgentMemorySettings.UserModeFollowApp),
             };
             _databaseContext.AppUserConfigs.Add(userConfig);
         }
@@ -92,6 +113,11 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
             if (MoAI.AI.AppToolApprovalContract.IsValidMode(request.ToolApprovalMode))
             {
                 userConfig.ToolApprovalMode = request.ToolApprovalMode!;
+            }
+
+            if (request.MemoryMode.HasValue)
+            {
+                userConfig.MemoryMode = (short)request.MemoryMode.Value;
             }
         }
 

@@ -50,13 +50,28 @@ public partial class AppWorkflowConfigEntity : IFullAudited
     /// </summary>
     public DateTimeOffset? PublishTime { get; set; }
 
+    /// <summary>
+    /// 创建人.
+    /// </summary>
     public long CreateUserId { get; set; }
 
+    /// <summary>
+    /// 创建时间.
+    /// </summary>
     public DateTimeOffset CreateTime { get; set; }
 
+    /// <summary>
+    /// 更新人.
+    /// </summary>
     public long UpdateUserId { get; set; }
 
+    /// <summary>
+    /// 更新时间.
+    /// </summary>
     public DateTimeOffset UpdateTime { get; set; }
 
+    /// <summary>
+    /// 软删除，0=未删除.
+    /// </summary>
     public long IsDeleted { get; set; }
 }

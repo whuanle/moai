@@ -16,6 +16,11 @@ public static class AppAgentConstants
     public const string SessionIdStateKey = "moai:app:sessionId";
 
     /// <summary>
+    /// 用户 id 在 AgentSession.StateBag 中的键（AppAgentDispatcher 装配时写入，安全审计事件归属用）.
+    /// </summary>
+    public const string UserIdStateKey = "moai:app:userId";
+
+    /// <summary>
     /// 默认会话标题.
     /// </summary>
     public const string DefaultSessionTitle = "未命名标题";

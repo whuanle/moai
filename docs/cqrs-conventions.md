@@ -509,6 +509,18 @@ public enum AIProtocolFamily
 
 每个字段都需要注释，注释不可以为空。
 
+审计属性参考：
+
+```sql
+comment on column public.app_security_event.create_user_id is '创建人';
+comment on column public.app_security_event.create_time is '创建时间';
+comment on column public.app_security_event.update_user_id is '更新人';
+comment on column public.app_security_event.update_time is '更新时间';
+comment on column public.app_security_event.is_deleted is '软删除，0=未删除';
+```
+
+
+
 
 
 ## 列表数据审计属性

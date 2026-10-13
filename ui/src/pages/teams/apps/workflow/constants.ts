@@ -69,6 +69,7 @@ export const NODE_CONSTRAINTS: Record<NodeType, NodeConstraints> = {
   questionClassifier: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   http: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
   agentApp: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
+  imageUnderstanding: { minCount: 0, maxCount: -1, deletable: true, copyable: true, requiresInput: true, requiresOutput: true },
 }
 
 export const DEFAULT_JS_CODE = `function run(inputs, sys, nodes) {
@@ -266,6 +267,21 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       errorCapture: false,
       extract: [],
     },
+  },
+  {
+    type: 'imageUnderstanding',
+    icon: '🖼️',
+    nameKey: 'workflowDesigner.nodeImageUnderstanding',
+    name: '图片理解',
+    descKey: 'workflowDesigner.nodeImageUnderstandingDesc',
+    desc: '把图片交给视觉模型，返回理解或提取内容',
+    color: '#d46b08',
+    inputs: {
+      image: { expressionType: 'variable', value: '', required: true, description: '图片地址（http(s) URL / data URI / 平台公开文件 objectKey）' },
+      prompt: { expressionType: 'variable', value: '', required: true, description: '理解或提取指令' },
+    },
+    outputs: [{ name: 'answer', fieldType: 'string', description: '模型对图片的理解/提取结果' }],
+    settings: { aiModelId: '' },
   },
 ]
 

@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Col, Progress, Row, Statistic } from 'antd'
 import type { TableColumnsType } from 'antd'
+import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Card, DataTable } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { getAppUsage, type AppUsageModelItem, type AppUsageSummary } from '@/api/app'
+import { getAppUsage, type AppUsageActivityStats, type AppUsageModelItem, type AppUsageSummary } from '@/api/app'
+import { getAppMemoryStats } from '@/api/memory'
+import { formatDateTime } from '@/utils/datetime'
 
 export interface AppMonitorSectionProps {
   appId: string
@@ -14,6 +17,8 @@ export interface AppMonitorSectionProps {
  * 应用用量监控分区：汇总卡片 + 按模型分布表。
  * 数据来自聚合用量表，最多滞后约 1 分钟；仅团队 Admin+ 访问（入口由 AppWorkspace 控制）。
  */
+const { Text } = Typography
+
 export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
   const { t, i18n } = useTranslation()
   const formatInt = useCallback(
@@ -28,6 +33,13 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
     totalTokens: 0,
   })
   const [byModel, setByModel] = useState<AppUsageModelItem[]>([])
+  const [stats, setStats] = useState<AppUsageActivityStats>({
+    sessionCount: 0,
+    userCount: 0,
+    messageCount: 0,
+    lastActiveTime: null,
+  })
+  const [memoryCount, setMemoryCount] = useState(0)
 
   useEffect(() => {
     if (!appId) return
@@ -38,15 +50,23 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
         if (cancelled) return
         setSummary(res.summary)
         setByModel(res.byModel ?? [])
+        setStats(res.stats)
       })
       .catch(() => {
         if (cancelled) return
         setSummary({ callCount: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0 })
         setByModel([])
+        setStats({ sessionCount: 0, userCount: 0, messageCount: 0, lastActiveTime: null })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
+    // 记忆条数来自记忆统计接口（应用内全部用户），失败不影响用量展示
+    getAppMemoryStats(appId)
+      .then((res) => {
+        if (!cancelled) setMemoryCount(res.totalMemories)
+      })
+      .catch(() => undefined)
     return () => {
       cancelled = true
     }
@@ -125,6 +145,34 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
           </Card>
         </Col>
       </Row>
+
+      <Row gutter={[spacing.md, spacing.md]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic title={t('appMonitor.userCount')} value={formatInt(stats.userCount)} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic title={t('appMonitor.sessionCount')} value={formatInt(stats.sessionCount)} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic title={t('appMonitor.messageCount')} value={formatInt(stats.messageCount)} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic title={t('appMonitor.memoryCount')} value={formatInt(memoryCount)} />
+          </Card>
+        </Col>
+      </Row>
+      {stats.lastActiveTime && (
+        <Text type="secondary">
+          {t('appMonitor.lastActive', { time: formatDateTime(stats.lastActiveTime) })}
+        </Text>
+      )}
 
       <Card title={t('appMonitor.byModelTitle')}>
         <DataTable<AppUsageModelItem>

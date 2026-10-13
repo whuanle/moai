@@ -40,6 +40,8 @@ import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } f
 // @ts-ignore
 import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadata, type TeamRequestBuilder } from './team/index.js';
 // @ts-ignore
+import { TimerRequestBuilderNavigationMetadata, TimerRequestBuilderRequestsMetadata, type TimerRequestBuilder } from './timer/index.js';
+// @ts-ignore
 import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetadata } from './usermanage/index.js';
 // @ts-ignore
 import { type VariableRequestBuilder, VariableRequestBuilderNavigationMetadata, VariableRequestBuilderRequestsMetadata } from './variable/index.js';
@@ -129,6 +131,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get team(): TeamRequestBuilder;
     /**
+     * The timer property
+     */
+    get timer(): TimerRequestBuilder;
+    /**
      * The usermanage property
      */
     get usermanage(): UsermanageRequestBuilder;
@@ -214,6 +220,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     team: {
         requestsMetadata: TeamRequestBuilderRequestsMetadata,
         navigationMetadata: TeamRequestBuilderNavigationMetadata,
+    },
+    timer: {
+        requestsMetadata: TimerRequestBuilderRequestsMetadata,
+        navigationMetadata: TimerRequestBuilderNavigationMetadata,
     },
     usermanage: {
         navigationMetadata: UsermanageRequestBuilderNavigationMetadata,

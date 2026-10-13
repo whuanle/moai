@@ -24,6 +24,8 @@ public sealed class WorkflowTestHarness
 
     public Mock<IWorkflowGraphSearchClient> GraphSearch { get; } = new();
 
+    public Mock<IWorkflowVisionClient> Vision { get; } = new();
+
     public IServiceProvider Services { get; }
 
     public WorkflowTestHarness()
@@ -41,6 +43,7 @@ public sealed class WorkflowTestHarness
         services.AddSingleton(AgentApp.Object);
         services.AddSingleton(WikiSearch.Object);
         services.AddSingleton(GraphSearch.Object);
+        services.AddSingleton(Vision.Object);
         Services = services.BuildServiceProvider();
     }
 

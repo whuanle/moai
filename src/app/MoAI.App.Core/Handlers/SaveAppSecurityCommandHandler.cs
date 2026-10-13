@@ -77,6 +77,7 @@ public class SaveAppSecurityCommandHandler : IRequestHandler<SaveAppSecurityComm
         config.MaskToolResult = request.MaskToolResult;
         config.MaskToolArgs = request.MaskToolArgs;
         config.MaskModelOutput = request.MaskModelOutput;
+        config.MaskInput = request.MaskInput;
         config.Rules = JsonSerializer.Serialize(rules, RuleJsonOptions);
         config.ModelOutputRules = JsonSerializer.Serialize(modelOutputRules, RuleJsonOptions);
 
@@ -85,7 +86,7 @@ public class SaveAppSecurityCommandHandler : IRequestHandler<SaveAppSecurityComm
     }
 
     /// <summary>
-    /// 规则规范化与校验：条数、名称/替换文本长度、类型合法性、custom 正则可编译；不合法抛 400.
+    /// 规则规范化与校验：条数、名称/替换文本长度、类型/策略合法性、custom 正则可编译；不合法抛 400（模型回复 block 走流式缓冲拦截，同样允许）.
     /// </summary>
     internal static List<AppSecurityPolicy.AppSecurityRule> NormalizeAndValidateRules(IReadOnlyList<AppSecurityPolicy.AppSecurityRule>? rules)
     {
@@ -105,23 +106,31 @@ public class SaveAppSecurityCommandHandler : IRequestHandler<SaveAppSecurityComm
             var name = rule.Name?.Trim() ?? string.Empty;
             var type = rule.Type?.Trim() ?? string.Empty;
             var pattern = rule.Pattern?.Trim() ?? string.Empty;
-            var replacement = string.IsNullOrEmpty(rule.Replacement?.Trim())
-                ? AppSecurityPolicy.DefaultReplacement
-                : rule.Replacement!.Trim();
+            // 策略空归一为 redact（兼容存量客户端）
+            var strategy = string.IsNullOrWhiteSpace(rule.Strategy) ? AppSecurityStrategies.Redact : rule.Strategy!.Trim();
+            // replacement 仅 redact 生效
+            var replacement = strategy == AppSecurityStrategies.Redact
+                ? (string.IsNullOrEmpty(rule.Replacement?.Trim()) ? AppSecurityPolicy.DefaultReplacement : rule.Replacement!.Trim())
+                : string.Empty;
 
             if (name.Length > 50)
             {
                 throw new BusinessException("规则名称最长 50 个字符.") { StatusCode = 400 };
             }
 
-            if (replacement.Length > 50)
-            {
-                throw new BusinessException("规则替换文本最长 50 个字符.") { StatusCode = 400 };
-            }
-
             if (!AppSecurityRuleTypes.IsValid(type))
             {
-                throw new BusinessException("规则类型仅支持 phone/idCard/email/bankCard/custom.") { StatusCode = 400 };
+                throw new BusinessException("规则类型仅支持 phone/idCard/email/bankCard/injection/custom.") { StatusCode = 400 };
+            }
+
+            if (!AppSecurityStrategies.IsValid(strategy))
+            {
+                throw new BusinessException("处理策略仅支持 redact/mask/hash/block/flag.") { StatusCode = 400 };
+            }
+
+            if (rule.KeepLast is { } keepLast && (keepLast < 0 || keepLast > 18))
+            {
+                throw new BusinessException("mask 保留末位需在 0~18 之间.") { StatusCode = 400 };
             }
 
             if (type == AppSecurityRuleTypes.Custom)
@@ -143,6 +152,8 @@ public class SaveAppSecurityCommandHandler : IRequestHandler<SaveAppSecurityComm
                 Type = type,
                 Pattern = type == AppSecurityRuleTypes.Custom ? pattern : null,
                 Replacement = replacement,
+                Strategy = strategy,
+                KeepLast = strategy == AppSecurityStrategies.Mask ? rule.KeepLast : null,
             });
         }
 

@@ -37,6 +37,7 @@ public sealed class AppAgentFactory
     private readonly IWorkflowChatEventSource _workflowChatEventSource;
     private readonly IStorageService _storageService;
     private readonly AppSecurityService _appSecurityService;
+    private readonly AppSecurityAuditWriter _appSecurityAuditWriter;
     private readonly SystemOptions _systemOptions;
     private readonly ILoggerFactory _loggerFactory;
 
@@ -53,6 +54,7 @@ public sealed class AppAgentFactory
     /// <param name="workflowChatEventSource">流程执行事件源（Workflow 应用对话流式过程推送）.</param>
     /// <param name="storageService">存储服务（对话图片附件多模态注入读取字节）.</param>
     /// <param name="appSecurityService">应用内容脱敏策略读取服务.</param>
+    /// <param name="appSecurityAuditWriter">应用安全事件写入器.</param>
     /// <param name="systemOptions">系统配置（Debug=true 时挂 OpenTelemetry 调试埋点）.</param>
     /// <param name="loggerFactory">日志工厂.</param>
     public AppAgentFactory(
@@ -66,6 +68,7 @@ public sealed class AppAgentFactory
         IWorkflowChatEventSource workflowChatEventSource,
         IStorageService storageService,
         AppSecurityService appSecurityService,
+        AppSecurityAuditWriter appSecurityAuditWriter,
         SystemOptions systemOptions,
         ILoggerFactory loggerFactory)
     {
@@ -79,6 +82,7 @@ public sealed class AppAgentFactory
         _workflowChatEventSource = workflowChatEventSource;
         _storageService = storageService;
         _appSecurityService = appSecurityService;
+        _appSecurityAuditWriter = appSecurityAuditWriter;
         _systemOptions = systemOptions;
         _loggerFactory = loggerFactory;
     }
@@ -245,8 +249,8 @@ public sealed class AppAgentFactory
             ChatHistoryProvider = history,
             AIContextProviders = contextProviders,
         };
-        // MAF 官方推荐拦截点（AIAgentBuilder.Use）：工具结果在函数调用中间件源头脱敏，参数与正文在 Run 级中间件脱敏
-        var securedAgent = AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy);
+        // MAF 官方推荐拦截点（AIAgentBuilder.Use）：输入检查点与工具结果在函数调用中间件处理，参数与正文在 Run 级中间件处理
+        var securedAgent = AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy, _appSecurityAuditWriter);
         // Debug 埋点包在脱敏中间件之外，Span 只记录脱敏后内容
         return _systemOptions.Debug ? AiObservabilityMiddleware.WrapAgent(securedAgent) : securedAgent;
     }
@@ -285,7 +289,7 @@ public sealed class AppAgentFactory
     }
 
     /// <summary>
-    /// 外部应用限制克隆：技能清空、沙箱关闭，其余字段原样拷贝；返回脱管行，仅用于读取.
+    /// 外部应用限制克隆：技能清空、沙箱/子代理/记忆关闭，其余字段原样拷贝；返回脱管行，仅用于读取.
     /// </summary>
     /// <param name="config">生效配置行（可能是变更跟踪中的草稿行，不可就地修改）.</param>
     /// <returns>应用了外部应用限制的新配置行.</returns>
@@ -293,6 +297,8 @@ public sealed class AppAgentFactory
     {
         var settings = AppAgentExecutionSettings.Parse(config.ExecutionSettings);
         settings.Sandbox = null;
+        settings.SubAgent = null;
+        settings.Memory = null;
         return new AppAgentConfigEntity
         {
             Id = config.Id,

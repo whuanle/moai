@@ -29,7 +29,7 @@ export interface OutputField {
 }
 
 /** 节点类型（引擎已实现的节点） */
-export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch' | 'knowledgeSearch' | 'kgSearch' | 'questionClassifier' | 'http' | 'agentApp'
+export type NodeType = 'start' | 'end' | 'condition' | 'aiChat' | 'javaScript' | 'plugin' | 'switch' | 'knowledgeSearch' | 'kgSearch' | 'questionClassifier' | 'http' | 'agentApp' | 'imageUnderstanding'
 
 /** http 节点键值对（查询参数/请求头/表单字段），值支持 {引用} 插值 */
 export interface HttpKvItem {
@@ -56,11 +56,11 @@ export interface HttpExtractFieldDef {
 
 /** 节点私有配置 */
 export interface NodeSettings {
-  /** aiChat/questionClassifier：模型 id（ai_model.id，团队网关可选模型） */
+  /** aiChat/imageUnderstanding/questionClassifier：模型 id（ai_model.id，团队网关可选模型；imageUnderstanding 仅视觉模型） */
   aiModelId?: string
   /** aiChat：静态系统提示词（角色/风格设定；输入绑定 system 可覆盖） */
   systemPrompt?: string
-  /** aiChat：采样温度 0-2（空=渠道/模型默认） */
+  /** aiChat/imageUnderstanding：采样温度 0-2（空=渠道/模型默认） */
   temperature?: number
   /** aiChat：引入的技能 id（挂载为模型可调用工具，需配合沙箱执行技能脚本） */
   /** aiChat：开启沙箱（暴露代码执行等沙箱工具） */

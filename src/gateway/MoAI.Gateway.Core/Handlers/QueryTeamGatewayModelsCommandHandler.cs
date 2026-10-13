@@ -37,6 +37,7 @@ public class QueryTeamGatewayModelsCommandHandler : IRequestHandler<QueryTeamGat
                 ModelId = x.Model.ModelId,
                 ChannelName = x.Channel.Name,
                 ProviderKey = x.Channel.ProviderKey,
+                SupportsVision = x.Model.SupportsVision,
                 Quota = x.Quota == null ? null : new TeamGatewayModelQuota
                 {
                     PeriodValue = x.Quota.PeriodValue,

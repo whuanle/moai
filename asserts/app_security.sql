@@ -35,3 +35,36 @@ comment on column app_security_config.rules is '内容脱敏规则列表（工�
 -- 2026-10-08：模型回复专属脱敏规则（与 rules 相互独立维护）
 alter table app_security_config add column if not exists model_output_rules text not null default '[]'::text;
 comment on column app_security_config.model_output_rules is '模型回复专属脱敏规则列表，与 rules 相互独立维护，元素同 rules，空为 ''[]''';
+
+-- 2026-10-13：处理策略升级（redact/mask/hash/block/flag）+ 用户输入作用域
+-- rules/model_output_rules 元素扩展为 {name,type,pattern,replacement,strategy,keepLast}，strategy 空缺省 redact（存量规则行为不变）
+alter table app_security_config add column if not exists mask_input boolean not null default false;
+comment on column app_security_config.mask_input is '是否处理用户输入文本（发送给模型的用户消息，含内容脱敏总开关门控）';
+
+-- 应用安全事件（规则命中审计），追加写不删改；同一次运行按（作用域, 规则, 策略, 动作）聚合为一行
+create table if not exists app_security_event (
+    id uuid default uuid_generate_v4() not null
+        constraint app_security_event_pkey primary key,
+    team_id integer not null,
+    app_id uuid not null,
+    session_id uuid null,
+    user_id bigint null,
+    scope text not null,
+    rule_name text not null,
+    rule_type text not null,
+    strategy text not null,
+    action text not null,
+    hit_count integer not null,
+    create_user_id bigint not null,
+    create_time timestamptz not null default CURRENT_TIMESTAMP,
+    update_user_id bigint not null,
+    update_time timestamptz not null default timezone('utc'::text, now()),
+    is_deleted bigint not null default 0
+);
+create index if not exists idx_app_security_event_app_id on app_security_event (app_id);
+create index if not exists idx_app_security_event_team_id on app_security_event (team_id);
+create index if not exists idx_app_security_event_create_time on app_security_event (create_time);
+comment on table app_security_event is '应用安全事件（规则命中审计），追加写不删改';
+comment on column app_security_event.scope is '作用域：input|toolResult|toolArgs|modelOutput';
+comment on column app_security_event.action is '动作：masked|blocked|flagged';
+comment on column app_security_event.hit_count is '聚合命中次数';

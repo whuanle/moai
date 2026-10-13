@@ -31,6 +31,11 @@ public class TeamGatewayModelItem
     public string ProviderKey { get; set; } = string.Empty;
 
     /// <summary>
+    /// 是否支持视觉（图片输入），图片理解等场景按此筛选.
+    /// </summary>
+    public bool SupportsVision { get; set; }
+
+    /// <summary>
     /// 额度限制，null=不限额.
     /// </summary>
     public TeamGatewayModelQuota? Quota { get; set; }

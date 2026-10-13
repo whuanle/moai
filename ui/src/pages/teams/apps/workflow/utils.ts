@@ -868,6 +868,14 @@ export function validateEditorData(editor: EditorWorkflowJSON | null): Validatio
       }
     }
 
+    // imageUnderstanding 节点：视觉模型必选（保存期拦截，与 aiChat 同级校验）
+    if (node.type === 'imageUnderstanding') {
+      const title = String(node.data?.title ?? node.id)
+      if (!String(node.data?.settings?.aiModelId ?? '').trim()) {
+        errors.push({ nodeId: node.id, message: `图片理解节点「${title}」未配置视觉模型，请在节点配置中选择视觉模型` })
+      }
+    }
+
     // agentApp 节点：必须选择 Agent 应用
     if (node.type === 'agentApp') {
       const title = String(node.data?.title ?? node.id)

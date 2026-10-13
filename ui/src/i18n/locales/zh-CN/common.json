@@ -188,6 +188,31 @@
       },
       "invalidTtl": "存活时间上限必须是 60~604800 之间的整数（秒）",
       "invalidFormat": "数量格式无效：CPU 例如 4 或 2000m；内存例如 8Gi 或 512Mi"
+    },
+    "compaction": {
+      "title": "Agent 上下文压缩默认参数",
+      "toolResult": {
+        "name": "工具结果折叠阈值（消息数）",
+        "desc": "消息数超过该值时折叠旧工具结果"
+      },
+      "preserveTurns": {
+        "name": "滑动窗口保留轮数",
+        "desc": "超过保留轮数的旧对话轮次被折叠"
+      },
+      "summarizeTokens": {
+        "name": "摘要触发 token",
+        "desc": "启用摘要后，token 超过该值触发旧对话摘要"
+      },
+      "hardLimit": {
+        "name": "紧急截断 token 上限",
+        "desc": "上下文超过该值时强制截断最旧消息"
+      },
+      "summarization": {
+        "name": "启用 LLM 摘要压缩",
+        "desc": "开启后超过摘要触发阈值时用摘要模型压缩旧对话；关闭则仅做无损压缩"
+      },
+      "overrideHint": "应用可在其执行参数中按字段覆盖上述默认值。",
+      "invalidValue": "压缩参数取值超出允许范围。"
     }
   },
   "oauthconnect": {
@@ -531,7 +556,78 @@
     "knowledgeGraph": "知识图谱",
     "prompts": "提示词",
     "skills": "团队技能",
-    "searchMemberPlaceholder": "搜索成员昵称/用户名"
+    "searchMemberPlaceholder": "搜索成员昵称/用户名",
+    "timers": "定时器"
+  },
+  "timer": {
+    "create": "新建定时器",
+    "createTitle": "新建定时器",
+    "editTitle": "编辑定时器",
+    "searchPlaceholder": "搜索名称/描述",
+    "name": "名称",
+    "namePlaceholder": "如：每日销售报告",
+    "description": "描述",
+    "descriptionPlaceholder": "定时器用途说明",
+    "app": "绑定应用",
+    "appPlaceholder": "选择要定时执行的 Agent / 流程应用",
+    "appDeleted": "应用已删除",
+    "appUnpublished": "未发布",
+    "appUnpublishedTip": "应用未发布，定时执行会失败，请先发布应用",
+    "appTypeAgent": "Agent",
+    "appTypeWorkflow": "流程",
+    "cron": "调度表达式",
+    "cronRequired": "请填写调度表达式",
+    "cronInvalid": "cron 表达式必须为 5 段（分 时 日 月 周）",
+    "cronHint": "按 UTC 时间调度；快选预设按北京时间换算",
+    "preset.hourly": "每小时",
+    "preset.daily9": "每天 9 点",
+    "preset.daily18": "每天 18 点",
+    "preset.weekly9": "每周一 9 点",
+    "inputContent": "执行内容",
+    "inputContentPlaceholder": "作为提问发送给应用，如：汇总本周数据并生成日报",
+    "enabled": "启用调度",
+    "retryCount": "失败重试",
+    "retryInterval": "重试间隔（秒）",
+    "save": "保存",
+    "cancel": "取消",
+    "colName": "名称",
+    "colApp": "绑定应用",
+    "colCron": "调度",
+    "colInput": "执行内容",
+    "colRetry": "重试策略",
+    "colLastRun": "最近触发",
+    "colEnabled": "状态",
+    "colActions": "操作",
+    "colTrigger": "触发方式",
+    "colStatus": "状态",
+    "colAttempt": "尝试",
+    "colStart": "开始时间",
+    "colTriggerUser": "触发人",
+    "colResult": "结果",
+    "colResultDetail": "回答内容",
+    "colError": "失败原因",
+    "nextRun": "下次：",
+    "paused": "已停用",
+    "enabledTag": "启用",
+    "retryText": "失败重试 {{count}} 次，间隔 {{seconds}} 秒",
+    "noRetry": "不重试",
+    "runNow": "立即执行",
+    "history": "历史",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteConfirm": "确定删除该定时器？调度将移除，执行历史保留。",
+    "createSuccess": "定时器已创建",
+    "updateSuccess": "定时器已更新",
+    "deleteSuccess": "定时器已删除",
+    "runTriggered": "已触发执行，请在历史中查看结果",
+    "runsTitle": "执行历史（{{name}}）",
+    "triggerScheduled": "调度",
+    "triggerManual": "手动",
+    "status.pending": "等待中",
+    "status.running": "执行中",
+    "status.success": "成功",
+    "status.failed": "失败",
+    "status.retrying": "重试中"
   },
   "wiki": {
     "title": "知识库",
@@ -1609,7 +1705,14 @@
     "attachmentTooMany": "最多添加 {{count}} 个附件",
     "workflowSteps": "执行过程",
     "workflowStepRunning": "生成中",
-    "workflowViewRun": "查看运行详情"
+    "workflowViewRun": "查看运行详情",
+    "memorySection": "长期记忆",
+    "memoryModeOff": "关闭",
+    "memoryModeOffHint": "本应用不读写我的记忆",
+    "memoryModeOn": "开启",
+    "memoryModeOnHint": "为本应用保留我的跨会话记忆（按用户隔离）",
+    "expertSearchPlaceholder": "搜索专家",
+    "resizePanel": "拖动调整面板宽度"
   },
   "publications": {
     "stateAll": "全部状态",
@@ -1792,7 +1895,22 @@
     "notFound": "应用不存在",
     "workflowGoDesign": "去编排设计",
     "formClassify": "应用分类",
-    "classifyPlaceholder": "选择应用分类（可选）"
+    "classifyPlaceholder": "选择应用分类（可选）",
+    "compactionSection": "上下文压缩",
+    "compactionHint": "输入框已预填平台默认参数，可直接调整；保存后写入应用配置并随发布快照生效。",
+    "compactionToolResult": "工具结果折叠阈值（消息数）",
+    "compactionPreserveTurns": "保留最近对话轮数",
+    "compactionSummarizeTokens": "摘要触发 token",
+    "compactionHardLimit": "紧急截断 token 上限",
+    "compactionSummarization": "启用 LLM 摘要压缩",
+    "compactionSummarizationHint": "开启后超过摘要触发阈值时用摘要模型压缩旧对话",
+    "compactionSummarizerModel": "摘要模型",
+    "compactionSummarizerModelHint": "留空使用应用对话模型",
+    "compactionSummarizerModelPlaceholder": "跟随应用对话模型",
+    "subAgentSection": "子代理协作",
+    "subAgentHint": "开启后主代理可创建子代理（同模型同工具）在独立上下文中执行高噪声任务，仅结论回传主对话。",
+    "subAgentTimeout": "单任务超时（秒）",
+    "subAgentResultMaxChars": "结果回传上限（字符）"
   },
   "skills": {
     "searchPlaceholder": "搜索技能标识/名称/描述",
@@ -1918,7 +2036,37 @@
       "idCard": "身份证号",
       "email": "邮箱",
       "bankCard": "银行卡号",
-      "custom": "自定义正则"
+      "custom": "自定义正则",
+      "injection": "提示词注入"
+    },
+    "scopeInput": "用户输入",
+    "scopeInputDesc": "对用户发送的消息文本生效，应用内容脱敏规则（总开关开启时生效）",
+    "keepLastPlaceholder": "保留末位",
+    "eventsTitle": "安全事件",
+    "strategy": {
+      "redact": "替换",
+      "mask": "遮蔽",
+      "hash": "哈希",
+      "block": "拦截",
+      "flag": "观测"
+    },
+    "action": {
+      "masked": "已脱敏",
+      "blocked": "已拦截",
+      "flagged": "已记录"
+    },
+    "scope": {
+      "input": "用户输入",
+      "toolResult": "工具结果",
+      "toolArgs": "工具参数",
+      "modelOutput": "模型回复"
+    },
+    "events": {
+      "colTime": "时间",
+      "colScope": "作用域",
+      "colRule": "规则",
+      "colAction": "动作",
+      "colCount": "命中"
     }
   },
   "appWorkspace": {
@@ -1966,7 +2114,8 @@
     "a2aAddress": "A2A 地址",
     "a2aAddressPlaceholder": "正在获取服务地址……",
     "a2aMethods": "JSON-RPC 方法",
-    "a2aAuthHint": "POST 端点为 A2A JSON-RPC（message/send、message/stream、tasks/get、tasks/cancel），GET {地址}/agent.json 为 Agent Card；鉴权携带勾选「应用 A2A」范围的应用接入 key。"
+    "a2aAuthHint": "POST 端点为 A2A JSON-RPC（message/send、message/stream、tasks/get、tasks/cancel），GET {地址}/agent.json 为 Agent Card；鉴权携带勾选「应用 A2A」范围的应用接入 key。",
+    "menuMemory": "长期记忆"
   },
   "appChannels": {
     "cardTitle": "飞书渠道",
@@ -2032,7 +2181,12 @@
     "columnModel": "模型",
     "columnShare": "占比",
     "empty": "暂无用量数据",
-    "lagHint": "数据来自聚合用量表，最多滞后约 1 分钟；不含调试会话；趋势图将在后续版本提供。"
+    "lagHint": "数据来自聚合用量表，最多滞后约 1 分钟；不含调试会话；趋势图将在后续版本提供。",
+    "userCount": "使用用户数",
+    "sessionCount": "会话总数",
+    "messageCount": "消息总数",
+    "memoryCount": "记忆条数",
+    "lastActive": "最近使用：{{time}}"
   },
   "appDebug": {
     "title": "调试",
@@ -2199,6 +2353,8 @@
     "nodeConditionDesc": "根据条件判断选择分支",
     "nodeAiChat": "AI 对话",
     "nodeAiChatDesc": "调用模型生成回答",
+    "nodeImageUnderstanding": "图片理解",
+    "nodeImageUnderstandingDesc": "把图片交给视觉模型，返回理解或提取内容",
     "nodeJs": "JavaScript",
     "nodeJsDesc": "JS 脚本加工数据（服务端沙箱）",
     "nodePlugin": "插件调用",
@@ -2262,6 +2418,10 @@
     "validateFailed": "校验未通过",
     "aiModel": "AI 模型",
     "aiModelPlaceholder": "选择团队可用模型",
+    "visionModel": "视觉模型",
+    "visionModelPlaceholder": "选择团队可用视觉模型",
+    "visionModelEmpty": "暂无可用视觉模型，请配置支持视觉（图片理解）的模型",
+    "imageUnderstandingHint": "image 支持 http(s) 图片地址、data URI 或平台公开文件 objectKey；模型仅列出支持视觉的对话模型。",
     "knowledgeWiki": "知识库",
     "knowledgeWikiPlaceholder": "选择知识库或绑定变量",
     "knowledgeWikiGroup": "本团队知识库",
@@ -2398,5 +2558,47 @@
     "classifierClassPlaceholder": "分类名称，如：售前咨询",
     "classifierAddClass": "添加问题类型",
     "classifierHint": "AI 模型判断用户问题命中的分类，出边从各分类端口连出；无法解析模型输出时默认命中第一个分类。"
+  },
+  "appMemory": {
+    "title": "长期记忆",
+    "enabled": "开启长期记忆",
+    "enabledHint": "开启后应用可为每位用户保留跨会话记忆（偏好/事实、事件经历、方法经验），按用户隔离，仅在应用内使用。",
+    "embeddingModel": "向量化模型",
+    "embeddingModelHint": "用于记忆内容的向量化；写入记忆后模型与维度不可更换，更换需先清空应用全部记忆。",
+    "embeddingModelPlaceholder": "选择该团队可用的向量化模型",
+    "embeddingDimensions": "向量维度",
+    "embeddingDimensionsHint": "1~2000，需与模型输出维度一致，留空默认 1024。",
+    "types": "记忆类型",
+    "typeSemantic": "语义（事实偏好）",
+    "typeEpisodic": "情景（事件经历）",
+    "typeProcedural": "程序（方法经验）",
+    "autoExtract": "自动提取记忆",
+    "autoExtractHint": "每轮对话后台提取重要信息并与既有记忆合并；关闭后仅 AI 通过工具显式保存。",
+    "retrievalTopK": "检索条数",
+    "maxPerUser": "单用户记忆上限",
+    "modelRequired": "请选择向量化模型。",
+    "myMemoriesHint": "你（管理员本人）在该应用下共有 {count} 条记忆：",
+    "clearApp": "清空应用全部记忆",
+    "clearAppConfirm": "确认清空该应用内全部用户的记忆？该操作不可恢复。",
+    "clearAppHint": "删除应用内所有用户的长期记忆（团队管理员操作），不影响其他应用。",
+    "clearAppSuccess": "应用记忆已清空。",
+    "manageHint": "查看并管理你（当前登录用户）在本应用下的记忆，仅支持删除与清空。",
+    "statsHint": "本应用已积累 {count} 条记忆（来自 {users} 个用户）。",
+    "statsEmpty": "本应用暂无记忆。"
+  },
+  "myMemory": {
+    "title": "我的记忆",
+    "hint": "这里是你在本应用中的跨会话长期记忆，可删除单条或清空；记忆只能删除，不能编辑。",
+    "empty": "暂无记忆",
+    "disabledTag": "应用未开启记忆",
+    "clear": "清空我的记忆",
+    "clearConfirm": "确认清空你在本应用内的全部记忆？不可恢复。",
+    "clearSuccess": "已清空本应用记忆。",
+    "deleteConfirm": "删除这条记忆？",
+    "deleteSuccess": "记忆已删除。",
+    "delete": "删除记忆",
+    "prev": "上一页",
+    "next": "下一页",
+    "manage": "管理记忆"
   }
 }

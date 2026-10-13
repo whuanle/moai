@@ -19,6 +19,9 @@ public partial class SettingEntity : IFullAudited
     /// </summary>
     public int Id { get; set; }
 
+    /// <summary>
+    /// 设置项显示名称.
+    /// </summary>
     public string Name { get; set; } = default!;
 
     /// <summary>

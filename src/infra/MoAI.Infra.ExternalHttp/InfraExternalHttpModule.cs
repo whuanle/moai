@@ -9,8 +9,10 @@ using MoAI.Infra.Doc2x;
 using MoAI.Infra.Elasticsearch;
 using MoAI.Infra.Feishu;
 using MoAI.Infra.Grafana;
+using MoAI.Infra.Jina;
 using MoAI.Infra.Kubernetes;
 using MoAI.Infra.Loki;
+using MoAI.Infra.Metaso;
 using MoAI.Infra.MojiWeather;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.Paddleocr;
@@ -18,6 +20,7 @@ using MoAI.Infra.Prometheus;
 using MoAI.Infra.Put;
 using MoAI.Infra.Tempo;
 using MoAI.Infra.WeixinWork;
+using MoAI.Infra.YahooFinance;
 using MoAI.Infra.Zabbix;
 using Refit;
 using System.Text.Json;
@@ -93,6 +96,26 @@ public class InfraExternalHttpModule : IModule
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
+        // Jina 搜索/阅读服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var jinaSearchEndpoint = context.Configuration["MoAI:Jina:SearchEndpoint"];
+        context.Services.AddRefitClient<IJinaSearchClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(jinaSearchEndpoint) ? "https://s.jina.ai" : jinaSearchEndpoint))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        var jinaReaderEndpoint = context.Configuration["MoAI:Jina:ReaderEndpoint"];
+        context.Services.AddRefitClient<IJinaReaderClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(jinaReaderEndpoint) ? "https://r.jina.ai" : jinaReaderEndpoint))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
+        // 秘塔搜索服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var metasoEndpoint = context.Configuration["MoAI:Metaso:Endpoint"];
+        context.Services.AddRefitClient<IMetasoClient>(settings)
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(metasoEndpoint) ? "https://metaso.cn" : metasoEndpoint))
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(30));
+
         // 墨迹天气服务地址允许被配置覆盖（默认阿里云云市场网关）：便于本地联调、指向代理或在 E2E 中指向桩服务.
         var mojiWeatherEndpoint = context.Configuration["MoAI:MojiWeather:Endpoint"];
         context.Services.AddRefitClient<IMojiWeatherClient>(settings)
@@ -123,6 +146,12 @@ public class InfraExternalHttpModule : IModule
             .SetHandlerLifetime(TimeSpan.FromSeconds(60));
 
         context.Services.AddRefitClient<ITempoClient>(settings)
+            .AddHttpMessageHandler<ExternalHttpMessageHandler>()
+            .SetHandlerLifetime(TimeSpan.FromSeconds(60));
+
+        // 雅虎财经数据源：地址来自动态插件实例配置（官方地址/镜像/桩服务均可），每次执行前由插件设置 BaseAddress，
+        // 故不注册固定 BaseAddress.
+        context.Services.AddRefitClient<IYahooFinanceClient>(settings)
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(60));
 

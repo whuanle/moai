@@ -98,3 +98,10 @@ Agent 运行时(src/ai)                 ▼
 - **压缩包上传自动解压**：`FileStoreHelper.SkillPackageFormats` 增加 `.zip`（整包上传形态）；新增 `ExtractSkillPackageCommand`（`POST /skill/file/extract`，登录用户）：读取已上传 zip → 条目白名单/路径校验（与 `SkillFileItem` 路径规则一致，禁 `..`/嵌套 zip）→ 逐条目 sha256 内容寻址经 `UploadStreamAsync` 登记为 `skill/` 资源文件 → 解析 `SKILL.md`（frontmatter `name:`/`description:` + 正文 instructions）。防 zip 炸弹：条目 ≤100、解压总大小 ≤50MB。唯一顶层目录自动剥离（GitHub 导出包形态）。
 - **前端**：`SkillEditModal` 上传按钮支持 `.zip`，zip 走"上传→解压→回填表单+并入文件清单"；普通文件流程不变。
 - **验证**：`local-dev/feature-batch-e2e.mjs` SK-ZIP/SK-AV 系列（HTTP 全链路）+ `Skills.test.tsx` zip 回填组件用例。
+
+## 增量设计（2026-10-12：use_count 使用计数，技能卡片热门排序）
+
+- **存储**：`skill.use_count integer not null default 0`（存量库执行 `asserts/skill_use_count.sql`），语义=应用对话中模型调用 `skill_{key}` 装载工具的次数。
+- **计数挂点**：`SkillAppToolProvider.LoadSkillAsync`（模型真实调用装载工具即视为一次使用）原子自增（`ExecuteUpdateAsync use_count+1`），失败仅告警不影响技能返回；个人技能不能被应用绑定，故计数只发生在系统/公开/团队技能上。
+- **下发**：`GET /api/skill/options` 与应用 `GET userconfig.defaultSkills` 均带 `useCount`；前端应用设置面板技能卡片默认按 `useCount` 降序取前十（应用层 UI，见 [../app/sdd.md](../app/sdd.md)）。
+- 证据：[local-dev/skill-usecount-e2e.mjs](../../local-dev/skill-usecount-e2e.mjs)（装载一次 0→1 双接口回显，8/8）。

@@ -1,6 +1,6 @@
 # 动态插件（DynamicPlugin）验证映射（TDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/jina-search-e2e.mjs](../../local-dev/jina-search-e2e.mjs) ｜ [local-dev/yahoo-finance-e2e.mjs](../../local-dev/yahoo-finance-e2e.mjs) ｜ [local-dev/metaso-search-e2e.mjs](../../local-dev/metaso-search-e2e.mjs) ｜ [local-dev/hot-board-e2e.mjs](../../local-dev/hot-board-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。场景复述见 BDD，本文只做编号→验证物映射。
 
 ## 后端 E2E
@@ -10,7 +10,11 @@
 `moji-weather-e2e.mjs` 同为桩服务模式（`MoAI__MojiWeather__Endpoint` 指向桩），覆盖墨迹天气模板，无需真实 AppCode；
 `ops-p1-plugins-e2e.mjs` 自带 HTTP 桩（拨测目标 + Zabbix JSON-RPC）与 Redis RESP2 桩并拉起独立后端（优先 `.builds/ops-p1` 独立输出，无则回退 `dotnet run`），覆盖 P1 运维三模板（http_probe/zabbix_query/redis_query），无需真实运维系统；
 `ops-p2-plugins-e2e.mjs` 同为桩模式（Grafana HTTP 桩 + `.builds/ops-p2` 独立输出），覆盖 P2 运维三模板（ssh_executor/grafana_query/sqlserver_query）：守卫用例（校验先于连接）无条件运行，SSH 真机执行与 SQL Server 真库由 `SSH_E2E_CONNECTION` / `SQLSERVER_E2E_CONNECTION` 门控（未设置 SKIP）；
-`ops-p0-plugins-e2e.mjs` 多路桩模式（Alertmanager v2 + Loki + Kubernetes API + 钉钉/企微机器人 + `.builds/ops-p0` 独立输出，`MoAI__DingTalk__RobotEndpoint` / `MoAI__WeixinWork__RobotEndpoint` 指向桩），覆盖 P0 运维五模板（alertmanager_query/loki_query/kubernetes_query/dingtalk_webhook_text/wecom_webhook_text），其中钉钉桩复算 HMAC-SHA256 验签。
+`ops-p0-plugins-e2e.mjs` 多路桩模式（Alertmanager v2 + Loki + Kubernetes API + 钉钉/企微机器人 + `.builds/ops-p0` 独立输出，`MoAI__DingTalk__RobotEndpoint` / `MoAI__WeixinWork__RobotEndpoint` 指向桩），覆盖 P0 运维五模板（alertmanager_query/loki_query/kubernetes_query/dingtalk_webhook_text/wecom_webhook_text），其中钉钉桩复算 HMAC-SHA256 验签；
+`jina-search-e2e.mjs` 同为桩服务模式（`MoAI__Jina__SearchEndpoint` / `MoAI__Jina__ReaderEndpoint` 指向同一桩，按请求体含 `q`/`url` 区分搜索与阅读端点），覆盖 Jina 搜索与网页阅读模板，无需真实 API Key、不消耗额度；
+`yahoo-finance-e2e.mjs` 桩服务模式（雅虎财经数据桩，v8 chart + v1 search 双端点；数据源地址在**实例配置** `BaseUrl`，无需应用级覆盖），覆盖雅虎财经模板三模式，无需真实外网、不受雅虎地域拦截影响。
+`metaso-search-e2e.mjs` 同为桩服务模式（`MoAI__Metaso__Endpoint` 指向桩，按请求体含 `q`/`url` 区分搜索与阅读端点、按 Accept 头区分阅读 markdown/json 双形态），覆盖秘塔搜索工具集两模板，无需真实 API Key、不消耗点数；后端从 `.builds/metaso` 独立输出拉起（bin/Debug 常被常驻后端锁 DLL）。
+`hot-board-e2e.mjs` 同为桩服务模式（新闻热榜数据桩按 16 个上游域名路径路由，`/https/{域名}/{路径}` 网关改写约定；实例配置 `Gateway` 指向桩），覆盖新闻热榜模板全渠道成功路径、解析细节、截断与失败隔离，无需真实外网、不受平台风控影响；后端从 `.builds/hotboard` 独立输出拉起。
 
 ```bash
 # 1) 实例管理与失败路径（需后端 :5000 运行中）
@@ -21,6 +25,18 @@ node local-dev/bocha-search-e2e.mjs
 
 # 3) 墨迹天气成功路径与解析（脚本自建桩服务 + 独立后端 :5197，无需真实 AppCode）
 node local-dev/moji-weather-e2e.mjs
+
+# 4) Jina 搜索/网页阅读成功路径与解析（脚本自建桩服务 + 独立后端 :5201，无需真实 Key）
+node local-dev/jina-search-e2e.mjs
+
+# 5) 雅虎财经三模式成功路径与解析（脚本自建数据桩 + 独立后端 :5211，无需真实外网）
+node local-dev/yahoo-finance-e2e.mjs
+
+# 6) 秘塔搜索工具集成功路径与解析（脚本自建桩服务 + 独立后端 :5203，前置 dotnet build -o .builds/metaso，无需真实 Key）
+node local-dev/metaso-search-e2e.mjs
+
+# 7) 新闻热榜 16 渠道成功路径/解析/截断/失败隔离（脚本自建 16 域名数据桩 + 独立后端 :5281，前置 dotnet build -o .builds/hotboard，无需真实外网）
+node local-dev/hot-board-e2e.mjs
 ```
 
 | 场景 | 验证物 | 结果（日期） |
@@ -96,6 +112,26 @@ node local-dev/moji-weather-e2e.mjs
 | @DYN-S71 | local-dev/observability-plugin-e2e.mjs ClickHouse 段（`S71a~j` 自由 SELECT 行/列/列类型解析（FORMAT JSON meta，空结果仍带列信息）+ MaxRows 截断、readonly=1/max_result_rows/result_overflow_mode/Basic 下发、SHOW DATABASES/SHOW TABLES/DESCRIBE/SHOW CREATE 摸底工作流、末尾 FORMAT 剥离） | PASS 61/61（2026-10-08） |
 | @DYN-S72 | local-dev/observability-plugin-e2e.mjs ClickHouse 段（`S72a~d` INSERT/UPDATE/DELETE/CREATE/DROP/SET/SYSTEM/url() 表函数/多语句守卫拒绝且未触达桩、上游 500/401 归一、空 BaseUrl 运行时拒绝） | PASS 61/61（2026-10-08） |
 | @DYN-S73 | ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx（模板已下线实例：红 Tag 标记 + 运行/编辑禁用；系统侧与团队侧面板同逻辑） | PASS 498/498（2026-10-08） |
+| @DYN-S76 | local-dev/jina-search-e2e.mjs（`S76a~e` 搜索结果解析（标题/链接/摘要/正文）+ UsageTokens 求和 + Query 去空格 + Bearer 头 + ReturnFormat/NoCache 头透传 + 缺省回落 markdown） | PASS 18/0（2026-10-12） |
+| @DYN-S77 | local-dev/jina-search-e2e.mjs（`S77a~e` 阅读结果解析（标题/地址/摘要/正文/发布时间/Links/Images）+ Url 去空格 + Accept JSON + 摘要开关头 + ReturnFormat/NoCache/Timeout 透传） | PASS 18/0（2026-10-12） |
+| @DYN-S78 | local-dev/jina-search-e2e.mjs（`S78a~e` 非法 Url 运行时拒绝、搜索/阅读业务 code=429 归一、无效 Key 401 归一、空 API Key InitAsync 拦截） | PASS 18/0（2026-10-12） |
+| @DYN-S79 | local-dev/yahoo-finance-e2e.mjs（`S79a~i` 批量报价解析（meta 全字段/涨跌计算/精简 meta 容错）+ 浏览器 UA + 走势 30 点截断与空收盘剔除 + Range/Interval 下发与白名单） | PASS 29/0（2026-10-12） |
+| @DYN-S80 | local-dev/yahoo-finance-e2e.mjs（`S80a~d` 无效代码 chart.error 与上游 500 归入 Errors 且好代码继续返回、超 MaxSymbols 截断 Truncated、重复代码去重） | PASS 29/0（2026-10-12） |
+| @DYN-S81 | local-dev/yahoo-finance-e2e.mjs（`S81a~e` 新闻解析（标题/发布方/链接/相关代码/发布时间 ISO、空标题丢弃）+ NewsCount 按实例上限 clamp + quotesCount=0 + Lang/Region 实例透传与请求级覆盖） | PASS 29/0（2026-10-12） |
+| @DYN-S82 | local-dev/yahoo-finance-e2e.mjs（`S82a~b` 代码候选解析（shortname 优先/longname 回落/exchDisp/typeDisp）+ quotesCount 下发且 newsCount=0） | PASS 29/0（2026-10-12） |
+| @DYN-S83 | local-dev/yahoo-finance-e2e.mjs（`S83a~e` 非法 Mode/quote 缺 Symbols/news 缺 Query/非法 Range 400 + 非法 BaseUrl InitAsync 拦截） | PASS 29/0（2026-10-12） |
+| @DYN-S84 | local-dev/yahoo-finance-e2e.mjs（`S84a` news 模式上游 500 归一为带状态码与响应体的可读失败） | PASS 29/0（2026-10-12） |
+| @DYN-S106 | local-dev/hot-board-e2e.mjs（`S106a~b` 创建实例 + 同 key 重复提交走更新语义） | PASS 29/0（2026-10-13） |
+| @DYN-S107 | local-dev/hot-board-e2e.mjs（`S107a~b` 空 Sources 400 提示可选值 + 未知输入回显、中文别名归一去重） | PASS 29/0（2026-10-13） |
+| @DYN-S108 | local-dev/hot-board-e2e.mjs（`S108a~e` 16 渠道全部成功、别名去重、48 条合并、来源内排名连续、条目结构） | PASS 29/0（2026-10-13） |
+| @DYN-S109 | local-dev/hot-board-e2e.mjs（`S109a~f` 知乎万热度/问题链接、36氪长整型精度、掘金文章链接与阅读数、微博搜索链接转义、新浪千分位与 JS 壳、腾讯 TIP 跳过） | PASS 29/0（2026-10-13） |
+| @DYN-S110 | local-dev/hot-board-e2e.mjs（`S110a~d` 百度 s-data 嵌套子榜、IT之家 HTML 改写、虎嗅 br 分段、B站 WBI 签名与封面 https） | PASS 29/0（2026-10-13） |
+| @DYN-S111 | local-dev/hot-board-e2e.mjs（`S111a~c` 16 域名网关改写命中桩、浏览器 UA、抖音 CSRF Cookie 回带） | PASS 29/0（2026-10-13） |
+| @DYN-S112 | local-dev/hot-board-e2e.mjs（`S112a~b` Limit=2 实例每来源截断且排名连续） | PASS 29/0（2026-10-13） |
+| @DYN-S113 | local-dev/hot-board-e2e.mjs（`S113a` 虎扑上游 500 进 Errors，知乎照常返回） | PASS 29/0（2026-10-13） |
+| @DYN-S114 | local-dev/hot-board-e2e.mjs（`S114a` 全来源不可达归一「全部来源抓取失败」） | PASS 29/0（2026-10-13） |
+| @DYN-S115 | local-dev/hot-board-e2e.mjs（`S115a` 非法 Gateway 被 InitAsync 拦截） | PASS 29/0（2026-10-13） |
+| @DYN-S116 | local-dev/hot-board-e2e.mjs（`S116a` 删除实例后运行 404） | PASS 29/0（2026-10-13） |
 
 ## 前端测试
 
@@ -266,3 +302,49 @@ node local-dev/clickstack-e2e.mjs                             # ClickStack 查�
 - 守卫变更：`SqlReadOnlyGuard` 对首关键字为 SHOW 的语句跳过全句关键字扫描——`SHOW CREATE TABLE/VIEW` 是摸结构最有用的语句，原全句扫描会因对象名里的 CREATE/INSERT 误杀（该放行对 MySQL/PG/SqlServer 守卫同样生效，SHOW 均为纯元数据读取）。
 - **clickstack_query 保留并与 clickhouse_query 分离**（用户澄清：ClickStack 部署里内置 ClickHouse 的 8123/9000 通常不发布到宿主机，HyperDX 对外 API 是唯一查询面，无 SQL 直通端点）：`clickstack_query`（sources/search/chart 三模式 + Personal API Access Key）原样保留，`node local-dev/clickstack-e2e.mjs` 恢复验证 **PASS 20/20**；两模板在描述里互相指路（ClickStack 观测数据 → clickstack_query，可直连的 ClickHouse → clickhouse_query 自由 SQL）。
 - **模板下线降级（@DYN-S73，vitest 498/498 + typecheck/lint 0 error）**：起因是用户点开旧实例的运行抽屉「请求参数」为空——实例的 `templeteKey` 不在注册表时 `paramsExample` 为 null，抽屉空 editor 极易误导；`DynamicPluginPanel`/`TeamDynamicPluginPanel` 用已加载的模板列表判缺失（`templeteKey` 不在 `templates` 中），模板列显示红 Tag「模板已下线」（`plugins.templateMissing`，zh/en 同步），运行/编辑按钮禁用、删除保留。
+
+### 2026-10-12 Jina 搜索/网页阅读内置模板（@DYN-S76~S78）
+
+- `dotnet build src/MoAI/MoAI.csproj` → **0 error、0 告警**（宿主 bin/Debug 未被进程锁，直写构建通过）。
+- `node local-dev/jina-search-e2e.mjs` → **PASS 18 / FAIL 0（首跑即全绿）**。桩服务按官方报文回放（搜索结果数组 + 阅读单对象，同一桩按请求体含 `q`/`url` 区分端点），覆盖 @DYN-S76~S78：搜索结果解析与 UsageTokens 求和、阅读正文/发布时间/Links/Images 解析、Bearer 鉴权头、Accept: application/json、X-Return-Format/X-No-Cache/X-With-Links-Summary/X-With-Images-Summary/X-Timeout 头透传、Query/Url 去空格、ReturnFormat 缺省回落 markdown、非法 Url 运行时拒绝、无效 Key 401 归一、HTTP 200 业务 code=429 归一、空 API Key InitAsync 拦截。
+- 新文件：infra `Jina/{IJinaSearchClient,IJinaReaderClient}.cs` + `Jina/Models/{JinaEnvelope,JinaUsage,JinaSearchQuery,JinaSearchResultItem,JinaReaderQuery,JinaReaderResult}.cs`（`InfraExternalHttpModule` 注册 `MoAI:Jina:SearchEndpoint`/`MoAI:Jina:ReaderEndpoint` 覆盖，默认官方地址）；插件侧 `JinaAuthorization.cs`、`Models/Jina{Search,Reader}{Config,Request,Response}.cs`（+`JinaSearchPage`）、`Plugins/{JinaSearchPlugin,JinaReaderPlugin}.cs`。
+- 实踩坑：infra 接口方法签名里写全限定 `System.Collections.Generic.List<>` 会被命名空间解析成 `MoAI.Infra.System.Collections...`（CS0234，Refit 源生成器同样报错）——`MoAI.Infra.*` 命名空间下必须 `using System.Collections.Generic;` 后用简单类型名。
+
+### 2026-10-12 雅虎财经内置模板（@DYN-S79~S84）
+
+- `dotnet build src/MoAI/MoAI.csproj` → **0 error**；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests --filter YahooFinance` → **PASS 17/0**。
+- `node local-dev/yahoo-finance-e2e.mjs` → **PASS 29 / FAIL 0**。数据桩按官方报文回放（v8 chart 按 symbol 分支：AAPL 全字段+35 点走势、MSFT 精简 meta、DEAD 返回 HTTP 200+chart.error、HTTPFAIL 返回 500、其余代码回通用报价；v1 search 按 newsCount/quotesCount 区分返回新闻或候选），覆盖 @DYN-S79~S84：批量报价解析与涨跌计算、走势 30 点截断、浏览器 UA、失败隔离（错误清单不拖垮整批）、MaxSymbols 截断与去重、新闻/候选解析、条数 clamp、Lang/Region 透传与请求级覆盖、四类 400、非法 BaseUrl InitAsync 拦截、上游 500 归一。
+- 新文件：infra `YahooFinance/IYahooFinanceClient.cs`（Refit 不注册固定 BaseAddress，由插件按实例配置设置——与 Prometheus 同款，数据源地址在**实例配置**而非应用级覆盖）；插件侧 `Models/YahooFinanceQuery{Config,Request,Response}.cs` + `Models/YahooFinanceModels.cs`、`Plugins/YahooFinancePlugin.cs`；单测 `tests/.../YahooFinancePluginParamsTests.cs`；E2E `local-dev/yahoo-finance-e2e.mjs`（桩 :5210 / 后端 :5211）。
+- 设计取舍：单模板三模式（quote/news/search）复用雅虎两个公开端点，无需任何 API Key；国内直连官方地址大概率被地域拦截，`BaseUrl` 留给镜像/代理；`PrepareClient` 固定携带 Chrome 浏览器 UA（雅虎对非浏览器 UA 常直接拒绝）。
+- 实踩坑：E2E 首版把「批量截断」用例建在只认识两个代码的桩上，未知代码 404 被插件失败隔离归入 Errors，导致截断断言错位——截断类用例需桩对任意代码回通用报价；chart 命中次数阈值按实际调用路径核算（quote 各用例合计 18 次）。
+
+### 2026-10-12 邮件内置模板（@DYN-S85~S102）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/email` → **0 error**（用户后端运行中锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **329/329**（新增 68 例：`EmailRecipientParserTests` 17、`EmailBodyExtractorTests` 7、`ImapSearchQueryBuilderTests` 8、`MailSecurityParserTests` 7、`SmtpEmailSendPluginParamsTests` 15、`ImapEmailQueryPluginParamsTests` 13、日期保持单测 1）。
+- `node local-dev/email-plugins-e2e.mjs` → **PASS 37 / FAIL 0**。自建 SMTP（EHLO/AUTH PLAIN+LOGIN/MAIL/RCPT/DATA）与 IMAP4rev1（LOGIN/LIST/SELECT·EXAMINE/SEARCH 含字面量续行/FETCH ENVELOPE·BODY[]/STORE ±FLAGS.SILENT/NAMESPACE）双协议桩，覆盖 @DYN-S85~S102：SMTP 纯文本/HTML/附件发送与报文头断言、Message-ID 回显一致、参数校验零桩命中、535 认证归一、配置缺项运行态拒绝；IMAP recent 新→旧截断、中文主题字面量搜索、FROM+SINCE AND 组合、未读联动（标记/回标）、detail 正文与附件元信息、中文 MIME 解码、folders、四类 400、认证失败、文件夹不存在。
+- 新文件：插件侧 `EmailRecipientParser.cs`/`MailSecurityParser.cs`/`EmailBodyExtractor.cs`/`ImapSearchQueryBuilder.cs`、`Models/SmtpEmailSend{Config,Request,Response}.cs`、`Models/ImapEmailQuery{Config,Request,Response}.cs`、`Plugins/{SmtpEmailSendPlugin,ImapEmailQueryPlugin}.cs`；E2E `local-dev/email-plugins-e2e.mjs`（SMTP :25254 / IMAP :25143 / 后端 :5212，前置 `dotnet build src/MoAI/MoAI.csproj -o .builds/email`）。
+- 设计取舍：SMTP 与 IMAP 拆两个模板（配置面各自最小、团队可只开其一）；IMAP 列表取信封摘要不取正文（不把整箱邮件拉进上下文），detail 才取全文并按 MaxBodyChars 截断；唯一写操作 mark_read（不做删除/移动）；`Security=none` 明文仅供内网调试。
+- 实踩坑（四个协议层断言/语义坑，见 sdd 细节节）：①MailKit 解析 ENVELOPE 报「Unexpected qstring/atom token」时真因常在更早字段——**INTERNALDATE 的日必须两位**（`05-Jan-2026`，RFC 3501 date-day-fixed），`5-Jan-2026` 会让分词错位甩锅给后面的字段；②ENVELOPE 的 From/To 是**地址列表**（双层括号 `((NIL NIL "a" "host"))`），写单层括号必挂；③`SearchQuery.DeliveredAfter` 渲染 SINCE 日期取 **UTC 部分**，`yyyy-MM-dd` 必须按 UTC 零点构造（本地零点会前移一天）；④MimeKit 的 `MimeMessage.MessageId` 属性读写均不带尖括号。
+- 流程坑：E2E 后端进程泄漏占住 5211 端口后，后续每轮探活命中的都是**旧代码后端**（S86 死活不过、单测却证明代码正确）——脚本已加端口预检 `ensurePortFree`，被占用直接报错提示清理。
+
+### 2026-10-13 秘塔搜索工具集内置模板（@DYN-S103~S105）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/metaso` → **0 error**（用户后端运行中锁 bin/Debug，走独立输出目录）。
+- `node local-dev/metaso-search-e2e.mjs` → **PASS 21 / FAIL 0**（修复脚本自身命中数阈值误算后全绿）。桩服务按官方 API v1 报文形态回放（搜索裸载荷按 scope 分集合 + 阅读按 Accept 头区分 text/plain 纯文本与 JSON），覆盖 @DYN-S103~S105：网页/文库/图片三范围解析与统一列表、综合摘要/总数/点数、Query 去空格与全参数透传、scope 大小写归一、Size 钳制、阅读 markdown/json 双形态与非法 Format 回落、非法 Scope/搜索词/Url 运行时拒绝、无效 Key 401 与上游 429 归一、空 API Key InitAsync 拦截。
+- 新文件：infra `Metaso/IMetasoClient.cs` + `Metaso/Models/{MetasoSearchQuery,MetasoSearchPayload,MetasoWebpageResult,MetasoDocumentResult,MetasoImageResult,MetasoReaderQuery,MetasoReaderResult}.cs`（`InfraExternalHttpModule` 注册 `MoAI:Metaso:Endpoint` 覆盖，默认 `https://metaso.cn`）；插件侧 `MetasoAuthorization.cs`、`Models/MetasoSearch{Config,Request,Response}.cs`（+`MetasoSearchPage`/`MetasoSearchImage`）、`Models/MetasoReader{Config,Request,Response}.cs`、`Plugins/{MetasoSearchPlugin,MetasoReaderPlugin}.cs`；E2E `local-dev/metaso-search-e2e.mjs`（桩 :5202 / 后端 :5203，从 `.builds/metaso` 拉起、cwd 指向 src/MoAI 读 appsettings.Development.json）。
+- 设计取舍：搜索/阅读拆两模板（同 Jina 口径）；搜索响应把字段同构的网页/文库/视频结果统一进 `Results`、仅 image 走 `Images`（AI 与流程编排按一个列表消费）；`IncludeSummary=true` 附带综合摘要、`IncludeRawContent=true` 附带来源原文；基址写法与 BoCha 同款（根地址 + `/api/v1/*` 绝对路径，避开 Refit 基址子路径被绝对路径吃掉的坑）。
+- 实踩坑：①秘塔官方文档页在登录墙后（metaso.cn/s/hXHmJkx 需登录），API 规格从官方 Python SDK（github meta-sota/metaso-sdk）与成熟第三方 MCP 集成的实报文交叉确认——SDK 走的 `/api/open/search/v2` 是 AI 搜索会话接口（SSE 流式），工具集插件取 `/api/v1/search`+`/api/v1/reader` 简单检索面；②阅读接口 text/plain 形态响应是纯文本，Refit 不能按对象反序列化——拆 `Task<string>` 与 `Task<T>` 两个方法、静态 `[Headers("Accept: ...")]` 区分；③bin/Debug 被运行中后端与 VS 双锁时，E2E 后端可从独立输出目录 `dotnet .builds/metaso/MoAI.dll` 拉起，cwd 指向 src/MoAI 使 appsettings.Development.json（基础设施连接）生效。
+
+### 2026-10-13 新闻热榜聚合内置模板（@DYN-S106~S116）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/hotboard` → **0 error**（用户后端运行中锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests --filter HotBoard` → **35/35**（`HotBoardChannelTests` 16 渠道解析、`HotBoardCatalogTests` 别名/去重/构造、`HotBoardPluginParamsTests` 配置钳制与网关校验、`HotBoardGatewayRewriteTests` 网关改写与 502 归一）。
+- `node local-dev/hot-board-e2e.mjs` → **PASS 29 / FAIL 0**。16 域名数据桩按官方报文结构回放（知乎万热度、36氪 POST 长整型、掘金 article_rank、微博 hotSearch、头条 hot-board、百度 s-data HTML、B站 nav+ranking WBI 双请求、抖音 Set-Cookie 双请求、IT之家 HTML 榜单、虎扑/虎嗅/网易/腾讯/新浪 JS 壳/澎湃/极客公园），覆盖 @DYN-S106~S116：实例创建与同 key 更新、参数校验零桩命中、全渠道成功与合并结构、解析细节、网关改写 + UA + Cookie、Limit 截断、单渠道 500 失败隔离、全失败 502 归一、非法 Gateway InitAsync 拦截、删除后 404。
+- 新文件：插件侧 `HotBoard/{HotBoardEntry,IHotBoardChannel,HotBoardChannelBase,HotBoardCatalog}.cs` + `HotBoard/Channels/*.cs`×16（36kr/zhihu/weibo/juejin/toutiao/baidu/bilibili/douyin/ithome/hupu/huxiu/thepaper/geekpark/qq-news/netease-news/sina-news，掘金为本轮新实现，其余移植自姊妹项目已验证渠道实现）、`Models/HotBoard{Request,Config,Response,NewsItem}.cs`、`Plugins/HotBoardPlugin.cs`；`DynamicPluginsModule` 注册命名 HttpClient `hot_board`（20s 超时 + 关自动 Cookie + 外部请求日志拦截器）；单测 `tests/.../HotBoard{Channel,Catalog,PluginParams,gatewayTests}.cs`；E2E `local-dev/hot-board-e2e.mjs`（桩 :5280 / 后端 :5281）。
+- 设计取舍：单模板聚合 16 渠道（来源是数组参数而非多模板，AI 一次调用可拿多平台榜单）；渠道无 DI、由 `HotBoardCatalog` 查表构造（纯解析逻辑，单测直接 new）；`Gateway` 网关改写统一收在基类 `Url()`（16 渠道零感知），E2E 由此全桩化零 SKIP；渠道内失败逐个归一进 `Errors` 不拖垮整轮（Yahoo 失败隔离同款语义），全部失败才 502。
+- 实踩坑：①E2E 首版假设「同 key 重复 save 返回 409」，实际是**更新语义 200 且配置整体覆盖**——重复提交把实例配置洗成 `{}` 后 Gateway 丢失，后续用例全部直连真实上游（因祸得福顺带验证了 16 渠道对真实上游全通、310 条真实数据解析正确），修复为按 DYN-S5 更新语义断言；②JS 桩回放 19 位长整型 itemId 会经 double 丢精度，36氪桩改手工拼 JSON 字面量保真；③B站 WBI 混淆表按 img_key+sub_key 拼接后取前 32 位下标，桩 key 必须各 32 字符否则 `SignWbi` 越界（主接口异常回落旧版 ranking 接口，功能不挂但断言错位）。
+
+### 2026-10-13 Base64 解码内置模板（@DYN-S117~S120）
+
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/base64` → **0 error**（用户后端运行中 + VS 双锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **381/381**（新增 `Base64DecodePluginTests` 17 例：数据 URL 前缀剥离、图片魔数/SVG 判定、文本截断、转存路径与 ObjectKey 幂等、校验拒绝零转存、解码前粗估、InitAsync 钳制）。
+- 新文件：插件侧 `Base64ContentDetector.cs`、`Models/Base64Decode{Config,Request,Response}.cs`、`Plugins/Base64DecodePlugin.cs`；`MoAI.AIPlugin.Dynamic.csproj` 增 `MoAI.Storage.Shared` 引用（构造注入 `IStorageService`）；单测 `tests/.../Base64DecodePluginTests.cs`（内置 `StubStorageService` 桩，零后端可跑）。纯本地解码无需外部依赖，不设 E2E（实例管理/失败路径由 `dynamic-plugin-e2e.mjs` 的通用链路覆盖）。
+- 设计取舍：①解码产物形态三分——严格 UTF-8 文本（解码失败或含 NUL 等控制字符即非文本）直接回填 `Text`，图片（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF 魔数 + SVG 文本特判：SVG 是文本但按图片处理才能渲染）与其它二进制经 `IStorageService.UploadStreamAsync` 转存 `public/images|files` 回 `/static` 公开地址；②**不回传 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL（仅放行 http/https 等），图片必须落公开 http 地址才能在对话里渲染，且小响应不吃模型上下文；③转存按 SHA-256 内容寻址（`FileStoreHelper.ToPublicObjectKey(GetObjectKey(...))`），同内容幂等去重；`FileName` 仅取扩展名参与 ObjectKey 与结果回显；④二进制形态有 `data:<mime>;base64,` 类型声明时信任声明定扩展名（如 application/pdf → .pdf），无声明按 octet-stream/.bin；⑤解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数，不会低估故不会误杀），超大输入不解码不占内存。

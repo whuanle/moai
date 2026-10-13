@@ -157,6 +157,7 @@ src/aiplugin/
 - Handler 涉及 DB 时放 `MoAI.AIPlugin.Custom`（它引用 `MoAI.Database.Shared` 与 `MoAI.Classify.Shared`）；无 DB 的逻辑放 `MoAI.AIPlugin.Core`。
 - **插件需要调用外部 HTTP 接口时**：Refit 客户端实现放 `src/infra/MoAI.Infra.ExternalHttp/<厂商>/`（复用 `ExternalHttpMessageHandler` 的日志与遥测，典型：`BoCha`），插件项目加 `ProjectReference` 后**构造注入**该客户端（`PluginExecutor` 用 `ActivatorUtilities.CreateInstance` 从 DI 作用域解析），不要在插件内 `new HttpClient`。
 - **插件需要解析上游 JSON 字符串时**（很多厂商把结构化结果塞进 `content` 字符串）：不要用强类型直接反序列化，用 `JsonDocument` 逐层展开并写**容错**分支（字段缺失、形态变化、空对象都要能跳过而不是抛异常），并把「取不到任何有效字段」的条目丢弃。
+- **插件需要把二进制产物落文件存储时**（解码图片、生成文件等）：构造注入 `IStorageService`（项目加 `MoAI.Storage.Shared` 引用），`UploadStreamAsync` + `FileStoreHelper.ToPublicObjectKey(GetObjectKey(...))` 落 `public/` 目录、`GetPublicFileUrl` 拼公开访问地址，禁止直接操作 file 表或 OSS；前端 Markdown 渲染默认剥 `data:` URL，图片必须回公开 http 地址才能在对话里展示。参考实现：动态插件 `Plugins/Base64DecodePlugin.cs`。
 - 参考实现：动态插件 `Plugins/BoChaWebSearchPlugin.cs`（外部 HTTP + 实例配置校验）、`Plugins/BoChaAiSearchPlugin.cs`（外部 HTTP + `content` JSON 文本解析 + 多形态结果重组），静态插件 `Plugins/StaticEchoPlugin.cs`（无配置）、`Plugins/CurrentUserPlugin.cs`（执行上下文注入取当前用户）。
 - 内置静态插件清单见 [静态插件 SOP 种子说明](./aiplugin-static/sop.md#种子说明)。新增静态插件可按形态挑选模板：`Plugins/CurrentTimePlugin.cs`（无参数）、`Plugins/FlowWaitPlugin.cs`（数值参数 + 业务校验 + `Task.Delay` 取消）、`Plugins/MarkdownToHtmlPlugin.cs`（第三方库转换）、`Plugins/TextExtractPlugin.cs`（构造注入 `Maomi.ToMarkdown.TextExtractionService` + `IPutClient` 下载）、`Plugins/WebContentFetchPlugin.cs`（外部 HTTP + AngleSharp 解析 + 超时/取消归一）。静态插件调用第三方库时需在 `MoAI.AIPlugin.Static.csproj` 显式加包引用（如 `Markdig`、`AngleSharp`、`Maomi.ToMarkdown`）。
 - **验证插件成功路径不要依赖真实 Key**：上游地址若能配置覆盖，用本地桩服务 + 真实后端跑端到端（见 `local-dev/bocha-search-e2e.mjs`）；桩服务只回放厂商文档的样例报文即可覆盖「请求下发 → 鉴权 → 解析 → 结果落库/返回」整条链路。
@@ -194,6 +195,8 @@ dotnet build src/MoAI/MoAI.csproj          # 后端 0 error
 cd ui && npm run typecheck && npm run lint && npm run test   # 前端全绿
 node local-dev/dynamic-plugin-e2e.mjs      # 动态插件实例管理与失败路径（需后端 5000 运行中）
 node local-dev/bocha-search-e2e.mjs        # 调用外部 HTTP 的插件：桩服务覆盖成功路径（无需真实 Key）
+node local-dev/jina-search-e2e.mjs         # Jina 搜索/网页阅读：同一桩按请求体 q/url 区分端点（无需真实 Key）
+node local-dev/hot-board-e2e.mjs           # 新闻热榜：16 域名数据桩经配置网关改写覆盖全渠道成功路径（无需真实外网）
 ```
 
 ## 常见问题

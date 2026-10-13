@@ -67,4 +67,9 @@ public static class NodeTypes
     /// Agent 应用节点 - 调用 <see cref="Nodes.IWorkflowAgentAppClient"/> 驱动一次已发布 Agent 应用对话（一轮）.
     /// </summary>
     public const string AgentApp = "agentApp";
+
+    /// <summary>
+    /// 图片理解节点 - 调用 <see cref="Nodes.IWorkflowVisionClient"/> 把图片交给视觉模型理解/提取内容.
+    /// </summary>
+    public const string ImageUnderstanding = "imageUnderstanding";
 }

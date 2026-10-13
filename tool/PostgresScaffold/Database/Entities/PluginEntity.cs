@@ -19,6 +19,9 @@ public partial class PluginEntity : IFullAudited
     /// </summary>
     public Guid Id { get; set; }
 
+    /// <summary>
+    /// 是否系统插件，true=系统内置插件（team_id=0 全局可用），false=团队自定义插件.
+    /// </summary>
     public bool IsSystem { get; set; }
 
     /// <summary>

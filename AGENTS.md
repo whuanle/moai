@@ -93,23 +93,33 @@ node local-dev/kg-external-e2e.mjs       # KX 101（知识图谱外部接口：�
 node local-dev/kg-mcp-e2e.mjs            # KGM 35（知识图谱 MCP：kg_mcp 鉴权门禁/工具域隔离（wiki 端点不掺 KG 工具）/图谱列表/schema/节点搜索/向量召回（本地桩 embedding）/协议行为；依赖 Memgraph）
 node local-dev/kg-import-e2e.mjs         # KG 20（知识图谱导入：AI 导入桩模型全链路（KG-S26）+ JSON 结构化导入（KG-S29：类型名引用/业务 key upsert/预检/逐条报告/幂等/超限/疑似重复检测）；依赖 Memgraph）
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
+node local-dev/team-timer-smoke.mjs      # TIMER 22（团队定时器：CRUD/门禁 + cron 校验 + Hangfire 下次调度回显 + 立即执行成功落历史 + 失败重试终态 + 停用移除调度 + 删除保留历史；自带桩模型，零真实依赖）
 node local-dev/team-plugin-e2e.mjs       # TP 47（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显 + 系统插件 key 全局保留与授权团队可用）
 node local-dev/app-e2e.mjs               # AP 178（含 AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段）
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
 node local-dev/settings-logo-e2e.mjs    # SET 18（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认）
-node local-dev/workflow-e2e.mjs          # WF 118（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量/对话实时过程：CUSTOM 节点事件 + AI 正文流式）
+node local-dev/workflow-e2e.mjs          # WF 130（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量/对话实时过程：CUSTOM 节点事件 + AI 正文流式/图片理解节点：桩视觉模型多模态全链路·非视觉模型拒绝·来源防护；内置桩视觉模型零依赖，存量依赖真实模型的用例在环境无模型时失败属预期）
 node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/撤回，is_public 审批制）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）
+node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载工具调用自增 use_count + options/userconfig 双接口回显；本地桩模型）
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
 node local-dev/team-apikey-scope-e2e.mjs  # TA 21（应用接入 key 功能范围：范围回显/非法代码 400/网关 model 门禁/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连网关与知识库/缓存立即性；团队接入 key 已下线）
 node local-dev/gateway-e2e.mjs            # GW 15（模型网关：应用接入 key 两种鉴权头直连/路由团队校验/已下线 moai- 前缀 401/keys 端点移除）
 node local-dev/external-app-e2e.mjs       # EA 76（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话/悬浮组件 tokenProvider·onRequest 拦截器与全局 mount）
 node local-dev/app-acp-e2e.mjs            # ACP 21（应用 ACP：app_acp scope 门禁 + JSON-RPC initialize/session/* + Agent/Workflow 应用 ACP 对话 + cancel 中断 + 范围缓存立即性；内置桩模型与确定性流程编排，零 SKIP）
+node local-dev/security-strategies-e2e.mjs  # SEC 23（应用安全五策略：输入检查点/工具参数预检拦截/回复哈希/事件审计/模型回复缓冲拦截/注入启发式；内置回显桩模型，零真实依赖）
 node local-dev/app-a2a-e2e.mjs          # A2A 20（应用 A2A 协议：app_a2a 门禁/Agent Card/message-send 与 stream（SSE 事件序列）/tasks-get·cancel/会话续聊与落库/用户 token/范围立即性）
+node local-dev/subagent-e2e.mjs          # SA 10（子代理协作：spawn_subagent 委派全链路 + 深度固定 1 桩捕获断言 + 未开启不注册；本地桩模型）
+node local-dev/agent-memory-e2e.mjs      # MEM 32（长期记忆：工具显式写入 + flush→MQ 两段式自动提取 + 每轮注入 + 用户隔离/模式 + 删除清空 + 压缩折叠视图 + 向量化模型/维度锁定（写入记忆后换模型/维度 400、关闭保留参照系、同模型重开、清空后解锁按新维度写入）；本地桩 embedding+chat，零 SKIP）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 162（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70；真实 Key/真库用例环境门控 SKIP）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
+node local-dev/jina-search-e2e.mjs       # DYN 18（Jina 搜索/网页阅读成功路径与解析，自建桩服务按请求体 q/url 区分端点，无需真实 Key）
+node local-dev/yahoo-finance-e2e.mjs     # DYN 29（雅虎财经三模式：批量报价+走势/财经新闻/代码搜索，自建数据桩 v8 chart+v1 search，无需真实外网；数据源地址在实例配置 BaseUrl，可指向镜像）
+node local-dev/metaso-search-e2e.mjs     # DYN 21（秘塔搜索工具集：六范围搜索+网页阅读 markdown/json 双形态，自建桩服务；前置 dotnet build -o .builds/metaso）
+node local-dev/hot-board-e2e.mjs         # DYN 29（新闻热榜：16 平台热榜聚合（36氪/知乎/微博/掘金/头条等）成功路径+解析细节+Limit 截断+失败隔离，自建 16 域名数据桩走 Gateway 网关改写；前置 dotnet build -o .builds/hotboard）
+node local-dev/email-plugins-e2e.mjs     # DYN 37（邮件双模板：SMTP 发送（多收件人/HTML/Base64 附件/认证失败归一）+ IMAP 读取（recent/中文搜索/未读联动/detail/folders），自建 SMTP+IMAP 双协议桩；前置 dotnet build src/MoAI/MoAI.csproj -o .builds/email）
 node local-dev/paddleocr-e2e.mjs         # DYN 36~42（PaddleOCR 三模板成功路径 + 响应解析，自建桩服务，无需真实 PaddleOCR）
 node local-dev/ops-p1-plugins-e2e.mjs    # DYN 39（P1 运维插件：http_probe 拨测 http/tcp/dns+内网防护 / zabbix_query 双鉴权+主机富化 / redis_query 六模式只读诊断；自建 HTTP+RESP2 双桩，无需真实运维系统；前置 dotnet build -o .builds/ops-p1）
 node local-dev/ops-p2-plugins-e2e.mjs    # DYN 30+2SKIP（P2 运维插件：ssh_executor 白名单守卫+处置执行 / grafana_query 注解时间线 / sqlserver_query 只读查询；Grafana 桩+守卫用例无条件，SSH 真机/SqlServer 真库按 SSH_E2E_CONNECTION/SQLSERVER_E2E_CONNECTION 门控；前置 dotnet build -o .builds/ops-p2）

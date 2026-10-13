@@ -227,7 +227,7 @@
 
 - **左侧菜单**：`config`（配置）/ `info`（信息，2026-09-19 增补，仅 Agent 应用，位于配置之后，成员可见）/ `logs`（日志）/ `monitor`（监控）；外部应用（`is_external=true`）额外 `access`（访问点）。采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，菜单项带图标（Setting/InfoCircle/Profile/AreaChart/Api）；`section` 非法或缺省回落 `config`。原 `AppManage.tsx` 单页左右分栏已删除，配置内容迁入 `AppConfigSection`。
 - **分区可见性（前端渲染层）**：`logs`/`monitor` 仅团队 Owner/Admin 可见；`access` 仅 Owner/Admin 且外部应用可见；Member 只有 `config` 与 `info`（只读，无调试），深链 `/logs` 回落 `config`。
-- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=15`）为 Agent 配置（含沙箱）；右栏（`lg=9`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存配置后**静默刷新**（`load(true)`），不卸载调试面板。基础信息（头像/名称/描述/授权与上架状态）自 2026-09-19 起拆至「信息」分区。
+- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=11`）为 Agent 配置（含沙箱，内部滚动，`maxHeight: calc(100vh - 160px)`）；右栏（`lg=13`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存配置后**静默刷新**（`load(true)`），不卸载调试面板。基础信息（头像/名称/描述/授权与上架状态）自 2026-09-19 起拆至「信息」分区。右栏卡片 2026-10-13 起不带标题（「调试」+提示+清空在面板内部头部，避免双标题），并定高 `calc(100vh - 160px)` + 卡片 body 弹性列布局：消息区内部滚动、输入框停靠底部（与正式对话页一致）；`AppDebugChat` 根节点 `flex:1/minHeight:0` 填充卡片。
 - **信息分区**（`AppInfoSection.tsx`，2026-09-19 增补）：应用基础信息维护（头像上传/类型标签/名称/描述/外部应用访问授权开关；内部应用为上架状态区块——公开、待审核可撤回、被驳回可重新申请，申请走 publication 模块 Modal）。保存信息/头像后 `onReload` 静默刷新；Member 表单只读且无保存入口。
 - **调试会话（Redis 临时会话）**：`POST /api/app/{id}/debug/session`（Admin+）生成 `Guid.CreateVersion7()` 会话 id 并写 Redis 注册表 `appagent:debug:{id}`（TTL 2h 滑动）；对话仍走 `/api/agent/{appId}/chat`，`AppAgentDispatcher` 在无 `app_agent_session` 行时回落注册表（校验 `UserId`），以 `isDebug=true` 装配（跳过 `UsageCapturingChatClient`）；`AppChatFlushService.FlushAsync` 无 session 行即 return → 调试对话**不落库**。前端刷新即弃用会话 id。
 - **日志分区**（`AppLogsSection.tsx`，Phase 2 已交付）：`GET /api/app/{id}/logs`（Admin+，分页，支持 标题关键字 / 用户类型 / 最后消息时间范围 过滤；数据源为全用户的正式会话 `app_agent_session`，即压缩后视图）+ `GET /api/app/{id}/logs/{sessionId}/messages`（Admin+，按 `seq` 返回该会话消息）。列表条目 `AppLogItem : AuditsInfo`，内部用户人名由 `IUserInfoFillService.FillAsync` 填充，外部用户按 `userType` + `ownerId` 展示（不填内部人名）。前端 `DataTable` + 详情 `Drawer`。
@@ -378,14 +378,48 @@
   4. 读侧兜底：会话消息/日志消息/流程运行历史查询按当前规则脱敏，覆盖启用策略前的存量数据。
 - **流程应用**：引擎新增 `INodeDataSanitizer` 扩展点（零依赖纯接口），`WorkflowScheduler` 在节点完成/失败后、检查点与事件前调用；实现 `WorkflowNodeSecuritySanitizer`（Workflow.Core，按 `WorkflowExecutionContext.AppId` 取策略，作用域内记忆化）。节点输入=工具参数范围、输出/错误消息=工具结果范围（aiChat/agentApp 输出叠加模型回复范围）；最终回复在 `WorkflowAppChatInvoker` 按模型回复范围脱敏。
 - **前端**：AppWorkspace「安全」分区（Agent 侧栏 + 流程应用配置二级组，canManage 门控）、`AppSecuritySection`（四个选项独立成组且常显：内容脱敏与模型回复卡片各自**内嵌**脱敏规则编辑器（名称+类型+自定义正则+替换文本），开关关闭仅隐藏编辑器、不清空已配规则；工具调用结果/参数沿用内容规则；两组规则随保存原样提交），api 封装 `getAppSecurity/saveAppSecurity`、i18n `appSecurity.*`（zh/en）。
+
+## 增量设计（2026-10-13：安全策略升级，redact/mask/hash/block/flag）
+
+- **规则 schema v2**：`{name, type, pattern, replacement, strategy, keepLast}`——strategy ∈ redact/mask/hash/block/flag，缺省 redact（存量 JSON 兼容）；replacement 仅 redact 生效；keepLast（0~18，默认 4）仅 mask 且 custom/银行卡可配（内置手机 3+4/证件 6+4/邮箱保域名有固定遮蔽样式）。聚合 `AppSecurityPolicy` 按策略分发执行（MatchEvaluator），命中按（作用域, 规则, 策略, 动作）聚合进 `AppSecurityHitCollector`。
+- **作用域扩展**：内容规则作用域从「工具结果/工具参数」扩展到「用户输入」（`mask_input` 列，受总开关门控）；用户消息在进入模型与落库前处理（模型只见脱敏形态）；读侧兜底同步覆盖 role=user 存量消息。
+- **block 强制语义**（模型回复作用域不支持——流式不可撤回，保存双侧校验拒绝）：①函数调用中间件执行**前**预检工具参数，命中则不执行工具、向模型返回拒绝应答（模型可自行调整）；②Run 级中间件输入检查点——流式 yield 拦截提示（原文不落库）、非流式抛 400；③工具结果 block 命中整段替换为 `[BLOCKED]`；非强制上下文（读侧兜底/落库）block 降级为占位替换。
+- **flag 观测模式**：内容原样放行仅记审计，供新规则灰度（先 flag 观察误报再切 redact/block）。
+- **hash 策略**：SHA256(pepper+原值) hex 截断 16 位，同值同哈希保留跨记录可关联性；pepper 由 `SecurityHashPepperHelper` 从系统 AES 密钥+数据库连接串域分离派生（部署内重启/多实例稳定，换部署换盐），未派生时降级 redact 不裸露原文。
+- **安全事件审计**：新表 `app_security_event`（追加写；team/app/session/user 归属 + scope/ruleName/ruleType/strategy/action/hitCount；`asserts/app_security.sql` 增量段，**EnsureCreated 对已存在库不建新表，必须手动执行增量 SQL**）；写入走有界通道（1 万，满丢最旧）+ `AppSecurityAuditStoreService` 后台攒批（50 条/批）落库，失败仅告警不反压对话；会话/用户归属由 dispatcher 装配时写入 StateBag、经 AsyncLocal 从 Run 级中间件传到函数级中间件。查询端点 `GET /api/app/{id}/security/events`（Admin+，分页 + scope 过滤，前端安全分区「安全事件」DataTable 展示）。
+- **坑：MAF 1.20 AGUI 适配器优先从 update 的 RawRepresentation（原始 SDK chunk）读文本**——流式脱敏产出新 update 时必须丢弃 RawRepresentation，否则脱敏后的 Contents 被原始 chunk 绕过（现象：落库已哈希而 SSE 流输出原文）。
+- **前端**：AppSecuritySection 五组卡片（内容脱敏/工具结果/工具参数/模型回复/用户输入）+ 规则行策略选择器 + 按策略显隐的条件参数 + 「安全事件」列表（时间/作用域/规则/动作/次数，管理员可见）；api 封装 `getAppSecurityEvents`，i18n `appSecurity.strategy.*/scope.*/action.*/events.*`（zh/en）。
+
+## 增量设计（2026-10-13 二期：模型回复 block 缓冲窗 + injection 启发式）
+
+- **模型回复 block 解禁**：保存校验移除 allowBlock 限制（两组规则同套校验）。聚合新增 `ModelBlockActive`（模型规则含可编译 block）、`IsModelTextBlocked`（仅 block 规则检测）、`EnforceModelText`（非流式：先非 block 策略脱敏再整段检测）、`MaskModelTextExcludeBlock`（流式入缓冲前的 span 级脱敏，跳过 block 防止占位替换抢先）。**block 检测与脱敏分离**是缓冲窗的前提——整段命中要截断而非替换。
+- **流式缓冲窗**（`AppSecurityAgentMiddleware.ModelOutputBuffer`）：`ModelBlockActive` 时流式路径切换缓冲模式——TextContent 先 excludeBlock 脱敏后积压，积压超 `HoldBackChars=120` 触发整段 block 检测，未命中释放前段、保留尾部 `TailKeepChars=32` 与后续合并重检（覆盖跨 chunk 边界），命中置 Blocked 丢弃未释放内容并下发 `BlockedModelOutputNotice`，`yield break` 终止消费（finally 仍写审计）；非文本 update 穿插时先清空缓冲再透传；流结束对尾段最终检测。非流式路径对完整回复检测命中整条替换为 `[BLOCKED]`。**已知权衡**：已释放出口的文本收不回（窗口 120 字符内的泄漏窗口换首字延迟）；落库侧 block 规则仍为 span 级占位替换（无泄漏但与前端截断展示略有差异）。
+- **坑：MAF ChatClientAgent 会把相邻文本 chunk 合并为单个 update**——真实链路缓冲多为整段一次判定，逐 chunk 分片语义由累积缓冲兜住；单测断言须按合并行为写。
+- **injection 内置类型**：提示词注入启发式正则集（指令覆盖 ignore/disregard/忽略之前指令、系统提示窃取 reveal/输出系统提示词——中英双语序、越狱关键词 developer mode/jailbreak/越狱模式/绕过审查），`(?i)` 大小写不敏感，低误报强信号选型；作为规则类型参与任意作用域与策略（建议 input+block 或 toolResult+flag），保存校验、审计 ruleType=injection 全链路兼容。
+- **前端**：模型回复组策略选项放开 block、规则类型列表加 injection（i18n type.injection）；命令 schema 未变，Kiota client 无需重新生成。
 - **已知边界**：规则为正则文本匹配，语义脱敏（如按人名语义识别）不在范围；脱敏对历史回放给模型的内容不追溯改写（仅新数据在源头脱敏，读侧兜底只作用于展示）。
 
 ## 增量设计（2026-10-08：前端展示工具，对话侧边栏渲染文档/代码/图表）
 
-- **契约**：`FrontendToolContract`（AI.Shared）定义 `ui_` 工具前缀、三工具名（ui_show_document/ui_show_code/ui_show_chart）、开关请求头 `X-Moai-Ui-Tools` 与桩结果常量；前端 `chat/uiTools.ts` 同步前缀与参数契约（title/content/language/code/option）。
+- **契约**：`FrontendToolContract`（AI.Shared）定义 `ui_` 工具前缀、三工具名（ui_show_document/ui_show_code/ui_show_chart）、开关请求头 `X-Moai-Ui-Tools` 与桩结果常量；前端 `chat/uiTools.ts` 同步前缀与参数契约（title/content/language/code/chart）。
 - **后端**：`FrontendToolContextProviderContributor`（Order 19，按 `AppAgentBuildContext.EnableUiTools` 开关）→ `FrontendToolContextProvider` 以**顶层直连工具**注册（不经 list_tools/call_tool 渐进披露，AG-UI 事件流原生携带真实工具名）；工具参数全 JsonNode + 默认值（漏传/形态不符不抛异常中断对话），执行体为固定桩结果 `rendered=true`（后端不执行任何业务）。开关经 `AppAgentDispatcher.ResolveUiToolsEnabled` 从 SSE 请求头解析传入工厂；流程内 Agent 节点与嵌入/外部渠道未启用（未携带请求头即不注册）。
-- **前端**：`agentChat.createAppChatAgent` 默认携带 `X-Moai-Ui-Tools: 1`（`uiTools:false` 可关）；`onToolCall` 扩展携带 toolCallId（流式占位卡与参数回填按 id upsert 去重，顺带修复非 call_tool 工具开始/结束双卡问题）。`ChatMessageList` 把 ui_ 前缀调用分流到 `UiToolCard` 折叠卡（类型图标+标签+标题+查看），其余工具维持折叠组/审批卡；`ChatSidePanel` 作为 `.moai-chat` 横向 flex 第三列停靠渲染（文档 markdown / 代码等宽+语言标签+复制 / 图表 EChart 组件：echarts 6 按需注册 13 类图表+常用组件+CanvasRenderer，ResizeObserver 自适应、文本色随 antd token）。实时流参数结束即自动打开面板并高亮当前卡；历史回放仅点击展开；会话切换/新建/删除清空面板。窄屏（≤900px）面板转右侧浮层。
+- **前端**：`agentChat.createAppChatAgent` 默认携带 `X-Moai-Ui-Tools: 1`（`uiTools:false` 可关）；`onToolCall` 扩展携带 toolCallId（流式占位卡与参数回填按 id upsert 去重，顺带修复非 call_tool 工具开始/结束双卡问题）。`ChatMessageList` 把 ui_ 前缀调用分流到 `UiToolCard` 折叠卡（类型图标+标签+标题+查看），其余工具维持折叠组/审批卡；`ChatSidePanel` 作为 `.moai-chat` 横向 flex 第三列停靠渲染（文档 markdown / 代码等宽+语言标签+复制 / 图表 `VisChart` 组件：`@antv/gpt-vis` 25 类图表工厂按 type 分发（2026-10-13 起，echarts 已移除），G2 autoFit 自适应容器、配置变化整体重渲染，`React.lazy` 独立 chunk 仅在首个图表标签渲染时拉取）。实时流参数结束即自动打开面板并高亮当前卡；历史回放仅点击展开；会话切换/新建/删除清空面板。窄屏（≤900px）面板转右侧浮层。
 - **多标签与可调宽（2026-10-08 增强）**：面板状态由单项改为 `{items, activeKey, open}` 集合（AppChat 内聚，切换/新建/删除会话时清空）；头部为标签栏（图标+标题+独立关闭，关闭当前项自动切相邻项，全关即收起），操作区按当前项提供复制/收起；收起仅置 open=false，标签保留供消息卡片重开。左缘 6px 拖拽手柄（Pointer Events + 指针捕获）实时调宽，宽度经 CSS 变量 --mc-panel-w 生效（默认 min(46vw,520px)，下限 360/上限 1000 且主对话区保留 480），松手持久化 localStorage `moai:chat:panel-width`；窄屏（≤900px）浮层模式下宽度固定并隐藏手柄。
-- **已知边界**：图表 option 为模型产出的纯声明式 JSON（禁函数，指引已注明），echarts 按需注册未覆盖冷门图型（地图/平行坐标等，命中时渲染兜底提示）；同一轮多次调用时面板始终展示最新一项（旧项可从卡片重开）；嵌入 widget 未接入侧边栏（不发请求头，后端不注册，行为不变）。
-- **参数形态归一化（2026-10-08 修复）**：实测部分模型会把 ui_show_chart 的 option 序列化成 JSON 字符串（工具参数 JsonNode 宽松 schema 下无类型约束所致），前端解析层统一归一——option 为字符串/ markdown 围栏包裹时解析为对象，漏嵌 option 键而 series 等铺在顶层时去 title 后整体兜底；后端工具描述同步强化「直接嵌套 JSON 对象」。
-- **图表渲染实例生命周期（2026-10-08 修复二）**：畸形 option（缺 series 等，实测使 echarts.setOption 抛 TypeError）在解析层即拦下（归一化结果须过 series/dataset/坐标轴结构校验，否则按内容缺失降级，不挂载图表）；`EChart` 组件容器 div 常驻不卸载——渲染失败以覆盖层提示（曾因条件卸载容器使图表实例与容器脱钩：换有效 option 后 setOption 落在游离实例上，面板永远空白，仅切标签触发重挂载才恢复），option 更新后同实例重试自动恢复。
+- **已知边界**：图表配置为模型产出的 type+data 纯声明式 JSON（禁函数，指引已注明），白名单 25 类（`summary` 为纯文本形态不纳入，文本产出走 ui_show_document）；白名单外 type / 缺 data / 历史遗留的旧版 ECharts option（echarts 已移除）一律按内容缺失降级，不挂载图表；同一轮多次调用时面板始终展示最新一项（旧项可从卡片重开）；嵌入 widget 未接入侧边栏（不发请求头，后端不注册，行为不变）。
+- **参数形态归一化（2026-10-08 修复，2026-10-13 随 GPT-Vis 迁移演进）**：实测部分模型会把 ui_show_chart 的 chart 配置序列化成 JSON 字符串（工具参数 JsonNode 宽松 schema 下无类型约束所致），前端解析层统一归一——配置为字符串/ markdown 围栏包裹时解析为对象，漏嵌 chart 键而配置铺在顶层时去 title 后整体兜底；归一化结果须过结构校验（type 在 `visChartTypes.ts` 白名单内且 data 为数组），否则按内容缺失降级；后端工具描述按 type+data 结构逐类给出示例并强化「直接嵌套 JSON 对象」。
+- **图表渲染实例生命周期（2026-10-08 修复二，2026-10-13 迁移后形态）**：`VisChart` 组件容器 div 常驻不卸载——渲染失败以覆盖层提示、配置更新后重试自动恢复（历史上 echarts 时代曾因条件卸载容器使实例与容器脱钩导致永久空白）；gpt-vis 工厂的 render 内部自毁重建图表、G2 `autoFit` 自适应容器尺寸，无需手动 resize。
+
+## 增量设计（2026-10-12：上下文压缩设置化 + 子代理协作 + 长期记忆分区与用户偏好）
+
+- **上下文压缩设置化（2026-10-12 修订：输入框预填默认值）**：`AppConfigSection` 新增「上下文压缩」卡片组（摘要开关 + 摘要模型 + 四个阈值 InputNumber）。新增登录可用的 `GET /api/app/agent/compaction-defaults`（App.Core 经 `IAgentSettingsService` 读 `AGENT_COMPACTION_DEFAULTS`）下发生效默认值（2026-10-12 调大：16/16000/8/64000，摘要仍默认关），**输入框直接预填**（应用显式配置优先，未配置字段填平台默认），保存即写入显式配置并随发布快照生效（原「留空走系统默认」占位方案因用户反馈弃用）。运行时仍按「应用显式 > 系统默认 > 内置」三级合并兜底，见 [../settings/sdd.md](../settings/sdd.md) 与 [../ai/sdd.md](../ai/sdd.md)。
+- **子代理协作**：配置区新增「子代理协作」卡片组（开关 + 单任务超时 30~1800s + 结果回传上限 500~100000 字符）；运行时见 [../ai/sdd.md](../ai/sdd.md)；外部应用固定关闭（保存强校验 + 装配兜底）。
+- **长期记忆分区（2026-10-13 修订）**：工作台 `memory` 分区（`AppMemorySection`，仅内部应用且 Admin+）：总开关级联（向量化模型/维度、三类记忆开关、自动提取、检索条数、单用户上限；共享范围随跨应用移除）+ 应用记忆统计（`GET .../memory/stats`：总条数/用户数）+ 危险区「清空应用全部记忆」；「管理记忆」按钮已移除（入口仅保留对话页设置面板）；保存全量回传配置快照只改 `memory` 节，关闭态也回传模型/维度保持锁定参照系；应用内已有记忆时模型/维度控件锁定（文案「写入记忆后不可更换」，后端硬校验见 [../memory/sdd.md](../memory/sdd.md) D-M6 与 [@MEM-S18~S21](../memory/bdd.md#mem-s18)）。
+- **面板专家/技能卡片化（2026-10-12 三次修订）**：应用设置面板的专家与技能改为**卡片网格**（两列，头像/名称/来源 Tag/描述，选中态高亮+角标）并各配搜索框；默认按**最热门十个**展示（专家按 `useCount` 降序；技能暂无使用计数，按应用默认技能目录顺序即管理员配置优先级），搜索按名称命中优先、同层按热度排序，均截断前十；已选项不在前十时置顶展示（搜索态只显示命中项）。专家为单选（点击已选=取消），技能为多选。
+- **用户记忆偏好（2026-10-12 二次修订）**：对话页设置面板「长期记忆」卡仅 **开启/关闭** 两态 + 「管理记忆」入口（不展示记忆明细，不设「跟随默认」避免用户无法判断应用是否开启记忆；未设置按开启生效）；设置面板宽度可拖拽调整（左缘可见手柄，默认 460，范围 360~760，localStorage 持久化；CSS 原生 resize 手柄在全高面板右下角不可发现，已弃用）。独立「我的记忆」管理页（路由 `team/:teamId/app/:appId/memory/mine`，MyMemoryPage）：分页查看本人记忆 + 删除单条 + 清空本应用（均 Popconfirm，不可编辑），工作台「长期记忆」分区与对话面板均有入口。**跨应用记忆功能整体移除**（各应用向量模型与维度不同无法统一检索），记忆仅应用内使用。`userconfig` 契约 `memoryMode/memoryEnabled`（见 [@MEM-S9](./bdd.md#mem-s9) 与 [../memory/bdd.md](../memory/bdd.md)）。
+- 前端 i18n：`appManage.compaction*/subAgent*`、`settings.compaction*`、`appMemory.*`、`appChat.memory*`、`appWorkspace.menuMemory`（zh-CN/en-US 同步）。
+
+## 增量设计（2026-10-12：监控页使用活动统计 + 记忆条数）
+
+- `GET /api/app/{id}/usage` 响应扩展 `stats` 块：会话总数、使用用户数（会话归属用户按 id+userType 去重）、消息总数（会话落库消息压缩后视图）、最近使用时间（会话最后消息时间）。
+- 监控分区新增第二组指标卡：使用用户数 / 会话总数 / 消息总数 / 记忆条数（记忆来自 `GET .../memory/stats`，前端并行拉取、失败不影响用量展示）；最近使用时间以次要文字展示。
+- 权限口径不变（团队 Admin+）。证据：ui/src/pages/teams/apps/__tests__/AppMonitorSection.test.tsx（3/3）。

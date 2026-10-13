@@ -62,6 +62,7 @@ public class QueryAppSecurityCommandHandler : IRequestHandler<QueryAppSecurityCo
             MaskToolResult = config?.MaskToolResult ?? true,
             MaskToolArgs = config?.MaskToolArgs ?? false,
             MaskModelOutput = config?.MaskModelOutput ?? false,
+            MaskInput = config?.MaskInput ?? false,
             Rules = ParseRules(config?.Rules),
             ModelOutputRules = ParseRules(config?.ModelOutputRules),
             MyRole = (int)myRole.Value,

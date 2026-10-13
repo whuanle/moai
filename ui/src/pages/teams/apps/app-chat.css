@@ -218,9 +218,45 @@
 
 /* ---------------- 应用设置面板（复用滑出布局，加宽容纳专家与技能列表） ---------------- */
 
+/* 设置面板宽度由 JS 内联控制（默认 460，左缘手柄拖拽调整，localStorage 持久化） */
 .moai-chat__settings {
-  width: 380px;
+  width: 460px;
   max-width: 92%;
+}
+
+/* 左缘拖拽手柄：悬停/拖动时显示分隔线 */
+.moai-chat__settings-resizer {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+  z-index: 2;
+  touch-action: none;
+}
+
+.moai-chat__settings-resizer::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.moai-chat__settings:hover .moai-chat__settings-resizer::after,
+.moai-chat__settings.is-resizing .moai-chat__settings-resizer::after {
+  background: var(--mc-primary, #3b82f6);
+}
+
+/* 拖拽中禁用文本选择，避免鼠标划过内容误选 */
+body.moai-chat-resizing {
+  user-select: none;
+  cursor: col-resize;
 }
 
 /* 设置面板内专家列表：限高内滚，技能组合等后续区块紧跟其下 */
@@ -296,6 +332,128 @@
   text-overflow: ellipsis;
 }
 
+/* ===== 设置面板卡片（专家/技能）===== */
+/* 卡片固定列宽（= 默认面板宽 460 时两列各占宽），拖宽面板只多排一列不拉伸卡片 */
+.moai-chat__opt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 214px);
+  gap: 8px;
+  padding: 2px 12px 12px;
+}
+
+.moai-chat__opt-card {
+  position: relative;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.moai-chat__opt-card:hover {
+  background: var(--mc-fill);
+}
+
+.moai-chat__opt-card.is-active {
+  border-color: var(--mc-primary, #3b82f6);
+  background: color-mix(in srgb, var(--mc-primary, #3b82f6) 8%, transparent);
+}
+
+.moai-chat__opt-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.moai-chat__opt-card-avatar {
+  flex-shrink: 0;
+}
+
+.moai-chat__opt-card-avatar img {
+  display: block;
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.moai-chat__opt-card-avatar-fallback {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--mc-fill);
+  color: var(--mc-text-secondary);
+}
+
+.moai-chat__opt-card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--mc-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moai-chat__opt-card-check {
+  flex-shrink: 0;
+  color: var(--mc-primary, #3b82f6);
+  font-size: 12px;
+}
+
+.moai-chat__opt-card-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--mc-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moai-chat__settings-memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 12px 16px;
+}
+
+.moai-chat__settings-memory-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--mc-text-secondary);
+  padding: 2px 10px 6px;
+}
+
+.moai-chat__settings-memory-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.moai-chat__settings-memory-item:hover {
+  background: var(--mc-fill);
+}
+
+.moai-chat__settings-memory-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--mc-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .moai-chat__settings-skill-lock {
   display: inline-flex;
   align-items: center;
@@ -312,12 +470,15 @@
 /* 设置面板：工具审批模式选择（自动/审批） */
 .moai-chat__settings-modes {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 4px 12px 10px;
 }
 
+/* 按钮固定宽度（与卡片列宽一致），不随面板拖宽拉伸 */
 .moai-chat__settings-mode {
-  flex: 1;
+  flex: none;
+  width: 214px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -14,6 +14,7 @@ using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
+using MoAI.Memory.Services;
 
 namespace MoAI.AI.Services;
 
@@ -40,6 +41,7 @@ public sealed class AppChatFlushService
     private readonly AppCompactionStrategyFactory _compactionStrategyFactory;
     private readonly IAiChatCompletionService _aiChatCompletionService;
     private readonly IAiModelResolver _aiModelResolver;
+    private readonly IMemoryExtractionTrigger _memoryExtractionTrigger;
     private readonly ILogger<AppChatFlushService> _logger;
 
     /// <summary>
@@ -50,6 +52,7 @@ public sealed class AppChatFlushService
     /// <param name="compactionStrategyFactory">压缩策略工厂.</param>
     /// <param name="aiChatCompletionService">一次性对话服务.</param>
     /// <param name="aiModelResolver">模型解析服务.</param>
+    /// <param name="memoryExtractionTrigger">长期记忆提取触发端口.</param>
     /// <param name="logger">日志.</param>
     public AppChatFlushService(
         AppChatHotStore hotStore,
@@ -57,6 +60,7 @@ public sealed class AppChatFlushService
         AppCompactionStrategyFactory compactionStrategyFactory,
         IAiChatCompletionService aiChatCompletionService,
         IAiModelResolver aiModelResolver,
+        IMemoryExtractionTrigger memoryExtractionTrigger,
         ILogger<AppChatFlushService> logger)
     {
         _hotStore = hotStore;
@@ -64,6 +68,7 @@ public sealed class AppChatFlushService
         _compactionStrategyFactory = compactionStrategyFactory;
         _aiChatCompletionService = aiChatCompletionService;
         _aiModelResolver = aiModelResolver;
+        _memoryExtractionTrigger = memoryExtractionTrigger;
         _logger = logger;
     }
 
@@ -145,6 +150,16 @@ public sealed class AppChatFlushService
 
         await _databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Agent 会话 {SessionId} flush 完成，热态消息 {RecordCount} 条.", sessionId, records.Count);
+
+        // 落库后投递长期记忆提取任务（开启记忆 + 自动提取 + 用户未关闭时生效；失败仅告警）
+        try
+        {
+            await _memoryExtractionTrigger.TriggerAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "会话 {SessionId} 记忆提取触发失败.", sessionId);
+        }
     }
 
     private async Task<IReadOnlyList<ChatMessage>> CompactAsync(AppAgentConfigEntity? config, IReadOnlyList<AppAgentMessageRecord> records, CancellationToken cancellationToken)

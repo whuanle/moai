@@ -153,6 +153,7 @@ public class AppSessionController : ControllerBase
             PromptId = req.PromptId,
             Skills = req.Skills,
             ToolApprovalMode = req.ToolApprovalMode,
+            MemoryMode = req.MemoryMode,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);

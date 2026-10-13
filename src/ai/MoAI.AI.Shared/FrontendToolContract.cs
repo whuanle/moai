@@ -28,7 +28,7 @@ public static class FrontendToolContract
     public const string ShowCodeToolName = "ui_show_code";
 
     /// <summary>
-    /// 数据图表工具：ECharts option JSON 折叠为消息卡片，点击在用户侧边栏渲染图表.
+    /// 数据图表工具：GPT-Vis 图表配置（type + data）折叠为消息卡片，点击在用户侧边栏渲染图表.
     /// </summary>
     public const string ShowChartToolName = "ui_show_chart";
 

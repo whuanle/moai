@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MoAI.Database.Entities;
@@ -31,11 +32,8 @@ internal partial class AppSecurityConfigConfiguration : IEntityTypeConfiguration
 
         entity.Property(e => e.Id)
             .HasDefaultValueSql("uuid_generate_v4()")
-            .HasComment("配置ID")
             .HasColumnName("id");
-        entity.Property(e => e.AppId)
-            .HasComment("所属应用ID，逻辑关联app.id（1:1，不建物理外键）")
-            .HasColumnName("app_id");
+        entity.Property(e => e.AppId).HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .HasComment("创建时间")
@@ -47,8 +45,9 @@ internal partial class AppSecurityConfigConfiguration : IEntityTypeConfiguration
             .HasComment("是否启用内容脱敏；启用且存在至少一条规则时生效")
             .HasColumnName("enabled");
         entity.Property(e => e.IsDeleted)
-            .HasComment("软删除，0=未删除（legacy bigint 约定）")
+            .HasComment("软删除，0=未删除")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.MaskInput).HasColumnName("mask_input");
         entity.Property(e => e.MaskModelOutput)
             .HasComment("是否对模型回复文本（对话正文）脱敏")
             .HasColumnName("mask_model_output");
@@ -56,19 +55,18 @@ internal partial class AppSecurityConfigConfiguration : IEntityTypeConfiguration
             .HasComment("是否对工具调用参数（调用记录展示、流程节点输入）脱敏")
             .HasColumnName("mask_tool_args");
         entity.Property(e => e.MaskToolResult)
+            .HasDefaultValue(true)
             .HasComment("是否对工具调用结果（含错误信息、流程节点输出）脱敏")
             .HasColumnName("mask_tool_result");
-        entity.Property(e => e.Rules)
-            .HasDefaultValueSql("'[]'::text")
-            .HasComment("内容脱敏规则列表（工具调用结果/工具调用参数范围共用），JSON 数组文本，元素为 {name,type,pattern,replacement}，type 见 AppSecurityRuleTypes，空为 '[]'")
-            .HasColumnName("rules");
         entity.Property(e => e.ModelOutputRules)
             .HasDefaultValueSql("'[]'::text")
             .HasComment("模型回复专属脱敏规则列表，与 rules 相互独立维护，元素同 rules，空为 '[]'")
             .HasColumnName("model_output_rules");
-        entity.Property(e => e.TeamId)
-            .HasComment("所属团队ID，逻辑关联app.team_id，冗余用于团队维度过滤")
-            .HasColumnName("team_id");
+        entity.Property(e => e.Rules)
+            .HasDefaultValueSql("'[]'::text")
+            .HasComment("脱敏规则列表，JSON 数组文本，元素为 {name,type,pattern,replacement}，type 见 AppSecurityRuleTypes（phone/idCard/email/bankCard/custom），空为 '[]'")
+            .HasColumnName("rules");
+        entity.Property(e => e.TeamId).HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

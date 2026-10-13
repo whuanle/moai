@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Input, Row, Space, Spin, Tag, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Input, Row, Spin, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, Page, useNeutralColors } from '@/design-system'
@@ -62,7 +62,16 @@ export function AppPlaza() {
 
   return (
     <Page>
-      <Space size={spacing.sm} wrap style={{ marginBottom: spacing.md }}>
+      {/* 搜索/刷新与分类标签同一行：antd Space 默认 inline-flex 会导致两段拼在同一行且无间距，改用块级 flex 容器 */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginBottom: spacing.md,
+        }}
+      >
         <Input.Search
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
@@ -78,8 +87,6 @@ export function AppPlaza() {
         <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
           {t('ds.table.refresh')}
         </Button>
-      </Space>
-      <Space size={4} wrap style={{ marginBottom: spacing.md }}>
         <Tag.CheckableTag
           checked={classifyId === undefined}
           onChange={() => setClassifyId(undefined)}
@@ -95,7 +102,7 @@ export function AppPlaza() {
             {classifyLabel(c)}
           </Tag.CheckableTag>
         ))}
-      </Space>
+      </div>
       <Spin spinning={loading}>
         {!loading && items.length === 0 ? (
           <Empty description={t('appPlaza.empty')} />

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Memory</RootNamespace>
+		<NoWarn>$(NoWarn);MAAI001</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
+		<ProjectReference Include="..\MoAI.Memory.Shared\MoAI.Memory.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

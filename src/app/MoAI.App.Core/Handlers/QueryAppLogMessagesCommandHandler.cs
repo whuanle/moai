@@ -4,6 +4,7 @@ using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
 using MoAI.Database;
 using MoAI.Database.Enums;
+using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Team.Services;
 
@@ -16,16 +17,19 @@ public class QueryAppLogMessagesCommandHandler : IRequestHandler<QueryAppLogMess
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAppLogMessagesCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public QueryAppLogMessagesCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="systemOptions">系统配置（派生 hash 策略加盐文本）.</param>
+    public QueryAppLogMessagesCommandHandler(DatabaseContext databaseContext, ITeamService teamService, SystemOptions systemOptions)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
@@ -95,7 +99,7 @@ public class QueryAppLogMessagesCommandHandler : IRequestHandler<QueryAppLogMess
             .ToList();
 
         // 读侧脱敏兜底：覆盖启用安全策略之前的存量消息
-        var policy = await AppMessageSecurityMasker.LoadPolicyAsync(_databaseContext, app.Id, cancellationToken);
+        var policy = await AppMessageSecurityMasker.LoadPolicyAsync(_databaseContext, _systemOptions, app.Id, cancellationToken);
         AppMessageSecurityMasker.Mask(policy, items);
 
         return new QueryAppLogMessagesCommandResponse

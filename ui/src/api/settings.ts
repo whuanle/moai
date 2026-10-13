@@ -13,6 +13,24 @@ export const SettingKeys = {
   sandboxMaxMemory: 'SANDBOX_MAX_MEMORY',
   systemLogo: 'SYSTEM_LOGO',
   systemName: 'SYSTEM_NAME',
+  agentCompactionDefaults: 'AGENT_COMPACTION_DEFAULTS',
+} as const
+
+/** Agent 上下文压缩默认参数内置默认值（与后端 AppAgentExecutionSettings 一致），设置项缺失/非法时回退 */
+export const AgentCompactionDefaults = {
+  toolResultTriggerMessages: 16,
+  summarizeTriggerTokens: 16000,
+  preserveTurns: 8,
+  hardTokenLimit: 64000,
+  enableSummarization: false,
+} as const
+
+/** 压缩参数取值范围（与后端 AgentCompactionDefaultsSettings 校验一致） */
+export const AGENT_COMPACTION_LIMITS = {
+  toolResultTriggerMessages: { min: 1, max: 500 },
+  summarizeTriggerTokens: { min: 200, max: 2000000 },
+  preserveTurns: { min: 1, max: 10000 },
+  hardTokenLimit: { min: 500, max: 4000000 },
 } as const
 
 /** 沙箱上限内置默认值（与后端 SettingDefinitions 一致），设置项缺失/非法时回退 */

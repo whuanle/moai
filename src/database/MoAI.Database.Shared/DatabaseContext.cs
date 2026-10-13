@@ -83,9 +83,16 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AppAgentSessionEntity> AppAgentSessions { get; set; }
 
     /// <summary>
+    /// 应用记忆分片登记：用户在某应用下的长期记忆行数，支撑跨应用发现与清空.
+    /// </summary>
+    public virtual DbSet<AppMemoryShardEntity> AppMemoryShards { get; set; }
+
+    /// <summary>
     /// 应用安全配置（内容脱敏），与 app 一一对应（Agent/流程应用通用）.
     /// </summary>
     public virtual DbSet<AppSecurityConfigEntity> AppSecurityConfigs { get; set; }
+
+    public virtual DbSet<AppSecurityEventEntity> AppSecurityEvents { get; set; }
 
     /// <summary>
     /// 用户级应用配置，(app_id, user_id) 唯一，跨会话复用.
@@ -192,6 +199,16 @@ public partial class DatabaseContext : DbContext
     /// 团队，知识库/插件等资源的管理单元.
     /// </summary>
     public virtual DbSet<TeamEntity> Teams { get; set; }
+
+    /// <summary>
+    /// 团队定时器：绑定应用按 cron 定时无头执行.
+    /// </summary>
+    public virtual DbSet<TeamTimerEntity> TeamTimers { get; set; }
+
+    /// <summary>
+    /// 团队定时器执行记录：一次触发一行，失败重试在同一行内累计尝试次数.
+    /// </summary>
+    public virtual DbSet<TeamTimerExecutionEntity> TeamTimerExecutions { get; set; }
 
     /// <summary>
     /// 团队成员，用户与团队多对多关联.

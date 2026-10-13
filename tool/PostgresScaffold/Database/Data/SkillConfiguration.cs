@@ -44,8 +44,11 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
             .HasColumnName("classify_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .HasComment("创建时间")
             .HasColumnName("create_time");
-        entity.Property(e => e.CreateUserId).HasColumnName("create_user_id");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnName("create_user_id");
         entity.Property(e => e.Description)
             .HasMaxLength(255)
             .HasDefaultValueSql("''::character varying")
@@ -59,7 +62,9 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
             .HasDefaultValueSql("''::text")
             .HasComment("使用说明（markdown），技能加载时注入给 Agent")
             .HasColumnName("instructions");
-        entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除，0=未删除")
+            .HasColumnName("is_deleted");
         entity.Property(e => e.IsDisable)
             .HasComment("是否禁用")
             .HasColumnName("is_disable");
@@ -82,8 +87,12 @@ internal partial class SkillConfiguration : IEntityTypeConfiguration<SkillEntity
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
-        entity.Property(e => e.UpdateUserId).HasColumnName("update_user_id");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnName("update_user_id");
+        entity.Property(e => e.UseCount).HasColumnName("use_count");
 
         OnConfigurePartial(entity);
     }

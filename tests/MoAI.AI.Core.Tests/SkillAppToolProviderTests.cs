@@ -43,7 +43,7 @@ public class SkillAppToolProviderTests
     public async Task GetTools_NoSkillBound_ReturnsEmpty()
     {
         var skillService = new Mock<ISkillService>();
-        var provider = new SkillAppToolProvider(skillService.Object, Mock.Of<IAppSandboxService>());
+        var provider = new SkillAppToolProvider(skillService.Object, Mock.Of<IAppSandboxService>(), null!, Mock.Of<Microsoft.Extensions.Logging.ILogger<SkillAppToolProvider>>());
 
         var tools = await provider.GetToolsAsync(Context("{\"sandbox\":{\"enabled\":true}}", []), CancellationToken.None);
 
@@ -58,7 +58,7 @@ public class SkillAppToolProviderTests
         skillService
             .Setup(x => x.GetRuntimeSkillsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<SkillRuntimeInfo>());
-        var provider = new SkillAppToolProvider(skillService.Object, Mock.Of<IAppSandboxService>());
+        var provider = new SkillAppToolProvider(skillService.Object, Mock.Of<IAppSandboxService>(), null!, Mock.Of<Microsoft.Extensions.Logging.ILogger<SkillAppToolProvider>>());
 
         var tools = await provider.GetToolsAsync(Context("{\"sandbox\":{\"enabled\":true}}"), CancellationToken.None);
 
@@ -72,7 +72,7 @@ public class SkillAppToolProviderTests
         skillService
             .Setup(x => x.GetRuntimeSkillsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { Skill("generate_docx.py") });
-        var provider = new SkillAppToolProvider(skillService.Object, Mock.Of<IAppSandboxService>());
+        var provider = new SkillAppToolProvider(skillService.Object, Mock.Of<IAppSandboxService>(), null!, Mock.Of<Microsoft.Extensions.Logging.ILogger<SkillAppToolProvider>>());
 
         var tools = await provider.GetToolsAsync(Context("{\"sandbox\":{\"enabled\":true}}"), CancellationToken.None);
 
@@ -91,7 +91,7 @@ public class SkillAppToolProviderTests
             .Setup(x => x.GetRuntimeSkillsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { skill });
         var sandbox = new Mock<IAppSandboxService>();
-        var provider = new SkillAppToolProvider(skillService.Object, sandbox.Object);
+        var provider = new SkillAppToolProvider(skillService.Object, sandbox.Object, null!, Mock.Of<Microsoft.Extensions.Logging.ILogger<SkillAppToolProvider>>());
 
         var tools = await provider.GetToolsAsync(Context("{}"), CancellationToken.None);
         var result = await tools[0].InvokeAsync("{}", CancellationToken.None);
@@ -119,7 +119,7 @@ public class SkillAppToolProviderTests
         sandbox
             .Setup(x => x.WriteFileAsync(It.IsAny<SandboxSessionContext>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("{\"success\":true}");
-        var provider = new SkillAppToolProvider(skillService.Object, sandbox.Object);
+        var provider = new SkillAppToolProvider(skillService.Object, sandbox.Object, null!, Mock.Of<Microsoft.Extensions.Logging.ILogger<SkillAppToolProvider>>());
 
         var tools = await provider.GetToolsAsync(Context("{\"sandbox\":{\"enabled\":true}}"), CancellationToken.None);
         var result = await tools[0].InvokeAsync("{}", CancellationToken.None);

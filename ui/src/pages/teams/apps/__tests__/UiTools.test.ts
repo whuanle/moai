@@ -29,55 +29,69 @@ describe('uiTools（前端展示工具解析）', () => {
     expect(hasRenderableContent(withLang)).toBe(true)
   })
 
-  it('ui_show_chart 解析 ECharts option 对象', () => {
-    const payload = parseUiToolPayload('ui_show_chart', '{"title":"销量","option":{"series":[{"type":"bar","data":[1,2]}]}}')
+  it('ui_show_chart 解析图表配置对象（type + data）', () => {
+    const payload = parseUiToolPayload(
+      'ui_show_chart',
+      '{"title":"销量","chart":{"type":"bar","data":[{"category":"A","value":1}]}}',
+    )
     expect(payload?.kind).toBe('chart')
-    expect(payload?.option).toEqual({ series: [{ type: 'bar', data: [1, 2] }] })
+    expect(payload?.chart).toEqual({ type: 'bar', data: [{ category: 'A', value: 1 }] })
     expect(hasRenderableContent(payload)).toBe(true)
   })
 
-  it('ui_show_chart 的 option 被模型序列化成 JSON 字符串时归一为对象（线上实测形态）', () => {
+  it('ui_show_chart 的配置被模型序列化成 JSON 字符串时归一为对象（线上实测形态）', () => {
     const argsJson = JSON.stringify({
       title: '月度趋势',
-      option: JSON.stringify({ xAxis: { type: 'category', data: ['1月', '2月'] }, series: [{ type: 'line', data: [1, 2] }] }),
+      chart: JSON.stringify({ type: 'line', data: [{ time: '1月', value: 1 }, { time: '2月', value: 2 }] }),
     })
     const payload = parseUiToolPayload('ui_show_chart', argsJson)
-    expect(payload?.option).toEqual({
-      xAxis: { type: 'category', data: ['1月', '2月'] },
-      series: [{ type: 'line', data: [1, 2] }],
-    })
+    expect(payload?.chart).toEqual({ type: 'line', data: [{ time: '1月', value: 1 }, { time: '2月', value: 2 }] })
     expect(hasRenderableContent(payload)).toBe(true)
   })
 
-  it('ui_show_chart 的 option 为 markdown 围栏包裹的 JSON 字符串时归一为对象', () => {
+  it('ui_show_chart 的配置为 markdown 围栏包裹的 JSON 字符串时归一为对象', () => {
     const argsJson = JSON.stringify({
       title: '占比',
-      option: '```json\n{"series":[{"type":"pie","data":[1,2]}]}\n```',
+      chart: '```json\n{"type":"pie","data":[{"category":"A","value":1}]}\n```',
     })
     const payload = parseUiToolPayload('ui_show_chart', argsJson)
-    expect(payload?.option).toEqual({ series: [{ type: 'pie', data: [1, 2] }] })
+    expect(payload?.chart).toEqual({ type: 'pie', data: [{ category: 'A', value: 1 }] })
     expect(hasRenderableContent(payload)).toBe(true)
   })
 
-  it('ui_show_chart 漏嵌 option 键而 series 铺在顶层时，去 title 后整体兜底为 option', () => {
-    const payload = parseUiToolPayload('ui_show_chart', '{"title":"销量","xAxis":{"type":"category"},"yAxis":{},"series":[{"type":"bar","data":[3]}]}')
-    expect(payload?.option).toEqual({ xAxis: { type: 'category' }, yAxis: {}, series: [{ type: 'bar', data: [3] }] })
+  it('ui_show_chart 漏嵌 chart 键而配置铺在顶层时，去 title 后整体兜底为配置', () => {
+    const payload = parseUiToolPayload(
+      'ui_show_chart',
+      '{"title":"销量","type":"bar","data":[{"category":"A","value":3}]}',
+    )
+    expect(payload?.chart).toEqual({ type: 'bar', data: [{ category: 'A', value: 3 }] })
     expect(hasRenderableContent(payload)).toBe(true)
   })
 
-  it('ui_show_chart 的 option 字符串内容非法（非 JSON 对象）时不可渲染', () => {
-    const payload = parseUiToolPayload('ui_show_chart', JSON.stringify({ title: '坏图', option: 'not-json' }))
-    expect(payload?.option).toBeUndefined()
+  it('ui_show_chart 的配置字符串内容非法（非 JSON 对象）时不可渲染', () => {
+    const payload = parseUiToolPayload('ui_show_chart', JSON.stringify({ title: '坏图', chart: 'not-json' }))
+    expect(payload?.chart).toBeUndefined()
     expect(hasRenderableContent(payload)).toBe(false)
   })
 
-  it('ui_show_chart 的 option 为对象但缺 ECharts 基本结构（实测会使 echarts 抛 TypeError）时不可渲染', () => {
-    // 线上实测形态：模型把 xAxis 内容打平到顶层，无 series/yAxis
+  it('ui_show_chart 缺 data 或 type 在白名单外时不可渲染', () => {
+    // 缺 data：畸形配置会让渲染层失败
+    const noData = parseUiToolPayload('ui_show_chart', '{"title":"坏图","chart":{"type":"line"}}')
+    expect(noData?.chart).toBeUndefined()
+    expect(hasRenderableContent(noData)).toBe(false)
+
+    // 白名单外 type（summary 为纯文本形态已排除）
+    const excluded = parseUiToolPayload('ui_show_chart', '{"title":"坏图","chart":{"type":"summary","data":[]}}')
+    expect(excluded?.chart).toBeUndefined()
+    expect(hasRenderableContent(excluded)).toBe(false)
+  })
+
+  it('历史消息里的旧 ECharts option（无 type）不再渲染（echarts 已移除，安全降级）', () => {
     const payload = parseUiToolPayload(
       'ui_show_chart',
-      JSON.stringify({ title: '坏图', option: { axisLabel: { rotate: 45 }, data: ['1月'], type: 'category', xAxis: { type: 'category' } } }),
+      '{"title":"旧图","chart":{"xAxis":{"type":"category"},"series":[{"type":"bar","data":[1,2]}]}}',
     )
-    expect(payload?.option).toBeUndefined()
+    expect(payload?.chart).toBeUndefined()
     expect(hasRenderableContent(payload)).toBe(false)
   })
 

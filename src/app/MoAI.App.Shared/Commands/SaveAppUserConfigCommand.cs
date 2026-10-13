@@ -31,6 +31,11 @@ public class SaveAppUserConfigCommand : IRequest<EmptyCommandResponse>, IModelVa
     /// </summary>
     public string? ToolApprovalMode { get; init; }
 
+    /// <summary>
+    /// 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）；null=不修改.
+    /// </summary>
+    public int? MemoryMode { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -51,5 +56,8 @@ public class SaveAppUserConfigCommand : IRequest<EmptyCommandResponse>, IModelVa
         validate.RuleFor(x => x.ToolApprovalMode)
             .Must(x => x == null || MoAI.AI.AppToolApprovalContract.IsValidMode(x))
             .WithMessage("工具审批模式不正确.");
+        validate.RuleFor(x => x.MemoryMode)
+            .Must(x => x == null || x is >= 0 and <= 3)
+            .WithMessage("长期记忆模式不正确.");
     }
 }

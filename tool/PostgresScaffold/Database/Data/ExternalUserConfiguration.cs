@@ -40,13 +40,18 @@ internal partial class ExternalUserConfiguration : IEntityTypeConfiguration<Exte
             .HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .HasComment("创建时间")
             .HasColumnName("create_time");
-        entity.Property(e => e.CreateUserId).HasColumnName("create_user_id");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnName("create_user_id");
         entity.Property(e => e.ExternalUserId)
             .HasMaxLength(128)
             .HasComment("外部身份标识，第三方系统的用户唯一标识或临时随机值")
             .HasColumnName("external_user_id");
-        entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除，0=未删除")
+            .HasColumnName("is_deleted");
         entity.Property(e => e.Nickname)
             .HasMaxLength(100)
             .HasComment("外部用户显示名，可选")
@@ -56,8 +61,11 @@ internal partial class ExternalUserConfiguration : IEntityTypeConfiguration<Exte
             .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
-        entity.Property(e => e.UpdateUserId).HasColumnName("update_user_id");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnName("update_user_id");
 
         OnConfigurePartial(entity);
     }

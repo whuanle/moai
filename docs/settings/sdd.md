@@ -63,3 +63,9 @@ ui/src/                    api/settings.ts（SettingKeys 常量 + get/save + upd
 - 无未修复缺陷。
 - 遗留观察（全局，非本模块缺陷）：GET /api/settings 为 admin 专属，member 得 403（有意设计，见 [@SET-S2](./bdd.md#set-s2)）；root 变更后权限最长滞后 1 小时（用户态缓存）。
 - 遗留观察：`NEO4J_PASSWORD` 明文存储且 `GET /api/settings` 面向 admin 返回全部值，因此非 root 的 admin 亦可通过接口读到密码；前端知识图谱卡片仅 root 渲染（[@SET-S18](./bdd.md#set-s18)），后续如需严格隔离应在查询层按角色裁剪敏感值。
+
+## 增量设计（2026-10-12：AGENT_COMPACTION_DEFAULTS，Agent 上下文压缩默认参数）
+
+- 新设置项 `AGENT_COMPACTION_DEFAULTS`（JSON：toolResultTriggerMessages/summarizeTriggerTokens/preserveTurns/hardTokenLimit/enableSummarization/summarizerModelId，默认 12/4000/6/24000/false/空），`SettingDefinitions` 注册 + `asserts/setting.sql` 幂等补种 + `SettingsService.ValidateValue` 范围校验（1~500 / 200~2000000 / 1~10000 / 500~4000000 / 布尔 / 摘要模型 id 须为 Guid 或空）。
+- 读取服务 `IAgentSettingsService.GetAgentCompactionDefaultsAsync`（Settings.Core，缺失/非法回退内置默认并钳制）；消费方为 `AppCompactionStrategyFactory` 字段级合并（应用显式配置优先），见 [../ai/sdd.md](../ai/sdd.md)。
+- 管理页（root）新增「Agent 上下文压缩默认参数」折叠卡（四个数值 + 摘要开关；摘要模型仅应用级配置，平台默认留空回落应用对话模型）。

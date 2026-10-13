@@ -96,10 +96,36 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
             TotalTokens = byModel.Sum(x => x.TotalTokens),
         };
 
+        // 使用活动统计：会话数 / 去重用户数 / 消息数 / 最近使用时间
+        var sessions = _databaseContext.AppAgentSessions.AsNoTracking()
+            .Where(x => x.AppId == app.Id);
+        var sessionStats = await sessions
+            .GroupBy(x => 1)
+            .Select(g => new
+            {
+                SessionCount = g.Count(),
+                UserCount = g.Select(x => new { x.CreateUserId, x.UserType }).Distinct().Count(),
+                LastActive = g.Max(x => x.LastMessageTime),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var sessionIds = await sessions.Select(x => x.Id).ToListAsync(cancellationToken);
+        var messageCount = sessionIds.Count == 0
+            ? 0
+            : await _databaseContext.AppAgentMessages.AsNoTracking()
+                .CountAsync(x => sessionIds.Contains(x.SessionId), cancellationToken);
+
         return new QueryAppUsageCommandResponse
         {
             Summary = summary,
             ByModel = byModelItems,
+            Stats = new AppUsageActivityStats
+            {
+                SessionCount = sessionStats?.SessionCount ?? 0,
+                UserCount = sessionStats?.UserCount ?? 0,
+                MessageCount = messageCount,
+                LastActiveTime = sessionStats?.LastActive,
+            },
         };
     }
 }

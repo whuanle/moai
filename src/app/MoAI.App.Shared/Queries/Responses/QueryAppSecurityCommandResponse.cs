@@ -28,9 +28,14 @@ public class QueryAppSecurityCommandResponse
     public bool MaskToolArgs { get; set; }
 
     /// <summary>
-    /// 是否对模型回复文本（对话正文）脱敏.
+    /// 是否处理模型回复文本（对话正文）.
     /// </summary>
     public bool MaskModelOutput { get; set; }
+
+    /// <summary>
+    /// 是否处理用户输入文本（发送给模型的用户消息）.
+    /// </summary>
+    public bool MaskInput { get; set; }
 
     /// <summary>
     /// 内容脱敏规则列表（工具调用结果/工具调用参数范围共用），未配置为空列表.

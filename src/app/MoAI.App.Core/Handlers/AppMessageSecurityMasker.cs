@@ -3,6 +3,8 @@ using MoAI.App.Queries.Responses;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
+using MoAI.Infra;
+using MoAI.Infra.Helpers;
 
 namespace MoAI.App.Handlers;
 
@@ -16,19 +18,20 @@ internal static class AppMessageSecurityMasker
     /// 按应用加载脱敏策略；未配置/未启用返回 <see cref="AppSecurityPolicy.Disabled"/>.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="systemOptions">系统配置（派生 hash 策略加盐文本）.</param>
     /// <param name="appId">应用 id.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>脱敏策略.</returns>
-    public static async Task<AppSecurityPolicy> LoadPolicyAsync(DatabaseContext databaseContext, Guid appId, CancellationToken cancellationToken)
+    public static async Task<AppSecurityPolicy> LoadPolicyAsync(DatabaseContext databaseContext, SystemOptions systemOptions, Guid appId, CancellationToken cancellationToken)
     {
         var entity = await databaseContext.AppSecurityConfigs
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.AppId == appId, cancellationToken);
-        return AppSecurityPolicy.Parse(entity);
+        return AppSecurityPolicy.Parse(entity, SecurityHashPepperHelper.Derive(systemOptions.AES, systemOptions.Database));
     }
 
     /// <summary>
-    /// 就地脱敏消息项：工具调用参数按「工具参数」范围、模型正文与思维链按「模型回复」范围、
+    /// 就地脱敏消息项：用户消息按「用户输入」范围、工具调用参数按「工具参数」范围、模型正文与思维链按「模型回复」范围、
     /// 工具消息正文按「工具结果」范围（存量数据的兜底口径，与新数据写侧一致）.
     /// </summary>
     /// <param name="policy">脱敏策略.</param>
@@ -47,7 +50,11 @@ internal static class AppMessageSecurityMasker
                 item.ToolCalls = policy.MaskToolArgsText(item.ToolCalls);
             }
 
-            if (string.Equals(item.Role, "tool", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(item.Role, "user", StringComparison.OrdinalIgnoreCase))
+            {
+                item.Content = policy.MaskInputText(item.Content);
+            }
+            else if (string.Equals(item.Role, "tool", StringComparison.OrdinalIgnoreCase))
             {
                 item.Content = policy.MaskToolResultText(item.Content);
             }

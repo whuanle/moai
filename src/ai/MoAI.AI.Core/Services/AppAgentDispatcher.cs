@@ -7,6 +7,7 @@ using Microsoft.Agents.AI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MoAI.AI;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -21,16 +22,19 @@ namespace MoAI.AI.Services;
 public sealed class AppAgentDispatcher : DelegatingAIAgent
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<AppAgentDispatcher> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppAgentDispatcher"/> class.
     /// </summary>
     /// <param name="sessionShell">仅用于会话序列化兼容的占位 Agent.</param>
     /// <param name="scopeFactory">作用域工厂.</param>
-    public AppAgentDispatcher(AIAgent sessionShell, IServiceScopeFactory scopeFactory)
+    /// <param name="logger">日志（对话装配/运行异常记录，避免静默失败）.</param>
+    public AppAgentDispatcher(AIAgent sessionShell, IServiceScopeFactory scopeFactory, ILogger<AppAgentDispatcher> logger)
         : base(sessionShell)
     {
         _scopeFactory = scopeFactory;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -73,6 +77,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Agent 装配失败（resolve 阶段）.");
             resolveError = Describe(ex);
             resolveSessionMissing = ex is BusinessException be && be.StatusCode == 404;
         }
@@ -103,6 +108,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "Agent 运行失败（run 阶段）.");
                     runError = Describe(ex);
                 }
 
@@ -137,6 +143,8 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         var databaseContext = serviceProvider.GetRequiredService<DatabaseContext>();
         var userContextProvider = serviceProvider.GetRequiredService<IUserContextProvider>();
         var userId = userContextProvider.GetUserContext().UserId;
+        // 安全审计事件归属：从 StateBag 读取（AppSecurityAgentMiddleware）；StateBag 值约束为引用类型，long 以字符串存放
+        session.StateBag.SetValue(AppAgentConstants.UserIdStateKey, userId.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         var row = await databaseContext.AppAgentSessions
             .Where(x => x.Id == sessionId)

@@ -51,3 +51,12 @@ where not exists (select 1 from setting where key = 'SYSTEM_LOGO');
 insert into setting (key, name, description, value, create_user_id, update_user_id)
 select 'SYSTEM_NAME', '网站名称', '仅影响前端展示（侧边栏标题与浏览器标签页），留空使用配置文件默认名称.', '', 0, 0
 where not exists (select 1 from setting where key = 'SYSTEM_NAME');
+
+insert into setting (key, name, description, value, create_user_id, update_user_id)
+select 'AGENT_COMPACTION_DEFAULTS', 'Agent 上下文压缩默认参数', 'JSON 对象：toolResultTriggerMessages（工具结果折叠触发消息数）、summarizeTriggerTokens（摘要触发 token）、preserveTurns（滑动窗口保留轮数）、hardTokenLimit（紧急截断 token 上限）、enableSummarization（是否启用 LLM 摘要）、summarizerModelId（摘要模型 id，留空回落应用对话模型）；应用在执行参数中显式配置的字段优先生效.', '{"toolResultTriggerMessages":16,"summarizeTriggerTokens":16000,"preserveTurns":8,"hardTokenLimit":64000,"enableSummarization":false,"summarizerModelId":""}', 0, 0
+where not exists (select 1 from setting where key = 'AGENT_COMPACTION_DEFAULTS');
+
+-- 2026-10-12 默认参数调大（12/4000/6/24000 → 16/16000/8/64000）：仅提升从未被修改过的旧行，root 已自定义的值不动
+update setting set value = '{"toolResultTriggerMessages":16,"summarizeTriggerTokens":16000,"preserveTurns":8,"hardTokenLimit":64000,"enableSummarization":false,"summarizerModelId":""}'
+where key = 'AGENT_COMPACTION_DEFAULTS'
+  and value = '{"toolResultTriggerMessages":12,"summarizeTriggerTokens":4000,"preserveTurns":6,"hardTokenLimit":24000,"enableSummarization":false,"summarizerModelId":""}';

@@ -491,9 +491,58 @@ export interface AppMessageItem extends Parsable {
     toolCalls?: string | null;
 }
 /**
+ * 应用安全事件（一条规则命中聚合行）.
+ */
+export interface AppSecurityEventItem extends Parsable {
+    /**
+     * 动作：masked/blocked/flagged.
+     */
+    action?: string | null;
+    /**
+     * 发生时间.
+     */
+    createTime?: string | null;
+    /**
+     * 聚合命中次数.
+     */
+    hitCount?: number | null;
+    /**
+     * 事件 id.
+     */
+    id?: Guid | null;
+    /**
+     * 规则名称.
+     */
+    ruleName?: string | null;
+    /**
+     * 规则类型：phone/idCard/email/bankCard/custom.
+     */
+    ruleType?: string | null;
+    /**
+     * 作用域：input/toolResult/toolArgs/modelOutput.
+     */
+    scope?: string | null;
+    /**
+     * 会话 id，空为无会话上下文.
+     */
+    sessionId?: Guid | null;
+    /**
+     * 处理策略：redact/mask/hash/block/flag.
+     */
+    strategy?: string | null;
+    /**
+     * 触发用户 id，空为无用户身份.
+     */
+    userId?: string | null;
+}
+/**
  * 脱敏规则存储/传输契约（app_security_config.rules 数组元素）.
  */
 export interface AppSecurityRule extends Parsable {
+    /**
+     * mask 策略保留末位（custom/银行卡），0~18；空为 4.
+     */
+    keepLast?: number | null;
     /**
      * 规则名称（展示用）.
      */
@@ -503,9 +552,13 @@ export interface AppSecurityRule extends Parsable {
      */
     pattern?: string | null;
     /**
-     * 命中后替换文本，空为 ***.
+     * 命中后替换文本（strategy=redact 时生效），空为 ***.
      */
     replacement?: string | null;
+    /**
+     * 处理策略代码，见 AppSecurityStrategies；空为 redact（兼容存量规则）.
+     */
+    strategy?: string | null;
     /**
      * 规则类型代码，见 AppSecurityRuleTypes.
      */
@@ -557,6 +610,27 @@ export interface AppSessionItem extends Parsable {
     userType?: number | null;
 }
 export type AppType = (typeof AppTypeObject)[keyof typeof AppTypeObject];
+/**
+ * 应用使用活动统计（会话/用户/消息维度）.
+ */
+export interface AppUsageActivityStats extends Parsable {
+    /**
+     * 最近使用时间（最后一条会话消息时间），无会话为 null.
+     */
+    lastActiveTime?: string | null;
+    /**
+     * 消息总数（会话落库消息，压缩后视图）.
+     */
+    messageCount?: string | null;
+    /**
+     * 会话总数（正式会话，不含已删除）.
+     */
+    sessionCount?: number | null;
+    /**
+     * 使用用户数（按会话归属用户去重，外部用户单独计数）.
+     */
+    userCount?: number | null;
+}
 /**
  * 应用按模型用量.
  */
@@ -635,6 +709,10 @@ export interface AppUserSkillOption extends Parsable {
      * 所属团队 id，0=系统内置或市场公开.
      */
     teamId?: number | null;
+    /**
+     * 使用次数（技能装载工具被模型调用时自增），面板技能卡片热门排序依据.
+     */
+    useCount?: number | null;
 }
 /**
  * 流程应用运行实例列表项.
@@ -1276,6 +1354,15 @@ export function createAppMessageItemFromDiscriminatorValue(parseNode: ParseNode 
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppSecurityEventItem}
+ */
+// @ts-ignore
+export function createAppSecurityEventItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppSecurityEventItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {AppSecurityRule}
  */
 // @ts-ignore
@@ -1307,6 +1394,15 @@ export interface CreateAppSessionCommand extends Parsable {
 // @ts-ignore
 export function createAppSessionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAppSessionItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppUsageActivityStats}
+ */
+// @ts-ignore
+export function createAppUsageActivityStatsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppUsageActivityStats;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -1661,6 +1757,15 @@ export function createCreateSkillCommandFromDiscriminatorValue(parseNode: ParseN
 // @ts-ignore
 export function createCreateTeamCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateTeamCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateTeamTimerCommand}
+ */
+// @ts-ignore
+export function createCreateTeamTimerCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateTeamTimerCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2250,6 +2355,15 @@ export function createMcpServerPluginConnectionOptionsFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {MemoryItem}
+ */
+// @ts-ignore
+export function createMemoryItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoMemoryItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {OAuthBindAccountByCodeCommand}
  */
 // @ts-ignore
@@ -2560,6 +2674,15 @@ export function createQueryAdminTeamListCommandResponseItemFromDiscriminatorValu
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAgentCompactionDefaultsResponse}
+ */
+// @ts-ignore
+export function createQueryAgentCompactionDefaultsResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAgentCompactionDefaultsResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAIChannelListCommandResponse}
  */
 // @ts-ignore
@@ -2695,6 +2818,15 @@ export function createQueryAppLogsCommandResponseFromDiscriminatorValue(parseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppMemoryStatsResponse}
+ */
+// @ts-ignore
+export function createQueryAppMemoryStatsResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppMemoryStatsResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryAppsCommandResponse}
  */
 // @ts-ignore
@@ -2709,6 +2841,15 @@ export function createQueryAppsCommandResponseFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createQueryAppSecurityCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAppSecurityCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppSecurityEventsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppSecurityEventsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppSecurityEventsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3028,6 +3169,15 @@ export function createQueryKnowledgeGraphTemplatesCommandResponseFromDiscriminat
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryMyMemoriesCommandResponse}
+ */
+// @ts-ignore
+export function createQueryMyMemoriesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryMyMemoriesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryPluginListCommandResponse}
  */
 // @ts-ignore
@@ -3249,6 +3399,24 @@ export function createQueryTeamPluginsCommandResponseFromDiscriminatorValue(pars
 // @ts-ignore
 export function createQueryTeamsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryTeamsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamTimerExecutionsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamTimerExecutionsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamTimerExecutionsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamTimersCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamTimersCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamTimersCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3912,6 +4080,73 @@ export function createTeamPluginItemFromDiscriminatorValue(parseNode: ParseNode 
     return deserializeIntoTeamPluginItem;
 }
 /**
+ * 创建团队定时器，需要团队 Admin 及以上角色；绑定应用必须是本团队已发布的 Agent/流程应用.
+ */
+export interface CreateTeamTimerCommand extends Parsable {
+    /**
+     * 绑定的应用 id（本团队已发布的 Agent/流程应用）.
+     */
+    appId?: Guid | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 调度 cron 表达式（UTC，5 段标准格式）.
+     */
+    cronExpression?: string | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 每次执行时作为提问发送给应用的内容.
+     */
+    inputContent?: string | null;
+    /**
+     * 是否启用调度.
+     */
+    isEnabled?: boolean | null;
+    /**
+     * 失败重试次数（0-5，不含首次执行）.
+     */
+    maxRetryCount?: number | null;
+    /**
+     * 定时器名称，团队内唯一.
+     */
+    name?: string | null;
+    /**
+     * 重试间隔秒数（10-3600）.
+     */
+    retryIntervalSeconds?: number | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamTimerExecutionItem}
+ */
+// @ts-ignore
+export function createTeamTimerExecutionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamTimerExecutionItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TeamTimerItem}
+ */
+// @ts-ignore
+export function createTeamTimerItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTeamTimerItem;
+}
+/**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TeamUserItem}
@@ -4243,6 +4478,15 @@ export function createUpdateTeamDisableCommandFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createUpdateTeamOwnerCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateTeamOwnerCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateTeamTimerCommand}
+ */
+// @ts-ignore
+export function createUpdateTeamTimerCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateTeamTimerCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -5010,11 +5254,32 @@ export function deserializeIntoAppMessageItem(appMessageItem: Partial<AppMessage
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAppSecurityEventItem(appSecurityEventItem: Partial<AppSecurityEventItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "action": n => { appSecurityEventItem.action = n.getStringValue(); },
+        "createTime": n => { appSecurityEventItem.createTime = n.getStringValue(); },
+        "hitCount": n => { appSecurityEventItem.hitCount = n.getNumberValue(); },
+        "id": n => { appSecurityEventItem.id = n.getGuidValue(); },
+        "ruleName": n => { appSecurityEventItem.ruleName = n.getStringValue(); },
+        "ruleType": n => { appSecurityEventItem.ruleType = n.getStringValue(); },
+        "scope": n => { appSecurityEventItem.scope = n.getStringValue(); },
+        "sessionId": n => { appSecurityEventItem.sessionId = n.getGuidValue(); },
+        "strategy": n => { appSecurityEventItem.strategy = n.getStringValue(); },
+        "userId": n => { appSecurityEventItem.userId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAppSecurityRule(appSecurityRule: Partial<AppSecurityRule> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "keepLast": n => { appSecurityRule.keepLast = n.getNumberValue(); },
         "name": n => { appSecurityRule.name = n.getStringValue(); },
         "pattern": n => { appSecurityRule.pattern = n.getStringValue(); },
         "replacement": n => { appSecurityRule.replacement = n.getStringValue(); },
+        "strategy": n => { appSecurityRule.strategy = n.getStringValue(); },
         "type": n => { appSecurityRule.type = n.getStringValue(); },
     }
 }
@@ -5035,6 +5300,19 @@ export function deserializeIntoAppSessionItem(appSessionItem: Partial<AppSession
         "title": n => { appSessionItem.title = n.getStringValue(); },
         "totalTokens": n => { appSessionItem.totalTokens = n.getNumberValue(); },
         "userType": n => { appSessionItem.userType = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAppUsageActivityStats(appUsageActivityStats: Partial<AppUsageActivityStats> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "lastActiveTime": n => { appUsageActivityStats.lastActiveTime = n.getStringValue(); },
+        "messageCount": n => { appUsageActivityStats.messageCount = n.getStringValue(); },
+        "sessionCount": n => { appUsageActivityStats.sessionCount = n.getNumberValue(); },
+        "userCount": n => { appUsageActivityStats.userCount = n.getNumberValue(); },
     }
 }
 /**
@@ -5078,6 +5356,7 @@ export function deserializeIntoAppUserSkillOption(appUserSkillOption: Partial<Ap
         "key": n => { appUserSkillOption.key = n.getStringValue(); },
         "name": n => { appUserSkillOption.name = n.getStringValue(); },
         "teamId": n => { appUserSkillOption.teamId = n.getNumberValue(); },
+        "useCount": n => { appUserSkillOption.useCount = n.getNumberValue(); },
     }
 }
 /**
@@ -5548,6 +5827,26 @@ export function deserializeIntoCreateTeamCommand(createTeamCommand: Partial<Crea
         "contextUserType": n => { createTeamCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "description": n => { createTeamCommand.description = n.getStringValue(); },
         "name": n => { createTeamCommand.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateTeamTimerCommand(createTeamTimerCommand: Partial<CreateTeamTimerCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { createTeamTimerCommand.appId = n.getGuidValue(); },
+        "contextUserId": n => { createTeamTimerCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { createTeamTimerCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "cronExpression": n => { createTeamTimerCommand.cronExpression = n.getStringValue(); },
+        "description": n => { createTeamTimerCommand.description = n.getStringValue(); },
+        "inputContent": n => { createTeamTimerCommand.inputContent = n.getStringValue(); },
+        "isEnabled": n => { createTeamTimerCommand.isEnabled = n.getBooleanValue(); },
+        "maxRetryCount": n => { createTeamTimerCommand.maxRetryCount = n.getNumberValue(); },
+        "name": n => { createTeamTimerCommand.name = n.getStringValue(); },
+        "retryIntervalSeconds": n => { createTeamTimerCommand.retryIntervalSeconds = n.getNumberValue(); },
+        "teamId": n => { createTeamTimerCommand.teamId = n.getStringValue(); },
     }
 }
 /**
@@ -6175,6 +6474,22 @@ export function deserializeIntoMcpServerPluginConnectionOptions(mcpServerPluginC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoMemoryItem(memoryItem: Partial<MemoryItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { memoryItem.appId = n.getGuidValue(); },
+        "content": n => { memoryItem.content = n.getStringValue(); },
+        "createTime": n => { memoryItem.createTime = n.getStringValue(); },
+        "id": n => { memoryItem.id = n.getGuidValue(); },
+        "memoryType": n => { memoryItem.memoryType = n.getNumberValue(); },
+        "score": n => { memoryItem.score = n.getNumberValue(); },
+        "updateTime": n => { memoryItem.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoOAuthBindAccountByCodeCommand(oAuthBindAccountByCodeCommand: Partial<OAuthBindAccountByCodeCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "code": n => { oAuthBindAccountByCodeCommand.code = n.getStringValue(); },
@@ -6567,6 +6882,21 @@ export function deserializeIntoQueryAdminTeamListCommandResponseItem(queryAdminT
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAgentCompactionDefaultsResponse(queryAgentCompactionDefaultsResponse: Partial<QueryAgentCompactionDefaultsResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "enableSummarization": n => { queryAgentCompactionDefaultsResponse.enableSummarization = n.getBooleanValue(); },
+        "hardTokenLimit": n => { queryAgentCompactionDefaultsResponse.hardTokenLimit = n.getNumberValue(); },
+        "preserveTurns": n => { queryAgentCompactionDefaultsResponse.preserveTurns = n.getNumberValue(); },
+        "summarizerModelId": n => { queryAgentCompactionDefaultsResponse.summarizerModelId = n.getStringValue(); },
+        "summarizeTriggerTokens": n => { queryAgentCompactionDefaultsResponse.summarizeTriggerTokens = n.getNumberValue(); },
+        "toolResultTriggerMessages": n => { queryAgentCompactionDefaultsResponse.toolResultTriggerMessages = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAIChannelListCommandResponse(queryAIChannelListCommandResponse: Partial<QueryAIChannelListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAIChannelListCommandResponse.items = n.getCollectionOfObjectValues<QueryAIChannelListCommandResponseItem>(createQueryAIChannelListCommandResponseItemFromDiscriminatorValue); },
@@ -6804,6 +7134,17 @@ export function deserializeIntoQueryAppLogsCommandResponse(queryAppLogsCommandRe
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryAppMemoryStatsResponse(queryAppMemoryStatsResponse: Partial<QueryAppMemoryStatsResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "totalMemories": n => { queryAppMemoryStatsResponse.totalMemories = n.getNumberValue(); },
+        "userCount": n => { queryAppMemoryStatsResponse.userCount = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryAppsCommandResponse(queryAppsCommandResponse: Partial<QueryAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAppsCommandResponse.items = n.getCollectionOfObjectValues<AppItem>(createAppItemFromDiscriminatorValue); },
@@ -6820,12 +7161,26 @@ export function deserializeIntoQueryAppSecurityCommandResponse(queryAppSecurityC
     return {
         "appId": n => { queryAppSecurityCommandResponse.appId = n.getGuidValue(); },
         "enabled": n => { queryAppSecurityCommandResponse.enabled = n.getBooleanValue(); },
+        "maskInput": n => { queryAppSecurityCommandResponse.maskInput = n.getBooleanValue(); },
         "maskModelOutput": n => { queryAppSecurityCommandResponse.maskModelOutput = n.getBooleanValue(); },
         "maskToolArgs": n => { queryAppSecurityCommandResponse.maskToolArgs = n.getBooleanValue(); },
         "maskToolResult": n => { queryAppSecurityCommandResponse.maskToolResult = n.getBooleanValue(); },
         "modelOutputRules": n => { queryAppSecurityCommandResponse.modelOutputRules = n.getCollectionOfObjectValues<AppSecurityRule>(createAppSecurityRuleFromDiscriminatorValue); },
         "myRole": n => { queryAppSecurityCommandResponse.myRole = n.getNumberValue(); },
         "rules": n => { queryAppSecurityCommandResponse.rules = n.getCollectionOfObjectValues<AppSecurityRule>(createAppSecurityRuleFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppSecurityEventsCommandResponse(queryAppSecurityEventsCommandResponse: Partial<QueryAppSecurityEventsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryAppSecurityEventsCommandResponse.items = n.getCollectionOfObjectValues<AppSecurityEventItem>(createAppSecurityEventItemFromDiscriminatorValue); },
+        "pageNo": n => { queryAppSecurityEventsCommandResponse.pageNo = n.getNumberValue(); },
+        "pageSize": n => { queryAppSecurityEventsCommandResponse.pageSize = n.getNumberValue(); },
+        "total": n => { queryAppSecurityEventsCommandResponse.total = n.getNumberValue(); },
     }
 }
 /**
@@ -6860,6 +7215,7 @@ export function deserializeIntoQueryAppSessionsCommandResponse(queryAppSessionsC
 export function deserializeIntoQueryAppUsageCommandResponse(queryAppUsageCommandResponse: Partial<QueryAppUsageCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "byModel": n => { queryAppUsageCommandResponse.byModel = n.getCollectionOfObjectValues<AppUsageModelItem>(createAppUsageModelItemFromDiscriminatorValue); },
+        "stats": n => { queryAppUsageCommandResponse.stats = n.getObjectValue<AppUsageActivityStats>(createAppUsageActivityStatsFromDiscriminatorValue); },
         "summary": n => { queryAppUsageCommandResponse.summary = n.getObjectValue<AppUsageSummary>(createAppUsageSummaryFromDiscriminatorValue); },
     }
 }
@@ -6871,6 +7227,8 @@ export function deserializeIntoQueryAppUsageCommandResponse(queryAppUsageCommand
 export function deserializeIntoQueryAppUserConfigCommandResponse(queryAppUserConfigCommandResponse: Partial<QueryAppUserConfigCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "defaultSkills": n => { queryAppUserConfigCommandResponse.defaultSkills = n.getCollectionOfObjectValues<AppUserSkillOption>(createAppUserSkillOptionFromDiscriminatorValue); },
+        "memoryEnabled": n => { queryAppUserConfigCommandResponse.memoryEnabled = n.getBooleanValue(); },
+        "memoryMode": n => { queryAppUserConfigCommandResponse.memoryMode = n.getNumberValue(); },
         "promptId": n => { queryAppUserConfigCommandResponse.promptId = n.getNumberValue(); },
         "skills": n => { queryAppUserConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "toolApprovalAutoApprovedNames": n => { queryAppUserConfigCommandResponse.toolApprovalAutoApprovedNames = n.getCollectionOfPrimitiveValues<string>(); },
@@ -7308,6 +7666,18 @@ export function deserializeIntoQueryKnowledgeGraphTemplatesCommandResponse(query
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryMyMemoriesCommandResponse(queryMyMemoriesCommandResponse: Partial<QueryMyMemoriesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryMyMemoriesCommandResponse.items = n.getCollectionOfObjectValues<MemoryItem>(createMemoryItemFromDiscriminatorValue); },
+        "memoryEnabled": n => { queryMyMemoriesCommandResponse.memoryEnabled = n.getBooleanValue(); },
+        "total": n => { queryMyMemoriesCommandResponse.total = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryPluginListCommandResponse(queryPluginListCommandResponse: Partial<QueryPluginListCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryPluginListCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginListCommandResponseItem>(createQueryPluginListCommandResponseItemFromDiscriminatorValue); },
@@ -7617,6 +7987,28 @@ export function deserializeIntoQueryTeamPluginsCommandResponse(queryTeamPluginsC
 export function deserializeIntoQueryTeamsCommandResponse(queryTeamsCommandResponse: Partial<QueryTeamsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryTeamsCommandResponse.items = n.getCollectionOfObjectValues<TeamItem>(createTeamItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamTimerExecutionsCommandResponse(queryTeamTimerExecutionsCommandResponse: Partial<QueryTeamTimerExecutionsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamTimerExecutionsCommandResponse.items = n.getCollectionOfObjectValues<TeamTimerExecutionItem>(createTeamTimerExecutionItemFromDiscriminatorValue); },
+        "totalCount": n => { queryTeamTimerExecutionsCommandResponse.totalCount = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamTimersCommandResponse(queryTeamTimersCommandResponse: Partial<QueryTeamTimersCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryTeamTimersCommandResponse.items = n.getCollectionOfObjectValues<TeamTimerItem>(createTeamTimerItemFromDiscriminatorValue); },
+        "totalCount": n => { queryTeamTimersCommandResponse.totalCount = n.getNumberValue(); },
     }
 }
 /**
@@ -8028,6 +8420,8 @@ export function deserializeIntoRunAgentInput(runAgentInput: Partial<RunAgentInpu
 export function deserializeIntoRunPluginCommand(runPluginCommand: Partial<RunPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "configJson": n => { runPluginCommand.configJson = n.getStringValue(); },
+        "contextUserId": n => { runPluginCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { runPluginCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "function": n => { runPluginCommand.functionEscaped = n.getStringValue(); },
         "key": n => { runPluginCommand.key = n.getStringValue(); },
         "requestJson": n => { runPluginCommand.requestJson = n.getStringValue(); },
@@ -8098,6 +8492,7 @@ export function deserializeIntoSaveAppSecurityCommand(saveAppSecurityCommand: Pa
     return {
         "appId": n => { saveAppSecurityCommand.appId = n.getGuidValue(); },
         "enabled": n => { saveAppSecurityCommand.enabled = n.getBooleanValue(); },
+        "maskInput": n => { saveAppSecurityCommand.maskInput = n.getBooleanValue(); },
         "maskModelOutput": n => { saveAppSecurityCommand.maskModelOutput = n.getBooleanValue(); },
         "maskToolArgs": n => { saveAppSecurityCommand.maskToolArgs = n.getBooleanValue(); },
         "maskToolResult": n => { saveAppSecurityCommand.maskToolResult = n.getBooleanValue(); },
@@ -8113,6 +8508,7 @@ export function deserializeIntoSaveAppSecurityCommand(saveAppSecurityCommand: Pa
 export function deserializeIntoSaveAppUserConfigCommand(saveAppUserConfigCommand: Partial<SaveAppUserConfigCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { saveAppUserConfigCommand.appId = n.getGuidValue(); },
+        "memoryMode": n => { saveAppUserConfigCommand.memoryMode = n.getNumberValue(); },
         "promptId": n => { saveAppUserConfigCommand.promptId = n.getNumberValue(); },
         "skills": n => { saveAppUserConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "toolApprovalMode": n => { saveAppUserConfigCommand.toolApprovalMode = n.getStringValue(); },
@@ -8386,6 +8782,7 @@ export function deserializeIntoSkillOptionItem(skillOptionItem: Partial<SkillOpt
         "key": n => { skillOptionItem.key = n.getStringValue(); },
         "name": n => { skillOptionItem.name = n.getStringValue(); },
         "teamId": n => { skillOptionItem.teamId = n.getNumberValue(); },
+        "useCount": n => { skillOptionItem.useCount = n.getNumberValue(); },
     }
 }
 /**
@@ -8502,6 +8899,7 @@ export function deserializeIntoTeamGatewayModelItem(teamGatewayModelItem: Partia
         "name": n => { teamGatewayModelItem.name = n.getStringValue(); },
         "providerKey": n => { teamGatewayModelItem.providerKey = n.getStringValue(); },
         "quota": n => { teamGatewayModelItem.quota = n.getObjectValue<TeamGatewayModelQuota>(createTeamGatewayModelQuotaFromDiscriminatorValue); },
+        "supportsVision": n => { teamGatewayModelItem.supportsVision = n.getBooleanValue(); },
         "totalUsedTokens": n => { teamGatewayModelItem.totalUsedTokens = n.getStringValue(); },
     }
 }
@@ -8577,6 +8975,55 @@ export function deserializeIntoTeamPluginItem(teamPluginItem: Partial<TeamPlugin
         "updateTime": n => { teamPluginItem.updateTime = n.getStringValue(); },
         "updateUserId": n => { teamPluginItem.updateUserId = n.getStringValue(); },
         "updateUserName": n => { teamPluginItem.updateUserName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTeamTimerExecutionItem(teamTimerExecutionItem: Partial<TeamTimerExecutionItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(teamTimerExecutionItem),
+        "appInstanceId": n => { teamTimerExecutionItem.appInstanceId = n.getStringValue(); },
+        "attemptCount": n => { teamTimerExecutionItem.attemptCount = n.getNumberValue(); },
+        "durationMs": n => { teamTimerExecutionItem.durationMs = n.getStringValue(); },
+        "endTime": n => { teamTimerExecutionItem.endTime = n.getStringValue(); },
+        "errorMessage": n => { teamTimerExecutionItem.errorMessage = n.getStringValue(); },
+        "executionId": n => { teamTimerExecutionItem.executionId = n.getGuidValue(); },
+        "nextRetryTime": n => { teamTimerExecutionItem.nextRetryTime = n.getStringValue(); },
+        "result": n => { teamTimerExecutionItem.result = n.getStringValue(); },
+        "startTime": n => { teamTimerExecutionItem.startTime = n.getStringValue(); },
+        "status": n => { teamTimerExecutionItem.status = n.getEnumValue<TimerExecutionStatus>(TimerExecutionStatusObject); },
+        "timerId": n => { teamTimerExecutionItem.timerId = n.getGuidValue(); },
+        "triggerType": n => { teamTimerExecutionItem.triggerType = n.getEnumValue<TimerTriggerType>(TimerTriggerTypeObject); },
+        "triggerUserId": n => { teamTimerExecutionItem.triggerUserId = n.getStringValue(); },
+        "triggerUserName": n => { teamTimerExecutionItem.triggerUserName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTeamTimerItem(teamTimerItem: Partial<TeamTimerItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(teamTimerItem),
+        "appId": n => { teamTimerItem.appId = n.getGuidValue(); },
+        "appName": n => { teamTimerItem.appName = n.getStringValue(); },
+        "appPublishStatus": n => { teamTimerItem.appPublishStatus = n.getNumberValue(); },
+        "appType": n => { teamTimerItem.appType = n.getEnumValue<AppType>(AppTypeObject); },
+        "cronExpression": n => { teamTimerItem.cronExpression = n.getStringValue(); },
+        "description": n => { teamTimerItem.description = n.getStringValue(); },
+        "inputContent": n => { teamTimerItem.inputContent = n.getStringValue(); },
+        "isEnabled": n => { teamTimerItem.isEnabled = n.getBooleanValue(); },
+        "lastRunTime": n => { teamTimerItem.lastRunTime = n.getStringValue(); },
+        "maxRetryCount": n => { teamTimerItem.maxRetryCount = n.getNumberValue(); },
+        "name": n => { teamTimerItem.name = n.getStringValue(); },
+        "nextRunTime": n => { teamTimerItem.nextRunTime = n.getStringValue(); },
+        "retryIntervalSeconds": n => { teamTimerItem.retryIntervalSeconds = n.getNumberValue(); },
+        "teamId": n => { teamTimerItem.teamId = n.getStringValue(); },
+        "timerId": n => { teamTimerItem.timerId = n.getGuidValue(); },
     }
 }
 /**
@@ -9056,6 +9503,26 @@ export function deserializeIntoUpdateTeamOwnerCommand(updateTeamOwnerCommand: Pa
         "contextUserType": n => { updateTeamOwnerCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "teamId": n => { updateTeamOwnerCommand.teamId = n.getStringValue(); },
         "userId": n => { updateTeamOwnerCommand.userId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateTeamTimerCommand(updateTeamTimerCommand: Partial<UpdateTeamTimerCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { updateTeamTimerCommand.appId = n.getGuidValue(); },
+        "contextUserId": n => { updateTeamTimerCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { updateTeamTimerCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "cronExpression": n => { updateTeamTimerCommand.cronExpression = n.getStringValue(); },
+        "description": n => { updateTeamTimerCommand.description = n.getStringValue(); },
+        "inputContent": n => { updateTeamTimerCommand.inputContent = n.getStringValue(); },
+        "isEnabled": n => { updateTeamTimerCommand.isEnabled = n.getBooleanValue(); },
+        "maxRetryCount": n => { updateTeamTimerCommand.maxRetryCount = n.getNumberValue(); },
+        "name": n => { updateTeamTimerCommand.name = n.getStringValue(); },
+        "retryIntervalSeconds": n => { updateTeamTimerCommand.retryIntervalSeconds = n.getNumberValue(); },
+        "timerId": n => { updateTeamTimerCommand.timerId = n.getGuidValue(); },
     }
 }
 /**
@@ -10282,6 +10749,39 @@ export interface McpServerPluginConnectionOptions extends Parsable {
      */
     title?: string | null;
 }
+/**
+ * 记忆条目.
+ */
+export interface MemoryItem extends Parsable {
+    /**
+     * 所属应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 记忆内容.
+     */
+    content?: string | null;
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 记忆 id.
+     */
+    id?: Guid | null;
+    /**
+     * 记忆类型（0 语义 / 1 情景 / 2 程序）.
+     */
+    memoryType?: number | null;
+    /**
+     * 相似度得分（列表场景为 0）.
+     */
+    score?: number | null;
+    /**
+     * 最近更新时间.
+     */
+    updateTime?: string | null;
+}
 export type MetadataGenerationStrategy = (typeof MetadataGenerationStrategyObject)[keyof typeof MetadataGenerationStrategyObject];
 /**
  * 已登录用户通过第三方授权回调 code 直接绑定第三方账号（与登录接口分离）.
@@ -10972,6 +11472,35 @@ export interface QueryAdminTeamListCommandResponseItem extends AuditsInfo, Parsa
     teamId?: string | null;
 }
 /**
+ * Agent 上下文压缩生效默认参数（系统默认，应用配置页输入框预填值）.
+ */
+export interface QueryAgentCompactionDefaultsResponse extends Parsable {
+    /**
+     * 是否启用 LLM 摘要压缩.
+     */
+    enableSummarization?: boolean | null;
+    /**
+     * 紧急截断 token 上限.
+     */
+    hardTokenLimit?: number | null;
+    /**
+     * 滑动窗口保留轮数.
+     */
+    preserveTurns?: number | null;
+    /**
+     * 摘要模型 id，空表示回落应用对话模型.
+     */
+    summarizerModelId?: string | null;
+    /**
+     * 摘要触发 token.
+     */
+    summarizeTriggerTokens?: number | null;
+    /**
+     * 工具结果折叠触发消息数.
+     */
+    toolResultTriggerMessages?: number | null;
+}
+/**
  * QueryAIChannelListCommandResponse.
  */
 export interface QueryAIChannelListCommandResponse extends Parsable {
@@ -11443,6 +11972,19 @@ export interface QueryAppLogsCommandResponse extends Parsable {
     total?: number | null;
 }
 /**
+ * 应用记忆统计响应.
+ */
+export interface QueryAppMemoryStatsResponse extends Parsable {
+    /**
+     * 应用内全部用户的记忆总条数.
+     */
+    totalMemories?: number | null;
+    /**
+     * 已有记忆的用户数.
+     */
+    userCount?: number | null;
+}
+/**
  * 应用列表响应.
  */
 export interface QueryAppsCommandResponse extends Parsable {
@@ -11472,7 +12014,11 @@ export interface QueryAppSecurityCommandResponse extends Parsable {
      */
     enabled?: boolean | null;
     /**
-     * 是否对模型回复文本（对话正文）脱敏.
+     * 是否处理用户输入文本（发送给模型的用户消息）.
+     */
+    maskInput?: boolean | null;
+    /**
+     * 是否处理模型回复文本（对话正文）.
      */
     maskModelOutput?: boolean | null;
     /**
@@ -11495,6 +12041,27 @@ export interface QueryAppSecurityCommandResponse extends Parsable {
      * 内容脱敏规则列表（工具调用结果/工具调用参数范围共用），未配置为空列表.
      */
     rules?: AppSecurityRule[] | null;
+}
+/**
+ * 应用安全事件分页结果.
+ */
+export interface QueryAppSecurityEventsCommandResponse extends Parsable {
+    /**
+     * 事件条目.
+     */
+    items?: AppSecurityEventItem[] | null;
+    /**
+     * 页码.
+     */
+    pageNo?: number | null;
+    /**
+     * 每页数量.
+     */
+    pageSize?: number | null;
+    /**
+     * 总数量.
+     */
+    total?: number | null;
 }
 /**
  * 会话消息响应.
@@ -11531,13 +12098,17 @@ export interface QueryAppSessionsCommandResponse extends Parsable {
     myRole?: number | null;
 }
 /**
- * 应用用量统计结果（汇总 + 按模型分布）.
+ * 应用用量统计结果（汇总 + 按模型分布 + 使用活动统计）.
  */
 export interface QueryAppUsageCommandResponse extends Parsable {
     /**
      * 按模型分布（按合计 token 倒序）.
      */
     byModel?: AppUsageModelItem[] | null;
+    /**
+     * 使用活动统计.
+     */
+    stats?: AppUsageActivityStats | null;
     /**
      * 用量汇总.
      */
@@ -11551,6 +12122,14 @@ export interface QueryAppUserConfigCommandResponse extends Parsable {
      * 应用默认使用的团队技能目录（管理员配置，按配置顺序），用户可取消勾选.
      */
     defaultSkills?: AppUserSkillOption[] | null;
+    /**
+     * 应用是否开启长期记忆（未开启时用户无需调整记忆偏好）.
+     */
+    memoryEnabled?: boolean | null;
+    /**
+     * 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用.
+     */
+    memoryMode?: number | null;
     /**
      * 用户当前选择的专家提示词 id，0=未选择；无用户配置行时为 0.
      */
@@ -12308,6 +12887,23 @@ export interface QueryKnowledgeGraphTemplatesCommandResponse extends Parsable {
     items?: KnowledgeGraphTemplateItem[] | null;
 }
 /**
+ * 本人记忆列表响应.
+ */
+export interface QueryMyMemoriesCommandResponse extends Parsable {
+    /**
+     * 记忆条目.
+     */
+    items?: MemoryItem[] | null;
+    /**
+     * 应用是否开启记忆（未开启时前端隐藏管理入口）.
+     */
+    memoryEnabled?: boolean | null;
+    /**
+     * 总条数.
+     */
+    total?: number | null;
+}
+/**
  * 插件列表查询响应.
  */
 export interface QueryPluginListCommandResponse extends Parsable {
@@ -12787,6 +13383,32 @@ export interface QueryTeamsCommandResponse extends Parsable {
      * 团队集合.
      */
     items?: TeamItem[] | null;
+}
+/**
+ * 团队定时器执行历史响应.
+ */
+export interface QueryTeamTimerExecutionsCommandResponse extends Parsable {
+    /**
+     * 执行记录列表.
+     */
+    items?: TeamTimerExecutionItem[] | null;
+    /**
+     * 总数.
+     */
+    totalCount?: number | null;
+}
+/**
+ * 团队定时器列表响应.
+ */
+export interface QueryTeamTimersCommandResponse extends Parsable {
+    /**
+     * 定时器列表.
+     */
+    items?: TeamTimerItem[] | null;
+    /**
+     * 总数.
+     */
+    totalCount?: number | null;
 }
 /**
  * 团队成员列表响应.
@@ -13522,6 +14144,14 @@ export interface RunPluginCommand extends Parsable {
      */
     configJson?: string | null;
     /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
      * 自定义插件（MCP/OpenAPI）的函数名称；为空时插件仅有一个函数才可执行.
      */
     functionEscaped?: string | null;
@@ -13678,23 +14308,27 @@ export interface SaveAppSecurityCommand extends Parsable {
      */
     enabled?: boolean | null;
     /**
-     * 是否对模型回复文本（对话正文）脱敏.
+     * 是否处理用户输入文本（发送给模型的用户消息）.
+     */
+    maskInput?: boolean | null;
+    /**
+     * 是否处理模型回复文本（对话正文）.
      */
     maskModelOutput?: boolean | null;
     /**
-     * 是否对工具调用参数（调用记录展示、流程节点输入）脱敏.
+     * 是否处理工具调用参数（调用记录展示、流程节点输入）.
      */
     maskToolArgs?: boolean | null;
     /**
-     * 是否对工具调用结果（含错误信息、流程节点输出）脱敏.
+     * 是否处理工具调用结果（含错误信息、流程节点输出）.
      */
     maskToolResult?: boolean | null;
     /**
-     * 模型回复专属脱敏规则列表，与 Rules 相互独立维护；条数与校验规则同 Rules.
+     * 模型回复专属规则列表，与 Rules 相互独立维护；条数与校验规则同 Rules.block 策略走流式缓冲窗拦截（积压阈值释放、命中截断输出），非流式整条替换.
      */
     modelOutputRules?: AppSecurityRule[] | null;
     /**
-     * 内容脱敏规则列表（工具调用结果/工具调用参数范围共用），最多 50 条；type 取 AppSecurityRuleTypes（phone/idCard/email/bankCard/custom），custom 须携带可编译正则.
+     * 内容规则列表（用户输入/工具调用结果/工具调用参数范围共用），最多 50 条；type 取 AppSecurityRuleTypes（phone/idCard/email/bankCard/custom），custom 须携带可编译正则；strategy 取 AppSecurityStrategies（redact/mask/hash/block/flag）.
      */
     rules?: AppSecurityRule[] | null;
 }
@@ -13706,6 +14340,10 @@ export interface SaveAppUserConfigCommand extends Parsable {
      * 应用 id.
      */
     appId?: Guid | null;
+    /**
+     * 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）；null=不修改.
+     */
+    memoryMode?: number | null;
     /**
      * 用户选择的专家提示词 id，须为本人个人提示词或本团队提示词，0=清除.
      */
@@ -14176,11 +14814,32 @@ export function serializeAppMessageItem(writer: SerializationWriter, appMessageI
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAppSecurityEventItem(writer: SerializationWriter, appSecurityEventItem: Partial<AppSecurityEventItem> | undefined | null = {}) : void {
+    if (appSecurityEventItem) {
+        writer.writeStringValue("action", appSecurityEventItem.action);
+        writer.writeStringValue("createTime", appSecurityEventItem.createTime);
+        writer.writeNumberValue("hitCount", appSecurityEventItem.hitCount);
+        writer.writeGuidValue("id", appSecurityEventItem.id);
+        writer.writeStringValue("ruleName", appSecurityEventItem.ruleName);
+        writer.writeStringValue("ruleType", appSecurityEventItem.ruleType);
+        writer.writeStringValue("scope", appSecurityEventItem.scope);
+        writer.writeGuidValue("sessionId", appSecurityEventItem.sessionId);
+        writer.writeStringValue("strategy", appSecurityEventItem.strategy);
+        writer.writeStringValue("userId", appSecurityEventItem.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAppSecurityRule(writer: SerializationWriter, appSecurityRule: Partial<AppSecurityRule> | undefined | null = {}) : void {
     if (appSecurityRule) {
+        writer.writeNumberValue("keepLast", appSecurityRule.keepLast);
         writer.writeStringValue("name", appSecurityRule.name);
         writer.writeStringValue("pattern", appSecurityRule.pattern);
         writer.writeStringValue("replacement", appSecurityRule.replacement);
+        writer.writeStringValue("strategy", appSecurityRule.strategy);
         writer.writeStringValue("type", appSecurityRule.type);
     }
 }
@@ -14201,6 +14860,19 @@ export function serializeAppSessionItem(writer: SerializationWriter, appSessionI
         writer.writeStringValue("title", appSessionItem.title);
         writer.writeNumberValue("totalTokens", appSessionItem.totalTokens);
         writer.writeNumberValue("userType", appSessionItem.userType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAppUsageActivityStats(writer: SerializationWriter, appUsageActivityStats: Partial<AppUsageActivityStats> | undefined | null = {}) : void {
+    if (appUsageActivityStats) {
+        writer.writeStringValue("lastActiveTime", appUsageActivityStats.lastActiveTime);
+        writer.writeStringValue("messageCount", appUsageActivityStats.messageCount);
+        writer.writeNumberValue("sessionCount", appUsageActivityStats.sessionCount);
+        writer.writeNumberValue("userCount", appUsageActivityStats.userCount);
     }
 }
 /**
@@ -14244,6 +14916,7 @@ export function serializeAppUserSkillOption(writer: SerializationWriter, appUser
         writer.writeStringValue("key", appUserSkillOption.key);
         writer.writeStringValue("name", appUserSkillOption.name);
         writer.writeNumberValue("teamId", appUserSkillOption.teamId);
+        writer.writeNumberValue("useCount", appUserSkillOption.useCount);
     }
 }
 /**
@@ -14715,6 +15388,26 @@ export function serializeCreateTeamCommand(writer: SerializationWriter, createTe
         writer.writeEnumValue<UserType>("contextUserType", createTeamCommand.contextUserType);
         writer.writeStringValue("description", createTeamCommand.description);
         writer.writeStringValue("name", createTeamCommand.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateTeamTimerCommand(writer: SerializationWriter, createTeamTimerCommand: Partial<CreateTeamTimerCommand> | undefined | null = {}) : void {
+    if (createTeamTimerCommand) {
+        writer.writeGuidValue("appId", createTeamTimerCommand.appId);
+        writer.writeStringValue("contextUserId", createTeamTimerCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", createTeamTimerCommand.contextUserType);
+        writer.writeStringValue("cronExpression", createTeamTimerCommand.cronExpression);
+        writer.writeStringValue("description", createTeamTimerCommand.description);
+        writer.writeStringValue("inputContent", createTeamTimerCommand.inputContent);
+        writer.writeBooleanValue("isEnabled", createTeamTimerCommand.isEnabled);
+        writer.writeNumberValue("maxRetryCount", createTeamTimerCommand.maxRetryCount);
+        writer.writeStringValue("name", createTeamTimerCommand.name);
+        writer.writeNumberValue("retryIntervalSeconds", createTeamTimerCommand.retryIntervalSeconds);
+        writer.writeStringValue("teamId", createTeamTimerCommand.teamId);
     }
 }
 /**
@@ -15342,6 +16035,22 @@ export function serializeMcpServerPluginConnectionOptions(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeMemoryItem(writer: SerializationWriter, memoryItem: Partial<MemoryItem> | undefined | null = {}) : void {
+    if (memoryItem) {
+        writer.writeGuidValue("appId", memoryItem.appId);
+        writer.writeStringValue("content", memoryItem.content);
+        writer.writeStringValue("createTime", memoryItem.createTime);
+        writer.writeGuidValue("id", memoryItem.id);
+        writer.writeNumberValue("memoryType", memoryItem.memoryType);
+        writer.writeNumberValue("score", memoryItem.score);
+        writer.writeStringValue("updateTime", memoryItem.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeOAuthBindAccountByCodeCommand(writer: SerializationWriter, oAuthBindAccountByCodeCommand: Partial<OAuthBindAccountByCodeCommand> | undefined | null = {}) : void {
     if (oAuthBindAccountByCodeCommand) {
         writer.writeStringValue("code", oAuthBindAccountByCodeCommand.code);
@@ -15734,6 +16443,21 @@ export function serializeQueryAdminTeamListCommandResponseItem(writer: Serializa
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAgentCompactionDefaultsResponse(writer: SerializationWriter, queryAgentCompactionDefaultsResponse: Partial<QueryAgentCompactionDefaultsResponse> | undefined | null = {}) : void {
+    if (queryAgentCompactionDefaultsResponse) {
+        writer.writeBooleanValue("enableSummarization", queryAgentCompactionDefaultsResponse.enableSummarization);
+        writer.writeNumberValue("hardTokenLimit", queryAgentCompactionDefaultsResponse.hardTokenLimit);
+        writer.writeNumberValue("preserveTurns", queryAgentCompactionDefaultsResponse.preserveTurns);
+        writer.writeStringValue("summarizerModelId", queryAgentCompactionDefaultsResponse.summarizerModelId);
+        writer.writeNumberValue("summarizeTriggerTokens", queryAgentCompactionDefaultsResponse.summarizeTriggerTokens);
+        writer.writeNumberValue("toolResultTriggerMessages", queryAgentCompactionDefaultsResponse.toolResultTriggerMessages);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAIChannelListCommandResponse(writer: SerializationWriter, queryAIChannelListCommandResponse: Partial<QueryAIChannelListCommandResponse> | undefined | null = {}) : void {
     if (queryAIChannelListCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryAIChannelListCommandResponseItem>("items", queryAIChannelListCommandResponse.items, serializeQueryAIChannelListCommandResponseItem);
@@ -15971,6 +16695,17 @@ export function serializeQueryAppLogsCommandResponse(writer: SerializationWriter
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryAppMemoryStatsResponse(writer: SerializationWriter, queryAppMemoryStatsResponse: Partial<QueryAppMemoryStatsResponse> | undefined | null = {}) : void {
+    if (queryAppMemoryStatsResponse) {
+        writer.writeNumberValue("totalMemories", queryAppMemoryStatsResponse.totalMemories);
+        writer.writeNumberValue("userCount", queryAppMemoryStatsResponse.userCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryAppsCommandResponse(writer: SerializationWriter, queryAppsCommandResponse: Partial<QueryAppsCommandResponse> | undefined | null = {}) : void {
     if (queryAppsCommandResponse) {
         writer.writeCollectionOfObjectValues<AppItem>("items", queryAppsCommandResponse.items, serializeAppItem);
@@ -15987,12 +16722,26 @@ export function serializeQueryAppSecurityCommandResponse(writer: SerializationWr
     if (queryAppSecurityCommandResponse) {
         writer.writeGuidValue("appId", queryAppSecurityCommandResponse.appId);
         writer.writeBooleanValue("enabled", queryAppSecurityCommandResponse.enabled);
+        writer.writeBooleanValue("maskInput", queryAppSecurityCommandResponse.maskInput);
         writer.writeBooleanValue("maskModelOutput", queryAppSecurityCommandResponse.maskModelOutput);
         writer.writeBooleanValue("maskToolArgs", queryAppSecurityCommandResponse.maskToolArgs);
         writer.writeBooleanValue("maskToolResult", queryAppSecurityCommandResponse.maskToolResult);
         writer.writeCollectionOfObjectValues<AppSecurityRule>("modelOutputRules", queryAppSecurityCommandResponse.modelOutputRules, serializeAppSecurityRule);
         writer.writeNumberValue("myRole", queryAppSecurityCommandResponse.myRole);
         writer.writeCollectionOfObjectValues<AppSecurityRule>("rules", queryAppSecurityCommandResponse.rules, serializeAppSecurityRule);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppSecurityEventsCommandResponse(writer: SerializationWriter, queryAppSecurityEventsCommandResponse: Partial<QueryAppSecurityEventsCommandResponse> | undefined | null = {}) : void {
+    if (queryAppSecurityEventsCommandResponse) {
+        writer.writeCollectionOfObjectValues<AppSecurityEventItem>("items", queryAppSecurityEventsCommandResponse.items, serializeAppSecurityEventItem);
+        writer.writeNumberValue("pageNo", queryAppSecurityEventsCommandResponse.pageNo);
+        writer.writeNumberValue("pageSize", queryAppSecurityEventsCommandResponse.pageSize);
+        writer.writeNumberValue("total", queryAppSecurityEventsCommandResponse.total);
     }
 }
 /**
@@ -16027,6 +16776,7 @@ export function serializeQueryAppSessionsCommandResponse(writer: SerializationWr
 export function serializeQueryAppUsageCommandResponse(writer: SerializationWriter, queryAppUsageCommandResponse: Partial<QueryAppUsageCommandResponse> | undefined | null = {}) : void {
     if (queryAppUsageCommandResponse) {
         writer.writeCollectionOfObjectValues<AppUsageModelItem>("byModel", queryAppUsageCommandResponse.byModel, serializeAppUsageModelItem);
+        writer.writeObjectValue<AppUsageActivityStats>("stats", queryAppUsageCommandResponse.stats, serializeAppUsageActivityStats);
         writer.writeObjectValue<AppUsageSummary>("summary", queryAppUsageCommandResponse.summary, serializeAppUsageSummary);
     }
 }
@@ -16038,6 +16788,8 @@ export function serializeQueryAppUsageCommandResponse(writer: SerializationWrite
 export function serializeQueryAppUserConfigCommandResponse(writer: SerializationWriter, queryAppUserConfigCommandResponse: Partial<QueryAppUserConfigCommandResponse> | undefined | null = {}) : void {
     if (queryAppUserConfigCommandResponse) {
         writer.writeCollectionOfObjectValues<AppUserSkillOption>("defaultSkills", queryAppUserConfigCommandResponse.defaultSkills, serializeAppUserSkillOption);
+        writer.writeBooleanValue("memoryEnabled", queryAppUserConfigCommandResponse.memoryEnabled);
+        writer.writeNumberValue("memoryMode", queryAppUserConfigCommandResponse.memoryMode);
         writer.writeNumberValue("promptId", queryAppUserConfigCommandResponse.promptId);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppUserConfigCommandResponse.skills);
         writer.writeCollectionOfPrimitiveValues<string>("toolApprovalAutoApprovedNames", queryAppUserConfigCommandResponse.toolApprovalAutoApprovedNames);
@@ -16475,6 +17227,18 @@ export function serializeQueryKnowledgeGraphTemplatesCommandResponse(writer: Ser
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryMyMemoriesCommandResponse(writer: SerializationWriter, queryMyMemoriesCommandResponse: Partial<QueryMyMemoriesCommandResponse> | undefined | null = {}) : void {
+    if (queryMyMemoriesCommandResponse) {
+        writer.writeCollectionOfObjectValues<MemoryItem>("items", queryMyMemoriesCommandResponse.items, serializeMemoryItem);
+        writer.writeBooleanValue("memoryEnabled", queryMyMemoriesCommandResponse.memoryEnabled);
+        writer.writeNumberValue("total", queryMyMemoriesCommandResponse.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryPluginListCommandResponse(writer: SerializationWriter, queryPluginListCommandResponse: Partial<QueryPluginListCommandResponse> | undefined | null = {}) : void {
     if (queryPluginListCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryPluginListCommandResponseItem>("items", queryPluginListCommandResponse.items, serializeQueryPluginListCommandResponseItem);
@@ -16784,6 +17548,28 @@ export function serializeQueryTeamPluginsCommandResponse(writer: SerializationWr
 export function serializeQueryTeamsCommandResponse(writer: SerializationWriter, queryTeamsCommandResponse: Partial<QueryTeamsCommandResponse> | undefined | null = {}) : void {
     if (queryTeamsCommandResponse) {
         writer.writeCollectionOfObjectValues<TeamItem>("items", queryTeamsCommandResponse.items, serializeTeamItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamTimerExecutionsCommandResponse(writer: SerializationWriter, queryTeamTimerExecutionsCommandResponse: Partial<QueryTeamTimerExecutionsCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamTimerExecutionsCommandResponse) {
+        writer.writeCollectionOfObjectValues<TeamTimerExecutionItem>("items", queryTeamTimerExecutionsCommandResponse.items, serializeTeamTimerExecutionItem);
+        writer.writeNumberValue("totalCount", queryTeamTimerExecutionsCommandResponse.totalCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamTimersCommandResponse(writer: SerializationWriter, queryTeamTimersCommandResponse: Partial<QueryTeamTimersCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamTimersCommandResponse) {
+        writer.writeCollectionOfObjectValues<TeamTimerItem>("items", queryTeamTimersCommandResponse.items, serializeTeamTimerItem);
+        writer.writeNumberValue("totalCount", queryTeamTimersCommandResponse.totalCount);
     }
 }
 /**
@@ -17195,6 +17981,8 @@ export function serializeRunAgentInput(writer: SerializationWriter, runAgentInpu
 export function serializeRunPluginCommand(writer: SerializationWriter, runPluginCommand: Partial<RunPluginCommand> | undefined | null = {}) : void {
     if (runPluginCommand) {
         writer.writeStringValue("configJson", runPluginCommand.configJson);
+        writer.writeStringValue("contextUserId", runPluginCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", runPluginCommand.contextUserType);
         writer.writeStringValue("function", runPluginCommand.functionEscaped);
         writer.writeStringValue("key", runPluginCommand.key);
         writer.writeStringValue("requestJson", runPluginCommand.requestJson);
@@ -17265,6 +18053,7 @@ export function serializeSaveAppSecurityCommand(writer: SerializationWriter, sav
     if (saveAppSecurityCommand) {
         writer.writeGuidValue("appId", saveAppSecurityCommand.appId);
         writer.writeBooleanValue("enabled", saveAppSecurityCommand.enabled);
+        writer.writeBooleanValue("maskInput", saveAppSecurityCommand.maskInput);
         writer.writeBooleanValue("maskModelOutput", saveAppSecurityCommand.maskModelOutput);
         writer.writeBooleanValue("maskToolArgs", saveAppSecurityCommand.maskToolArgs);
         writer.writeBooleanValue("maskToolResult", saveAppSecurityCommand.maskToolResult);
@@ -17280,6 +18069,7 @@ export function serializeSaveAppSecurityCommand(writer: SerializationWriter, sav
 export function serializeSaveAppUserConfigCommand(writer: SerializationWriter, saveAppUserConfigCommand: Partial<SaveAppUserConfigCommand> | undefined | null = {}) : void {
     if (saveAppUserConfigCommand) {
         writer.writeGuidValue("appId", saveAppUserConfigCommand.appId);
+        writer.writeNumberValue("memoryMode", saveAppUserConfigCommand.memoryMode);
         writer.writeNumberValue("promptId", saveAppUserConfigCommand.promptId);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppUserConfigCommand.skills);
         writer.writeStringValue("toolApprovalMode", saveAppUserConfigCommand.toolApprovalMode);
@@ -17553,6 +18343,7 @@ export function serializeSkillOptionItem(writer: SerializationWriter, skillOptio
         writer.writeStringValue("key", skillOptionItem.key);
         writer.writeStringValue("name", skillOptionItem.name);
         writer.writeNumberValue("teamId", skillOptionItem.teamId);
+        writer.writeNumberValue("useCount", skillOptionItem.useCount);
     }
 }
 /**
@@ -17669,6 +18460,7 @@ export function serializeTeamGatewayModelItem(writer: SerializationWriter, teamG
         writer.writeStringValue("name", teamGatewayModelItem.name);
         writer.writeStringValue("providerKey", teamGatewayModelItem.providerKey);
         writer.writeObjectValue<TeamGatewayModelQuota>("quota", teamGatewayModelItem.quota, serializeTeamGatewayModelQuota);
+        writer.writeBooleanValue("supportsVision", teamGatewayModelItem.supportsVision);
         writer.writeStringValue("totalUsedTokens", teamGatewayModelItem.totalUsedTokens);
     }
 }
@@ -17744,6 +18536,55 @@ export function serializeTeamPluginItem(writer: SerializationWriter, teamPluginI
         writer.writeStringValue("updateTime", teamPluginItem.updateTime);
         writer.writeStringValue("updateUserId", teamPluginItem.updateUserId);
         writer.writeStringValue("updateUserName", teamPluginItem.updateUserName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTeamTimerExecutionItem(writer: SerializationWriter, teamTimerExecutionItem: Partial<TeamTimerExecutionItem> | undefined | null = {}) : void {
+    if (teamTimerExecutionItem) {
+        serializeAuditsInfo(writer, teamTimerExecutionItem)
+        writer.writeStringValue("appInstanceId", teamTimerExecutionItem.appInstanceId);
+        writer.writeNumberValue("attemptCount", teamTimerExecutionItem.attemptCount);
+        writer.writeStringValue("durationMs", teamTimerExecutionItem.durationMs);
+        writer.writeStringValue("endTime", teamTimerExecutionItem.endTime);
+        writer.writeStringValue("errorMessage", teamTimerExecutionItem.errorMessage);
+        writer.writeGuidValue("executionId", teamTimerExecutionItem.executionId);
+        writer.writeStringValue("nextRetryTime", teamTimerExecutionItem.nextRetryTime);
+        writer.writeStringValue("result", teamTimerExecutionItem.result);
+        writer.writeStringValue("startTime", teamTimerExecutionItem.startTime);
+        writer.writeEnumValue<TimerExecutionStatus>("status", teamTimerExecutionItem.status);
+        writer.writeGuidValue("timerId", teamTimerExecutionItem.timerId);
+        writer.writeEnumValue<TimerTriggerType>("triggerType", teamTimerExecutionItem.triggerType);
+        writer.writeStringValue("triggerUserId", teamTimerExecutionItem.triggerUserId);
+        writer.writeStringValue("triggerUserName", teamTimerExecutionItem.triggerUserName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTeamTimerItem(writer: SerializationWriter, teamTimerItem: Partial<TeamTimerItem> | undefined | null = {}) : void {
+    if (teamTimerItem) {
+        serializeAuditsInfo(writer, teamTimerItem)
+        writer.writeGuidValue("appId", teamTimerItem.appId);
+        writer.writeStringValue("appName", teamTimerItem.appName);
+        writer.writeNumberValue("appPublishStatus", teamTimerItem.appPublishStatus);
+        writer.writeEnumValue<AppType>("appType", teamTimerItem.appType);
+        writer.writeStringValue("cronExpression", teamTimerItem.cronExpression);
+        writer.writeStringValue("description", teamTimerItem.description);
+        writer.writeStringValue("inputContent", teamTimerItem.inputContent);
+        writer.writeBooleanValue("isEnabled", teamTimerItem.isEnabled);
+        writer.writeStringValue("lastRunTime", teamTimerItem.lastRunTime);
+        writer.writeNumberValue("maxRetryCount", teamTimerItem.maxRetryCount);
+        writer.writeStringValue("name", teamTimerItem.name);
+        writer.writeStringValue("nextRunTime", teamTimerItem.nextRunTime);
+        writer.writeNumberValue("retryIntervalSeconds", teamTimerItem.retryIntervalSeconds);
+        writer.writeStringValue("teamId", teamTimerItem.teamId);
+        writer.writeGuidValue("timerId", teamTimerItem.timerId);
     }
 }
 /**
@@ -18223,6 +19064,26 @@ export function serializeUpdateTeamOwnerCommand(writer: SerializationWriter, upd
         writer.writeEnumValue<UserType>("contextUserType", updateTeamOwnerCommand.contextUserType);
         writer.writeStringValue("teamId", updateTeamOwnerCommand.teamId);
         writer.writeStringValue("userId", updateTeamOwnerCommand.userId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateTeamTimerCommand(writer: SerializationWriter, updateTeamTimerCommand: Partial<UpdateTeamTimerCommand> | undefined | null = {}) : void {
+    if (updateTeamTimerCommand) {
+        writer.writeGuidValue("appId", updateTeamTimerCommand.appId);
+        writer.writeStringValue("contextUserId", updateTeamTimerCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", updateTeamTimerCommand.contextUserType);
+        writer.writeStringValue("cronExpression", updateTeamTimerCommand.cronExpression);
+        writer.writeStringValue("description", updateTeamTimerCommand.description);
+        writer.writeStringValue("inputContent", updateTeamTimerCommand.inputContent);
+        writer.writeBooleanValue("isEnabled", updateTeamTimerCommand.isEnabled);
+        writer.writeNumberValue("maxRetryCount", updateTeamTimerCommand.maxRetryCount);
+        writer.writeStringValue("name", updateTeamTimerCommand.name);
+        writer.writeNumberValue("retryIntervalSeconds", updateTeamTimerCommand.retryIntervalSeconds);
+        writer.writeGuidValue("timerId", updateTeamTimerCommand.timerId);
     }
 }
 /**
@@ -18860,6 +19721,10 @@ export interface SkillOptionItem extends Parsable {
      * 所属团队 id，0=系统内置或个人技能.
      */
     teamId?: number | null;
+    /**
+     * 使用次数（应用对话中模型调用装载工具时自增），技能卡片热门排序依据.
+     */
+    useCount?: number | null;
 }
 /**
  * 对文本执行 ${key} 变量替换（含私密变量解密），仅团队 Admin 及以上可调用；插件运行时应使用服务端内部的 IVariableService，避免将私密值回传给成员.
@@ -19045,6 +19910,10 @@ export interface TeamGatewayModelItem extends Parsable {
      * 额度限制，null=不限额.
      */
     quota?: TeamGatewayModelQuota | null;
+    /**
+     * 是否支持视觉（图片输入），图片理解等场景按此筛选.
+     */
+    supportsVision?: boolean | null;
     /**
      * 该团队通过开放接口累计消耗 tokens.
      */
@@ -19255,6 +20124,132 @@ export interface TeamPluginItem extends Parsable {
 }
 export type TeamRole = (typeof TeamRoleObject)[keyof typeof TeamRoleObject];
 /**
+ * 团队定时器执行记录项.
+ */
+export interface TeamTimerExecutionItem extends AuditsInfo, Parsable {
+    /**
+     * 流程应用实例 id，Agent 应用为 null.
+     */
+    appInstanceId?: string | null;
+    /**
+     * 已尝试次数（首次执行记 1）.
+     */
+    attemptCount?: number | null;
+    /**
+     * 总耗时毫秒，未结束为 null.
+     */
+    durationMs?: string | null;
+    /**
+     * 结束时间，未结束为 null.
+     */
+    endTime?: string | null;
+    /**
+     * 失败原因.
+     */
+    errorMessage?: string | null;
+    /**
+     * 执行记录 id.
+     */
+    executionId?: Guid | null;
+    /**
+     * 下次重试时间，仅待重试状态有值.
+     */
+    nextRetryTime?: string | null;
+    /**
+     * 应用回答文本.
+     */
+    result?: string | null;
+    /**
+     * 首次开始执行时间，未开始为 null.
+     */
+    startTime?: string | null;
+    /**
+     * 执行状态.
+     */
+    status?: TimerExecutionStatus | null;
+    /**
+     * 定时器 id.
+     */
+    timerId?: Guid | null;
+    /**
+     * 触发方式.
+     */
+    triggerType?: TimerTriggerType | null;
+    /**
+     * 触发用户 id（手动=操作人，调度=定时器创建人）.
+     */
+    triggerUserId?: string | null;
+    /**
+     * 触发用户名字.
+     */
+    triggerUserName?: string | null;
+}
+/**
+ * 团队定时器项.
+ */
+export interface TeamTimerItem extends AuditsInfo, Parsable {
+    /**
+     * 绑定的应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 绑定的应用名称（应用已删除为空）.
+     */
+    appName?: string | null;
+    /**
+     * 绑定的应用发布状态，0=草稿 1=已发布.
+     */
+    appPublishStatus?: number | null;
+    /**
+     * 绑定的应用类型.
+     */
+    appType?: AppType | null;
+    /**
+     * 调度 cron 表达式（UTC）.
+     */
+    cronExpression?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 每次执行时作为提问发送给应用的内容.
+     */
+    inputContent?: string | null;
+    /**
+     * 是否启用调度.
+     */
+    isEnabled?: boolean | null;
+    /**
+     * 最近一次触发时间，未执行过为 null.
+     */
+    lastRunTime?: string | null;
+    /**
+     * 失败重试次数（不含首次执行）.
+     */
+    maxRetryCount?: number | null;
+    /**
+     * 定时器名称.
+     */
+    name?: string | null;
+    /**
+     * 下次调度时间（Hangfire），未启用或无调度为 null.
+     */
+    nextRunTime?: string | null;
+    /**
+     * 重试间隔秒数.
+     */
+    retryIntervalSeconds?: number | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 定时器 id.
+     */
+    timerId?: Guid | null;
+}
+/**
  * 团队成员项.
  */
 export interface TeamUserItem extends Parsable {
@@ -19320,6 +20315,8 @@ export interface TeamVariableItem extends Parsable {
      */
     variableId?: string | null;
 }
+export type TimerExecutionStatus = (typeof TimerExecutionStatusObject)[keyof typeof TimerExecutionStatusObject];
+export type TimerTriggerType = (typeof TimerTriggerTypeObject)[keyof typeof TimerTriggerTypeObject];
 /**
  * 解绑第三方账号.
  */
@@ -20018,6 +21015,55 @@ export interface UpdateTeamOwnerCommand extends Parsable {
      * 新所有者的用户 id，必须是团队成员.
      */
     userId?: string | null;
+}
+/**
+ * 更新团队定时器，需要团队 Admin 及以上角色；绑定应用必须是本团队已发布的 Agent/流程应用.
+ */
+export interface UpdateTeamTimerCommand extends Parsable {
+    /**
+     * 绑定的应用 id（本团队已发布的 Agent/流程应用）.
+     */
+    appId?: Guid | null;
+    /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 调度 cron 表达式（UTC，5 段标准格式）.
+     */
+    cronExpression?: string | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 每次执行时作为提问发送给应用的内容.
+     */
+    inputContent?: string | null;
+    /**
+     * 是否启用调度.
+     */
+    isEnabled?: boolean | null;
+    /**
+     * 失败重试次数（0-5，不含首次执行）.
+     */
+    maxRetryCount?: number | null;
+    /**
+     * 定时器名称，团队内唯一.
+     */
+    name?: string | null;
+    /**
+     * 重试间隔秒数（10-3600）.
+     */
+    retryIntervalSeconds?: number | null;
+    /**
+     * 定时器 id.
+     */
+    timerId?: Guid | null;
 }
 /**
  * 修改成员角色，仅 Owner 可操作；只能改为 Admin/Member，所有权转让不在本期范围.
@@ -20954,6 +22000,23 @@ export const TeamRoleObject = {
     Member: "member",
     Admin: "admin",
     Owner: "owner",
+} as const;
+/**
+ * 定时器执行状态.
+ */
+export const TimerExecutionStatusObject = {
+    Pending: "pending",
+    Running: "running",
+    Success: "success",
+    Failed: "failed",
+    Retrying: "retrying",
+} as const;
+/**
+ * 定时器触发方式.
+ */
+export const TimerTriggerTypeObject = {
+    Scheduled: "scheduled",
+    Manual: "manual",
 } as const;
 /**
  * 用户类型.

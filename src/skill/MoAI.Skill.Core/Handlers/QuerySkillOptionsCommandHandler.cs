@@ -40,6 +40,7 @@ public class QuerySkillOptionsCommandHandler : IRequestHandler<QuerySkillOptions
                 Description = x.Description,
                 IsSystem = x.IsSystem,
                 TeamId = x.TeamId,
+                UseCount = x.UseCount,
             })
             .ToListAsync(cancellationToken);
 

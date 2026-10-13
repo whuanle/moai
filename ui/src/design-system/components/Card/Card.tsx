@@ -7,6 +7,7 @@ export function Card(props: CardProps) {
   return (
     <AntdCard
       variant="borderless"
+      {...props}
       style={{
         border: `1px solid ${token.colorBorderSecondary}`,
         boxShadow: token.boxShadowTertiary,
@@ -17,7 +18,6 @@ export function Card(props: CardProps) {
         header: { borderBottom: `1px solid ${token.colorBorderSecondary}`, fontWeight: 600 },
         ...props.styles,
       }}
-      {...props}
     />
   )
 }

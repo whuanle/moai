@@ -44,18 +44,38 @@ public partial class AppUserConfigEntity : IFullAudited
     /// </summary>
     public string Skills { get; set; } = default!;
 
+    /// <summary>
+    /// 创建人.
+    /// </summary>
     public long CreateUserId { get; set; }
 
+    /// <summary>
+    /// 创建时间.
+    /// </summary>
     public DateTimeOffset CreateTime { get; set; }
 
+    /// <summary>
+    /// 更新人.
+    /// </summary>
     public long UpdateUserId { get; set; }
 
+    /// <summary>
+    /// 更新时间.
+    /// </summary>
     public DateTimeOffset UpdateTime { get; set; }
 
+    /// <summary>
+    /// 软删除，0=未删除.
+    /// </summary>
     public long IsDeleted { get; set; }
 
     /// <summary>
     /// 工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准.
     /// </summary>
     public string ToolApprovalMode { get; set; } = default!;
+
+    /// <summary>
+    /// 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）.
+    /// </summary>
+    public short MemoryMode { get; set; }
 }

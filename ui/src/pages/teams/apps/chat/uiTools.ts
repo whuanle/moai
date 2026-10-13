@@ -1,4 +1,5 @@
 import type { ToolCallDisplay } from './ToolCallCard'
+import { VIS_CHART_TYPES } from './visChartTypes'
 
 /** 前端展示工具名前缀（与后端 FrontendToolContract 保持同步）：识别到即转交侧边栏渲染，后端仅桩执行 */
 export const UI_TOOL_PREFIX = 'ui_'
@@ -19,8 +20,8 @@ export interface UiToolPayload {
   language?: string
   /** code：完整代码文本 */
   code?: string
-  /** chart：ECharts option（纯 JSON 对象） */
-  option?: Record<string, unknown>
+  /** chart：GPT-Vis 图表配置（type + data 等，纯 JSON 对象） */
+  chart?: Record<string, unknown>
 }
 
 /** 判断工具调用是否为前端展示工具（固定前缀 ui_） */
@@ -36,10 +37,10 @@ function kindOf(name: string): UiToolKind | null {
 }
 
 /**
- * 图表 option 归一化：部分模型会把整个 option 序列化成 JSON 字符串（或包一层 markdown 围栏）传给工具，
+ * 图表配置归一化：部分模型会把整个配置序列化成 JSON 字符串（或包一层 markdown 围栏）传给工具，
  * 统一归一为对象；无法归一出对象时返回 undefined（卡片按内容缺失降级）.
  */
-function normalizeChartOption(raw: unknown): Record<string, unknown> | undefined {
+function normalizeChartConfig(raw: unknown): Record<string, unknown> | undefined {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     return raw as Record<string, unknown>
   }
@@ -60,9 +61,9 @@ function normalizeChartOption(raw: unknown): Record<string, unknown> | undefined
   return undefined
 }
 
-/** 判断对象是否长得像 ECharts option（series/dataset/坐标轴等顶层键） */
-function looksLikeEchartsOption(obj: Record<string, unknown>): boolean {
-  return 'series' in obj || 'dataset' in obj || ('xAxis' in obj && 'yAxis' in obj) || 'radar' in obj
+/** 判断对象是否为可渲染的图表配置：type 在支持列表内且 data 为数组（缺 data 或白名单外 type 会让渲染层失败） */
+function looksLikeVisChart(obj: Record<string, unknown>): boolean {
+  return typeof obj.type === 'string' && VIS_CHART_TYPES.has(obj.type) && Array.isArray(obj.data)
 }
 
 /**
@@ -93,16 +94,16 @@ export function parseUiToolPayload(name: string, argsJson?: string): UiToolPaylo
     payload.language = typeof args.language === 'string' && args.language.trim() ? args.language.trim() : undefined
     payload.code = typeof args.code === 'string' ? args.code : undefined
   } else {
-    // 首选 option 字段（归一化字符串/围栏形态）；归一化结果必须具备 ECharts option 的基本结构
-    // （series/dataset/坐标轴等，实测缺 series 的畸形 option 会让 echarts.setOption 抛 TypeError）；
-    // 模型漏嵌 option 键而把 series 等直接铺在顶层时，去掉 title 后整体作为 option 兜底
-    let option = normalizeChartOption(args.option)
-    if (!option || !looksLikeEchartsOption(option)) {
+    // 首选 chart 字段（归一化字符串/围栏形态）；归一化结果必须是可渲染的图表配置
+    // （type 在白名单内且 data 为数组）；模型漏嵌 chart 键而把配置直接铺在顶层时，
+    // 去掉 title 后整体作为配置兜底
+    let chart = normalizeChartConfig(args.chart)
+    if (!chart || !looksLikeVisChart(chart)) {
       const rest = { ...args }
       delete rest.title
-      option = looksLikeEchartsOption(rest) ? rest : undefined
+      chart = looksLikeVisChart(rest) ? rest : undefined
     }
-    payload.option = option
+    payload.chart = chart
   }
   return payload
 }
@@ -112,7 +113,7 @@ export function hasRenderableContent(payload: UiToolPayload | null): boolean {
   if (!payload) return false
   if (payload.kind === 'document') return !!payload.content
   if (payload.kind === 'code') return !!payload.code
-  return !!payload.option
+  return !!payload.chart
 }
 
 /** 侧边栏面板项：由工具调用负载生成，key 为调用 id 以支持历史卡片重开 */

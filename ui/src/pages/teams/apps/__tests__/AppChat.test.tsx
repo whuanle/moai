@@ -50,8 +50,8 @@ vi.mock('@/utils/storage', () => ({
   uploadChatFile: vi.fn(),
 }))
 
-vi.mock('../chat/EChart', () => ({
-  EChart: (props: { option: unknown }) => <div data-testid="echart-mock">{JSON.stringify(props.option)}</div>,
+vi.mock('../chat/VisChart', () => ({
+  VisChart: (props: { chart: unknown }) => <div data-testid="vischart-mock">{JSON.stringify(props.chart)}</div>,
 }))
 
 function renderPage() {
@@ -87,6 +87,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       toolApprovalAutoApprovedNames: [],
       toolApprovalAutoApprovedPrefixes: [],
+      memoryMode: 2,
+      memoryEnabled: true,
     })
     vi.mocked(getMyPrompts).mockResolvedValue([
       { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0 },
@@ -314,6 +316,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       toolApprovalExemptNames: ['search_knowledge_base'],
       toolApprovalExemptPrefixes: ['skill_'],
+      memoryMode: 2,
+      memoryEnabled: true,
     })
     let finishRun: (() => void) | undefined
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
@@ -364,6 +368,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       toolApprovalExemptNames: ['search_knowledge_base'],
       toolApprovalExemptPrefixes: ['skill_'],
+      memoryMode: 2,
+      memoryEnabled: true,
     })
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
       handlers.onToolCallEnd?.({
@@ -402,6 +408,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalAutoApprovedPrefixes: ['sandbox_'],
       toolApprovalExemptNames: ['search_knowledge_base'],
       toolApprovalExemptPrefixes: ['skill_'],
+      memoryMode: 2,
+      memoryEnabled: true,
     })
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
       handlers.onToolCallEnd?.({
@@ -642,10 +650,10 @@ describe('AppChat（Agent 应用对话页）', () => {
       handlers.onToolCallEnd?.({
         id: 'ui-1',
         name: 'ui_show_chart',
-        // 线上实测形态：部分模型会把 option 序列化成 JSON 字符串（前端解析层归一化）
+        // 线上实测形态：部分模型会把 chart 配置序列化成 JSON 字符串（前端解析层归一化）
         args: {
           title: '销量分析',
-          option: JSON.stringify({ series: [{ type: 'bar', data: [3, 5] }] }),
+          chart: JSON.stringify({ type: 'bar', data: [{ category: 'A', value: 3 }, { category: 'B', value: 5 }] }),
         },
       })
       handlers.onDelta?.('图表已生成，点击卡片查看。')
@@ -658,20 +666,22 @@ describe('AppChat（Agent 应用对话页）', () => {
     fireEvent.change(screen.getByPlaceholderText(/发消息给/), { target: { value: '画个销量图表' } })
     fireEvent.click(screen.getByRole('button', { name: '发送' }))
 
-    // 卡片折叠在消息流：类型标签 + 标题，不在正文展开 option
+    // 卡片折叠在消息流：类型标签 + 标题，不在正文展开配置
     await waitFor(() => {
       expect(screen.getAllByText('销量分析').length).toBeGreaterThanOrEqual(1)
     })
     expect(screen.getAllByText('图表').length).toBeGreaterThanOrEqual(1)
-    // option JSON 不进对话正文（仅存在于侧边栏渲染器）
+    // 配置 JSON 不进对话正文（仅存在于侧边栏渲染器）
     const stream = document.querySelector('.moai-chat__stream')
     expect(stream?.textContent).not.toContain('"type":"bar"')
 
-    // 参数流结束自动打开右侧侧边栏渲染图表
+    // 参数流结束自动打开右侧侧边栏渲染图表（VisChart 懒加载，waitFor 等 chunk 解析）
     await waitFor(() => {
       expect(document.querySelector('.moai-chat__panel')).not.toBeNull()
     })
-    expect(screen.getByTestId('echart-mock')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('vischart-mock')).toBeInTheDocument()
+    })
 
     // 关闭侧边栏后，点击卡片可重新打开
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
@@ -722,12 +732,12 @@ describe('AppChat（Agent 应用对话页）', () => {
       handlers.onToolCallEnd?.({
         id: 'ui-a',
         name: 'ui_show_chart',
-        args: { title: '销量图表', option: JSON.stringify({ series: [{ type: 'bar', data: [1] }] }) },
+        args: { title: '销量图表', chart: { type: 'bar', data: [{ category: 'A', value: 1 }] } },
       })
       handlers.onToolCallEnd?.({
         id: 'ui-b',
         name: 'ui_show_chart',
-        args: { title: '流量图表', option: JSON.stringify({ series: [{ type: 'line', data: [2] }] }) },
+        args: { title: '流量图表', chart: JSON.stringify({ type: 'line', data: [{ time: '1月', value: 2 }] }) },
       })
       handlers.onDelta?.('两个图表已生成。')
       handlers.onDone?.()
@@ -750,18 +760,18 @@ describe('AppChat（Agent 应用对话页）', () => {
       expect(tabOf('流量图表')).not.toBeNull()
     })
     expect(tabOf('销量图表')).not.toBeNull()
-    expect(screen.getByTestId('echart-mock').textContent).toContain('"type":"line"')
+    expect(screen.getByTestId('vischart-mock').textContent).toContain('"type":"line"')
 
     // 点击第一个标签：正文切到销量图表（bar）
     fireEvent.click(tabOf('销量图表') as HTMLElement)
     await waitFor(() => {
-      expect(screen.getByTestId('echart-mock').textContent).toContain('"type":"bar"')
+      expect(screen.getByTestId('vischart-mock').textContent).toContain('"type":"bar"')
     })
 
     // 关闭当前标签（销量图表）：自动切回相邻标签（流量图表），标签移除
     fireEvent.click((tabOf('销量图表') as HTMLElement).querySelector('.moai-chat__panel-tab-close') as HTMLElement)
     await waitFor(() => {
-      expect(screen.getByTestId('echart-mock').textContent).toContain('"type":"line"')
+      expect(screen.getByTestId('vischart-mock').textContent).toContain('"type":"line"')
     })
     expect(tabOf('销量图表')).toBeNull()
 

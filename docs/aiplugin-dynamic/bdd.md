@@ -1,6 +1,6 @@
 # 动态插件（DynamicPlugin）行为规格（BDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/ops-p1-plugins-e2e.mjs](../../local-dev/ops-p1-plugins-e2e.mjs) ｜ [local-dev/ops-p2-plugins-e2e.mjs](../../local-dev/ops-p2-plugins-e2e.mjs) ｜ [local-dev/ops-p0-plugins-e2e.mjs](../../local-dev/ops-p0-plugins-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/ops-p1-plugins-e2e.mjs](../../local-dev/ops-p1-plugins-e2e.mjs) ｜ [local-dev/ops-p2-plugins-e2e.mjs](../../local-dev/ops-p2-plugins-e2e.mjs) ｜ [local-dev/ops-p0-plugins-e2e.mjs](../../local-dev/ops-p0-plugins-e2e.mjs) ｜ [local-dev/hot-board-e2e.mjs](../../local-dev/hot-board-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。标签：`@DYN-S<n>` 为场景主键（永久不复用）；`@auto:e2e` 由脚本验证（默认 `local-dev/dynamic-plugin-e2e.mjs`，博查成功路径与响应解析为 `local-dev/bocha-search-e2e.mjs`，墨迹天气为 `local-dev/moji-weather-e2e.mjs`），`@manual` 人工走查。
 
 ## Feature: 动态插件实例列表
@@ -698,4 +698,359 @@
     Then 该行模板列在模板 key 旁显示红色「模板已下线」标记
     And 运行与编辑按钮禁用（不再打开参数示例为空的运行抽屉）
     And 删除按钮仍可用
+```
+
+## Feature: Jina 搜索与网页阅读内置模板（jina_search / jina_reader）
+
+> 外部服务商 Jina AI（https://jina.ai/）：搜索走 Search API（s.jina.ai），网页正文提取走 Reader API（r.jina.ai）。
+> 两个服务地址均允许配置覆盖（`MoAI:Jina:SearchEndpoint` / `MoAI:Jina:ReaderEndpoint`），桩服务 E2E 按官方报文回放。
+
+```gherkin
+  @DYN-S76 @auto:e2e
+  Scenario: Jina 搜索成功路径与参数下发
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员用模板 jina_search 创建实例并以搜索词运行
+    Then 请求以 POST 送达搜索端点且请求体 q 为去空格后的搜索词
+    And Authorization 头为 Bearer「实例配置中的 API Key」
+    And 每条结果解析出标题、链接、摘要与页面正文，UsageTokens 为各条 usage.tokens 求和
+    And ReturnFormat 缺省或非法时回落 markdown，NoCache=true 时透传 X-No-Cache 头
+
+  @DYN-S77 @auto:e2e
+  Scenario: Jina 网页阅读成功路径
+    Given 管理员用模板 jina_reader 创建实例
+    When 以网页地址（可带链接/图片摘要开关、ReturnFormat、NoCache、Timeout）运行
+    Then 请求体 url 为去空格后的地址且 Accept 为 application/json
+    And 解析出标题、地址、摘要、正文、发布时间与 token 用量
+    And 摘要开关开启时 Links/Images 按「地址 → 说明」字典解析
+    And X-With-Links-Summary / X-With-Images-Summary / X-Return-Format / X-No-Cache / X-Timeout 头按参数透传
+
+  @DYN-S78 @auto:e2e
+  Scenario: Jina 插件失败路径归一
+    Given 管理员已创建 jina_search / jina_reader 实例
+    When 配置中的 API Key 为空后运行
+    Then InitAsync 拦截并提示 API Key 不能为空
+    When 阅读实例以非 http/https 地址运行
+    Then 运行时校验拒绝并提示 Url 必须是完整地址
+    When 以无效 API Key 运行
+    Then 上游 401 归一为带 HTTP 状态码与响应体的可读失败
+    When 上游 HTTP 200 但业务 code 非 200（如额度耗尽）
+    Then 归一为带 code 与可读信息的失败而非成功
+```
+
+## Feature: 雅虎财经内置模板（yahoo_finance）
+
+> 数据源：雅虎财经公开端点（v8 chart 报价 / v1 search 新闻与代码候选），无需 API Key。
+> 数据源地址在实例配置 `BaseUrl`（留空用官方地址，可指向镜像/代理/桩服务）；国内直连官方地址大概率被拦，建议镜像。
+
+```gherkin
+  @DYN-S79 @auto:e2e
+  Scenario: quote 批量报价成功路径与解析
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员用模板 yahoo_finance 创建实例（BaseUrl 指向数据源）并以逗号分隔代码运行 quote
+    Then 逐代码返回报价：名称/币种/交易所/类型/最新价/昨收/日内高低/成交量/52 周高低
+    And 涨跌额与涨跌幅由最新价与昨收计算（百分比保留两位）
+    And 行情时间与新闻时间统一转为 UTC ISO 8601
+    And 精简 meta（缺日内高低、行情时间等可选字段）容错为空而不报错
+    And 请求携带浏览器 User-Agent 与 Accept: application/json（上游反爬要求）
+    And IncludeHistory=true 时附带区间收盘序列：空收盘剔除、最多保留最近 30 点、Range/Interval 白名单校验后下发
+    And 未开启 IncludeHistory 时不带 range/interval 参数
+
+  @DYN-S80 @auto:e2e
+  Scenario: quote 失败隔离与截断
+    Given 实例配置 MaxSymbols 生效
+    When 批量中混入无效代码（上游 HTTP 200 + chart.error）与上游 500 代码
+    Then 两者归入 Errors[]（消息分别含 chart.error 文案与 HTTP 500），好代码照常返回 Quotes
+    When 单次提供超过 MaxSymbols 的代码（含重复项）
+    Then 去重后按上限截断并置 Truncated=true
+
+  @DYN-S81 @auto:e2e
+  Scenario: news 财经新闻成功路径与参数下发
+    When 以关键词运行 news 并请求超额条数
+    Then 以 GET /v1/finance/search 检索，newsCount 按实例上限 clamp、quotesCount=0
+    And 实例配置的 Lang/Region 透传（请求级可覆盖）
+    And 新闻解析出标题/发布方/链接/相关代码，空标题条目丢弃，发布时间转 UTC ISO 8601（缺省为空）
+
+  @DYN-S82 @auto:e2e
+  Scenario: search 股票代码解析成功路径
+    When 以公司名或别名运行 search
+    Then 以 GET /v1/finance/search 检索，quotesCount 按参数 clamp、newsCount=0
+    And 候选解析出代码/名称（shortname 优先、longname 回落）/交易所（exchDisp）/类型
+
+  @DYN-S83 @auto:e2e
+  Scenario: 参数与配置校验
+    When 以非法 Mode 运行
+    Then 运行时拒绝并提示仅允许 quote/news/search（空白回落 quote）
+    When quote 缺 Symbols、news/search 缺 Query、IncludeHistory=true 且 Range/Interval 非法
+    Then 均抛 400 并指明缺失或非法字段
+    When 实例配置的 BaseUrl 非 http/https 合法地址
+    Then InitAsync 拦截并提示 BaseUrl 必须是合法 URL
+
+  @DYN-S84 @auto:e2e
+  Scenario: 上游错误归一
+    Given news/search 模式调用数据源
+    When 上游返回 HTTP 500
+    Then 整次运行归一为带 HTTP 状态码与响应体的可读失败
+```
+
+## Feature: SMTP 邮件发送（smtp_email_send）
+
+> 协议栈 MailKit；实例配置承载 SMTP 服务器与授权码，Message-ID 由插件预生成并回显。证据：`local-dev/email-plugins-e2e.mjs`（自建 SMTP 桩）。
+
+```gherkin
+  @DYN-S85 @auto:e2e
+  Scenario: 模板自动进入注册表
+    Given 动态插件模块完成程序集扫描
+    When 查询插件列表
+    Then smtp_email_send 模板出现（isDynamic=true），带 configExample 与 paramsExample
+
+  @DYN-S86 @auto:e2e
+  Scenario: 纯文本发送成功
+    When 创建实例（Host/Port/Security/Username/Password）并以两个收件人运行
+    Then SMTP 桩按序收到 EHLO/AUTH/MAIL FROM/2 个 RCPT TO/DATA
+    And 报文含纯文本正文、From 头为「显示名 <发件地址>」
+    And 运行结果回显归一化收件人列表与 Message-ID，报文 Message-ID 头与回显一致
+
+  @DYN-S87 @auto:e2e
+  Scenario: HTML 正文与抄送密送
+    When 以 To(2 个)+Cc+Bcc+ReplyTo+IsHtml=true 运行
+    Then SMTP 桩收到 4 个 RCPT（密送计入信封收件）
+    And 报文头含 Cc/Reply-To，正文 Content-Type 为 text/html
+
+  @DYN-S88 @auto:e2e
+  Scenario: Base64 附件
+    When 携带 Attachments[{FileName,ContentBase64}] 运行
+    Then 运行结果回显 AttachmentCount 与 AttachmentTotalBytes
+    And 报文为 multipart，含 Content-Disposition: attachment 与原始文件内容
+
+  @DYN-S89 @auto:e2e
+  Scenario: 参数校验先于网络
+    When To 为空 / 含非法地址 / Subject 为空分别运行
+    Then 均归一为可读失败并指明字段与非法地址
+    And SMTP 桩零命中（校验不建立连接）
+
+  @DYN-S90 @auto:e2e
+  Scenario: 认证失败归一
+    When 以错误密码运行
+    Then 归一为「SMTP 认证失败」可读错误（桩返回 535，桩侧计数确认）
+
+  @DYN-S91 @auto:e2e
+  Scenario: 配置运行态校验
+    When 实例配置缺 Host 后运行
+    Then 运行时拒绝并提示 Host 不能为空（保存实例不跑 InitAsync）
+```
+
+## Feature: IMAP 邮箱读取（imap_email_query）
+
+> 协议栈 MailKit；列表模式只取信封摘要，detail 才取全文；唯一写操作是 mark_read。证据：`local-dev/email-plugins-e2e.mjs`（自建 IMAP4rev1 桩，支持 LOGIN/LIST/SELECT/SEARCH/FETCH/STORE 与字面量续行）。
+
+```gherkin
+  @DYN-S92 @auto:e2e
+  Scenario: 模板自动进入注册表
+    When 查询插件列表
+    Then imap_email_query 模板出现（isDynamic=true），带 configExample 与 paramsExample
+
+  @DYN-S93 @auto:e2e
+  Scenario: recent 最近邮件
+    When 以 Count=2 运行 recent
+    Then 返回最新 2 封（UID 降序=新→旧），TotalCount=3、Truncated=true
+    And 摘要含发件人地址/主题/Seen 旗标/ISO 时间（+08:00）
+
+  @DYN-S94 @auto:e2e
+  Scenario: 按中文主题搜索
+    When 以 SubjectContains=发票 运行 search
+    Then MailKit 以 IMAP 字面量下发中文关键字（桩回 continuation）
+    And 仅命中含该关键字的邮件
+
+  @DYN-S95 @auto:e2e
+  Scenario: 发件人与起始日期组合
+    When 以 FromContains=alice、SinceDate=2026-01-06 运行 search
+    Then SINCE 含当天且日期与输入一致（UTC 零点下发）
+    And AND 语义仅命中同时满足两条件的邮件
+
+  @DYN-S96 @auto:e2e
+  Scenario: 仅未读搜索
+    When 以 UnreadOnly=true 运行 search
+    Then 仅命中未读邮件
+
+  @DYN-S97 @auto:e2e
+  Scenario: detail 单封完整内容
+    When 以 Uid 读取带附件的邮件 / 纯文本邮件 / 中文 MIME 邮件
+    Then 返回主题/发件人/Message-ID/已读状态/可读正文（HTML 剥标签、Base64 解码、按 MaxBodyChars 截断）
+    And 附件只回元信息（文件名/类型/字节数）
+
+  @DYN-S98 @auto:e2e
+  Scenario: 标记已读与未读联动
+    When mark_read 标记已读 → 未读搜索
+    Then 回显 UpdatedUid 与 Unread=false，未读集合联动减少
+    When Unread=true 标回未读
+    Then 未读集合恢复
+
+  @DYN-S99 @auto:e2e
+  Scenario: folders 文件夹列表
+    When 运行 folders
+    Then 列出 INBOX 与 Archive（FullName 可作为请求 Folder 参数）
+
+  @DYN-S100 @auto:e2e
+  Scenario: 参数校验先于网络
+    When 未知 Mode / detail 缺 Uid / search 无过滤条件 / 非法 SinceDate 分别运行
+    Then 均归一为 400 可读失败（IMAP 桩零命中）
+
+  @DYN-S101 @auto:e2e
+  Scenario: 认证失败归一
+    When 以错误密码运行 recent
+    Then 归一为「IMAP 认证失败（要求授权码）」可读错误（桩 LOGIN NO，桩侧计数确认）
+
+  @DYN-S102 @auto:e2e
+  Scenario: 文件夹不存在
+    When 以不存在的 Folder 运行 recent
+    Then 归一为 400 并提示先用 folders 模式查看可用文件夹
+```
+
+## Feature: 秘塔搜索工具集内置模板（metaso_search / metaso_reader）
+
+> 外部服务商秘塔 AI 搜索（https://metaso.cn/）：多范围搜索走 Search API，网页正文提取走 Reader API（同一基址 `https://metaso.cn` 下的 `/api/v1/*`）。
+> 服务地址允许配置覆盖（`MoAI:Metaso:Endpoint`，默认官方地址），桩服务 E2E 按官方报文形态回放。证据：`local-dev/metaso-search-e2e.mjs`。
+
+```gherkin
+  @DYN-S103 @auto:e2e
+  Scenario: 秘塔搜索成功路径与参数下发
+    Given 动态插件模块已挂载宿主并完成程序集扫描
+    When 管理员用模板 metaso_search 创建实例并以搜索词运行
+    Then 请求以 POST 送达 /api/v1/search 且请求体 q 为去空格后的搜索词
+    And Authorization 头为 Bearer「实例配置中的 API Key」
+    And 网页结果解析出标题、链接、摘要、发布时间、得分、序号与来源原文，文库/视频结果并入同一结果列表
+    And Scope 大小写归一（缺省 webpage）、Size 钳制 1-100，IncludeSummary/IncludeRawContent/ConciseSnippet 原样透传
+    And IncludeSummary=true 时响应附带综合摘要 Summary，回显 Query/Scope/Total/Credits
+    And Scope=image 时结果进 Images（标题/图片地址/缩略图地址），Results 为空
+
+  @DYN-S104 @auto:e2e
+  Scenario: 秘塔网页阅读成功路径
+    Given 管理员用模板 metaso_reader 创建实例
+    When 以网页地址运行且 Format 为 markdown（缺省）
+    Then 请求以 POST 送达 /api/v1/reader 且 Accept 为 text/plain，正文为 Markdown 原文，Url 回显去空格后的请求地址
+    When 以 Format=json 运行
+    Then Accept 为 application/json，解析出标题、地址、作者、日期、正文与点数
+    When 以非法 Format 运行
+    Then 回落 markdown（Accept text/plain）
+
+  @DYN-S105 @auto:e2e
+  Scenario: 秘塔插件失败路径归一
+    Given 管理员已创建 metaso_search / metaso_reader 实例
+    When 配置中的 API Key 为空后运行
+    Then InitAsync 拦截并提示 API Key 不能为空
+    When 以空白搜索词 / 非法 Scope / 非 http/https 地址运行
+    Then 运行时校验拒绝并指明字段（不发请求）
+    When 以无效 API Key 运行
+    Then 上游 401 归一为带 HTTP 状态码与响应体的可读失败
+    When 上游 429（点数不足/限流）
+    Then 归一为带 HTTP 429 与响应体的可读失败而非成功
+```
+
+## Feature: 新闻热榜聚合（news_hot_board）
+
+> 无需 API Key 的多平台热榜聚合模板：渠道基类统一补浏览器指纹头（上游网页接口缺 UA 会被风控）并支持可选网关改写（`{Gateway}/https/{域名}/{路径}`，用于镜像/抓包/本地桩），16 渠道按来源并发拉取、按请求顺序合并、来源内补排名。证据：`local-dev/hot-board-e2e.mjs`。
+
+```gherkin
+  @DYN-S106 @auto:e2e
+  Scenario: 实例创建与同 key 更新
+    When 管理员用模板 news_hot_board 创建实例（配置 Limit 与 Gateway）
+    Then 创建成功
+    When 以相同 key 再次提交
+    Then 走更新语义返回 200（配置整体覆盖，与实例管理更新语义一致）
+
+  @DYN-S107 @auto:e2e
+  Scenario: 参数校验先于网络
+    When 以空 Sources 运行
+    Then 归一为 400 并提示全部可选来源
+    When Sources 含无法识别的输入（如「抖音号」）
+    Then 归一为 400 并原样回显未知输入；中文别名（知乎/b站/稀土掘金等）归一为对应渠道 id 且按出现顺序去重
+
+  @DYN-S108 @auto:e2e
+  Scenario: 全渠道并发拉取与合并结构
+    When 以 16 个来源（含中文别名重复）运行
+    Then 16 渠道全部成功、Errors 为空，别名去重后每来源 3 条共 48 条
+    And 每条目含 Source/SourceName/Rank/Title/Url，来源内排名连续 1..n
+
+  @DYN-S109 @auto:e2e
+  Scenario: JSON 渠道解析细节
+    When 桩服务按各平台官方报文回放后运行
+    Then 知乎 detail_text「4589 万热度」换算为数值且问题链接由 api 地址末段拼回
+    And 36氪 19 位长整型 itemId 以原始文本进文章链接（精度不丢失）
+    And 掘金 content_id 拼文章链接且热度取 content_counter.view
+    And 微博词条拼 s.weibo.com 搜索链接并 URL 转义
+    And 新浪剥「var data =」壳解析且千分位热度归一
+    And 腾讯 id 以 TIP 开头的横幅条目被跳过
+
+  @DYN-S110 @auto:e2e
+  Scenario: 结构类渠道解析细节
+    When 桩服务按各平台官方报文回放后运行
+    Then 百度从 HTML s-data 注释抠出整榜并下钻嵌套子榜、词条拼搜索链接
+    And IT之家 AngleSharp 解析 HTML 榜单且短链改写为 www 站文章地址
+    And 虎嗅快讯按 br 分段（首段去句号为标题、余段为摘要）
+    And B站 nav 取 WBI key 签名 ranking/v2 且 http 封面升级 https、热度取播放量
+
+  @DYN-S111 @auto:e2e
+  Scenario: 网关改写与浏览器指纹
+    Given 实例配置了 Gateway 指向桩服务
+    When 运行全部来源
+    Then 16 个上游域名全部改写为 {Gateway}/https/{域名}/{路径} 命中桩服务
+    And 请求自动补全浏览器 User-Agent（反爬要求）
+    And 抖音先访问 passport 接口取 Set-Cookie 中的 csrf token 并在热榜请求回带 Cookie
+
+  @DYN-S112 @auto:e2e
+  Scenario: Limit 每来源截断
+    Given 实例配置 Limit=2
+    When 以两个来源运行
+    Then 每来源仅保留前 2 条且排名仍从 1 连续
+
+  @DYN-S113 @auto:e2e
+  Scenario: 单渠道失败隔离
+    When 某一渠道上游 500（虎扑）而其余正常
+    Then 运行仍成功：正常来源照常返回，失败来源进 Errors 并带「渠道名 + HTTP 状态码」
+
+  @DYN-S114 @auto:e2e
+  Scenario: 全来源失败归一
+    When 所有渠道均不可达（网关指向无监听端口）
+    Then 归一为「全部来源抓取失败：…」的可读失败而非空成功
+
+  @DYN-S115 @auto:e2e
+  Scenario: 非法网关被 InitAsync 拦截
+    When 实例配置 Gateway 为非 http/https 地址后运行
+    Then InitAsync 拦截并提示 Gateway 必须是合法 URL（不发请求）
+
+  @DYN-S116 @auto:e2e
+  Scenario: 删除实例后不可运行
+    When 删除实例后以其 key 运行
+    Then 运行返回 404 插件不存在
+```
+
+## Feature: Base64 解码内置模板（base64_decode）
+
+> 纯本地解码模板：输入 Base64 字符串（允许空白换行、支持 data URL 前缀），按内容形态三分输出——文本直接回填、图片/二进制转存公开地址。证据：`tests/MoAI.AIPlugin.Dynamic.Tests/Base64DecodePluginTests.cs`。
+
+```gherkin
+  @DYN-S117 @auto:vitest
+  Scenario: 文本解码成功路径
+    When 以纯 Base64（允许含空白与换行）运行
+    Then 内容经严格 UTF-8 判定为文本后回填 Text，回显 ContentType 与完整字节数 SizeBytes
+    When 解码文本超过实例配置的 TextMaxLength
+    Then 输出被截断并置 TextTruncated（SizeBytes 仍为完整字节数）
+
+  @DYN-S118 @auto:vitest
+  Scenario: 图片解码与公开转存
+    When 输入为 PNG/JPEG 等图片魔数内容、data:image/png;base64 前缀形式，或 SVG 文本
+    Then 内容按内容寻址转存公开图片目录并返回 /static 公开地址与 Markdown 图片引用（可直接在对话中渲染）
+    And 同一内容重复解码返回相同地址（幂等去重）
+
+  @DYN-S119 @auto:vitest
+  Scenario: 其它二进制转存
+    When 输入为无魔数二进制或带 data:application/pdf 类型声明的 Base64
+    Then 转存公开文件目录并返回下载链接；有类型声明时信任声明（如 .pdf 扩展名），无声明按通用二进制处理
+
+  @DYN-S120 @auto:vitest
+  Scenario: 参数校验与上限护栏
+    When 空白输入 / 非法 Base64 / 解码结果超过 MaxDecodeBytes 分别运行
+    Then 均归一为 400 可读失败且不发生任何转存
+    And 超大输入在解码前即按长度粗估拒绝（不先占内存）
+    And 实例配置越界时 InitAsync 钳制（字节数与文本长度各归其界）
 ```

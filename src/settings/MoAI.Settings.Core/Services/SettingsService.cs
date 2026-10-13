@@ -128,6 +128,14 @@ public class SettingsService : ISettingsService
                 }
 
                 break;
+
+            case SettingDefinitions.AgentCompactionDefaultsKey:
+                if (!AgentCompactionDefaultsSettings.TryValidateJson(value, out var compactionError))
+                {
+                    throw new BusinessException(compactionError) { StatusCode = 400 };
+                }
+
+                break;
         }
     }
 }

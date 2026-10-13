@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryAppSecurityCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeSaveAppSecurityCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryAppSecurityCommandResponse, type SaveAppSecurityCommand } from '../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { EventsRequestBuilderRequestsMetadata, type EventsRequestBuilder } from './events/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/app/{id}/security
  */
 export interface SecurityRequestBuilder extends BaseRequestBuilder<SecurityRequestBuilder> {
+    /**
+     * The events property
+     */
+    get events(): EventsRequestBuilder;
     /**
      * 查询应用安全配置（内容脱敏规则，Agent 应用与流程应用通用），仅团队成员可访问；未保存过配置时返回默认值.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -22,7 +28,7 @@ export interface SecurityRequestBuilder extends BaseRequestBuilder<SecurityReque
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAppSecurityCommandResponse | undefined>;
     /**
-     * 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则.
+     * 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则；模型回复 block 策略走流式缓冲窗拦截.
      * @param body 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；Agent 应用与流程应用通用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -40,7 +46,7 @@ export interface SecurityRequestBuilder extends BaseRequestBuilder<SecurityReque
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则.
+     * 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；自定义规则须携带可编译正则；模型回复 block 策略走流式缓冲窗拦截.
      * @param body 保存应用安全配置（内容脱敏规则），需要团队 Admin 及以上角色；Agent 应用与流程应用通用.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
@@ -51,6 +57,14 @@ export interface SecurityRequestBuilder extends BaseRequestBuilder<SecurityReque
  * Uri template for the request builder.
  */
 export const SecurityRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}/security";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const SecurityRequestBuilderNavigationMetadata: Record<Exclude<keyof SecurityRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    events: {
+        requestsMetadata: EventsRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

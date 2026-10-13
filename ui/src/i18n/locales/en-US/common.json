@@ -188,6 +188,31 @@
       },
       "invalidTtl": "Lifetime limit must be an integer between 60 and 604800 seconds",
       "invalidFormat": "Invalid quantity format: CPU e.g. 4 or 2000m; memory e.g. 8Gi or 512Mi"
+    },
+    "compaction": {
+      "title": "Agent Context Compaction Defaults",
+      "toolResult": {
+        "name": "Tool result collapse threshold (messages)",
+        "desc": "Older tool results are collapsed beyond this message count"
+      },
+      "preserveTurns": {
+        "name": "Sliding window turns",
+        "desc": "Conversation turns beyond this count are folded"
+      },
+      "summarizeTokens": {
+        "name": "Summarization trigger tokens",
+        "desc": "When summarization is enabled, older turns are summarized beyond this token count"
+      },
+      "hardLimit": {
+        "name": "Hard truncation token limit",
+        "desc": "Oldest messages are force-truncated beyond this token count"
+      },
+      "summarization": {
+        "name": "Enable LLM summarization",
+        "desc": "When enabled, older turns are compressed by a summarizer model beyond the trigger threshold; otherwise lossless compaction only"
+      },
+      "overrideHint": "Apps may override these defaults field by field in their execution settings.",
+      "invalidValue": "Compaction values are out of the allowed range."
     }
   },
   "oauthconnect": {
@@ -718,7 +743,78 @@
     "knowledgeGraph": "Knowledge Graphs",
     "prompts": "Prompts",
     "skills": "Team Skills",
-    "searchMemberPlaceholder": "Search members by nickname/username"
+    "searchMemberPlaceholder": "Search members by nickname/username",
+    "timers": "Timers"
+  },
+  "timer": {
+    "create": "New Timer",
+    "createTitle": "New Timer",
+    "editTitle": "Edit Timer",
+    "searchPlaceholder": "Search name/description",
+    "name": "Name",
+    "namePlaceholder": "e.g. Daily sales report",
+    "description": "Description",
+    "descriptionPlaceholder": "What this timer does",
+    "app": "Bound app",
+    "appPlaceholder": "Select an Agent / Workflow app to run",
+    "appDeleted": "App deleted",
+    "appUnpublished": "Unpublished",
+    "appUnpublishedTip": "Unpublished app will fail on run; publish it first",
+    "appTypeAgent": "Agent",
+    "appTypeWorkflow": "Workflow",
+    "cron": "Schedule",
+    "cronRequired": "Schedule expression is required",
+    "cronInvalid": "Cron must have 5 fields (min hour day month weekday)",
+    "cronHint": "Scheduled in UTC; presets are Beijing time converted",
+    "preset.hourly": "Hourly",
+    "preset.daily9": "Daily 9:00",
+    "preset.daily18": "Daily 18:00",
+    "preset.weekly9": "Mon 9:00",
+    "inputContent": "Input",
+    "inputContentPlaceholder": "Sent to the app as the question, e.g. summarize this week into a daily report",
+    "enabled": "Enable schedule",
+    "retryCount": "Retries",
+    "retryInterval": "Retry interval (s)",
+    "save": "Save",
+    "cancel": "Cancel",
+    "colName": "Name",
+    "colApp": "App",
+    "colCron": "Schedule",
+    "colInput": "Input",
+    "colRetry": "Retry",
+    "colLastRun": "Last run",
+    "colEnabled": "Status",
+    "colActions": "Actions",
+    "colTrigger": "Trigger",
+    "colStatus": "Status",
+    "colAttempt": "Tries",
+    "colStart": "Started",
+    "colTriggerUser": "Triggered by",
+    "colResult": "Result",
+    "colResultDetail": "Answer",
+    "colError": "Error",
+    "nextRun": "Next: ",
+    "paused": "Disabled",
+    "enabledTag": "On",
+    "retryText": "{{count}} retries, every {{seconds}}s",
+    "noRetry": "No retry",
+    "runNow": "Run now",
+    "history": "History",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this timer? Schedule is removed; run history is kept.",
+    "createSuccess": "Timer created",
+    "updateSuccess": "Timer updated",
+    "deleteSuccess": "Timer deleted",
+    "runTriggered": "Execution triggered, check history for the result",
+    "runsTitle": "Run history ({{name}})",
+    "triggerScheduled": "Schedule",
+    "triggerManual": "Manual",
+    "status.pending": "Pending",
+    "status.running": "Running",
+    "status.success": "Success",
+    "status.failed": "Failed",
+    "status.retrying": "Retrying"
   },
   "wiki": {
     "title": "Knowledge Base",
@@ -1592,7 +1688,7 @@
     "uiToolInvalid": "Missing content",
     "uiPanelClose": "Close",
     "uiPanelCopy": "Copy content",
-    "uiChartInvalid": "Invalid chart option, cannot render",
+    "uiChartInvalid": "Invalid chart config, cannot render",
     "uiPanelTitle": "Sidebar",
     "uiPanelResize": "Drag to resize sidebar",
     "uiTabClose": "Close tab",
@@ -1609,7 +1705,14 @@
     "attachmentTooMany": "Up to {{count}} attachments",
     "workflowSteps": "Execution steps",
     "workflowStepRunning": "Generating",
-    "workflowViewRun": "View run details"
+    "workflowViewRun": "View run details",
+    "memorySection": "Long-term Memory",
+    "memoryModeOff": "Off",
+    "memoryModeOffHint": "This app will not read or write my memories",
+    "memoryModeOn": "On",
+    "memoryModeOnHint": "Keep my cross-session memories for this app (isolated per user)",
+    "expertSearchPlaceholder": "Search experts",
+    "resizePanel": "Drag to resize panel"
   },
   "publications": {
     "stateAll": "All Status",
@@ -1792,7 +1895,22 @@
     "notFound": "App not found",
     "workflowGoDesign": "Open Designer",
     "formClassify": "App category",
-    "classifyPlaceholder": "Select a category (optional)"
+    "classifyPlaceholder": "Select a category (optional)",
+    "compactionSection": "Context Compaction",
+    "compactionHint": "Inputs are prefilled with the platform defaults and can be adjusted; saved values take effect with the publish snapshot.",
+    "compactionToolResult": "Tool result collapse threshold (messages)",
+    "compactionPreserveTurns": "Recent turns to preserve",
+    "compactionSummarizeTokens": "Summarization trigger tokens",
+    "compactionHardLimit": "Hard truncation token limit",
+    "compactionSummarization": "Enable LLM summarization",
+    "compactionSummarizationHint": "When enabled, older turns are compressed by a summarizer model beyond the trigger threshold",
+    "compactionSummarizerModel": "Summarizer model",
+    "compactionSummarizerModelHint": "Leave empty to use the app chat model",
+    "compactionSummarizerModelPlaceholder": "Follow app chat model",
+    "subAgentSection": "Sub-agent Collaboration",
+    "subAgentHint": "Allows the main agent to spawn a sub-agent (same model and tools) that works in an isolated context and returns only its conclusion.",
+    "subAgentTimeout": "Per-task timeout (seconds)",
+    "subAgentResultMaxChars": "Result return limit (chars)"
   },
   "accessApp": {
     "create": "New Access",
@@ -1849,7 +1967,37 @@
       "idCard": "ID card number",
       "email": "Email",
       "bankCard": "Bank card number",
-      "custom": "Custom regex"
+      "custom": "Custom regex",
+      "injection": "Prompt injection"
+    },
+    "scopeInput": "User Input",
+    "scopeInputDesc": "Applies to user message text, using content masking rules (effective while master switch is on)",
+    "keepLastPlaceholder": "Keep last",
+    "eventsTitle": "Security Events",
+    "strategy": {
+      "redact": "Redact",
+      "mask": "Mask",
+      "hash": "Hash",
+      "block": "Block",
+      "flag": "Observe"
+    },
+    "action": {
+      "masked": "Masked",
+      "blocked": "Blocked",
+      "flagged": "Recorded"
+    },
+    "scope": {
+      "input": "User input",
+      "toolResult": "Tool result",
+      "toolArgs": "Tool args",
+      "modelOutput": "Model reply"
+    },
+    "events": {
+      "colTime": "Time",
+      "colScope": "Scope",
+      "colRule": "Rule",
+      "colAction": "Action",
+      "colCount": "Hits"
     }
   },
   "appWorkspace": {
@@ -1897,7 +2045,8 @@
     "a2aAddress": "A2A address",
     "a2aAddressPlaceholder": "Fetching server address……",
     "a2aMethods": "JSON-RPC methods",
-    "a2aAuthHint": "POST endpoint speaks A2A JSON-RPC (message/send, message/stream, tasks/get, tasks/cancel); GET {address}/agent.json serves the Agent Card. Auth via an app access key with the \"App A2A\" scope."
+    "a2aAuthHint": "POST endpoint speaks A2A JSON-RPC (message/send, message/stream, tasks/get, tasks/cancel); GET {address}/agent.json serves the Agent Card. Auth via an app access key with the \"App A2A\" scope.",
+    "menuMemory": "Memory"
   },
   "appChannels": {
     "cardTitle": "Feishu Channels",
@@ -1963,7 +2112,12 @@
     "columnModel": "Model",
     "columnShare": "Share",
     "empty": "No usage data",
-    "lagHint": "Data comes from the aggregated usage table and lags up to ~1 minute; debug sessions are excluded; a trend chart will be available in a later release."
+    "lagHint": "Data comes from the aggregated usage table and lags up to ~1 minute; debug sessions are excluded; a trend chart will be available in a later release.",
+    "userCount": "Active Users",
+    "sessionCount": "Sessions",
+    "messageCount": "Messages",
+    "memoryCount": "Memories",
+    "lastActive": "Last active: {{time}}"
   },
   "appDebug": {
     "title": "Debug",
@@ -2199,6 +2353,8 @@
     "nodeConditionDesc": "Route branches by condition",
     "nodeAiChat": "AI Chat",
     "nodeAiChatDesc": "Generate answer via model",
+    "nodeImageUnderstanding": "Image Understanding",
+    "nodeImageUnderstandingDesc": "Send an image to a vision model and return understanding or extracted content",
     "nodeJs": "JavaScript",
     "nodeJsDesc": "Transform data with JS (server sandbox)",
     "nodePlugin": "Plugin",
@@ -2262,6 +2418,10 @@
     "validateFailed": "Validation failed",
     "aiModel": "AI Model",
     "aiModelPlaceholder": "Select a team model",
+    "visionModel": "Vision Model",
+    "visionModelPlaceholder": "Select a team vision model",
+    "visionModelEmpty": "No vision models available; configure models with vision (image understanding) first",
+    "imageUnderstandingHint": "image accepts http(s) image URLs, data URIs, or public platform file objectKeys; only vision-capable chat models are listed.",
     "knowledgeWiki": "Knowledge Base",
     "knowledgeWikiPlaceholder": "Pick a wiki or bind a variable",
     "knowledgeWikiGroup": "Team Knowledge Bases",
@@ -2398,5 +2558,47 @@
     "classifierClassPlaceholder": "Class name, e.g. Pre-sales",
     "classifierAddClass": "Add Question Class",
     "classifierHint": "The AI model picks the matching class; draw out edges from each class port. Falls back to the first class when the model output cannot be parsed."
+  },
+  "appMemory": {
+    "title": "Long-term Memory",
+    "enabled": "Enable long-term memory",
+    "enabledHint": "Keeps cross-session memories (preferences/facts, events, methods) per user, used within this app only.",
+    "embeddingModel": "Embedding model",
+    "embeddingModelHint": "Embeds memory content; model and dimensions are locked once memories are written — clear all app memories first to change.",
+    "embeddingModelPlaceholder": "Select a team-available embedding model",
+    "embeddingDimensions": "Vector dimensions",
+    "embeddingDimensionsHint": "1~2000, must match the model output; defaults to 1024.",
+    "types": "Memory types",
+    "typeSemantic": "Semantic (facts)",
+    "typeEpisodic": "Episodic (events)",
+    "typeProcedural": "Procedural (methods)",
+    "autoExtract": "Auto extraction",
+    "autoExtractHint": "Extracts important information and consolidates memories after each turn; when off, only explicit AI tool saves.",
+    "retrievalTopK": "Retrieval top-K",
+    "maxPerUser": "Memories per user",
+    "modelRequired": "Please select an embedding model.",
+    "myMemoriesHint": "You (as admin) have {count} memories in this app:",
+    "clearApp": "Clear all app memories",
+    "clearAppConfirm": "Clear all memories of all users in this app? This cannot be undone.",
+    "clearAppHint": "Deletes long-term memories of all users within this app (team admin only); other apps are not affected.",
+    "clearAppSuccess": "App memories cleared.",
+    "manageHint": "View and manage your (current user) memories in this app; delete and clear only.",
+    "statsHint": "This app has accumulated {count} memories from {users} user(s).",
+    "statsEmpty": "No memories in this app yet."
+  },
+  "myMemory": {
+    "title": "My Memories",
+    "hint": "Your cross-session long-term memories in this app. Delete individual items or clear all; memories can only be deleted, not edited.",
+    "empty": "No memories yet",
+    "disabledTag": "Memory disabled by app",
+    "clear": "Clear my memories",
+    "clearConfirm": "Clear all your memories in this app? This cannot be undone.",
+    "clearSuccess": "Memories in this app cleared.",
+    "deleteConfirm": "Delete this memory?",
+    "deleteSuccess": "Memory deleted.",
+    "delete": "Delete memory",
+    "prev": "Prev",
+    "next": "Next",
+    "manage": "Manage memories"
   }
 }

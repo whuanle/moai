@@ -34,4 +34,9 @@ public class SkillOptionItem
     /// 所属团队 id，0=系统内置或个人技能.
     /// </summary>
     public int TeamId { get; init; }
+
+    /// <summary>
+    /// 使用次数（应用对话中模型调用装载工具时自增），技能卡片热门排序依据.
+    /// </summary>
+    public int UseCount { get; init; }
 }

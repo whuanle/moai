@@ -110,6 +110,15 @@ ui/src/
 | `wecom_webhook_text` | `WeixinWorkWebhookTextPlugin` | `WebhookKey`(必填，完整地址或裸 key) | `Text`(必填)/`AtMobiles`/`AtAll` | `Errcode`/`Errmsg`/`Text` |
 | `clickhouse_query` | `ClickHouseQueryPlugin` | `BaseUrl`(必填，ClickHouse HTTP 8123)/`Username`/`Password`(Basic，建议只读账号)/`Database`/`TimeoutSeconds`(1-300)/`MaxRows`(1-1000，默认 100) | `Sql`(必填，单条只读：SHOW DATABASES/SHOW TABLES/DESCRIBE/SHOW CREATE/SELECT 均可) | `Columns[]`/`ColumnTypes[]`(FORMAT JSON meta)/`Rows[]`（列名→值）/`RowCount`/`Truncated` |
 | `clickstack_query` | `ClickStackQueryPlugin` | `BaseUrl`(必填，API server 端口)/`ApiKey`(Personal API Access Key)/`TimeoutSeconds`/`MaxRows`(1-500，默认 100) | `Mode`(sources/search/chart)/`SourceId`/`Where`/`WhereLanguage`(lucene/sql)/`Select`/`OrderBy`/`StartTime`/`EndTime`/`MaxResults`(≤2000)/`Offset`(≤10000)/`Granularity`/`AggFn`/`Field`/`GroupBy` | `Sources[]`/`Rows[]`（列名→值）/`RowCount`/`Truncated`/`Points[]` |
+| `jina_search` | `JinaSearchPlugin` | `ApiKey`（必填，`InitAsync` 校验） | `Query`(必填)/`ReturnFormat`/`NoCache` | `Query`/`Results[]`（Title/Url/Description/Content）/`UsageTokens` |
+| `jina_reader` | `JinaReaderPlugin` | `ApiKey`（必填，`InitAsync` 校验） | `Url`(必填，http/https)/`ReturnFormat`/`WithLinksSummary`/`WithImagesSummary`/`NoCache`/`Timeout` | `Url`/`Title`/`Description`/`Content`/`PublishTime`/`Links`/`Images`/`UsageTokens` |
+| `yahoo_finance` | `YahooFinancePlugin` | `BaseUrl`（可选，留空用官方地址，可指向镜像/桩服务）/`TimeoutSeconds`(1-120，默认 20)/`MaxSymbols`(1-50，默认 10)/`MaxNews`(1-50，默认 10)/`MaxSearchResults`(1-50，默认 10)/`Lang`/`Region`（默认语言与市场区域，留空不传） | `Mode`(quote/news/search)/`Symbols`(quote 必填，逗号分隔)/`Query`(news/search 必填)/`NewsCount`/`SearchCount`/`Range`/`Interval`（IncludeHistory=true 时生效，白名单校验）/`IncludeHistory`/`Lang`/`Region`（请求级覆盖） | `Mode`/`Quotes[]`（报价+可选走势）/`News[]`/`Candidates[]`/`Errors[]`（单代码失败隔离）/`Truncated` |
+| `smtp_email_send` | `SmtpEmailSendPlugin` | `Host`(必填，`InitAsync` 校验)/`Port`(1-65535，默认 465)/`Security`(ssl 默认/starttls/none)/`Username`(必填)/`Password`(必填，授权码)/`FromAddress`(可选，留空取 Username)/`FromName`/`TimeoutSeconds`(1-120，默认 15)/`MaxAttachmentMb`(1-50，默认 10) | `To`(必填，逗号/分号分隔)/`Cc`/`Bcc`/`Subject`(必填)/`Body`(必填)/`IsHtml`/`ReplyTo`/`Attachments[]`({FileName,ContentBase64}，≤10 个) | `MessageId`/`From`/`To[]`/`Cc[]`/`Bcc[]`/`Subject`/`AttachmentCount`/`AttachmentTotalBytes` |
+| `imap_email_query` | `ImapEmailQueryPlugin` | `Host`(必填)/`Port`(默认 993)/`Security`(同上)/`Username`(必填)/`Password`(必填)/`Folder`(默认 INBOX)/`TimeoutSeconds`(默认 15)/`MaxBodyChars`(0-20000，默认 4000) | `Mode`(recent 默认/search/detail/mark_read/folders)/`Count`(1-50，默认 10)/`Folder`(请求级覆盖)/`FromContains`/`SubjectContains`/`SinceDate`(yyyy-MM-dd)/`UnreadOnly`/`Uid`(detail/mark_read 必填)/`Unread` | `ResultType`/`Folder`/`TotalCount`/`Messages[]`（信封摘要）/`Message`（detail 全文+附件元信息）/`Folders[]`/`UpdatedUid`/`Unread`/`Truncated` |
+| `metaso_search` | `MetasoSearchPlugin` | `ApiKey`（必填，`InitAsync` 校验） | `Query`(必填)/`Scope`(webpage 默认/document/paper/image/video/podcast)/`Size`(1-100，默认 10)/`IncludeSummary`/`IncludeRawContent`/`ConciseSnippet` | `Query`/`Scope`/`Results[]`（Title/Link/Snippet/Date/Score/Position/RawContent，网页/文库/视频统一）/`Images[]`（Title/Link/Thumbnail）/`Total`/`Summary`/`Credits` |
+| `metaso_reader` | `MetasoReaderPlugin` | `ApiKey`（必填，`InitAsync` 校验） | `Url`(必填，http/https)/`Format`(markdown 默认/json) | `Url`/`Title`/`Author`/`Date`/`Content`/`Credits`（Title/Author/Date/Credits 仅 json 形态） |
+| `news_hot_board` | `HotBoardPlugin` | `Limit`(1-50，默认 20，每来源条数上限)/`Gateway`（可选，调试网关：设置后请求改写为 `{Gateway}/https/{域名}/{路径}`，留空直连官方） | `Sources`(必填数组，可多选：36kr/zhihu/weibo/juejin/toutiao/baidu/bilibili/douyin/ithome/hupu/huxiu/thepaper/geekpark/qq-news/netease-news/sina-news，接受中文别名) | `NewsList[]`（Source/SourceName/Rank/Title/Url/Desc/Cover/HotValue）/`Errors[]`（单来源失败隔离） |
+| `base64_decode` | `Base64DecodePlugin` | `MaxDecodeBytes`(1024-33554432，默认 2MB，超出拒绝)/`TextMaxLength`(100-200000，默认 20000，超出截断) | `Base64`(必填，允许空白换行与 data URL 前缀)/`FileName`(可选，仅推断转存扩展名与结果回显) | `Kind`(text/image/binary)/`ContentType`/`SizeBytes`/`Text`(text 形态)/`TextTruncated`/`Url`(image/binary 形态)/`Markdown`(可直接引用)/`FileName` |
 
 `bocha_web_search` 细节：
 
@@ -235,6 +244,63 @@ ui/src/
 4. **错误归一与边界**：非 2xx 按状态给可读提示——401/403 提示「ApiKey 需为 Personal API Access Key（非 Ingestion Key）」，404 提示检查 SourceId 与 BaseUrl；search 错误形态 `{message}`、chart 形态 `{error}` 均可提取（`ExtractErrorMessage`）。凭证与 BaseUrl 校验都在运行态（保存实例不跑 `InitAsync`，同 Zabbix 口径）；不加网络守卫（BaseUrl 由管理员配置，同 zabbix/grafana 口径）。
 5. **Search 端点有镜像版本要求**（2026-09-29 真机实测）：`POST /api/v2/search` 是对外 API server 较新构建才有的端点——2026-07 前后的 `hyperdx:2` 镜像里 `GET /api/v2/sources` 与 `POST /api/v2/charts/series` 均已存在（无 Key 时 401「Unauthorized」即路由存在的正常形态），但 `POST /api/v2/search` 返回 Express 的「Cannot POST」HTML 404，升级 `clickstack-app` 镜像即可获得；插件对该形态给「端点不存在（可能版本过旧或 BaseUrl 指向 UI）」专属提示，与 SourceId 无效的 404 区分。
 
+`jina_search` / `jina_reader` 细节（Jina AI 搜索与网页阅读模板，证据 `local-dev/jina-search-e2e.mjs`，@DYN-S76~S78）：
+
+1. **两模板分立对接 Jina 两条产品线**：`jina_search` 走 Search API（`https://s.jina.ai`，`POST /`，请求体 `{q}`），`jina_reader` 走 Reader API（`https://r.jina.ai`，`POST /`，请求体 `{url}`）；两者都是一次 HTTP 往返返回完整 JSON（`{code,status,data,...}` 信封，搜索 `data` 为结果数组、阅读为单对象），插件引擎无需透出 SSE。构造注入 `IJinaSearchClient`/`IJinaReaderClient`（Refit + `ExternalHttpMessageHandler`），插件内不新建 `HttpClient`。
+2. **鉴权**：`ApiKey` 存裸 Key（`jina_xxx`），调用时经 `JinaAuthorization.Build`（`MoAI.AIPlugin.Dynamic/JinaAuthorization.cs`，与博查同款幂等追加 `Bearer ` 前缀）放 `Authorization` 头；阅读请求固定 `Accept: application/json` 取结构化响应。
+3. **可选能力走 X- 头而非请求体**：正文格式 `X-Return-Format`（markdown/text/html/screenshot/pageshot，空白或非法回落 markdown）、`X-No-Cache`、阅读专属的 `X-With-Links-Summary`/`X-With-Images-Summary`/`X-Timeout`（秒）；开关为 false 或超时未配置时**不发头**（Refit 参数传 null 即省略），避免向服务端发送冗余头。
+4. **参数校验**：`Query`/`Url` 空白抛 `BusinessException(400)`；阅读的 `Url` 还须经 `Uri.TryCreate(Absolute)` 校验为 http/https 完整地址；`UsageTokens` 为各条结果 `usage.tokens` 求和（阅读取单值）。
+5. **错误归一**：Refit 非 2xx → `BusinessException((int)StatusCode, "Jina xxx 调用失败（HTTP xxx）：{body}")`；HTTP 200 但信封 `code != 200`（额度耗尽 429 等）由 `JinaEnvelope<T>.EnsureSuccess` 兜底，错误信息取 `readable_message`/`message`。两路径统一由 `PluginExecutor` 归一为 `Success=false`。
+6. **上游地址可配置**：`InfraExternalHttpModule` 读取 `MoAI:Jina:SearchEndpoint` / `MoAI:Jina:ReaderEndpoint`（默认官方地址），便于指向代理或本地桩服务；桩服务按请求体含 `q`/`url` 区分两个端点，实现无 Key 的端到端验证（见 [tdd.md](./tdd.md)）。
+7. **infra 命名空间坑**：`MoAI.Infra.*` 命名空间下写全限定 `System.Collections.Generic.List<>` 会被解析成 `MoAI.Infra.System.Collections...`（CS0234，Refit 源生成器同样报错），须 `using System.Collections.Generic;` 后用简单类型名。
+
+`yahoo_finance` 细节（雅虎财经模板，证据 `local-dev/yahoo-finance-e2e.mjs`，@DYN-S79~S84）：
+
+1. **单模板三模式复用官方两个公开端点**：quote 逐代码调 `GET /v8/finance/chart/{symbol}`（meta 含最新价/昨收/日内高低/成交量/52 周高低，indicators 含区间采样点），news/search 共用 `GET /v1/finance/search`（按 `newsCount`/`quotesCount` 谁大于 0 区分取 news 数组还是 quotes 数组）；构造注入 `IYahooFinanceClient`（Refit + `ExternalHttpMessageHandler`），插件内不新建 `HttpClient`。无需任何 API Key。
+2. **数据源地址在实例配置**：`BaseUrl` 可选（留空官方 `https://query1.finance.yahoo.com`），可指向镜像/代理/桩服务（同 zabbix/grafana 口径，不加网络守卫）；Refit 客户端不注册固定 BaseAddress，每次运行由插件 `PrepareClient` 按 `_config.BaseUrl` 设置（transient + 每次独立作用域，实例内只设一次）。因无应用级覆盖项，桩服务 E2E 全靠实例配置指向本地桩。
+3. **浏览器 User-Agent 必带**：雅虎对非浏览器 UA 的请求常直接拒绝（地域/反爬），`PrepareClient` 固定追加 Chrome UA 与 `Accept: application/json`；国内部署直连大概率被拦，建议配置镜像地址。
+4. **quote 批量失败隔离**：`Symbols` 按逗号/分号/空格切分去重，超过 `MaxSymbols` 截断并置 `Truncated`；逐代码调用，无效代码（上游 HTTP 200 + `chart.error`，如已退市）与 HTTP 非 2xx 都归入 `Errors[]`，其余代码照常返回，不拖垮整批。涨跌额/涨跌幅由 `regularMarketPrice - chartPreviousClose`（回落 `previousClose`）计算，百分比保留两位。
+5. **走势序列可选**：`IncludeHistory=true` 才下发 `Range`/`Interval`（白名单校验，非法 400），从 `timestamp` 与 `indicators.quote[0].close` 按下标配对，空收盘剔除，最多保留最近 30 点（`Time` 为 UTC ISO 8601）。
+6. **参数校验与覆盖**：`Mode` 白名单（quote/news/search，空白回落 quote）；quote 缺 `Symbols`、news/search 缺 `Query` 抛 `BusinessException(400)`；条数参数按实例配置上限 clamp（下限 1）；`Lang`/`Region` 请求级优先于实例默认，空则不下发。
+7. **错误归一**：Refit 非 2xx → `BusinessException((int)StatusCode, "雅虎财经调用失败（HTTP xxx）：{body}")`；news/search 模式整体失败归一 `Success=false`；时间戳统一转 UTC ISO 8601（`providerPublishTime`/`regularMarketTime`）。
+
+`smtp_email_send` / `imap_email_query` 细节（邮件双模板，证据 `local-dev/email-plugins-e2e.mjs`，@DYN-S85~S102）：
+
+1. **协议栈 MailKit 4.18.1**（中心化版本管理）：SMTP 发信走 `MailKit.Net.Smtp.SmtpClient`、收件读取走 `MailKit.Net.Imap.ImapClient`，插件内不新建 HTTP 客户端；连接/认证/收发全部挂 `CancellationTokenSource.CancelAfter(TimeoutSeconds)` 超时护栏并同步设置 `client.Timeout`。安全模式由 `MailSecurityParser` 统一解析（空值回落 `ssl`，未知值 400）。
+2. **收件人解析务实化**（`EmailRecipientParser`）：MimeKit 的 `MailboxAddress.Parse` 对裸词/缺域地址过宽（`not-an-email` 也能解析出 Address），解析后再做结构校验——恰好一个 `@`、本地部分与域名非空、域名至少一个点且无空白；多收件人按逗号/分号/换行拆分并忽略大小写去重。
+3. **Message-ID 由插件预生成**（`<{Guid v7}@{发件域}>`）并回显，便于与收件侧联动核对；注意 MimeKit 的 `MimeMessage.MessageId` 属性**读写均不带尖括号**（报文头里才有），E2E 断言按去括号后的值比对。
+4. **附件三重护栏**：数量 ≤10、单文件 ≤20MB、总大小 ≤ `MaxAttachmentMb`；`FileName` 剥离路径分隔符（`..\..\` 清洗后为空即拒绝）；Base64 解码失败 400。MimeKit 对纯 ASCII 内容自动选 7bit 传输编码（不强求 base64）。
+5. **IMAP 列表只取信封摘要**（`MessageSummaryItems.Envelope|Flags|Size|InternalDate|UniqueId`，不含正文——避免把整箱邮件拉进上下文），detail 模式才 `GetMessage` 取单封全文并按 `MaxBodyChars` 截断；附件只回元信息（文件名/类型/大小）。截断语义：SEARCH 命中数超过 `Count` 时取最新 N 封并置 `Truncated=true`。
+6. **全量用户输入校验先于网络连接**：未知 Mode、search 无过滤条件、detail/mark_read 缺 Uid、非法 `SinceDate` 均在 `ConnectAsync` 之前拒绝（不消耗 IMAP 会话）。
+7. **SinceDate 语义**：IMAP 的 `SINCE` 含当天；MailKit 渲染 SINCE 日期取 UTC 部分，因此 `yyyy-MM-dd` 固定按 UTC 零点构造 `SearchQuery.DeliveredAfter`（`DateTimeOffset.TryParseExact` + `AdjustToUniversal`），保证服务端看到的日期与用户输入一致。
+8. **错误归一**：`AuthenticationException` → 401「认证失败（部分服务商要求授权码并开启 IMAP/SMTP 服务）」；`FolderNotFoundException` → 400 提示用 folders 模式查看可用文件夹；`SslHandshakeException` → 502 提示 Security 与端口匹配；超时（链接 CTS 触发）→ 504；其余 → 502 带首行错误。均由 `PluginExecutor` 归一为 `Success=false`。
+9. **无状态与凭证**：每次运行独立 DI 作用域 + 连接用后即弃；`Username/Password` 仅存实例配置（`plugin_dynamic.config`），凭证只在运行态校验（保存实例不跑 `InitAsync`，同 zabbix/grafana 口径）；`Security=none` 明文仅供内网调试（配置描述注明）。
+
+`metaso_search` / `metaso_reader` 细节（秘塔搜索工具集模板，证据 `local-dev/metaso-search-e2e.mjs`，@DYN-S103~S105）：
+
+1. **两模板共基址分端点**：搜索与阅读都在 `https://metaso.cn` 下的 `/api/v1/search` 与 `/api/v1/reader`，共用一个 `IMetasoClient`（Refit + `ExternalHttpMessageHandler`，构造注入，插件内不新建 `HttpClient`）；搜索响应为裸载荷（无 code 信封，按 scope 分 `webpages`/`documents`/`images`/`videos` 集合），错误以非 2xx HTTP + `{message}` 表达，故无需业务码兜底层。
+2. **鉴权**：`ApiKey` 存裸 Key（`mk-xxx`，在 metaso.cn/search-api/api-keys 获取），调用时经 `MetasoAuthorization.Build`（与 Jina/博查同款幂等追加 `Bearer ` 前缀）放 `Authorization` 头；两模板各自独立配置（互不共享实例）。
+3. **搜索结果统一列表**：网页/文库/视频结果字段同构，统一并入 `Results`（便于 AI 与流程编排按一个列表消费），仅 image 范围走 `Images`（标题/图片地址/缩略图地址）；`IncludeSummary=true` 时上游做摘要召回增强并返回综合摘要 `Summary`，`IncludeRawContent=true` 时每条网页结果带来源原文 `RawContent`，`ConciseSnippet=true` 时摘要为精简原文匹配信息。
+4. **参数校验与钳制**：`Query` 空白抛 400；`Scope` 空白回落 `webpage`、大小写归一，非法值 400 列出合法范围；`Size` `Math.Clamp(1,100)`；阅读 `Url` 须过 `Uri.TryCreate(Absolute)` 且 http/https。
+5. **阅读双形态**：`Format=markdown`（默认）走 `ReadMarkdownAsync`（`[Headers("Accept: text/plain")]`，Refit 对 `Task<string>` 返回响应体原文）；`Format=json` 走 `ReadJsonAsync`（Accept: application/json，解析标题/地址/作者/日期/正文/点数）；非法 Format 回落 markdown。响应正文优先取 `markdown` 字段、回落 `content`。
+6. **上游地址可配置**：`InfraExternalHttpModule` 读取 `MoAI:Metaso:Endpoint`（默认官方地址 `https://metaso.cn`，与 BoCha 同款根基址 + 绝对路径写法——Refit `[Post]` 路径以 `/` 开头会吃掉基址子路径，因此默认基址不带 `/api/v1`），便于指向代理或本地桩服务；桩按请求体含 `q`/`url` 区分端点、按 Accept 头区分阅读双形态。
+7. **错误归一**：Refit 非 2xx → `BusinessException((int)StatusCode, "秘塔xxx调用失败（HTTP xxx）：{body}")`，由 `PluginExecutor` 归一为 `Success=false`（401 密钥无效、402 点数不足、429 限流）。
+
+`news_hot_board` 细节（新闻热榜聚合模板，证据 `local-dev/hot-board-e2e.mjs`，@DYN-S106~S116）：
+
+1. **单模板聚合 16 渠道**：来源是数组参数而非多模板（AI 一次调用可拿多平台榜单）；渠道无 DI、由 `HotBoardCatalog` 查表构造（纯解析逻辑，单测直接 new + 桩 `HttpMessageHandler`）；渠道实现移植自姊妹项目（WoAI）已验证的 15 个渠道，掘金（`article_rank` GET，热度取阅读数）为本轮新实现。
+2. **渠道基类统一横切面**：`HotBoardChannelBase` 按目标主机稳定选档补浏览器指纹头（UA/Sec-Ch-Ua/Sec-Fetch 等，上游网页接口缺 UA 会被风控）、连接失败与非 2xx 统一包装 502、非法 JSON 归一 502；`GetString/GetScalar/GetNested*` 容错读取（长整型 id 取原始文本防精度丢失）。
+3. **网关改写收在基类**：配置 `Gateway` 后请求统一改写为 `{Gateway}/https/{域名}/{路径}`（`Url()` 一处实现，16 渠道零感知），供镜像/抓包/本地桩服务使用；命名 HttpClient `hot_board`（`DynamicPluginsModule` 注册：20s 超时、关闭自动 Cookie——抖音渠道手动携带 csrf token、挂 `ExternalHttpMessageHandler` 外部请求日志）。
+4. **并发拉取 + 失败隔离**：来源并发 `Task.WhenAll`，单渠道异常归一进 `Errors`（渠道名 + 原因）不拖垮整轮（yahoo 失败隔离同款语义）；空结果也记为错误（「未返回任何条目（可能被风控或榜单结构变化）」）；全部失败才抛 502「全部来源抓取失败」。合并按请求顺序、来源内补排名 1..n、`Limit` 截断。
+5. **异构上游解析**：JSON 接口（知乎/36氪/掘金/微博/头条/虎扑/网易/腾讯/新浪/澎湃/极客公园/B站/抖音）逐层容错展开；HTML/文本壳（百度 s-data 注释、IT之家 AngleSharp、虎嗅 br 分段、新浪 `var data =` 剥壳）各自专属解析；B站 WBI 签名（nav 取 key 进程内缓存 1h，主接口失败回落旧版 ranking）；抖音先取 passport Set-Cookie 再携 Cookie 拉榜。
+
+`base64_decode` 细节（Base64 解码模板，证据 `tests/MoAI.AIPlugin.Dynamic.Tests/Base64DecodePluginTests.cs`，@DYN-S117~S120）：
+
+1. **形态三分**（`Base64ContentDetector`）：严格 UTF-8 判定（解码失败或含 NUL 等控制字符即非文本）→ 文本直接回填 `Text`；图片魔数（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF）与 SVG 文本特判（SVG 是文本但按图片处理才能在对话渲染）→ 转存 `public/images`；其余二进制 → 转存 `public/files`，`Kind` 标记 text/image/binary。
+2. **图片/二进制不回 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL，且大负载直接撑爆模型上下文——统一经 `IStorageService.UploadStreamAsync` 按 SHA-256 内容寻址转存（同内容幂等去重），响应回 `/static` 公开地址与 `Markdown` 引用（图片 `![image](url)`、其它 `[file](url)`）。这是动态插件首个构造注入 `IStorageService` 的模板（csproj 增 `MoAI.Storage.Shared` 引用）。
+3. **输入宽容**：允许空白与换行（`Convert.FromBase64String` 语义）、自动剥离 `data:<mime>;base64,` 前缀；二进制形态有类型声明时信任声明定扩展名（application/pdf → .pdf 等白名单），无声明按 octet-stream/.bin；`FileName` 仅取扩展名参与 ObjectKey 与回显，不进地址。
+4. **护栏**：解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数不会低估，杜绝超大输入先占内存）；解码后精确比对 `MaxDecodeBytes`（`InitAsync` 钳制 1024-32MB）；文本按 `TextMaxLength` 截断（100-200000）置 `TextTruncated`；空白/非法 Base64/超限均 `BusinessException(400)` 归一且不发生转存。
+
 ## 已知问题
 
 - `templete_key` 列名拼写沿用用户给定的 `templete_key`（非 `template_key`）；如需修正属数据/DB 迁移事项。
@@ -244,3 +310,7 @@ ui/src/
 - 博查两模板的**成功路径**已由 `local-dev/bocha-search-e2e.mjs` 用桩服务自动覆盖（@DYN-S16 / @DYN-S22）；桩服务返回的是官方文档样例报文，**真实上游字段若与文档有出入仍需一次人工走查**。
 - `bocha_ai_search` 的模态卡只解析通用字段：`douyin` 等非通用结构（`cover_images`、`interactions` 等）会被裁剪，仅保留 `Type` 与可映射的 `description`。
 - `moji_weather` 按阿里云云市场公开样例报文（`{code,msg,data}` 信封 + camelCase 字段）实现并容错解析；墨迹官方完整接口文档需注册后获取，真实上游字段若与样例有出入仍需一次人工走查（同博查既有口径）。
+- Jina 两模板按官方公开文档样例报文（`{code,status,data}` 信封）实现；本机代理未启动时无法实测真实上游，**真实字段若有出入仍需一次人工走查**（同博查/墨迹口径）。
+- `imap_email_query` 列表模式为信封级摘要（无正文/无附件标志），snippet 与附件列表只在 detail 模式提供；若后续需要「列表即摘要」，可改走 BODYSTRUCTURE+部分取（协议面更宽，暂不做）。
+- `yahoo_finance` 按雅虎财经公开端点（v8 chart / v1 search）样例报文实现；本机直连雅虎被地域拦截、代理未启动时无法实测真实上游，**真实字段若有出入仍需一次人工走查**（同博查/墨迹口径）。国内部署直连官方地址大概率被拦，建议实例配置镜像地址。
+- `news_hot_board` 渠道解析已按官方报文桩全量覆盖（@DYN-S106~S116），且 E2E 调试期间曾以真实上游全 16 渠道拉通（310 条真实数据解析正确）；但热榜接口均为网页端非公开接口，**平台风控或结构变化会导致单渠道失败**——已有失败隔离兜底（进 `Errors` 不影响其它来源），渠道修复属常规维护。

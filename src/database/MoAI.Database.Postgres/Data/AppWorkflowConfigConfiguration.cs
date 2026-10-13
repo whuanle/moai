@@ -36,8 +36,11 @@ internal partial class AppWorkflowConfigConfiguration : IEntityTypeConfiguration
         entity.Property(e => e.AppId).HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .HasComment("创建时间")
             .HasColumnName("create_time");
-        entity.Property(e => e.CreateUserId).HasColumnName("create_user_id");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnName("create_user_id");
         entity.Property(e => e.DraftDefinition)
             .HasComment("草稿流程定义 JSON（引擎 WorkflowDefinition 契约：nodes + connections + ui）")
             .HasColumnName("draft_definition");
@@ -45,7 +48,9 @@ internal partial class AppWorkflowConfigConfiguration : IEntityTypeConfiguration
             .HasDefaultValueSql("'{}'::text")
             .HasComment("草稿编辑器原始 JSON（FlowGram 画布 toJSON 产物，用于无损还原画布），空为 '{}'")
             .HasColumnName("draft_editor_data");
-        entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除，0=未删除")
+            .HasColumnName("is_deleted");
         entity.Property(e => e.PublishTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("最近发布时间，从未发布为 null")
@@ -59,8 +64,11 @@ internal partial class AppWorkflowConfigConfiguration : IEntityTypeConfiguration
         entity.Property(e => e.TeamId).HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
-        entity.Property(e => e.UpdateUserId).HasColumnName("update_user_id");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnName("update_user_id");
         entity.Property(e => e.Version)
             .HasComment("当前已发布版本号，发布一次递增 1，0=从未发布")
             .HasColumnName("version");

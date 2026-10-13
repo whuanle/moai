@@ -18,7 +18,7 @@ describe('UiToolCard（前端展示工具折叠卡）', () => {
         toolCall={{
           id: 'tc-2',
           name: 'ui_show_chart',
-          argsJson: '{"title":"销量分析","option":{"series":[]}}',
+          argsJson: '{"title":"销量分析","chart":{"type":"bar","data":[{"category":"A","value":1}]}}',
           status: 'done',
         }}
         onOpen={onOpen}

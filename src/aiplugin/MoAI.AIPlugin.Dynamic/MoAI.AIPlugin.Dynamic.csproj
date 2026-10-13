@@ -9,10 +9,14 @@
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
 		<ProjectReference Include="..\..\knowledgegraph\MoAI.KnowledgeGraph.Shared\MoAI.KnowledgeGraph.Shared.csproj" />
+		<!-- base64_decode 插件把解码出的图片/二进制经 IStorageService 转存为公开可访问文件 -->
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Jint" />
+		<!-- 热榜插件（news_hot_board）IT之家渠道解析 HTML 榜单页 -->
+		<PackageReference Include="AngleSharp" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -22,6 +26,8 @@
 		<PackageReference Include="Microsoft.Data.SqlClient" />
 		<!-- SSH 命令执行插件（ssh_executor）所需的 SSH 协议栈 -->
 		<PackageReference Include="SSH.NET" />
+		<!-- 邮件插件（smtp_email_send / imap_email_query）所需的 SMTP/IMAP 协议栈 -->
+		<PackageReference Include="MailKit" />
 	</ItemGroup>
 
 	<ItemGroup>

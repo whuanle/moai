@@ -34,9 +34,9 @@ public sealed class FrontendToolContextProvider : AIContextProvider
                 name: FrontendToolContract.ShowCodeToolName,
                 description: "把一段完整的代码交给用户界面：代码会折叠为消息卡片并在用户侧边栏中打开。适用于脚本、配置文件、项目文件等大块代码产出。参数：title=标题，language=编程语言（如 python/sql/typescript，可省略），code=完整代码文本。"),
             AIFunctionFactory.Create(
-                (System.Text.Json.Nodes.JsonNode? title = null, System.Text.Json.Nodes.JsonNode? option = null) => Task.FromResult(FrontendToolContract.StubResultJson),
+                (System.Text.Json.Nodes.JsonNode? title = null, System.Text.Json.Nodes.JsonNode? chart = null) => Task.FromResult(FrontendToolContract.StubResultJson),
                 name: FrontendToolContract.ShowChartToolName,
-                description: "把数据可视化图表交给用户界面：图表会折叠为消息卡片并在用户侧边栏中渲染。参数：title=图表标题，option=ECharts option 配置（必须直接嵌套 JSON 对象，如 {\"xAxis\":{...},\"series\":[{\"type\":\"bar\",\"data\":[...]}]}；禁止把 option 序列化成字符串、禁止包含函数或表达式）。"),
+                description: "把数据可视化图表交给用户界面：图表会折叠为消息卡片并在用户侧边栏中渲染。参数：title=图表标题（简短），chart=图表配置（必须直接嵌套 JSON 对象，禁止序列化成字符串、禁止函数）。chart.type 决定图表形态与 data 结构，常用：line/column/bar/area（data 如 [{\"time\":\"1月\",\"value\":100,\"group\":\"系列名\"}]，group 可选用于多系列，可另加 axisXTitle/axisYTitle）；pie（data 如 [{\"category\":\"A\",\"value\":1}]）；table（data 为对象数组，键为列名）；mindmap/organization-chart/indented-tree（{\"name\":\"根\",\"children\":[{\"name\":\"子\"}]}）；network-graph（{\"nodes\":[{\"name\":\"A\"}],\"edges\":[{\"source\":\"A\",\"target\":\"B\"}]}）。也支持 scatter/radar/funnel/waterfall/dual-axes/histogram/boxplot/violin/venn/sankey/treemap/word-cloud/liquid/flow-diagram/fishbone-diagram，data 结构按图表语义给出。"),
         ];
 
         _instructions = """
@@ -44,7 +44,7 @@ public sealed class FrontendToolContextProvider : AIContextProvider
 你可以调用 ui_show_document / ui_show_code / ui_show_chart，把大块产出内容交给用户界面侧边栏展示：
 - 报告/方案/长总结 → ui_show_document（markdown 正文）
 - 完整代码/脚本/配置 → ui_show_code
-- 数据图表 → ui_show_chart（ECharts option，必须直接传 JSON 对象、不要序列化成字符串，禁止函数）
+- 数据图表 → ui_show_chart（图表配置 JSON 对象，type + data 结构，不要序列化成字符串，禁止函数）
 规则：
 1. 调用即视为内容已在用户界面展示（结果固定返回 rendered=true），不要等待用户操作，继续完成后续任务。
 2. 调用后在回复正文里用一两句话概括产出了什么即可，不要在正文重复完整内容；简短内容（几行文字/代码）直接写在正文，不要调用这些工具。

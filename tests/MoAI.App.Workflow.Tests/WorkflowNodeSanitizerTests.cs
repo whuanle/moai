@@ -129,6 +129,7 @@ public class WorkflowNodeSanitizerTests
         services.AddSingleton(new Moq.Mock<IWorkflowAgentAppClient>().Object);
         services.AddSingleton(new Moq.Mock<IWorkflowWikiSearchClient>().Object);
         services.AddSingleton(new Moq.Mock<IWorkflowGraphSearchClient>().Object);
+        services.AddSingleton(new Moq.Mock<IWorkflowVisionClient>().Object);
         services.AddSingleton<INodeDataSanitizer>(sanitizer);
         using var provider = services.BuildServiceProvider();
 

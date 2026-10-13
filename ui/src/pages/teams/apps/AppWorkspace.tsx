@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, AreaChartOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
+import { ApiOutlined, AreaChartOutlined, BulbOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
 import { Button, Layout, Menu, Popconfirm, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +15,7 @@ import { AppChannelsSection } from './AppChannelsSection'
 import { AppConfigSection, type AppDetail } from './AppConfigSection'
 import { AppInfoSection } from './AppInfoSection'
 import { AppLogsSection } from './AppLogsSection'
+import { AppMemorySection } from './AppMemorySection'
 import { AppMonitorSection } from './AppMonitorSection'
 import { AppSecuritySection } from './AppSecuritySection'
 import { AppWorkflowDebugSection } from './AppWorkflowDebugSection'
@@ -28,7 +29,7 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'a2a', 'channels', 'security', 'debug'] as const
+const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'a2a', 'channels', 'security', 'memory', 'debug'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 /** 流程应用「配置」Tab 承载的二级分区（与内部应用的左侧菜单一致） */
@@ -122,6 +123,10 @@ export function AppWorkspace() {
     if (canManage) {
       menuItems.push(
         { key: 'security', icon: <SafetyCertificateOutlined />, label: t('appWorkspace.menuSecurity') },
+        // 长期记忆（仅内部应用；外部应用面向匿名/外部用户不开放记忆）
+        ...(!isExternal
+          ? [{ key: 'memory', icon: <BulbOutlined />, label: t('appWorkspace.menuMemory') }]
+          : []),
         { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
         { key: 'monitor', icon: <AreaChartOutlined />, label: t('appWorkspace.menuMonitor') },
         // ACP：agent-to-agent 接入（Agent 与流程应用均支持）
@@ -264,6 +269,17 @@ export function AppWorkspace() {
     if (validSection === 'logs') return <AppLogsSection appId={appId} />
     if (validSection === 'monitor') return <AppMonitorSection appId={appId} />
     if (validSection === 'security') return <AppSecuritySection appId={appId} canManage={canManage} />
+    if (validSection === 'memory') {
+      return (
+        <AppMemorySection
+          teamId={teamId}
+          appId={appId}
+          canManage={canManage}
+          isPublished={isPublished}
+          onPublished={() => void load(true)}
+        />
+      )
+    }
     if (validSection === 'acp') return <AppAcpSection appId={appId} />
     if (validSection === 'a2a') return <AppA2aSection appId={appId} />
     if (validSection === 'channels') {

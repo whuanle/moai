@@ -36,8 +36,11 @@ internal partial class AppWorkflowInstanceConfiguration : IEntityTypeConfigurati
         entity.Property(e => e.AppId).HasColumnName("app_id");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
+            .HasComment("创建时间")
             .HasColumnName("create_time");
-        entity.Property(e => e.CreateUserId).HasColumnName("create_user_id");
+        entity.Property(e => e.CreateUserId)
+            .HasComment("创建人")
+            .HasColumnName("create_user_id");
         entity.Property(e => e.EndTime).HasColumnName("end_time");
         entity.Property(e => e.ErrorMessage).HasColumnName("error_message");
         entity.Property(e => e.Input)
@@ -49,7 +52,9 @@ internal partial class AppWorkflowInstanceConfiguration : IEntityTypeConfigurati
         entity.Property(e => e.IsDebug)
             .HasComment("是否调试运行（设计器内发起），0=正式执行 1=调试")
             .HasColumnName("is_debug");
-        entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
+        entity.Property(e => e.IsDeleted)
+            .HasComment("软删除，0=未删除")
+            .HasColumnName("is_deleted");
         entity.Property(e => e.Output).HasColumnName("output");
         entity.Property(e => e.StartTime).HasColumnName("start_time");
         entity.Property(e => e.Status)
@@ -58,8 +63,11 @@ internal partial class AppWorkflowInstanceConfiguration : IEntityTypeConfigurati
         entity.Property(e => e.TeamId).HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
+            .HasComment("更新时间")
             .HasColumnName("update_time");
-        entity.Property(e => e.UpdateUserId).HasColumnName("update_user_id");
+        entity.Property(e => e.UpdateUserId)
+            .HasComment("更新人")
+            .HasColumnName("update_user_id");
         entity.Property(e => e.Version)
             .HasComment("执行引用的定义版本号，0=调试执行（运行草稿定义）")
             .HasColumnName("version");

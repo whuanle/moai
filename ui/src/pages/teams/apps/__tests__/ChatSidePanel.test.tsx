@@ -3,8 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { ChatSidePanel } from '../chat/ChatSidePanel'
 import type { UiPanelItem } from '../chat/uiTools'
 
-vi.mock('../chat/EChart', () => ({
-  EChart: (props: { option: unknown }) => <div data-testid="echart-mock">{JSON.stringify(props.option)}</div>,
+vi.mock('../chat/VisChart', () => ({
+  VisChart: (props: { chart: unknown }) => <div data-testid="vischart-mock">{JSON.stringify(props.chart)}</div>,
 }))
 
 const docItem: UiPanelItem = { key: 'tc-1', kind: 'document', title: '季度报告', content: '# 摘要\n正文段落' }
@@ -13,7 +13,7 @@ const chartItem: UiPanelItem = {
   key: 'tc-3',
   kind: 'chart',
   title: '销量分析',
-  option: { series: [{ type: 'bar', data: [1, 2] }] },
+  chart: { type: 'bar', data: [{ category: 'A', value: 1 }] },
 }
 
 function renderPanel(
@@ -85,14 +85,14 @@ describe('ChatSidePanel（前端展示工具侧边栏：多标签 + 可调宽）
     expect(screen.getByText(/print\("hi"\)/)).toBeInTheDocument()
   })
 
-  it('图表项：透传 ECharts option 给渲染组件', () => {
+  it('图表项：透传图表配置给懒加载的渲染组件', async () => {
     renderPanel({}, [chartItem])
-    const chart = screen.getByTestId('echart-mock')
+    const chart = await screen.findByTestId('vischart-mock')
     expect(chart.textContent).toContain('"type":"bar"')
   })
 
   it('无标题时回退类型标签作为标签标题', () => {
-    renderPanel({}, [{ key: 'tc-5', kind: 'chart', title: '', option: {} }])
+    renderPanel({}, [{ key: 'tc-5', kind: 'chart', title: '', chart: { type: 'pie', data: [] } }])
     expect(screen.getAllByText('图表').length).toBeGreaterThanOrEqual(1)
   })
 

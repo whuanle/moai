@@ -8,7 +8,7 @@
 |---|---|---|
 | L0 导航 | 本页 | — |
 | L1 全局规范 | 后端 CQRS / 文档标准 / 前端约定 / 设计系统 | 见下「全局规范」 |
-| L2 领域四件套 | 26 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
+| L2 领域四件套 | 27 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
 | L3 证据 | 可执行验收脚本 / 单测 / 回归命令 | 见下「回归入口」 |
 
 ## 全局规范（L1）
@@ -49,7 +49,9 @@
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱维护 + 外部接入只读；Memgraph/Neo4j 双方言 Bolt 访问、单库 kgId 隔离；图览画布 + 一跳邻接；`KG_ENABLED` 门禁，Member 全只读，名称全局唯一） |
+| [memory](./memory/) | MEM | Agent 应用跨会话长期记忆（mem0 v3 式两段写入：抽取+合并；每轮相关记忆按需注入；语义/情景/程序三类；按用户隔离，应用内/跨应用共享范围 + 用户级关闭与清空；`__agent_mem_{appId}` 向量分表 + `app_memory_shard` 登记发现；外部应用不开放） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
+| [timer](./timer/) | TIMER | 团队定时器（绑定已发布 Agent/流程应用按 cron(UTC) 无头执行固定提问；立即执行调试、失败重试策略、执行历史默认 10 条可回看；Hangfire 周期任务 `team-timer:{id}`） |
 | [app](./app/) | AP | 团队应用（团队页「应用」分区：Agent/流程应用的卡片列表与基础信息 + 头像与「允许外部使用」开关；卡片「管理」进**单页左侧应用信息 + 右侧 Agent 配置**的管理页，配置**对话模型**/插件/知识库/提示词；成员只读使用；**已支持发布进入对话**，会话运行见 ai 模块） |
 | [app-workflow](./app-workflow/) | WF | 流程应用（FlowGram 可视化 DAG 编排：拖拽/连线/参数表达式绑定，草稿-发布不可变版本快照；同步调试执行 + 节点级状态回显与运行历史；9 种节点 start/end/condition/switch/aiChat/javascript/plugin/knowledgeSearch/questionClassifier；引擎端口对接 ai 模型与 aiplugin 执行入口） |
 | [ai](./ai/) | AI | Agent 运行时（应用发布后 AG-UI 流式对话、会话持久化 Redis热+Postgres冷、上下文压缩、知识库 RAG、token 用量；`src/ai` + 前端对话页） |
