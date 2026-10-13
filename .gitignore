@@ -398,3 +398,5 @@ local-dev/backend-*.log
 /configs/system.json
 /configs/system.runtime.json
 /.playwright-cli
+/outputs
+/preproc.xml
