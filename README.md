@@ -1,173 +1,100 @@
 <p align="center">
-  <img src="moai_docs/static/img/logo.png" width="120" alt="MoAI Logo">
+  <img src="ui/public/logo.svg" width="110" alt="MoAI Logo">
 </p>
 
 <h1 align="center">MoAI</h1>
 
 <p align="center">
-  <strong>开源 AI 应用平台 - 构建你的智能助手</strong>
+  <strong>轻松搭建企业 Agent 应用的开源平台</strong>
 </p>
 
 <p align="center">
-  <a href="https://moai.anyai.wiki">📖 文档</a> •
-  <a href="#快速开始">🚀 快速开始</a> •
-  <a href="#功能特性">✨ 功能特性</a>
+  <a href="https://moai.whuanle.cn/">官方网站</a> •
+  <a href="https://docs.whuanle.cn/zh/moai">文档中心</a> •
+  <a href="https://github.com/whuanle/moai">GitHub</a>
+</p>
+
+<p align="center">
+  <img alt="license" src="https://img.shields.io/badge/License-Apache--2.0-blue">
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10-purple">
+  <img alt="React" src="https://img.shields.io/badge/React-19-61dafb">
 </p>
 
 ---
 
-## 简介
+## MoAI 是什么
 
-MoAI 是一个功能丰富的开源 AI 应用平台，支持多种主流 AI 模型接入，提供知识库管理、插件扩展、工作流自动化等能力，帮助你快速构建企业级 AI 应用。
+MoAI 不是一个大语言模型，而是一个把**模型、企业文档和业务工具组合起来**的开源平台。选好模型，绑定知识与工具，调试后发布，就能搭建出知识问答、经营分析、客户服务等 AI 助手——发布给员工使用、接入现有业务系统，或嵌入对外网站，不需要从零开发整套平台。
 
-## 功能特性
+把企业知识、业务系统和工具连接起来，搭建能**查资料、分析数据、执行任务**的 AI 助手。用过 Dify、FastGPT？试试 MoAI，让企业 Agent 搭建更简单、更顺手。
 
-🤖 **多模型支持**
-- OpenAI、Anthropic、HuggingFace、Mistral 等主流模型
-- 统一的模型管理和调用接口
-- 支持自定义模型接入
+> 想先看效果？官网有一支 2 分钟宣传片：[moai.whuanle.cn](https://moai.whuanle.cn/)
 
-📚 **知识库管理**
-- 文档向量化与语义搜索
-- 支持多种文档格式 (PDF、Word、Markdown 等)
-- 基于 pgvector 的高效向量存储
+## 平台能力
 
-🔌 **插件系统**
-- 原生插件、自定义插件、工具插件
-- 灵活的插件开发框架
-- 支持 MCP 协议
+### 🤖 Agent 与流程应用
 
-💬 **AI 对话**
-- 多轮对话上下文管理
-- 提示词模板管理
-- 流式响应支持
+自由推理与确定性编排，各得其所。Agent 应用自主规划与调用工具，流程应用在可视化画布上编排节点；从配置、调试到发布，在一个平台完成应用构建闭环。
 
-👥 **团队协作**
-- 多用户权限管理
-- OAuth2.0 登录 (飞书、钉钉、企业微信)
-- 团队资源共享
+### 📚 知识：建立连接
 
-📁 **文件存储**
-- 本地存储、S3、MinIO
-- 阿里云 OSS、腾讯云 COS
-- 统一的存储抽象层
+知识库提供文档语义检索（RAG），知识图谱组织业务实体关系，让回答既有依据，也有业务上下文——既读懂内容，也理解关系。
 
-⚙️ **工作流自动化**
-- 可视化工作流编排
-- 丰富的节点类型
-- 定时任务支持
+### 🔌 连接业务，执行行动
 
-## 技术栈
+通过 MCP、OpenAPI 与插件接入业务系统，让现有系统成为 AI 的工具；在隔离沙箱中执行代码、处理文件，扩展应用的行动力。
 
-| 后端 | 前端 |
-|------|------|
-| .NET 9 / ASP.NET Core | React 19 / TypeScript |
-| Entity Framework Core | Ant Design / LobeHub UI |
-| MediatR (CQRS) | Redux Toolkit / Zustand |
-| Semantic Kernel | Vite 6 |
+### 🛡️ 企业级边界
+
+团队资源隔离、角色权限、内容脱敏与接入范围控制，为团队协作和对外交付保留清晰边界，安全地把 AI 交到员工和客户手里。
+
+## 业务实践
+
+从企业内部分析，到面向客户的服务，看看 MoAI 如何进入真实的业务场景（完整案例见[文档中心 · 应用实践](https://docs.whuanle.cn/zh/moai)）：
+
+| 场景 | 做什么 |
+| --- | --- |
+| [经营分析](https://docs.whuanle.cn/zh/moai/2.apply/1.data_p) | 接入业务数据库，Agent 分析销售趋势、组织图表、产出报告 |
+| [机票查询](https://docs.whuanle.cn/zh/moai/2.apply/7.flight_query) | 航线台账进知识图谱、政策文档进知识库，双数据源回答比价与咨询 |
+| [物流服务](https://docs.whuanle.cn/zh/moai/2.apply/8.logistics_query) | 一段代码嵌入官网，访客免登录查件、比价、问理赔 |
+| [运维排查](https://docs.whuanle.cn/zh/moai/2.apply/3.dev_troubleshooting) | 接入观测平台，AI 查日志、追链路，给出带证据的排查报告 |
+
+## 开放架构
+
+模块清晰，扩展自由；适配既有技术生态，部署在自己的环境。
+
+- **模块化单体**：.NET 10 + React 19 + PostgreSQL/pgvector，CQRS 分层，便于按领域扩展与二次开发
+- **开放生态**：OpenAI 兼容模型入口、MCP 与 OpenAPI 插件接入、pgvector 向量存储、OpenSandbox 代码沙箱
+- **自有基础设施**：支持 Docker、Docker Compose 和 Kubernetes 部署，基础设施与数据由你管理
 
 ## 快速开始
 
-### Docker 部署
-
-支持两种方式，完整说明见 [docs/deployment/docker.md](./docs/deployment/docker.md)。
-
-**方式一：Docker Compose 一体部署**（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
-
 ```bash
-cp .env.example .env          # 按需修改账号/端口；MOAI_SERVER_URL 留空会自动探测
-bash deploy/deploy-compose.sh # 按 .env 生成配置 + 预拉沙箱镜像 + 拉取/构建 + 启动
+git clone https://github.com/whuanle/moai.git
+cd moai
+cp .env.example .env   # 先在 .env 配置账号与服务地址
+bash deploy/deploy-compose.sh
 ```
 
-**方式二：Docker 单容器**（仅前后端；外部提供 PostgreSQL/Redis/RabbitMQ/OSS）
-
-```bash
-cp configs/system.example.json configs/system.json   # 再按外部服务改 host
-docker run -d --name moai -p 8080:8080 \
-  --add-host host.docker.internal:host-gateway \
-  -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
-  -v moai_files:/app/files \
-  whuanle/moai:latest
-```
-
-> Compose 方式以 `.env` 为唯一配置来源（脚本生成 `configs/system.json`，无需手写）；前端已编译进后端 `wwwroot` 同源托管，无需单独部署前端。
-
-### 服务组件（Compose）
-
-| 服务 | 说明 | 默认端口 |
-|------|------|----------|
-| moai | MoAI 服务（前端 + 后端） | 8080 |
-| postgres | PostgreSQL + pgvector（`pgvector/pgvector:pg16`，不可用裸 postgres） | 5432 |
-| redis | Redis 缓存 | 6379 |
-| rabbitmq | RabbitMQ 消息队列 | 5672 / 15672 |
-| rustfs | RustFS 对象存储（S3 兼容，替代 MinIO） | 9000 / 9001 |
-| opensandbox-server | OpenSandbox 沙箱服务（可选能力） | 18123 |
-
-图数据库（Memgraph/Neo4j）不内置，知识图谱按需接入，见部署文档。
-
-### 镜像发布
-
-```bash
-bash deploy/publish.sh          # 构建并推送 whuanle/moai:<tag> 与 :latest
-```
+一条命令拉起 MoAI 与常用依赖。部署方式（Docker / Compose / Kubernetes）与完整配置说明见[文档中心 · 安装](https://docs.whuanle.cn/zh/moai/1.install/2.docker-compose)。
 
 ## 文档
 
-完整文档请访问：**https://moai.anyai.wiki**
+完整的安装、使用与实践文档：**https://docs.whuanle.cn/zh/moai**
 
-文档包含：
-- 快速入门指南
-- Docker 部署教程
-- AI 模型配置
-- 插件开发指南
-- 知识库使用说明
-- API 参考
-
-## 本地开发
-
-### 后端
-
-```bash
-# 构建
-dotnet build MoAI.sln
-
-# 运行
-dotnet run --project src/MoAI/MoAI.csproj
-```
-
-### 前端
-
-```bash
-cd ui
-
-# 安装依赖
-npm install
-
-# 开发模式
-npm run dev
-
-# 构建
-npm run build
-```
-
-## 配置说明
-
-详细配置见 [docs/deployment/docker.md](./docs/deployment/docker.md)：Compose 部署以 `.env` 为来源自动生成 `configs/system.json`（参考模板 `configs/system.example.json`）。主要配置项：
-
-- **Server / WebUI**: 服务端与前端访问地址
-- **AES**: 敏感数据加密密钥
-- **Database**: PostgreSQL（pgvector）连接配置
-- **Redis**: 缓存服务配置
-- **RabbitMQ**: 消息队列配置
-- **Storage**: S3 兼容对象存储配置（RustFS/MinIO/OSS/S3）
-- **OpenSandBox**: 沙箱服务地址、镜像与超时
-- **OTLP**: 可观测性上报（可选）
+- **安装** —— Docker / Docker Compose / Kubernetes 部署与配置参考
+- **应用实践** —— 数据分析、机票查询、物流服务等端到端业务案例
+- **使用指南** —— 模型、知识库、知识图谱、插件、应用接入等功能详解
 
 ## License
 
-[MIT License](LICENSE.txt)
+[Apache License 2.0](LICENSE.txt)
 
 ---
+
+<p align="center">
+  开放的能力，无限的业务可能 · <a href="https://moai.whuanle.cn/">Build with MoAI</a>
+</p>
 
 <p align="center">
   如果这个项目对你有帮助，欢迎 ⭐ Star 支持！

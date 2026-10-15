@@ -401,3 +401,4 @@ local-dev/backend-*.log
 /outputs
 /preproc.xml
 /website
+.commandcode/
