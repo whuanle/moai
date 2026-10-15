@@ -75,7 +75,7 @@ public class ClickHouseQueryPlugin : IDynamicPluginRuntime<ClickHouseQueryReques
     {
         return """
             {
-              "BaseUrl": "http://192.168.50.199:8123", // ClickHouse HTTP 接口（默认 8123）
+              "BaseUrl": "http://127.0.0.1:8123", // ClickHouse HTTP 接口（默认 8123）
               "Username": "default",                   // Basic 认证用户名（建议只读账号）
               "Password": "",                          // Basic 认证密码
               "Database": "",                          // 默认数据库（可选），未带库名的表按该库解析

@@ -14,6 +14,7 @@
 6. 客群：高会员等级客户下单更频繁（top 客户集中度可观）
 7. 周末订单量略低于工作日
 """
+import os
 import random
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -23,8 +24,14 @@ from psycopg2.extras import execute_values
 
 random.seed(42)
 
-HOST, PORT, USER, PW = "192.168.50.199", 5432, "postgres", "19971120"
-DB = "test_sample"
+# 连接信息一律走环境变量，仓库内不留真实 IP/密码
+HOST = os.environ.get("TEST_SAMPLE_PG_HOST", "127.0.0.1")
+PORT = int(os.environ.get("TEST_SAMPLE_PG_PORT", "5432"))
+USER = os.environ.get("TEST_SAMPLE_PG_USER", "postgres")
+PW = os.environ.get("TEST_SAMPLE_PG_PASSWORD")
+if not PW:
+    raise SystemExit("请先设置环境变量 TEST_SAMPLE_PG_PASSWORD（postgres 密码）")
+DB = os.environ.get("TEST_SAMPLE_PG_DB", "test_sample")
 TODAY = date(2026, 10, 8)
 START, END = date(2025, 1, 1), date(2026, 9, 30)
 

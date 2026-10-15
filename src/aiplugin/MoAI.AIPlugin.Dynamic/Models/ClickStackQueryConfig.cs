@@ -10,7 +10,7 @@ public class ClickStackQueryConfig
     /// <summary>
     /// ClickStack 对外 API 基址.
     /// </summary>
-    [Description("ClickStack/HyperDX 对外 API 基址（API server，镜像默认 8000 端口，与 UI 的 8080 分离），例如 http://192.168.50.199:28000")]
+    [Description("ClickStack/HyperDX 对外 API 基址（API server，镜像默认 8000 端口，与 UI 的 8080 分离），例如 http://127.0.0.1:28000")]
     public string BaseUrl { get; set; } = string.Empty;
 
     /// <summary>

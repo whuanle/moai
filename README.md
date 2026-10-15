@@ -1,6 +1,7 @@
 <p align="center">
-  <img src="ui/public/logo.svg" width="110" alt="MoAI Logo">
+  <img src="ui/public/logo.png" width="110" alt="MoAI Logo">
 </p>
+
 
 <h1 align="center">MoAI</h1>
 
@@ -29,6 +30,14 @@ MoAI 不是一个大语言模型，而是一个把**模型、企业文档和业�
 把企业知识、业务系统和工具连接起来，搭建能**查资料、分析数据、执行任务**的 AI 助手。用过 Dify、FastGPT？试试 MoAI，让企业 Agent 搭建更简单、更顺手。
 
 > 想先看效果？官网有一支 2 分钟宣传片：[moai.whuanle.cn](https://moai.whuanle.cn/)
+
+
+
+## 作者微信
+
+<img src="images/weix.png" alt="weix" style="zoom: 33%;" />
+
+
 
 ## 平台能力
 

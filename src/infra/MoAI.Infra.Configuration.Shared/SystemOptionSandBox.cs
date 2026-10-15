@@ -9,7 +9,7 @@ namespace MoAI.Infra;
 public class SystemOptionSandBox
 {
     /// <summary>
-    /// 沙箱服务地址，如 http://192.168.50.199:18123.
+    /// 沙箱服务地址，如 http://127.0.0.1:18123.
     /// </summary>
     public string Address { get; init; } = string.Empty;
 

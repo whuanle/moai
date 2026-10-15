@@ -126,7 +126,7 @@ public class ClickStackQueryPlugin : IDynamicPluginRuntime<ClickStackQueryReques
     {
         return """
             {
-              "BaseUrl": "http://192.168.50.199:28000", // ClickStack 对外 API 基址（API server，镜像默认 8000 端口，与 UI 8080 分离）
+              "BaseUrl": "http://127.0.0.1:28000", // ClickStack 对外 API 基址（API server，镜像默认 8000 端口，与 UI 8080 分离）
               "ApiKey": "",            // Personal API Access Key：HyperDX UI → Team Settings → API Keys 创建（非 OTLP Ingestion Key）
               "TimeoutSeconds": 30,    // 单次请求超时秒数，1-300
               "MaxRows": 100           // search 默认行数上限，1-500（服务端硬上限 2000）

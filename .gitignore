@@ -397,6 +397,8 @@ local-dev/backend-*.log
 # 由 deploy/deploy-compose.sh 从 .env 生成的运行时配置（模板见 configs/system.example.json）
 /configs/system.json
 /configs/system.runtime.json
+# 本机私有运行时配置（含内网 IP/密码/AES 密钥），同上用 system.example.json 作模板
+/configs/system.yaml
 /.playwright-cli
 /outputs
 /preproc.xml

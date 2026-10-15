@@ -10,7 +10,7 @@ public class ClickHouseQueryConfig
     /// <summary>
     /// ClickHouse HTTP 接口地址.
     /// </summary>
-    [Description("ClickHouse HTTP 接口地址（默认 8123 端口），例如 http://192.168.50.199:8123；可含路径前缀")]
+    [Description("ClickHouse HTTP 接口地址（默认 8123 端口），例如 http://127.0.0.1:8123；可含路径前缀")]
     public string BaseUrl { get; set; } = string.Empty;
 
     /// <summary>
