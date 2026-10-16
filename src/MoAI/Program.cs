@@ -1,3 +1,4 @@
+using Maomi.I18n;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI;
@@ -55,6 +56,9 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors("AllowSpecificOrigins");
+
+// i18n：按请求语言（Accept-Language）解析文化，供 IStringLocalizer 翻译 BusinessException 等消息
+app.UseI18n();
 
 // 路由（显式声明，保证认证在端点分发之前执行）
 app.UseRouting();

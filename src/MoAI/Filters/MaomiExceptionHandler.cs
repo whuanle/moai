@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
@@ -65,19 +67,15 @@ public class MaomiExceptionHandler : IExceptionHandler
 
     private static void HandleBusinessException(HttpContext httpContext, BusinessException businessException, CancellationToken cancellationToken)
     {
-        // todo: i18n
-
-        var message = string.Empty;
-        var messageDetail = string.Empty;
-
-        message = businessException.Message;
-        if (businessException.Argments?.Count > 0)
-        {
-            message = string.Format(message, businessException.Argments.ToArray());
-        }
+        // 本类是单例，IStringLocalizer 依赖请求级 I18nContext，从请求作用域解析；
+        // 消息原文即 i18n key，资源缺失时 IStringLocalizer 原样返回 key，行为与未翻译一致
+        var localizer = httpContext.RequestServices.GetRequiredService<IStringLocalizer>();
+        var message = businessException.Argments?.Count > 0
+            ? localizer[businessException.Message, businessException.Argments.ToArray()].Value
+            : localizer[businessException.Message].Value;
 
 #if DEBUG
-        messageDetail = businessException.ToString();
+        var messageDetail = businessException.ToString();
 #endif
 
         var response = new BusinessValidationResult()

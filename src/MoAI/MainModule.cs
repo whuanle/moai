@@ -77,5 +77,10 @@ public partial class MainModule : IModule
         context.Services.AddHttpContextAccessor();
         context.Services.AddExceptionHandler<MaomiExceptionHandler>();
         context.Services.AddI18nAspNetCore();
+        context.Services.AddI18nResource(factory =>
+        {
+            // i18n 资源目录由 tool/I18nScanner 扫描 BusinessException 生成，文件名即语言名
+            factory.AddJsonDirectory(Path.Combine(AppContext.BaseDirectory, "i18n"));
+        });
     }
 }

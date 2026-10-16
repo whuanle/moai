@@ -74,20 +74,12 @@ public class MaomiExceptionFilter : IAsyncExceptionFilter
         };
     }
 
-    private static void HandleBusinessException(ExceptionContext context, BusinessException businessException)
+    private void HandleBusinessException(ExceptionContext context, BusinessException businessException)
     {
-        // todo: i18n
-        var message = string.Empty;
-        var messageDetail = string.Empty;
-
-        message = businessException.Message;
-        if (businessException.Argments?.Count > 0)
-        {
-            message = string.Format(message, businessException.Argments.ToArray());
-        }
+        var message = LocalizeMessage(businessException);
 
 #if DEBUG
-        messageDetail = businessException.ToString();
+        var messageDetail = businessException.ToString();
 #endif
 
         var response = new BusinessValidationResult()
@@ -101,5 +93,16 @@ public class MaomiExceptionFilter : IAsyncExceptionFilter
         {
             StatusCode = businessException.StatusCode,
         };
+    }
+
+    private string LocalizeMessage(BusinessException businessException)
+    {
+        // 消息原文即 i18n key；资源缺失时 IStringLocalizer 原样返回 key，行为与未翻译一致
+        if (businessException.Argments?.Count > 0)
+        {
+            return _stringLocalizer[businessException.Message, businessException.Argments.ToArray()].Value;
+        }
+
+        return _stringLocalizer[businessException.Message].Value;
     }
 }

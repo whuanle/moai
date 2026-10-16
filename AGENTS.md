@@ -72,6 +72,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 - 前端：`cd ui && npm run dev`（4000）
 - 一体部署：`bash deploy/deploy-compose.sh`（postgres 5432、redis 6379、rabbitmq 5672/15672、**rustfs 9000/9001**、opensandbox-server 18123、moai 8080）；配置以 `.env` 为来源自动生成 `configs/system.json` 后挂载注入。详见 [docs/deployment/docker.md](./docs/deployment/docker.md)。图数据库（Memgraph）不内置，按需接入
 - 种子账号：admin / abcd123456（root）
+- i18n：`dotnet run --project tool/I18nScanner` 扫描 BusinessException 消息生成 `src/MoAI/i18n/{zh-CN,en-US}.json`（已有翻译保留），后端拦截器按 Accept-Language 翻译返回，见 [tool/I18nScanner/README.md](./tool/I18nScanner/README.md)
 - git 需代理：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 fetch`
 
 ## 验证命令（提交前全绿）

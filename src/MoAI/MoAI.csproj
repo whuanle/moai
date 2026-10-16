@@ -70,4 +70,12 @@
 		</Content>
 	</ItemGroup>
 
+	<!-- i18n 资源：tool/I18nScanner 扫描 BusinessException 生成的语言文件，运行时由 Maomi.I18n 按文件名加载 -->
+	<ItemGroup>
+		<Content Update="i18n/**/*.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+
 </Project>
