@@ -142,7 +142,8 @@ cat > "${MOAI_CONFIG_FILE}" <<EOF
   },
   "Serilog": {
     "Using": [
-      "Serilog.Sinks.Console"
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.Async"
     ],
     "MinimumLevel": {
       "Default": "Information",
@@ -161,9 +162,16 @@ cat > "${MOAI_CONFIG_FILE}" <<EOF
     },
     "WriteTo": [
       {
-        "Name": "Console",
+        "Name": "Async",
         "Args": {
-          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+          "configure": [
+            {
+              "Name": "Console",
+              "Args": {
+                "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+              }
+            }
+          ]
         }
       }
     ],

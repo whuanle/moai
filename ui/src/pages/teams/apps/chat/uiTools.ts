@@ -61,9 +61,85 @@ function normalizeChartConfig(raw: unknown): Record<string, unknown> | undefined
   return undefined
 }
 
-/** 判断对象是否为可渲染的图表配置：type 在支持列表内且 data 为数组（缺 data 或白名单外 type 会让渲染层失败） */
+/** data 为单对象（而非数组）的图表类型：树/图家族 data={name,children} 或 {nodes,edges}，与 gpt-vis 渲染器读取形态对齐 */
+const OBJECT_DATA_CHART_TYPES: ReadonlySet<string> = new Set([
+  'mindmap',
+  'indented-tree',
+  'organization-chart',
+  'fishbone-diagram',
+  'network-graph',
+  'flow-diagram',
+])
+
+/**
+ * 判断对象是否为可渲染的图表配置：type 在支持列表内，且 data 形态与该类型的渲染契约一致
+ * （缺数据或白名单外 type 会让渲染层失败）。dual-axes 顶层是 categories+series（无 data 数组）、
+ * liquid 顶层是 percent，树/图家族 data 为对象，其余类型 data 为数组.
+ */
 function looksLikeVisChart(obj: Record<string, unknown>): boolean {
-  return typeof obj.type === 'string' && VIS_CHART_TYPES.has(obj.type) && Array.isArray(obj.data)
+  const type = obj.type
+  if (typeof type !== 'string' || !VIS_CHART_TYPES.has(type)) return false
+  if (type === 'dual-axes') return Array.isArray(obj.categories) && Array.isArray(obj.series)
+  if (type === 'liquid') return typeof obj.percent === 'number'
+  if (OBJECT_DATA_CHART_TYPES.has(type)) {
+    return !!obj.data && typeof obj.data === 'object' && !Array.isArray(obj.data)
+  }
+  return Array.isArray(obj.data)
+}
+
+/**
+ * 行级图表的 x 字段契约（gpt-vis 渲染器硬编码 encode：line/area 用 time、column/bar/pie/waterfall/
+ * funnel/boxplot/violin 用 category，y 一律 value）；数据行字段名不符时渲染器不报错，而是把全部行
+ * 塌进一个 x 槽位叠画（如 20 根柱叠成 1 根），因此解析层做字段漂移修复.
+ */
+const CHART_ROW_X_FIELD: ReadonlyMap<string, string> = new Map([
+  ['line', 'time'],
+  ['area', 'time'],
+  ['column', 'category'],
+  ['bar', 'category'],
+  ['pie', 'category'],
+  ['waterfall', 'category'],
+  ['funnel', 'category'],
+  ['boxplot', 'category'],
+  ['violin', 'category'],
+])
+
+/** x 字段的常见别名（模型漂移命名，按命中优先级）；y 别名单列 */
+const X_FIELD_ALIASES: readonly string[] = ['time', 'category', 'date', 'month', 'day', 'year', 'name', 'label']
+const Y_FIELD_ALIASES: readonly string[] = ['value', 'count', 'amount', 'total', 'sum']
+
+/**
+ * 字段漂移修复：数据行缺失该类型硬编码的 x/value 字段、但存在常见别名字段时，整列改名为契约字段
+ * （如 column 数据写成 {time,value} 时把 time 改为 category——线上真实事故形态）。
+ * 仅在期望字段完全缺失且别名无歧义时生效，正确的数据原样返回；非行级形态（dual-axes 等）不处理.
+ */
+function repairChartDataFields(chart: Record<string, unknown>): Record<string, unknown> {
+  const type = typeof chart.type === 'string' ? chart.type : ''
+  const xField = CHART_ROW_X_FIELD.get(type)
+  if (!xField || !Array.isArray(chart.data) || chart.data.length === 0) return chart
+  const first = chart.data[0]
+  if (!first || typeof first !== 'object' || Array.isArray(first)) return chart
+
+  const keys = Object.keys(first as Record<string, unknown>)
+  const xAlias = keys.includes(xField)
+    ? undefined
+    : X_FIELD_ALIASES.find((k) => keys.includes(k) && k !== 'value')
+  const yAlias = keys.includes('value')
+    ? undefined
+    : Y_FIELD_ALIASES.find((k) => keys.includes(k) && k !== xField && k !== xAlias)
+  if (!xAlias && !yAlias) return chart
+
+  const data = chart.data.map((row) => {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return row
+    const next: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(row as Record<string, unknown>)) {
+      if (xAlias && key === xAlias) next[xField] = val
+      else if (yAlias && key === yAlias) next.value = val
+      else next[key] = val
+    }
+    return next
+  })
+  return { ...chart, data }
 }
 
 /**
@@ -95,15 +171,15 @@ export function parseUiToolPayload(name: string, argsJson?: string): UiToolPaylo
     payload.code = typeof args.code === 'string' ? args.code : undefined
   } else {
     // 首选 chart 字段（归一化字符串/围栏形态）；归一化结果必须是可渲染的图表配置
-    // （type 在白名单内且 data 为数组）；模型漏嵌 chart 键而把配置直接铺在顶层时，
-    // 去掉 title 后整体作为配置兜底
+    // （type 在白名单内且数据形态与类型契约一致）；模型漏嵌 chart 键而把配置直接铺在顶层时，
+    // 去掉 title 后整体作为配置兜底；行级图表再做字段漂移修复
     let chart = normalizeChartConfig(args.chart)
     if (!chart || !looksLikeVisChart(chart)) {
       const rest = { ...args }
       delete rest.title
       chart = looksLikeVisChart(rest) ? rest : undefined
     }
-    payload.chart = chart
+    payload.chart = chart ? repairChartDataFields(chart) : undefined
   }
   return payload
 }

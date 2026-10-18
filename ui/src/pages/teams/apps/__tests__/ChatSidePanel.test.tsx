@@ -1,10 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { feedback } from '@/design-system'
 import { ChatSidePanel } from '../chat/ChatSidePanel'
+import { exportChartImage } from '../chat/visChartExport'
 import type { UiPanelItem } from '../chat/uiTools'
 
 vi.mock('../chat/VisChart', () => ({
   VisChart: (props: { chart: unknown }) => <div data-testid="vischart-mock">{JSON.stringify(props.chart)}</div>,
+}))
+
+vi.mock('../chat/visChartExport', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  exportChartImage: vi.fn(),
+}))
+
+vi.mock('@/design-system', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  feedback: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(),
+    notify: vi.fn(),
+    notifySuccess: vi.fn(),
+    notifyWarning: vi.fn(),
+    notifyError: vi.fn(),
+    handleError: vi.fn(),
+  },
 }))
 
 const docItem: UiPanelItem = { key: 'tc-1', kind: 'document', title: '季度报告', content: '# 摘要\n正文段落' }
@@ -89,6 +112,31 @@ describe('ChatSidePanel（前端展示工具侧边栏：多标签 + 可调宽）
     renderPanel({}, [chartItem])
     const chart = await screen.findByTestId('vischart-mock')
     expect(chart.textContent).toContain('"type":"bar"')
+  })
+
+  it('图表项：头部提供下载按钮，点击导出画布为标题命名的 PNG', async () => {
+    vi.mocked(exportChartImage).mockResolvedValue(true)
+    renderPanel({}, [chartItem])
+    fireEvent.click(screen.getByRole('button', { name: '下载图表图片' }))
+    await waitFor(() => expect(exportChartImage).toHaveBeenCalledTimes(1))
+    expect(exportChartImage).toHaveBeenCalledWith(expect.any(HTMLElement), '销量分析.png')
+    expect(feedback.success).toHaveBeenCalledWith('图表已下载')
+  })
+
+  it('图表导出失败（无画布/导出异常）时提示下载失败', async () => {
+    vi.mocked(exportChartImage).mockResolvedValue(false)
+    renderPanel({}, [chartItem])
+    fireEvent.click(screen.getByRole('button', { name: '下载图表图片' }))
+    await waitFor(() => expect(feedback.warning).toHaveBeenCalledWith('图表下载失败'))
+  })
+
+  it('table 图表无画布不提供下载；文档项同样无下载按钮', () => {
+    renderPanel({}, [
+      { key: 'tc-6', kind: 'chart', title: '明细', chart: { type: 'table', data: [] } },
+    ])
+    expect(screen.queryByRole('button', { name: '下载图表图片' })).toBeNull()
+    renderPanel({}, [docItem])
+    expect(screen.queryByRole('button', { name: '下载图表图片' })).toBeNull()
   })
 
   it('无标题时回退类型标签作为标签标题', () => {

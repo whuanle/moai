@@ -29,6 +29,17 @@ public class FrontendToolContextProviderTests
         Assert.NotNull(context.Instructions);
         Assert.Contains("ui_show_document", context.Instructions);
         Assert.Contains("不要在正文重复完整内容", context.Instructions);
+
+        // 图表工具 description 必须带全类型字段契约矩阵（gpt-vis 渲染器按类型硬编码字段名，
+        // 描述给错/缺失会让模型把 line 的 {time,value} 套到 column 上，柱图静默塌缩成单柱）
+        var chartTool = context.Tools.OfType<AIFunction>().Single(t => t.Name == FrontendToolContract.ShowChartToolName);
+        Assert.Contains("line/area", chartTool.Description);
+        Assert.Contains("\"time\":\"2025-01\"", chartTool.Description);
+        Assert.Contains("column/bar", chartTool.Description);
+        Assert.Contains("\"category\":\"1月\"", chartTool.Description);
+        Assert.Contains("dual-axes", chartTool.Description);
+        Assert.Contains("\"categories\"", chartTool.Description);
+        Assert.Contains("\"series\"", chartTool.Description);
     }
 
     [Theory]

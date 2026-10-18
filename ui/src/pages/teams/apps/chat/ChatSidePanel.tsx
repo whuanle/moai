@@ -3,6 +3,7 @@ import {
   CloseOutlined,
   CodeOutlined,
   CopyOutlined,
+  DownloadOutlined,
   FileTextOutlined,
 } from '@ant-design/icons'
 import { Button, Tooltip } from 'antd'
@@ -11,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { feedback } from '@/design-system'
+import { chartFileName, exportChartImage } from './visChartExport'
 import type { UiPanelItem } from './uiTools'
 
 // 图表渲染依赖 gpt-vis（拖 G2/G6 全家桶），懒加载成独立 chunk，只在首个图表标签渲染时拉取
@@ -68,6 +70,11 @@ export function ChatSidePanel({ items, activeKey, onSelect, onCloseTab, onClose 
   const active = items.find((x) => x.key === activeKey) ?? items[items.length - 1]
   const copyText =
     active.kind === 'document' ? active.content : active.kind === 'code' ? active.code : undefined
+  // table 图表走 DOM 渲染没有画布，不提供图片下载
+  const canDownloadChart =
+    active.kind === 'chart' &&
+    !!active.chart &&
+    active.chart.type !== 'table'
 
   const copy = async () => {
     if (!copyText) return
@@ -77,6 +84,15 @@ export function ChatSidePanel({ items, activeKey, onSelect, onCloseTab, onClose 
     } catch {
       // 忽略剪贴板不可用
     }
+  }
+
+  const downloadChart = async () => {
+    const panel = panelRef.current
+    if (!panel) return
+    const fileName = chartFileName(active.title || t('appChat.uiToolKind.chart'))
+    const ok = await exportChartImage(panel, fileName)
+    if (ok) feedback.success(t('appChat.uiChartDownloaded'))
+    else feedback.warning(t('appChat.uiChartDownloadFailed'))
   }
 
   // 左缘拖拽调宽：指针捕获跟随，宽度 = 容器右缘 - 指针 x（面板右停靠），松手持久化
@@ -155,6 +171,17 @@ export function ChatSidePanel({ items, activeKey, onSelect, onCloseTab, onClose 
           })}
         </div>
         <div className="moai-chat__panel-actions">
+          {canDownloadChart && (
+            <Tooltip title={t('appChat.uiPanelDownloadChart')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<DownloadOutlined />}
+                aria-label={t('appChat.uiPanelDownloadChart')}
+                onClick={() => void downloadChart()}
+              />
+            </Tooltip>
+          )}
           {copyText && (
             <Tooltip title={t('appChat.uiPanelCopy')}>
               <Button

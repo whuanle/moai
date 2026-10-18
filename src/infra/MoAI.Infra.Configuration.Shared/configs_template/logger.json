@@ -1,7 +1,8 @@
 ﻿{
   "Serilog": {
     "Using": [
-      "Serilog.Sinks.Console"
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.Async"
     ],
     "MinimumLevel": {
       "Default": "Information",
@@ -20,9 +21,16 @@
     },
     "WriteTo": [
       {
-        "Name": "Console",
+        "Name": "Async",
         "Args": {
-          "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+          "configure": [
+            {
+              "Name": "Console",
+              "Args": {
+                "outputTemplate": "{SourceContext} {Scope} {Timestamp:HH:mm} [{Level}]{NewLine}{Properties:j}{NewLine}{Message:lj} {Exception} {NewLine}"
+              }
+            }
+          ]
         }
       }
     ],

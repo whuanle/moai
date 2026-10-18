@@ -1149,10 +1149,20 @@ Scenario: 历史会话回放恢复前端展示工具卡片
 Scenario: 异常参数的渲染降级
   Given 模型产出无效的前端展示工具调用（参数流中断、内容缺失或未知 ui_ 工具名）
   Then 卡片展示「生成中/内容缺失」且不可点击，对话与正文展示不受影响
-  When 图表配置无法渲染（type 不在支持白名单、缺 data 数组或历史遗留的旧版 ECharts option）
+  When 图表配置无法渲染（type 不在支持白名单、数据形态不符该类型契约（行级缺 data 数组、dual-axes 缺 series、liquid 缺 percent、树/图家族 data 非对象）或历史遗留的旧版 ECharts option）
   Then 卡片同样按内容缺失降级，不挂载图表
   When 渲染层仍遇到不可渲染的配置
   Then 侧边栏展示兜底提示
+```
+
+```gherkin
+@AP-S90 @auto:vitest
+Scenario: 行级图表字段漂移自动修复与非 data 数组形态放行
+  Given 模型给出的图表 type 与数据字段名不符渲染契约（如 column 数据写成 time/value）
+  When 解析图表配置
+  Then 缺失的 x/value 字段按常见别名整列自动改名（group 等其余字段保留），字段正确的数据原样通过
+  When 模型按正确契约给出 dual-axes（categories+series）、liquid（percent）或树/图家族的 data 对象
+  Then 配置同样通过校验并交渲染层渲染（此前被 data 数组校验误杀）
 ```
 
 ```gherkin
@@ -1166,4 +1176,16 @@ Scenario: 侧边栏多标签与宽度调节
   Then 面板重新展开且剩余标签保留
   When 拖动面板左缘手柄
   Then 面板宽度实时调节（有上下限，主对话区保留最小宽度）并持久化到本地
+```
+
+```gherkin
+@AP-S89 @auto:vitest
+Scenario: 图表导出为图片下载
+  Given 侧边栏正在展示一张 GPT-Vis 图表
+  Then 头部操作区提供图片下载入口（table 图表无画布，不提供该入口）
+  When 用户点击下载
+  Then 当前图表画布以 PNG 保存到本地，文件名取自内容标题（非法字符净化、空回退「图表」）
+  And 导出为白底位图，分辨率取画布像素尺寸（devicePixelRatio 高清导出）
+  When 导出失败（无画布或导出异常）
+  Then 提示下载失败，对话与侧边栏不受影响
 ```

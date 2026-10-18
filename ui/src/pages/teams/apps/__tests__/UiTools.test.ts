@@ -86,6 +86,158 @@ describe('uiTools（前端展示工具解析）', () => {
     expect(hasRenderableContent(excluded)).toBe(false)
   })
 
+  it('column 数据误用 line 的 time 字段时自动修复为 category（线上塌缩事故形态）', () => {
+    const payload = parseUiToolPayload(
+      'ui_show_chart',
+      JSON.stringify({
+        title: '环比增速',
+        chart: {
+          type: 'column',
+          axisXTitle: '月份',
+          axisYTitle: '环比增速 %',
+          data: [
+            { time: '2025-02', value: -0.5 },
+            { time: '2025-03', value: 18.5 },
+          ],
+        },
+      }),
+    )
+    expect(payload?.chart).toEqual({
+      type: 'column',
+      axisXTitle: '月份',
+      axisYTitle: '环比增速 %',
+      data: [
+        { category: '2025-02', value: -0.5 },
+        { category: '2025-03', value: 18.5 },
+      ],
+    })
+  })
+
+  it('column 字段漂移修复保留 group 字段，line 误用 category 时修复为 time', () => {
+    const groupDrift = parseUiToolPayload(
+      'ui_show_chart',
+      JSON.stringify({
+        chart: {
+          type: 'column',
+          group: true,
+          data: [
+            { time: '1月', value: 1, group: '2025年' },
+            { time: '1月', value: 2, group: '2026年' },
+          ],
+        },
+      }),
+    )
+    expect(groupDrift?.chart).toEqual({
+      type: 'column',
+      group: true,
+      data: [
+        { category: '1月', value: 1, group: '2025年' },
+        { category: '1月', value: 2, group: '2026年' },
+      ],
+    })
+
+    const lineDrift = parseUiToolPayload(
+      'ui_show_chart',
+      '{"chart":{"type":"line","data":[{"category":"1月","value":5}]}}',
+    )
+    expect(lineDrift?.chart).toEqual({ type: 'line', data: [{ time: '1月', value: 5 }] })
+  })
+
+  it('value 字段漂移（count/total 等别名）自动修复，x/y 双漂移一并处理', () => {
+    const yDrift = parseUiToolPayload(
+      'ui_show_chart',
+      '{"chart":{"type":"bar","data":[{"category":"A","count":3}]}}',
+    )
+    expect(yDrift?.chart).toEqual({ type: 'bar', data: [{ category: 'A', value: 3 }] })
+
+    const both = parseUiToolPayload(
+      'ui_show_chart',
+      '{"chart":{"type":"column","data":[{"month":"1月","total":10}]}}',
+    )
+    expect(both?.chart).toEqual({ type: 'column', data: [{ category: '1月', value: 10 }] })
+  })
+
+  it('字段正确的行级数据原样返回（不做无谓改写）', () => {
+    const raw = {
+      type: 'waterfall',
+      data: [
+        { category: '期初', value: 100 },
+        { category: '总计', value: 100, isTotal: true },
+      ],
+    }
+    const payload = parseUiToolPayload('ui_show_chart', JSON.stringify({ title: '瀑布', chart: raw }))
+    expect(payload?.chart).toEqual(raw)
+  })
+
+  it('dual-axes 正确结构（categories+series，无 data 数组）通过白名单', () => {
+    const payload = parseUiToolPayload(
+      'ui_show_chart',
+      JSON.stringify({
+        title: 'GMV与增速',
+        chart: {
+          type: 'dual-axes',
+          categories: ['2025-01', '2025-02'],
+          series: [
+            { type: 'column', data: [1, 2], axisYTitle: 'GMV' },
+            { type: 'line', data: [0.1, 0.2], axisYTitle: '增速%' },
+          ],
+        },
+      }),
+    )
+    expect(payload?.chart).toEqual({
+      type: 'dual-axes',
+      categories: ['2025-01', '2025-02'],
+      series: [
+        { type: 'column', data: [1, 2], axisYTitle: 'GMV' },
+        { type: 'line', data: [0.1, 0.2], axisYTitle: '增速%' },
+      ],
+    })
+    expect(hasRenderableContent(payload)).toBe(true)
+
+    // 漏嵌 chart 键铺在顶层时同样兜底
+    const topLevel = parseUiToolPayload(
+      'ui_show_chart',
+      '{"title":"x","type":"dual-axes","categories":["1月"],"series":[{"type":"line","data":[1]}]}',
+    )
+    expect(hasRenderableContent(topLevel)).toBe(true)
+  })
+
+  it('非 data 数组形态的类型契约缺失时仍拒绝', () => {
+    // dual-axes 缺 series
+    const noSeries = parseUiToolPayload(
+      'ui_show_chart',
+      '{"chart":{"type":"dual-axes","categories":["1月"]}}',
+    )
+    expect(hasRenderableContent(noSeries)).toBe(false)
+
+    // liquid 缺 percent
+    const noPercent = parseUiToolPayload('ui_show_chart', '{"chart":{"type":"liquid","data":[]}}')
+    expect(hasRenderableContent(noPercent)).toBe(false)
+
+    // 树形态 data 必须是对象
+    const treeWithArray = parseUiToolPayload('ui_show_chart', '{"chart":{"type":"mindmap","data":[]}}')
+    expect(hasRenderableContent(treeWithArray)).toBe(false)
+  })
+
+  it('树/图家族的 data 对象形态通过白名单（此前被 data 数组校验误杀）', () => {
+    const mindmap = parseUiToolPayload(
+      'ui_show_chart',
+      '{"chart":{"type":"mindmap","data":{"name":"根","children":[{"name":"子"}]}}}',
+    )
+    expect(mindmap?.chart).toEqual({ type: 'mindmap', data: { name: '根', children: [{ name: '子' }] } })
+    expect(hasRenderableContent(mindmap)).toBe(true)
+
+    const graph = parseUiToolPayload(
+      'ui_show_chart',
+      '{"chart":{"type":"network-graph","data":{"nodes":[{"name":"A"}],"edges":[{"source":"A","target":"B"}]}}}',
+    )
+    expect(hasRenderableContent(graph)).toBe(true)
+
+    const liquid = parseUiToolPayload('ui_show_chart', '{"chart":{"type":"liquid","percent":0.75}}')
+    expect(liquid?.chart).toEqual({ type: 'liquid', percent: 0.75 })
+    expect(hasRenderableContent(liquid)).toBe(true)
+  })
+
   it('历史消息里的旧 ECharts option（无 type）不再渲染（echarts 已移除，安全降级）', () => {
     const payload = parseUiToolPayload(
       'ui_show_chart',

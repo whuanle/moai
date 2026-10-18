@@ -223,11 +223,13 @@ cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck &&
 | @AP-S88 | local-dev/security-strategies-e2e.mjs（S05/S07：事件四断言+scope 过滤+Member 403） | PASS 18/18（2026-10-13） |
 | @AP-S80 | ui/src/pages/teams/apps/__tests__/AppSecuritySection.test.tsx（五组卡片/策略载荷/事件列表/成员不加载 7 例） | PASS 7/7（2026-10-13） |
 | @AP-S80 | ui/src/pages/teams/apps/__tests__/AppSecuritySection.test.tsx + AppWorkspace.test.tsx | PASS 7/7、4/4（2026-10-08：四组独立常显 + 双套规则内嵌改版） |
-| @AP-S81 | tests/MoAI.AI.Core.Tests/FrontendToolContextProviderTests.cs（三工具注册/桩执行/漏传参数/请求头开关/前缀判定） | PASS 9/9（2026-10-13 GPT-Vis 迁移复验） |
+| @AP-S81 | tests/MoAI.AI.Core.Tests/FrontendToolContextProviderTests.cs（三工具注册/桩执行/漏传参数/请求头开关/前缀判定 + 图表 description 全类型字段契约矩阵断言） | PASS 9/9（2026-10-18 字段矩阵修复复验） |
 | @AP-S82 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（ui_show_chart 流式折叠卡 + 侧边栏自动打开/关闭重开） | PASS 24/24（2026-10-13） |
 | @AP-S83 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（历史回放渲染折叠卡，点击打开不自动展开） | PASS 24/24（2026-10-13） |
-| @AP-S84 | UiToolCard.test.tsx（降级态/点击/高亮）+ ChatSidePanel.test.tsx（三渲染器/复制/关闭/多标签/拖宽手柄）+ UiTools.test.ts（解析层含配置字符串/围栏/顶层回退/白名单外 type/缺 data/旧 ECharts option 拦截归一化）+ VisChart.test.tsx（容器常驻/抛后恢复/白名单外防御/卸载释放） | PASS 5/5、8/8、13/13、6/6（2026-10-13：echarts → @antv/gpt-vis 迁移复验） |
+| @AP-S84 | UiToolCard.test.tsx（降级态/点击/高亮）+ ChatSidePanel.test.tsx（三渲染器/复制/关闭/多标签/拖宽手柄）+ UiTools.test.ts（解析层含配置字符串/围栏/顶层回退/白名单外 type/缺 data/旧 ECharts option 拦截归一化）+ VisChart.test.tsx（容器常驻/抛后恢复/白名单外防御/卸载释放） | PASS 5/5、11/11、20/20、6/6（2026-10-18：字段漂移修复与非 data 数组形态复验） |
 | @AP-S85 | ChatSidePanel.test.tsx（多标签切换/单关回调/收起/拖宽手柄）+ AppChat.test.tsx（一轮双图表多标签端到端：切换/关当前切相邻/收起重开保留） | PASS 8/8、24/24（2026-10-13） |
+| @AP-S89 | ui/src/pages/teams/apps/__tests__/ChatSidePanel.test.tsx（图表下载入口/成功与失败反馈/table 与文档项无入口）+ visChartExport.test.ts（下载文件名净化） | PASS 11/11、3/3（2026-10-18） |
+| @AP-S90 | ui/src/pages/teams/apps/__tests__/UiTools.test.ts（column/line/x·y 漂移修复/group 保留/正确数据不误伤/dual-axes·liquid·树图放行/契约缺失拒绝） | PASS 20/20（2026-10-18） |
 | @AP-S86 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（悬浮显示的红色删除入口 + 确认后调删除接口并刷新列表 + 删除当前会话回欢迎态） | PASS 21/21（2026-10-08：含 Popconfirm 弹层点击沿 React 树冒泡误触发行的修复回归） |
 | @AP-S87 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（头部返回按钮跳转 /apps，公开应用非团队成员不落入团队应用列表） | PASS 22/22（2026-10-08） |
 | @AP-S88 | AppChat.test.tsx（多会话并行：A 流式中点「新对话」立即创建会话 B 且各自独立 agent；侧栏呼吸点标识进行中会话；切回流式中会话恢复实时现场不回拉历史；停止仅中止当前会话） | PASS 24/24（2026-10-08，typecheck/lint 0 error） |
