@@ -145,16 +145,35 @@ describe('AppConfigSection（应用配置分区）', () => {
     })
   })
 
-  it('呈现 Agent 配置表单（模型/提示词/插件/流程应用/默认技能/知识库）', async () => {
+  it('呈现五张收缩卡片（基础配置/用户提示/能力扩展/沙箱/安全审批），默认全部展开', async () => {
     renderSection()
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    expect(screen.getByText('用户提示')).toBeTruthy()
+    expect(screen.getByText('能力扩展')).toBeTruthy()
+    expect(screen.getByText('沙箱')).toBeTruthy()
+    expect(screen.getByText('安全审批')).toBeTruthy()
+    expect(document.querySelectorAll('.ant-collapse').length).toBe(5)
+    document.querySelectorAll('.ant-collapse-header').forEach((node) => {
+      expect(node.getAttribute('aria-expanded')).toBe('true')
+    })
     expect(screen.getByText('对话模型')).toBeTruthy()
     expect(screen.getByText('提示词')).toBeTruthy()
     expect(screen.getByText('插件')).toBeTruthy()
     expect(screen.getByText('流程应用')).toBeTruthy()
     expect(screen.getByText('默认技能')).toBeTruthy()
     expect(screen.getByText('知识库')).toBeTruthy()
+  })
+
+  it('收缩卡片可折叠：点击沙箱卡片头收起，再次点击展开', async () => {
+    renderSection()
+
+    const header = (await screen.findByText('沙箱')).closest('.ant-collapse-header') as HTMLElement
+    expect(header.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(header)
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(header)
+    expect(header.getAttribute('aria-expanded')).toBe('true')
   })
 
   it('回显团队可用模型与本团队知识库、已绑定插件', async () => {
@@ -181,7 +200,7 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection()
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
     await waitFor(() => expect(screen.getByText('请选择对话模型')).toBeTruthy())
     expect(screen.queryByText('00000000-0000-0000-0000-000000000000')).toBeNull()
 
@@ -242,9 +261,10 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection({ ...AGENT_DETAIL, isExternal: true })
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
     expect(screen.getByText(/不支持沙箱与技能/)).toBeTruthy()
     expect(screen.queryByText('默认技能')).toBeNull()
+    expect(screen.queryByText('沙箱')).toBeNull()
     expect(screen.queryByText('启用沙箱')).toBeNull()
     expect(screen.queryByText('沙箱自动放行')).toBeNull()
 
@@ -316,7 +336,7 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection()
 
-    expect(await screen.findByText('审批策略')).toBeTruthy()
+    expect(await screen.findByText('安全审批')).toBeTruthy()
     expect(screen.getByText('沙箱自动放行')).toBeTruthy()
     expect(screen.getByText('自动放行插件')).toBeTruthy()
 
@@ -351,7 +371,7 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection()
 
-    expect(await screen.findByText('审批策略')).toBeTruthy()
+    expect(await screen.findByText('安全审批')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
 
     // 未绑定的插件从自动放行白名单中剔除（后端强校验，前端先收敛）
@@ -569,7 +589,7 @@ describe('AppConfigSection（应用配置分区）', () => {
   it('普通成员只读：无保存入口并提示需要团队管理员', async () => {
     renderSection({ ...AGENT_DETAIL, myRole: 0 }, false)
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /保存配置/ })).toBeNull()
     expect(screen.getByText(/创建与配置需要团队管理员/)).toBeTruthy()
   })

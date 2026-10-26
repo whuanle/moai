@@ -5,6 +5,7 @@ using MoAI.App.Queries.Responses;
 using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
+using MoAI.App.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -82,6 +83,8 @@ public class QueryExternalAppsCommandHandler : IRequestHandler<QueryExternalApps
                 CreateTime = x.CreateTime
             })
             .ToList();
+
+        await AppListItemHelper.FillTeamAndUsageAsync(_databaseContext, items, cancellationToken);
 
         return new QueryAppsCommandResponse
         {

@@ -63,7 +63,7 @@ public class AIModelController : ControllerBase
     }
 
     /// <summary>
-    /// 批量导入模型列表（前端从 models.json 解析后提交，仅管理员可访问）.
+    /// 批量导入模型列表（默认停用，仅管理员可访问）.
     /// </summary>
     /// <param name="req">导入请求体.</param>
     /// <param name="ct">取消令牌.</param>
@@ -76,7 +76,7 @@ public class AIModelController : ControllerBase
     }
 
     /// <summary>
-    /// 从供应商拉取模型列表并同步到数据库（仅管理员可访问）.
+    /// 从供应商拉取模型列表并匹配内置目录，只探测不落库（仅管理员可访问）；返回候选列表供用户挑选后调用 import 导入.
     /// </summary>
     /// <param name="req">同步请求体.</param>
     /// <param name="ct">取消令牌.</param>

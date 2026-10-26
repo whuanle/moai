@@ -51,7 +51,7 @@ docker exec -i moai-postgres psql -U postgres -d moai < asserts/feishu_app.sql
 |---|---|---|
 | 飞书发消息无回复 | 飞书应用未添加机器人能力 / 未订阅 im.message.receive_v1 / 未开 im:message 权限；接入目标是未发布或未配置模型的应用 | 按第 1 节逐项核对；列表看 `isOnline`；查日志「飞书消息忽略」关键字（@FS-S21） |
 | 应用渠道页「接入飞书应用」提交报 409 | 该飞书 AppID 已建过连接（同一开放平台应用全局一连，可能在其它应用页或知识库外部源创建） | 无「绑定已有连接」路径：先删除原连接（删除即彻底移除）再接入，或换一个飞书应用（@FS-S25/@FS-S8） |
-| 列表 `isOnline=false` 且日志 `app_id is invalid` | 凭证错误（终态） | 修正 AppSecret 重新保存（触发重连） |
+| 列表 `isOnline=false` 且日志 `app_id is invalid` | 凭证错误（终态） | 「编辑」连接修正 AppID/AppSecret 后保存（触发重连），无需删除重建（@FS-S12） |
 | `isOnline=false` 周期性重连日志 | 网络中断/飞书侧断开 | SDK 自动重连，无需处理；持续失败查代理与域名 |
 | 建连接返回 409 | 同 AppID 已建过连接（飞书侧一应用一连） | 先删除原连接（删除即彻底移除，AppID 随之释放）或换一个飞书应用 |
 | 事件收到但业务无反应 | 渠道类型无处理器注册 / 业务方未订阅该 event_type | 确认 `AddSingleton<IFeishuEventHandler,...>`；核对飞书订阅 |

@@ -10,6 +10,7 @@ import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createApp, getApps, type AppItem, type AppKind } from '@/api/app'
+import { ExternalChannelEntry } from '@/components/ExternalChannelEntry'
 
 const { Text, Paragraph } = Typography
 
@@ -220,17 +221,21 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
                             <div style={{ marginTop: 2 }}>{renderKind(item.appType)}</div>
                           </div>
                         </div>
-                        {canManage && (
-                          <Button
-                            type="link"
-                            size="small"
-                            icon={<SettingOutlined />}
-                            style={{ height: 'auto', padding: 0, flexShrink: 0 }}
-                            onClick={() => openManage(item)}
-                          >
-                            {t('appManage.manage')}
-                          </Button>
-                        )}
+                        {/* 已开通外部渠道（如飞书）时在卡片右上角展示渠道入口，与管理入口并排 */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.xs, flexShrink: 0 }}>
+                          <ExternalChannelEntry channels={item.externalChannels} />
+                          {canManage && (
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<SettingOutlined />}
+                              style={{ height: 'auto', padding: 0, flexShrink: 0 }}
+                              onClick={() => openManage(item)}
+                            >
+                              {t('appManage.manage')}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <Paragraph
                         type="secondary"

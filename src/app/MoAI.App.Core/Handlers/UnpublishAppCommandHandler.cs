@@ -54,6 +54,7 @@ public class UnpublishAppCommandHandler : IRequestHandler<UnpublishAppCommand, E
         {
             app.PublishStatus = 0;
             app.PublishTime = null;
+            app.PublishVersion = null;
             await _databaseContext.SaveChangesAsync(cancellationToken);
         }
 

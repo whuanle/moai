@@ -15,6 +15,10 @@ export interface PublicationReviewItem {
   resourceId?: string | null
   /** 资源名称快照，申请时的名称 */
   resourceName?: string | null
+  /** 资源头像 objectKey（取资源当前头像），未设置为空串 */
+  resourceAvatar?: string | null
+  /** 申请上架的版本号（int 编码 aaa*10000+bb*100+cc），仅应用类型有值 */
+  publishVersion?: number | null
   teamId?: string | null
   teamName?: string | null
   applyReason?: string | null
@@ -59,17 +63,20 @@ export async function getTeamPublicationList(
   return (res?.items ?? []) as PublicationReviewItem[]
 }
 
-/** 申请上架，返回上架审核记录 id；需要资源所属团队 Admin+ */
+/** 申请上架，返回上架审核记录 id；需要资源所属团队 Admin+；应用类型必须携带版本号 aaa.bb.cc（按版本号上架） */
 export async function applyPublication(payload: {
   resourceType: PublicationResourceType
   resourceId: string
   applyReason?: string
+  /** 应用版本号 aaa.bb.cc，仅 resourceType=app 必填 */
+  version?: string
 }): Promise<string> {
   const client = getApiClient()
   const res = await client.api.publication.apply.post({
     resourceType: payload.resourceType,
     resourceId: payload.resourceId,
     applyReason: payload.applyReason,
+    version: payload.version,
   })
   return String(res?.value ?? '')
 }

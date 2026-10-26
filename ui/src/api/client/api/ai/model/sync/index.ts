@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface SyncRequestBuilder extends BaseRequestBuilder<SyncRequestBuilder> {
     /**
-     * 从供应商拉取模型列表并同步到数据库（仅管理员可访问）.
+     * 从供应商拉取模型列表并匹配内置目录，只探测不落库（仅管理员可访问）；返回候选列表供用户挑选后调用 import 导入.
      * @param body 从供应商拉取并同步模型列表（后端负责获取模型并匹配内置 models.json）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SyncAIModelCommandResponse>}
@@ -23,7 +23,7 @@ export interface SyncRequestBuilder extends BaseRequestBuilder<SyncRequestBuilde
      */
      post(body: SyncAIModelCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<SyncAIModelCommandResponse | undefined>;
     /**
-     * 从供应商拉取模型列表并同步到数据库（仅管理员可访问）.
+     * 从供应商拉取模型列表并匹配内置目录，只探测不落库（仅管理员可访问）；返回候选列表供用户挑选后调用 import 导入.
      * @param body 从供应商拉取并同步模型列表（后端负责获取模型并匹配内置 models.json）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

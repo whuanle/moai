@@ -18,7 +18,7 @@
 ```
 src/aiplugin/
 ├── MoAI.AIPlugin.Shared/
-│   ├── Commands/SaveDynamicPluginCommand.cs        {pluginKey,templeteKey,title,description,classifyId,config} → EmptyCommandResponse
+│   ├── Commands/SaveDynamicPluginCommand.cs        {pluginKey,templeteKey,title,description,classifyId,config,avatarPath?} → EmptyCommandResponse
 │   ├── Commands/DeleteDynamicPluginCommand.cs       {pluginKey} → EmptyCommandResponse
 │   ├── Commands/UpdatePluginAvatarCommand.cs        {pluginId(路由回填),objectKey} → EmptyCommandResponse
 │   └── Queries/Responses/QueryPluginManageListCommandResponseItem.cs  （增强：+TempleteKey,+Config,+ConfigExample,+AvatarPath）
@@ -42,7 +42,7 @@ ui/src/
 └── pages/plugins/
     ├── DynamicPluginPanel.tsx                        实例列表 + 运行 + 授权 + 新建/编辑（共享模态）+ 列表头像展示
     ├── PluginTemplates.tsx                           模板列表页（系统/团队双页面：/plugin/templates 与 /team/{teamId}/plugin/templates；卡片实例数 + 卡片「新建」+ 面包屑返回）
-    └── components/DynamicPluginInstanceModal.tsx     系统/团队共用创建/编辑模态（kg 绑定预填、头像上传随 scope 保留；团队新建实例 key 自动填「模板key_团队id」）
+    └── components/DynamicPluginInstanceModal.tsx     系统/团队共用创建/编辑模态（kg 绑定预填；头像仅系统侧：新建态暂存随保存提交、编辑态即登记；团队新建实例 key 自动填「模板key_团队id」）
 ```
 
 三层依赖：`Api → Core → Shared`；Core 增 `IDynamicInstanceResolver`（供 Run 解析）。Api 引用 `MoAI.Account.Shared`、`MoAI.AIPlugin.Shared`。
@@ -79,6 +79,7 @@ ui/src/
 7. **删除**：软删除 `plugin_dynamic` 与该实例关联的 `plugin` 行（`IsDeleted=1`）。
 8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 系统侧实例、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
 9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
+10. **创建态头像**：插件记录保存前无 id 可登记，保存命令带可选 `avatarPath`（创建直接落库；更新仅传了才覆盖，不传不改动），Handler 同样校验 `Files` 表已登记（404 防伪造，校验先于任何写入，失败不建实例）。前端共享模态在系统侧新建态渲染 `PluginAvatarPendingUpload`（仅直传暂存 objectKey，随保存提交），编辑态保留 `PluginAvatarUpload`（选图即登记）；团队侧保存命令无此字段、暂不开放（团队列表亦未展示头像）。
 
 ## 内置动态模板
 

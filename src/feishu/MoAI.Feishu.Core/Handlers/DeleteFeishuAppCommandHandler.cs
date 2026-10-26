@@ -59,7 +59,7 @@ public class DeleteFeishuAppCommandHandler : IRequestHandler<DeleteFeishuAppComm
         await _databaseContext.SoftDeleteAsync(_databaseContext.FeishuAppBindings.Where(x => x.FeishuAppId == entity.Id));
         await _databaseContext.SoftDeleteAsync(_databaseContext.FeishuApps.Where(x => x.Id == entity.Id));
 
-        _connectionManager.ApplyDelete(entity.Id);
+        await _connectionManager.ApplyDeleteAsync(entity.Id);
 
         return EmptyCommandResponse.Default;
     }

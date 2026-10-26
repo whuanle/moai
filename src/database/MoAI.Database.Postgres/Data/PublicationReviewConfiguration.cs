@@ -38,6 +38,9 @@ internal partial class PublicationReviewConfiguration : IEntityTypeConfiguration
             .HasDefaultValueSql("''::character varying")
             .HasComment("申请说明")
             .HasColumnName("apply_reason");
+        entity.Property(e => e.PublishVersion)
+            .HasComment("申请上架的版本号（int 编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc），仅应用类型使用，其他资源为 null")
+            .HasColumnName("publish_version");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")

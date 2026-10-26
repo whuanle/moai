@@ -112,6 +112,44 @@ describe('AppChannelsSection（应用外部渠道）', () => {
     // 弹窗关闭与否依赖 antd 动画在 jsdom 的结束事件，按项目惯例不对其断言
   })
 
+  it('编辑：回显表单，密钥留空表示保持不变（不改启停状态）', async () => {
+    renderSection()
+    fireEvent.click(await screen.findByRole('button', { name: /编\s*辑/ }))
+
+    expect(await screen.findByText('编辑飞书应用')).toBeInTheDocument()
+    expect(screen.getByLabelText('连接名称')).toHaveValue('客服机器人')
+    expect(screen.getByLabelText('AppID')).toHaveValue('cli_bound')
+
+    fireEvent.change(screen.getByLabelText('连接名称'), { target: { value: '改名机器人' } })
+    fireEvent.change(screen.getByLabelText('AppID'), { target: { value: 'cli_fixed' } })
+    // 密钥留空直接保存
+    fireEvent.click(screen.getByRole('button', { name: /^保\s*存$/ }))
+
+    await waitFor(() =>
+      expect(updateFeishuApp).toHaveBeenCalledWith('f1', {
+        name: '改名机器人',
+        description: undefined,
+        appId: 'cli_fixed',
+        appSecret: undefined,
+        domain: undefined,
+        isDisable: false,
+      }),
+    )
+  })
+
+  it('编辑：填写新密钥一并保存', async () => {
+    renderSection()
+    fireEvent.click(await screen.findByRole('button', { name: /编\s*辑/ }))
+    await screen.findByText('编辑飞书应用')
+
+    fireEvent.change(screen.getByLabelText('AppSecret'), { target: { value: 'new-secret' } })
+    fireEvent.click(screen.getByRole('button', { name: /^保\s*存$/ }))
+
+    await waitFor(() =>
+      expect(updateFeishuApp).toHaveBeenCalledWith('f1', expect.objectContaining({ appSecret: 'new-secret' })),
+    )
+  })
+
   it('停用需二次确认，启用直接执行', async () => {
     renderSection()
     fireEvent.click(await screen.findByRole('button', { name: /停\s*用/ }))

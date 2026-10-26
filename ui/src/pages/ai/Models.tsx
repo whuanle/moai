@@ -31,9 +31,11 @@ import {
   type AIModelItem,
   type AIModelMeta,
   type CreateAIChannelPayload,
+  type SyncModelCandidate,
 } from '@/api/aichannel'
 import { getCatalogProviders, type CatalogProvider } from '@/api/models-catalog'
 import { DataTable, feedback, Page } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { ModelAccessDrawer } from './ModelAccessDrawer'
 import { formatDateTime } from '@/utils/datetime'
@@ -411,6 +413,12 @@ export function Models() {
   const [modelKind, setModelKind] = useState<string | undefined>()
   const [accessModel, setAccessModel] = useState<AIModelItem | null>(null)
   const [accessOpen, setAccessOpen] = useState(false)
+
+  const [syncModalOpen, setSyncModalOpen] = useState(false)
+  const [syncChannel, setSyncChannel] = useState<AIChannelItem | null>(null)
+  const [syncCandidates, setSyncCandidates] = useState<SyncModelCandidate[]>([])
+  const [syncSelectedIds, setSyncSelectedIds] = useState<React.Key[]>([])
+  const [importing, setImporting] = useState(false)
   const appliedKind = modelKind ?? editingModel?.modelKind ?? 'conversation'
   const kindCaps = kindCapabilitySettings(appliedKind)
 
@@ -544,19 +552,57 @@ export function Models() {
     setSyncingChannelId(channel.id)
     try {
       const res = await aichannelApi.syncModel(channel.id)
-      const added = res.added ?? 0
-      const total = res.total ?? 0
-      if (added > 0) {
-        feedback.success(t('models.syncSuccess', { count: added }))
-      } else {
-        feedback.success(t('models.syncNoChange', { count: total }))
+      const candidates = (res.items ?? []).filter((item) => item.meta != null)
+      if (candidates.length === 0) {
+        feedback.info(t('models.syncEmpty'))
+        return
       }
-      await loadModelsForChannel(channel.id)
-      await loadChannels()
+      // 已识别的排前面，其余按 modelId 排序，便于挑选
+      const sorted = [...candidates].sort((a, b) => {
+        if (Boolean(a.recognized) !== Boolean(b.recognized)) return a.recognized ? -1 : 1
+        return String(a.meta?.modelId ?? '').localeCompare(String(b.meta?.modelId ?? ''))
+      })
+      setSyncChannel(channel)
+      setSyncCandidates(sorted)
+      // 默认勾选已识别且未导入过的模型，其余由用户手动挑选
+      setSyncSelectedIds(
+        sorted
+          .filter((item) => item.recognized && !item.exists && item.meta?.modelId != null)
+          .map((item) => item.meta?.modelId as React.Key),
+      )
+      setSyncModalOpen(true)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setSyncingChannelId(null)
+    }
+  }
+
+  const handleSyncImportOk = async () => {
+    const channelId = syncChannel?.id
+    if (!channelId || syncSelectedIds.length === 0) return
+    const selectedIdSet = new Set(syncSelectedIds.map(String))
+    const items: AIModelMeta[] = []
+    for (const item of syncCandidates) {
+      if (!item.exists && item.meta?.modelId != null && selectedIdSet.has(item.meta.modelId)) {
+        items.push(item.meta)
+      }
+    }
+    if (items.length === 0) {
+      feedback.warning(t('models.syncSelectRequired'))
+      return
+    }
+    setImporting(true)
+    try {
+      await aichannelApi.importModels({ channelId, items })
+      feedback.success(t('models.importSuccess', { count: items.length }))
+      setSyncModalOpen(false)
+      await loadModelsForChannel(channelId)
+      await loadChannels()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -723,6 +769,34 @@ export function Models() {
               />
             </Tooltip>
           </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  const syncColumns: TableColumnsType<SyncModelCandidate> = [
+    { title: t('models.colName'), dataIndex: ['meta', 'name'], width: 200, ellipsis: true },
+    { title: t('models.colModelId'), dataIndex: ['meta', 'modelId'], width: 240, ellipsis: true },
+    {
+      title: t('models.colModelKind'),
+      dataIndex: 'modelKind',
+      width: 110,
+      render: (v: string | null | undefined) => (
+        <Tag color={kindColor[v ?? ''] ?? 'default'}>{kindLabel(v, t)}</Tag>
+      ),
+    },
+    {
+      title: t('models.syncColStatus'),
+      key: 'status',
+      width: 160,
+      render: (_, record) => (
+        <Space size={[4, 4]} wrap>
+          {record.recognized ? (
+            <Tag color="green">{t('models.recognized')}</Tag>
+          ) : (
+            <Tag>{t('models.unrecognized')}</Tag>
+          )}
+          {record.exists ? <Tag color="orange">{t('models.syncExists')}</Tag> : null}
         </Space>
       ),
     },
@@ -899,6 +973,35 @@ export function Models() {
             <Switch />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        open={syncModalOpen}
+        title={t('models.syncSelectTitle')}
+        width={760}
+        okText={t('models.syncImport')}
+        okButtonProps={{ disabled: syncSelectedIds.length === 0, loading: importing }}
+        onOk={handleSyncImportOk}
+        onCancel={() => setSyncModalOpen(false)}
+        cancelText={t('models.cancel')}
+        maskClosable={false}
+      >
+        <div style={{ marginBottom: spacing.md }}>
+          {t('models.syncSelectHint', { total: syncCandidates.length, selected: syncSelectedIds.length })}
+        </div>
+        <DataTable<SyncModelCandidate>
+          rowKey={(record) => record.meta?.modelId ?? ''}
+          columns={syncColumns}
+          dataSource={syncCandidates}
+          scroll={{ y: 420 }}
+          pagination={false}
+          size="small"
+          rowSelection={{
+            selectedRowKeys: syncSelectedIds,
+            onChange: (keys) => setSyncSelectedIds(keys),
+            getCheckboxProps: (record) => ({ disabled: record.exists === true }),
+          }}
+        />
       </Modal>
 
       <ModelAccessDrawer

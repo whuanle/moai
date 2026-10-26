@@ -269,7 +269,7 @@ async function main() {
     check('AP-13o 发布应用 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
 
     if (pubAdminToken) {
-      const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: PUB_ID, applyReason: 'e2e 申请上架' } })
+      const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: PUB_ID, applyReason: 'e2e 申请上架', version: '1.0.0' } })
       check('AP-13o2 团队申请上架 200', apply.status === 200, `${apply.status} ${apply.text.slice(0, 140)}`)
       const review = await api('POST', '/api/publication/review', { token: pubAdminToken, body: { publicationId: apply.json?.value, isApprove: true } })
       check('AP-13o3 管理员审批通过 200', review.status === 200, `${review.status} ${review.text.slice(0, 140)}`)
@@ -285,6 +285,15 @@ async function main() {
 
     const sess = await api('POST', `/api/app/${PUB_ID}/session`, { token: outsider.token, body: {} })
     check('AP-13r 非成员可对公开已发布应用建会话', sess.status === 200 && isGuid(sess.json?.value), `${sess.status} ${sess.text.slice(0, 140)}`)
+
+    const pub2 = await api('GET', '/api/app/public/list', { token: outsider.token })
+    const pubItem = (pub2.json?.items ?? []).find(i => i.appId === PUB_ID)
+    check('AP-13t 列表携带团队名称与使用次数', !!pubItem && typeof pubItem.teamName === 'string' && pubItem.teamName.length > 0 && Number(pubItem.useCount) >= 1,
+      JSON.stringify({ teamName: pubItem?.teamName, useCount: pubItem?.useCount }))
+
+    const counts = (pub2.json?.items ?? []).map(i => Number(i.useCount ?? 0))
+    check('AP-13u 公开列表按使用次数降序', counts.length > 0 && counts.every((c, idx) => idx === 0 || counts[idx - 1] >= c),
+      JSON.stringify(counts.slice(0, 12)))
   }
 
   // AP-15 ~ AP-19 Agent 应用配置（允许使用的插件/知识库 + 提示词）

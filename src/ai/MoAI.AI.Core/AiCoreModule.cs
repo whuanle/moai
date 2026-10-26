@@ -4,6 +4,7 @@ using Microsoft.Agents.AI.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MoAI.AI.Services;
+using MoAI.DingTalk.Services;
 using MoAI.Feishu.Services;
 
 namespace MoAI.AI;
@@ -68,5 +69,8 @@ public class AiCoreModule : IModule
 
         // 应用渠道的飞书消息处理器（群聊/私聊消息 → 应用 Agent → 回复）；单例：内部按 chat_id 加锁串行
         context.Services.AddSingleton<IFeishuEventHandler, AppFeishuMessageHandler>();
+
+        // 应用渠道的钉钉消息处理器（群聊/私聊消息 → 应用 Agent → 回复）；单例：内部按 conversationId 加锁串行
+        context.Services.AddSingleton<IDingTalkEventHandler, AppDingTalkMessageHandler>();
     }
 }

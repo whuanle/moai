@@ -35,6 +35,12 @@ ui/src/api/publication.ts         手写封装层（Kiota 生成物之外）
 | state | int，见 `PublicationState`（pending=0，approved=1，rejected=2） |
 | create_user_id / update_user_id | 审计自动注入：申请人 / 审批人（无需单独 reviewer 列） |
 
+- **列表展示**：响应项继承 `AuditsInfo` 并经 `IUserInfoFillService.FillAsync` 填充申请人/审批人姓名，团队名称批量查询补齐；管理员列表 `/api/publication/list`、团队列表 `/api/publication/team_list`（复用同一响应模型）。2026-10-26 起响应含 `resourceAvatar`（按资源类型批量查 Apps.Avatar / Prompts.AvatarPath / Skills.AvatarPath，审批页资源列展示头像）。
+
+应用类型申请必须携带版本号 `version`（`aaa.bb.cc` 文本，int 编码 `aaa*10000 + bb*100 + cc` 存 `publish_version`，规则与 app 模块 `AppVersionHelper` 一致），其余资源类型必须为空；列表（团队侧/管理员侧）经 `publishVersion` 下发回显。存量库执行 [asserts/publication_review_version.sql](../../asserts/publication_review_version.sql)。
+
+列表排序（2026-10-26）：待审核恒排最前，组内按申请时间倒序（管理员列表与团队列表同规则，见 [@PB-S17](./bdd.md#pb-s17)）。
+
 约束：`ux_publication_review_resource_pending (resource_type, resource_id) WHERE is_deleted = 0 AND state = 0` —— 同一资源同时只有一条待审核申请；撤回走软删除即释放该约束，驳回保留记录、可重新申请。
 
 ## 关键决策
@@ -43,8 +49,7 @@ ui/src/api/publication.ts         手写封装层（Kiota 生成物之外）
 - **resource_id 用字符串**：AppEntity.Id 是 Guid、PromptEntity.Id 是 int，Handler 内按资源类型解析并校验，避免两列或触发器。
 - **管理员门禁在 Controller**：`PublicationController.EnsureAdminAsync`（`IUserAccountService.GetUserStateAsync().IsAdmin`，403），Handler 只做团队角色与状态机校验，符合 CQRS 约定。
 - **审批终态校验**：非 pending 记录审批/撤回返回 409；通过时目标资源已被删除返回 404（引导管理员改走驳回）。
-- **列表展示**：响应项继承 `AuditsInfo` 并经 `IUserInfoFillService.FillAsync` 填充申请人/审批人姓名，团队名称批量查询补齐；管理员列表 `/api/publication/list`、团队列表 `/api/publication/team_list`（复用同一响应模型）。
-- **前端**：管理页在 `adminNav` 一级菜单（仅 isAdmin 可见，页面内再校验）；应用配置分区以「上架状态」替代原公开开关（申请/撤回/重新申请入口 + 状态标签）。
+- **前端**：管理页在 `adminNav` 一级菜单（仅 isAdmin 可见，页面内再校验）；应用侧入口 2026-10-26 起自应用「信息」分区拆至工作台独立「上架管理」分区（`AppPublicationSection.tsx`：申请/撤回/重新申请入口 + 状态标签 + 历次申请记录与拒绝原因，见 [@AP-S92](../app/bdd.md#ap-s92)）。
 
 ## 已知问题
 

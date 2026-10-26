@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, AreaChartOutlined, BulbOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
+import { ApiOutlined, AreaChartOutlined, BulbOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
 import { Button, Layout, Menu, Popconfirm, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -12,11 +12,13 @@ import { AppAccessSection } from './AppAccessSection'
 import { AppAcpSection } from './AppAcpSection'
 import { AppA2aSection } from './AppA2aSection'
 import { AppChannelsSection } from './AppChannelsSection'
+import { AppDingTalkChannelsSection } from './AppDingTalkChannelsSection'
 import { AppConfigSection, type AppDetail } from './AppConfigSection'
 import { AppInfoSection } from './AppInfoSection'
 import { AppLogsSection } from './AppLogsSection'
 import { AppMemorySection } from './AppMemorySection'
 import { AppMonitorSection } from './AppMonitorSection'
+import { AppPublicationSection } from './AppPublicationSection'
 import { AppSecuritySection } from './AppSecuritySection'
 import { AppWorkflowDebugSection } from './AppWorkflowDebugSection'
 import { AppWorkflowRunsSection } from './AppWorkflowRunsSection'
@@ -29,16 +31,16 @@ const { Text } = Typography
 /** 角色：0=Member 1=Admin 2=Owner（对齐后端 TeamRole 枚举） */
 const ROLE_MEMBER = 0
 
-const SECTIONS = ['config', 'info', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'a2a', 'channels', 'security', 'memory', 'debug'] as const
+const SECTIONS = ['config', 'info', 'publication', 'design', 'runs', 'logs', 'monitor', 'access', 'acp', 'a2a', 'channels', 'security', 'memory', 'debug'] as const
 type SectionKey = (typeof SECTIONS)[number]
 
 /** 流程应用「配置」Tab 承载的二级分区（与内部应用的左侧菜单一致） */
-const CONFIG_GROUP_SECTIONS = ['info', 'security', 'logs', 'monitor', 'acp', 'a2a', 'channels'] as const
+const CONFIG_GROUP_SECTIONS = ['info', 'publication', 'security', 'logs', 'monitor', 'acp', 'a2a', 'channels'] as const
 
 /**
  * 应用工作台外壳：
- * - 内部应用：左侧菜单承载 配置/信息/日志/监控/外部渠道（外部应用另有访问点），「配置」分区为左配置栏 + 右调试对话；
- * - 流程应用：头部 Tab（设计/调试/配置/运行历史），「调试」为会话式对话，「配置」下挂二级菜单（信息/日志/监控/外部渠道，功能与内部应用一致）。
+ * - 内部应用：左侧菜单承载 配置/信息/上架管理/日志/监控/外部渠道（外部应用另有访问点），「配置」分区为左配置栏 + 右调试对话；
+ * - 流程应用：头部 Tab（设计/调试/配置/运行历史），「调试」为会话式对话，「配置」下挂二级菜单（信息/上架管理/日志/监控/外部渠道，功能与内部应用一致）。
  * 面包屑与发布/取消发布/进入对话等页级操作集中在此，各分区只负责自身内容。
  */
 export function AppWorkspace() {
@@ -120,6 +122,10 @@ export function AppWorkspace() {
       { key: 'config', icon: <SettingOutlined />, label: t('appWorkspace.menuConfig') },
       { key: 'info', icon: <InfoCircleOutlined />, label: t('appWorkspace.menuInfo') },
     )
+    // 上架管理：内部应用单独成页（申请记录/拒绝原因/版本与草稿），外部应用不开放公开到平台
+    if (!isExternal) {
+      menuItems.push({ key: 'publication', icon: <CloudUploadOutlined />, label: t('appWorkspace.menuPublication') })
+    }
     if (canManage) {
       menuItems.push(
         { key: 'security', icon: <SafetyCertificateOutlined />, label: t('appWorkspace.menuSecurity') },
@@ -145,7 +151,7 @@ export function AppWorkspace() {
     }
   }
 
-  // 流程应用分区集合：设计 / 调试 / 配置（二级：信息·安全·日志·监控·ACP·外部渠道）/ 运行历史；外部应用另有访问点
+  // 流程应用分区集合：设计 / 调试 / 配置（二级：信息·上架管理·安全·日志·监控·ACP·外部渠道）/ 运行历史；外部应用另有访问点
   const workflowSectionKeys = new Set<string>(['debug', 'runs', 'info'])
   if (canManage) {
     workflowSectionKeys.add('design')
@@ -157,6 +163,7 @@ export function AppWorkspace() {
   }
   if (!isExternal) {
     workflowSectionKeys.add('channels')
+    workflowSectionKeys.add('publication')
   }
   if (canManage && isExternal) {
     workflowSectionKeys.add('access')
@@ -175,8 +182,11 @@ export function AppWorkspace() {
   // 流程应用「配置」Tab：key 固定 info，激活条件是任一二级分区
   const inConfigGroup = !isAgent && (CONFIG_GROUP_SECTIONS as readonly string[]).includes(validSection)
 
-  // 「配置」分区左侧菜单：信息 / 安全 / 日志 / 监控 / ACP / 外部渠道（功能与内部应用一致，复用既有分区组件）
+  // 「配置」分区左侧菜单：信息 / 上架管理 / 安全 / 日志 / 监控 / ACP / 外部渠道（功能与内部应用一致，复用既有分区组件）
   const configGroupItems: MenuProps['items'] = [{ key: 'info', icon: <InfoCircleOutlined />, label: t('appWorkspace.menuInfo') }]
+  if (!isExternal) {
+    configGroupItems.push({ key: 'publication', icon: <CloudUploadOutlined />, label: t('appWorkspace.menuPublication') })
+  }
   if (canManage) {
     configGroupItems.push(
       { key: 'security', icon: <SafetyCertificateOutlined />, label: t('appWorkspace.menuSecurity') },
@@ -247,10 +257,21 @@ export function AppWorkspace() {
     if (validSection === 'info') {
       return (
         <AppInfoSection
+          appId={appId}
+          detail={detail}
+          canManage={canManage}
+          onReload={() => load(true)}
+        />
+      )
+    }
+    if (validSection === 'publication') {
+      return (
+        <AppPublicationSection
           teamId={teamId}
           appId={appId}
           detail={detail}
           canManage={canManage}
+          configStatus={configStatus}
           onReload={() => load(true)}
         />
       )
@@ -283,7 +304,12 @@ export function AppWorkspace() {
     if (validSection === 'acp') return <AppAcpSection appId={appId} />
     if (validSection === 'a2a') return <AppA2aSection appId={appId} />
     if (validSection === 'channels') {
-      return <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
+      return (
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
+          <AppDingTalkChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
+        </Space>
+      )
     }
     return <Placeholder text={t('appWorkspace.accessComingSoon')} />
   }

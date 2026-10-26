@@ -81,6 +81,13 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("发布时间，未发布为 null")
             .HasColumnName("publish_time");
+        entity.Property(e => e.PublishVersion)
+            .HasComment("发布时快照的应用版本号，未发布或存量已发布应用（未重新发布过）为 null")
+            .HasColumnName("publish_version");
+        entity.Property(e => e.Version)
+            .HasDefaultValueSql("10000")
+            .HasComment("应用版本号，编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc（默认 10000=1.0.0）")
+            .HasColumnName("version");
         entity.Property(e => e.TeamId)
             .HasComment("团队id")
             .HasColumnName("team_id");

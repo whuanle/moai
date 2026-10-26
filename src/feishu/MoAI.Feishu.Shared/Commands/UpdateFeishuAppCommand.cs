@@ -17,6 +17,11 @@ public class UpdateFeishuAppCommand : IRequest<EmptyCommandResponse>, IUserIdCon
     public Guid FeishuAppId { get; init; }
 
     /// <summary>
+    /// 飞书开放平台 AppID，为空表示保持不变；修改后自动重连.
+    /// </summary>
+    public string? AppId { get; init; }
+
+    /// <summary>
     /// 连接名称，团队内唯一.
     /// </summary>
     public string Name { get; init; } = default!;
@@ -52,6 +57,7 @@ public class UpdateFeishuAppCommand : IRequest<EmptyCommandResponse>, IUserIdCon
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateFeishuAppCommand> validate)
     {
+        validate.RuleFor(x => x.AppId).MaximumLength(64).WithMessage("飞书 AppID 最长 64 个字符.");
         validate.RuleFor(x => x.Name).NotEmpty().WithMessage("连接名称不能为空.").MaximumLength(50).WithMessage("连接名称最长 50 个字符.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("描述最长 255 个字符.");
         validate.RuleFor(x => x.AppSecret).MaximumLength(128).WithMessage("飞书 AppSecret 最长 128 个字符.");

@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using System;
+using System.Linq;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -35,6 +37,7 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
         int teamId;
         string resourceName;
         long resourceOwnerId = 0;
+        int? publishVersionValue = null;
 
         if (request.ResourceType == PublicationResourceType.App)
         {
@@ -61,6 +64,13 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
                 throw new BusinessException("应用已公开，无需重复申请.") { StatusCode = 409 };
             }
 
+            // 应用按版本号上架：aaa.bb.cc 编码为 int 落库（规则与 MoAI.App.Shared.AppVersionHelper 一致），格式已由命令校验、此处防御性再验
+            if (!TryParseVersion(request.Version, out var publishVersion))
+            {
+                throw new BusinessException("应用版本号格式不正确，应为 aaa.bb.cc（如 1.2.0）.") { StatusCode = 400 };
+            }
+
+            publishVersionValue = publishVersion;
             teamId = app.TeamId;
             resourceName = app.Name;
         }
@@ -158,6 +168,7 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
             ResourceName = resourceName,
             TeamId = teamId,
             ApplyReason = request.ApplyReason ?? string.Empty,
+            PublishVersion = publishVersionValue,
             State = (int)PublicationState.Pending
         };
 
@@ -165,5 +176,40 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return new SimpleLong { Value = publicationReview.Id };
+    }
+
+    /// <summary>
+    /// 解析 aaa.bb.cc 文本为 int 编码（aaa*10000 + bb*100 + cc），规则与 MoAI.App.Shared.AppVersionHelper 保持一致.
+    /// </summary>
+    private static bool TryParseVersion(string? text, out int version)
+    {
+        version = 0;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        var parts = text.Split('.');
+        if (parts.Length != 3
+            || !TryParsePart(parts[0], 999, out var aaa)
+            || !TryParsePart(parts[1], 99, out var bb)
+            || !TryParsePart(parts[2], 99, out var cc))
+        {
+            return false;
+        }
+
+        version = (aaa * 10000) + (bb * 100) + cc;
+        return true;
+    }
+
+    private static bool TryParsePart(string text, int maxValue, out int value)
+    {
+        value = 0;
+        if (text.Length == 0 || text.Length > 3 || !text.All(char.IsAsciiDigit) || !int.TryParse(text, out value))
+        {
+            return false;
+        }
+
+        return value <= maxValue;
     }
 }

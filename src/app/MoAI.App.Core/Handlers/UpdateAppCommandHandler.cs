@@ -75,6 +75,17 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
         app.Description = request.Description ?? string.Empty;
         app.ClassifyId = request.ClassifyId;
 
+        // 版本号 aaa.bb.cc 编码为 int 落库（aaa*10000 + bb*100 + cc），格式已由命令校验、此处防御性再验
+        if (!string.IsNullOrWhiteSpace(request.Version))
+        {
+            if (!AppVersionHelper.TryParse(request.Version, out var version))
+            {
+                throw new BusinessException("应用版本号格式不正确，应为 aaa.bb.cc（如 1.0.3）.") { StatusCode = 400 };
+            }
+
+            app.Version = version;
+        }
+
         // 应用类型创建后不可更改，IsExternal 以库内为准；公开（is_public）只能通过上架审核通过后由系统设置
         app.IsAuth = app.IsExternal && request.IsAuth;
         await _databaseContext.SaveChangesAsync(cancellationToken);

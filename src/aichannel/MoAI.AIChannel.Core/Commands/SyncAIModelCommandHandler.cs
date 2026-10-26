@@ -4,7 +4,6 @@ using MoAI.AIChannel.Commands;
 using MoAI.AIChannel.Models;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
-using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.AIChannel.Handlers;
@@ -48,59 +47,30 @@ public class SyncAIModelCommandHandler : IRequestHandler<SyncAIModelCommand, Syn
         var protocol = (AIProtocolFamily)channel.ProtocolFamily;
         var modelIds = await _providerService.GetModelIdsAsync(protocol, channel.BaseUrl, channel.ApiKey, cancellationToken);
 
-        var existing = await _databaseContext.AiModels
+        var existingModelIds = await _databaseContext.AiModels
             .Where(x => x.ChannelId == channel.Id && x.IsDeleted == 0)
-            .ToDictionaryAsync(x => x.ModelId, x => x, cancellationToken);
+            .Select(x => x.ModelId)
+            .ToHashSetAsync(cancellationToken);
 
-        var added = 0;
+        // 只探测不落库：候选列表返回给前端，由用户挑选后走 import 接口导入.
+        var items = new List<SyncAIModelCandidateItem>(modelIds.Count);
         foreach (var modelId in modelIds)
         {
             var meta = await _catalogService.GetModelAsync(channel.ProviderKey, modelId, cancellationToken);
-            var shouldEnable = meta != null;
-
-            // 匹配到 models.json 的模型默认启用；未匹配到（无参数）默认禁用.
-            if (existing.TryGetValue(modelId, out var existedModel))
+            items.Add(new SyncAIModelCandidateItem
             {
-                var derivedKind = AIModelMetaMapper.ResolveModelKind(
-                    meta ?? new AIChannelModelMeta { ModelId = modelId, Name = modelId });
-
-                if (existedModel.Enabled != shouldEnable || existedModel.ModelKind != derivedKind)
-                {
-                    existedModel.Enabled = shouldEnable;
-                    existedModel.ModelKind = derivedKind;
-                    _databaseContext.Update(existedModel);
-                }
-
-                continue;
-            }
-
-            var model = new AiModelEntity
-            {
-                ChannelId = channel.Id,
-                Enabled = shouldEnable,
-                IsPublic = false,
-                ModelId = modelId,
-                Name = modelId,
-                ModelKind = AIModelMetaMapper.ResolveModelKind(new AIChannelModelMeta { ModelId = modelId, Name = modelId }),
-            };
-
-            if (meta != null)
-            {
-                AIModelMetaMapper.Apply(model, meta);
-            }
-
-            _databaseContext.AiModels.Add(model);
-            existing[modelId] = model;
-            added++;
+                Meta = meta ?? new AIChannelModelMeta { ModelId = modelId, Name = modelId },
+                Recognized = meta != null,
+                Exists = existingModelIds.Contains(modelId),
+                ModelKind = AIModelMetaMapper.ResolveModelKind(
+                    meta ?? new AIChannelModelMeta { ModelId = modelId, Name = modelId }),
+            });
         }
-
-        await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return new SyncAIModelCommandResponse
         {
             Total = modelIds.Count,
-            Added = added,
-            Skipped = modelIds.Count - added,
+            Items = items,
         };
     }
 }

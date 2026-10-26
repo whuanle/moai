@@ -45,6 +45,9 @@ Feature: 飞书应用连接管理
     Then 列表中名称已更新且禁用状态生效
     And 禁用连接的在线状态为 false
     And 更新时 AppSecret 留空则保持原值
+    And owner 编辑连接修改飞书 AppID 后列表回显新 AppID（填错凭证无需删除重建）
+    But 修改为其它连接已占用的 AppID 返回 409
+    And 更新时 AppID 留空则保持原值
 
 Feature: 应用渠道接入（创建即绑定）
   应用渠道不提供独立的绑定/解绑操作：接入 = 创建连接即绑定到目标应用（单次调用、同一事务）；移除 = 删除连接（级联解绑、彻底移除）。
@@ -198,3 +201,31 @@ Feature: 应用工作台外部渠道页
     Given 内部 Agent 应用尚未发布
     When 管理员打开外部渠道页
     Then 页面提示飞书消息不会被处理，需先发布应用
+
+Feature: 应用列表外部渠道入口
+  应用渠道接入飞书后在站内可见：应用广场与团队内部应用列表的卡片据 externalChannels 在右上角显示飞书图标，点击经 applink 打开飞书机器人单聊。
+
+  @FS-S29 @auto:e2e
+  Scenario: 应用列表携带外部渠道
+    Given 连接已接入应用 A（启用中）
+    When 团队成员查询团队内部应用列表
+    Then 应用 A 的列表项携带一条 externalChannels：channelType=feishu，chatUrl 由连接接入域名与飞书 AppID 拼出
+    And 未接入渠道的应用列表项携带空列表
+
+  @FS-S30 @auto:e2e
+  Scenario: 连接禁用后入口隐藏
+    Given 连接已接入应用 A
+    When owner 禁用该连接
+    Then 应用 A 的列表项不再携带外部渠道
+    When owner 重新启用该连接
+    Then 应用 A 的列表项恢复携带外部渠道
+
+Feature: 多实例部署（Redis 租约选主）
+  @FS-S31 @manual
+  Scenario: 多实例部署按应用抢占负载均衡与自动接管
+    Given 平台以两个实例部署且 Redis 可用
+    When 两个实例同时启动
+    Then 每个飞书应用由其中一个实例独占建立长连接，应用分散到不同实例（负载均衡）
+    When 持有部分应用的实例下线
+    Then 它持有的应用租约到期后由存活实例争抢接管（约 35 秒内）
+    And 管理员经由任一实例的接口变更连接时，持有实例在一个对账周期内自动对账同步

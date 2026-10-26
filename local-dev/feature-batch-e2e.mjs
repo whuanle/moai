@@ -200,7 +200,7 @@ async function main() {
   check('AP-CLS-09 非法分类 404', badCls.status === 404, `${badCls.status}`)
 
   // 公开+发布，验证市场列表
-  const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP1 } })
+  const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP1, version: '1.0.0' } })
   check('AP-CLS-10 申请上架 200', apply.status === 200, `${apply.status} ${apply.text.slice(0, 120)}`)
   const review = await api('POST', '/api/publication/review', { token: admin, body: { publicationId: apply.json?.value, isApprove: true, reviewComment: 'ok' } })
   check('AP-CLS-11 审批通过 200', review.status === 200, `${review.status} ${review.text.slice(0, 120)}`)

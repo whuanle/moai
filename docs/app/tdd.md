@@ -4,6 +4,18 @@
 
 ## 自检记录
 
+- 应用列表团队名称与使用次数（@AP-S95 新增，2026-10-26）：`AppItem` 新增 `TeamName`/`UseCount`（累计会话数，与用量监控 SessionCount 同口径），新增 `AppListItemHelper.FillTeamAndUsageAsync` 批量填充，`QueryApps`/`QueryExternalApps`/`QueryPublicApps` 三 Handler 统一接入；应用广场列表按 `UseCount` 降序、同次数按发布时间倒序；前端 `AppPlaza` 卡片底部两端对齐——左侧 `TeamOutlined`（`colorPrimary` 蓝）+ 团队名称（不带「团队」前缀）、右侧 `FireFilled`（`brandColors.warning` 橙）+ N 次使用（i18n 仅保留 `appPlaza.useCount`，`appPlaza.teamId`/`appPlaza.team` 已删，zh/en 同步）；用户反馈四轮：「团队 id 改显示名称 + 团队名后展示使用次数 + 列表按使用次数排序 + 去掉「团队」前缀两端对齐配图标 + 图标要彩色」。
+  - 后端：`dotnet build src/MoAI/MoAI.csproj` **0 error**；openapi 校验 `AppItem` 含 `teamName`/`useCount`；`local-dev/app-e2e.mjs` 新增 **AP-13t**（建会话后公开列表断言 teamName 非空且 useCount≥1）与 **AP-13u**（列表 useCount 序列非升）**均 PASS**，全量 174 PASS / 6 FAIL（AP-43a/b 用量接口 EF `GroupBy(1)+Distinct().Count()` 翻译出非法 SQL 42601、AP-20a/b/c/e 依赖真实模型渠道授权，均为存量问题与本轮无关）（2026-10-26）。
+  - 前端：syncapi 重新生成 Kiota 客户端；typecheck **0 error**、改动文件 eslint **0 error**、全仓 vitest **565/565**（1 个 AppInfoSection 版本表单未捕获拒绝为存量时序问题，与本轮无关）；浏览器走查：卡片底部两端对齐布局（左团队名右火焰次数）与排序正确（2026-10-26）。
+
+- 上架申请弹窗版本提示文案（@AP-S93 配套 UI 文案微调，2026-10-26）：`applyVersionHint` 从「本次按该版本号上架（aaa.bb.cc）…」改为「当前版本 {{version}}；本次按递增后的版本号上架，审批通过后记录在申请历史中。」（插值取 `formatAppVersion(detail?.version)`，zh/en 同步）；用户反馈「不要多余显示 aaa.bb.cc 格式文案，直接写当前版本，引导用户递增」。typecheck 0 error、AppPublicationSection.test 9/9、eslint 0 error，浏览器走查弹窗显示「当前版本 1.0.0；…」。
+
+- 应用列表外部渠道入口（@AP-S94 新增，2026-10-26）：`AppItem` 新增 `ExternalChannels`（`AppExternalChannelItem`：channelType + chatUrl），`AppExternalChannelHelper` 从飞书/钉钉绑定关系反查启用连接，`QueryApps`（团队内部列表）与 `QueryPublicApps`（应用广场）映射带出；前端 `AppPlaza`/`TeamApps` 卡片右上角按此渲染 `ExternalChannelEntry`（多渠道并存：内联官方 logo 的 `FeishuIcon`/`DingTalkIcon`，Tooltip + 新窗口打开机器人单聊地址），i18n `appManage.openInFeishu`/`openInDingTalk`（zh/en）。钉钉侧 chatbot_user_id 回填链路与 jumprobot 链接见 [../dingtalk/tdd.md](../dingtalk/tdd.md)（2026-10-26）。
+  - 后端：`dotnet build src/MoAI/MoAI.csproj` **0 error**；`local-dev/feishu-e2e.mjs` **38/38**（新增 FS-15a~b/16a~d：回显 applink 地址、禁用隐藏/启用恢复）（2026-10-26）。
+  - 前端：typecheck **0 error**、lint **0 error（既有 14 warning 均存量文件）**；本涉改动文件测试全绿（TeamApps 27、AppPlaza 3、AppConfigSection 17）；浏览器走查：广场与团队应用卡片图标按有无渠道正确显隐、点击地址正确（内嵌测试浏览器拦截 `_blank` 弹窗，改以捕获 window.open 断言）。AppInfoSection 5 例失败为并行 WIP（`Space` 未 import），与本轮无关（2026-10-26）。
+- 配置分区收缩卡片改版（@AP-S91 新增、@AP-S67 更新，2026-10-26）：`AppConfigSection` 左栏把原单卡「Agent 配置」拆为五张 Collapse 收缩卡片——基础配置（对话模型+上下文压缩+子代理协作）/用户提示（提示词+对话开场白+快捷输入）/能力扩展（插件+流程应用+技能+知识库+知识图谱）/沙箱（执行参数 + **审批模式沙箱自动放行开关自审批策略区迁入**）/安全审批（自动放行插件白名单）；卡片默认全部展开、点卡片头收起（`destroyInactivePanel` 默认 false，收起不丢表单状态），保存仍为单次 `PUT /agent-config` 全量提交，payload 契约不变（`toolApproval.sandboxAutoApproved` 语义不变仅挪位）；外部应用不渲染沙箱卡片（含沙箱自动放行开关）。流程应用仍为单卡提示。i18n `appManage.group*` 六键（zh/en）新增、`toolApprovalSection` 键删除。
+  - 前端：`AppConfigSection.test.tsx` **18/18**（+五卡分组默认展开 1 例 + 沙箱卡片头折叠/展开 1 例；「审批策略」标题断言迁移为「安全审批」）、typecheck **0 error**、改动文件 eslint **0 error**（2026-10-26；teams/apps 目录中 AppPublicationSection 3 例失败为并行 WIP 上架分区，与本轮无关）。
+
 - 模型下拉全零 Guid 归一（@AP-S17 更新，2026-10-08）：后端未选择模型时 `QueryAppAgentConfig` 回 `Guid.Empty`、清空保存亦落库全零，前端原样入 Select 无匹配选项即渲染裸串；`AppConfigSection` 加载时与流程设计器 `ModelSelectSection`（AI 对话/问题分类节点共用）取值处统一把全零 Guid 归一为未选择（显示占位符），并兜住存量库全零数据。
   - 前端：`AppConfigSection.test.tsx` **17/17**（新增：全零 Guid 显示占位符不渲染裸串、保存按 `modelId: null` 提交）、workflow `utils.test.ts` **58/58**、typecheck **0 error**、lint **0 error（既有 9 warning）**（2026-10-08）。
 
@@ -98,6 +110,7 @@
 
 | 场景 | 验证物 | 结果 |
 |---|---|---|
+| @AP-S95 | local-dev/app-e2e.mjs（AP-13t 建会话后公开列表 teamName 非空且 useCount≥1）+ AppPlaza 卡片底部「团队名 · N 次使用」渲染 | PASS（2026-10-26） |
 | @AP-S1 | app-e2e.mjs（AP-01） | PASS |
 | @AP-S2 | app-e2e.mjs（AP-02a-d） | PASS |
 | @AP-S3 | app-e2e.mjs（AP-03a-c、AP-09a、AP-10c） | PASS |
@@ -141,7 +154,7 @@
 | @AP-S46 | app-e2e.mjs（AP-45b/c/d）+ AppConfigSection.test.tsx（开场白回显、随保存提交） | PASS 121/121、9/9（2026-09-17） |
 | @AP-S47 | app-e2e.mjs（AP-45a/e/f/g/h） | PASS 121/121（2026-09-17） |
 | @AP-S48 | sandbox-limits-e2e.mjs（SB-01/03/05/06/07/08）+ [tests/MoAI.App.Tests](../../tests/MoAI.App.Tests/)（`SandboxSettingsLimitValidatorTests` 超限/非法/未启用放行）+ AppConfigSection.test.tsx（上限提示与前端拦截） | PASS 21/21、35/35、9/9（2026-09-19） |
-| @AP-S49 | AppInfoSection.test.tsx（信息分区回显/申请上架/保存/成员只读）+ AppWorkspace.test.tsx（Agent 菜单含 信息 项且位于 配置 之后、Member 可见）+ AppConfigSection.test.tsx（配置区不再含应用信息） | PASS 4/4、3/3、9/9（2026-09-19，全仓 vitest 352/352、typecheck 0、lint 0 error） |
+| @AP-S49 | AppInfoSection.test.tsx（信息分区回显/保存/成员只读/不再含上架状态/外部应用授权开关；2026-10-26 起上架状态拆至 @AP-S92）+ AppWorkspace.test.tsx（Agent 菜单含 信息 项且位于 配置 之后、Member 可见）+ AppConfigSection.test.tsx（配置区不再含应用信息） | PASS 7/7、3/3、9/9（2026-10-26 复跑，含版本号用例） |
 | @AP-S54 | app-e2e.mjs（AP-54a~i：发布快照/草稿隔离/重新发布生效/未发布实时） | PASS 130/130（2026-09-20） |
 | @AP-S55 | chat-attachment-e2e.mjs（CA-01~08：直传/提取/白名单/大小上限/目录越权/404/未登录） | PASS 12/12（2026-09-20） |
 | @AP-S56 | AppChat.test.tsx（附件上传提取拼接/图片不提取带 objectKey 裸 URL 块/输入卡图片缩略图与文档类型图标/气泡缩略图/处理中禁发） | PASS 17/17（2026-09-20 复跑，图片块格式随 @AP-S64 调整、chip 展示随 122 轮缩略图/类型图标调整；全仓 vitest 397/397、typecheck 0、lint 0 error；浏览器实测缩略图 32px/Word·Markdown 图标正常）；2026-10-05 复跑 17/17 |
@@ -157,7 +170,8 @@
 | @AP-S64 | [tests/MoAI.AI.Core.Tests](../../tests/MoAI.AI.Core.Tests/) `ChatAttachmentImageRewriterTests`（objectKey/历史 URL 双格式解析、文档块与助手消息不动、越权目录不读、读取失败降级、svg 不内联、多图顺序与缓存、MayContainAttachment 快路径） | PASS 9/9（2026-09-20，AI.Core 全套 37/37、dotnet build 0 error） |
 | @AP-S65 | app-e2e.mjs（AP-60a~d/i/j：白名单须为绑定插件子集 400/非法结构 400/合法保存并发布/草稿改策略不影响线上、重新发布后新策略生效） | PASS 172/172（2026-09-20） |
 | @AP-S66 | app-e2e.mjs（AP-60e~h：审批模式白名单插件直接执行决策 missing/非白名单沙箱挂起拒绝收敛/自动模式全放行/userconfig 下发自动放行工具名与沙箱前缀） | PASS 172/172（2026-09-20） |
-| @AP-S67 | AppConfigSection.test.tsx（审批策略区渲染回显、随保存提交并收敛为绑定插件子集） | PASS 14/14（2026-09-20） |
+| @AP-S67 | AppConfigSection.test.tsx（审批策略回显、随保存提交并收敛为绑定插件子集；2026-10-26 起表单随收缩卡片改版：沙箱自动放行开关在「沙箱」卡片、白名单多选在「安全审批」卡片，见 @AP-S91） | PASS 14/14（2026-09-20）、随 @AP-S91 18/18（2026-10-26） |
+| @AP-S91 | AppConfigSection.test.tsx（五张收缩卡片分组默认全展开、沙箱卡片头折叠/展开、外部应用不渲染沙箱卡片） | PASS 18/18（2026-10-26） |
 | @AP-S68 | AppChat.test.tsx（策略自动放行的插件名与沙箱前缀工具不展示审批卡、不调决策接口） | PASS 17/17（2026-09-20） |
 | @AP-S75 | app-e2e.mjs（AP-61a~f：绑定知识库的 Agent 对话中 call_tool(search_knowledge_base) 返回片段序号/上下文 → call_tool(get_knowledge_base_chunk) 按 documentId/chunkIndex 补取片段并回显；不存在文档返回工具级错误说明）；配套 `WikiAppToolProviderTests`（[tests/MoAI.AI.Core.Tests](../../tests/MoAI.AI.Core.Tests/)，工具 8 例） | PASS 178/178 + AI.Core 77/77（2026-10-05；本地桩模型状态机驱动，场景见 [../wiki/bdd.md](../wiki/bdd.md) @AP-S75、设计见 [../wiki/sdd.md](../wiki/sdd.md) D36） |
 | @EA-S1 | external-app-e2e.mjs（EA-01、EA-02） | PASS 28/28（2026-09-14） |
@@ -230,6 +244,8 @@ cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck &&
 | @AP-S85 | ChatSidePanel.test.tsx（多标签切换/单关回调/收起/拖宽手柄）+ AppChat.test.tsx（一轮双图表多标签端到端：切换/关当前切相邻/收起重开保留） | PASS 8/8、24/24（2026-10-13） |
 | @AP-S89 | ui/src/pages/teams/apps/__tests__/ChatSidePanel.test.tsx（图表下载入口/成功与失败反馈/table 与文档项无入口）+ visChartExport.test.ts（下载文件名净化） | PASS 11/11、3/3（2026-10-18） |
 | @AP-S90 | ui/src/pages/teams/apps/__tests__/UiTools.test.ts（column/line/x·y 漂移修复/group 保留/正确数据不误伤/dual-axes·liquid·树图放行/契约缺失拒绝） | PASS 20/20（2026-10-18） |
+| @AP-S92 | AppPublicationSection.test.tsx（未申请按版本号申请/版本号必填与非法拦截/审核中可撤回/被驳回展示拒绝原因并可重新申请/已公开无入口/记录列表含版本列/成员只读/版本与草稿版本号展示）+ AppInfoSection.test.tsx（信息分区不再含上架状态） | PASS 9/9、7/7（2026-10-26 复跑，含上架版本号用例） |
+| @AP-S93 | [tests/MoAI.App.Tests](../../tests/MoAI.App.Tests/) `AppVersionHelperTests`（解析/格式化/比较/round-trip 26 例）+ `UpdateAppCommandHandlerTests`（版本落库/不携带保持原值/非法 400/Member 403）+ AppInfoSection.test.tsx（版本回显/编辑/非法拦截）+ AppPublicationSection.test.tsx（线上/草稿版本号与未发布提示）+ ui/src/utils/__tests__/appVersion.test.ts | PASS 80/80（App.Tests）、7/7、8/8、5/5（2026-10-26，全仓 vitest 560/560、Workflow.Tests 84/84、typecheck 0、lint 0 error） |
 | @AP-S86 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（悬浮显示的红色删除入口 + 确认后调删除接口并刷新列表 + 删除当前会话回欢迎态） | PASS 21/21（2026-10-08：含 Popconfirm 弹层点击沿 React 树冒泡误触发行的修复回归） |
 | @AP-S87 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（头部返回按钮跳转 /apps，公开应用非团队成员不落入团队应用列表） | PASS 22/22（2026-10-08） |
 | @AP-S88 | AppChat.test.tsx（多会话并行：A 流式中点「新对话」立即创建会话 B 且各自独立 agent；侧栏呼吸点标识进行中会话；切回流式中会话恢复实时现场不回拉历史；停止仅中止当前会话） | PASS 24/24（2026-10-08，typecheck/lint 0 error） |

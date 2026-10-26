@@ -6,10 +6,8 @@ import {
   AuditOutlined,
   CloudServerOutlined,
   LogoutOutlined,
-  MoonOutlined,
   SettingOutlined,
   ShopOutlined,
-  SunOutlined,
   TagsOutlined,
   TeamOutlined,
   ThunderboltOutlined,
@@ -22,10 +20,10 @@ import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import { AppLogo } from '@/layouts/components/AppLogo'
 import { useSystemName } from '@/layouts/useSystemLogo'
+import { themePresetList, themePresets, type ThemeKey } from '@/design-system/theme'
 import {
   useAppStore,
   type Locale,
-  type ThemeMode,
 } from '@/store/app'
 
 const { Sider } = Layout
@@ -103,7 +101,7 @@ export function AppSider() {
       : location.pathname.startsWith('/skill')
         ? 'skillMarket'
         : '')
-  const isDark = themeKey === 'dark'
+  const isDark = themePresets[themeKey].mode === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
 
   const displayName = userInfo?.nickName ?? userInfo?.userName
@@ -127,10 +125,34 @@ export function AppSider() {
     },
   ]
 
-  const themeOptions = [
-    { value: 'light', label: (<span><SunOutlined /> {t('common.light')}</span>) },
-    { value: 'dark', label: (<span><MoonOutlined /> {t('common.dark')}</span>) },
-  ]
+  /** 主题选项：亮/暗两组，各 4 套预设，选项带底色+强调色双色圆点 */
+  const themeOptions = (['light', 'dark'] as const).map((mode) => ({
+    key: mode,
+    label: t(mode === 'light' ? 'common.light' : 'common.dark'),
+    title: t(mode === 'light' ? 'common.light' : 'common.dark'),
+    options: themePresetList
+      .filter((preset) => preset.mode === mode)
+      .map((preset) => ({
+        value: preset.key,
+        label: (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span
+              aria-hidden
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                flexShrink: 0,
+                background: `linear-gradient(135deg, ${preset.palette.accent} 0 50%, ${preset.palette.bgContainer} 50% 100%)`,
+                border: `1px solid ${preset.palette.border}`,
+                boxSizing: 'border-box',
+              }}
+            />
+            {t(preset.nameKey)}
+          </span>
+        ),
+      })),
+  }))
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
     const item = [...mainNav, ...adminNav].find((nav) => nav.key === key)
@@ -147,7 +169,7 @@ export function AppSider() {
   return (
     <Sider
       width={232}
-      theme={themeKey}
+      theme={themePresets[themeKey].mode}
       style={{
         borderRight: `1px solid ${dividerColor}`,
         height: '100vh',
@@ -218,7 +240,7 @@ export function AppSider() {
         <Select
           value={themeKey}
           options={themeOptions}
-          onChange={(value: ThemeMode) => setThemeKey(value)}
+          onChange={(value) => setThemeKey(value as ThemeKey)}
           style={{ width: '100%' }}
           popupMatchSelectWidth={false}
         />

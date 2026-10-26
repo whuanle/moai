@@ -39,6 +39,11 @@ public class SaveDynamicPluginCommand : IRequest<EmptyCommandResponse>, IModelVa
     /// </summary>
     public string Config { get; init; } = string.Empty;
 
+    /// <summary>
+    /// 头像文件 ObjectKey，可空；仅在传入时生效（更新时不传表示不修改头像）.
+    /// </summary>
+    public string? AvatarPath { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<SaveDynamicPluginCommand> validate)
     {
@@ -56,5 +61,8 @@ public class SaveDynamicPluginCommand : IRequest<EmptyCommandResponse>, IModelVa
 
         validate.RuleFor(x => x.Description)
             .MaximumLength(255).WithMessage("描述长度不能超过 255");
+
+        validate.RuleFor(x => x.AvatarPath)
+            .MaximumLength(255).WithMessage("头像地址长度不能超过 255");
     }
 }

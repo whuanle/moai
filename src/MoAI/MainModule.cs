@@ -12,6 +12,7 @@ using MoAI.Auth;
 using MoAI.Classify;
 using MoAI.Common;
 using MoAI.Database;
+using MoAI.DingTalk;
 using MoAI.Feishu;
 using MoAI.Filters;
 using MoAI.Gateway;
@@ -60,6 +61,7 @@ namespace MoAI;
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<AiCoreModule>]
 [InjectModule<FeishuCoreModule>]
+[InjectModule<DingTalkCoreModule>]
 [InjectModule<PublicationCoreModule>]
 [InjectModule<PromptCoreModule>]
 [InjectModule<ClassifyCoreModule>]

@@ -29,13 +29,30 @@ Feature: 上架申请（团队侧）
     Then 返回 404（非成员不泄露资源存在性）
 
   @PB-S4 @auto:e2e
-  Scenario: 团队管理员申请上架
-    When owner 为应用 A 附申请说明提交上架申请
-    Then 申请成功并返回审核记录 id
+  Scenario: 团队管理员按版本号申请上架
+    When owner 为应用 A 附申请说明与版本号 aaa.bb.cc 提交上架申请
+    Then 申请成功并返回审核记录 id，记录保存该版本号（int 编码）
     When owner 为外部应用 E 申请上架
     Then 返回 400（外部应用不支持公开到平台）
     When 为已公开的资源再次申请
     Then 返回 409（已公开无需重复申请）
+
+  @PB-S17 @auto:e2e
+  Scenario: 审核列表排序：待审核恒排最前
+    When 查询管理员列表或团队列表（含已审批与未审批记录）
+    Then 待审核记录全部排在已通过/已驳回之前
+    And 同组内按申请时间倒序（最新申请在前）
+
+  @PB-S16 @auto:e2e
+  Scenario: 应用上架申请的版本号校验
+    When owner 为应用 A 不携带版本号提交上架申请
+    Then 返回 400（应用申请上架必须携带版本号）
+    When owner 携带非法格式版本号（如 "1.2"）提交
+    Then 返回 400（应为 aaa.bb.cc）
+    When owner 为提示词/技能申请上架时携带版本号
+    Then 返回 400（仅应用申请上架需要版本号）
+    When 团队列表或管理员列表查询审核记录
+    Then 应用类型的记录回显申请时的版本号
 
   @PB-S5 @auto:e2e
   Scenario: 同一资源同时只能有一条待审核申请

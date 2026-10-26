@@ -6,7 +6,7 @@
 ## 项目简介
 
 开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
-已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）。进度见 [rounds-log.md](./docs/rounds-log.md)。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉机器人接入对话）。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
@@ -14,6 +14,7 @@
 src/MoAI/         组合宿主（Program.cs、MainModule、OpenApiModule）
 src/{auth,account,settings,oauthconnect,storage,common,infra,database,hangfire}/   平台底座
 src/{classify,team,teamplugin,variable,wiki,app,publication}/                      团队协作
+src/{feishu,dingtalk}/                                                             外部渠道（飞书/钉钉机器人接入）
 src/{aichannel,aimodel,aiplugin,skill,gateway}/                                   AI 业务层
 src/{ai,admin,plugin}/                                                             在建
 ui/               前端（React 19 + TS + Vite + antd 5 + zustand + Kiota）
@@ -108,13 +109,14 @@ node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载�
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
 node local-dev/team-apikey-scope-e2e.mjs  # TA 21（应用接入 key 功能范围：范围回显/非法代码 400/网关 model 门禁/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连网关与知识库/缓存立即性；团队接入 key 已下线）
 node local-dev/gateway-e2e.mjs            # GW 15（模型网关：应用接入 key 两种鉴权头直连/路由团队校验/已下线 moai- 前缀 401/keys 端点移除）
+node local-dev/aimodel-sync-e2e.mjs       # AM 14（模型同步挑选导入：sync 只探测不落库 + 候选项 recognized/exists/modelKind + import 默认停用 + 再 sync exists 标记；内置 /models 桩服务，零真实依赖）
 node local-dev/external-app-e2e.mjs       # EA 76（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话/悬浮组件 tokenProvider·onRequest 拦截器与全局 mount）
 node local-dev/app-acp-e2e.mjs            # ACP 21（应用 ACP：app_acp scope 门禁 + JSON-RPC initialize/session/* + Agent/Workflow 应用 ACP 对话 + cancel 中断 + 范围缓存立即性；内置桩模型与确定性流程编排，零 SKIP）
 node local-dev/security-strategies-e2e.mjs  # SEC 23（应用安全五策略：输入检查点/工具参数预检拦截/回复哈希/事件审计/模型回复缓冲拦截/注入启发式；内置回显桩模型，零真实依赖）
 node local-dev/app-a2a-e2e.mjs          # A2A 20（应用 A2A 协议：app_a2a 门禁/Agent Card/message-send 与 stream（SSE 事件序列）/tasks-get·cancel/会话续聊与落库/用户 token/范围立即性）
 node local-dev/subagent-e2e.mjs          # SA 10（子代理协作：spawn_subagent 委派全链路 + 深度固定 1 桩捕获断言 + 未开启不注册；本地桩模型）
 node local-dev/agent-memory-e2e.mjs      # MEM 32（长期记忆：工具显式写入 + flush→MQ 两段式自动提取 + 每轮注入 + 用户隔离/模式 + 删除清空 + 压缩折叠视图 + 向量化模型/维度锁定（写入记忆后换模型/维度 400、关闭保留参照系、同模型重开、清空后解锁按新维度写入）；本地桩 embedding+chat，零 SKIP）
-node local-dev/dynamic-plugin-e2e.mjs    # DYN 162（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70；真实 Key/真库用例环境门控 SKIP）
+node local-dev/dynamic-plugin-e2e.mjs    # DYN 169（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70 + 插件头像 S43~S45/创建携带 avatarPath S121~S123；真实 Key/真库用例环境门控 SKIP）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/jina-search-e2e.mjs       # DYN 18（Jina 搜索/网页阅读成功路径与解析，自建桩服务按请求体 q/url 区分端点，无需真实 Key）
 node local-dev/yahoo-finance-e2e.mjs     # DYN 29（雅虎财经三模式：批量报价+走势/财经新闻/代码搜索，自建数据桩 v8 chart+v1 search，无需真实外网；数据源地址在实例配置 BaseUrl，可指向镜像）
@@ -127,7 +129,8 @@ node local-dev/ops-p2-plugins-e2e.mjs    # DYN 30+2SKIP（P2 运维插件：ssh_
 node local-dev/ops-p0-plugins-e2e.mjs    # DYN 30（P0 运维插件：alertmanager_query 告警静默 / loki_query LogQL 纳秒归一 / kubernetes_query 资源与日志 / 钉钉企微机器人 HMAC 加签；四桩全链路，无需真实运维系统；前置 dotnet build -o .builds/ops-p0）
 node local-dev/observability-plugin-e2e.mjs # DYN 61（观测四插件：Prometheus/ES/Tempo 桩全链路 + clickhouse_query 自由只读 SQL @DYN-S71~S72（摸库摸表/SHOW CREATE/FORMAT JSON meta/三层只读防护）；自建四段路由桩，无需真实观测服务；前置 dotnet build -o .builds/observability）
 node local-dev/clickstack-e2e.mjs        # DYN 20（ClickStack 查询：sources 数据源 / search 原始检索 / chart 时间线聚合，走 HyperDX 对外 API（Personal API Access Key，ClickHouse 8123 不公开时的唯一查询面，与 clickhouse_query 分立）；自建三端点桩，无需真实 ClickStack；前置 dotnet build -o .builds/clickstack）
-node local-dev/feishu-e2e.mjs            # FS 32（飞书应用连接 CRUD + 应用渠道创建即绑定/删除即彻底移除/绑定解绑端点下线，假凭证即可）
+node local-dev/feishu-e2e.mjs            # FS 42（飞书应用连接 CRUD + 应用渠道创建即绑定/删除即彻底移除/绑定解绑端点下线 + 编辑可改 AppID + 应用列表回显外部渠道 applink 入口与禁用隐藏 @FS-S29~S30，假凭证即可）
+node local-dev/dingtalk-e2e.mjs          # DT 39（钉钉应用连接 CRUD + 应用渠道创建即绑定/删除即彻底移除/编辑可改 AppKey/非成员 404 + 应用列表钉钉渠道绑定即露出（AppKey 兜底）@DT-S27，假凭证即可）
 node local-dev/audit-345.mjs node local-dev/audit-storage.mjs node local-dev/auth-lockout-check.mjs
 ```
 

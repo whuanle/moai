@@ -123,6 +123,14 @@ async function main() {
   check('FS-12b 禁用生效且禁用时离线', item3 && item3.isDisable === true && item3.isOnline === false)
   check('FS-12c 禁用后 AppSecret 为空保持不变（仍能改回）', (await api('PUT', `/api/feishu_app/${FID}`, { token: owner.token, body: { name: 'fs-o2-' + TS, isDisable: false } })).status === 200)
 
+  // FS-12 编辑：换 AppID（填错凭证无需删除重建）
+  check('FS-12d 编辑换 AppID 200', (await api('PUT', `/api/feishu_app/${FID}`, { token: owner.token, body: { name: 'fs-o2-' + TS, appId: 'cli_edit' + TS, isDisable: false } })).status === 200)
+  const lst4 = await api('GET', `/api/feishu_app/list?teamId=${TID}`, { token: owner.token })
+  check('FS-12e 列表回显新 AppID', (lst4.json?.items ?? []).find(x => x.feishuAppId === FID)?.appId === 'cli_edit' + TS)
+  check('FS-12f 换成已存在的 AppID 409', (await api('PUT', `/api/feishu_app/${FID}`, { token: owner.token, body: { name: 'fs-o2-' + TS, appId: 'cli_o' + TS, isDisable: false } })).status === 409)
+  const editKeep = await api('PUT', `/api/feishu_app/${FID}`, { token: owner.token, body: { name: 'fs-o2-' + TS, isDisable: false } })
+  check('FS-12g AppID/AppSecret 留空保持不变', editKeep.status === 200 && (await api('GET', `/api/feishu_app/list?teamId=${TID}`, { token: owner.token })).json?.items?.find(x => x.feishuAppId === FID)?.appId === 'cli_edit' + TS)
+
   // FS-13 删除即彻底移除：删除后 AppID 可重新创建并接入同一渠道（不保留可复用连接）
   check('FS-13a 删除 200', (await api('DELETE', `/api/feishu_app/${FID2}`, { token: owner.token })).status === 200)
   check('FS-13b 重复删除 404', (await api('DELETE', `/api/feishu_app/${FID2}`, { token: owner.token })).status === 404)
@@ -135,6 +143,25 @@ async function main() {
   check('FS-14b 列表不再包含已删连接', (lst14.json?.items ?? []).every(x => x.feishuAppId !== FID))
   const bind3 = await api('POST', '/api/feishu_app', { token: owner.token, body: { teamId: TID, name: 'fs-q-' + TS, appId: 'cli_q' + TS, appSecret: 's', channelType: 'app', channelId: appA } })
   check('FS-14c 应用 A 渠道可被新连接接入', bind3.status === 200, bind3.text.slice(0, 120))
+  const FID3 = bind3.json?.value
+
+  // FS-15 应用列表回显外部渠道：团队内部应用列表在 AppItem 上带出飞书 applink 机器人单聊入口
+  const appLst = await api('GET', `/api/app/list?teamId=${TID}`, { token: member.token })
+  const appItemA = (appLst.json?.items ?? []).find(x => x.appId === appA)
+  const appItemB = (appLst.json?.items ?? []).find(x => x.appId === appB)
+  check('FS-15a 应用 A 回显飞书渠道与 applink 单聊地址', appItemA && (appItemA.externalChannels ?? []).length === 1
+    && appItemA.externalChannels[0].channelType === 'feishu'
+    && appItemA.externalChannels[0].chatUrl === `https://applink.feishu.cn/client/bot/open?appId=cli_q${TS}`, JSON.stringify(appItemA?.externalChannels).slice(0, 200))
+  check('FS-15b 应用 B 回显自己连接的 applink 地址（不同飞书应用互不影响）', appItemB && (appItemB.externalChannels ?? []).length === 1
+    && appItemB.externalChannels[0].chatUrl === `https://applink.feishu.cn/client/bot/open?appId=cli_p${TS}`)
+
+  // FS-16 连接禁用后入口隐藏（机器人离线不再回显），重新启用后恢复
+  check('FS-16a 禁用连接 200', (await api('PUT', `/api/feishu_app/${FID3}`, { token: owner.token, body: { name: 'fs-q-' + TS, isDisable: true } })).status === 200)
+  const appLstDis = await api('GET', `/api/app/list?teamId=${TID}`, { token: owner.token })
+  check('FS-16b 禁用后应用列表不回显外部渠道', ((appLstDis.json?.items ?? []).find(x => x.appId === appA)?.externalChannels ?? []).length === 0)
+  check('FS-16c 重新启用连接 200', (await api('PUT', `/api/feishu_app/${FID3}`, { token: owner.token, body: { name: 'fs-q-' + TS, isDisable: false } })).status === 200)
+  const appLstEn = await api('GET', `/api/app/list?teamId=${TID}`, { token: owner.token })
+  check('FS-16d 重新启用后恢复回显', ((appLstEn.json?.items ?? []).find(x => x.appId === appA)?.externalChannels ?? []).length === 1)
 
   console.log(`\n== feishu e2e: ${PASS} pass, ${FAIL} fail ==`)
   if (FAIL > 0) process.exit(1)

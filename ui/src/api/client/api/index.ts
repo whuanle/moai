@@ -22,6 +22,8 @@ import { ClassifyRequestBuilderNavigationMetadata, ClassifyRequestBuilderRequest
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
+import { Dingtalk_appRequestBuilderNavigationMetadata, Dingtalk_appRequestBuilderRequestsMetadata, type Dingtalk_appRequestBuilder } from './dingtalk_app/index.js';
+// @ts-ignore
 import { Feishu_appRequestBuilderNavigationMetadata, Feishu_appRequestBuilderRequestsMetadata, type Feishu_appRequestBuilder } from './feishu_app/index.js';
 // @ts-ignore
 import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBuilderRequestsMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
@@ -94,6 +96,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The common property
      */
     get common(): CommonRequestBuilder;
+    /**
+     * The dingtalk_app property
+     */
+    get dingtalk_app(): Dingtalk_appRequestBuilder;
     /**
      * The feishu_app property
      */
@@ -187,6 +193,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     },
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
+    },
+    dingtalk_app: {
+        requestsMetadata: Dingtalk_appRequestBuilderRequestsMetadata,
+        navigationMetadata: Dingtalk_appRequestBuilderNavigationMetadata,
     },
     feishu_app: {
         requestsMetadata: Feishu_appRequestBuilderRequestsMetadata,

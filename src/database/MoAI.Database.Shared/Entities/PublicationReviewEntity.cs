@@ -45,6 +45,11 @@ public partial class PublicationReviewEntity : IFullAudited
     public string ApplyReason { get; set; } = default!;
 
     /// <summary>
+    /// 申请上架的版本号（int 编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc），仅应用类型使用，其他资源为 null.
+    /// </summary>
+    public int? PublishVersion { get; set; }
+
+    /// <summary>
     /// 审核状态，见 PublicationState（待审核=0，已通过=1，已驳回=2）.
     /// </summary>
     public int State { get; set; }

@@ -21,3 +21,5 @@
 - E2E：`node local-dev/publication-e2e.mjs` → 34 pass / 0 fail；`node local-dev/app-e2e.mjs` → 101 pass / 0 fail（公开场景已改走申请+审批）。
 - OpenAPI：`/openapi/v1.json` 出现 5 个 publication 路由（apply/withdraw/review/list/team_list），`npm run syncapi` 已重新生成客户端。
 - 前端：`npm run typecheck` 通过；`npm run lint` 0 error；`npm run test` 259 通过（受影响断言已同步更新）。
+| @PB-S16 | local-dev/publication-e2e.mjs（PB-02c/d/e 缺版本号/非法格式/非应用带版本 400 + PB-07a 团队列表回显 publishVersion=10200） | PASS 37/37（2026-10-26，对 5031 新构建实例） |
+| @PB-S17 | local-dev/publication-e2e.mjs（PB-16a 待审核全部排在已审批前 + PB-16b 管理员列表组内倒序 + PB-16c 团队列表首条为最新待审核） | PASS 40/40（2026-10-26，对 5031 新构建实例） |

@@ -85,6 +85,7 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
 
         app.PublishStatus = 1;
         app.PublishTime = DateTimeOffset.Now;
+        app.PublishVersion = app.Version;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

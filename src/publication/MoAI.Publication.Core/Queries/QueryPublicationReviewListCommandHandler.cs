@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Publication.Queries.Responses;
 
 namespace MoAI.Publication.Queries;
@@ -41,7 +42,9 @@ public class QueryPublicationReviewListCommandHandler : IRequestHandler<QueryPub
         }
 
         var entities = await query
-            .OrderByDescending(x => x.CreateTime)
+            // 待审核（pending）恒排最前，其余按申请时间倒序；同组内再按时间倒序
+            .OrderBy(x => x.State == (int)PublicationState.Pending ? 0 : 1)
+            .ThenByDescending(x => x.CreateTime)
             .ToListAsync(cancellationToken);
 
         var items = await PublicationReviewListHelper.MapAsync(entities, _databaseContext, _userInfoFillService, cancellationToken);

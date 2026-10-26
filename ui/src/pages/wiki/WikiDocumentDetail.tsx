@@ -5,7 +5,7 @@ import { Alert, Button, Card, Checkbox, Col, Form, Input, InputNumber, Modal, Ro
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { feedback, Page } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { spacing, themePresets } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { aichannelApi } from '@/api/aichannel'
 import {
@@ -746,7 +746,7 @@ export function WikiDocumentDetail() {
             height="100%"
             width="100%"
             language="plaintext"
-            theme={themeKey === 'dark' ? 'vs-dark' : 'light'}
+            theme={themePresets[themeKey].mode === 'dark' ? 'vs-dark' : 'light'}
             value={shownContent || '-'}
             loading={<Spin />}
             options={{

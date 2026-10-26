@@ -92,6 +92,8 @@ public class QueryAppCommandHandler : IRequestHandler<QueryAppCommand, QueryAppC
             IsPublic = app.IsPublic,
             PublishStatus = app.PublishStatus,
             PublishTime = app.PublishTime,
+            PublishVersion = app.PublishVersion,
+            Version = app.Version,
             OpeningStatement = openingStatement,
             OpeningStatementEnabled = openingStatementEnabled,
             QuickInputs = quickInputs,

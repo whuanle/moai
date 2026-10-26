@@ -20,6 +20,28 @@ function copyMonacoToPublic(): { name: string; configureServer: () => void; writ
 }
 
 /**
+ * 把 vditor 运行时按需资源复制到 public/vendor/vditor/dist（编辑器 cdn 选项指向 /vendor/vditor，避免外网 CDN）.
+ * 只复制用到子集：lute（markdown 引擎 WASM，必需）、i18n/icons（界面）、highlight.js（代码高亮）、katex（公式）；
+ * mermaid/mathjax/graphviz/echarts 等重型图示引擎不随仓库分发，提示词正文用不到（滥用时降级为普通代码块）.
+ */
+function copyVditorToPublic(): { name: string; configureServer: () => void; writeBundle: () => void } {
+  const src = join(__dirname, 'node_modules', 'vditor', 'dist')
+  const dest = join(__dirname, 'public', 'vendor', 'vditor', 'dist')
+  const run = () => {
+    if (!existsSync(src)) return
+    rmSync(dest, { recursive: true, force: true })
+    mkdirSync(join(dest, 'js'), { recursive: true })
+    for (const dir of ['lute', 'i18n', 'icons', 'highlight.js', 'katex']) {
+      cpSync(join(src, 'js', dir), join(dest, 'js', dir), { recursive: true })
+    }
+    for (const dir of ['css', 'images']) {
+      cpSync(join(src, dir), join(dest, dir), { recursive: true })
+    }
+  }
+  return { name: 'copy-vditor-to-public', configureServer: run, writeBundle: run }
+}
+
+/**
  * 开发期把后端 wwwroot 的悬浮对话组件挂到本站 /embed/moai-widget.js（嵌入代码的 script src 指向站点自身源）.
  * 唯一产物源仍是 `npm run build:embed` 输出的 src/MoAI/wwwroot/embed/moai-widget.js，此处只读托管避免双份产物.
  */
@@ -47,7 +69,7 @@ function serveEmbedWidget() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyMonacoToPublic(), serveEmbedWidget()],
+  plugins: [react(), copyMonacoToPublic(), copyVditorToPublic(), serveEmbedWidget()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

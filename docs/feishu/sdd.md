@@ -58,6 +58,14 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 - 渠道用 `(FeishuChannelType, string ChannelId)` 弱关联（`app` → app.id；`wikiSource` → wiki_source.id），绑定 Handler 校验渠道存在且与连接同团队。
 - 权限模型沿用团队资源：连接属于团队，写操作（增删改）Admin+，读列表 Member+。应用渠道无独立绑定/解绑操作——`POST /api/feishu_app` 携带渠道字段即创建即绑定，删除即级联解绑；`bind`/`unbind` HTTP 端点已下线，`BindFeishuAppCommand`/`UnbindFeishuAppCommand` 仅保留给业务模块内部 MediatR 复用。**订阅型渠道的绑定由业务模块在自身 Handler 内完成**（如创建/更新/删除外部源时），飞书模块不感知业务语义。
 
+## 多实例部署（按应用粒度的 Redis 租约负载均衡）
+
+飞书 WSS 同一应用多处建连会互踢（连接抖动），多实例部署通过**按应用粒度的 Redis 租约抢占**实现负载均衡：每个 feishu_app 一个独立租约键 `leader:feishu-conn:{id}`，各实例对账循环（5s/周期）续租已持有连接、争抢未持有应用（先到先得）、按数据库对账（新增/删除/禁用/凭证/域名变化 ≤5s 自动同步）、公平份额再均衡（持有数超过 `ceil(应用数/存活实例数)+1` 主动释放）。共享实现 [MoAI.Database.Shared/Redis/RedisAppLease.cs](../../src/database/MoAI.Database.Shared/Redis/RedisAppLease.cs)，与钉钉模块（[../dingtalk/sdd.md](../dingtalk/sdd.md) 多实例部署节）同构；故障转移（持有者下线 ≤35s 被接管）、在线状态跨实例哈希查询、优雅停机秒级交接均与钉钉一致；未引入 MQ（只有应用持有者收到事件、就地处理）。
+
+- **后台开销（性能预算）**：每实例每对账周期（5s）固定为 1 条数据库查询 + 常数次 Redis 网络往返（续租/争抢/状态写入均按流水线批量发送 WhenAll，往返次数与连接数无关；状态哈希仅写变化字段），Redis 操作量 ≈ 3×持有应用数/5s——千级应用下单周期耗时仍在数十毫秒级。真正的常驻成本是每个应用一条长连接（内存 + 心跳帧），已按应用租约分散到各实例；凭证错误的连接为终态退出不重试（不产生持续重试流量）。
+
+## 关键决策
+
 ## 关键决策
 
 1. **连接复用而非转发总线**：每 AppID 一条连接由飞书模块独占；业务模块不感知 WSS，只消费 `IFeishuEventHandler`。
@@ -67,6 +75,7 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 5. **删连接级联解绑、删除即彻底移除**：删除 feishu_app 同时软删其绑定；应用渠道体系下删除不留存可复用连接，同 AppID 可立即重建并接入原渠道。
 6. **回复走既有 Agent 会话管线**：飞书会话与 AG-UI 会话同构（热态/落库/压缩/工具全复用），不另建存储；chat↔session 映射放 Redis（30 天滑动）而非加列。
 7. **飞书用户不映射内部用户**：`userId=0`，会话 `UserType=External`；用量计入团队/应用维度。
+8. **应用列表带出外部渠道入口**：应用模块从绑定关系反查启用的连接（不含 AppSecret），团队/公开应用列表 DTO 携带 `externalChannels`（channelType=feishu + applink 机器人单聊 chatUrl，域名由连接域名 `open.` → `applink.` 推导，禁用连接不回显）；站内卡片据此显示飞书入口。见 [@FS-S29~S30](./bdd.md#fs-s29)。
 
 ## 已知问题
 

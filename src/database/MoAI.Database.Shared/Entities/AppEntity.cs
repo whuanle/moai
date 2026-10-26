@@ -95,6 +95,16 @@ public partial class AppEntity : IFullAudited
     public DateTimeOffset? PublishTime { get; set; }
 
     /// <summary>
+    /// 发布时快照的应用版本号；未发布或存量已发布应用（未重新发布过）为 null.
+    /// </summary>
+    public int? PublishVersion { get; set; }
+
+    /// <summary>
+    /// 应用版本号，编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc（默认 10000=1.0.0）.
+    /// </summary>
+    public int Version { get; set; } = 10000;
+
+    /// <summary>
     /// 是否外部应用.
     /// </summary>
     public bool IsExternal { get; set; }
