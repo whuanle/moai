@@ -1,10 +1,15 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.Database;
+using MoAI.Database.Enums;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
+using MoAI.Team.Services;
 
 namespace MoAI.App.Controllers;
 
@@ -17,16 +22,50 @@ public class AppController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IUserContextProvider _userContextProvider;
+    private readonly DatabaseContext _databaseContext;
+    private readonly ITeamService _teamService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 实例，用于发送命令/查询.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
-    public AppController(IMediator mediator, IUserContextProvider userContextProvider)
+    /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="teamService">团队领域服务.</param>
+    public AppController(IMediator mediator, IUserContextProvider userContextProvider, DatabaseContext databaseContext, ITeamService teamService)
     {
         _mediator = mediator;
         _userContextProvider = userContextProvider;
+        _databaseContext = databaseContext;
+        _teamService = teamService;
+    }
+
+    /// <summary>
+    /// 删除应用，保留历史记录；仅团队 Owner/Admin 可操作，被其它应用引用时拒绝删除.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>空响应.</returns>
+    [HttpDelete("{id:guid}")]
+    public async Task<EmptyCommandResponse> DeleteApp([FromRoute] Guid id, CancellationToken ct)
+    {
+        var teamId = await _databaseContext.Apps.Where(x => x.Id == id)
+            .Select(x => (int?)x.TeamId).FirstOrDefaultAsync(ct)
+            ?? throw new BusinessException("应用不存在.") { StatusCode = 404 };
+        var role = await _teamService.GetMyRoleAsync(teamId, _userContextProvider.GetUserContext().UserId, ct);
+        if (role == null)
+        {
+            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
+        }
+
+        if (role != TeamRole.Owner && role != TeamRole.Admin)
+        {
+            throw new BusinessException("只有团队管理员可以删除应用.") { StatusCode = 403 };
+        }
+
+        var command = new DeleteAppCommand { AppId = id };
+        _userContextProvider.SetUserContext(command);
+        return await _mediator.Send(command, ct);
     }
 
     /// <summary>

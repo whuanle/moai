@@ -17,14 +17,9 @@
 
 ### 本地 Memgraph
 
-`docker-compose.yml` 已内置可选 `memgraph` 服务（memgraph-platform：Bolt 7687、MgLab 3000）：
+`docker-compose.yml` 提供可选 `memgraph` 服务，安装与连接以 [部署手册第 7 节](../deployment/docker.md#7-知识图谱可选接入-memgraph) 为准。
 
-```bash
-docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + 退出快照），数据卷 memgraph_data
-```
-
-- 社区版**默认纯内存**，compose 已带 `--storage-snapshot-interval-sec=300 --storage-snapshot-on-exit=true`；切勿移除，否则容器重启丢图。
-- MgLab 控制台 <http://127.0.0.1:3000> 可直查 Cypher；系统设置里 `KG_URI` 填 `bolt://127.0.0.1:7687`。
+该服务不包含 MgLab 控制台；在 MoAI 团队知识图谱页面维护数据即可。快照与数据卷注意事项见上述部署手册。
 
 ## 3. 日常操作
 

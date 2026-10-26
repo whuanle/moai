@@ -4,6 +4,13 @@
 
 ## 自检记录
 
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @AP-S91~S93 | [app-delete-e2e.mjs](../../local-dev/app-delete-e2e.mjs)；[DeleteAppCommandHandlerTests](../../tests/MoAI.App.Tests/DeleteAppCommandHandlerTests.cs)（权限、软删除、飞书解绑、引用保护） | E2E PASS 36/36、App 模块单测 PASS 64/64（2026-10-23） |
+| @AP-S94 | [AppInfoSection.test.tsx](../../ui/src/pages/teams/apps/__tests__/AppInfoSection.test.tsx)；[AppWorkspace.test.tsx](../../ui/src/pages/teams/apps/__tests__/AppWorkspace.test.tsx)；浏览器真实删除走查 | 前端专项 PASS 12/12（确认、取消、失败、角色及内外部列表跳转）；浏览器删除「测试」后返回列表且目标消失，其他应用保留（2026-10-23） |
+
+- 删除功能回归（2026-10-23）：宿主构建 0 error；前端 typecheck 通过、lint 0 error（10 个既有 warning）；全量前端 `npm run test -- --maxWorkers=2 --testTimeout=15000` PASS 541/541（75 文件）。
+
 - 模型下拉全零 Guid 归一（@AP-S17 更新，2026-10-08）：后端未选择模型时 `QueryAppAgentConfig` 回 `Guid.Empty`、清空保存亦落库全零，前端原样入 Select 无匹配选项即渲染裸串；`AppConfigSection` 加载时与流程设计器 `ModelSelectSection`（AI 对话/问题分类节点共用）取值处统一把全零 Guid 归一为未选择（显示占位符），并兜住存量库全零数据。
   - 前端：`AppConfigSection.test.tsx` **17/17**（新增：全零 Guid 显示占位符不渲染裸串、保存按 `modelId: null` 提交）、workflow `utils.test.ts` **58/58**、typecheck **0 error**、lint **0 error（既有 9 warning）**（2026-10-08）。
 

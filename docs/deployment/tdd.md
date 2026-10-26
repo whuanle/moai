@@ -22,6 +22,8 @@
 | @DEP-S16 | `docker compose --profile sandbox-images pull sandbox-image` + `docker pull opensandbox/execd|egress` 成功 | 待执行（2026-09-23 新增） |
 | @DEP-S17 | `docker run -v system.json ... whuanle/moai:latest` → `curl /api/common/serverinfo` 200 | 待执行（2026-09-23 新增） |
 | @DEP-S18 | `bash deploy/publish.sh` 推送成功后 `docker manifest inspect whuanle/moai:latest` | 待执行（2026-09-23 新增） |
+| @DEP-S19 | `docker compose config -q`、默认/profile 服务列表对比、`docker compose up -d memgraph`、容器项目标签与 `mgconsole` 查询 | PASS（2026-10-23，Memgraph 3.14.0；项目 moai；本机 7687 可达） |
+| @DEP-S20 | `mgconsole` 写入独立测试节点 → `docker compose restart memgraph` → 查询节点后删除测试数据 | PASS（2026-10-23，正常重启后节点保留，测试数据已清理） |
 
 ## 回归命令
 

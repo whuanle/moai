@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { AppInfoSection } from '../AppInfoSection'
 import type { AppDetail } from '../AppConfigSection'
-import { updateApp } from '@/api/app'
+import { deleteApp, updateApp } from '@/api/app'
 import { applyPublication, getTeamPublicationList } from '@/api/publication'
 
 vi.mock('@/api/classify', () => ({
@@ -12,6 +12,7 @@ vi.mock('@/api/classify', () => ({
 }))
 vi.mock('@/api/app', () => ({
   updateApp: vi.fn().mockResolvedValue(undefined),
+  deleteApp: vi.fn().mockResolvedValue(undefined),
   uploadAppAvatar: vi.fn().mockResolvedValue(''),
 }))
 
@@ -32,7 +33,7 @@ const DETAIL: AppDetail = {
   myRole: 2,
 }
 
-function renderSection(detail: AppDetail = DETAIL, canManage = true) {
+function renderSection(detail: AppDetail = DETAIL, canManage = true, onDeleted = vi.fn()) {
   return render(
     <AppInfoSection
       teamId={3}
@@ -40,6 +41,7 @@ function renderSection(detail: AppDetail = DETAIL, canManage = true) {
       detail={detail}
       canManage={canManage}
       onReload={vi.fn()}
+      onDeleted={onDeleted}
     />,
   )
 }
@@ -86,6 +88,7 @@ describe('AppInfoSection（应用信息分区）', () => {
         detail={DETAIL}
         canManage
         onReload={onReload}
+        onDeleted={vi.fn()}
       />,
     )
 
@@ -110,6 +113,35 @@ describe('AppInfoSection（应用信息分区）', () => {
 
     expect(await screen.findByText('应用信息')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /保存信息/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: '删除应用' })).toBeNull()
     expect(screen.getByText(/创建与配置需要团队管理员/)).toBeTruthy()
+  })
+
+  it('删除需确认，取消不调用接口，确认成功后通知工作台离开应用', async () => {
+    const onDeleted = vi.fn()
+    renderSection(DETAIL, true, onDeleted)
+    fireEvent.click(await screen.findByRole('button', { name: '删除应用' }))
+    expect(await screen.findByText('确定删除应用「客服助手」？')).toBeTruthy()
+    expect(deleteApp).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '取 消' }))
+    expect(deleteApp).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getAllByRole('button', { name: '删除应用' })[0])
+    const buttons = await screen.findAllByRole('button', { name: '删除应用' })
+    fireEvent.click(buttons[buttons.length - 1])
+    await waitFor(() => expect(onDeleted).toHaveBeenCalledOnce())
+    expect(deleteApp).toHaveBeenCalledExactlyOnceWith('a1')
+  })
+
+  it('删除失败保留当前应用，不触发离开回调', async () => {
+    vi.mocked(deleteApp).mockRejectedValueOnce(new Error('conflict'))
+    const onDeleted = vi.fn()
+    renderSection(DETAIL, true, onDeleted)
+    fireEvent.click(await screen.findByRole('button', { name: '删除应用' }))
+    const buttons = await screen.findAllByRole('button', { name: '删除应用' })
+    await act(async () => fireEvent.click(buttons[buttons.length - 1]))
+    await waitFor(() => expect(deleteApp).toHaveBeenCalledOnce())
+    expect(onDeleted).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('应用名称')).toHaveValue('客服助手')
   })
 })

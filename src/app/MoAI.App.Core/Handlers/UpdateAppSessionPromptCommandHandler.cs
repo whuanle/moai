@@ -32,6 +32,7 @@ public class UpdateAppSessionPromptCommandHandler : IRequestHandler<UpdateAppSes
     public async Task<EmptyCommandResponse> Handle(UpdateAppSessionPromptCommand request, CancellationToken cancellationToken)
     {
         var session = await _databaseContext.AppAgentSessions
+            .Where(x => _databaseContext.Apps.Any(app => app.Id == x.AppId))
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
 
         if (session == null || session.CreateUserId != request.ContextUserId)

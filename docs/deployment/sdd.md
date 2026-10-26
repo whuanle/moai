@@ -37,8 +37,8 @@
 - `opensandbox-server`：官方 `opensandbox/server:latest`，挂载 `docker.sock` + `deploy/opensandbox/sandbox.toml`（`resolve_internal=false`、`host_ip=host.docker.internal`），独立容器避免 .NET 侧持有 Docker 能力（[@DEP-S16](./bdd.md#dep-s16)）。
 - `sandbox-image`：`profiles: ["sandbox-images"]`，仅供 `pull`（沙箱运行时镜像只拉取不部署）。
 - `moai`：默认镜像 `whuanle/moai:latest`（本地可 build），`depends_on` 三者 `service_healthy` + `rustfs-init` 完成 + `opensandbox-server` 启动（[@DEP-S7](./bdd.md#dep-s7)）；bind-mount `${MOAI_CONFIG_FILE}`（默认 `configs/system.json`）；volume `moai_files:/app/files`。
-- 图数据库（Memgraph）**不内置**，按 [docker.md 第 7 节](./docker.md) 单独部署接入。
-- 网络 `moai-network`（bridge）；named volume：postgres_data/redis_data/rabbitmq_data/rustfs_data/rustfs_logs/opensandbox_data/moai_files。
+- `memgraph`：`memgraph/memgraph-mage:latest`，`knowledgegraph` profile 按需启动，同属 `moai` 项目与网络；仅发布本机 `7687`，数据卷与定期/退出快照持久化（[@DEP-S19](./bdd.md#dep-s19)、[@DEP-S20](./bdd.md#dep-s20)）。接入见 [docker.md 第 7 节](./docker.md)。
+- 网络 `moai-network`（bridge）；named volume：postgres_data/redis_data/rabbitmq_data/memgraph_data/rustfs_data/rustfs_logs/opensandbox_data/moai_files。
 
 ## 已知缺陷（D1/D2 已修复，D3–D5 记录中）
 
@@ -48,7 +48,7 @@
 | D2 | `ConfigureOpenTelemetryModule` 曾对 `OTLP.Trace/Metrics` **无条件 `new Uri(...)`**，而 entrypoint/compose 对 OTLP 默认留空 | 曾导致**默认 `docker-compose up` 后端启动即抛异常**（[@DEP-S4](./bdd.md#dep-s4)） | ✅ **已修复（2026-09-02）**：新增 `ParseOtlpEndpoint`，空值/非法地址跳过导出，OTLP 变为可选项 |
 | D3 | ~~entrypoint 只生成 `Storage.LocalPath`~~（该字段在 `SystemOptionStorage` 中**不存在**，S3 五字段全空 → S3 客户端无 ServiceURL，业务接口 500） | 曾导致容器形态上传类接口必 500（[@DEP-S3](./bdd.md#dep-s3)） | ✅ **已修复**：2026-09-03 由 entrypoint 生成 S3 段；**2026-09-23 改为 `deploy-compose.sh` 由 `.env` 生成 `Storage` 五项**（`S3_ENDPOINT` 支持自定义域名）。**部署注意**：`Storage.Endpoint` 单端点设计——预签名 URL 的 host 即应用所配端点，必须**同时**对应用与上传客户端（浏览器）可达，见 [docker.md 3.1](./docker.md) |
 | D7 | 沙箱需 Docker + Python，若与 .NET 同容器会扩大逃逸面 | 安全风险 | ✅ **已规避（2026-09-23）**：`opensandbox-server` 拆为独立容器（官方镜像），.NET 仅 HTTP 调用（[@DEP-S16](./bdd.md#dep-s16)） |
-| D8 | 图数据库社区版默认纯内存，容器重启丢图 | 知识图谱数据丢失 | 不内置；接入时用 `--storage-snapshot-interval-sec` + `--storage-snapshot-on-exit=true`（[docker.md 第 7 节](./docker.md)） |
+| D8 | 图数据库内存模式需要快照恢复 | 知识图谱数据丢失 | 可选 Compose 服务配置数据卷、300 秒快照与正常退出快照；异常退出仍可能丢失最近快照后的变更（[docker.md 第 7 节](./docker.md)） |
 | D4 | `.env.example` 的 OTLP 示例指 `127.0.0.1:4012`，容器内 `127.0.0.1` 是容器自身 | 照抄示例则 OTLP 上报失败（[@DEP-S6](./bdd.md#dep-s6)） | 写 collector 的容器网络名或宿主机地址 |
 | D5 | README 引用的 `moai_docs/` 目录已不存在于仓库 | README 图片裂图 | 与部署无关，仅记录 |
 | D6 | aspnet:10.0 运行时无 `libgssapi_krb5.so.2`，启动时探测告警（Cannot load library） | 不影响功能（Negotiate 探测为非致命） | ✅ **已消除（2026-09-23）**：final 阶段 `apt-get install -y libgssapi-krb5-2` |

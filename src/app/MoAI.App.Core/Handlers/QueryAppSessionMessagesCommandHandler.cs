@@ -31,6 +31,7 @@ public class QueryAppSessionMessagesCommandHandler : IRequestHandler<QueryAppSes
     public async Task<QueryAppSessionMessagesCommandResponse> Handle(QueryAppSessionMessagesCommand request, CancellationToken cancellationToken)
     {
         var session = await _databaseContext.AppAgentSessions
+            .Where(x => _databaseContext.Apps.Any(app => app.Id == x.AppId))
             .Where(x => x.Id == request.SessionId)
             .Select(x => new { x.Id, x.Title, x.CreateUserId, x.AppId })
             .FirstOrDefaultAsync(cancellationToken);

@@ -32,6 +32,7 @@ public class DecideAppSessionToolApprovalCommandHandler : IRequestHandler<Decide
     public async Task<DecideAppSessionToolApprovalResponse> Handle(DecideAppSessionToolApprovalCommand request, CancellationToken cancellationToken)
     {
         var ownerId = await _databaseContext.AppAgentSessions
+            .Where(x => _databaseContext.Apps.Any(app => app.Id == x.AppId))
             .Where(x => x.Id == request.SessionId)
             .Select(x => (long?)x.CreateUserId)
             .FirstOrDefaultAsync(cancellationToken);

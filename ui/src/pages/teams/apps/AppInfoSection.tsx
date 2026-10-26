@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AvatarUpload, Card as DSCard, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
-import { updateApp, uploadAppAvatar } from '@/api/app'
+import { deleteApp, updateApp, uploadAppAvatar } from '@/api/app'
 import {
   applyPublication,
   getTeamPublicationList,
@@ -29,16 +29,18 @@ export interface AppInfoSectionProps {
   detail: AppDetail | null
   canManage: boolean
   onReload: () => Promise<void> | void
+  onDeleted: () => void
 }
 
 /**
  * 应用「信息」分区：应用基础信息维护（头像/类型/名称/描述/授权与公开状态）。
  * 应用公开（is_public）需系统管理员审批，团队侧可申请/撤回并查看审批状态。
  */
-export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: AppInfoSectionProps) {
+export function AppInfoSection({ teamId, appId, detail, canManage, onReload, onDeleted }: AppInfoSectionProps) {
   const { t } = useTranslation()
 
   const [savingInfo, setSavingInfo] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [infoForm] = Form.useForm<InfoFormValues>()
   const [classifies, setClassifies] = useState<Classify[]>([])
@@ -144,6 +146,20 @@ export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: A
       // 错误已由全局请求中间件统一提示
     } finally {
       setSavingInfo(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!appId || !canManage) return
+    setDeleting(true)
+    try {
+      await deleteApp(appId)
+      feedback.success(t('appManage.deleteSuccess'))
+      onDeleted()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -269,9 +285,23 @@ export function AppInfoSection({ teamId, appId, detail, canManage, onReload }: A
               </Form.Item>
             )}
             {canManage && (
-              <Button type="primary" loading={savingInfo} onClick={() => void handleSaveInfo()}>
-                {t('appManage.saveInfo')}
-              </Button>
+              <Space>
+                <Button type="primary" loading={savingInfo} disabled={deleting} onClick={() => void handleSaveInfo()}>
+                  {t('appManage.saveInfo')}
+                </Button>
+                <Popconfirm
+                  title={t('appManage.deleteConfirm', { name: appName })}
+                  description={t('appManage.deleteHint')}
+                  onConfirm={handleDelete}
+                  okText={t('appManage.delete')}
+                  cancelText={t('appManage.cancel')}
+                  okButtonProps={{ danger: true, loading: deleting }}
+                >
+                  <Button danger loading={deleting} disabled={savingInfo || uploadingAvatar}>
+                    {t('appManage.delete')}
+                  </Button>
+                </Popconfirm>
+              </Space>
             )}
           </Form>
         </DSCard>

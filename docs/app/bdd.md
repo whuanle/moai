@@ -2,6 +2,44 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md)
 
+## Feature: 删除应用
+
+```gherkin
+@AP-S91 @auto:e2e
+Scenario: 仅团队所有者与管理员可以删除应用
+  Given 团队中存在一个应用
+  When 普通成员尝试删除该应用
+  Then 操作被禁止且应用保持不变
+  When 非团队成员尝试删除该应用
+  Then 按应用不存在处理
+
+@AP-S92 @auto:e2e
+Scenario: 删除应用后停止访问且不影响同团队其他应用
+  Given 团队所有者或管理员管理内部或外部的 Agent 或流程应用
+  When 管理员删除该应用
+  Then 该应用从对应列表移除且详情和会话不可再访问
+  And 同团队其他应用仍可访问且可重新使用已删除应用的名称
+  When 管理员再次删除同一应用
+  Then 按应用不存在处理
+
+@AP-S93 @auto:e2e
+Scenario: 被其他应用引用的应用不能直接删除
+  Given 其他存续应用的草稿或已发布配置仍引用目标应用
+  When 管理员删除目标应用
+  Then 提示先解除引用且保留目标应用
+  When 所有引用均已解除并重新发布生效后再次删除
+  Then 删除成功
+
+@AP-S94 @auto:vitest
+Scenario: 应用删除必须由管理员确认
+  Given 团队所有者或管理员进入应用管理页面
+  When 点击删除应用并取消确认
+  Then 应用保持不变
+  When 确认删除应用
+  Then 删除成功后返回该应用所属的内部或外部应用列表
+  And 删除失败时保留当前页面并显示失败原因
+```
+
 ## Feature: 访问与权限
 
 ```gherkin

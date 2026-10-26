@@ -27,6 +27,7 @@ public class DeleteAppSessionCommandHandler : IRequestHandler<DeleteAppSessionCo
     public async Task<EmptyCommandResponse> Handle(DeleteAppSessionCommand request, CancellationToken cancellationToken)
     {
         var session = await _databaseContext.AppAgentSessions
+            .Where(x => _databaseContext.Apps.Any(app => app.Id == x.AppId))
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);
 
         if (session == null || session.CreateUserId != request.ContextUserId)
