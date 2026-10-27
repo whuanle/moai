@@ -534,7 +534,8 @@ public sealed partial class DingTalkConnectionManager : IDingTalkConnectionStatu
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "钉钉长连接启动任务异常退出，dingTalkAppId={DingTalkAppId} appKey={AppKey}.", dingTalkAppId, appKey);
+                    // 启动失败多为 appKey/appSecret 配置错误，非业务异常，只记 Warn 不带堆栈，避免错误凭证下刷屏
+                    _logger.LogWarning("钉钉长连接启动任务异常退出（常见于 appKey/appSecret 配置错误），dingTalkAppId={DingTalkAppId} appKey={AppKey} reason={Reason}.", dingTalkAppId, appKey, ex.Message);
                 }
             });
         }

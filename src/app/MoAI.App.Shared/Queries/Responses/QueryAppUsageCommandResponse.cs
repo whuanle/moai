@@ -11,6 +11,8 @@ public class AppUsageSummary
     public long CompletionTokens { get; set; }
     /// <summary>合计 token.</summary>
     public long TotalTokens { get; set; }
+    /// <summary>缓存命中的输入 token（模型响应 usage 上报，未上报为 0）.</summary>
+    public long CachedTokens { get; set; }
 }
 
 /// <summary>应用按模型用量.</summary>
@@ -28,11 +30,16 @@ public class AppUsageModelItem
     public long CompletionTokens { get; set; }
     /// <summary>合计 token.</summary>
     public long TotalTokens { get; set; }
+    /// <summary>缓存命中的输入 token（模型响应 usage 上报，未上报为 0）.</summary>
+    public long CachedTokens { get; set; }
 }
 
 /// <summary>应用使用活动统计（会话/用户/消息维度）.</summary>
 public class AppUsageActivityStats
 {
+    /// <summary>累计使用次数（会话创建计数，删除会话不减少，Redis 计数器异步累加）.</summary>
+    public long UseCount { get; set; }
+
     /// <summary>会话总数（正式会话，不含已删除）.</summary>
     public int SessionCount { get; set; }
 

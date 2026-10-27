@@ -1,14 +1,12 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppMemorySection } from '../AppMemorySection'
-import { getAppAgentConfig, publishApp, saveAppAgentConfig } from '@/api/app'
-import { getWikiModelOptions } from '@/api/wiki'
+import { AppMemorySettingsPanel } from '../AppMemoryPanel'
+import { getAppAgentConfig, saveAppAgentConfig } from '@/api/app'
 import { clearAppMemory, getAppMemoryStats, getMyMemories } from '@/api/memory'
 
 vi.mock('@/api/app', () => ({
   getAppAgentConfig: vi.fn(),
-  publishApp: vi.fn().mockResolvedValue(undefined),
+  getMemoryDefaults: vi.fn().mockResolvedValue({ prompt: '平台默认记忆提示词：如何管理与使用记忆' }),
   saveAppAgentConfig: vi.fn().mockResolvedValue(undefined),
 }))
 
@@ -46,7 +44,17 @@ const mockConfig = (executionSettings: Record<string, unknown>) => {
   } as never)
 }
 
-/** 展开总开关并选定向量化模型（保存前置条件） */
+/** 嵌入态宿主桩：捕获面板注册的 memory 节构造回调 */
+function renderPanel(canManage = true) {
+  const state = { getSettings: null as (() => Record<string, unknown>) | null }
+  const registerSettings = (get: (() => Record<string, unknown>) | null) => {
+    state.getSettings = get
+  }
+  render(<AppMemorySettingsPanel teamId={3} appId="a1" canManage={canManage} registerSettings={registerSettings} />)
+  return state
+}
+
+/** 展开总开关并选定向量化模型 */
 async function enableMemoryWithModel() {
   fireEvent.click(screen.getByRole('switch'))
   await screen.findByText('appMemory.embeddingModel')
@@ -55,45 +63,79 @@ async function enableMemoryWithModel() {
   fireEvent.click(option)
 }
 
-describe('AppMemorySection（应用长期记忆分区）', () => {
+describe('AppMemorySettingsPanel（长期记忆设置面板，「配置」分区嵌入态）', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('未开启记忆时仅展示总开关，开启后级联显示向量化模型等配置', async () => {
+  it('加载完成后注册 memory 节构造回调；未开启时仅展示总开关，开启后级联显示向量化模型等配置', async () => {
     mockConfig({})
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage isPublished={false} /></MemoryRouter>)
+    const state = renderPanel()
     expect(await screen.findByText('appMemory.enabled')).toBeTruthy()
+    // 配置回显完成后才注册，防宿主在回显前保存默认值
+    await waitFor(() => expect(state.getSettings).toBeTruthy())
     expect(screen.queryByText('appMemory.embeddingModel')).toBeFalsy()
     await enableMemoryWithModel()
     expect(screen.getByText('appMemory.embeddingDimensions')).toBeTruthy()
     expect(screen.getByText('appMemory.autoExtract')).toBeTruthy()
   })
 
-  it('保存时全量回传配置快照并仅改 memory 节', async () => {
-    mockConfig({ sandbox: { enabled: true }, toolApproval: { sandboxAutoApproved: false } })
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage isPublished={false} /></MemoryRouter>)
-    await screen.findByText('appMemory.enabled')
-    await enableMemoryWithModel()
-    fireEvent.change(screen.getByPlaceholderText('1024'), { target: { value: '768' } })
-    fireEvent.click(screen.getByRole('button', { name: /appManage.saveConfig/ }))
-    await waitFor(() => expect(saveAppAgentConfig).toHaveBeenCalled())
-    const payload = vi.mocked(saveAppAgentConfig).mock.calls[0][1]
-    expect(payload.executionSettings?.memory).toMatchObject({ enabled: true, embeddingModelId: 'emb-1', embeddingDimensions: 768 })
-    // 其他分区配置原样保留
-    expect(payload.executionSettings?.sandbox).toEqual({ enabled: true })
-    expect(payload.modelId).toBe('m1')
+  it('注册回调仅产出 memory 节（保存主配置时并入 executionSettings），面板不渲染保存/发布按钮', async () => {
+    mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', embeddingDimensions: 1024, retrievalTopK: 5 } })
+    const state = renderPanel()
+    await screen.findByText('appMemory.embeddingModel')
+    await waitFor(() => expect(state.getSettings).toBeTruthy())
+
+    fireEvent.click(screen.getAllByRole('switch')[0])
+    const settings = state.getSettings!()
+    expect(settings).toEqual({ enabled: false, embeddingModelId: 'emb-1', embeddingDimensions: 1024 })
+    // 关闭期间保留模型/维度锁定参照系，丢弃开启态专属参数
+
+    fireEvent.click(screen.getAllByRole('switch')[0])
+    const enabledSettings = state.getSettings!()
+    expect(enabledSettings).toMatchObject({
+      enabled: true,
+      embeddingModelId: 'emb-1',
+      embeddingDimensions: 1024,
+      retrievalTopK: 5,
+      autoExtract: true,
+    })
+    // 记忆类型完全由 AI 自行判定：配置不再下发类型限制字段
+    expect('enableSemantic' in enabledSettings).toBe(false)
+    expect('enableEpisodic' in enabledSettings).toBe(false)
+    expect('enableProcedural' in enabledSettings).toBe(false)
+
+    // 嵌入态不渲染自己的保存按钮（宿主「保存设置」统一提交），也不再有发布动作
+    expect(screen.queryByRole('button', { name: /appManage.saveConfig/ })).toBeFalsy()
+    expect(screen.queryByRole('button', { name: /appManage.republish/ })).toBeFalsy()
+    expect(saveAppAgentConfig).not.toHaveBeenCalled()
   })
 
-  it('未选向量化模型时保存被拦截，不发起请求', async () => {
+  it('开启但未选向量化模型时回调抛错中断宿主保存', async () => {
     mockConfig({})
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage isPublished={false} /></MemoryRouter>)
+    const state = renderPanel()
     await screen.findByText('appMemory.enabled')
-    // 仅开启不选模型
+    await waitFor(() => expect(state.getSettings).toBeTruthy())
     fireEvent.click(screen.getByRole('switch'))
-    await screen.findByText('appMemory.embeddingModel')
-    fireEvent.click(screen.getByRole('button', { name: /appManage.saveConfig/ }))
-    await waitFor(() => expect(saveAppAgentConfig).not.toHaveBeenCalled())
+    expect(() => state.getSettings!()).toThrow()
+  })
+
+  it('记忆提示词：留空时平台默认展示为占位符且不随回调下发，配置后回显并随回调产出', async () => {
+    // 未配置 prompt：占位符展示平台默认
+    mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', embeddingDimensions: 1024 } })
+    const state = renderPanel()
+    await screen.findByText('appMemory.prompt')
+    expect(screen.getByPlaceholderText('平台默认记忆提示词：如何管理与使用记忆')).toBeTruthy()
+    await waitFor(() => expect(state.getSettings).toBeTruthy())
+    expect('prompt' in state.getSettings!()).toBe(false)
+
+    // 配置 prompt：回显并随回调下发
+    mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', prompt: '优先记录用户的项目背景与偏好' } })
+    const state2 = renderPanel()
+    const textarea = await screen.findByDisplayValue('优先记录用户的项目背景与偏好') as HTMLTextAreaElement
+    expect(state2.getSettings).toBeTruthy()
+    await waitFor(() => expect(state2.getSettings!()).toMatchObject({ prompt: '优先记录用户的项目背景与偏好' }))
+    expect(textarea).toBeTruthy()
   })
 
   it('清空应用全部记忆需 Popconfirm 确认且调用管理端接口', async () => {
@@ -103,19 +145,18 @@ describe('AppMemorySection（应用长期记忆分区）', () => {
       total: 1,
       memoryEnabled: true,
     })
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage isPublished={false} /></MemoryRouter>)
+    renderPanel()
     await screen.findByText('appMemory.clearApp')
     fireEvent.click(screen.getByText('appMemory.clearApp'))
     const okButtons = await screen.findAllByRole('button', { name: /OK/i })
     fireEvent.click(okButtons[okButtons.length - 1])
     await waitFor(() => expect(clearAppMemory).toHaveBeenCalledWith('a1'))
-    expect(publishApp).not.toHaveBeenCalled()
   })
 
   it('展示应用记忆统计（总条数与用户数），清空后归零', async () => {
     mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', embeddingDimensions: 1024 } })
     vi.mocked(getAppMemoryStats).mockResolvedValue({ totalMemories: 7, userCount: 3 })
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage isPublished={false} /></MemoryRouter>)
+    renderPanel()
     expect(await screen.findByText('appMemory.statsHint:7')).toBeInTheDocument()
     fireEvent.click(screen.getByText('appMemory.clearApp'))
     const okButtons = await screen.findAllByRole('button', { name: /OK/i })
@@ -126,7 +167,7 @@ describe('AppMemorySection（应用长期记忆分区）', () => {
   it('应用内已有记忆时向量化模型与维度锁定，清空全部记忆后解锁', async () => {
     mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', embeddingDimensions: 1024 } })
     vi.mocked(getAppMemoryStats).mockResolvedValue({ totalMemories: 5, userCount: 2 })
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage isPublished={false} /></MemoryRouter>)
+    renderPanel()
     await screen.findByText('appMemory.embeddingModel')
     expect(document.querySelectorAll('.ant-select-disabled').length).toBeGreaterThan(0)
     expect(document.querySelector('.ant-input-number-disabled')).toBeTruthy()
@@ -136,11 +177,10 @@ describe('AppMemorySection（应用长期记忆分区）', () => {
     await waitFor(() => expect(document.querySelector('.ant-select-disabled')).toBeNull())
   })
 
-  it('只读成员无保存与清空入口', async () => {
+  it('只读成员无清空入口', async () => {
     mockConfig({})
-    render(<MemoryRouter><AppMemorySection teamId={3} appId="a1" canManage={false} isPublished={false} /></MemoryRouter>)
-    await screen.findByText('appManage.memberHint')
-    expect(screen.queryByRole('button', { name: /appManage.saveConfig/ })).toBeFalsy()
+    render(<AppMemorySettingsPanel teamId={3} appId="a1" canManage={false} />)
+    await screen.findByText('appMemory.enabled')
     expect(screen.queryByText('appMemory.clearApp')).toBeFalsy()
   })
 })

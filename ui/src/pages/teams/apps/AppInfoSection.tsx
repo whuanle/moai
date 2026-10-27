@@ -6,7 +6,6 @@ import { fontSize, spacing } from '@/design-system/theme'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { updateApp, uploadAppAvatar } from '@/api/app'
 import { resolveStorageUrl } from '@/utils/storage'
-import { APP_DEFAULT_VERSION, APP_VERSION_PATTERN, formatAppVersion } from '@/utils/appVersion'
 import type { AppDetail } from './AppConfigSection'
 
 const { Text } = Typography
@@ -16,7 +15,6 @@ interface InfoFormValues {
   description?: string
   isAuth?: boolean
   classifyId?: number
-  version?: string
 }
 
 export interface AppInfoSectionProps {
@@ -61,7 +59,6 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
       description: detail.description ?? undefined,
       isAuth: detail.isAuth ?? false,
       classifyId: detail.classifyId || undefined,
-      version: formatAppVersion(detail.version ?? APP_DEFAULT_VERSION),
     })
   }, [detail, infoForm])
 
@@ -76,7 +73,6 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
         isExternal: detail?.isExternal ?? false,
         isAuth: values.isAuth ?? false,
         classifyId: values.classifyId ?? 0,
-        version: values.version?.trim() || undefined,
       })
       feedback.success(t('appManage.updateSuccess'))
       await onReload()
@@ -159,16 +155,6 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
             </Form.Item>
             <Form.Item name="classifyId" label={t('appManage.formClassify')}>
               <Select allowClear placeholder={t('appManage.classifyPlaceholder')} options={classifyOptions} />
-            </Form.Item>
-            <Form.Item
-              name="version"
-              label={t('appManage.version')}
-              rules={[
-                { pattern: APP_VERSION_PATTERN, message: t('appManage.versionInvalid') },
-              ]}
-              extra={t('appManage.versionHint')}
-            >
-              <Input placeholder={t('appManage.versionPlaceholder')} maxLength={12} allowClear />
             </Form.Item>
             {detail?.isExternal && (
               <Form.Item

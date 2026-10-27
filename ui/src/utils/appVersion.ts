@@ -25,3 +25,17 @@ export function parseAppVersion(text: string | null | undefined): number | null 
   if (!Number.isFinite(aaa) || !Number.isFinite(bb) || !Number.isFinite(cc)) return null
   return aaa * 10000 + bb * 100 + cc
 }
+
+/**
+ * 计算严格递增的下一版本号编码：patch 段 +1，段满进位（如 0.0.1→0.0.2、0.0.99→0.1.0）.
+ * 已到上限（999.99.99）返回 null（需用户手填有效更大版本）.
+ */
+export function nextAppVersion(version: number): number | null {
+  const aaa = Math.floor(version / 10000)
+  const bb = Math.floor(version / 100) % 100
+  const cc = version % 100
+  if (cc < 99) return version + 1
+  if (bb < 99) return version + 100
+  if (aaa < 999) return version + 10000
+  return null
+}

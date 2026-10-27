@@ -4,6 +4,8 @@
 #pragma warning disable SA1600 // Elements should be documented
 #pragma warning disable CA1002 // 不要公开泛型列表
 #pragma warning disable CA2227 // 集合属性应为只读
+using System.Text.Json.Serialization;
+
 namespace MoAI.Infra.WeixinWork.Models;
 
 /// <summary>
@@ -11,11 +13,15 @@ namespace MoAI.Infra.WeixinWork.Models;
 /// </summary>
 public class GetTokenResult
 {
+    [JsonPropertyName("errcode")]
     public int ErrCode { get; set; }
 
+    [JsonPropertyName("errmsg")]
     public string ErrMsg { get; set; }
 
+    [JsonPropertyName("access_token")]
     public string? AccessToken { get; set; }
 
+    [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }
 }

@@ -98,6 +98,10 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
         entity.Property(e => e.UpdateUserId)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.UseCount)
+            .HasDefaultValueSql("0")
+            .HasComment("累计使用次数（会话创建计数，删除会话不减少），由 Redis 计数器每分钟批量累加")
+            .HasColumnName("use_count");
 
         OnConfigurePartial(entity);
     }

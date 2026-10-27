@@ -48,6 +48,8 @@ import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetada
 // @ts-ignore
 import { type VariableRequestBuilder, VariableRequestBuilderNavigationMetadata, VariableRequestBuilderRequestsMetadata } from './variable/index.js';
 // @ts-ignore
+import { type Weixinwork_appRequestBuilder, Weixinwork_appRequestBuilderNavigationMetadata, Weixinwork_appRequestBuilderRequestsMetadata } from './weixinwork_app/index.js';
+// @ts-ignore
 import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata, WikiRequestBuilderRequestsMetadata } from './wiki/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -149,6 +151,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get variable(): VariableRequestBuilder;
     /**
+     * The weixinwork_app property
+     */
+    get weixinwork_app(): Weixinwork_appRequestBuilder;
+    /**
      * The wiki property
      */
     get wiki(): WikiRequestBuilder;
@@ -241,6 +247,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     variable: {
         requestsMetadata: VariableRequestBuilderRequestsMetadata,
         navigationMetadata: VariableRequestBuilderNavigationMetadata,
+    },
+    weixinwork_app: {
+        requestsMetadata: Weixinwork_appRequestBuilderRequestsMetadata,
+        navigationMetadata: Weixinwork_appRequestBuilderNavigationMetadata,
     },
     wiki: {
         requestsMetadata: WikiRequestBuilderRequestsMetadata,

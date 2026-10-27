@@ -12,6 +12,8 @@ using MoAI.Infra.Feishu;
 using MoAI.Infra.Feishu.Models;
 using MoAI.Infra.OAuth;
 using MoAI.Infra.OAuth.Models;
+using MoAI.Infra.WeixinWork;
+using MoAI.Infra.WeixinWork.Models;
 
 namespace MoAI.Auth.Services;
 
@@ -41,7 +43,7 @@ public class OAuthUserProfileService : IOAuthUserProfileService
     }
 
     /// <inheritdoc/>
-    public async Task<OAuthBindUserProfile> GetProfileAsync(Guid oAuthConnectionId, string code, CancellationToken cancellationToken)
+    public async Task<OAuthBindUserProfile> GetProfileAsync(Guid oAuthConnectionId, string code, Uri? redirectUrl, CancellationToken cancellationToken)
     {
         var oauthConnectionEntity = await _databaseContext.OauthConnections
             .FirstOrDefaultAsync(c => c.Id == oAuthConnectionId, cancellationToken);
@@ -54,7 +56,7 @@ public class OAuthUserProfileService : IOAuthUserProfileService
         var oauthPrivider = oauthConnectionEntity.Provider.JsonToObject<OAuthPrivider>();
         if (oauthPrivider == OAuthPrivider.Feishu)
         {
-            return await GetOpenIdFromFeishuAsync(code, oauthConnectionEntity);
+            return await GetOpenIdFromFeishuAsync(code, redirectUrl, oauthConnectionEntity);
         }
         else if (oauthPrivider == OAuthPrivider.DingTalk)
         {
@@ -126,8 +128,64 @@ public class OAuthUserProfileService : IOAuthUserProfileService
         };
     }
 
-    private async Task<OAuthBindUserProfile> GetOpenIdFromFeishuAsync(string code, OauthConnectionEntity clientEntity)
+    private async Task<OAuthBindUserProfile> GetOpenIdFromWeixinWorkAsync(string code, OauthConnectionEntity clientEntity)
     {
+        var weixinWorkClient = _serviceProvider.GetRequiredService<IWeixinWorkClient>();
+
+        var tokenResult = await weixinWorkClient.GetTokenAsync(clientEntity.Key, clientEntity.Secret);
+        if (tokenResult.ErrCode != 0 || string.IsNullOrWhiteSpace(tokenResult.AccessToken))
+        {
+            throw new BusinessException("企业微信接口错误") { StatusCode = 500 };
+        }
+
+        var userInfoResult = await weixinWorkClient.GetUserInfoAsync(tokenResult.AccessToken, new GetUserInfoByCodeRequest
+        {
+            Code = code
+        });
+
+        if (userInfoResult.ErrCode != 0 || string.IsNullOrWhiteSpace(userInfoResult.UserId))
+        {
+            throw new BusinessException("企业微信接口错误") { StatusCode = 500 };
+        }
+
+        // 姓名与头像按通讯录接口补全，应用无通讯录读权限时失败不阻断登录，回退 userid
+        var name = userInfoResult.UserId;
+        var avatar = string.Empty;
+        try
+        {
+            var userResult = await weixinWorkClient.GetUserAsync(tokenResult.AccessToken, userInfoResult.UserId);
+            if (userResult.ErrCode == 0)
+            {
+                name = string.IsNullOrWhiteSpace(userResult.Name) ? name : userResult.Name;
+                avatar = userResult.Avatar ?? string.Empty;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return new OAuthBindUserProfile
+        {
+            OAuthId = clientEntity.Id,
+            Name = name,
+            Profile = new OpenIdUserProfile
+            {
+                Sub = userInfoResult.UserId,
+                Name = name,
+                Audience = clientEntity.Key,
+                Issuer = "https://work.weixin.qq.com",
+                Picture = avatar,
+                PreferredUsername = name,
+            },
+
+            AccessToken = tokenResult.AccessToken
+        };
+    }
+
+    private async Task<OAuthBindUserProfile> GetOpenIdFromFeishuAsync(string code, Uri? redirectUrl, OauthConnectionEntity clientEntity)
+    {
+        // 飞书换 token 要求 redirect_uri 与授权时一致，这里用授权发起页的来源回填
+        var loopbackOrigin = redirectUrl?.GetLeftPart(UriPartial.Authority) ?? _systemOptions.WebUI.TrimEnd('/');
         var feishuClient = _serviceProvider.GetRequiredService<IFeishuAuthClient>();
         var feishuAccessToken = await feishuClient.GetUserAccessTokenAsync(new FeishuTokenRequest
         {
@@ -135,8 +193,7 @@ public class OAuthUserProfileService : IOAuthUserProfileService
             GrantType = "authorization_code",
             ClientId = clientEntity.Key,
             ClientSecret = clientEntity.Secret,
-            RedirectUri = new Uri(new Uri(_systemOptions.WebUI), $"/oauth_login").ToString(),
-            CodeVerifier = code,
+            RedirectUri = $"{loopbackOrigin}/oauth_login",
             Scope = string.Empty
         });
 

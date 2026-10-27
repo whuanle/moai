@@ -5,6 +5,7 @@ namespace MoAI.AI.Models;
 
 /// <summary>
 /// Agent 应用长期记忆配置（对应 execution_settings.memory；为空表示未开启记忆）.
+/// 记忆类型（语义/情景/程序）完全由 AI 在保存/提取时自行判定，配置不再提供类型限制.
 /// </summary>
 public sealed class AgentMemorySettings
 {
@@ -42,6 +43,21 @@ public sealed class AgentMemorySettings
     /// 检索条数上限.
     /// </summary>
     public const int MaxRetrievalTopK = 50;
+
+    /// <summary>
+    /// 记忆提示词上限（追加为记忆工具描述，指导 AI 如何管理与使用记忆）.
+    /// </summary>
+    public const int MaxPromptLength = 2000;
+
+    /// <summary>
+    /// 默认记忆提示词（应用未配置时生效，前端占位符同步展示）.
+    /// </summary>
+    public const string DefaultPrompt =
+        "1. 记忆分为语义（事实/偏好/结论）、情景（事件/经历）、程序（方法/流程）三类，保存时自行判定最贴切的类型；\n" +
+        "2. 用户明确要求记住或忘记时必须调用记忆工具；对话中出现稳定偏好、重要约定、项目背景等值得长期保留的信息时也建议保存；\n" +
+        "3. 保存内容要具体（含数字/名称/约定等细节），与既有记忆高度相似时工具会自动合并更新，不要重复保存；\n" +
+        "4. 回答前先参考系统注入的相关记忆，自动注入不够用时用 memory_search 主动检索；\n" +
+        "5. 用户要求忘记或更正信息时，先用 memory_search 找到对应记忆 id，再调用 memory_forget 删除。";
 
     /// <summary>
     /// 默认相似度阈值（余弦相似度 0~1）.
@@ -84,24 +100,14 @@ public sealed class AgentMemorySettings
     public int EmbeddingDimensions { get; set; } = DefaultEmbeddingDimensions;
 
     /// <summary>
-    /// 提取/检索语义记忆.
-    /// </summary>
-    public bool EnableSemantic { get; set; } = true;
-
-    /// <summary>
-    /// 提取/检索情景记忆.
-    /// </summary>
-    public bool EnableEpisodic { get; set; } = true;
-
-    /// <summary>
-    /// 提取/检索程序记忆.
-    /// </summary>
-    public bool EnableProcedural { get; set; } = true;
-
-    /// <summary>
     /// 每轮对话后自动提取并合并记忆（mem0 式选择性写入）；关闭则仅可由 AI 通过工具显式保存.
     /// </summary>
     public bool AutoExtract { get; set; } = true;
+
+    /// <summary>
+    /// 记忆提示词（指导 AI 如何管理与使用记忆，追加为记忆工具描述）；空串表示使用 <see cref="DefaultPrompt"/>.
+    /// </summary>
+    public string Prompt { get; set; } = string.Empty;
 
     /// <summary>
     /// 每轮注入上下文与 memory_search 的默认召回条数（1~50）.
@@ -117,19 +123,6 @@ public sealed class AgentMemorySettings
     /// 单用户在该应用的记忆条数上限（10~10000），超限删除最旧记忆.
     /// </summary>
     public int MaxPerUser { get; set; } = DefaultMaxPerUser;
-
-    /// <summary>
-    /// 判断记忆类型是否启用.
-    /// </summary>
-    /// <param name="memoryType">记忆类型常量.</param>
-    /// <returns>是否启用.</returns>
-    public bool IsTypeEnabled(int memoryType) => memoryType switch
-    {
-        TypeSemantic => EnableSemantic,
-        TypeEpisodic => EnableEpisodic,
-        TypeProcedural => EnableProcedural,
-        _ => false
-    };
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

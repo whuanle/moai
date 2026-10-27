@@ -8,3 +8,13 @@ export function formatFileSize(bytes: number, decimals = 2): string {
   const value = bytes / Math.pow(BASE, i)
   return `${parseFloat(value.toFixed(decimals))} ${UNITS[i]}`
 }
+
+/** 将 token 数量转为紧凑展示：980 / 12.4k / 128k / 1.2M（用于上下文占用等窄空间场景） */
+export function formatTokenCount(tokens: number): string {
+  if (!tokens || tokens <= 0) return '0'
+  if (tokens >= 1_000_000) return `${parseFloat((tokens / 1_000_000).toFixed(1))}M`
+  if (tokens >= 10_000) return `${Math.round(tokens / 1_000)}k`
+  if (tokens >= 1_000) return `${parseFloat((tokens / 1_000).toFixed(1))}k`
+  return String(tokens)
+}
+

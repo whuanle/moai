@@ -53,6 +53,10 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
         {
             await AddDingTalkConnectionAsync(request, cancellationToken);
         }
+        else if (request.Provider == OAuthPrivider.WeixinWork)
+        {
+            await AddWeixinWorkConnectionAsync(request, cancellationToken);
+        }
         else
         {
             await AddCustomConnectionAsync(request, cancellationToken);
@@ -109,6 +113,25 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             IconUrl = request.IconUrl,
             AuthorizeUrl = "https://login.dingtalk.com/oauth2/auth",
             WellKnown = request.WellKnown?.ToString() ?? "https://login.dingtalk.com/oauth2/auth",
+        };
+
+        _databaseContext.OauthConnections.Add(connection);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task AddWeixinWorkConnectionAsync(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
+    {
+        // see https://developer.work.weixin.qq.com/document/path/98152 （企业微信 Web 登录）
+        var connection = new OauthConnectionEntity
+        {
+            Name = request.Name,
+            Provider = TextToJsonExtensions.ToJsonString(request.Provider),
+            Key = request.Key,
+            Secret = request.Secret,
+            IconUrl = request.IconUrl,
+            AgentId = request.AgentId,
+            AuthorizeUrl = "https://login.work.weixin.qq.com/wwlogin/sso/login",
+            WellKnown = request.WellKnown?.ToString() ?? "https://work.weixin.qq.com",
         };
 
         _databaseContext.OauthConnections.Add(connection);

@@ -7,7 +7,7 @@ using MoAI.Infra.Services;
 namespace MoAI.App.Commands;
 
 /// <summary>
-/// 取消发布应用；需要团队 Admin 及以上角色.
+/// 撤回发布应用（团队发布下线），已上架（公开）的应用会同时自动下架并撤下待审申请；需要团队 Admin 及以上角色.
 /// </summary>
 public class UnpublishAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, IModelValidator<UnpublishAppCommand>
 {

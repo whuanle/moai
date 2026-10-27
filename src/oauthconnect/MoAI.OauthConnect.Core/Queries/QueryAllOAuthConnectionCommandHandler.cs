@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
+using MoAI.Infra;
 using MoAI.OauthConnect.Queries;
 using MoAI.OauthConnect.Queries.Responses;
 
@@ -14,16 +15,19 @@ public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAu
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IUserInfoFillService _userInfoFillService;
+    private readonly SystemOptions _systemOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAllOAuthConnectionCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="userInfoFillService">用户信息填充服务.</param>
-    public QueryAllOAuthConnectionCommandHandler(DatabaseContext databaseContext, IUserInfoFillService userInfoFillService)
+    /// <param name="systemOptions">系统配置.</param>
+    public QueryAllOAuthConnectionCommandHandler(DatabaseContext databaseContext, IUserInfoFillService userInfoFillService, SystemOptions systemOptions)
     {
         _databaseContext = databaseContext;
         _userInfoFillService = userInfoFillService;
+        _systemOptions = systemOptions;
     }
 
     /// <inheritdoc/>
@@ -38,6 +42,7 @@ public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAu
                 Provider = x.Provider,
                 Key = x.Key,
                 WellKnown = x.WellKnown,
+                AgentId = x.AgentId,
                 AuthorizeUrl = x.AuthorizeUrl,
                 CreateTime = x.CreateTime,
                 CreateUserId = (int)x.CreateUserId,
@@ -48,6 +53,10 @@ public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAu
 
         await _userInfoFillService.FillAsync(items, cancellationToken);
 
-        return new QueryAllOAuthConnectionCommandResponse { Items = items };
+        return new QueryAllOAuthConnectionCommandResponse
+        {
+            Items = items,
+            RedirectUri = $"{_systemOptions.WebUI.TrimEnd('/')}/oauth_login"
+        };
     }
 }

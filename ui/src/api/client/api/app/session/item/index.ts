@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, type BusinessValidationResult, type EmptyCommandResponse } from '../../../../models/index.js';
 // @ts-ignore
+import { ContextUsageRequestBuilderRequestsMetadata, type ContextUsageRequestBuilder } from './contextUsage/index.js';
+// @ts-ignore
 import { MessagesRequestBuilderRequestsMetadata, type MessagesRequestBuilder } from './messages/index.js';
 // @ts-ignore
 import { PromptRequestBuilderRequestsMetadata, type PromptRequestBuilder } from './prompt/index.js';
@@ -18,6 +20,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/app/session/{sessionId}
  */
 export interface WithSessionItemRequestBuilder extends BaseRequestBuilder<WithSessionItemRequestBuilder> {
+    /**
+     * The contextUsage property
+     */
+    get contextUsage(): ContextUsageRequestBuilder;
     /**
      * The messages property
      */
@@ -60,6 +66,9 @@ export const WithSessionItemRequestBuilderUriTemplate = "{+baseurl}/api/app/sess
  * Metadata for all the navigation properties in the request builder.
  */
 export const WithSessionItemRequestBuilderNavigationMetadata: Record<Exclude<keyof WithSessionItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    contextUsage: {
+        requestsMetadata: ContextUsageRequestBuilderRequestsMetadata,
+    },
     messages: {
         requestsMetadata: MessagesRequestBuilderRequestsMetadata,
     },

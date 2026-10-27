@@ -21,5 +21,14 @@
 - E2E：`node local-dev/publication-e2e.mjs` → 34 pass / 0 fail；`node local-dev/app-e2e.mjs` → 101 pass / 0 fail（公开场景已改走申请+审批）。
 - OpenAPI：`/openapi/v1.json` 出现 5 个 publication 路由（apply/withdraw/review/list/team_list），`npm run syncapi` 已重新生成客户端。
 - 前端：`npm run typecheck` 通过；`npm run lint` 0 error；`npm run test` 259 通过（受影响断言已同步更新）。
-| @PB-S16 | local-dev/publication-e2e.mjs（PB-02c/d/e 缺版本号/非法格式/非应用带版本 400 + PB-07a 团队列表回显 publishVersion=10200） | PASS 37/37（2026-10-26，对 5031 新构建实例） |
+| @PB-S16 | local-dev/publication-e2e.mjs（PB-02c/c2 不携带版本号申请 200 且版本自动取当前版本并撤回 + PB-02d/e/f 非法格式/非应用带版本/低于当前版本 400 + PB-07a 团队列表回显 publishVersion=10200） | PASS 49/49（2026-10-27，上架不再单独填版本号：缺省自动取应用当前版本） |
 | @PB-S17 | local-dev/publication-e2e.mjs（PB-16a 待审核全部排在已审批前 + PB-16b 管理员列表组内倒序 + PB-16c 团队列表首条为最新待审核） | PASS 40/40（2026-10-26，对 5031 新构建实例） |
+| @PB-S18 | local-dev/publication-e2e.mjs（PB-17a Member 下架 403 + PB-17b 非成员 404 + PB-17c 下架 200 + PB-17d is_public=false + PB-17e 移出公开列表 + PB-17f 未公开 409 + PB-17g 可重新申请） | PASS 47/47（2026-10-27，新增 `POST /api/publication/takedown`，syncapi 已重新生成客户端） |
+| @PB-S19 | @manual（个人提示词/技能下架门禁浏览器走查） | 待走查（2026-10-27） |
+
+## 证据摘要（2026-10-27 增量：下架）
+
+- 后端：`TakedownPublicationCommand`（Shared）+ `TakedownPublicationCommandHandler`（Core，团队资源 Admin+/个人资源仅创建人/未公开 409）+ `PublicationController` 新增 `POST /publication/takedown`；`dotnet build src/MoAI/MoAI.csproj` 0 error。
+- 应用联动：`UnpublishAppCommandHandler` 撤回发布时清 `is_public` 并撤下待审核申请（见 [../app/bdd.md @AP-S96](../app/bdd.md#ap-s96)，app-e2e AP-96a~h 8/8）。
+- OpenAPI：`/openapi/v1.json` 出现 `takedown` 路由，`npm run syncapi` 重新生成客户端。
+- 前端：AppPublicationSection（下架按钮/撤回发布改名）+ `ui/src/i18n` zh/en 同步；AppPublicationSection.test 12/12（含下架与成员只读）。

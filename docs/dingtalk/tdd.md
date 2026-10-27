@@ -62,3 +62,9 @@
 
 | @DT-S29 | 双实例实测（5002/5006 新构建）：A 圈占 31 应用后触发公平份额释放 14 个、B 争抢到 14 个（≈16/14 负载均衡）；杀 A 后 B 约 40s 争抢接管全部应用并重连真实连接（日志观测） | PASS（2026-10-26） |
 | @DT-S30 | 同上双实例实测（对账周期 5s）+ ApplyCreate 本地争抢即建连 | PASS 走查（2026-10-26） |
+
+## 证据摘要（2026-10-27，外部渠道页布局收敛：接入指引默认收缩 + 按钮上移卡片标题）
+
+- 同飞书分区布局调整（用户反馈「接入指引整段 Alert 把页面撑开」）：`AppDingTalkChannelsSection` 接入指引改为卡片内 `Collapse` 默认收缩、点击展开；「接入钉钉应用」「刷新」上移卡片标题右侧（`Card extra`），移除 DataTable toolbar 行；未发布警告保留卡片上方。bdd @DT-S24 场景措辞同步。
+- 验证：`npm run typecheck` 0 error；`npm run lint` 0 error；`AppDingTalkChannelsSection.test.tsx` 8/8（三渠道分区合计 25/25）。
+- 迭代（同日，用户反馈指引展开后堆成一段）：指引文案按「N. 」序号拆分为有序列表逐条展示——新增共享组件 `AppChannelGuide`（三渠道分区共用）与 `utils/text.ts` `splitNumberedSteps`（zh/en 通用，去序号与段尾分号）；AppChannelsSection.test 增「默认收缩、展开逐条分行」断言。

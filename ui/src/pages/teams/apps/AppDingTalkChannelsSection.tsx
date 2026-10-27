@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { AppChannelGuide } from './AppChannelGuide'
 import {
   createDingTalkApp,
   deleteDingTalkApp,
@@ -213,28 +214,38 @@ export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublish
     })
   }
 
+  // 接入指引默认收缩，点击展开后按步骤逐条分行展示
+  const guidePanel = <AppChannelGuide ns="appDingTalkChannels" />
+
+  const refreshButton = (
+    <Button onClick={load} loading={loading}>
+      {t('ds.table.refresh')}
+    </Button>
+  )
+
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      <Alert type="info" showIcon message={t('appDingTalkChannels.hintTitle')} description={t('appDingTalkChannels.hint')} />
       {!isPublished && <Alert type="warning" showIcon message={t('appDingTalkChannels.unpublishedHint')} />}
-      <DSCard title={t('appDingTalkChannels.cardTitle')}>
+      <DSCard
+        title={t('appDingTalkChannels.cardTitle')}
+        extra={
+          <Space>
+            {canManage && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                {t('appDingTalkChannels.addDingTalk')}
+              </Button>
+            )}
+            {refreshButton}
+          </Space>
+        }
+      >
+        {guidePanel}
         <DataTable
           rowKey="dingTalkAppId"
           columns={columns}
           dataSource={boundItems}
           loading={loading}
-          onRefresh={load}
-          refreshLoading={loading}
           pagination={false}
-          toolbar={
-            canManage ? (
-              <Space>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                  {t('appDingTalkChannels.addDingTalk')}
-                </Button>
-              </Space>
-            ) : undefined
-          }
         />
 
         <Modal

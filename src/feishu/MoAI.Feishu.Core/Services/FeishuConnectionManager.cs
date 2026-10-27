@@ -527,7 +527,8 @@ public sealed partial class FeishuConnectionManager : IFeishuConnectionStatus
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "飞书长连接异常退出，feishuAppId={FeishuAppId} appId={AppId}.", feishuAppId, appId);
+                    // 长连接退出多为 appId/appSecret 配置错误，非业务异常，只记 Warn 不带堆栈，避免错误凭证下刷屏
+                    _logger.LogWarning("飞书长连接异常退出（常见于 appId/appSecret 配置错误），feishuAppId={FeishuAppId} appId={AppId} reason={Reason}.", feishuAppId, appId, ex.Message);
                 }
                 finally
                 {

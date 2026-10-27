@@ -5,7 +5,7 @@ using MoAI.Database;
 namespace MoAI.App.Services;
 
 /// <summary>
-/// 应用列表项补充信息：批量填充所属团队名称与使用次数（累计会话数，与用量监控会话数同口径）.
+/// 应用列表项补充信息：批量填充所属团队名称与使用次数（累计使用次数，Redis 计数器异步累加，删除会话不减少）.
 /// </summary>
 internal static class AppListItemHelper
 {
@@ -29,12 +29,10 @@ internal static class AppListItemHelper
             .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
 
         var appIds = items.Select(x => x.AppId).ToList();
-        var useCounts = await databaseContext.AppAgentSessions
+        var useCounts = await databaseContext.Apps
             .AsNoTracking()
-            .Where(x => appIds.Contains(x.AppId))
-            .GroupBy(x => x.AppId)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.Key, x => x.Count, cancellationToken);
+            .Where(x => appIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.UseCount, cancellationToken);
 
         foreach (var item in items)
         {

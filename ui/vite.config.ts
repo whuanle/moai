@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { cpSync, createReadStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -68,7 +69,11 @@ function serveEmbedWidget() {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // 内网穿透联调（企业微信等外部渠道要求公网可信域名）：ui/.env.local 配置 MOAI_ALLOWED_HOSTS 放行自定义 Host，
+  // 逗号分隔，前导点匹配整个子域（如 .local.example.com 放行 4000.local.example.com）
+  const env = loadEnv(mode, __dirname, '')
+  return {
   plugins: [react(), copyMonacoToPublic(), copyVditorToPublic(), serveEmbedWidget()],
   resolve: {
     alias: {
@@ -95,6 +100,9 @@ export default defineConfig({
   server: {
     port: 4000,
     host: true,
+    allowedHosts: env.MOAI_ALLOWED_HOSTS
+      ? env.MOAI_ALLOWED_HOSTS.split(',').map((h) => h.trim()).filter(Boolean)
+      : [],
     // 必须关闭：Vite 内置 cors 只放行 localhost 系 origin，会抢答 /api 预检且对
     // Origin: null（file:// 宿主页，悬浮组件的典型嵌入场景）不带 ACAO，把请求挡在代理之前。
     // 关闭后预检穿透到后端，由后端 CORS 策略统一回答（AllowAnyOrigin → *）。
@@ -148,5 +156,6 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
   },
+  }
 })
 

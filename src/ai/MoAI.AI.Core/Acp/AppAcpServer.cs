@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using MoAI.App.Services;
 using MoAI.AI.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -44,6 +45,7 @@ public sealed class AppAcpServer
     private readonly AppChatHotStore _hotStore;
     private readonly AppChatFlushService _flushService;
     private readonly AppAcpRunRegistry _runRegistry;
+    private readonly IAppUsageCounter _appUsageCounter;
     private readonly ILogger<AppAcpServer> _logger;
 
     /// <summary>
@@ -55,6 +57,7 @@ public sealed class AppAcpServer
         AppChatHotStore hotStore,
         AppChatFlushService flushService,
         AppAcpRunRegistry runRegistry,
+        IAppUsageCounter appUsageCounter,
         ILogger<AppAcpServer> logger)
     {
         _databaseContext = databaseContext;
@@ -62,6 +65,7 @@ public sealed class AppAcpServer
         _hotStore = hotStore;
         _flushService = flushService;
         _runRegistry = runRegistry;
+        _appUsageCounter = appUsageCounter;
         _logger = logger;
     }
 
@@ -207,6 +211,9 @@ public sealed class AppAcpServer
         };
         _databaseContext.AppAgentSessions.Add(session);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 使用次数 +1（Redis 计数器，删除会话不回退）
+        await _appUsageCounter.IncrementAsync(appId, cancellationToken);
 
         await WriteJsonAsync(context, JsonRpcResult(id, new JsonObject { ["sessionId"] = session.Id.ToString() }));
     }

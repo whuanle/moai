@@ -43,6 +43,19 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
+    /// 查询长期记忆的默认提示词（应用未配置 memory.prompt 时生效的平台默认值，配置页展示与占位），登录用户可用.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAgentMemoryDefaultsResponse"/>.</returns>
+    [HttpGet("agent/memory-defaults")]
+    public Task<QueryAgentMemoryDefaultsResponse> QueryMemoryDefaults(CancellationToken ct)
+    {
+        var cmd = new QueryAgentMemoryDefaultsCommand();
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 创建应用（Agent 应用/流程应用），需要团队 Admin 及以上角色；可选携带头像 objectKey 与「允许外部使用」开关.
     /// </summary>
     /// <param name="req">创建请求.</param>
@@ -95,20 +108,22 @@ public class AppController : ControllerBase
 
     /// <summary>
     /// 发布应用，发布后团队成员可进入应用进行对话；需要团队 Admin 及以上角色，仅 Agent 应用可发布.
+    /// 请求体可省略；携带 version（aaa.bb.cc）时把应用当前版本更新为该值并随发布快照生效.
     /// </summary>
     /// <param name="id">应用 id.</param>
+    /// <param name="req">发布请求，可为空；仅用于携带可选版本号.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
     [HttpPost("{id:guid}/publish")]
-    public async Task<EmptyCommandResponse> PublishApp([FromRoute] Guid id, CancellationToken ct)
+    public async Task<EmptyCommandResponse> PublishApp([FromRoute] Guid id, [FromBody] PublishAppCommand? req = null, CancellationToken ct = default)
     {
-        var cmd = new PublishAppCommand { AppId = id };
+        var cmd = new PublishAppCommand { AppId = id, Version = req?.Version };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }
 
     /// <summary>
-    /// 取消发布应用；需要团队 Admin 及以上角色.
+    /// 撤回发布应用（团队发布下线），已上架（公开）的应用会同时自动下架；需要团队 Admin 及以上角色.
     /// </summary>
     /// <param name="id">应用 id.</param>
     /// <param name="ct">取消令牌.</param>

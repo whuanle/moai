@@ -66,9 +66,16 @@ async function main() {
   // PB-02 校验
   check('PB-02a resourceType 非法 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'video', resourceId: APP_ID } })).status === 400)
   check('PB-02b 空 resourceId 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: '' } })).status === 400)
-  check('PB-02c 应用缺版本号 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 400)
+  // PB-02c 上架把最新的团队发布上架：不携带版本号申请成功，版本号自动记录应用当前版本（1.0.0=10000），撤回后继续主流程
+  const applyNoVer = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })
+  const noVerItem = ((await api('GET', `/api/publication/team_list?teamId=${TID}`, { token: owner.token })).json?.items ?? [])
+    .find(i => String(i.publicationId) === String(applyNoVer.json?.value ?? ''))
+  check('PB-02c 不携带版本号申请 200 且版本自动取应用当前版本', applyNoVer.status === 200 && noVerItem?.publishVersion === 10000,
+    `${applyNoVer.status} ${JSON.stringify(noVerItem)}`)
+  check('PB-02c2 自动版本申请可撤回', (await api('POST', '/api/publication/withdraw', { token: owner.token, body: { publicationId: applyNoVer.json?.value } })).status === 200)
   check('PB-02d 版本号格式非法 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID, version: '1.2' } })).status === 400)
   check('PB-02e 非应用类型携带版本号 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'prompt', resourceId: '1', version: '1.0.0' } })).status === 400)
+  check('PB-02f 申请版本低于当前版本 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID, version: '0.0.9' } })).status === 400)
 
   // PB-03 资源不存在
   check('PB-03a 不存在的应用 404', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: '01924f5e-0000-7000-8000-00000000ffff', version: '1.0.0' } })).status === 404)
@@ -156,6 +163,15 @@ async function main() {
   })(), `首条待审核=${allItems.find(i => i.state === 'pending')?.publicationId} 本条=${PBS_ID}`)
   const teamFirst = ((await api('GET', `/api/publication/team_list?teamId=${TID}`, { token: owner.token })).json?.items ?? [])[0]
   check('PB-16c 团队列表首条为最新待审核', teamFirst?.publicationId == PBS_ID && teamFirst?.state === 'pending', JSON.stringify(teamFirst))
+
+  // PB-17 下架（取消公开）：清 is_public、不改变团队发布状态、下架后可重新申请
+  check('PB-17a Member 下架 403', (await api('POST', '/api/publication/takedown', { token: member.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 403)
+  check('PB-17b 非成员下架 404', (await api('POST', '/api/publication/takedown', { token: outsider.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 404)
+  check('PB-17c Owner 下架已公开应用 200', (await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 200)
+  check('PB-17d 下架后 is_public=false', (await api('GET', `/api/app/${APP_ID}`, { token: owner.token })).json?.isPublic === false)
+  check('PB-17e 下架后不再出现在公开列表', !((await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items ?? []).some(i => i.appId === APP_ID))
+  check('PB-17f 未公开重复下架 409', (await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 409)
+  check('PB-17g 下架后可重新申请 200', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID, version: '1.3.1' } })).status === 200)
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)

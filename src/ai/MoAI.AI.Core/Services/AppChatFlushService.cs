@@ -140,6 +140,8 @@ public sealed class AppChatFlushService
         session.InputTokens = usage.InputTokens;
         session.OutTokens = usage.OutTokens;
         session.TotalTokens = usage.TotalTokens;
+        session.CachedTokens = usage.CachedTokens;
+        session.ContextTokens = usage.LastPromptTokens;
         session.LastMessageTime = DateTimeOffset.Now;
 
         var snapshot = await _hotStore.GetSessionSnapshotAsync(sessionId, cancellationToken).ConfigureAwait(false);

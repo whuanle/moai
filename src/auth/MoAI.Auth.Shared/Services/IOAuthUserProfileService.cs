@@ -18,5 +18,5 @@ public interface IOAuthUserProfileService
     /// <param name="code">授权回调得到的 code.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>返回 <see cref="OAuthBindUserProfile"/>，包含第三方用户唯一标识.</returns>
-    Task<OAuthBindUserProfile> GetProfileAsync(Guid oAuthConnectionId, string code, CancellationToken cancellationToken);
+    Task<OAuthBindUserProfile> GetProfileAsync(Guid oAuthConnectionId, string code, Uri? redirectUrl, CancellationToken cancellationToken);
 }

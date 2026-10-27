@@ -145,6 +145,7 @@ public class GatewayUsageService
                 apiKeyId,
                 promptTokens,
                 completionTokens,
+                0,
                 cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

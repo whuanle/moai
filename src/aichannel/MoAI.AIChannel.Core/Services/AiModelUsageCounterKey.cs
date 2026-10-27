@@ -8,6 +8,7 @@ internal enum AiModelUsageMetric
     Prompt,
     Completion,
     Total,
+    Cached,
 }
 
 internal readonly record struct AiModelUsageCounterDimension(
@@ -80,6 +81,7 @@ internal static class AiModelUsageCounterKey
             AiModelUsageMetric.Prompt => "prompt",
             AiModelUsageMetric.Completion => "completion",
             AiModelUsageMetric.Total => "total",
+            AiModelUsageMetric.Cached => "cached",
             _ => throw new ArgumentOutOfRangeException(nameof(metric)),
         };
     }
@@ -92,9 +94,10 @@ internal static class AiModelUsageCounterKey
             "prompt" => AiModelUsageMetric.Prompt,
             "completion" => AiModelUsageMetric.Completion,
             "total" => AiModelUsageMetric.Total,
+            "cached" => AiModelUsageMetric.Cached,
             _ => default,
         };
 
-        return value is "count" or "prompt" or "completion" or "total";
+        return value is "count" or "prompt" or "completion" or "total" or "cached";
     }
 }

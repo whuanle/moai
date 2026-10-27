@@ -15,6 +15,7 @@ public interface IAiModelUsageCounter
     /// <param name="useResourceId">使用来源资源 id.</param>
     /// <param name="promptTokens">输入 token 数.</param>
     /// <param name="completionTokens">输出 token 数.</param>
+    /// <param name="cachedTokens">缓存命中的输入 token 数（模型未上报传 0）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
     Task IncrementAsync(
@@ -25,5 +26,6 @@ public interface IAiModelUsageCounter
         Guid useResourceId,
         int promptTokens,
         int completionTokens,
+        int cachedTokens = 0,
         CancellationToken cancellationToken = default);
 }

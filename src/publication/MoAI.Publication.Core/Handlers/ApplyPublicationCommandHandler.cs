@@ -64,13 +64,25 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
                 throw new BusinessException("应用已公开，无需重复申请.") { StatusCode = 409 };
             }
 
-            // 应用按版本号上架：aaa.bb.cc 编码为 int 落库（规则与 MoAI.App.Shared.AppVersionHelper 一致），格式已由命令校验、此处防御性再验
-            if (!TryParseVersion(request.Version, out var publishVersion))
+            // 上架即把最新的团队发布上架：不携带版本号时自动记录应用当前版本；携带时防御性再验格式且不能低于当前版本（只能递增不能回退）
+            if (!string.IsNullOrWhiteSpace(request.Version))
             {
-                throw new BusinessException("应用版本号格式不正确，应为 aaa.bb.cc（如 1.2.0）.") { StatusCode = 400 };
-            }
+                if (!TryParseVersion(request.Version, out var carryVersion))
+                {
+                    throw new BusinessException("应用版本号格式不正确，应为 aaa.bb.cc（如 1.2.0）.") { StatusCode = 400 };
+                }
 
-            publishVersionValue = publishVersion;
+                if (carryVersion < app.Version)
+                {
+                    throw new BusinessException($"应用版本号不能低于当前版本 {FormatVersion(app.Version)}，请递增后再申请上架.") { StatusCode = 400 };
+                }
+
+                publishVersionValue = carryVersion;
+            }
+            else
+            {
+                publishVersionValue = app.Version;
+            }
             teamId = app.TeamId;
             resourceName = app.Name;
         }
@@ -200,6 +212,14 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
 
         version = (aaa * 10000) + (bb * 100) + cc;
         return true;
+    }
+
+    /// <summary>
+    /// 把 int 版本编码（aaa*10000 + bb*100 + cc）格式化为 aaa.bb.cc 文本，规则与 MoAI.App.Shared.AppVersionHelper 保持一致.
+    /// </summary>
+    private static string FormatVersion(int version)
+    {
+        return $"{version / 10000}.{version / 100 % 100}.{version % 100}";
     }
 
     private static bool TryParsePart(string text, int maxValue, out int value)

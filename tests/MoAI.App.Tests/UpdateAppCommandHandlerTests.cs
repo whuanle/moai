@@ -13,31 +13,12 @@ using Xunit;
 namespace MoAI.App.Tests;
 
 /// <summary>
-/// 更新应用基础信息：版本号 aaa.bb.cc 解析为 int 落库、不携带保持原值、Member 403、非法格式 400.
+/// 更新应用基础信息：名称/描述/分类落库、版本号不再随基础信息修改（只能发布/上架时设置）、Member 403.
 /// </summary>
 public class UpdateAppCommandHandlerTests
 {
     [Fact]
-    public async Task Handle_AdminUpdateVersion_ParsesToInt()
-    {
-        using var db = TestSqliteContext.Create();
-        var appId = SeedApp(db.Context);
-
-        await CreateSut(db.Context, TeamRole.Admin).Handle(new UpdateAppCommand
-        {
-            AppId = appId,
-            Name = "助手",
-            IsExternal = false,
-            Version = "1.2.3",
-        }, CancellationToken.None);
-
-        var app = db.Context.Apps.Find(appId);
-        Assert.NotNull(app);
-        Assert.Equal(10203, app!.Version);
-    }
-
-    [Fact]
-    public async Task Handle_VersionNotCarried_KeepsOriginal()
+    public async Task Handle_AdminUpdate_KeepsVersionUntouched()
     {
         using var db = TestSqliteContext.Create();
         var appId = SeedApp(db.Context);
@@ -51,21 +32,8 @@ public class UpdateAppCommandHandlerTests
 
         var app = db.Context.Apps.Find(appId);
         Assert.NotNull(app);
-        Assert.Equal(10000, app!.Version);
-        Assert.Equal("助手改名", app.Name);
-    }
-
-    [Fact]
-    public async Task Handle_InvalidVersionFormat_Throws400()
-    {
-        using var db = TestSqliteContext.Create();
-        var appId = SeedApp(db.Context);
-
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => CreateSut(db.Context, TeamRole.Admin).Handle(
-            new UpdateAppCommand { AppId = appId, Name = "助手", IsExternal = false, Version = "1.2.3.4" },
-            CancellationToken.None));
-
-        Assert.Equal(400, ex.StatusCode);
+        Assert.Equal("助手改名", app!.Name);
+        Assert.Equal(10000, app.Version);
     }
 
     [Fact]
@@ -75,7 +43,7 @@ public class UpdateAppCommandHandlerTests
         var appId = SeedApp(db.Context);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => CreateSut(db.Context, TeamRole.Member).Handle(
-            new UpdateAppCommand { AppId = appId, Name = "助手", IsExternal = false, Version = "2.0.0" },
+            new UpdateAppCommand { AppId = appId, Name = "助手", IsExternal = false },
             CancellationToken.None));
 
         Assert.Equal(403, ex.StatusCode);

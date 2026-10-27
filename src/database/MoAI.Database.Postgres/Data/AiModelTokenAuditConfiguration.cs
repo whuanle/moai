@@ -54,6 +54,9 @@ internal partial class AiModelTokenAuditConfiguration : IEntityTypeConfiguration
         entity.Property(e => e.PromptTokens)
             .HasComment("输入数量")
             .HasColumnName("prompt_tokens");
+        entity.Property(e => e.CachedTokens)
+            .HasComment("缓存命中的输入数量（模型响应 usage 上报，未上报为 0）")
+            .HasColumnName("cached_tokens");
         entity.Property(e => e.TeamId)
             .HasComment("额度归属团队id，0=个人直接使用，>0=通过该团队资源使用（含公开应用/知识库被外部用户使用）")
             .HasColumnName("team_id");

@@ -28,7 +28,10 @@
     "copyFailed": "Copy failed",
     "ok": "OK",
     "home": "Home",
-    "clickToUploadAvatar": "Click to upload avatar"
+    "clickToUploadAvatar": "Click to upload avatar",
+    "cancel": "Cancel",
+    "imageCropTitle": "Crop image",
+    "imageCropHint": "Drag to adjust position, zoom with the slider or mouse wheel (zoom out to see the whole image); it will be cropped as a square on confirm"
   },
   "nav": {
     "chat": "AI Assistant",
@@ -242,6 +245,9 @@
     "colKey": "App Key",
     "colIcon": "Icon",
     "colAuthorize": "Authorize URL",
+    "colCallback": "Callback URL",
+    "callbackTip": "Configure this callback URL in the provider console",
+    "callbackWeComTip": "WeCom \"callback domain\" only needs the host: {{host}} (full callback URL: {{redirectUri}})",
     "colCreateUser": "Created By",
     "colCreateTime": "Created At",
     "colUpdateUser": "Updated By",
@@ -252,6 +258,9 @@
     "secret": "Secret",
     "icon": "Icon URL",
     "wellKnown": "Discovery Endpoint (WellKnown)",
+    "agentId": "App AgentId",
+    "agentIdRequired": "WeCom requires the app AgentId",
+    "agentIdHint": "WeCom admin console → App Management → the app's AgentId",
     "nameRequired": "Please enter the connection name",
     "keyRequired": "Please enter the app key",
     "secretRequired": "Please enter the secret",
@@ -259,7 +268,8 @@
     "wellKnownRequired": "Discovery endpoint is required for custom OAuth",
     "secretKeep": "Leave blank to keep unchanged",
     "uploadIcon": "Upload icon",
-    "iconUploadFailed": "Failed to upload icon"
+    "iconUploadFailed": "Failed to upload icon",
+    "iconSquareHint": "The sign-in icon is displayed as a square; a 1:1 square image is recommended, with cropping supported after upload"
   },
   "models": {
     "addChannel": "Add Channel",
@@ -1732,7 +1742,13 @@
     "memoryModeOn": "On",
     "memoryModeOnHint": "Keep my cross-session memories for this app (isolated per user)",
     "expertSearchPlaceholder": "Search experts",
-    "resizePanel": "Drag to resize panel"
+    "resizePanel": "Drag to resize panel",
+    "contextUsageTitle": "Context usage",
+    "contextUsageModel": "Model: {{name}}",
+    "contextUsageTokens": "Current context {{used}} / {{total}} tokens ({{percent}}%)",
+    "contextUsageUnknownLimit": "Current context {{used}} tokens (model context window unknown)",
+    "contextUsageSplit": "Total input {{input}} · Total output {{output}}",
+    "contextUsageCache": "Cache hit {{cached}} tokens ({{percent}}%)"
   },
   "publications": {
     "stateAll": "All Status",
@@ -1770,12 +1786,15 @@
     "published": "Published",
     "unpublished": "Unpublished",
     "publishSuccess": "App published",
-    "unpublishSuccess": "App unpublished",
-    "publishConfirm": "Publish this app? Team members will be able to chat with it.",
-    "unpublishConfirm": "Unpublish this app? Members will no longer be able to chat.",
+    "unpublishSuccess": "Unpublished",
+    "publishVersionHint": "The version is only set when the team publishes: it must increment past the current version (the next version is pre-filled), takes effect with this publish and updates the live version.",
+    "versionMustIncrease": "Version must be greater than the current version ({{version}}); please increment it",
+    "unpublishConfirm": "Unpublish this app? Members will no longer be able to chat; a listed app will also be taken down from the platform.",
     "republish": "Republish",
-    "republishConfirm": "Republish now? The current draft config takes effect immediately for online conversations.",
     "republishSuccess": "Republished; the live config has been updated",
+    "takedown": "Take down",
+    "takedownConfirm": "Take this app off the platform? Platform users will no longer be able to use it; team usage is not affected.",
+    "takedownSuccess": "Taken down from the platform",
     "enterChat": "Open Chat",
     "openInFeishu": "Chat in Feishu",
     "openInDingTalk": "Chat in DingTalk",
@@ -1896,6 +1915,8 @@
     "groupSandboxDesc": "Sandbox execution settings and sandbox auto approval in approval mode",
     "groupApproval": "Security & Approval",
     "groupApprovalDesc": "Plugin whitelist auto-approved in approval mode",
+    "groupSecurity": "Content Masking",
+    "groupSecurityDesc": "Masking rules and scopes (tool call results/args, model replies, user input)",
     "toolApprovalHint": "Takes effect when the user turns on Approval mode in chat: tool calls matching the rules below are auto-approved, while other tools (plugins/sandbox/workflow apps) still require manual approval each time; in Auto mode every tool runs directly",
     "toolApprovalSandbox": "Auto-approve sandbox",
     "toolApprovalSandboxHint": "When enabled, sandbox calls (code/shell/file) run automatically in Approval mode; otherwise every sandbox call requires manual approval",
@@ -1923,7 +1944,7 @@
     "modelPlaceholder": "Select a chat model",
     "modelEmpty": "No models available to this team",
     "saveInfo": "Save info",
-    "saveConfig": "Save configuration",
+    "saveConfig": "Save Settings",
     "notFound": "App not found",
     "workflowGoDesign": "Open Designer",
     "formClassify": "App category",
@@ -1943,12 +1964,13 @@
     "subAgentHint": "Allows the main agent to spawn a sub-agent (same model and tools) that works in an isolated context and returns only its conclusion.",
     "subAgentTimeout": "Per-task timeout (seconds)",
     "subAgentResultMaxChars": "Result return limit (chars)",
-    "sectionPublication": "Publication",
+    "sectionPublication": "Listing (App Market)",
     "publicationNotApplied": "Not Applied",
-    "publicationVersionCard": "Version & Draft",
+    "teamAppCard": "Team App",
+    "publicationMarketVersion": "Published version",
     "publicationOnlineVersion": "Live version (published snapshot)",
     "publicationPublishTime": "Published at",
-    "publicationDraft": "Current draft",
+    "publicationDraft": "Current version",
     "publicationDraftInSync": "In sync with live",
     "publicationDraftChanged": "Unpublished changes",
     "publicationRecords": "Application Records",
@@ -1968,11 +1990,12 @@
     "version": "Version",
     "versionPlaceholder": "e.g. 1.0.3",
     "versionInvalid": "Invalid version format, expected aaa.bb.cc (e.g. 1.0.3)",
-    "versionHint": "Format aaa.bb.cc, saved with app info; republish to apply the version to the live app.",
     "publicationVersionUnreleased": "Version not live",
     "versionRequired": "Please enter the app version",
-    "applyVersionHint": "Current version {{version}}; publish with an incremented version number. Approved requests are kept in the application history.",
-    "applyReasonLabel": "Reason"
+    "applyVersionHint": "Listing records the app's current published version ({{version}}) automatically; no need to enter it.",
+    "applyReasonLabel": "Reason",
+    "groupMemory": "Long-term Memory",
+    "groupMemoryDesc": "Memory switch, embedding model, memory prompt and retrieval settings"
   },
   "accessApp": {
     "create": "New Access",
@@ -2108,7 +2131,6 @@
     "a2aAddressPlaceholder": "Fetching server address……",
     "a2aMethods": "JSON-RPC methods",
     "a2aAuthHint": "POST endpoint speaks A2A JSON-RPC (message/send, message/stream, tasks/get, tasks/cancel); GET {address}/agent.json serves the Agent Card. Auth via an app access key with the \"App A2A\" scope.",
-    "menuMemory": "Memory",
     "menuPublication": "Publication"
   },
   "appChannels": {
@@ -2149,6 +2171,9 @@
     "fieldAppSecretKeepPlaceholder": "Leave blank to keep unchanged"
   },
   "appLogs": {
+    "tabLogs": "Logs",
+    "tabEvents": "Security Events",
+    "tabUsage": "Usage Analytics",
     "keywordPlaceholder": "Search session title",
     "userType": "User type",
     "userTypeNormal": "Internal user",
@@ -2164,11 +2189,7 @@
     "columnActions": "Actions",
     "view": "View",
     "detailTitle": "Session messages",
-    "detailEmpty": "No messages",
-    "roleUser": "User",
-    "roleAssistant": "Assistant",
-    "roleTool": "Tool",
-    "roleSystem": "System"
+    "detailEmpty": "No messages"
   },
   "appMonitor": {
     "callCount": "Calls",
@@ -2180,11 +2201,13 @@
     "columnShare": "Share",
     "empty": "No usage data",
     "lagHint": "Data comes from the aggregated usage table and lags up to ~1 minute; debug sessions are excluded; a trend chart will be available in a later release.",
+    "useCount": "Total Uses",
     "userCount": "Active Users",
     "sessionCount": "Sessions",
     "messageCount": "Messages",
     "memoryCount": "Memories",
-    "lastActive": "Last active: {{time}}"
+    "lastActive": "Last active: {{time}}",
+    "cachedTokens": "Cached tokens"
   },
   "appDebug": {
     "title": "Debug",
@@ -2607,7 +2630,6 @@
     "classifierHint": "The AI model picks the matching class; draw out edges from each class port. Falls back to the first class when the model output cannot be parsed."
   },
   "appMemory": {
-    "title": "Long-term Memory",
     "enabled": "Enable long-term memory",
     "enabledHint": "Keeps cross-session memories (preferences/facts, events, methods) per user, used within this app only.",
     "embeddingModel": "Embedding model",
@@ -2615,7 +2637,6 @@
     "embeddingModelPlaceholder": "Select a team-available embedding model",
     "embeddingDimensions": "Vector dimensions",
     "embeddingDimensionsHint": "1~2000, must match the model output; defaults to 1024.",
-    "types": "Memory types",
     "typeSemantic": "Semantic (facts)",
     "typeEpisodic": "Episodic (events)",
     "typeProcedural": "Procedural (methods)",
@@ -2631,7 +2652,9 @@
     "clearAppSuccess": "App memories cleared.",
     "manageHint": "View and manage your (current user) memories in this app; delete and clear only.",
     "statsHint": "This app has accumulated {count} memories from {users} user(s).",
-    "statsEmpty": "No memories in this app yet."
+    "statsEmpty": "No memories in this app yet.",
+    "prompt": "Memory prompt",
+    "promptHint": "Appended to the memory tool (memory_search / memory_save / memory_forget) descriptions to guide how the AI manages and uses memories; leave empty to use the platform default (shown as placeholder), max 2000 chars."
   },
   "myMemory": {
     "title": "My Memories",
@@ -2682,5 +2705,51 @@
     "editTitle": "Edit DingTalk App",
     "editOk": "Save",
     "fieldAppSecretKeepPlaceholder": "Leave blank to keep unchanged"
+  },
+  "appWeixinWorkChannels": {
+    "cardTitle": "WeCom Channel",
+    "hintTitle": "Integration Guide",
+    "hint": "1. Create a self-built app in the WeCom admin console and note the CorpID, Secret and AgentId; 2. In the app's \"Receive Messages\" → \"Set API receiver\", generate a Token and an EncodingAESKey, and set the callback URL to this platform (copy it from the edit dialog after creating the connection); 3. Fill in the details here to finish. WeCom members can chat with this app via direct messages or @mentions in group chats. The platform receives messages via callback, so the server must be reachable from the public internet; configure trusted domains/IPs in WeCom as prompted before chatting.",
+    "unpublishedHint": "The app is not published yet: WeCom messages will not be processed. Publish the app first.",
+    "columnName": "Name",
+    "columnCorpId": "Corp ID / AgentId",
+    "columnStatus": "Status",
+    "statusOnline": "Online",
+    "statusOffline": "Offline",
+    "statusDisabled": "Disabled",
+    "columnBindTime": "Connected At",
+    "columnCreator": "Creator",
+    "columnActions": "Actions",
+    "addWeixinWork": "Connect WeCom App",
+    "createTitle": "Connect WeCom App",
+    "createOk": "Create",
+    "fieldName": "Connection Name",
+    "fieldNamePlaceholder": "e.g. WeCom Assistant",
+    "fieldCorpId": "Corp ID",
+    "fieldCorpIdPlaceholder": "Corp ID from WeCom admin console \"My Company\" → Company Info",
+    "fieldAgentId": "AgentId",
+    "fieldAgentIdPlaceholder": "The AgentId shown on the self-built app page",
+    "fieldCorpSecret": "Secret",
+    "fieldCorpSecretPlaceholder": "The Secret shown on the self-built app page",
+    "fieldToken": "Callback Token",
+    "fieldTokenPlaceholder": "The Token generated in \"Receive Messages\" → \"Set API receiver\"",
+    "fieldEncodingAesKey": "EncodingAESKey",
+    "fieldEncodingAesKeyPlaceholder": "The EncodingAESKey generated in \"Receive Messages\" → \"Set API receiver\" (43 chars)",
+    "fieldApiEndpoint": "API Endpoint (optional)",
+    "fieldApiEndpointPlaceholder": "Leave empty for the official qyapi.weixin.qq.com; useful for proxy or local stubs",
+    "fieldCallbackUrl": "Callback URL (set in WeCom admin \"Receive Messages\" → URL)",
+    "fieldDescription": "Description",
+    "disable": "Disable",
+    "enable": "Enable",
+    "disableConfirm": "WeCom messages will no longer be processed after disabling. Disable now?",
+    "delete": "Delete",
+    "deleteConfirm": "The WeCom channel becomes invalid immediately after deletion and cannot be recovered. Delete now?",
+    "operateSuccess": "Operation successful",
+    "edit": "Edit",
+    "editTitle": "Edit WeCom App",
+    "editOk": "Save",
+    "fieldCorpSecretKeepPlaceholder": "Leave empty to keep unchanged",
+    "fieldTokenKeepPlaceholder": "Leave empty to keep unchanged",
+    "fieldAesKeyKeepPlaceholder": "Leave empty to keep unchanged"
   }
 }

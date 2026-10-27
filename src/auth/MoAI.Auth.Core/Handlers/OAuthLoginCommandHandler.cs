@@ -64,7 +64,7 @@ state=STATE
         OAuthBindUserProfile oauthUserProfile = default!;
         try
         {
-            oauthUserProfile = await _profileService.GetProfileAsync(request.OAuthId, request.Code, cancellationToken);
+            oauthUserProfile = await _profileService.GetProfileAsync(request.OAuthId, request.Code, request.RedirectUrl, cancellationToken);
         }
         catch (BusinessException)
         {

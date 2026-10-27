@@ -12,7 +12,7 @@ namespace MoAI.AI.Services;
 /// Agent 会话热态存储（Redis）：运行期间消息只写热态，流结束后由 flush 一次性落库，提升多轮性能.
 /// </summary>
 [InjectOnSingleton]
-public class AppChatHotStore
+public class AppChatHotStore : IAgentChatUsageReader
 {
     private static readonly TimeSpan Ttl = TimeSpan.FromHours(24);
 
@@ -89,11 +89,13 @@ public class AppChatHotStore
     /// <param name="sessionId">会话 id.</param>
     /// <param name="promptTokens">输入 token.</param>
     /// <param name="completionTokens">输出 token.</param>
+    /// <param name="cachedTokens">缓存命中的输入 token.</param>
+    /// <param name="lastPromptTokens">最近一次调用输入 token（替换语义，0 表示未上报保留旧值）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
-    public async Task AddUsageAsync(Guid sessionId, int promptTokens, int completionTokens, CancellationToken cancellationToken = default)
+    public async Task AddUsageAsync(Guid sessionId, int promptTokens, int completionTokens, int cachedTokens = 0, int lastPromptTokens = 0, CancellationToken cancellationToken = default)
     {
-        if (promptTokens <= 0 && completionTokens <= 0)
+        if (promptTokens <= 0 && completionTokens <= 0 && cachedTokens <= 0)
         {
             return;
         }
@@ -102,6 +104,12 @@ public class AppChatHotStore
         var usage = await _redisDatabase.GetAsync<AppAgentUsageAggregate>(key) ?? new AppAgentUsageAggregate();
         usage.InputTokens += Math.Max(0, promptTokens);
         usage.OutTokens += Math.Max(0, completionTokens);
+        usage.CachedTokens += Math.Max(0, cachedTokens);
+        if (lastPromptTokens > 0)
+        {
+            usage.LastPromptTokens = lastPromptTokens;
+        }
+
         usage.TotalTokens = usage.InputTokens + usage.OutTokens;
         await _redisDatabase.Database.StringSetAsync(key, usage.ToRedisValue(), Ttl);
     }

@@ -61,6 +61,20 @@ public class PublicationController : ControllerBase
     }
 
     /// <summary>
+    /// 下架（取消公开），将已公开资源从平台下架（is_public 置为 false），不改变团队内发布状态；
+    /// 需要资源所属团队 Admin 及以上角色，个人资源仅创建人.
+    /// </summary>
+    /// <param name="req">下架请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("takedown")]
+    public Task<EmptyCommandResponse> Takedown([FromBody] TakedownPublicationCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 审批上架申请（通过/驳回），仅系统管理员可访问；通过后目标资源 is_public 置为 true.
     /// </summary>
     /// <param name="req">审批请求.</param>

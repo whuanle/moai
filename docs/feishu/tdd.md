@@ -49,3 +49,9 @@
 - E2E：`node local-dev/feishu-e2e.mjs`（对 5002 新构建）→ 42 pass / 0 fail（FS-12d 换 AppID、12e 回显、12f 占用 409、12g 留空保持）。
 
 | @FS-S31 | 双实例实测（与钉钉共用 RedisAppLease 同轮验证）：飞书应用分散到两实例（公平份额释放 + 争抢）、杀一实例后另一实例约 40s 接管其应用 | PASS（2026-10-26） |
+
+## 证据摘要（2026-10-27，外部渠道页布局收敛：接入指引默认收缩 + 按钮上移卡片标题）
+
+- 用户反馈「接入指引整段 Alert 把页面撑开」。`AppChannelsSection`：接入指引由卡片上方独立 Alert 改为卡片内 `Collapse`（ghost，默认收缩、点击展开）；「接入飞书应用」「刷新」按钮上移至卡片标题右侧（`Card extra`），移除 DataTable toolbar 独立一行；未发布警告保留卡片上方。
+- 验证：`npm run typecheck` 0 error；`npm run lint` 0 error；`AppChannelsSection.test.tsx` 9/9（三渠道分区合计 25/25）。
+- 迭代（同日，用户反馈指引展开后堆成一段）：指引文案按「N. 」序号拆分为有序列表逐条展示——新增共享组件 `AppChannelGuide`（三渠道分区共用）与 `utils/text.ts` `splitNumberedSteps`（zh/en 通用，去序号与段尾分号）；AppChannelsSection.test 增「默认收缩、展开逐条分行」断言。

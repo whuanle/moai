@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Alert, Button, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Spin, Switch, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -25,6 +25,8 @@ import { getKnowledgeGraphs, type KnowledgeGraphItem } from '@/api/knowledgeGrap
 import { resolveStorageUrl } from '@/utils/storage'
 import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
 import { AppDebugChat } from './chat/AppDebugChat'
+import { AppSecuritySettingsPanel } from './AppSecuritySection'
+import { AppMemorySettingsPanel } from './AppMemoryPanel'
 
 /** 后端 memory 静态插件无 DB 记录，pluginId 为空 Guid，不能作为绑定目标 */
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
@@ -66,9 +68,11 @@ export interface AppConfigSectionProps {
 }
 
 /**
- * 应用「配置」分区：左栏把 Agent 配置拆为五张收缩卡片（基础配置/用户提示/能力扩展/沙箱/安全审批，
- * 默认全部展开，可按卡片收起），右栏调试对话面板。资源绑定只能选择该团队有权使用的模型/插件/知识库；
- * 基础信息（头像/名称/公开状态）在「信息」分区维护（AppInfoSection）。
+ * 应用「配置」分区：左栏把 Agent 配置拆为收缩卡片（基础配置/用户提示/能力扩展/沙箱/安全审批，
+ * 默认全部展开；「内容脱敏」由原独立「安全」分区并入、默认收起；「长期记忆」由原独立「记忆」分区并入、默认收起，
+ * 两者均仅管理员可见，长期记忆仅内部应用），右栏调试对话面板。「保存设置」一次提交全部卡片：
+ * 主配置走 agent-config（草稿/发布快照，长期记忆 memory 节随主配置一并提交），内容脱敏走 security 接口即时生效。
+ * 资源绑定只能选择该团队有权使用的模型/插件/知识库；基础信息（头像/名称/公开状态）在「信息」分区维护（AppInfoSection）。
  */
 export function AppConfigSection({ teamId, appId, detail, loading, canManage, configStatus, onConfigStatusChange }: AppConfigSectionProps) {
   const navigate = useNavigate()
@@ -128,6 +132,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [republishing, setRepublishing] = useState(false)
   // 0=草稿有未发布变更 1=草稿与已发布一致（已发布应用 0 时线上仍按发布快照执行）
   const [localConfigStatus, setLocalConfigStatus] = useState(0)
+  // 内容脱敏面板注册的保存回调（展开「内容脱敏」卡片并加载完成后才有值）：随「保存设置」一并提交
+  const [securitySave, setSecuritySave] = useState<(() => Promise<void>) | null>(null)
+  // 长期记忆面板注册的 memory 节构造回调（展开「长期记忆」卡片并加载完成后才有值）：随「保存设置」并入 executionSettings
+  const memorySettingsRef = useRef<(() => Record<string, unknown>) | null>(null)
 
   const isAgent = detail?.appType !== 'workflow'
   // 外部应用面向外部用户/匿名开放，不支持沙箱与技能（后端保存强校验 + 对话装配兜底强制关闭）
@@ -275,11 +283,24 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     return true
   }
 
+  /** 内容脱敏面板保存回调注册（须稳定引用，面板以之为 effect 依赖） */
+  const registerSecuritySave = useCallback((save: (() => Promise<void>) | null) => {
+    setSecuritySave(() => save)
+  }, [])
+
+  /** 长期记忆面板 memory 节构造回调注册（须稳定引用，面板以之为 effect 依赖） */
+  const registerMemorySettings = useCallback((get: (() => Record<string, unknown>) | null) => {
+    memorySettingsRef.current = get
+  }, [])
+
   const handleSaveConfig = async () => {
     if (!appId) return
     if (!isExternal && !validateSandboxLimits()) return
     setSavingConfig(true)
     try {
+      // 内容脱敏随「保存设置」一并提交：security 接口即时生效（校验/提交失败抛错，中断整体保存）
+      // 卡片未展开或仍在加载时未注册回调，本次仅保存主配置
+      if (securitySave) await securitySave()
       // 外部应用不支持沙箱：固定关闭，避免携带历史开启状态触发后端 400
       const sandbox: Record<string, unknown> = isExternal
         ? { enabled: false }
@@ -327,6 +348,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         if (subAgentTimeout != null && subAgentTimeout > 0) subAgent.timeoutSeconds = subAgentTimeout
         if (subAgentResultMaxChars != null && subAgentResultMaxChars > 0) subAgent.resultMaxChars = subAgentResultMaxChars
       }
+
+      // 长期记忆随「保存设置」一并提交（开启未选向量化模型时回调抛错中断整体保存）；
+      // 卡片未展开时未注册回调，memory 节保持加载时原值不动
+      if (memorySettingsRef.current) mergedSettings.memory = memorySettingsRef.current()
 
       await saveAppAgentConfig(appId, {
         modelId: modelId ?? null,
@@ -395,7 +420,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
 
   return (
     <Row gutter={[spacing.md, spacing.md]} align="top">
-      {/* 配置拆为五张收缩卡片便于定位；左栏内部滚动（不把调试对话栏顶出可视区），并让出更多宽度给右栏 */}
+      {/* 配置拆为收缩卡片便于定位；左栏内部滚动（不把调试对话栏顶出可视区），并让出更多宽度给右栏 */}
       <Col
         xs={24}
         lg={11}
@@ -898,6 +923,40 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                   },
                 ]}
               />
+              {/* 六、内容脱敏（原独立「安全」分区并入，展开才加载设置；随下方「保存设置」一并提交，security 接口即时生效不经发布快照） */}
+              {canManage && (
+                <Collapse
+                  items={[
+                    {
+                      key: 'security',
+                      label: groupHeader(t('appManage.groupSecurity'), t('appManage.groupSecurityDesc')),
+                      children: (
+                        <AppSecuritySettingsPanel appId={appId} canManage={canManage} registerSave={registerSecuritySave} />
+                      ),
+                    },
+                  ]}
+                />
+              )}
+              {/* 七、长期记忆（原独立「记忆」分区并入，展开才加载设置；memory 节随「保存设置」并入主配置，随发布快照生效；
+                  外部应用面向匿名/外部用户不开放记忆） */}
+              {canManage && !isExternal && (
+                <Collapse
+                  items={[
+                    {
+                      key: 'memory',
+                      label: groupHeader(t('appManage.groupMemory'), t('appManage.groupMemoryDesc')),
+                      children: (
+                        <AppMemorySettingsPanel
+                          teamId={teamId}
+                          appId={appId}
+                          canManage={canManage}
+                          registerSettings={registerMemorySettings}
+                        />
+                      ),
+                    },
+                  ]}
+                />
+              )}
             </div>
             {canManage && (
               <Button

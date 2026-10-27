@@ -72,8 +72,9 @@ describe('TeamExternalApps（团队外部应用分区）', () => {
     await screen.findByText('对外助手')
 
     expect(screen.getByRole('button', { name: /新建外部应用/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /取消发布/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /发布/ })).toBeTruthy()
+    // antd 对两字中文按钮自动插空格：「发布」的可访问名为「发 布」，用锚定正则避免误匹配「撤回发布」
+    expect(screen.getByRole('button', { name: /撤\s*回\s*发\s*布/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^发\s*布$/ })).toBeTruthy()
   })
 
   it('创建外部应用时带上 isExternal', async () => {

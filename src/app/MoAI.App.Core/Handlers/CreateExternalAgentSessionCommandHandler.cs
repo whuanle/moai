@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
@@ -17,14 +18,17 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
     private const string DefaultTitle = "未命名标题";
 
     private readonly DatabaseContext _databaseContext;
+    private readonly IAppUsageCounter _appUsageCounter;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateExternalAgentSessionCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public CreateExternalAgentSessionCommandHandler(DatabaseContext databaseContext)
+    /// <param name="appUsageCounter">应用使用次数计数器.</param>
+    public CreateExternalAgentSessionCommandHandler(DatabaseContext databaseContext, IAppUsageCounter appUsageCounter)
     {
         _databaseContext = databaseContext;
+        _appUsageCounter = appUsageCounter;
     }
 
     /// <inheritdoc/>
@@ -60,6 +64,9 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
 
         _databaseContext.AppAgentSessions.Add(session);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 使用次数 +1（Redis 计数器，删除会话不回退）
+        await _appUsageCounter.IncrementAsync(app.Id, cancellationToken);
 
         return new SimpleGuid { Value = session.Id };
     }

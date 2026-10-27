@@ -481,7 +481,7 @@ export interface ApplyPublicationCommand extends Parsable {
      */
     resourceType?: PublicationResourceType | null;
     /**
-     * 应用版本号 aaa.bb.cc（如 1.2.0），按版本号上架；仅应用类型必填，其他资源必须为空.存库编码 aaa*10000 + bb*100 + cc（与 MoAI.App.Shared.AppVersionHelper 同规则）.
+     * 应用版本号 aaa.bb.cc（如 1.2.0），可空；上架即把最新的团队发布上架，不携带时自动记录应用当前版本号.携带时校验格式且不能低于应用当前版本. 存库编码 aaa*10000 + bb*100 + cc（与 MoAI.App.Shared.AppVersionHelper 同规则）.
      */
     version?: string | null;
 }
@@ -663,6 +663,10 @@ export interface AppUsageActivityStats extends Parsable {
      */
     sessionCount?: number | null;
     /**
+     * 累计使用次数（会话创建计数，删除会话不减少，Redis 计数器异步累加）.
+     */
+    useCount?: string | null;
+    /**
      * 使用用户数（按会话归属用户去重，外部用户单独计数）.
      */
     userCount?: number | null;
@@ -671,6 +675,10 @@ export interface AppUsageActivityStats extends Parsable {
  * 应用按模型用量.
  */
 export interface AppUsageModelItem extends Parsable {
+    /**
+     * 缓存命中的输入 token（模型响应 usage 上报，未上报为 0）.
+     */
+    cachedTokens?: string | null;
     /**
      * 调用次数.
      */
@@ -700,6 +708,10 @@ export interface AppUsageModelItem extends Parsable {
  * 应用用量汇总.
  */
 export interface AppUsageSummary extends Parsable {
+    /**
+     * 缓存命中的输入 token（模型响应 usage 上报，未上报为 0）.
+     */
+    cachedTokens?: string | null;
     /**
      * 调用次数.
      */
@@ -1833,6 +1845,15 @@ export function createCreateVariableCommandFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateWeixinWorkAppCommand}
+ */
+// @ts-ignore
+export function createCreateWeixinWorkAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateWeixinWorkAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {CreateWikiCommand}
  */
 // @ts-ignore
@@ -2480,6 +2501,10 @@ export function createOAuthBindExistAccountCommandFromDiscriminatorValue(parseNo
  */
 export interface CreateOAuthConnectionCommand extends Parsable {
     /**
+     * 企业微信应用 agentid，仅 weixinwork 提供商必填.
+     */
+    agentId?: string | null;
+    /**
      * 图标地址.
      */
     iconUrl?: string | null;
@@ -2734,6 +2759,15 @@ export function createPublicationReviewItemFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PublishAppCommand}
+ */
+// @ts-ignore
+export function createPublishAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPublishAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PublishAppWorkflowCommand}
  */
 // @ts-ignore
@@ -2775,6 +2809,15 @@ export function createQueryAdminTeamListCommandResponseItemFromDiscriminatorValu
 // @ts-ignore
 export function createQueryAgentCompactionDefaultsResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAgentCompactionDefaultsResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAgentMemoryDefaultsResponse}
+ */
+// @ts-ignore
+export function createQueryAgentMemoryDefaultsResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAgentMemoryDefaultsResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2946,6 +2989,15 @@ export function createQueryAppSecurityCommandResponseFromDiscriminatorValue(pars
 // @ts-ignore
 export function createQueryAppSecurityEventsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryAppSecurityEventsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryAppSessionContextUsageCommandResponse}
+ */
+// @ts-ignore
+export function createQueryAppSessionContextUsageCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryAppSessionContextUsageCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3580,6 +3632,15 @@ export function createQueryVariablesCommandResponseFromDiscriminatorValue(parseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWeixinWorkAppsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWeixinWorkAppsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWeixinWorkAppsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiCommandResponse}
  */
 // @ts-ignore
@@ -4130,6 +4191,15 @@ export function createSyncWikiSourceDocumentResultFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TakedownPublicationCommand}
+ */
+// @ts-ignore
+export function createTakedownPublicationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTakedownPublicationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TeamCandidateItem}
  */
 // @ts-ignore
@@ -4668,6 +4738,15 @@ export function createUpdateVariableCommandFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateWeixinWorkAppCommand}
+ */
+// @ts-ignore
+export function createUpdateWeixinWorkAppCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateWeixinWorkAppCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateWikiAvatarCommand}
  */
 // @ts-ignore
@@ -4756,6 +4835,64 @@ export interface CreateVariableCommand extends Parsable {
      * 变量值.
      */
     value?: string | null;
+}
+/**
+ * 创建企业微信应用连接，需要团队 Admin 及以上角色；CorpId + AgentId 全局唯一，创建后回调地址即可配置到企业微信管理端；可携带渠道信息创建即绑定（当前仅应用渠道）.
+ */
+export interface CreateWeixinWorkAppCommand extends Parsable {
+    /**
+     * 企业微信自建应用 AgentId.
+     */
+    agentId?: number | null;
+    /**
+     * API 地址覆盖，可为空（默认官方地址）；供本地桩联调或代理使用.
+     */
+    apiEndpoint?: string | null;
+    /**
+     * 创建即绑定的渠道记录 id 字符串，应用渠道为 app.id（uuid）；与 ChannelType 必须同时提供或同时缺省.
+     */
+    channelId?: string | null;
+    /**
+     * 创建即绑定的渠道类型，可为空（不绑定）；当前仅支持应用渠道 app.
+     */
+    channelType?: WeixinWorkChannelType | null;
+    /**
+     * 企业微信企业 ID（管理后台 我的企业 → 企业信息）.
+     */
+    corpId?: string | null;
+    /**
+     * 企业微信自建应用 Secret（应用管理 → 自建应用 → Secret）.
+     */
+    corpSecret?: string | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 接收消息回调配置 EncodingAESKey（43 字符）.
+     */
+    encodingAesKey?: string | null;
+    /**
+     * 连接名称，团队内唯一.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 接收消息回调配置 Token（管理后台 接收消息 → 设置 API 接收）.
+     */
+    token?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WeixinWorkAppItem}
+ */
+// @ts-ignore
+export function createWeixinWorkAppItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWeixinWorkAppItem;
 }
 /**
  * 创建知识库，需要团队 Admin 及以上角色.
@@ -5450,6 +5587,7 @@ export function deserializeIntoAppUsageActivityStats(appUsageActivityStats: Part
         "lastActiveTime": n => { appUsageActivityStats.lastActiveTime = n.getStringValue(); },
         "messageCount": n => { appUsageActivityStats.messageCount = n.getStringValue(); },
         "sessionCount": n => { appUsageActivityStats.sessionCount = n.getNumberValue(); },
+        "useCount": n => { appUsageActivityStats.useCount = n.getStringValue(); },
         "userCount": n => { appUsageActivityStats.userCount = n.getNumberValue(); },
     }
 }
@@ -5460,6 +5598,7 @@ export function deserializeIntoAppUsageActivityStats(appUsageActivityStats: Part
 // @ts-ignore
 export function deserializeIntoAppUsageModelItem(appUsageModelItem: Partial<AppUsageModelItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "cachedTokens": n => { appUsageModelItem.cachedTokens = n.getStringValue(); },
         "callCount": n => { appUsageModelItem.callCount = n.getStringValue(); },
         "completionTokens": n => { appUsageModelItem.completionTokens = n.getStringValue(); },
         "modelId": n => { appUsageModelItem.modelId = n.getGuidValue(); },
@@ -5475,6 +5614,7 @@ export function deserializeIntoAppUsageModelItem(appUsageModelItem: Partial<AppU
 // @ts-ignore
 export function deserializeIntoAppUsageSummary(appUsageSummary: Partial<AppUsageSummary> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "cachedTokens": n => { appUsageSummary.cachedTokens = n.getStringValue(); },
         "callCount": n => { appUsageSummary.callCount = n.getStringValue(); },
         "completionTokens": n => { appUsageSummary.completionTokens = n.getStringValue(); },
         "promptTokens": n => { appUsageSummary.promptTokens = n.getStringValue(); },
@@ -5930,6 +6070,7 @@ export function deserializeIntoCreateKnowledgeGraphRelationTypeCommand(createKno
 // @ts-ignore
 export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "agentId": n => { createOAuthConnectionCommand.agentId = n.getStringValue(); },
         "iconUrl": n => { createOAuthConnectionCommand.iconUrl = n.getStringValue(); },
         "key": n => { createOAuthConnectionCommand.key = n.getStringValue(); },
         "name": n => { createOAuthConnectionCommand.name = n.getStringValue(); },
@@ -6016,6 +6157,26 @@ export function deserializeIntoCreateVariableCommand(createVariableCommand: Part
         "name": n => { createVariableCommand.name = n.getStringValue(); },
         "teamId": n => { createVariableCommand.teamId = n.getStringValue(); },
         "value": n => { createVariableCommand.value = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateWeixinWorkAppCommand(createWeixinWorkAppCommand: Partial<CreateWeixinWorkAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "agentId": n => { createWeixinWorkAppCommand.agentId = n.getNumberValue(); },
+        "apiEndpoint": n => { createWeixinWorkAppCommand.apiEndpoint = n.getStringValue(); },
+        "channelId": n => { createWeixinWorkAppCommand.channelId = n.getStringValue(); },
+        "channelType": n => { createWeixinWorkAppCommand.channelType = n.getEnumValue<WeixinWorkChannelType>(WeixinWorkChannelTypeObject); },
+        "corpId": n => { createWeixinWorkAppCommand.corpId = n.getStringValue(); },
+        "corpSecret": n => { createWeixinWorkAppCommand.corpSecret = n.getStringValue(); },
+        "description": n => { createWeixinWorkAppCommand.description = n.getStringValue(); },
+        "encodingAesKey": n => { createWeixinWorkAppCommand.encodingAesKey = n.getStringValue(); },
+        "name": n => { createWeixinWorkAppCommand.name = n.getStringValue(); },
+        "teamId": n => { createWeixinWorkAppCommand.teamId = n.getStringValue(); },
+        "token": n => { createWeixinWorkAppCommand.token = n.getStringValue(); },
     }
 }
 /**
@@ -6670,6 +6831,7 @@ export function deserializeIntoOAuthBindAccountByCodeCommand(oAuthBindAccountByC
         "contextUserId": n => { oAuthBindAccountByCodeCommand.contextUserId = n.getStringValue(); },
         "contextUserType": n => { oAuthBindAccountByCodeCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "oAuthId": n => { oAuthBindAccountByCodeCommand.oAuthId = n.getGuidValue(); },
+        "redirectUrl": n => { oAuthBindAccountByCodeCommand.redirectUrl = n.getStringValue(); },
     }
 }
 /**
@@ -6691,6 +6853,7 @@ export function deserializeIntoOAuthLoginCommand(oAuthLoginCommand: Partial<OAut
     return {
         "code": n => { oAuthLoginCommand.code = n.getStringValue(); },
         "oAuthId": n => { oAuthLoginCommand.oAuthId = n.getGuidValue(); },
+        "redirectUrl": n => { oAuthLoginCommand.redirectUrl = n.getStringValue(); },
     }
 }
 /**
@@ -7004,6 +7167,17 @@ export function deserializeIntoPublicationReviewItem(publicationReviewItem: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPublishAppCommand(publishAppCommand: Partial<PublishAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "appId": n => { publishAppCommand.appId = n.getGuidValue(); },
+        "version": n => { publishAppCommand.version = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPublishAppWorkflowCommand(publishAppWorkflowCommand: Partial<PublishAppWorkflowCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { publishAppWorkflowCommand.appId = n.getGuidValue(); },
@@ -7066,6 +7240,16 @@ export function deserializeIntoQueryAgentCompactionDefaultsResponse(queryAgentCo
         "summarizerModelId": n => { queryAgentCompactionDefaultsResponse.summarizerModelId = n.getStringValue(); },
         "summarizeTriggerTokens": n => { queryAgentCompactionDefaultsResponse.summarizeTriggerTokens = n.getNumberValue(); },
         "toolResultTriggerMessages": n => { queryAgentCompactionDefaultsResponse.toolResultTriggerMessages = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAgentMemoryDefaultsResponse(queryAgentMemoryDefaultsResponse: Partial<QueryAgentMemoryDefaultsResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "prompt": n => { queryAgentMemoryDefaultsResponse.prompt = n.getStringValue(); },
     }
 }
 /**
@@ -7175,6 +7359,7 @@ export function deserializeIntoQueryAIModelListCommandResponseItem(queryAIModelL
 export function deserializeIntoQueryAllOAuthConnectionCommandResponse(queryAllOAuthConnectionCommandResponse: Partial<QueryAllOAuthConnectionCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryAllOAuthConnectionCommandResponse.items = n.getCollectionOfObjectValues<QueryAllOAuthConnectionCommandResponseItem>(createQueryAllOAuthConnectionCommandResponseItemFromDiscriminatorValue); },
+        "redirectUri": n => { queryAllOAuthConnectionCommandResponse.redirectUri = n.getStringValue(); },
     }
 }
 /**
@@ -7185,6 +7370,7 @@ export function deserializeIntoQueryAllOAuthConnectionCommandResponse(queryAllOA
 export function deserializeIntoQueryAllOAuthConnectionCommandResponseItem(queryAllOAuthConnectionCommandResponseItem: Partial<QueryAllOAuthConnectionCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoAuditsInfo(queryAllOAuthConnectionCommandResponseItem),
+        "agentId": n => { queryAllOAuthConnectionCommandResponseItem.agentId = n.getStringValue(); },
         "authorizeUrl": n => { queryAllOAuthConnectionCommandResponseItem.authorizeUrl = n.getStringValue(); },
         "iconUrl": n => { queryAllOAuthConnectionCommandResponseItem.iconUrl = n.getStringValue(); },
         "id": n => { queryAllOAuthConnectionCommandResponseItem.id = n.getGuidValue(); },
@@ -7359,6 +7545,23 @@ export function deserializeIntoQueryAppSecurityEventsCommandResponse(queryAppSec
         "pageNo": n => { queryAppSecurityEventsCommandResponse.pageNo = n.getNumberValue(); },
         "pageSize": n => { queryAppSecurityEventsCommandResponse.pageSize = n.getNumberValue(); },
         "total": n => { queryAppSecurityEventsCommandResponse.total = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryAppSessionContextUsageCommandResponse(queryAppSessionContextUsageCommandResponse: Partial<QueryAppSessionContextUsageCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "cachedTokens": n => { queryAppSessionContextUsageCommandResponse.cachedTokens = n.getNumberValue(); },
+        "contextTokens": n => { queryAppSessionContextUsageCommandResponse.contextTokens = n.getNumberValue(); },
+        "contextWindow": n => { queryAppSessionContextUsageCommandResponse.contextWindow = n.getNumberValue(); },
+        "inputTokens": n => { queryAppSessionContextUsageCommandResponse.inputTokens = n.getNumberValue(); },
+        "modelName": n => { queryAppSessionContextUsageCommandResponse.modelName = n.getStringValue(); },
+        "outTokens": n => { queryAppSessionContextUsageCommandResponse.outTokens = n.getNumberValue(); },
+        "sessionId": n => { queryAppSessionContextUsageCommandResponse.sessionId = n.getGuidValue(); },
+        "totalTokens": n => { queryAppSessionContextUsageCommandResponse.totalTokens = n.getNumberValue(); },
     }
 }
 /**
@@ -8285,6 +8488,18 @@ export function deserializeIntoQueryVariablesCommandResponse(queryVariablesComma
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWeixinWorkAppsCommandResponse(queryWeixinWorkAppsCommandResponse: Partial<QueryWeixinWorkAppsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryWeixinWorkAppsCommandResponse.items = n.getCollectionOfObjectValues<WeixinWorkAppItem>(createWeixinWorkAppItemFromDiscriminatorValue); },
+        "myRole": n => { queryWeixinWorkAppsCommandResponse.myRole = n.getNumberValue(); },
+        "teamId": n => { queryWeixinWorkAppsCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryWikiCommandResponse(queryWikiCommandResponse: Partial<QueryWikiCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatarPath": n => { queryWikiCommandResponse.avatarPath = n.getStringValue(); },
@@ -9081,6 +9296,17 @@ export function deserializeIntoSyncWikiSourceDocumentResult(syncWikiSourceDocume
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoTakedownPublicationCommand(takedownPublicationCommand: Partial<TakedownPublicationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "resourceId": n => { takedownPublicationCommand.resourceId = n.getStringValue(); },
+        "resourceType": n => { takedownPublicationCommand.resourceType = n.getEnumValue<PublicationResourceType>(PublicationResourceTypeObject); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoTeamCandidateItem(teamCandidateItem: Partial<TeamCandidateItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { teamCandidateItem.avatar = n.getStringValue(); },
@@ -9375,7 +9601,6 @@ export function deserializeIntoUpdateAppCommand(updateAppCommand: Partial<Update
         "isAuth": n => { updateAppCommand.isAuth = n.getBooleanValue(); },
         "isExternal": n => { updateAppCommand.isExternal = n.getBooleanValue(); },
         "name": n => { updateAppCommand.name = n.getStringValue(); },
-        "version": n => { updateAppCommand.version = n.getStringValue(); },
     }
 }
 /**
@@ -9566,6 +9791,7 @@ export function deserializeIntoUpdateMcpServerPluginCommand(updateMcpServerPlugi
 // @ts-ignore
 export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "agentId": n => { updateOAuthConnectionCommand.agentId = n.getStringValue(); },
         "iconUrl": n => { updateOAuthConnectionCommand.iconUrl = n.getStringValue(); },
         "key": n => { updateOAuthConnectionCommand.key = n.getStringValue(); },
         "name": n => { updateOAuthConnectionCommand.name = n.getStringValue(); },
@@ -9829,6 +10055,25 @@ export function deserializeIntoUpdateVariableCommand(updateVariableCommand: Part
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateWeixinWorkAppCommand(updateWeixinWorkAppCommand: Partial<UpdateWeixinWorkAppCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "agentId": n => { updateWeixinWorkAppCommand.agentId = n.getNumberValue(); },
+        "apiEndpoint": n => { updateWeixinWorkAppCommand.apiEndpoint = n.getStringValue(); },
+        "corpId": n => { updateWeixinWorkAppCommand.corpId = n.getStringValue(); },
+        "corpSecret": n => { updateWeixinWorkAppCommand.corpSecret = n.getStringValue(); },
+        "description": n => { updateWeixinWorkAppCommand.description = n.getStringValue(); },
+        "encodingAesKey": n => { updateWeixinWorkAppCommand.encodingAesKey = n.getStringValue(); },
+        "isDisable": n => { updateWeixinWorkAppCommand.isDisable = n.getBooleanValue(); },
+        "name": n => { updateWeixinWorkAppCommand.name = n.getStringValue(); },
+        "token": n => { updateWeixinWorkAppCommand.token = n.getStringValue(); },
+        "weixinWorkAppId": n => { updateWeixinWorkAppCommand.weixinWorkAppId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateWikiAvatarCommand(updateWikiAvatarCommand: Partial<UpdateWikiAvatarCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "objectKey": n => { updateWikiAvatarCommand.objectKey = n.getStringValue(); },
@@ -9927,6 +10172,28 @@ export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInf
         "phone": n => { userStateInfo.phone = n.getStringValue(); },
         "userId": n => { userStateInfo.userId = n.getStringValue(); },
         "userName": n => { userStateInfo.userName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWeixinWorkAppItem(weixinWorkAppItem: Partial<WeixinWorkAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(weixinWorkAppItem),
+        "agentId": n => { weixinWorkAppItem.agentId = n.getNumberValue(); },
+        "apiEndpoint": n => { weixinWorkAppItem.apiEndpoint = n.getStringValue(); },
+        "bindChannelId": n => { weixinWorkAppItem.bindChannelId = n.getStringValue(); },
+        "bindChannelType": n => { weixinWorkAppItem.bindChannelType = n.getEnumValue<WeixinWorkChannelType>(WeixinWorkChannelTypeObject); },
+        "bindTime": n => { weixinWorkAppItem.bindTime = n.getStringValue(); },
+        "corpId": n => { weixinWorkAppItem.corpId = n.getStringValue(); },
+        "description": n => { weixinWorkAppItem.description = n.getStringValue(); },
+        "isDisable": n => { weixinWorkAppItem.isDisable = n.getBooleanValue(); },
+        "isOnline": n => { weixinWorkAppItem.isOnline = n.getBooleanValue(); },
+        "name": n => { weixinWorkAppItem.name = n.getStringValue(); },
+        "teamId": n => { weixinWorkAppItem.teamId = n.getStringValue(); },
+        "weixinWorkAppId": n => { weixinWorkAppItem.weixinWorkAppId = n.getGuidValue(); },
     }
 }
 /**
@@ -11069,6 +11336,10 @@ export interface OAuthBindAccountByCodeCommand extends Parsable {
      * 第三方认证方式 id，对应 OauthConnection 表的 id.
      */
     oAuthId?: Guid | null;
+    /**
+     * 授权发起页来源（如 https://example.com），飞书换 token 的 redirect_uri 需与授权时一致；为空回退 WebUI.
+     */
+    redirectUrl?: string | null;
 }
 /**
  * 使用 OAuth 绑定已存在的账号.
@@ -11091,6 +11362,10 @@ export interface OAuthLoginCommand extends Parsable {
      * id.
      */
     oAuthId?: Guid | null;
+    /**
+     * 授权发起页来源（如 https://example.com），回调地址与飞书换 token 的 redirect_uri 需与之一致；为空回退 WebUI.
+     */
+    redirectUrl?: string | null;
 }
 /**
  * 响应.
@@ -11658,6 +11933,19 @@ export interface PublicationReviewItem extends AuditsInfo, Parsable {
 }
 export type PublicationState = (typeof PublicationStateObject)[keyof typeof PublicationStateObject];
 /**
+ * 发布应用，发布后团队成员可进入应用进行对话；需要团队 Admin 及以上角色，仅 Agent 应用可发布.
+ */
+export interface PublishAppCommand extends Parsable {
+    /**
+     * 应用 id.
+     */
+    appId?: Guid | null;
+    /**
+     * 应用版本号 aaa.bb.cc（如 1.0.3），可空；携带时必须严格大于应用当前版本（更新当前版本并随发布快照生效），不携带时保持原版本号.存库编码 aaa*10000 + bb*100 + cc.
+     */
+    version?: string | null;
+}
+/**
  * 发布流程应用编排：校验草稿定义合法后生成不可变的已发布快照（版本号递增），并置应用为已发布.需要团队 Admin 及以上角色.
  */
 export interface PublishAppWorkflowCommand extends Parsable {
@@ -11773,6 +12061,15 @@ export interface QueryAgentCompactionDefaultsResponse extends Parsable {
      * 工具结果折叠触发消息数.
      */
     toolResultTriggerMessages?: number | null;
+}
+/**
+ * 长期记忆默认提示词（应用未配置 memory.prompt 时生效的平台默认值，前端展示与占位）.
+ */
+export interface QueryAgentMemoryDefaultsResponse extends Parsable {
+    /**
+     * 默认记忆提示词（追加为记忆工具描述，指导 AI 如何管理与使用记忆）.
+     */
+    prompt?: string | null;
 }
 /**
  * QueryAIChannelListCommandResponse.
@@ -11984,11 +12281,19 @@ export interface QueryAllOAuthConnectionCommandResponse extends Parsable {
      * 集合.
      */
     items?: QueryAllOAuthConnectionCommandResponseItem[] | null;
+    /**
+     * 回调地址（{WebUI}/oauth_login），管理员需将其配置到提供方后台的重定向/回调域名白名单.
+     */
+    redirectUri?: string | null;
 }
 /**
  * QueryAllOAuthConnectionCommandResponseItem.
  */
 export interface QueryAllOAuthConnectionCommandResponseItem extends AuditsInfo, Parsable {
+    /**
+     * 企业微信应用 agentid，仅 weixinwork 提供商使用.
+     */
+    agentId?: string | null;
     /**
      * 登录跳转地址.
      */
@@ -12344,6 +12649,43 @@ export interface QueryAppSecurityEventsCommandResponse extends Parsable {
      * 总数量.
      */
     total?: number | null;
+}
+/**
+ * 会话上下文用量响应.
+ */
+export interface QueryAppSessionContextUsageCommandResponse extends Parsable {
+    /**
+     * 缓存命中的输入 token 累计（模型响应 usage 上报，未上报为 0）.
+     */
+    cachedTokens?: number | null;
+    /**
+     * 当前上下文占用（最近一次模型调用的输入 token；上下文压缩后随下一轮回落）.
+     */
+    contextTokens?: number | null;
+    /**
+     * 生效对话模型的上下文窗口上限（token），未知为 0.
+     */
+    contextWindow?: number | null;
+    /**
+     * 输入 token 累计.
+     */
+    inputTokens?: number | null;
+    /**
+     * 生效对话模型名称（未配置或模型不可用为空串）.
+     */
+    modelName?: string | null;
+    /**
+     * 输出 token 累计.
+     */
+    outTokens?: number | null;
+    /**
+     * 会话 id.
+     */
+    sessionId?: Guid | null;
+    /**
+     * token 累计总数.
+     */
+    totalTokens?: number | null;
 }
 /**
  * 会话消息响应.
@@ -13840,6 +14182,23 @@ export interface QueryVariablesCommandResponse extends Parsable {
     teamId?: string | null;
 }
 /**
+ * 企业微信应用连接列表响应.
+ */
+export interface QueryWeixinWorkAppsCommandResponse extends Parsable {
+    /**
+     * 企业微信应用连接集合.
+     */
+    items?: WeixinWorkAppItem[] | null;
+    /**
+     * 我在该团队中的角色：0=Member 1=Admin 2=Owner.
+     */
+    myRole?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+}
+/**
  * 知识库详情响应.wiki 只承载向量模型与维度；元数据模型与切片参数由每次触发文档向量化时按需传入.
  */
 export interface QueryWikiCommandResponse extends Parsable {
@@ -15193,6 +15552,7 @@ export function serializeAppUsageActivityStats(writer: SerializationWriter, appU
         writer.writeStringValue("lastActiveTime", appUsageActivityStats.lastActiveTime);
         writer.writeStringValue("messageCount", appUsageActivityStats.messageCount);
         writer.writeNumberValue("sessionCount", appUsageActivityStats.sessionCount);
+        writer.writeStringValue("useCount", appUsageActivityStats.useCount);
         writer.writeNumberValue("userCount", appUsageActivityStats.userCount);
     }
 }
@@ -15203,6 +15563,7 @@ export function serializeAppUsageActivityStats(writer: SerializationWriter, appU
 // @ts-ignore
 export function serializeAppUsageModelItem(writer: SerializationWriter, appUsageModelItem: Partial<AppUsageModelItem> | undefined | null = {}) : void {
     if (appUsageModelItem) {
+        writer.writeStringValue("cachedTokens", appUsageModelItem.cachedTokens);
         writer.writeStringValue("callCount", appUsageModelItem.callCount);
         writer.writeStringValue("completionTokens", appUsageModelItem.completionTokens);
         writer.writeGuidValue("modelId", appUsageModelItem.modelId);
@@ -15218,6 +15579,7 @@ export function serializeAppUsageModelItem(writer: SerializationWriter, appUsage
 // @ts-ignore
 export function serializeAppUsageSummary(writer: SerializationWriter, appUsageSummary: Partial<AppUsageSummary> | undefined | null = {}) : void {
     if (appUsageSummary) {
+        writer.writeStringValue("cachedTokens", appUsageSummary.cachedTokens);
         writer.writeStringValue("callCount", appUsageSummary.callCount);
         writer.writeStringValue("completionTokens", appUsageSummary.completionTokens);
         writer.writeStringValue("promptTokens", appUsageSummary.promptTokens);
@@ -15674,6 +16036,7 @@ export function serializeCreateKnowledgeGraphRelationTypeCommand(writer: Seriali
 // @ts-ignore
 export function serializeCreateOAuthConnectionCommand(writer: SerializationWriter, createOAuthConnectionCommand: Partial<CreateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (createOAuthConnectionCommand) {
+        writer.writeStringValue("agentId", createOAuthConnectionCommand.agentId);
         writer.writeStringValue("iconUrl", createOAuthConnectionCommand.iconUrl);
         writer.writeStringValue("key", createOAuthConnectionCommand.key);
         writer.writeStringValue("name", createOAuthConnectionCommand.name);
@@ -15760,6 +16123,26 @@ export function serializeCreateVariableCommand(writer: SerializationWriter, crea
         writer.writeStringValue("name", createVariableCommand.name);
         writer.writeStringValue("teamId", createVariableCommand.teamId);
         writer.writeStringValue("value", createVariableCommand.value);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateWeixinWorkAppCommand(writer: SerializationWriter, createWeixinWorkAppCommand: Partial<CreateWeixinWorkAppCommand> | undefined | null = {}) : void {
+    if (createWeixinWorkAppCommand) {
+        writer.writeNumberValue("agentId", createWeixinWorkAppCommand.agentId);
+        writer.writeStringValue("apiEndpoint", createWeixinWorkAppCommand.apiEndpoint);
+        writer.writeStringValue("channelId", createWeixinWorkAppCommand.channelId);
+        writer.writeEnumValue<WeixinWorkChannelType>("channelType", createWeixinWorkAppCommand.channelType);
+        writer.writeStringValue("corpId", createWeixinWorkAppCommand.corpId);
+        writer.writeStringValue("corpSecret", createWeixinWorkAppCommand.corpSecret);
+        writer.writeStringValue("description", createWeixinWorkAppCommand.description);
+        writer.writeStringValue("encodingAesKey", createWeixinWorkAppCommand.encodingAesKey);
+        writer.writeStringValue("name", createWeixinWorkAppCommand.name);
+        writer.writeStringValue("teamId", createWeixinWorkAppCommand.teamId);
+        writer.writeStringValue("token", createWeixinWorkAppCommand.token);
     }
 }
 /**
@@ -16414,6 +16797,7 @@ export function serializeOAuthBindAccountByCodeCommand(writer: SerializationWrit
         writer.writeStringValue("contextUserId", oAuthBindAccountByCodeCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", oAuthBindAccountByCodeCommand.contextUserType);
         writer.writeGuidValue("oAuthId", oAuthBindAccountByCodeCommand.oAuthId);
+        writer.writeStringValue("redirectUrl", oAuthBindAccountByCodeCommand.redirectUrl);
     }
 }
 /**
@@ -16435,6 +16819,7 @@ export function serializeOAuthLoginCommand(writer: SerializationWriter, oAuthLog
     if (oAuthLoginCommand) {
         writer.writeStringValue("code", oAuthLoginCommand.code);
         writer.writeGuidValue("oAuthId", oAuthLoginCommand.oAuthId);
+        writer.writeStringValue("redirectUrl", oAuthLoginCommand.redirectUrl);
     }
 }
 /**
@@ -16748,6 +17133,17 @@ export function serializePublicationReviewItem(writer: SerializationWriter, publ
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePublishAppCommand(writer: SerializationWriter, publishAppCommand: Partial<PublishAppCommand> | undefined | null = {}) : void {
+    if (publishAppCommand) {
+        writer.writeGuidValue("appId", publishAppCommand.appId);
+        writer.writeStringValue("version", publishAppCommand.version);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePublishAppWorkflowCommand(writer: SerializationWriter, publishAppWorkflowCommand: Partial<PublishAppWorkflowCommand> | undefined | null = {}) : void {
     if (publishAppWorkflowCommand) {
         writer.writeGuidValue("appId", publishAppWorkflowCommand.appId);
@@ -16810,6 +17206,16 @@ export function serializeQueryAgentCompactionDefaultsResponse(writer: Serializat
         writer.writeStringValue("summarizerModelId", queryAgentCompactionDefaultsResponse.summarizerModelId);
         writer.writeNumberValue("summarizeTriggerTokens", queryAgentCompactionDefaultsResponse.summarizeTriggerTokens);
         writer.writeNumberValue("toolResultTriggerMessages", queryAgentCompactionDefaultsResponse.toolResultTriggerMessages);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAgentMemoryDefaultsResponse(writer: SerializationWriter, queryAgentMemoryDefaultsResponse: Partial<QueryAgentMemoryDefaultsResponse> | undefined | null = {}) : void {
+    if (queryAgentMemoryDefaultsResponse) {
+        writer.writeStringValue("prompt", queryAgentMemoryDefaultsResponse.prompt);
     }
 }
 /**
@@ -16919,6 +17325,7 @@ export function serializeQueryAIModelListCommandResponseItem(writer: Serializati
 export function serializeQueryAllOAuthConnectionCommandResponse(writer: SerializationWriter, queryAllOAuthConnectionCommandResponse: Partial<QueryAllOAuthConnectionCommandResponse> | undefined | null = {}) : void {
     if (queryAllOAuthConnectionCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryAllOAuthConnectionCommandResponseItem>("items", queryAllOAuthConnectionCommandResponse.items, serializeQueryAllOAuthConnectionCommandResponseItem);
+        writer.writeStringValue("redirectUri", queryAllOAuthConnectionCommandResponse.redirectUri);
     }
 }
 /**
@@ -16929,6 +17336,7 @@ export function serializeQueryAllOAuthConnectionCommandResponse(writer: Serializ
 export function serializeQueryAllOAuthConnectionCommandResponseItem(writer: SerializationWriter, queryAllOAuthConnectionCommandResponseItem: Partial<QueryAllOAuthConnectionCommandResponseItem> | undefined | null = {}) : void {
     if (queryAllOAuthConnectionCommandResponseItem) {
         serializeAuditsInfo(writer, queryAllOAuthConnectionCommandResponseItem)
+        writer.writeStringValue("agentId", queryAllOAuthConnectionCommandResponseItem.agentId);
         writer.writeStringValue("authorizeUrl", queryAllOAuthConnectionCommandResponseItem.authorizeUrl);
         writer.writeStringValue("iconUrl", queryAllOAuthConnectionCommandResponseItem.iconUrl);
         writer.writeGuidValue("id", queryAllOAuthConnectionCommandResponseItem.id);
@@ -17103,6 +17511,23 @@ export function serializeQueryAppSecurityEventsCommandResponse(writer: Serializa
         writer.writeNumberValue("pageNo", queryAppSecurityEventsCommandResponse.pageNo);
         writer.writeNumberValue("pageSize", queryAppSecurityEventsCommandResponse.pageSize);
         writer.writeNumberValue("total", queryAppSecurityEventsCommandResponse.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryAppSessionContextUsageCommandResponse(writer: SerializationWriter, queryAppSessionContextUsageCommandResponse: Partial<QueryAppSessionContextUsageCommandResponse> | undefined | null = {}) : void {
+    if (queryAppSessionContextUsageCommandResponse) {
+        writer.writeNumberValue("cachedTokens", queryAppSessionContextUsageCommandResponse.cachedTokens);
+        writer.writeNumberValue("contextTokens", queryAppSessionContextUsageCommandResponse.contextTokens);
+        writer.writeNumberValue("contextWindow", queryAppSessionContextUsageCommandResponse.contextWindow);
+        writer.writeNumberValue("inputTokens", queryAppSessionContextUsageCommandResponse.inputTokens);
+        writer.writeStringValue("modelName", queryAppSessionContextUsageCommandResponse.modelName);
+        writer.writeNumberValue("outTokens", queryAppSessionContextUsageCommandResponse.outTokens);
+        writer.writeGuidValue("sessionId", queryAppSessionContextUsageCommandResponse.sessionId);
+        writer.writeNumberValue("totalTokens", queryAppSessionContextUsageCommandResponse.totalTokens);
     }
 }
 /**
@@ -18029,6 +18454,18 @@ export function serializeQueryVariablesCommandResponse(writer: SerializationWrit
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWeixinWorkAppsCommandResponse(writer: SerializationWriter, queryWeixinWorkAppsCommandResponse: Partial<QueryWeixinWorkAppsCommandResponse> | undefined | null = {}) : void {
+    if (queryWeixinWorkAppsCommandResponse) {
+        writer.writeCollectionOfObjectValues<WeixinWorkAppItem>("items", queryWeixinWorkAppsCommandResponse.items, serializeWeixinWorkAppItem);
+        writer.writeNumberValue("myRole", queryWeixinWorkAppsCommandResponse.myRole);
+        writer.writeStringValue("teamId", queryWeixinWorkAppsCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryWikiCommandResponse(writer: SerializationWriter, queryWikiCommandResponse: Partial<QueryWikiCommandResponse> | undefined | null = {}) : void {
     if (queryWikiCommandResponse) {
         writer.writeStringValue("avatarPath", queryWikiCommandResponse.avatarPath);
@@ -18825,6 +19262,17 @@ export function serializeSyncWikiSourceDocumentResult(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTakedownPublicationCommand(writer: SerializationWriter, takedownPublicationCommand: Partial<TakedownPublicationCommand> | undefined | null = {}) : void {
+    if (takedownPublicationCommand) {
+        writer.writeStringValue("resourceId", takedownPublicationCommand.resourceId);
+        writer.writeEnumValue<PublicationResourceType>("resourceType", takedownPublicationCommand.resourceType);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeTeamCandidateItem(writer: SerializationWriter, teamCandidateItem: Partial<TeamCandidateItem> | undefined | null = {}) : void {
     if (teamCandidateItem) {
         writer.writeStringValue("avatar", teamCandidateItem.avatar);
@@ -19119,7 +19567,6 @@ export function serializeUpdateAppCommand(writer: SerializationWriter, updateApp
         writer.writeBooleanValue("isAuth", updateAppCommand.isAuth);
         writer.writeBooleanValue("isExternal", updateAppCommand.isExternal);
         writer.writeStringValue("name", updateAppCommand.name);
-        writer.writeStringValue("version", updateAppCommand.version);
     }
 }
 /**
@@ -19310,6 +19757,7 @@ export function serializeUpdateMcpServerPluginCommand(writer: SerializationWrite
 // @ts-ignore
 export function serializeUpdateOAuthConnectionCommand(writer: SerializationWriter, updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (updateOAuthConnectionCommand) {
+        writer.writeStringValue("agentId", updateOAuthConnectionCommand.agentId);
         writer.writeStringValue("iconUrl", updateOAuthConnectionCommand.iconUrl);
         writer.writeStringValue("key", updateOAuthConnectionCommand.key);
         writer.writeStringValue("name", updateOAuthConnectionCommand.name);
@@ -19573,6 +20021,25 @@ export function serializeUpdateVariableCommand(writer: SerializationWriter, upda
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateWeixinWorkAppCommand(writer: SerializationWriter, updateWeixinWorkAppCommand: Partial<UpdateWeixinWorkAppCommand> | undefined | null = {}) : void {
+    if (updateWeixinWorkAppCommand) {
+        writer.writeNumberValue("agentId", updateWeixinWorkAppCommand.agentId);
+        writer.writeStringValue("apiEndpoint", updateWeixinWorkAppCommand.apiEndpoint);
+        writer.writeStringValue("corpId", updateWeixinWorkAppCommand.corpId);
+        writer.writeStringValue("corpSecret", updateWeixinWorkAppCommand.corpSecret);
+        writer.writeStringValue("description", updateWeixinWorkAppCommand.description);
+        writer.writeStringValue("encodingAesKey", updateWeixinWorkAppCommand.encodingAesKey);
+        writer.writeBooleanValue("isDisable", updateWeixinWorkAppCommand.isDisable);
+        writer.writeStringValue("name", updateWeixinWorkAppCommand.name);
+        writer.writeStringValue("token", updateWeixinWorkAppCommand.token);
+        writer.writeGuidValue("weixinWorkAppId", updateWeixinWorkAppCommand.weixinWorkAppId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateWikiAvatarCommand(writer: SerializationWriter, updateWikiAvatarCommand: Partial<UpdateWikiAvatarCommand> | undefined | null = {}) : void {
     if (updateWikiAvatarCommand) {
         writer.writeStringValue("objectKey", updateWikiAvatarCommand.objectKey);
@@ -19671,6 +20138,28 @@ export function serializeUserStateInfo(writer: SerializationWriter, userStateInf
         writer.writeStringValue("phone", userStateInfo.phone);
         writer.writeStringValue("userId", userStateInfo.userId);
         writer.writeStringValue("userName", userStateInfo.userName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWeixinWorkAppItem(writer: SerializationWriter, weixinWorkAppItem: Partial<WeixinWorkAppItem> | undefined | null = {}) : void {
+    if (weixinWorkAppItem) {
+        serializeAuditsInfo(writer, weixinWorkAppItem)
+        writer.writeNumberValue("agentId", weixinWorkAppItem.agentId);
+        writer.writeStringValue("apiEndpoint", weixinWorkAppItem.apiEndpoint);
+        writer.writeStringValue("bindChannelId", weixinWorkAppItem.bindChannelId);
+        writer.writeEnumValue<WeixinWorkChannelType>("bindChannelType", weixinWorkAppItem.bindChannelType);
+        writer.writeStringValue("bindTime", weixinWorkAppItem.bindTime);
+        writer.writeStringValue("corpId", weixinWorkAppItem.corpId);
+        writer.writeStringValue("description", weixinWorkAppItem.description);
+        writer.writeBooleanValue("isDisable", weixinWorkAppItem.isDisable);
+        writer.writeBooleanValue("isOnline", weixinWorkAppItem.isOnline);
+        writer.writeStringValue("name", weixinWorkAppItem.name);
+        writer.writeStringValue("teamId", weixinWorkAppItem.teamId);
+        writer.writeGuidValue("weixinWorkAppId", weixinWorkAppItem.weixinWorkAppId);
     }
 }
 /**
@@ -20280,6 +20769,19 @@ export interface SyncWikiSourceDocumentResult extends Parsable {
      * 外部文档标题.
      */
     title?: string | null;
+}
+/**
+ * 下架（取消公开）：将已公开资源从平台下架（is_public 置为 false），不改变团队内发布状态；团队资源需要所属团队 Admin 及以上角色，个人资源仅创建人.
+ */
+export interface TakedownPublicationCommand extends Parsable {
+    /**
+     * 资源 id 字符串，应用/技能为资源 id（uuid），提示词为 prompt.id（数字）.
+     */
+    resourceId?: string | null;
+    /**
+     * 资源类型.
+     */
+    resourceType?: PublicationResourceType | null;
 }
 /**
  * 团队候选用户项.
@@ -20921,10 +21423,6 @@ export interface UpdateAppCommand extends Parsable {
      * 应用名称，团队内唯一.
      */
     name?: string | null;
-    /**
-     * 应用版本号 aaa.bb.cc（如 1.0.3），null/空串=保持原值；存库编码 aaa*10000 + bb*100 + cc.
-     */
-    version?: string | null;
 }
 /**
  * 设置会话绑定的专家提示词；仅会话归属用户可操作，promptId=0 表示清除绑定.
@@ -21216,6 +21714,10 @@ export interface UpdateMcpServerPluginCommand extends McpServerPluginConnectionO
  * 更新第三方登录连接配置.
  */
 export interface UpdateOAuthConnectionCommand extends Parsable {
+    /**
+     * 企业微信应用 agentid，仅 weixinwork 提供商必填.
+     */
+    agentId?: string | null;
     /**
      * 图标地址.
      */
@@ -21653,6 +22155,51 @@ export interface UpdateVariableCommand extends Parsable {
     variableId?: string | null;
 }
 /**
+ * 更新企业微信应用连接，需要团队 Admin 及以上角色；CorpSecret/Token/EncodingAESKey 为空表示保持不变.
+ */
+export interface UpdateWeixinWorkAppCommand extends Parsable {
+    /**
+     * 企业微信自建应用 AgentId.
+     */
+    agentId?: number | null;
+    /**
+     * API 地址覆盖，为空表示使用官方地址.
+     */
+    apiEndpoint?: string | null;
+    /**
+     * 企业微信企业 ID.
+     */
+    corpId?: string | null;
+    /**
+     * 企业微信自建应用 Secret，为空表示保持不变.
+     */
+    corpSecret?: string | null;
+    /**
+     * 描述，可为空.
+     */
+    description?: string | null;
+    /**
+     * 接收消息回调配置 EncodingAESKey（43 字符），为空表示保持不变.
+     */
+    encodingAesKey?: string | null;
+    /**
+     * 是否禁用，禁用后回调推送不再处理.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 连接名称，团队内唯一.
+     */
+    name?: string | null;
+    /**
+     * 接收消息回调配置 Token，为空表示保持不变.
+     */
+    token?: string | null;
+    /**
+     * 企业微信应用记录 id（来自路由）.
+     */
+    weixinWorkAppId?: Guid | null;
+}
+/**
  * 设置知识库头像，仅团队 Admin 及以上可操作；objectKey 需为已完成上传并登记的文件.
  */
 export interface UpdateWikiAvatarCommand extends Parsable {
@@ -21856,6 +22403,60 @@ export interface UserStateInfo extends Parsable {
     userName?: string | null;
 }
 export type UserType = (typeof UserTypeObject)[keyof typeof UserTypeObject];
+/**
+ * 企业微信应用连接项.
+ */
+export interface WeixinWorkAppItem extends AuditsInfo, Parsable {
+    /**
+     * 企业微信自建应用 AgentId.
+     */
+    agentId?: number | null;
+    /**
+     * API 地址覆盖，空表示使用官方地址.
+     */
+    apiEndpoint?: string | null;
+    /**
+     * 绑定的渠道记录 id 字符串，未绑定为 null.
+     */
+    bindChannelId?: string | null;
+    /**
+     * 绑定的渠道类型，未绑定为 null.
+     */
+    bindChannelType?: WeixinWorkChannelType | null;
+    /**
+     * 绑定时间，未绑定为 null.
+     */
+    bindTime?: string | null;
+    /**
+     * 企业微信企业 ID.
+     */
+    corpId?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 是否禁用.
+     */
+    isDisable?: boolean | null;
+    /**
+     * 是否可接收回调推送（回调模式下连接启用即可接收，禁用时恒为 false）.
+     */
+    isOnline?: boolean | null;
+    /**
+     * 连接名称.
+     */
+    name?: string | null;
+    /**
+     * 所属团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 企业微信应用记录 id.
+     */
+    weixinWorkAppId?: Guid | null;
+}
+export type WeixinWorkChannelType = (typeof WeixinWorkChannelTypeObject)[keyof typeof WeixinWorkChannelTypeObject];
 /**
  * 切片元数据项.
  */
@@ -22436,6 +23037,7 @@ export const OAuthPrividerObject = {
     Custom: "custom",
     Feishu: "feishu",
     DingTalk: "dingTalk",
+    WeixinWork: "weixinWork",
 } as const;
 /**
  * 插件类型.
@@ -22496,6 +23098,12 @@ export const UserTypeObject = {
     External: "external",
     ExternalApp: "externalApp",
     Normal: "normal",
+} as const;
+/**
+ * 企业微信渠道类型.
+ */
+export const WeixinWorkChannelTypeObject = {
+    App: "app",
 } as const;
 /**
  * 外部源文档同步状态.

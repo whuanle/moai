@@ -8,6 +8,7 @@ import {
   deleteAppSession,
   extractChatAttachment,
   getAppDetail,
+  getAppSessionContextUsage,
   getAppSessionMessages,
   getAppSessions,
   getAppUserConfig,
@@ -23,6 +24,7 @@ vi.mock('@/api/app', () => ({
   getAppSessions: vi.fn(),
   createAppSession: vi.fn(),
   getAppSessionMessages: vi.fn(),
+  getAppSessionContextUsage: vi.fn(),
   deleteAppSession: vi.fn().mockResolvedValue(undefined),
   updateAppSessionPrompt: vi.fn().mockResolvedValue(undefined),
   getAppUserConfig: vi.fn(),
@@ -78,6 +80,16 @@ describe('AppChat（Agent 应用对话页）', () => {
     ] as never)
     vi.mocked(createAppSession).mockResolvedValue('s2')
     vi.mocked(getAppSessionMessages).mockResolvedValue([])
+    vi.mocked(getAppSessionContextUsage).mockResolvedValue({
+      sessionId: 's1',
+      modelName: '',
+      contextWindow: 0,
+      inputTokens: 0,
+      outTokens: 0,
+      totalTokens: 0,
+      cachedTokens: 0,
+      contextTokens: 0,
+    })
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
       skills: [],
@@ -152,6 +164,48 @@ describe('AppChat（Agent 应用对话页）', () => {
     await waitFor(() => expect(getAppSessions).toHaveBeenCalledTimes(2))
     // 删除的是当前会话：清空消息回到欢迎态
     await waitFor(() => expect(document.querySelector('.moai-chat__main.is-landing')).not.toBeNull())
+  })
+
+  it('上下文用量环形指示：会话有用量时输入卡左下角显示环与 token 统计，无会话不显示', async () => {
+    vi.mocked(getAppSessionMessages).mockResolvedValue([
+      { messageId: 'm1', seq: 1, role: 'user', content: '你好' },
+    ] as never)
+    vi.mocked(getAppSessionContextUsage).mockResolvedValue({
+      sessionId: 's1',
+      modelName: 'GPT-5',
+      contextWindow: 128000,
+      inputTokens: 6000,
+      outTokens: 2400,
+      totalTokens: 8400,
+      cachedTokens: 3000,
+      contextTokens: 7200,
+    })
+
+    renderPage()
+    await waitFor(() => expect(screen.getByText('第一段对话')).toBeInTheDocument())
+
+    // 欢迎态（无会话）不显示环形指示
+    expect(document.querySelector('.moai-chat__context-usage')).toBeNull()
+
+    // 进入会话后拉取上下文用量：环形 + 紧凑 token 统计（当前上下文占用口径），占用 <70% 为常规色
+    fireEvent.click(screen.getByText('第一段对话'))
+    const ring = await waitFor(() => {
+      const el = document.querySelector('.moai-chat__context-usage')
+      expect(el).not.toBeNull()
+      return el as HTMLElement
+    })
+    expect(getAppSessionContextUsage).toHaveBeenCalledWith('s1')
+    expect(ring.className).toBe('moai-chat__context-usage is-normal')
+    expect(ring.querySelector('.moai-chat__context-ring-bar')).not.toBeNull()
+    expect(screen.getByText('7.2k / 128k')).toBeInTheDocument()
+
+    // 悬浮环形展示明细：模型名、当前上下文/上限与累计输入输出拆分、缓存命中始终显示（3,000/6,000=50%）
+    fireEvent.mouseEnter(ring)
+    expect(await screen.findByText('上下文用量')).toBeInTheDocument()
+    expect(screen.getByText('模型：GPT-5')).toBeInTheDocument()
+    expect(screen.getByText('当前上下文 7,200 / 128,000 tokens（6%）')).toBeInTheDocument()
+    expect(screen.getByText('累计输入 6,000 · 累计输出 2,400')).toBeInTheDocument()
+    expect(screen.getByText('缓存命中 3,000 tokens（50%）')).toBeInTheDocument()
   })
 
   it('欢迎态点击快捷输入：直接发送（创建会话并携带快捷问题，无需手动点发送）', async () => {

@@ -24,7 +24,8 @@
 |---|---|---|
 | 前端登录 401 但密码确认正确 | RSA 公钥过期/服务端换钥/多实例私钥不一致 | 刷新页面重拉 serverinfo；核对各实例 rsa_private.key |
 | 登录 403 次数过多 | 5 次失败锁定 | 等 5 分钟或删 Redis key（第 1 节） |
-| oauth 回调报「不合法的跳转地址」 | redirectUrl host ≠ WebUI host | 修正 SystemOptions.WebUI（注：该校验当前因 Controller 未回填 redirectUrl 不生效，见 [SDD 已知问题](./sdd.md)，[@AUTH-S14](./bdd.md#auth-s14)） |
+| oauth 回调报「不合法的跳转地址」 | redirectUrl 非 http/https | 修正前端来源（该守卫已随 221 轮修复生效，[@AUTH-S14](./bdd.md#auth-s14)） |
+| 飞书登录/绑定报「第三方接口错误」 | 授权与换 token 的 `redirect_uri` 不一致（飞书要求两步逐字符相同，2026-10-27 已修复：两步均拼 `{来源}/oauth_login`）；或飞书开放平台重定向白名单未含 `{前端域名}/oauth_login` | 升级后端后重试；仍失败则核对飞书后台「重定向 URL」白名单与日志 `Get openid error`（[@AUTH-S14](./bdd.md#auth-s14)） |
 | 第三方授权后提示绑定过期 | 临时绑定标识超 10 分钟 | 重新发起第三方登录（[@AUTH-S18](./bdd.md#auth-s18)） |
 
 ## 4. 验收流程（发布前）
@@ -47,3 +48,4 @@
 | 2026-09-01 | 初版（轮 2，as-built）；两轮自检（见存档） |
 | 2026-09-02 | 随第三轮验收更新 OAuth 证据 |
 | 2026-09-01 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@AUTH-S1~S23）、四件互链、职责瘦身 |
+| 2026-10-27 | 飞书第三方登录 `redirect_uri` 不一致缺陷修复（授权地址去除多余 `?redirectUri=` 后缀 + 删伪 PKCE `code_verifier`）；排障表补飞书行、清理 AUTH-S14 过期备注 |

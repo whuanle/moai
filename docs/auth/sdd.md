@@ -27,7 +27,7 @@ src/auth/
 │                       Queries/{QueryRepeatedUserName,QueryAllOAuthPrivider}Command
 │                       Services/{ITokenProvider,IOAuthUserProfileService}、Models/OAuthBindUserProfile
 ├── MoAI.Auth.Core/     Handlers/ 五个 CommandHandler + Queries/ 两个 QueryHandler
-│                       Services/OAuthUserProfileService（飞书 open_id / 钉钉 union_id / 自定义 OIDC）
+│                       Services/OAuthUserProfileService（飞书 open_id / 钉钉 union_id / 企业微信 userid / 自定义 OIDC）
 └── MoAI.Auth.Api/      AuthController（[Route("/auth")]，全部 [AllowAnonymous]，部署加 /api 前缀）
 src/account/            TokenProvider（RS256 签发/校验）
 ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx、utils/{rsa,jwt}.ts
@@ -41,7 +41,7 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx
 | POST | `/auth/register` | 五字段 → 新用户 id；Handler 解密后校验强度（`(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$`） |
 | POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId` |
 | POST | `/auth/oauth_register` | tempOAuthBindId → 一键注册并登录 |
-| GET | `/auth/oauth_prividers` | 匿名；返回各提供商拼好的授权地址 |
+| GET | `/auth/oauth_prividers` | 匿名；可选 `redirectUrl`（登录页来源），回调地址跟随该来源，未携带回退 `WebUI`；返回各提供商拼好的授权地址 |
 | POST | `/auth/refresh_token` | 仅 refresh_token 类型可用 |
 
 响应要点：`expiresIn` 为 **Access Token 过期时刻的 Unix 毫秒时间戳**（注释写"秒"，实现是毫秒，前端按毫秒解析）；`tokenType` 固定 `Bearer`。
@@ -51,13 +51,13 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx
 1. 密码强度在 Handler 解密后校验（DTO 只 NotEmpty）——密文无法预校验；解密失败同样 400。
 2. 重复注册检查用户名/邮箱/手机号三者任一命中即 409（提示具体字段）。
 3. OAuth 未绑定 profile 写 Redis `oauth:bind:{guid}`（10 分钟 TTL）；一键注册在 `TransactionScope` 内以占位 Guid 建号、改为 `u{自增id}`、失效用户态缓存、写 `UserOauthConnections`（ProviderId+Sub）。
-4. 授权地址按提供商特殊拼接：默认 `scope=openid profile`、飞书 scope 为空、钉钉 `openid corpid`+`prompt=consent`；`state={OAuthId}`；`redirect_uri={WebUI}/oauth_login`。
+4. 授权地址按提供商特殊拼接：默认 `scope=openid profile`、飞书 scope 为空、钉钉 `openid corpid`+`prompt=consent`、企业微信 `login_type=CorpApp&appid={CorpID}&agentid={AgentId}`；`state={OAuthId}`；`redirect_uri` **跟随登录页来源**（前端把 `window.location.origin` 作为 `redirectUrl` 传入 `oauth_prividers`/`oauth_login`/账号绑定接口，仅接受 http/https，未携带回退 `WebUI`）——内网穿透测试前端域名与 WebUI 配置不同时零后端配置；提供方后台的回调域白名单是安全边界。飞书换 token 的 `redirect_uri` 必须与授权时**逐字符一致**（两步均拼 `{来源}/oauth_login`，授权地址不得附加其他参数，2026-10-27 修复不一致缺陷），故同源透传到 `GetProfileAsync`。企业微信换身份链路（`IWeixinWorkClient`）：gettoken(corpid+secret) → getuserinfo(code)→userid → user/get 尽力补姓名头像（通讯录无权限/失败回退 userid，不阻断）。
 5. 前端：401 且非 login 接口 → 清用户态跳 `/login`（`kiota.ts` FilterRequestHandler）；Access Token 过期（60 秒宽限）且 Refresh 有效时静默续期；OAuthLogin 用 `useRef` 防 StrictMode 重复消费一次性 code。
 6. **所有内部签发 token 的处理器必须显式设 `UserType = Normal`**（Login/Refresh/OAuthLogin/OAuthRegister）：claim `typ` 缺失会解析为 None，下游 `app_agent_session.user_type` 落 0，对话日志把内部用户误标为外部用户（2026-09-20 修复 Refresh/OAuth 两类三处漏设，回归 [@AUTH-S24](./bdd.md#auth-s24)；存量数据见 `asserts/app_agent_session_user_type_fix.sql`）。
 
 ## 已知问题
 
-- **oauth_prividers 回跳地址校验失效（死代码，未修复）**：`AuthController.QueryAllOAuthProviders` 以 `new QueryAllOAuthPrividerCommand()` 空参构造，Handler 的 host 校验（redirectUrl host 必须等于 WebUI host）永不触发，实测任意 redirectUrl 返回 200（[@AUTH-S14](./bdd.md#auth-s14)）。修复需 Controller 增加 `[FromQuery] Uri? redirectUrl` 并回填。
+- **oauth_prividers 回跳地址死代码（2026-10-27 已修复并重新设计）**：原 Controller 空参构造导致 `RedirectUrl` 校验永不触发（[@AUTH-S14](./bdd.md#auth-s14) 记录为缺陷）。现修复为：Controller `[FromQuery]` 绑定并回填，校验收紧为仅接受 http/https 绝对地址（400），语义从「必须同 WebUI host」改为「跟随登录页来源」，支持内网穿透场景零后端配置。
 - `LoginCommandHandler` 内有大段注释掉的 OAuth 绑定旧逻辑（历史遗留，待清理）。
 - DEBUG 编译 Access Token 7 天与 Release 30 分钟不一致，本地联调易误判"token 不过期"。
 - 修复史：注册手机号重复曾返回裸 500（唯一索引异常未转译），已修复为 409「手机号 {0} 已被注册」（源码 `RegisterUserCommandHandler` 现行实现已含三者检查）。

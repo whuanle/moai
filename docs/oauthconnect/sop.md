@@ -6,7 +6,8 @@
 
 | 操作 | 步骤 | 对应场景 |
 |---|---|---|
-| 接入第三方登录渠道 | ① 在提供方（飞书/钉钉/自建 OIDC）创建应用，回调地址配 `{WebUI}/oauth_login`；② admin 登录前端 →「OAuth 连接器」→「新建」；③ 填名称（≤50、全局唯一）/提供商/Key/Secret/图标；④ 保存后在登录页确认新渠道按钮 | [@OC-S5](./bdd.md#oc-s5)~[@OC-S7](./bdd.md#oc-s7)、[@OC-S18](./bdd.md#oc-s18) |
+| 接入第三方登录渠道 | ① 在提供方（飞书/钉钉/企业微信/自建 OIDC）创建应用，回调地址配 `{WebUI}/oauth_login`；② admin 登录前端 →「OAuth 连接器」→「新建」；③ 填名称（≤50、全局唯一）/提供商/Key/Secret/图标；④ 保存后在登录页确认新渠道按钮 | [@OC-S5](./bdd.md#oc-s5)~[@OC-S7](./bdd.md#oc-s7)、[@OC-S26](./bdd.md#oc-s26)、[@OC-S18](./bdd.md#oc-s18) |
+| 接入企业微信 | Key=企业 CorpID（我的企业→企业信息）、Secret=自建应用 Secret、AgentId=自建应用 AgentId；应用管理→网页授权及 JS-SDK 将 WebUI 域名配为可信域名；应用可见范围决定可登录成员 | [@OC-S26](./bdd.md#oc-s26)~[@OC-S28](./bdd.md#oc-s28) |
 | Custom 渠道 | 「发现端点」必填（OIDC discovery URL，须可被**后端**访问）；保存时后端实时拉取解析授权地址 | [@OC-S7](./bdd.md#oc-s7) |
 | 编辑连接器 | 提供商不可改；Secret 留空=保持不变；Custom 换发现端点后授权地址自动重解析 | [@OC-S13](./bdd.md#oc-s13)、[@OC-S23](./bdd.md#oc-s23) |
 | 删除连接器 | 二次确认后软删除；**渠道立即从登录页消失**，已绑定用户的历史记录保留 | [@OC-S16](./bdd.md#oc-s16)、[@OC-S19](./bdd.md#oc-s19) |
@@ -19,6 +20,7 @@
 | 保存 400「认证名称已存在」 | 名称与其他连接器重复（含软删除记录） | 更换名称，见 [@OC-S8](./bdd.md#oc-s8) |
 | 登录页不显示某渠道 | 连接器已被软删除 | 重新创建，见 [@OC-S19](./bdd.md#oc-s19) |
 | 第三方登录提示"第三方接口错误" | 提供方接口异常或 Key/Secret 失效 | 核对凭据；查后端日志 Get openid error |
+| 企业微信登录提示"企业微信接口错误" | Secret/AgentId 不匹配、code 已消费、可信域名未配、应用不可见该成员 | 核对 CorpID/Secret/AgentId 与可信域名；gettoken 与 getuserinfo 的 errcode/errmsg 落后端日志 |
 | 跳转地址 400「不合法的跳转地址」 | redirectUri 与 `SystemOptions.WebUI` 不同 Host | 检查 WebUI 配置（见 [../infra/sop.md](../infra/sop.md)） |
 | 接口 403 | 当前登录人不是管理员 | 换 admin 账号，见 [@OC-S1](./bdd.md#oc-s1) |
 | PUT 固定 400（历史） | **已修复**（2026-09-02 终审实测 200） | 若复现回查 `UpdateOAuthConnectionCommand.Validate`，见 [@OC-S12](./bdd.md#oc-s12) |
@@ -27,7 +29,7 @@
 
 1. 自动化：跑 [TDD 回归命令](./tdd.md)（audit-345.mjs，OC 相关 6 条）。
 2. HTTP 手动走查：member token 访问四个端点应 403、匿名应 401（[@OC-S1](./bdd.md#oc-s1)/[@OC-S2](./bdd.md#oc-s2)）；创建 Custom 缺 wellKnown 应 400（[@OC-S9](./bdd.md#oc-s9)）；更新/删除全零 Guid 应 400（[@OC-S15](./bdd.md#oc-s15)/[@OC-S17](./bdd.md#oc-s17)）。
-3. 浏览器走查：admin 进入 /oauthconnect 核对 [@OC-S21](./bdd.md#oc-s21)~[@OC-S23](./bdd.md#oc-s23)；member 直访被重定向（[@OC-S24](./bdd.md#oc-s24)）。
+3. 浏览器走查：admin 进入 /oauthconnect 核对 [@OC-S21](./bdd.md#oc-s21)~[@OC-S23](./bdd.md#oc-s23)；member 直访被重定向（[@OC-S24](./bdd.md#oc-s24)）；新建/编辑表单核对图标方形提示与上传裁剪（[@OC-S25](./bdd.md#oc-s25)：选图弹裁剪窗，宽图/长图初始完整居中且上下/左右均可拖动，缩放后确认回填方形图标，取消不上传）。
 
 ## 4. 历史验收存档（L3 证据，保留原始记录）
 
@@ -42,3 +44,5 @@
 |---|---|
 | 2026-09-01 | 初版（回溯整理）；两轮验收（见存档） |
 | 2026-09-02 | PUT 恒 400 缺陷修复并实测通过；按 [DOC-STANDARD](../DOC-STANDARD.md) 重构四件套 |
+| 2026-10-27 | 图标上传增加正方形提示与 `ImageSquareCropModal` 裁剪（[@OC-S25](./bdd.md#oc-s25)） |
+| 2026-10-27 | 新增企业微信提供商（[@OC-S26](./bdd.md#oc-s26)~[@OC-S28](./bdd.md#oc-s28)）：AgentId 字段、固定 wwlogin 授权地址、登录页 URL 拼接；冒烟 [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs) 17/17 |

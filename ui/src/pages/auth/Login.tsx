@@ -26,7 +26,7 @@ export function Login() {
     let cancelled = false
     ;(async () => {
       try {
-        const items = await getOAuthProviders()
+        const items = await getOAuthProviders(window.location.origin)
         if (!cancelled) setProviders(items)
       } catch {
         // 错误已由全局请求中间件统一提示

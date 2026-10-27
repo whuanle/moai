@@ -41,11 +41,6 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
     /// </summary>
     public int ClassifyId { get; init; }
 
-    /// <summary>
-    /// 应用版本号 aaa.bb.cc（如 1.0.3），null/空串=保持原值；存库编码 aaa*10000 + bb*100 + cc.
-    /// </summary>
-    public string? Version { get; init; }
-
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -63,7 +58,5 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
         validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");
         validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
             .WithMessage("只有外部应用可以设置需要授权访问.");
-        validate.RuleFor(x => x.Version).Matches(AppVersionHelper.Pattern).When(x => !string.IsNullOrWhiteSpace(x.Version))
-            .WithMessage("应用版本号格式不正确，应为 aaa.bb.cc（如 1.0.3）.");
     }
 }

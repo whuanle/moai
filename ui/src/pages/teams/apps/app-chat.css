@@ -1427,6 +1427,52 @@ body.moai-chat-resizing {
   align-items: center;
 }
 
+/* 上下文占用环形指示（发送按钮左侧）：累计 token / 模型上下文窗口 */
+.moai-chat__context-usage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  color: var(--mc-text-tertiary);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.moai-chat__context-ring {
+  flex: none;
+  display: block;
+}
+
+.moai-chat__context-ring-track {
+  stroke: var(--mc-border-strong);
+}
+
+.moai-chat__context-ring-bar {
+  stroke: var(--mc-success);
+  transition: stroke-dasharray 0.3s ease, stroke 0.15s ease;
+}
+
+.moai-chat__context-usage.is-warning .moai-chat__context-ring-bar {
+  stroke: var(--mc-warning);
+}
+
+.moai-chat__context-usage.is-danger .moai-chat__context-ring-bar {
+  stroke: var(--mc-danger);
+}
+
+.moai-chat__context-usage.is-danger .moai-chat__context-usage-text {
+  color: var(--mc-danger);
+}
+
+.moai-chat__context-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .moai-chat__file-input {
   display: none;
 }

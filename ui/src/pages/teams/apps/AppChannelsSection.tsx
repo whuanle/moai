@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { AppChannelGuide } from './AppChannelGuide'
 import {
   createFeishuApp,
   deleteFeishuApp,
@@ -217,29 +218,33 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     })
   }
 
+  // 接入指引默认收缩，点击展开后按步骤逐条分行展示
+  const guidePanel = <AppChannelGuide ns="appChannels" />
+
+  const refreshButton = (
+    <Button onClick={load} loading={loading}>
+      {t('ds.table.refresh')}
+    </Button>
+  )
+
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      <Alert type="info" showIcon message={t('appChannels.hintTitle')} description={t('appChannels.hint')} />
       {!isPublished && <Alert type="warning" showIcon message={t('appChannels.unpublishedHint')} />}
-      <DSCard title={t('appChannels.cardTitle')}>
-        <DataTable
-          rowKey="feishuAppId"
-          columns={columns}
-          dataSource={boundItems}
-          loading={loading}
-          onRefresh={load}
-          refreshLoading={loading}
-          pagination={false}
-          toolbar={
-            canManage ? (
-              <Space>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                  {t('appChannels.addFeishu')}
-                </Button>
-              </Space>
-            ) : undefined
-          }
-        />
+      <DSCard
+        title={t('appChannels.cardTitle')}
+        extra={
+          <Space>
+            {canManage && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                {t('appChannels.addFeishu')}
+              </Button>
+            )}
+            {refreshButton}
+          </Space>
+        }
+      >
+        {guidePanel}
+        <DataTable rowKey="feishuAppId" columns={columns} dataSource={boundItems} loading={loading} pagination={false} />
       </DSCard>
 
       <Modal

@@ -116,13 +116,13 @@ export async function createApp(payload: {
 }
 
 /**
- * 基础信息更新：名称、描述、分类、授权开关、版本号（应用类型创建后不可修改；头像走独立接口）。
- * version 为 aaa.bb.cc 文本（后端编码 aaa*10000 + bb*100 + cc 落库），不携带则保持原值。
+ * 基础信息更新：名称、描述、分类、授权开关（应用类型创建后不可修改；头像走独立接口）。
+ * 版本号不随基础信息修改，只能在发布或申请上架时设置。
  * 公开（is_public）只能通过「上架审核」由系统管理员审批后设置，此处不再提供。
  */
 export async function updateApp(
   appId: string,
-  payload: { name: string; description?: string; isExternal?: boolean; isAuth?: boolean; classifyId?: number; version?: string },
+  payload: { name: string; description?: string; isExternal?: boolean; isAuth?: boolean; classifyId?: number },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).put({
@@ -131,7 +131,6 @@ export async function updateApp(
     isExternal: payload.isExternal,
     isAuth: payload.isAuth,
     classifyId: payload.classifyId ?? 0,
-    version: payload.version,
   })
 }
 
@@ -288,12 +287,25 @@ export async function getCompactionDefaults(): Promise<AgentCompactionDefaults> 
   }
 }
 
+/** 长期记忆默认提示词（应用未配置 memory.prompt 时生效的平台默认值） */
+export interface MemoryDefaults {
+  prompt: string
+}
+
+/** 查询长期记忆默认提示词（登录用户可用，配置页占位展示） */
+export async function getMemoryDefaults(): Promise<MemoryDefaults> {
+  const client = getApiClient()
+  const res = await client.api.app.agent.memoryDefaults.get()
+  const raw = res as unknown as Partial<MemoryDefaults> | undefined
+  return { prompt: raw?.prompt ?? '' }
+}
+
 // ==================== 应用发布 ====================
 
-/** 发布应用（发布后团队成员可进入对话），仅团队 Admin+ 且仅 Agent 应用 */
-export async function publishApp(appId: string): Promise<void> {
+/** 发布应用（发布后团队成员可进入对话），仅团队 Admin+ 且仅 Agent 应用；version（aaa.bb.cc）可选，携带时把应用版本更新为该值并随发布生效 */
+export async function publishApp(appId: string, version?: string): Promise<void> {
   const client = getApiClient()
-  await client.api.app.byId(appId).publish.post()
+  await client.api.app.byId(appId).publish.post({ version })
 }
 
 /** 取消发布应用，仅团队 Admin+ */
@@ -356,6 +368,36 @@ export async function getAppSessionMessages(sessionId: string): Promise<AspAppSe
   const client = getApiClient()
   const res = await client.api.app.session.bySessionId(sessionId).messages.get()
   return (res?.items ?? []) as AspAppSessionMessageItem[]
+}
+
+/** 会话上下文用量：累计 token 与生效对话模型的上下文窗口上限（contextWindow 未知为 0） */
+export interface AppSessionContextUsage {
+  sessionId: string
+  modelName: string
+  contextWindow: number
+  inputTokens: number
+  outTokens: number
+  totalTokens: number
+  /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
+  cachedTokens: number
+  /** 当前上下文占用（最近一次模型调用的输入 token；上下文压缩后随下一轮回落） */
+  contextTokens: number
+}
+
+/** 查询会话上下文用量（热态优先、落库兜底），用于对话输入区的上下文占用环形指示 */
+export async function getAppSessionContextUsage(sessionId: string): Promise<AppSessionContextUsage> {
+  const client = getApiClient()
+  const res = await client.api.app.session.bySessionId(sessionId).contextUsage.get()
+  return {
+    sessionId: String(res?.sessionId ?? sessionId),
+    modelName: res?.modelName ?? '',
+    contextWindow: toFiniteNumber(res?.contextWindow),
+    inputTokens: toFiniteNumber(res?.inputTokens),
+    outTokens: toFiniteNumber(res?.outTokens),
+    totalTokens: toFiniteNumber(res?.totalTokens),
+    cachedTokens: toFiniteNumber(res?.cachedTokens),
+    contextTokens: toFiniteNumber(res?.contextTokens),
+  }
 }
 
 /** 重命名会话 */
@@ -468,6 +510,8 @@ export interface AppUsageSummary {
   promptTokens: number
   completionTokens: number
   totalTokens: number
+  /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
+  cachedTokens: number
 }
 
 export interface AppUsageModelItem {
@@ -477,10 +521,14 @@ export interface AppUsageModelItem {
   promptTokens: number
   completionTokens: number
   totalTokens: number
+  /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
+  cachedTokens: number
 }
 
 /** 应用使用活动统计（会话/用户/消息维度） */
 export interface AppUsageActivityStats {
+  /** 累计使用次数（会话创建计数，删除会话不减少） */
+  useCount: number
   sessionCount: number
   userCount: number
   messageCount: number
@@ -501,6 +549,7 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
   const stats = res?.stats
   return {
     stats: {
+      useCount: toFiniteNumber(stats?.useCount),
       sessionCount: toFiniteNumber(stats?.sessionCount),
       userCount: toFiniteNumber(stats?.userCount),
       messageCount: toFiniteNumber(stats?.messageCount),
@@ -511,6 +560,7 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
       promptTokens: toFiniteNumber(summary?.promptTokens),
       completionTokens: toFiniteNumber(summary?.completionTokens),
       totalTokens: toFiniteNumber(summary?.totalTokens),
+      cachedTokens: toFiniteNumber(summary?.cachedTokens),
     },
     byModel: (res?.byModel ?? []).map((item) => ({
       modelId: item.modelId,
@@ -519,6 +569,7 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
       promptTokens: toFiniteNumber(item.promptTokens),
       completionTokens: toFiniteNumber(item.completionTokens),
       totalTokens: toFiniteNumber(item.totalTokens),
+      cachedTokens: toFiniteNumber(item.cachedTokens),
     })),
   }
 }

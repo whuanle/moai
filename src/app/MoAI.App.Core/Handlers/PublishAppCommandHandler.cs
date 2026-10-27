@@ -57,6 +57,23 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
             throw new BusinessException("只有 Agent 应用支持发布使用.") { StatusCode = 400 };
         }
 
+        // 版本号只能在发布时设置：携带 aaa.bb.cc 文本则把当前版本更新为该值（编码为 int 落库），格式已由命令校验、此处防御性再验；
+        // 版本号必须严格递增（int 编码直接比较），相同或低于当前版本一律拒绝；不携带时保持原值（快捷重发语义）
+        if (!string.IsNullOrWhiteSpace(request.Version))
+        {
+            if (!AppVersionHelper.TryParse(request.Version, out var version))
+            {
+                throw new BusinessException("应用版本号格式不正确，应为 aaa.bb.cc（如 1.0.3）.") { StatusCode = 400 };
+            }
+
+            if (version <= app.Version)
+            {
+                throw new BusinessException($"应用版本号必须大于当前版本 {AppVersionHelper.Format(app.Version)}，请递增后再发布.") { StatusCode = 400 };
+            }
+
+            app.Version = version;
+        }
+
         // 发布即快照当前配置：正式会话按快照执行，之后的保存只落草稿，直到下次发布
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
@@ -74,6 +91,9 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
                 GraphIds = "[]",
                 Plugins = "[]",
                 Skills = "[]",
+                Prompts = "[]",
+                QuickInputs = "[]",
+                WorkflowApps = "[]",
                 ExecutionSettings = "{}",
                 OpeningStatement = string.Empty,
             };

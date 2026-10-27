@@ -45,6 +45,16 @@ public partial class AppAgentSessionEntity : IFullAudited
     public int InputTokens { get; set; }
 
     /// <summary>
+    /// 缓存命中的输入token累计（模型响应 usage 上报，未上报为 0）.
+    /// </summary>
+    public int CachedTokens { get; set; }
+
+    /// <summary>
+    /// 当前上下文占用（最近一次模型调用的输入 token；上下文压缩后随下一轮回落）.
+    /// </summary>
+    public int ContextTokens { get; set; }
+
+    /// <summary>
     /// 输出token累计.
     /// </summary>
     public int OutTokens { get; set; }

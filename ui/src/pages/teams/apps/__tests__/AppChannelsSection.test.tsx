@@ -76,6 +76,17 @@ describe('AppChannelsSection（应用外部渠道）', () => {
     expect(screen.queryByText(/应用尚未发布/)).not.toBeInTheDocument()
   })
 
+  it('接入指引默认收缩，展开后按步骤逐条分行', async () => {
+    renderSection()
+    // 收缩态：步骤文案未渲染
+    expect(screen.queryByText(/在飞书开放平台创建企业自建应用/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('接入指引'))
+
+    const items = await screen.findAllByRole('listitem')
+    expect(items.length).toBeGreaterThanOrEqual(3)
+    expect(items[0].textContent).toBe('在飞书开放平台创建企业自建应用并添加机器人能力')
+  })
+
   it('应用未发布时提示消息不会被处理', async () => {
     renderSection({ isPublished: false })
     expect(await screen.findByText(/应用尚未发布/)).toBeInTheDocument()

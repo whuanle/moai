@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
@@ -190,6 +191,9 @@ public sealed class AppDingTalkMessageHandler : IDingTalkEventHandler
         };
         databaseContext.AppAgentSessions.Add(session);
         await databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 使用次数 +1（Redis 计数器，删除会话不回退）
+        await scope.ServiceProvider.GetRequiredService<IAppUsageCounter>().IncrementAsync(appId, cancellationToken);
 
         await redisDatabase.Database.StringSetAsync(key, session.Id.ToString(), ChatSessionTtl);
         _logger.LogInformation("钉钉会话已创建，dingTalkAppId={DingTalkAppId} conversationId={ConversationId} sessionId={SessionId}.", dingTalkAppId, conversationId, session.Id);

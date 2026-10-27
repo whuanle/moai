@@ -95,9 +95,9 @@ export function applyLoginResponse(
   return userInfo
 }
 
-export async function oauthLogin(payload: { code: string; oAuthId: string }) {
+export async function oauthLogin(payload: { code: string; oAuthId: string; redirectUrl?: string }) {
   const client = getAnonymousClient()
-  return client.api.auth.oauth_login.post({ code: payload.code, oAuthId: payload.oAuthId })
+  return client.api.auth.oauth_login.post({ code: payload.code, oAuthId: payload.oAuthId, redirectUrl: payload.redirectUrl })
 }
 
 export async function oauthRegister(tempOAuthBindId: string): Promise<UserInfo | null> {
@@ -115,9 +115,10 @@ export interface OAuthProviderItem {
   redirectUrl?: string | null
 }
 
-export async function getOAuthProviders(): Promise<OAuthProviderItem[]> {
+export async function getOAuthProviders(redirectUrl?: string): Promise<OAuthProviderItem[]> {
   const client = getAnonymousClient()
-  const res = await client.api.auth.oauth_prividers.get()
+  // 回调地址跟随登录页实际访问来源（内网穿透等场景与后端 WebUI 配置不同）
+  const res = await client.api.auth.oauth_prividers.get({ queryParameters: { redirectUrl } })
   return res?.items ?? []
 }
 

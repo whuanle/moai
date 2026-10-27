@@ -24,4 +24,10 @@ public enum OAuthPrivider
     /// </summary>
     [JsonPropertyName("dingtalk")]
     DingTalk = 2,
+
+    /// <summary>
+    /// 企业微信.
+    /// </summary>
+    [JsonPropertyName("weixinwork")]
+    WeixinWork = 3,
 }

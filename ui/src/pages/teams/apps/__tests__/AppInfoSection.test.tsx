@@ -71,13 +71,12 @@ describe('AppInfoSection（应用信息分区）', () => {
         isExternal: false,
         isAuth: false,
         classifyId: 0,
-        version: '1.0.0',
       })
       expect(onReload).toHaveBeenCalled()
     })
   })
 
-  it('版本号回显与编辑：按 aaa.bb.cc 展示，保存随基础信息提交', async () => {
+  it('不再提供版本号输入（版本号只能在发布/申请上架时设置）', async () => {
     render(
       <AppInfoSection
         appId="a1"
@@ -87,35 +86,8 @@ describe('AppInfoSection（应用信息分区）', () => {
       />,
     )
 
-    const versionInput = (await screen.findByLabelText('应用版本')) as HTMLInputElement
-    expect(versionInput.value).toBe('1.2.3')
-
-    fireEvent.change(versionInput, { target: { value: '2.10.1' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存信息/ }))
-
-    await waitFor(() => {
-      expect(updateApp).toHaveBeenCalledWith('a1', expect.objectContaining({ version: '2.10.1' }))
-    })
-  })
-
-  it('版本号格式非法时阻止保存', async () => {
-    render(
-      <AppInfoSection
-        appId="a1"
-        detail={{ ...DETAIL, version: 10000 }}
-        canManage
-        onReload={vi.fn()}
-      />,
-    )
-
-    const versionInput = (await screen.findByLabelText('应用版本')) as HTMLInputElement
-    fireEvent.change(versionInput, { target: { value: '1.2' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存信息/ }))
-
-    await waitFor(() => {
-      expect(screen.getByText(/版本号格式不正确/)).toBeTruthy()
-    })
-    expect(updateApp).not.toHaveBeenCalled()
+    await screen.findByLabelText('应用名称')
+    expect(screen.queryByLabelText('应用版本')).toBeNull()
   })
 
   it('普通成员只读：无保存入口并提示需要团队管理员', async () => {

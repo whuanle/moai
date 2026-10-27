@@ -87,6 +87,18 @@ export async function withdrawPublication(publicationId: string): Promise<void> 
   await client.api.publication.withdraw.post({ publicationId })
 }
 
+/** 下架（取消公开）：将已公开资源从平台下架，不改变团队内发布状态；需要资源所属团队 Admin+ */
+export async function takedownPublication(payload: {
+  resourceType: PublicationResourceType
+  resourceId: string
+}): Promise<void> {
+  const client = getApiClient()
+  await client.api.publication.takedown.post({
+    resourceType: payload.resourceType,
+    resourceId: payload.resourceId,
+  })
+}
+
 /** 审批上架申请（仅系统管理员）：isApprove=true 通过并公开资源，false 驳回 */
 export async function reviewPublication(
   publicationId: string,

@@ -20,16 +20,19 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
 
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IAppUsageCounter _appUsageCounter;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateAppSessionCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public CreateAppSessionCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="appUsageCounter">应用使用次数计数器.</param>
+    public CreateAppSessionCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAppUsageCounter appUsageCounter)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _appUsageCounter = appUsageCounter;
     }
 
     /// <inheritdoc/>
@@ -93,6 +96,9 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
 
         _databaseContext.AppAgentSessions.Add(session);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 使用次数 +1（Redis 计数器，删除会话不回退）
+        await _appUsageCounter.IncrementAsync(app.Id, cancellationToken);
 
         return new SimpleGuid { Value = session.Id };
     }

@@ -4,6 +4,8 @@
 // @ts-ignore
 import { CompactionDefaultsRequestBuilderRequestsMetadata, type CompactionDefaultsRequestBuilder } from './compactionDefaults/index.js';
 // @ts-ignore
+import { MemoryDefaultsRequestBuilderRequestsMetadata, type MemoryDefaultsRequestBuilder } from './memoryDefaults/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -14,6 +16,10 @@ export interface AgentRequestBuilder extends BaseRequestBuilder<AgentRequestBuil
      * The compactionDefaults property
      */
     get compactionDefaults(): CompactionDefaultsRequestBuilder;
+    /**
+     * The memoryDefaults property
+     */
+    get memoryDefaults(): MemoryDefaultsRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -25,6 +31,9 @@ export const AgentRequestBuilderUriTemplate = "{+baseurl}/api/app/agent";
 export const AgentRequestBuilderNavigationMetadata: Record<Exclude<keyof AgentRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     compactionDefaults: {
         requestsMetadata: CompactionDefaultsRequestBuilderRequestsMetadata,
+    },
+    memoryDefaults: {
+        requestsMetadata: MemoryDefaultsRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

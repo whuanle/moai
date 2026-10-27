@@ -6,7 +6,7 @@
 ## 项目简介
 
 开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
-已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉机器人接入对话）。进度见 [rounds-log.md](./docs/rounds-log.md)。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉/企业微信机器人接入对话）。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
@@ -14,7 +14,7 @@
 src/MoAI/         组合宿主（Program.cs、MainModule、OpenApiModule）
 src/{auth,account,settings,oauthconnect,storage,common,infra,database,hangfire}/   平台底座
 src/{classify,team,teamplugin,variable,wiki,app,publication}/                      团队协作
-src/{feishu,dingtalk}/                                                             外部渠道（飞书/钉钉机器人接入）
+src/{feishu,dingtalk,weixinwork}/                                                       外部渠道（飞书/钉钉/企业微信机器人接入）
 src/{aichannel,aimodel,aiplugin,skill,gateway}/                                   AI 业务层
 src/{ai,admin,plugin}/                                                             在建
 ui/               前端（React 19 + TS + Vite + antd 5 + zustand + Kiota）
@@ -97,12 +97,13 @@ node local-dev/kg-import-e2e.mjs         # KG 20（知识图谱导入：AI 导�
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
 node local-dev/team-timer-smoke.mjs      # TIMER 22（团队定时器：CRUD/门禁 + cron 校验 + Hangfire 下次调度回显 + 立即执行成功落历史 + 失败重试终态 + 停用移除调度 + 删除保留历史；自带桩模型，零真实依赖）
 node local-dev/team-plugin-e2e.mjs       # TP 47（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显 + 系统插件 key 全局保留与授权团队可用）
-node local-dev/app-e2e.mjs               # AP 178（含 AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段）
+node local-dev/app-e2e.mjs               # AP 209（含 AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段 + AP-97 版本号只在发布/上架时设置且只能递增不能回退 + AP-98/99 会话上下文用量查询：门禁/零值回显/对话后热态累计与生效模型回显/缓存命中捕获与使用分析聚合，AP-99d 含约 120s 审计落库轮询）
+node local-dev/app-usecount-e2e.mjs      # AU 13（应用使用次数计数：会话创建推 Redis 计数每分钟批量落库 + 删除会话不回退 + 累计/存活双口径 + 调试会话不计入；含约 75s 计数周期等待）
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
 node local-dev/settings-logo-e2e.mjs    # SET 18（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认）
 node local-dev/workflow-e2e.mjs          # WF 130（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量/对话实时过程：CUSTOM 节点事件 + AI 正文流式/图片理解节点：桩视觉模型多模态全链路·非视觉模型拒绝·来源防护；内置桩视觉模型零依赖，存量依赖真实模型的用例在环境无模型时失败属预期）
-node local-dev/publication-e2e.mjs       # PB 34（上架审核：申请/审批/撤回，is_public 审批制）
+node local-dev/publication-e2e.mjs       # PB 49（上架审核：申请/审批/撤回，is_public 审批制；上架自动取最新团队发布版本，携带版本需递增）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）
 node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载工具调用自增 use_count + options/userconfig 双接口回显；本地桩模型）
@@ -129,8 +130,10 @@ node local-dev/ops-p2-plugins-e2e.mjs    # DYN 30+2SKIP（P2 运维插件：ssh_
 node local-dev/ops-p0-plugins-e2e.mjs    # DYN 30（P0 运维插件：alertmanager_query 告警静默 / loki_query LogQL 纳秒归一 / kubernetes_query 资源与日志 / 钉钉企微机器人 HMAC 加签；四桩全链路，无需真实运维系统；前置 dotnet build -o .builds/ops-p0）
 node local-dev/observability-plugin-e2e.mjs # DYN 61（观测四插件：Prometheus/ES/Tempo 桩全链路 + clickhouse_query 自由只读 SQL @DYN-S71~S72（摸库摸表/SHOW CREATE/FORMAT JSON meta/三层只读防护）；自建四段路由桩，无需真实观测服务；前置 dotnet build -o .builds/observability）
 node local-dev/clickstack-e2e.mjs        # DYN 20（ClickStack 查询：sources 数据源 / search 原始检索 / chart 时间线聚合，走 HyperDX 对外 API（Personal API Access Key，ClickHouse 8123 不公开时的唯一查询面，与 clickhouse_query 分立）；自建三端点桩，无需真实 ClickStack；前置 dotnet build -o .builds/clickstack）
+node local-dev/oauth-weixinwork-smoke.mjs  # OCW 17（企业微信第三方登录：连接器 AgentId 校验/回显 + 固定 wwlogin 授权地址 + 登录页 URL 拼接（login_type=CorpApp/appid/agentid）+ 更新同步；假凭证即可，@OC-S26~S28）
 node local-dev/feishu-e2e.mjs            # FS 42（飞书应用连接 CRUD + 应用渠道创建即绑定/删除即彻底移除/绑定解绑端点下线 + 编辑可改 AppID + 应用列表回显外部渠道 applink 入口与禁用隐藏 @FS-S29~S30，假凭证即可）
 node local-dev/dingtalk-e2e.mjs          # DT 39（钉钉应用连接 CRUD + 应用渠道创建即绑定/删除即彻底移除/编辑可改 AppKey/非成员 404 + 应用列表钉钉渠道绑定即露出（AppKey 兜底）@DT-S27，假凭证即可）
+node local-dev/weixinwork-e2e.mjs        # WX 54（企业微信自建应用渠道：连接 CRUD/门禁 + 创建即绑定 + 回调 URL 验证与推送全链路（签名/AES 加解密/receiveid 防护）+ 单聊 message/send 与群聊 appchat/send 桩模型回复 + MsgId 去重/会话延续/禁用与未发布不回复 @WX-S1~S27；内置 qyapi 桩与回调加密模拟，零真实依赖）
 node local-dev/audit-345.mjs node local-dev/audit-storage.mjs node local-dev/auth-lockout-check.mjs
 ```
 

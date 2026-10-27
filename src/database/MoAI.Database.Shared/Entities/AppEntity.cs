@@ -113,4 +113,9 @@ public partial class AppEntity : IFullAudited
     /// 是否需要授权访问，外部应用设置才有效.
     /// </summary>
     public bool IsAuth { get; set; }
+
+    /// <summary>
+    /// 累计使用次数（会话创建计数，删除会话不减少），由 Redis 计数器每分钟批量累加.
+    /// </summary>
+    public int UseCount { get; set; }
 }

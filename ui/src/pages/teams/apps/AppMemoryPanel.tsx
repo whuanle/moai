@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Col, Divider, Form, InputNumber, Popconfirm, Row, Select, Space, Switch, Tag, Typography } from 'antd'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Button, Col, Divider, Form, Input, InputNumber, Popconfirm, Row, Select, Switch, Tag, Typography } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, feedback } from '@/design-system'
+import { feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { getAppAgentConfig, publishApp, saveAppAgentConfig } from '@/api/app'
+import { getAppAgentConfig, getMemoryDefaults } from '@/api/app'
 import { getWikiModelOptions } from '@/api/wiki'
 import { clearAppMemory, getAppMemoryStats, getMyMemories, type MyMemoryItem } from '@/api/memory'
 import { formatDateTime } from '@/utils/datetime'
@@ -15,92 +15,62 @@ const { Text } = Typography
 const TYPE_EPISODIC = 1
 const TYPE_PROCEDURAL = 2
 
-/** 空模型 id（后端未选择模型时返回全零 Guid） */
-const EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
-
-/** 本分区维护的全量配置快照（保存时原样回传，只改 memory 节，避免覆盖其他分区字段） */
-interface ConfigSnapshot {
-  modelId?: string | null
-  prompt: string
-  wikiIds: number[]
-  graphIds: number[]
-  plugins: string[]
-  workflowApps: string[]
-  skills: string[]
-  openingStatement: string
-  openingStatementEnabled: boolean
-  quickInputs: string[]
-  executionSettings: Record<string, unknown>
-}
-
-export interface AppMemorySectionProps {
+export interface AppMemorySettingsPanelProps {
   teamId: number
   appId: string
   canManage: boolean
-  isPublished: boolean
-  /** 发布动作触发后回报工作台刷新配置状态 */
-  onPublished?: () => void
+  /**
+   * 宿主统一保存回调注册（Agent 应用「配置」分区嵌入态）：传入后面板不渲染保存按钮、不自行提示成功，
+   * 由宿主页「保存设置」把 memory 节并入主配置一次提交（随发布快照生效）；
+   * 校验失败（开启未选向量化模型）提示并抛错中断宿主整体保存。
+   * 注册在配置加载完成后才生效，避免宿主在回显前保存到默认值。
+   */
+  registerSettings?: (get: (() => Record<string, unknown>) | null) => void
 }
 
 /**
- * 应用「记忆」分区：长期记忆总开关级联（向量化模型/维度、记忆类型、自动提取、检索参数、共享范围默认、容量），
- * 危险区提供清空应用全部用户记忆（团队管理员，Popconfirm 二次确认）；
- * 用户的个人记忆偏好（模式/清空）在对话页应用设置中调整.
+ * 长期记忆设置面板（「配置」分区收缩卡片承载）：长期记忆总开关级联
+ * （向量化模型/维度、记忆提示词、自动提取、检索参数、单用户容量；记忆类型由 AI 自行判定，不提供限制）；
+ * 记忆提示词追加为记忆工具描述（指导 AI 如何管理与使用记忆），留空用平台默认（占位符展示）；
+ * memory 节经 registerSettings 注册给宿主页，随「保存设置」并入 executionSettings 一次提交；
+ * 下方维护应用记忆统计、管理员本人记忆样例与「清空应用全部记忆」危险区（即时接口，不经发布快照）；
+ * 用户的个人记忆偏好（模式/清空）在对话页应用设置中调整。
  */
-export function AppMemorySection({ teamId, appId, canManage, isPublished, onPublished }: AppMemorySectionProps) {
+export function AppMemorySettingsPanel({ teamId, appId, canManage, registerSettings }: AppMemorySettingsPanelProps) {
   const { t } = useTranslation()
 
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [publishing, setPublishing] = useState(false)
   const [memoryEnabled, setMemoryEnabled] = useState(false)
   const [embeddingModelId, setEmbeddingModelId] = useState<string>()
   const [embeddingDimensions, setEmbeddingDimensions] = useState<number | null>(null)
-  const [enableSemantic, setEnableSemantic] = useState(true)
-  const [enableEpisodic, setEnableEpisodic] = useState(true)
-  const [enableProcedural, setEnableProcedural] = useState(true)
+  const [prompt, setPrompt] = useState('')
+  // 平台默认记忆提示词（prompt 留空时生效，展示为输入框占位符）
+  const [defaultPrompt, setDefaultPrompt] = useState('')
   const [autoExtract, setAutoExtract] = useState(true)
   const [retrievalTopK, setRetrievalTopK] = useState<number | null>(null)
   const [maxPerUser, setMaxPerUser] = useState<number | null>(null)
-  const [config, setConfig] = useState<ConfigSnapshot | null>(null)
   const [embeddingModels, setEmbeddingModels] = useState<{ value: string; label: string }[]>([])
   // 应用内本人记忆样例（帮助管理员确认记忆在生效；只读）
   const [myMemories, setMyMemories] = useState<MyMemoryItem[]>([])
   const [myMemoryTotal, setMyMemoryTotal] = useState(0)
   // 应用维度记忆统计（全部用户）；已有记忆时向量化模型与维度锁定（不同模型/维度的向量不可比，需先清空才能换）
   const [stats, setStats] = useState<{ totalMemories: number; userCount: number } | null>(null)
-  const memoryLocked = (stats?.totalMemories ?? 0) > 0
-  const [dirty, setDirty] = useState(false)
 
   const load = useCallback(async () => {
     if (!appId) return
     setLoading(true)
     try {
-      const [configRow, models] = await Promise.all([
+      const [configRow, models, defaults] = await Promise.all([
         getAppAgentConfig(appId),
         getWikiModelOptions(teamId),
+        getMemoryDefaults(),
       ])
-      const settings = configRow.executionSettings ?? {}
-      const memory = (settings.memory ?? {}) as Record<string, unknown>
-      setConfig({
-        modelId: configRow.modelId && configRow.modelId !== EMPTY_GUID ? configRow.modelId : null,
-        prompt: configRow.prompt ?? '',
-        wikiIds: configRow.wikiIds ?? [],
-        graphIds: configRow.graphIds ?? [],
-        plugins: configRow.plugins ?? [],
-        workflowApps: configRow.workflowApps ?? [],
-        skills: configRow.skills ?? [],
-        openingStatement: configRow.openingStatement ?? '',
-        openingStatementEnabled: configRow.openingStatementEnabled ?? false,
-        quickInputs: configRow.quickInputs ?? [],
-        executionSettings: settings,
-      })
+      const memory = ((configRow.executionSettings ?? {}).memory ?? {}) as Record<string, unknown>
       setMemoryEnabled(memory.enabled === true)
       setEmbeddingModelId(typeof memory.embeddingModelId === 'string' && memory.embeddingModelId ? memory.embeddingModelId : undefined)
       setEmbeddingDimensions(typeof memory.embeddingDimensions === 'number' ? (memory.embeddingDimensions as number) : null)
-      setEnableSemantic(memory.enableSemantic !== false)
-      setEnableEpisodic(memory.enableEpisodic !== false)
-      setEnableProcedural(memory.enableProcedural !== false)
+      setPrompt(typeof memory.prompt === 'string' ? (memory.prompt as string) : '')
+      setDefaultPrompt(defaults.prompt)
       setAutoExtract(memory.autoExtract !== false)
       setRetrievalTopK(typeof memory.retrievalTopK === 'number' ? (memory.retrievalTopK as number) : null)
       setMaxPerUser(typeof memory.maxPerUser === 'number' ? (memory.maxPerUser as number) : null)
@@ -132,66 +102,38 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
     void load()
   }, [load])
 
-  const buildMemorySettings = (): Record<string, unknown> => ({
-    enabled: memoryEnabled,
-    // 模型/维度无论开关都回传：关闭期间保留锁定参照系，重新开启时口径不变
-    ...(embeddingModelId ? { embeddingModelId } : {}),
-    ...(embeddingDimensions != null && embeddingDimensions > 0 ? { embeddingDimensions } : {}),
-    ...(memoryEnabled
-      ? {
-          enableSemantic,
-          enableEpisodic,
-          enableProcedural,
-          autoExtract,
-          ...(retrievalTopK != null && retrievalTopK > 0 ? { retrievalTopK } : {}),
-          ...(maxPerUser != null && maxPerUser >= 10 ? { maxPerUser } : {}),
-        }
-      : {}),
-  })
-
-  const handleSave = async () => {
-    if (!appId || !config) return
+  /** 构造 memory 节（宿主保存时并入 executionSettings）；开启未选向量化模型时提示并抛错中断宿主保存 */
+  const buildMemorySettings = (): Record<string, unknown> => {
     if (memoryEnabled && !embeddingModelId) {
       feedback.error(t('appMemory.modelRequired'))
-      return
+      throw new Error('embedding model required')
     }
-    setSaving(true)
-    try {
-      await saveAppAgentConfig(appId, {
-        modelId: config.modelId ?? null,
-        prompt: config.prompt,
-        wikiIds: config.wikiIds,
-        graphIds: config.graphIds,
-        plugins: config.plugins,
-        workflowApps: config.workflowApps,
-        skills: config.skills,
-        openingStatement: config.openingStatement,
-        openingStatementEnabled: config.openingStatementEnabled,
-        quickInputs: config.quickInputs,
-        executionSettings: { ...config.executionSettings, memory: buildMemorySettings() },
-      })
-      feedback.success(t(isPublished ? 'appManage.configSaveDraftSuccess' : 'appManage.configSaveSuccess'))
-      setDirty(false)
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSaving(false)
+    return {
+      enabled: memoryEnabled,
+      // 模型/维度无论开关都回传：关闭期间保留锁定参照系，重新开启时口径不变
+      ...(embeddingModelId ? { embeddingModelId } : {}),
+      ...(embeddingDimensions != null && embeddingDimensions > 0 ? { embeddingDimensions } : {}),
+      // 记忆提示词：非空才回传（空=后端按平台默认生效）
+      ...(prompt.trim() ? { prompt: prompt.trim() } : {}),
+      ...(memoryEnabled
+        ? {
+            autoExtract,
+            ...(retrievalTopK != null && retrievalTopK > 0 ? { retrievalTopK } : {}),
+            ...(maxPerUser != null && maxPerUser >= 10 ? { maxPerUser } : {}),
+          }
+        : {}),
     }
   }
 
-  const handlePublish = async () => {
-    if (!appId) return
-    setPublishing(true)
-    try {
-      await publishApp(appId)
-      feedback.success(t('appManage.publishSuccess'))
-      onPublished?.()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setPublishing(false)
-    }
-  }
+  const settingsRef = useRef<() => Record<string, unknown>>(() => ({}))
+  settingsRef.current = buildMemorySettings
+
+  // 嵌入态：配置加载完成后才注册 memory 节构造回调（加载中不注册，防宿主在回显前把默认值存库）；卸载/换应用时注销
+  useEffect(() => {
+    if (!registerSettings || loading) return
+    registerSettings(() => settingsRef.current())
+    return () => registerSettings(null)
+  }, [registerSettings, loading])
 
   const handleClearAppMemory = async () => {
     if (!appId) return
@@ -209,32 +151,19 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
   const typeName = (type: number) =>
     type === TYPE_EPISODIC ? t('appMemory.typeEpisodic') : type === TYPE_PROCEDURAL ? t('appMemory.typeProcedural') : t('appMemory.typeSemantic')
 
+  if (loading) {
+    return null
+  }
+
+  const memoryLocked = (stats?.totalMemories ?? 0) > 0
+
   return (
-    <DSCard title={t('appMemory.title')} loading={loading}>
-      {!canManage && (
-        <Alert type="info" showIcon message={t('appManage.memberHint')} style={{ marginBottom: spacing.md }} />
-      )}
-      {canManage && isPublished && (
-        <Alert
-          type="warning"
-          showIcon
-          message={t('appManage.draftPendingHint')}
-          action={
-            <Button size="small" type="primary" loading={publishing} onClick={() => void handlePublish()}>
-              {t('appManage.republish')}
-            </Button>
-          }
-          style={{ marginBottom: spacing.md }}
-        />
-      )}
+    <div>
       <Form layout="vertical" disabled={!canManage}>
         <Form.Item label={t('appMemory.enabled')} valuePropName="checked" extra={t('appMemory.enabledHint')} style={{ marginBottom: spacing.sm }}>
           <Switch
             checked={memoryEnabled}
-            onChange={(checked) => {
-              setMemoryEnabled(checked)
-              setDirty(true)
-            }}
+            onChange={(checked) => setMemoryEnabled(checked)}
           />
         </Form.Item>
         {memoryEnabled && (
@@ -250,10 +179,7 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
                     placeholder={t('appMemory.embeddingModelPlaceholder')}
                     value={embeddingModelId}
                     disabled={memoryLocked}
-                    onChange={(value) => {
-                      setEmbeddingModelId(value)
-                      setDirty(true)
-                    }}
+                    onChange={setEmbeddingModelId}
                     options={embeddingModels}
                   />
                 </Form.Item>
@@ -267,60 +193,23 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
                     style={{ width: '100%' }}
                     value={embeddingDimensions ?? undefined}
                     disabled={memoryLocked}
-                    onChange={(value) => {
-                      setEmbeddingDimensions(typeof value === 'number' ? value : null)
-                      setDirty(true)
-                    }}
+                    onChange={(value) => setEmbeddingDimensions(typeof value === 'number' ? value : null)}
                     placeholder="1024"
                   />
                 </Form.Item>
               </Col>
             </Row>
-            <Form.Item label={t('appMemory.types')} style={{ marginBottom: spacing.sm }}>
-              <Space size={spacing.lg} wrap>
-                <span>
-                  <Switch
-                    size="small"
-                    checked={enableSemantic}
-                    onChange={(v) => {
-                      setEnableSemantic(v)
-                      setDirty(true)
-                    }}
-                  />{' '}
-                  {t('appMemory.typeSemantic')}
-                </span>
-                <span>
-                  <Switch
-                    size="small"
-                    checked={enableEpisodic}
-                    onChange={(v) => {
-                      setEnableEpisodic(v)
-                      setDirty(true)
-                    }}
-                  />{' '}
-                  {t('appMemory.typeEpisodic')}
-                </span>
-                <span>
-                  <Switch
-                    size="small"
-                    checked={enableProcedural}
-                    onChange={(v) => {
-                      setEnableProcedural(v)
-                      setDirty(true)
-                    }}
-                  />{' '}
-                  {t('appMemory.typeProcedural')}
-                </span>
-              </Space>
+            <Form.Item label={t('appMemory.prompt')} extra={t('appMemory.promptHint')} style={{ marginBottom: spacing.sm }}>
+              <Input.TextArea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={defaultPrompt}
+                maxLength={2000}
+                autoSize={{ minRows: 4, maxRows: 12 }}
+              />
             </Form.Item>
             <Form.Item label={t('appMemory.autoExtract')} valuePropName="checked" extra={t('appMemory.autoExtractHint')} style={{ marginBottom: spacing.sm }}>
-              <Switch
-                checked={autoExtract}
-                onChange={(v) => {
-                  setAutoExtract(v)
-                  setDirty(true)
-                }}
-              />
+              <Switch checked={autoExtract} onChange={setAutoExtract} />
             </Form.Item>
             <Row gutter={spacing.md}>
               <Col xs={24} md={8}>
@@ -331,10 +220,7 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
                     precision={0}
                     style={{ width: '100%' }}
                     value={retrievalTopK ?? undefined}
-                    onChange={(value) => {
-                      setRetrievalTopK(typeof value === 'number' ? value : null)
-                      setDirty(true)
-                    }}
+                    onChange={(value) => setRetrievalTopK(typeof value === 'number' ? value : null)}
                     placeholder="5"
                   />
                 </Form.Item>
@@ -347,10 +233,7 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
                     precision={0}
                     style={{ width: '100%' }}
                     value={maxPerUser ?? undefined}
-                    onChange={(value) => {
-                      setMaxPerUser(typeof value === 'number' ? value : null)
-                      setDirty(true)
-                    }}
+                    onChange={(value) => setMaxPerUser(typeof value === 'number' ? value : null)}
                     placeholder="500"
                   />
                 </Form.Item>
@@ -359,11 +242,6 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
           </>
         )}
       </Form>
-      {canManage && (
-        <Button type="primary" style={{ marginTop: spacing.sm }} loading={saving} disabled={!dirty} onClick={() => void handleSave()}>
-          {t('appManage.saveConfig')}
-        </Button>
-      )}
 
       {stats && (
         <>
@@ -408,6 +286,6 @@ export function AppMemorySection({ teamId, appId, canManage, isPublished, onPubl
           </div>
         </>
       )}
-    </DSCard>
+    </div>
   )
 }

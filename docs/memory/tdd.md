@@ -21,7 +21,8 @@
 | @MEM-S14 | local-dev/agent-memory-e2e.mjs#AM-21~22 | PASS（2026-10-12） |
 | @MEM-S15 | local-dev/agent-memory-e2e.mjs#AM-23~24 | PASS（2026-10-12） |
 | @MEM-S16 | local-dev/agent-memory-e2e.mjs#AM-25 | PASS（2026-10-12） |
-| @MEM-S17 | ui/src/pages/teams/apps/__tests__/AppMemorySection.test.tsx | PASS 7/7（2026-10-13） |
+| @MEM-S17 | ui/src/pages/teams/apps/__tests__/AppMemoryPanel.test.tsx（统计展示与清空归零；面板已随 @AP-S104 并入应用「配置」分区收缩卡片） | PASS 7/7（2026-10-27 复跑） |
+| @MEM-S22 @MEM-S23 | ui/src/pages/teams/apps/__tests__/AppMemoryPanel.test.tsx（默认提示词占位展示且空值不下发/自定义回显并随回调产出；后端超长 400 由 `MemorySettingsValidator` 校验） | PASS 9/9（2026-10-27） |
 | @MEM-S18 | local-dev/agent-memory-e2e.mjs#AM-10b ｜ tests/MoAI.App.Tests/SaveAppAgentConfigMemoryLockTests#ModelChange/DisabledDraftSwitch | PASS 32/32（2026-10-13） |
 | @MEM-S19 | local-dev/agent-memory-e2e.mjs#AM-10c ｜ tests/MoAI.App.Tests/SaveAppAgentConfigMemoryLockTests#DimensionChange | PASS 32/32（2026-10-13） |
 | @MEM-S20 | local-dev/agent-memory-e2e.mjs#AM-10d~f ｜ tests/MoAI.App.Tests/SaveAppAgentConfigMemoryLockTests#ReEnable/RequestWithoutDimensions | PASS 32/32（2026-10-13） |

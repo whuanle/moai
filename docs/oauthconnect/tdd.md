@@ -15,14 +15,17 @@
 | @OC-S7、@OC-S18 ~ @OC-S20 | @manual 本地模拟 OIDC Provider 全链路 12/12（记录见 [../user-management/sop.md](../user-management/sop.md) 历史验收存档·第三轮） | PASS（2026-09-02） |
 | @OC-S1、@OC-S2、@OC-S6、@OC-S9 ~ @OC-S11、@OC-S13 ~ @OC-S15、@OC-S17 | @manual HTTP 走查（[SOP 第 3 节](./sop.md)） | PASS（2026-09-01，第二轮深度 API 68/68 互证） |
 | @OC-S21 ~ @OC-S24 | @manual 浏览器走查（[SOP 第 3 节](./sop.md)） | PASS（2026-09-01/02，全页面回归） |
+| @OC-S25 | [ImageSquareCropModal.test.tsx](../../ui/src/components/__tests__/ImageSquareCropModal.test.tsx)（组件冒烟 3/3 + `clampCropOffset` 全向拖动约束 3/3）+ @manual 浏览器走查（[SOP 第 3 节](./sop.md)） | PASS（2026-10-27）；交互走查待回归 |
+| @OC-S26 ~ @OC-S28 | [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs)（创建/AgentId 校验与回显/固定授权地址/登录页 URL 拼接/回调地址 redirectUri/更新同步/删除清理）+ @manual 浏览器走查（表单联动 [@OC-S22](./bdd.md#oc-s22)） | PASS 18/18（2026-10-27） |
 
 ## 回归命令
 
 ```bash
 node local-dev/audit-345.mjs   # 需后端运行于 :5210；脚本含轮3/4 断言，OC 相关 6 条
+node local-dev/oauth-weixinwork-smoke.mjs   # 企业微信连接器冒烟 17 断言（@OC-S26~S28 + @AUTH-S13/@AUTH-S25 URL 拼接）
 ```
 
 ## 覆盖率说明
 
-- 自动化 5 项（列表/软删除/建飞书/重名/PUT/删）覆盖核心写路径；创建 Custom、钉钉、401/403 门禁为手动（需可达的外部 OIDC 端点与 member 账号）。
+- 自动化 5 项（列表/软删除/建飞书/重名/PUT/删）覆盖核心写路径；创建 Custom、钉钉、401/403 门禁为手动（需可达的外部 OIDC 端点与 member 账号）。企业微信连接器 CRUD 与 URL 拼接已自动化（假凭证冒烟），真实扫码登录链路无法离线自动化（[@AUTH-S25](../auth/bdd.md#auth-s25) @manual）。
 - 已知未覆盖：Custom 发现端点不可达的 500 路径（[@OC-S11](./bdd.md#oc-s11)，缺陷记录未修复，不自动化）。

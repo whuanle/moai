@@ -40,6 +40,11 @@ public class CreateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     /// </summary>
     public Uri WellKnown { get; init; } = default!;
 
+    /// <summary>
+    /// 企业微信应用 agentid，仅 weixinwork 提供商必填.
+    /// </summary>
+    public string? AgentId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateOAuthConnectionCommand> validate)
     {
@@ -49,5 +54,6 @@ public class CreateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
         validate.RuleFor(x => x.Secret).NotEmpty().WithMessage("密钥不能为空.");
         validate.RuleFor(x => x.IconUrl).NotEmpty().WithMessage("图标地址不能为空.");
         validate.RuleFor(x => x.WellKnown).NotNull().When(x => x.Provider == OAuthPrivider.Custom).WithMessage("发现端点不能为空.");
+        validate.RuleFor(x => x.AgentId).NotEmpty().When(x => x.Provider == OAuthPrivider.WeixinWork).WithMessage("企业微信应用 AgentId 不能为空.").MaximumLength(100).WithMessage("企业微信应用 AgentId 最长 100 个字符.");
     }
 }
