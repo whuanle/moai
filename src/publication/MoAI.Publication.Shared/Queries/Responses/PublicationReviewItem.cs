@@ -29,6 +29,16 @@ public class PublicationReviewItem : AuditsInfo
     public string ResourceName { get; set; } = string.Empty;
 
     /// <summary>
+    /// 资源头像 objectKey（申请时快照之后仍以资源当前头像为准），未设置为空串.
+    /// </summary>
+    public string ResourceAvatar { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 申请上架的版本号（int 编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc），仅应用类型有值.
+    /// </summary>
+    public int? PublishVersion { get; set; }
+
+    /// <summary>
     /// 资源所属团队 id.
     /// </summary>
     public long TeamId { get; set; }

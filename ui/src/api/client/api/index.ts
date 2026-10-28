@@ -22,6 +22,8 @@ import { ClassifyRequestBuilderNavigationMetadata, ClassifyRequestBuilderRequest
 // @ts-ignore
 import { CommonRequestBuilderNavigationMetadata, type CommonRequestBuilder } from './common/index.js';
 // @ts-ignore
+import { Dingtalk_appRequestBuilderNavigationMetadata, Dingtalk_appRequestBuilderRequestsMetadata, type Dingtalk_appRequestBuilder } from './dingtalk_app/index.js';
+// @ts-ignore
 import { Feishu_appRequestBuilderNavigationMetadata, Feishu_appRequestBuilderRequestsMetadata, type Feishu_appRequestBuilder } from './feishu_app/index.js';
 // @ts-ignore
 import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBuilderRequestsMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
@@ -45,6 +47,8 @@ import { TimerRequestBuilderNavigationMetadata, TimerRequestBuilderRequestsMetad
 import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetadata } from './usermanage/index.js';
 // @ts-ignore
 import { type VariableRequestBuilder, VariableRequestBuilderNavigationMetadata, VariableRequestBuilderRequestsMetadata } from './variable/index.js';
+// @ts-ignore
+import { type Weixinwork_appRequestBuilder, Weixinwork_appRequestBuilderNavigationMetadata, Weixinwork_appRequestBuilderRequestsMetadata } from './weixinwork_app/index.js';
 // @ts-ignore
 import { type WikiRequestBuilder, WikiRequestBuilderNavigationMetadata, WikiRequestBuilderRequestsMetadata } from './wiki/index.js';
 // @ts-ignore
@@ -95,6 +99,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get common(): CommonRequestBuilder;
     /**
+     * The dingtalk_app property
+     */
+    get dingtalk_app(): Dingtalk_appRequestBuilder;
+    /**
      * The feishu_app property
      */
     get feishu_app(): Feishu_appRequestBuilder;
@@ -143,6 +151,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get variable(): VariableRequestBuilder;
     /**
+     * The weixinwork_app property
+     */
+    get weixinwork_app(): Weixinwork_appRequestBuilder;
+    /**
      * The wiki property
      */
     get wiki(): WikiRequestBuilder;
@@ -188,6 +200,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     common: {
         navigationMetadata: CommonRequestBuilderNavigationMetadata,
     },
+    dingtalk_app: {
+        requestsMetadata: Dingtalk_appRequestBuilderRequestsMetadata,
+        navigationMetadata: Dingtalk_appRequestBuilderNavigationMetadata,
+    },
     feishu_app: {
         requestsMetadata: Feishu_appRequestBuilderRequestsMetadata,
         navigationMetadata: Feishu_appRequestBuilderNavigationMetadata,
@@ -231,6 +247,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     variable: {
         requestsMetadata: VariableRequestBuilderRequestsMetadata,
         navigationMetadata: VariableRequestBuilderNavigationMetadata,
+    },
+    weixinwork_app: {
+        requestsMetadata: Weixinwork_appRequestBuilderRequestsMetadata,
+        navigationMetadata: Weixinwork_appRequestBuilderNavigationMetadata,
     },
     wiki: {
         requestsMetadata: WikiRequestBuilderRequestsMetadata,

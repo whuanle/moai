@@ -76,6 +76,17 @@ describe('AppChannelsSection（应用外部渠道）', () => {
     expect(screen.queryByText(/应用尚未发布/)).not.toBeInTheDocument()
   })
 
+  it('接入指引默认收缩，展开后按步骤逐条分行', async () => {
+    renderSection()
+    // 收缩态：步骤文案未渲染
+    expect(screen.queryByText(/在飞书开放平台创建企业自建应用/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('接入指引'))
+
+    const items = await screen.findAllByRole('listitem')
+    expect(items.length).toBeGreaterThanOrEqual(3)
+    expect(items[0].textContent).toBe('在飞书开放平台创建企业自建应用并添加机器人能力')
+  })
+
   it('应用未发布时提示消息不会被处理', async () => {
     renderSection({ isPublished: false })
     expect(await screen.findByText(/应用尚未发布/)).toBeInTheDocument()
@@ -110,6 +121,44 @@ describe('AppChannelsSection（应用外部渠道）', () => {
       }),
     )
     // 弹窗关闭与否依赖 antd 动画在 jsdom 的结束事件，按项目惯例不对其断言
+  })
+
+  it('编辑：回显表单，密钥留空表示保持不变（不改启停状态）', async () => {
+    renderSection()
+    fireEvent.click(await screen.findByRole('button', { name: /编\s*辑/ }))
+
+    expect(await screen.findByText('编辑飞书应用')).toBeInTheDocument()
+    expect(screen.getByLabelText('连接名称')).toHaveValue('客服机器人')
+    expect(screen.getByLabelText('AppID')).toHaveValue('cli_bound')
+
+    fireEvent.change(screen.getByLabelText('连接名称'), { target: { value: '改名机器人' } })
+    fireEvent.change(screen.getByLabelText('AppID'), { target: { value: 'cli_fixed' } })
+    // 密钥留空直接保存
+    fireEvent.click(screen.getByRole('button', { name: /^保\s*存$/ }))
+
+    await waitFor(() =>
+      expect(updateFeishuApp).toHaveBeenCalledWith('f1', {
+        name: '改名机器人',
+        description: undefined,
+        appId: 'cli_fixed',
+        appSecret: undefined,
+        domain: undefined,
+        isDisable: false,
+      }),
+    )
+  })
+
+  it('编辑：填写新密钥一并保存', async () => {
+    renderSection()
+    fireEvent.click(await screen.findByRole('button', { name: /编\s*辑/ }))
+    await screen.findByText('编辑飞书应用')
+
+    fireEvent.change(screen.getByLabelText('AppSecret'), { target: { value: 'new-secret' } })
+    fireEvent.click(screen.getByRole('button', { name: /^保\s*存$/ }))
+
+    await waitFor(() =>
+      expect(updateFeishuApp).toHaveBeenCalledWith('f1', expect.objectContaining({ appSecret: 'new-secret' })),
+    )
   })
 
   it('停用需二次确认，启用直接执行', async () => {

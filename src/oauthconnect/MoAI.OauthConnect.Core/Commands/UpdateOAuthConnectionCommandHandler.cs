@@ -55,6 +55,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
         connection.Name = request.Name;
         connection.IconUrl = request.IconUrl;
         connection.Provider = TextToJsonExtensions.ToJsonString(request.Provider);
+        connection.AgentId = request.Provider == OAuthPrivider.WeixinWork ? request.AgentId : null;
 
         if (!string.IsNullOrEmpty(request.Secret))
         {
@@ -77,6 +78,11 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
         {
             connection.AuthorizeUrl = "https://login.dingtalk.com/oauth2/auth";
             connection.WellKnown = "https://login.dingtalk.com/oauth2/auth";
+        }
+        else if (request.Provider == OAuthPrivider.WeixinWork)
+        {
+            connection.AuthorizeUrl = "https://login.work.weixin.qq.com/wwlogin/sso/login";
+            connection.WellKnown = "https://work.weixin.qq.com";
         }
 
         _databaseContext.Update(connection);

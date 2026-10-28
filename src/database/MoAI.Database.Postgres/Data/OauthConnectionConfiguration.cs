@@ -28,6 +28,10 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
             .HasColumnName("id");
+        entity.Property(e => e.AgentId)
+            .HasMaxLength(100)
+            .HasComment("企业微信应用 agentid")
+            .HasColumnName("agent_id");
         entity.Property(e => e.AuthorizeUrl)
             .HasMaxLength(1000)
             .HasComment("登录跳转地址")

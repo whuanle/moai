@@ -70,6 +70,15 @@ describe('DynamicPluginPanel', () => {
     expect(await screen.findByText('实例 Key')).toBeInTheDocument()
   })
 
+  it('新建实例弹窗展示头像上传入口', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByText('greet_cn')
+
+    await user.click(screen.getByText('新建实例'))
+    expect(await screen.findByText('点击头像上传，支持图片格式，不超过 5MB')).toBeInTheDocument()
+  })
+
   it('模板下拉支持搜索', async () => {
     const user = userEvent.setup()
     renderPanel()

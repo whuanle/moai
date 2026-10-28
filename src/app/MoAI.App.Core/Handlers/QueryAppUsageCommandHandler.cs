@@ -33,7 +33,7 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)
-            .Select(x => new { x.Id, x.TeamId })
+            .Select(x => new { x.Id, x.TeamId, x.UseCount })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (app == null)
@@ -66,6 +66,7 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
                 PromptTokens = g.Sum(x => (long)x.PromptTokens),
                 CompletionTokens = g.Sum(x => (long)x.CompletionTokens),
                 TotalTokens = g.Sum(x => (long)x.TotalTokens),
+                CachedTokens = g.Sum(x => (long)x.CachedTokens),
             })
             .ToListAsync(cancellationToken);
 
@@ -85,6 +86,7 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
                 PromptTokens = x.PromptTokens,
                 CompletionTokens = x.CompletionTokens,
                 TotalTokens = x.TotalTokens,
+                CachedTokens = x.CachedTokens,
             })
             .ToList();
 
@@ -94,26 +96,21 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
             PromptTokens = byModel.Sum(x => x.PromptTokens),
             CompletionTokens = byModel.Sum(x => x.CompletionTokens),
             TotalTokens = byModel.Sum(x => x.TotalTokens),
+            CachedTokens = byModel.Sum(x => x.CachedTokens),
         };
 
         // 使用活动统计：会话数 / 去重用户数 / 消息数 / 最近使用时间
-        var sessions = _databaseContext.AppAgentSessions.AsNoTracking()
-            .Where(x => x.AppId == app.Id);
-        var sessionStats = await sessions
-            .GroupBy(x => 1)
-            .Select(g => new
-            {
-                SessionCount = g.Count(),
-                UserCount = g.Select(x => new { x.CreateUserId, x.UserType }).Distinct().Count(),
-                LastActive = g.Max(x => x.LastMessageTime),
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        //（不可用 GroupBy(1)+Distinct().Count()：EF 会翻译出 COUNT(DISTINCT *) 非法 SQL，PostgreSQL 42601；
+        // 会话量与应用规模同阶，一次取回内存计算）
+        var sessionRows = await _databaseContext.AppAgentSessions.AsNoTracking()
+            .Where(x => x.AppId == app.Id)
+            .Select(x => new { x.Id, x.CreateUserId, x.UserType, x.LastMessageTime })
+            .ToListAsync(cancellationToken);
 
-        var sessionIds = await sessions.Select(x => x.Id).ToListAsync(cancellationToken);
-        var messageCount = sessionIds.Count == 0
+        var messageCount = sessionRows.Count == 0
             ? 0
             : await _databaseContext.AppAgentMessages.AsNoTracking()
-                .CountAsync(x => sessionIds.Contains(x.SessionId), cancellationToken);
+                .CountAsync(x => sessionRows.Select(s => s.Id).Contains(x.SessionId), cancellationToken);
 
         return new QueryAppUsageCommandResponse
         {
@@ -121,10 +118,11 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
             ByModel = byModelItems,
             Stats = new AppUsageActivityStats
             {
-                SessionCount = sessionStats?.SessionCount ?? 0,
-                UserCount = sessionStats?.UserCount ?? 0,
+                UseCount = app.UseCount,
+                SessionCount = sessionRows.Count,
+                UserCount = sessionRows.Select(x => new { x.CreateUserId, x.UserType }).Distinct().Count(),
                 MessageCount = messageCount,
-                LastActiveTime = sessionStats?.LastActive,
+                LastActiveTime = sessionRows.Count == 0 ? null : sessionRows.Max(x => x.LastMessageTime),
             },
         };
     }

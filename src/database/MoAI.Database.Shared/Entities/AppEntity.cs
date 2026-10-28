@@ -95,6 +95,16 @@ public partial class AppEntity : IFullAudited
     public DateTimeOffset? PublishTime { get; set; }
 
     /// <summary>
+    /// 发布时快照的应用版本号；未发布或存量已发布应用（未重新发布过）为 null.
+    /// </summary>
+    public int? PublishVersion { get; set; }
+
+    /// <summary>
+    /// 应用版本号，编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc（默认 10000=1.0.0）.
+    /// </summary>
+    public int Version { get; set; } = 10000;
+
+    /// <summary>
     /// 是否外部应用.
     /// </summary>
     public bool IsExternal { get; set; }
@@ -103,4 +113,9 @@ public partial class AppEntity : IFullAudited
     /// 是否需要授权访问，外部应用设置才有效.
     /// </summary>
     public bool IsAuth { get; set; }
+
+    /// <summary>
+    /// 累计使用次数（会话创建计数，删除会话不减少），由 Redis 计数器每分钟批量累加.
+    /// </summary>
+    public int UseCount { get; set; }
 }

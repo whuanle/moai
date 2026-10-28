@@ -270,7 +270,7 @@ async function getDynamicTemplates(): Promise<DynamicPluginTemplate[]> {
   return (res?.items ?? []).filter((i) => i.isDynamic === true)
 }
 
-/** 保存/创建动态插件实例.*/
+/** 保存/创建动态插件实例（avatarPath 仅新建时用于直接落头像；编辑态头像走 updatePluginAvatar）.*/
 async function saveDynamicPlugin(payload: {
   pluginKey: string
   templeteKey: string
@@ -278,6 +278,7 @@ async function saveDynamicPlugin(payload: {
   description: string
   classifyId: number
   config: string
+  avatarPath?: string | null
 }): Promise<EmptyCommandResponse | null> {
   const client = getAiPluginClient()
   const body: SaveDynamicPluginCommand = {
@@ -287,6 +288,7 @@ async function saveDynamicPlugin(payload: {
     description: payload.description,
     classifyId: payload.classifyId,
     config: payload.config,
+    ...(payload.avatarPath ? { avatarPath: payload.avatarPath } : {}),
   }
   return (await client.api.ai.plugin.dynamic.save.post(body)) ?? null
 }

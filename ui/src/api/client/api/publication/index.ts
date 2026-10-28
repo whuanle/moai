@@ -8,6 +8,8 @@ import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './l
 // @ts-ignore
 import { ReviewRequestBuilderRequestsMetadata, type ReviewRequestBuilder } from './review/index.js';
 // @ts-ignore
+import { TakedownRequestBuilderRequestsMetadata, type TakedownRequestBuilder } from './takedown/index.js';
+// @ts-ignore
 import { Team_listRequestBuilderRequestsMetadata, type Team_listRequestBuilder } from './team_list/index.js';
 // @ts-ignore
 import { type WithdrawRequestBuilder, WithdrawRequestBuilderRequestsMetadata } from './withdraw/index.js';
@@ -30,6 +32,10 @@ export interface PublicationRequestBuilder extends BaseRequestBuilder<Publicatio
      * The review property
      */
     get review(): ReviewRequestBuilder;
+    /**
+     * The takedown property
+     */
+    get takedown(): TakedownRequestBuilder;
     /**
      * The team_list property
      */
@@ -55,6 +61,9 @@ export const PublicationRequestBuilderNavigationMetadata: Record<Exclude<keyof P
     },
     review: {
         requestsMetadata: ReviewRequestBuilderRequestsMetadata,
+    },
+    takedown: {
+        requestsMetadata: TakedownRequestBuilderRequestsMetadata,
     },
     team_list: {
         requestsMetadata: Team_listRequestBuilderRequestsMetadata,

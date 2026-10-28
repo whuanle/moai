@@ -1,7 +1,6 @@
 using MediatR;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
-using MoAI.Settings.Services;
 
 namespace MoAI.App.Handlers;
 
@@ -10,29 +9,18 @@ namespace MoAI.App.Handlers;
 /// </summary>
 public class QueryAgentCompactionDefaultsCommandHandler : IRequestHandler<QueryAgentCompactionDefaultsCommand, QueryAgentCompactionDefaultsResponse>
 {
-    private readonly IAgentSettingsService _agentSettingsService;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="QueryAgentCompactionDefaultsCommandHandler"/> class.
-    /// </summary>
-    /// <param name="agentSettingsService">Agent 运行时默认参数读取服务.</param>
-    public QueryAgentCompactionDefaultsCommandHandler(IAgentSettingsService agentSettingsService)
-    {
-        _agentSettingsService = agentSettingsService;
-    }
-
     /// <inheritdoc/>
-    public async Task<QueryAgentCompactionDefaultsResponse> Handle(QueryAgentCompactionDefaultsCommand request, CancellationToken cancellationToken)
+    public Task<QueryAgentCompactionDefaultsResponse> Handle(QueryAgentCompactionDefaultsCommand request, CancellationToken cancellationToken)
     {
-        var defaults = await _agentSettingsService.GetAgentCompactionDefaultsAsync(cancellationToken);
-        return new QueryAgentCompactionDefaultsResponse
+        // 内置默认值与 MoAI.AI.Models.AppAgentExecutionSettings 属性初始值一致（应用未显式配置字段时的运行时合并基线）
+        return Task.FromResult(new QueryAgentCompactionDefaultsResponse
         {
-            ToolResultTriggerMessages = defaults.ToolResultTriggerMessages,
-            SummarizeTriggerTokens = defaults.SummarizeTriggerTokens,
-            PreserveTurns = defaults.PreserveTurns,
-            HardTokenLimit = defaults.HardTokenLimit,
-            EnableSummarization = defaults.EnableSummarization,
-            SummarizerModelId = defaults.SummarizerModelId ?? string.Empty,
-        };
+            ToolResultTriggerMessages = 16,
+            SummarizeTriggerTokens = 16000,
+            PreserveTurns = 8,
+            HardTokenLimit = 64000,
+            EnableSummarization = false,
+            SummarizerModelId = string.Empty,
+        });
     }
 }

@@ -52,6 +52,17 @@ public class SaveDynamicPluginCommandHandler : IRequestHandler<SaveDynamicPlugin
             }
         }
 
+        if (!string.IsNullOrEmpty(request.AvatarPath))
+        {
+            // 仅允许引用已完成上传并登记的文件，防止任意伪造 objectKey（与插件头像端点同规则）
+            var avatarExists = await _databaseContext.Files
+                .AnyAsync(f => f.ObjectKey == request.AvatarPath && f.IsUploaded, cancellationToken);
+            if (!avatarExists)
+            {
+                throw new BusinessException("头像文件不存在或未完成上传") { StatusCode = 404 };
+            }
+        }
+
         var existing = await _databaseContext.PluginDynamics
             .FirstOrDefaultAsync(x => x.PluginKey == request.PluginKey && x.IsDeleted == 0, cancellationToken);
 
@@ -78,6 +89,7 @@ public class SaveDynamicPluginCommandHandler : IRequestHandler<SaveDynamicPlugin
                 Description = request.Description,
                 Type = (int)PluginType.NativePlugin,
                 ClassifyId = request.ClassifyId,
+                AvatarPath = request.AvatarPath ?? string.Empty,
                 IsPublic = true,
                 Counter = 0,
             };
@@ -103,6 +115,10 @@ public class SaveDynamicPluginCommandHandler : IRequestHandler<SaveDynamicPlugin
             pluginEntity.Title = request.Title;
             pluginEntity.Description = request.Description;
             pluginEntity.ClassifyId = request.ClassifyId;
+            if (!string.IsNullOrEmpty(request.AvatarPath))
+            {
+                pluginEntity.AvatarPath = request.AvatarPath;
+            }
 
             _databaseContext.PluginDynamics.Update(existing);
             _databaseContext.Plugins.Update(pluginEntity);

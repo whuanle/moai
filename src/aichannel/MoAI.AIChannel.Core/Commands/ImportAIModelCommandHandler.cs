@@ -62,7 +62,9 @@ public class ImportAIModelCommandHandler : IRequestHandler<ImportAIModelCommand,
             var model = new AiModelEntity
             {
                 ChannelId = request.ChannelId,
-                Enabled = true,
+
+                // 同步/批量导入的模型一律默认停用，由管理员确认后再启用.
+                Enabled = false,
                 IsPublic = false,
             };
 

@@ -26,17 +26,20 @@ import { feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import { resolveStorageUrl, uploadChatFile } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
+import { formatTokenCount } from '@/utils/format'
 import {
   createAppSession,
   decideAppSessionToolApproval,
   deleteAppSession,
   extractChatAttachment,
   getAppDetail,
+  getAppSessionContextUsage,
   getAppSessionMessages,
   getAppSessions,
   getAppUserConfig,
   saveAppUserConfig,
   updateAppSessionPrompt,
+  type AppSessionContextUsage,
   type AppSessionItem,
 } from '@/api/app'
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts, type PromptItem } from '@/api/prompt'
@@ -79,6 +82,10 @@ interface AppDetailLite {
 
 /** 开场白为前端本地展示消息，不入会话历史，id 固定以便复用 */
 const OPENING_MESSAGE_ID = 'opening-statement'
+
+/** 上下文占用环形指示的尺寸（px）与描边宽度 */
+const CONTEXT_RING_SIZE = 14
+const CONTEXT_RING_STROKE = 2
 
 /** 审批卡豁免工具的兜底规则（后端 userconfig 未返回时使用，与 AppToolApprovalContract 保持一致） */
 const DEFAULT_EXEMPT_NAMES = ['search_knowledge_base']
@@ -141,6 +148,8 @@ export function AppChat() {
   const [messagesBySession, setMessagesBySession] = useState<Record<string, DisplayMessage[]>>({})
   const [sendingBySession, setSendingBySession] = useState<Record<string, boolean>>({})
   const [runStates, setRunStates] = useState<Record<string, WorkflowRunState>>({})
+  // 会话上下文用量（累计 token + 模型上下文窗口）：输入卡左下角环形指示，随会话分桶
+  const [contextUsageBySession, setContextUsageBySession] = useState<Record<string, AppSessionContextUsage>>({})
   const [input, setInput] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // 前端展示工具（ui_ 前缀）产出内容的右侧侧边栏：多项标签集合 + 当前项 + 展开状态；
@@ -225,6 +234,17 @@ export function AppChat() {
     }
   }, [appId])
 
+  // 拉取会话上下文用量（累计 token + 模型上限）：静默失败不打扰，会话切换与每轮对话结束后刷新
+  const refreshContextUsage = useCallback(async (sessionId: string) => {
+    if (!sessionId) return
+    try {
+      const usage = await getAppSessionContextUsage(sessionId)
+      setContextUsageBySession((prev) => ({ ...prev, [sessionId]: usage }))
+    } catch {
+      // 会话可能刚被删除或暂不可读：环形指示保持上一次数据，不提示
+    }
+  }, [])
+
   useEffect(() => {
     if (!appId) return
     // 应用切换：中止上一应用的全部并行会话并清空现场（同应用挂载时为空操作）
@@ -235,6 +255,7 @@ export function AppChat() {
     setMessagesBySession({})
     setSendingBySession({})
     setRunStates({})
+    setContextUsageBySession({})
     setLoading(true)
     getAppDetail(appId)
       .then((res) => setDetail(res as unknown as AppDetailLite))
@@ -303,6 +324,12 @@ export function AppChat() {
       delete next[sessionId]
       return next
     })
+    setContextUsageBySession((prev) => {
+      if (!(sessionId in prev)) return prev
+      const next = { ...prev }
+      delete next[sessionId]
+      return next
+    })
     setMessagesBySession((prev) => {
       if (!(sessionId in prev)) return prev
       const next = { ...prev }
@@ -338,6 +365,7 @@ export function AppChat() {
     }
     // 流式进行中的会话直接恢复本地现场：服务端历史不含本轮，回拉会丢实时内容
     if (agentsRef.current.has(sessionId)) return
+    void refreshContextUsage(sessionId)
     try {
       const items = await getAppSessionMessages(sessionId)
       // 历史返回前该会话已开始新一轮流式（用户切走又快速发消息）：以流式现场为准
@@ -356,7 +384,7 @@ export function AppChat() {
     } catch {
       // 错误已由全局请求中间件统一提示
     }
-  }, [navigateSession, urlSessionId])
+  }, [navigateSession, refreshContextUsage, urlSessionId])
 
   // 当前会话 ref（渲染期同步）：供 URL 会话段副作用比较，避免依赖 activeSessionId 状态造成
   // 「新对话清空 active 但 URL 尚未更新」的一帧误判而把旧会话又选回来
@@ -642,9 +670,11 @@ export function AppChat() {
         return next
       })
       setRunStates((prev) => (prev[sessionId] ? { ...prev, [sessionId]: finishWorkflowRun(prev[sessionId]) } : prev))
+      // 本轮结束：会话用量已 flush/热态更新，刷新上下文占用环形指示
+      void refreshContextUsage(sessionId)
       void loadSessions()
     }
-  }, [activeSending, activeSessionId, appId, approvalMode, attachments, input, isExemptTool, loadSessions, navigateSession, openingMessage, openUiPanelItem, selectedPromptId, t, urlSessionId])
+  }, [activeSending, activeSessionId, appId, approvalMode, attachments, input, isExemptTool, loadSessions, navigateSession, openingMessage, openUiPanelItem, refreshContextUsage, selectedPromptId, t, urlSessionId])
 
   // 选择附件：直传存储 →（文档）文本提取 → 就绪；失败标记在 chip 上由用户移除
   const handleFiles = useCallback(
@@ -811,6 +841,52 @@ export function AppChat() {
   // 附件中是否有未就绪项：发送按钮置灰并提示
   const attachmentsBlocking = hasPendingAttachment(attachments) || attachments.some((a) => a.status === 'failed')
 
+  // 上下文占用环形指示：当前会话最近一轮输入 token（当前上下文占用，压缩后随下一轮回落）/ 模型上下文窗口；上限未知（0）只展示 token 数
+  const activeContextUsage = activeSessionId ? contextUsageBySession[activeSessionId] : undefined
+  const contextTokens = activeContextUsage?.contextTokens || activeContextUsage?.totalTokens || 0
+  const contextPercent =
+    activeContextUsage && activeContextUsage.contextWindow > 0
+      ? Math.min(100, (contextTokens / activeContextUsage.contextWindow) * 100)
+      : 0
+  const contextPhase = contextPercent >= 90 ? 'danger' : contextPercent >= 70 ? 'warning' : 'normal'
+  const contextRingRadius = (CONTEXT_RING_SIZE - CONTEXT_RING_STROKE) / 2
+  const contextRingCircumference = 2 * Math.PI * contextRingRadius
+  const contextTip =
+    activeContextUsage && activeContextUsage.totalTokens > 0 ? (
+      <div className="moai-chat__context-tip">
+        <div>{t('appChat.contextUsageTitle')}</div>
+        {activeContextUsage.modelName && (
+          <div>{t('appChat.contextUsageModel', { name: activeContextUsage.modelName })}</div>
+        )}
+        <div>
+          {activeContextUsage.contextWindow > 0
+            ? t('appChat.contextUsageTokens', {
+                used: contextTokens.toLocaleString(),
+                total: activeContextUsage.contextWindow.toLocaleString(),
+                percent: contextPercent >= 1 ? String(Math.round(contextPercent)) : contextPercent.toFixed(1),
+              })
+            : t('appChat.contextUsageUnknownLimit', { used: contextTokens.toLocaleString() })}
+        </div>
+        <div>
+          {t('appChat.contextUsageSplit', {
+            input: activeContextUsage.inputTokens.toLocaleString(),
+            output: activeContextUsage.outTokens.toLocaleString(),
+          })}
+        </div>
+        <div>
+          {t('appChat.contextUsageCache', {
+            cached: activeContextUsage.cachedTokens.toLocaleString(),
+            percent:
+              activeContextUsage.inputTokens > 0
+                ? Math.round((activeContextUsage.cachedTokens / activeContextUsage.inputTokens) * 100)
+                : 0,
+          })}
+        </div>
+      </div>
+    ) : (
+      ''
+    )
+
   // 输入卡（欢迎态居中 / 对话态停靠底部共用）：文本域 + 附件 chips + 底部左侧附件/模式、右侧发送/停止
   const composerNode = (
     <div className="moai-chat__composer">
@@ -911,6 +987,48 @@ export function AppChat() {
           )}
         </div>
         <div className="moai-chat__composer-actions">
+          {activeContextUsage && activeContextUsage.totalTokens > 0 && (
+            <Tooltip title={contextTip}>
+              <div
+                className={`moai-chat__context-usage is-${contextPhase}`}
+                aria-label={t('appChat.contextUsageTitle')}
+              >
+                <svg
+                  className="moai-chat__context-ring"
+                  width={CONTEXT_RING_SIZE}
+                  height={CONTEXT_RING_SIZE}
+                  viewBox={`0 0 ${CONTEXT_RING_SIZE} ${CONTEXT_RING_SIZE}`}
+                >
+                  <circle
+                    className="moai-chat__context-ring-track"
+                    cx={CONTEXT_RING_SIZE / 2}
+                    cy={CONTEXT_RING_SIZE / 2}
+                    r={contextRingRadius}
+                    fill="none"
+                    strokeWidth={CONTEXT_RING_STROKE}
+                  />
+                  {contextPercent > 0 && (
+                    <circle
+                      className="moai-chat__context-ring-bar"
+                      cx={CONTEXT_RING_SIZE / 2}
+                      cy={CONTEXT_RING_SIZE / 2}
+                      r={contextRingRadius}
+                      fill="none"
+                      strokeWidth={CONTEXT_RING_STROKE}
+                      strokeLinecap="round"
+                      strokeDasharray={`${(contextPercent / 100) * contextRingCircumference} ${contextRingCircumference}`}
+                      transform={`rotate(-90 ${CONTEXT_RING_SIZE / 2} ${CONTEXT_RING_SIZE / 2})`}
+                    />
+                  )}
+                </svg>
+                <span className="moai-chat__context-usage-text">
+                  {activeContextUsage.contextWindow > 0
+                    ? `${formatTokenCount(contextTokens)} / ${formatTokenCount(activeContextUsage.contextWindow)}`
+                    : formatTokenCount(contextTokens)}
+                </span>
+              </div>
+            </Tooltip>
+          )}
           {activeSending ? (
             <button type="button" className="moai-chat__send" onClick={stop} aria-label={t('appChat.stop')}>
               <StopOutlined />

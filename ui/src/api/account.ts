@@ -43,7 +43,7 @@ export async function unbindProvider(providerId: string): Promise<void> {
   await client.api.account.unbind_account.post({ providerId })
 }
 
-export async function oauthBindByCode(payload: { code: string; oAuthId: string }): Promise<void> {
+export async function oauthBindByCode(payload: { code: string; oAuthId: string; redirectUrl?: string }): Promise<void> {
   const client = getApiClient()
-  await client.api.account.oauth_bind.post({ code: payload.code, oAuthId: payload.oAuthId })
+  await client.api.account.oauth_bind.post({ code: payload.code, oAuthId: payload.oAuthId, redirectUrl: payload.redirectUrl })
 }

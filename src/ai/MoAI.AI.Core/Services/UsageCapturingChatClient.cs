@@ -61,6 +61,7 @@ public sealed class UsageCapturingChatClient : DelegatingChatClient
         await RecordAsync(
             (int)(usage?.InputTokenCount ?? 0),
             (int)(usage?.OutputTokenCount ?? 0),
+            (int)(usage?.CachedInputTokenCount ?? 0),
             cancellationToken).ConfigureAwait(false);
         return response;
     }
@@ -73,6 +74,7 @@ public sealed class UsageCapturingChatClient : DelegatingChatClient
     {
         var prompt = 0;
         var completion = 0;
+        var cached = 0;
 
         await foreach (var update in base.GetStreamingResponseAsync(messages, options, cancellationToken).ConfigureAwait(false))
         {
@@ -89,23 +91,29 @@ public sealed class UsageCapturingChatClient : DelegatingChatClient
                     {
                         completion = (int)output;
                     }
+
+                    if (usage.Details?.CachedInputTokenCount is long cachedTokens)
+                    {
+                        cached = (int)cachedTokens;
+                    }
                 }
             }
 
             yield return update;
         }
 
-        await RecordAsync(prompt, completion, cancellationToken).ConfigureAwait(false);
+        await RecordAsync(prompt, completion, cached, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task RecordAsync(int promptTokens, int completionTokens, CancellationToken cancellationToken)
+    private async Task RecordAsync(int promptTokens, int completionTokens, int cachedTokens, CancellationToken cancellationToken)
     {
         if (promptTokens <= 0 && completionTokens <= 0)
         {
             return;
         }
 
-        await _hotStore.AddUsageAsync(_sessionId, promptTokens, completionTokens, cancellationToken).ConfigureAwait(false);
+        // promptTokens 即本次调用发给模型的完整上下文（历史+系统+新消息），作为"当前上下文占用"（压缩后随下一轮回落）
+        await _hotStore.AddUsageAsync(_sessionId, promptTokens, completionTokens, cachedTokens, promptTokens, cancellationToken).ConfigureAwait(false);
 
         await _usageCounter.IncrementAsync(
             _modelId,
@@ -115,6 +123,7 @@ public sealed class UsageCapturingChatClient : DelegatingChatClient
             _appId,
             promptTokens,
             completionTokens,
+            cachedTokens,
             cancellationToken).ConfigureAwait(false);
     }
 }

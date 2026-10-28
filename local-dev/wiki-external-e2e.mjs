@@ -1,10 +1,13 @@
 // 知识库外部接口 E2E（真实 HTTP；复用 kg-external-e2e / wiki-embedding-e2e 同款 helper；后端默认 127.0.0.1:5210）
-// 场景编号 WX-01..WX-06（新编号，不复用 WK-S* / KX-*）：/api/external/wiki 仅接受应用 token（团队级授权）
+// 场景编号 WX-01..WX-10（新编号，不复用 WK-S* / KX-*）：/api/external/wiki 仅接受应用 token（团队级授权）
+//   WX-08 原文件下载（预签名 URL 直下字节一致）；WX-09 向量召回（recall/list 读档分档）；
+//   WX-10 切片元数据生成（对话桩模型，全量/策略/追加/指定切片）
 // 用法：node local-dev/wiki-external-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5210）
 // 前置：后端 + MinIO + RabbitMQ 可达。
 // 向量化模型：脚本自带本地 embedding 桩服务（同 bocha/paddleocr e2e 的自建桩口径），经管理接口临时登记
 //   渠道+embedding 模型并授权给本次团队（同 app-e2e AP-20 口径），WX-05 真实走任务队列→桩服务→pgvector
-//   入库全链路，不依赖外部模型可用性；清理阶段删除模型/渠道并关闭桩服务，可重复执行。
+//   入库全链路，不依赖外部模型可用性；同一桩服务兼答 /chat/completions（WX-10 元数据生成对话桩，
+//   固定返回 outline/questions×2/keywords×2/summary/aggregated JSON，断言条数确定）；清理阶段删除模型/渠道并关闭桩服务，可重复执行。
 // 说明：内部准备全部用 admin（不依赖普通用户的成员角色语义）；共享开发库偶发 500（并行任务 DDL 竞争），
 //   准备阶段对 500 做有限重试。
 import crypto from 'node:crypto'
@@ -46,15 +49,32 @@ async function retryApi(method, path, body, token, tries = 4) {
 const sha256Hex = (content) => crypto.createHash('sha256').update(content).digest('hex')
 const EMBEDDING_DIMENSIONS = 1024
 
-// 本地 embedding 桩：OpenAI /v1/embeddings 兼容，返回确定性的dims 维伪向量；每次请求延迟 DELAY_MS，
-// 保证 WX-05 触发任务后有确定的「进行中」窗口（WX-05c 409 断言无竞态）。
+// 本地桩服务：/v1/embeddings 返回确定性的 dims 维伪向量，每次延迟 DELAY_MS（保证 WX-05 有确定的「进行中」
+// 窗口）；/v1/chat/completions 服务 WX-10 元数据生成，固定返回 outline+questions×2+keywords×2+summary+aggregated
+// 的 JSON 内容（每个切片恰好生成 7 条元数据，断言条数确定），无延迟。
 const STUB_DELAY_MS = 3000
+const METADATA_STUB_CONTENT = JSON.stringify({
+  outline: '外部接口测试切片大纲',
+  questions: ['外部接口能上传文档吗？', '外部接口能向量化吗？'],
+  keywords: ['外部接口', '知识库'],
+  summary: '外部接口全链路测试摘要',
+  aggregated: '外部接口语义聚合段',
+})
 function startEmbeddingStub() {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       let body = ''
       req.on('data', (chunk) => { body += chunk })
       req.on('end', () => {
+        if ((req.url ?? '').includes('chat/completions')) {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({
+            id: 'wx-chat-mock', object: 'chat.completion', created: Math.floor(Date.now() / 1000), model: 'wx-metadata-mock',
+            choices: [{ index: 0, message: { role: 'assistant', content: METADATA_STUB_CONTENT }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+          }))
+          return
+        }
         let inputs = ['']
         let dims = EMBEDDING_DIMENSIONS
         try {
@@ -111,10 +131,22 @@ async function main() {
   const AT1 = tok1.json?.accessToken
   const AT2 = tok2.json?.accessToken
 
+  // WX-09f 读档分档证明：只读 key（仅 wiki_read）与只写 key（仅 wiki_write）
+  let ACC_RO = 0, ACC_WO = 0, AT1_RO = '', AT1_WO = ''
+  {
+    const accRO = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入只读-' + TS, description: 'wiki external e2e', scopes: ['wiki_read'] }, token)
+    const accWO = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入只写-' + TS, description: 'wiki external e2e', scopes: ['wiki_write'] }, token)
+    ACC_RO = accRO.json?.accessAppId ?? 0
+    ACC_WO = accWO.json?.accessAppId ?? 0
+    AT1_RO = (await api('POST', '/api/external/token', { body: { accessAppKey: accRO.json?.key } })).json?.accessToken
+    AT1_WO = (await api('POST', '/api/external/token', { body: { accessAppKey: accWO.json?.key } })).json?.accessToken
+  }
+
   // ===== 向量化模型准备：本地桩渠道 + embedding 模型，临时授权给 T1（清理删除）=====
   let stubServer = null
   let STUB_MODEL_ID = ''
   let STUB_CHANNEL_ID = ''
+  let CONV_MODEL_ID = ''
   let unauthorizedModel = null
   {
     stubServer = await startEmbeddingStub()
@@ -140,6 +172,20 @@ async function main() {
     const grant = await api('PUT', `/api/ai/model/${STUB_MODEL_ID}/authorization`, { token, body: { teamIds: [T1] } })
     if (grant.status !== 200) throw new Error(`桩模型授权失败: ${grant.status} ${grant.text.slice(0, 160)}`)
 
+    // WX-10 元数据生成用的对话桩模型（同一桩渠道，桩服务按 /chat/completions 分流）
+    const convName = `wx-metadata-mock-${TS}`
+    const convrc = await retryApi('POST', '/api/ai/model', {
+      channelId: STUB_CHANNEL_ID,
+      meta: { modelId: convName, name: convName, modelKind: 'conversation', description: 'wiki external e2e 元数据桩模型' },
+      enabled: true, isPublic: false,
+    }, token)
+    if (convrc.status !== 200) throw new Error(`创建对话桩模型失败: ${convrc.status} ${convrc.text.slice(0, 160)}`)
+    const convModels = await api('GET', `/api/ai/model?channelId=${STUB_CHANNEL_ID}`, { token })
+    CONV_MODEL_ID = (convModels.json?.items ?? []).find((m) => m.name === convName)?.id ?? ''
+    if (!CONV_MODEL_ID) throw new Error('未取得对话桩模型 id')
+    const convGrant = await api('PUT', `/api/ai/model/${CONV_MODEL_ID}/authorization`, { token, body: { teamIds: [T1] } })
+    if (convGrant.status !== 200) throw new Error(`对话桩模型授权失败: ${convGrant.status} ${convGrant.text.slice(0, 160)}`)
+
     // WX-02e 用未授权模型：环境里已启用、未公开、未授权给 T1 的其它 embedding 模型（无则跳过）
     const all = await api('GET', '/api/ai/model', { token })
     const embs = (all.json?.items ?? []).filter((m) => m.modelKind === 'embedding' && m.enabled && m.id !== STUB_MODEL_ID && !m.isPublic)
@@ -161,6 +207,7 @@ async function main() {
   let DID = 0     // W1 主文档
   let BID = 0     // W1 删除/重传用文档
   let JID = 0     // W1 .json 文档（内容提取行为随环境而定的探针）
+  let CHUNK_COUNT = 0  // W1 主文档切片数（WX-05d 后回填，WX-10 元数据条数断言基准）
 
   try {
     if (!AT1 || !AT2) throw new Error(`应用 token 换取失败: ${tok1.status}/${tok2.status}`)
@@ -319,10 +366,83 @@ async function main() {
       check('WX-05d 轮询向量化完成 embeddingCount>0', done, last ? `${last.status} embeddingCount=${last.json?.embeddingCount}` : 'no taskId')
       if (done) {
         const items = last.json?.items ?? []
+        CHUNK_COUNT = items.length
         const sliceOrders = items.map((x) => Number(x.sliceOrder ?? 0))
         // 切片序号当前为 0-based（WikiDocumentProcessingService 从 0 递增），断言连续自增且含原文片段
         check('WX-05e 切片顺序连续自增且含原文片段', items.length >= 1 && sliceOrders[0] === 0 && sliceOrders.every((o, i) => i === 0 || o === sliceOrders[i - 1] + 1) && items.some((x) => typeof x.sliceContent === 'string' && x.sliceContent.includes('知识库外部接口测试')), `items=${items.length} orders=${sliceOrders.join(',')}`)
       }
+    }
+
+    // ===== WX-08 原文件下载 =====
+    {
+      const dl = await api('GET', xw(W1, `/documents/${DID}/download`), { token: AT1 })
+      let bytesOk = false
+      if (dl.status === 200 && typeof dl.json?.value === 'string' && dl.json.value.startsWith('http')) {
+        const file = await fetch(dl.json.value).catch(() => null)
+        if (file && file.status === 200) {
+          const buf = Buffer.from(await file.arrayBuffer())
+          bytesOk = buf.equals(mdContent)
+        }
+      }
+      check('WX-08a download 200 返回预签名 URL 且原文件字节一致', bytesOk, `${dl.status} ${String(dl.json?.value ?? dl.text).slice(0, 120)}`)
+      check('WX-08b 不存在文档 download 404', (await api('GET', xw(W1, '/documents/999999999/download'), { token: AT1 })).status === 404)
+    }
+
+    // ===== WX-09 向量召回 =====
+    {
+      const rec = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '外部接口上传与向量化', top: 5 } })
+      const items = rec.json?.items ?? []
+      check('WX-09a recall 200 命中已向量化文档切片且得分为有效余弦值', rec.status === 200 && items.length > 0 && items.every((x) => String(Number(x.documentId)) === String(DID)) && items.every((x) => typeof x.score === 'number' && x.score >= -1 && x.score <= 1), `${rec.status} items=${items.length} ${rec.text.slice(0, 160)}`)
+      const top1 = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '外部接口上传与向量化', top: 1 } })
+      check('WX-09b top=1 最多返回 1 条', top1.status === 200 && (top1.json?.items ?? []).length <= 1, `${top1.status} ${(top1.json?.items ?? []).length}`)
+      const ghostFilter = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '外部接口上传与向量化', top: 5, documentIds: [987654321] } })
+      check('WX-09c 文档范围过滤生效（ghost 文档无命中）', ghostFilter.status === 200 && (ghostFilter.json?.items ?? []).length === 0, `${ghostFilter.status} ${(ghostFilter.json?.items ?? []).length}`)
+      const badTop = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '外部接口', top: 0 } })
+      const badQuery = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '', top: 5 } })
+      check('WX-09d 非法参数 400（top=0 / 空 query）', badTop.status === 400 && badQuery.status === 400, `top=${badTop.status} query=${badQuery.status}`)
+      // 读档分档：recall/list 走 GET/*/list=读口径，只读 key 放行、只写 key 403（若分档退化为写档会在此暴露）
+      const roRecall = await api('POST', xw(W1, '/recall/list'), { token: AT1_RO, body: { query: '外部接口', top: 5 } })
+      const woRecall = await api('POST', xw(W1, '/recall/list'), { token: AT1_WO, body: { query: '外部接口', top: 5 } })
+      check('WX-09e 读档分档：只读 key 可召回、只写 key 403', roRecall.status === 200 && woRecall.status === 403, `ro=${roRecall.status} wo=${woRecall.status}`)
+    }
+
+    // ===== WX-10 切片元数据生成 =====
+    {
+      const genPath = `/documents/${DID}/chunks/metadata/generate`
+      check('WX-10a 不存在文档元数据生成 404', (await api('POST', xw(W1, '/documents/999999999/chunks/metadata/generate'), { token: AT1, body: { metadataModelId: CONV_MODEL_ID } })).status === 404)
+      check('WX-10b embedding 模型用于元数据生成 400', (await api('POST', xw(W1, genPath), { token: AT1, body: { metadataModelId: STUB_MODEL_ID } })).status === 400)
+      check('WX-10c 不存在元数据模型 404', (await api('POST', xw(W1, genPath), { token: AT1, body: { metadataModelId: '11111111-1111-1111-1111-111111111111' } })).status === 404)
+      // 未切割文档 → 400（.json 探针文档未切割；未创建成功则跳过该断言）
+      if (JID > 0) {
+        check('WX-10d 未切割文档元数据生成 400', (await api('POST', xw(W1, `/documents/${JID}/chunks/metadata/generate`), { token: AT1, body: { metadataModelId: CONV_MODEL_ID } })).status === 400)
+      } else {
+        console.warn('WARN | WX-10d 跳过：.json 探针文档未创建')
+      }
+
+      // 全量生成：桩返回 outline×1+questions×2+keywords×2+summary×1+aggregated×1 → 每切片 7 条
+      const gen = await api('POST', xw(W1, genPath), { token: AT1, body: { metadataModelId: CONV_MODEL_ID } })
+      check('WX-10e 全量生成条数 = 切片数×7', gen.status === 200 && Number(gen.json?.value) === CHUNK_COUNT * 7, `${gen.status} ${gen.text.slice(0, 120)} chunks=${CHUNK_COUNT}`)
+      const det = await api('GET', xw(W1, `/documents/${DID}/embedding`), { token: AT1 })
+      const detItems = det.json?.items ?? []
+      const types = new Set(detItems.flatMap((x) => (x.metadatas ?? []).map((m) => Number(m.metadataType))))
+      check('WX-10f 详情回读每切片 7 条且类型齐全（1大纲/2问题/3关键词/4摘要/5聚合）', detItems.length === CHUNK_COUNT && detItems.every((x) => Number(x.metadataCount ?? 0) === 7) && [1, 2, 3, 4, 5].every((t) => types.has(t)), `items=${detItems.length} counts=${detItems.map((x) => x.metadataCount).join(',')} types=${[...types].join(',')}`)
+
+      // 指定策略覆盖生成（appendExisting=false 清空后仅大纲）→ 每切片 1 条
+      const gen2 = await api('POST', xw(W1, genPath), { token: AT1, body: { metadataModelId: CONV_MODEL_ID, strategyTypes: ['outlineGeneration'] } })
+      const det2 = await api('GET', xw(W1, `/documents/${DID}/embedding`), { token: AT1 })
+      const det2Items = det2.json?.items ?? []
+      check('WX-10g 策略覆盖生成 = 切片数×1 且详情每切片 1 条大纲', gen2.status === 200 && Number(gen2.json?.value) === CHUNK_COUNT && det2Items.length === CHUNK_COUNT && det2Items.every((x) => Number(x.metadataCount ?? 0) === 1 && (x.metadatas ?? []).every((m) => Number(m.metadataType) === 1)), `gen=${gen2.status}/${gen2.json?.value} counts=${det2Items.map((x) => x.metadataCount).join(',')}`)
+
+      // 追加模式（appendExisting=true 保留已有再追加）→ 每切片 2 条
+      const gen3 = await api('POST', xw(W1, genPath), { token: AT1, body: { metadataModelId: CONV_MODEL_ID, strategyTypes: ['outlineGeneration'], appendExisting: true } })
+      const det3 = await api('GET', xw(W1, `/documents/${DID}/embedding`), { token: AT1 })
+      const det3Items = det3.json?.items ?? []
+      check('WX-10h 追加生成 = 切片数×1 且详情每切片累计 2 条', gen3.status === 200 && Number(gen3.json?.value) === CHUNK_COUNT && det3Items.every((x) => Number(x.metadataCount ?? 0) === 2), `gen=${gen3.status}/${gen3.json?.value} counts=${det3Items.map((x) => x.metadataCount).join(',')}`)
+
+      // 指定切片：只处理第一个切片 → 1 条
+      const firstChunkId = det3Items[0]?.chunkId
+      const gen4 = await api('POST', xw(W1, genPath), { token: AT1, body: { metadataModelId: CONV_MODEL_ID, chunkIds: [firstChunkId], strategyTypes: ['outlineGeneration'] } })
+      check('WX-10i 指定切片生成条数 = 1', gen4.status === 200 && Number(gen4.json?.value) === 1, `${gen4.status} ${gen4.text.slice(0, 120)}`)
     }
 
     // ===== WX-06 越权与认证 =====
@@ -338,6 +458,9 @@ async function main() {
       cross.push(['POST preupload', await api('POST', xw(W1, '/documents/preupload'), { token: AT2, body: { fileName: `cross-${TS}.md`, contentType: 'text/markdown', fileSize: 8, sha256: sha256Hex(`cross-${TS}`) } })])
       cross.push(['GET document embedding', await api('GET', xw(W1, `/documents/${DID}/embedding`), { token: AT2 })])
       cross.push(['DELETE documents', await api('DELETE', xw(W1, '/documents'), { token: AT2, body: { documentIds: [DID] } })])
+      cross.push(['GET document download', await api('GET', xw(W1, `/documents/${DID}/download`), { token: AT2 })])
+      cross.push(['POST recall/list', await api('POST', xw(W1, '/recall/list'), { token: AT2, body: { query: '外部接口', top: 5 } })])
+      cross.push(['POST chunks/metadata/generate', await api('POST', xw(W1, `/documents/${DID}/chunks/metadata/generate`), { token: AT2, body: { metadataModelId: CONV_MODEL_ID } })])
       check('WX-06c T2 token 访问 T1 库各端点一律 404', cross.every(([, r]) => r.status === 404), cross.map(([n, r]) => `${n}=${r.status}`).join(' '))
 
       const internal = await api('POST', '/api/external/wiki/list', { token, body: {} })
@@ -352,8 +475,8 @@ async function main() {
     }
     await api('DELETE', `/api/wiki/${W1}`, { token })
     await api('DELETE', `/api/wiki/${W2}`, { token })
-    if (STUB_MODEL_ID) {
-      const dm = await api('POST', '/api/ai/model/batch-delete', { token, body: { modelIds: [STUB_MODEL_ID] } })
+    if (STUB_MODEL_ID || CONV_MODEL_ID) {
+      const dm = await api('POST', '/api/ai/model/batch-delete', { token, body: { modelIds: [STUB_MODEL_ID, CONV_MODEL_ID].filter(Boolean) } })
       if (dm.status !== 200) console.warn(`WARN | 桩模型删除失败: ${dm.status}`)
     }
     if (STUB_CHANNEL_ID) {
@@ -362,6 +485,8 @@ async function main() {
     }
     if (ACC1) await api('DELETE', `/api/access-app/${ACC1}`, { token })
     if (ACC2) await api('DELETE', `/api/access-app/${ACC2}`, { token })
+    if (ACC_RO) await api('DELETE', `/api/access-app/${ACC_RO}`, { token })
+    if (ACC_WO) await api('DELETE', `/api/access-app/${ACC_WO}`, { token })
     // 团队不可解散：清理改为管理员禁用归档
     await api('PUT', `/api/admin/team/${T1}/disable`, { token, body: { isDisable: true } })
     await api('PUT', `/api/admin/team/${T2}/disable`, { token, body: { isDisable: true } })

@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface UnpublishRequestBuilder extends BaseRequestBuilder<UnpublishRequestBuilder> {
     /**
-     * 取消发布应用；需要团队 Admin 及以上角色.
+     * 撤回发布应用（团队发布下线），已上架（公开）的应用会同时自动下架；需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,7 +22,7 @@ export interface UnpublishRequestBuilder extends BaseRequestBuilder<UnpublishReq
      */
      post(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 取消发布应用；需要团队 Admin 及以上角色.
+     * 撤回发布应用（团队发布下线），已上架（公开）的应用会同时自动下架；需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

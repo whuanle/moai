@@ -7,7 +7,8 @@ using Microsoft.Extensions.Logging;
 namespace MoAI.Feishu.Services;
 
 /// <summary>
-/// 飞书长连接启动宿主服务，应用启动时为全部启用的飞书应用建立长连接；初始化失败只记录日志，不阻断宿主启动.
+/// 飞书长连接启动宿主服务：启动租约循环参与领导者选举，持租约的实例建立全部飞书长连接；
+/// 初始化失败只记录日志，不阻断宿主启动.
 /// </summary>
 public sealed class FeishuConnectionHostedService : IHostedService
 {
@@ -26,22 +27,31 @@ public sealed class FeishuConnectionHostedService : IHostedService
     }
 
     /// <inheritdoc/>
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
         try
         {
-            await _connectionManager.InitializeAsync(cancellationToken);
+            _connectionManager.StartLease();
         }
         catch (Exception ex)
         {
-            // 存量库未建 feishu 表等情况下降级为无长连接，不阻断启动
-            _logger.LogError(ex, "飞书长连接初始化失败，本实例将不接收飞书事件.");
+            // Redis 不可用等情况下降级为无长连接，不阻断宿主启动
+            _logger.LogError(ex, "飞书长连接租约启动失败，本实例将不接收飞书事件.");
         }
+
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc/>
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        return _connectionManager.StopAllAsync(cancellationToken);
+        try
+        {
+            await _connectionManager.StopAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "飞书长连接停止异常.");
+        }
     }
 }

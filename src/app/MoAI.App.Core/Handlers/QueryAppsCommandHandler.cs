@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
@@ -60,6 +61,8 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
             })
             .ToListAsync(cancellationToken);
 
+        var channelMap = await AppExternalChannelHelper.GetChannelsAsync(_databaseContext, rows.Select(x => x.Id).ToList(), cancellationToken);
+
         var items = rows
             .Select(x => new AppItem
             {
@@ -75,9 +78,12 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
                 IsPublic = x.IsPublic,
                 PublishStatus = x.PublishStatus,
                 PublishTime = x.PublishTime,
-                CreateTime = x.CreateTime
+                CreateTime = x.CreateTime,
+                ExternalChannels = channelMap.TryGetValue(x.Id, out var channels) ? channels : []
             })
             .ToList();
+
+        await AppListItemHelper.FillTeamAndUsageAsync(_databaseContext, items, cancellationToken);
 
         return new QueryAppsCommandResponse
         {

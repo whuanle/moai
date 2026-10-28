@@ -65,6 +65,10 @@ public class DeleteAppCommandHandler : IRequestHandler<DeleteAppCommand, EmptyCo
         var channelId = app.Id.ToString();
         await _databaseContext.SoftDeleteAsync(_databaseContext.FeishuAppBindings
             .Where(x => x.ChannelType == (int)FeishuChannelType.App && x.ChannelId == channelId));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.DingTalkAppBindings
+            .Where(x => x.ChannelType == (int)DingTalkChannelType.App && x.ChannelId == channelId));
+        await _databaseContext.SoftDeleteAsync(_databaseContext.WeixinWorkAppBindings
+            .Where(x => x.ChannelType == (int)WeixinWorkChannelType.App && x.ChannelId == channelId));
         var deleted = await _databaseContext.SoftDeleteAsync(_databaseContext.Apps.Where(x => x.Id == app.Id));
         if (deleted == 0)
         {

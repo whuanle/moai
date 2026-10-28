@@ -73,6 +73,20 @@ public class AppSessionController : ControllerBase
     }
 
     /// <summary>
+    /// 查询会话上下文用量：累计 token（热态优先，落库兜底）与生效对话模型的上下文窗口上限；仅会话归属用户可访问.
+    /// </summary>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAppSessionContextUsageCommandResponse"/>.</returns>
+    [HttpGet("session/{sessionId:guid}/context-usage")]
+    public Task<QueryAppSessionContextUsageCommandResponse> QueryContextUsage([FromRoute] Guid sessionId, CancellationToken ct)
+    {
+        var cmd = new QueryAppSessionContextUsageCommand { SessionId = sessionId };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 重命名会话；仅会话归属用户可操作.
     /// </summary>
     /// <param name="sessionId">会话 id.</param>

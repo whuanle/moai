@@ -269,7 +269,7 @@ async function main() {
     check('AP-13o 发布应用 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
 
     if (pubAdminToken) {
-      const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: PUB_ID, applyReason: 'e2e 申请上架' } })
+      const apply = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: PUB_ID, applyReason: 'e2e 申请上架', version: '1.0.0' } })
       check('AP-13o2 团队申请上架 200', apply.status === 200, `${apply.status} ${apply.text.slice(0, 140)}`)
       const review = await api('POST', '/api/publication/review', { token: pubAdminToken, body: { publicationId: apply.json?.value, isApprove: true } })
       check('AP-13o3 管理员审批通过 200', review.status === 200, `${review.status} ${review.text.slice(0, 140)}`)
@@ -285,6 +285,79 @@ async function main() {
 
     const sess = await api('POST', `/api/app/${PUB_ID}/session`, { token: outsider.token, body: {} })
     check('AP-13r 非成员可对公开已发布应用建会话', sess.status === 200 && isGuid(sess.json?.value), `${sess.status} ${sess.text.slice(0, 140)}`)
+
+    // 使用次数由 Redis 计数器每分钟批量落库，轮询等待可见（最长 90s）
+    let pub2 = await api('GET', '/api/app/public/list', { token: outsider.token })
+    let pubItem = (pub2.json?.items ?? []).find(i => i.appId === PUB_ID)
+    const ucDeadline = Date.now() + 90_000
+    while (pubItem && Number(pubItem.useCount ?? 0) < 1 && Date.now() < ucDeadline) {
+      await new Promise((r) => setTimeout(r, 5000))
+      pub2 = await api('GET', '/api/app/public/list', { token: outsider.token })
+      pubItem = (pub2.json?.items ?? []).find(i => i.appId === PUB_ID)
+    }
+    check('AP-13t 列表携带团队名称与使用次数', !!pubItem && typeof pubItem.teamName === 'string' && pubItem.teamName.length > 0 && Number(pubItem.useCount) >= 1,
+      JSON.stringify({ teamName: pubItem?.teamName, useCount: pubItem?.useCount }))
+
+    const counts = (pub2.json?.items ?? []).map(i => Number(i.useCount ?? 0))
+    check('AP-13u 公开列表按使用次数降序', counts.length > 0 && counts.every((c, idx) => idx === 0 || counts[idx - 1] >= c),
+      JSON.stringify(counts.slice(0, 12)))
+
+    // AP-96 撤回发布联动下架：unpublish 清发布快照 + is_public 自动下架 + 撤下待审申请
+    check('AP-96a Member 撤回发布 403', (await api('POST', `/api/app/${PUB_ID}/unpublish`, { token: member.token })).status === 403)
+    const unp1 = await api('POST', `/api/app/${PUB_ID}/unpublish`, { token: owner.token })
+    check('AP-96b Owner 撤回发布 200', unp1.status === 200, `${unp1.status} ${unp1.text.slice(0, 140)}`)
+    const ud = await api('GET', `/api/app/${PUB_ID}`, { token: owner.token })
+    check('AP-96c 撤回后 publishStatus=0 且 isPublic=false', ud.json?.publishStatus === 0 && ud.json?.isPublic === false, JSON.stringify({ publishStatus: ud.json?.publishStatus, isPublic: ud.json?.isPublic }))
+    check('AP-96d 撤回后不再出现在公开列表', !((await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items ?? []).some(i => i.appId === PUB_ID))
+    // 再次发布并挂一条待审申请，验证撤回发布时待审申请被联动撤下
+    check('AP-96e 重新发布 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
+    const apply96 = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: PUB_ID, applyReason: '验证撤回联动', version: '1.0.1' } })
+    check('AP-96f 撤回后可再次申请上架 200', apply96.status === 200, `${apply96.status} ${apply96.text.slice(0, 140)}`)
+    const unp2 = await api('POST', `/api/app/${PUB_ID}/unpublish`, { token: owner.token })
+    const pend96 = ((await api('GET', `/api/publication/team_list?teamId=${TID}`, { token: owner.token })).json?.items ?? [])
+      .filter(i => String(i.resourceId) === PUB_ID)
+    check('AP-96g 撤回发布自动撤下待审申请', unp2.status === 200 && pend96.every(i => i.state !== 'pending'), JSON.stringify(pend96))
+    check('AP-96h 再次发布 200', (await api('POST', `/api/app/${PUB_ID}/publish`, { token: owner.token })).status === 200)
+  }
+
+  // AP-97 应用版本号只在发布/上架时设置：基础信息不再接受版本号，发布携带 version 更新当前版本并快照到线上
+  {
+    const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `版本号助手${TS}`, appType: 'agent' } })
+    check('AP-97a 创建应用 200', c.status === 200 && isGuid(c.json?.value), `${c.status} ${c.text.slice(0, 140)}`)
+    const VER_ID = String(c.json?.value ?? '')
+
+    const d0 = await api('GET', `/api/app/${VER_ID}`, { token: owner.token })
+    check('AP-97b 新建应用默认版本 1.0.0（int 编码 10000）', d0.status === 200 && d0.json?.version === 10000, JSON.stringify({ version: d0.json?.version }))
+
+    // 版本号已从基础信息下线：请求携带 version 字段被忽略，版本保持原值
+    const upV = await api('PUT', `/api/app/${VER_ID}`, { token: owner.token, body: { name: `版本号助手${TS}`, description: '', isExternal: false, isAuth: false, classifyId: 0, version: '9.9.9' } })
+    const d1 = await api('GET', `/api/app/${VER_ID}`, { token: owner.token })
+    check('AP-97c 基础信息携带 version 被忽略且版本不变', upV.status === 200 && d1.json?.version === 10000, `${upV.status} ${JSON.stringify({ version: d1.json?.version })}`)
+
+    check('AP-97d 发布携带非法版本 400', (await api('POST', `/api/app/${VER_ID}/publish`, { token: owner.token, body: { version: '1.2.3.4' } })).status === 400)
+    check('AP-97e Member 携带版本发布 403', (await api('POST', `/api/app/${VER_ID}/publish`, { token: member.token, body: { version: '2.0.0' } })).status === 403)
+
+    check('AP-97f 发布携带版本 2.5.1 200', (await api('POST', `/api/app/${VER_ID}/publish`, { token: owner.token, body: { version: '2.5.1' } })).status === 200)
+    const d2 = await api('GET', `/api/app/${VER_ID}`, { token: owner.token })
+    check('AP-97g 版本随发布更新并快照到线上版本', d2.json?.version === 20501 && d2.json?.publishVersion === 20501 && d2.json?.publishStatus === 1,
+      JSON.stringify({ version: d2.json?.version, publishVersion: d2.json?.publishVersion, publishStatus: d2.json?.publishStatus }))
+
+    // 版本号必须严格递增：相同或低于当前版本一律拒绝
+    check('AP-97k 发布低于当前版本 400', (await api('POST', `/api/app/${VER_ID}/publish`, { token: owner.token, body: { version: '2.5.0' } })).status === 400)
+    const d2e = await api('GET', `/api/app/${VER_ID}`, { token: owner.token })
+    check('AP-97l 发布等于当前版本 400 且版本不变', (await api('POST', `/api/app/${VER_ID}/publish`, { token: owner.token, body: { version: '2.5.1' } })).status === 400 && d2e.json?.version === 20501,
+      JSON.stringify({ version: d2e.json?.version }))
+
+    // 不携带版本重新发布（配置页快捷重发/记忆保存并发布同语义）：版本保持原值
+    check('AP-97h 不携带版本重新发布 200', (await api('POST', `/api/app/${VER_ID}/publish`, { token: owner.token })).status === 200)
+    const d3 = await api('GET', `/api/app/${VER_ID}`, { token: owner.token })
+    check('AP-97i 重发后当前版本与线上快照保持 2.5.1', d3.json?.version === 20501 && d3.json?.publishVersion === 20501, JSON.stringify({ version: d3.json?.version, publishVersion: d3.json?.publishVersion }))
+
+    // 撤回发布：清线上版本快照，当前版本保留
+    const unpV = await api('POST', `/api/app/${VER_ID}/unpublish`, { token: owner.token })
+    const d4 = await api('GET', `/api/app/${VER_ID}`, { token: owner.token })
+    check('AP-97j 撤回后清线上快照且当前版本保留', unpV.status === 200 && d4.json?.publishVersion == null && d4.json?.version === 20501,
+      JSON.stringify({ version: d4.json?.version, publishVersion: d4.json?.publishVersion }))
   }
 
   // AP-15 ~ AP-19 Agent 应用配置（允许使用的插件/知识库 + 提示词）
@@ -425,6 +498,28 @@ async function main() {
     // 删除提示词后会话仍保留 promptId，但对话装配时静默降级（不阻塞对话）；此处仅验证软删不回读出可用性错误
     const del = await api('DELETE', `/api/prompt/${PERSONAL_ID}`, { token: owner.token })
     check('AP-44l 清理：删除个人提示词 200', del.status === 200, `${del.status}`)
+  }
+
+  // AP-98 会话上下文用量查询（对话输入区环形指示数据源；门禁与零值回显）
+  {
+    // 新建无对话会话：用量为零值回显，结构完整（contextWindow 允许为 0=模型未配置或未知）
+    const cuSess = await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'ap98' } })
+    const CU_SID = String(cuSess.json?.value ?? '')
+    check('AP-98a 创建用量场景会话 200', cuSess.status === 200 && isGuid(CU_SID), `${cuSess.status}`)
+
+    check('AP-98b 未登录查上下文用量 401', (await api('GET', `/api/app/session/${CU_SID}/context-usage`)).status === 401)
+    // GET 端点的 Command 在 Controller 手动构造（非模型绑定），FluentValidation 自动验证不触发，
+    // 空 guid 与 messages 端点一致由 Handler 归一为 404 会话不存在
+    check('AP-98c 空 sessionId 404', (await api('GET', `/api/app/session/00000000-0000-0000-0000-000000000000/context-usage`, { token: owner.token })).status === 404)
+    check('AP-98d 非归属用户查他人会话用量 404', (await api('GET', `/api/app/session/${CU_SID}/context-usage`, { token: member.token })).status === 404)
+
+    const cu = await api('GET', `/api/app/session/${CU_SID}/context-usage`, { token: owner.token })
+    check('AP-98e 零用量会话回显 0 且结构完整',
+      cu.status === 200 && String(cu.json?.sessionId) === CU_SID
+      && Number(cu.json?.totalTokens) === 0 && Number(cu.json?.inputTokens) === 0 && Number(cu.json?.outTokens) === 0
+      && Number(cu.json?.cachedTokens) === 0 && Number(cu.json?.contextTokens) === 0
+      && Number(cu.json?.contextWindow) >= 0 && typeof cu.json?.modelName === 'string',
+      `${cu.status} ${cu.text.slice(0, 200)}`)
   }
 
   // AP-45 对话开场白（Agent 应用配置：启用开关 + 内容，随应用详情下发到聊天页）
@@ -1029,16 +1124,24 @@ async function main() {
           const lastUser = [...(payload.messages ?? [])].reverse().find((m) => m.role === 'user')
           const badDoc = String(lastUser?.content ?? '').includes('BADDOC:')
           const base = { id: 'chatcmpl-stub61', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'stub61' }
+          // 收尾 chunk 携带 usage（含 prompt_tokens_details.cached_tokens）：
+          // 驱动 UsageCapturingChatClient 累计真实用量与缓存命中（AP-99 断言数据源）
+          const usage = {
+            prompt_tokens: 42,
+            completion_tokens: 7,
+            total_tokens: 49,
+            prompt_tokens_details: { cached_tokens: 30 },
+          }
           const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n')
           res.writeHead(200, { 'Content-Type': 'text/event-stream' })
           const callTool = (toolName, args) => {
             const fnArgs = JSON.stringify({ toolName, argumentsJson: JSON.stringify(args) })
             send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: null, tool_calls: [{ index: 0, id: 'call_stub61_' + Math.floor(Math.random() * 1e6), type: 'function', function: { name: 'call_tool', arguments: fnArgs } }] }, finish_reason: null }] })
-            send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })
+            send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }], usage })
           }
           const reply = (text) => {
             send({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: text }, finish_reason: null }] })
-            send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })
+            send({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage })
           }
           if (toolMsgs.length) {
             // 已有工具结果：按结果类型推进/收敛，避免同一指令反复发起调用
@@ -1159,6 +1262,32 @@ async function main() {
         || chat2.reply.includes('\\u6587\\u6863') || chat2.reply.includes('\\u4E0D\\u5C5E\\u4E8E')
       check('AP-61f 不存在文档取片段返回错误说明', chat2.status === 200 && badDocHint,
         `${chat2.status} reply=${chat2.reply.slice(0, 200)}`)
+
+      // AP-99 真实对话轮次后的上下文用量：热态累计 > 0（含缓存命中），模型名回显（环形指示数据源）
+      const cuChat = await api('GET', `/api/app/session/${SID}/context-usage`, { token: owner.token })
+      check('AP-99a 对话后会话用量累计 > 0 且输入/输出拆分存在',
+        cuChat.status === 200 && Number(cuChat.json?.totalTokens) > 0
+        && Number(cuChat.json?.inputTokens) > 0 && Number(cuChat.json?.outTokens) >= 0,
+        `${cuChat.status} ${cuChat.text.slice(0, 200)}`)
+      check('AP-99b 生效模型名回显与 contextWindow 数值型',
+        cuChat.status === 200 && typeof cuChat.json?.modelName === 'string' && cuChat.json.modelName.length > 0
+        && Number.isFinite(Number(cuChat.json?.contextWindow)) && Number(cuChat.json?.contextWindow) >= 0,
+        cuChat.text.slice(0, 200))
+      check('AP-99c 缓存命中 token 累计 > 0（prompt_tokens_details.cached_tokens 捕获）',
+        cuChat.status === 200 && Number(cuChat.json?.cachedTokens) > 0,
+        cuChat.text.slice(0, 200))
+      check('AP-99c2 当前上下文占用=最近一轮输入 token > 0',
+        cuChat.status === 200 && Number(cuChat.json?.contextTokens) > 0,
+        cuChat.text.slice(0, 200))
+
+      // AP-99d 使用分析聚合缓存命中（审计经计数器批量落库，约 1 分钟滞后，轮询等待）
+      let usageCached = 0
+      for (let i = 0; i < 24 && usageCached <= 0; i++) {
+        await new Promise((r) => setTimeout(r, 5000))
+        const u = await api('GET', `/api/app/${APP_ID}/usage`, { token: owner.token })
+        usageCached = Number(u.json?.summary?.cachedTokens ?? 0)
+      }
+      check('AP-99d 使用分析 summary/byModel 聚合缓存命中 token', usageCached > 0, `summary.cachedTokens=${usageCached}`)
 
       // 清理桩模型/渠道（应用与知识库留给台账）
       await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [EMB_ID, MODEL_ID] } })

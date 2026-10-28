@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Segmented, Space, Tag, Typography } from 'antd'
-import { SearchOutlined, TeamOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Segmented, Space, Tag, theme, Typography } from 'antd'
+import { ClockCircleOutlined, SearchOutlined, TeamOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, Page, feedback, useNeutralColors } from '@/design-system'
@@ -27,6 +27,7 @@ interface CreateFormValues {
 
 export function Teams() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const neutral = useNeutralColors()
   const navigate = useNavigate()
   const setMyTeams = useAppStore((state) => state.setMyTeams)
@@ -184,7 +185,11 @@ export function Teams() {
                       <div
                         style={{
                           display: 'flex',
-                          gap: spacing.md,
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          rowGap: spacing.xxs,
+                          gap: spacing.sm,
                           color: neutral.textTertiary,
                           fontSize: 12,
                           marginTop: 'auto',
@@ -192,8 +197,44 @@ export function Teams() {
                           paddingTop: spacing.sm,
                         }}
                       >
-                        <span>{t('team.colMembers')}: {team.memberCount ?? 0}</span>
-                        <span>{t('team.colCreateTime')}: {formatDateTime(team.createTime)}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.xs }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 22,
+                              height: 22,
+                              borderRadius: token.borderRadiusSM,
+                              fontSize: 12,
+                              color: token.colorPrimary,
+                              background: token.colorPrimaryBg,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <TeamOutlined />
+                          </span>
+                          {t('team.colMembers')}: {team.memberCount ?? 0}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.xs }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 22,
+                              height: 22,
+                              borderRadius: token.borderRadiusSM,
+                              fontSize: 12,
+                              color: token.colorWarning,
+                              background: token.colorWarningBg,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <ClockCircleOutlined />
+                          </span>
+                          {t('team.colCreateTime')}: {formatDateTime(team.createTime)}
+                        </span>
                       </div>
                     </div>
                   </div>

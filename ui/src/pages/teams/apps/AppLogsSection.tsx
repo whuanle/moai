@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, DatePicker, Drawer, Form, Input, Select, Space, Spin, Tag, Typography } from 'antd'
+import { Button, DatePicker, Drawer, Form, Input, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import type { Dayjs } from 'dayjs'
 import { useTranslation } from 'react-i18next'
-import { DataTable, QueryBar, useNeutralColors } from '@/design-system'
-import { radius, spacing } from '@/design-system/theme'
+import { DataTable, QueryBar, feedback } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import {
   getAppLogs,
@@ -12,11 +12,20 @@ import {
   type AppLogItem,
   type AspAppSessionMessageItem,
 } from '@/api/app'
+import { AppMonitorSection } from './AppMonitorSection'
+import { AppSecurityEventsCard } from './AppSecurityEventsCard'
+import { ChatMessageList, type DisplayMessage } from './chat/ChatMessageList'
+import { parseHistoryToolCalls } from './chat/historyToolCalls'
+import { chatCssVars } from './chat/chatCssVars'
+import './app-chat.css'
 
 const { Text } = Typography
 const { RangePicker } = DatePicker
 
 type RangeValue = [Dayjs | null, Dayjs | null] | null
+
+/** 日志分区 Tab：日志（默认）/ 安全事件 / 使用分析（原「监控」分区并入） */
+export type AppLogsTab = 'logs' | 'events' | 'usage'
 
 /** 可筛选的用户类型；后端 UserType 枚举按名不区分大小写绑定 */
 const USER_TYPE_OPTIONS = ['normal', 'external', 'externalApp'] as const
@@ -35,59 +44,23 @@ function userTypeLabelKey(userType?: string | null): string {
   }
 }
 
-/** 角色 → i18n key（未知角色回退 system） */
-function roleLabelKey(role?: string | null): string {
-  switch (role) {
-    case 'user':
-      return 'appLogs.roleUser'
-    case 'assistant':
-      return 'appLogs.roleAssistant'
-    case 'tool':
-      return 'appLogs.roleTool'
-    case 'system':
-      return 'appLogs.roleSystem'
-    default:
-      return 'appLogs.roleSystem'
-  }
-}
-
-const ROLE_COLOR: Record<string, string> = {
-  user: 'blue',
-  assistant: 'green',
-  tool: 'orange',
-  system: 'default',
-}
-
-/** 解析 assistant 的 toolCalls 文本为工具名数组；非法/空返回空数组 */
-function parseToolNames(toolCalls?: string | null): string[] {
-  if (!toolCalls) return []
-  try {
-    const parsed: unknown = JSON.parse(toolCalls)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((item) => {
-        if (typeof item === 'string') return item
-        const fn = (item as { function?: { name?: unknown } })?.function?.name
-        const name = fn ?? (item as { name?: unknown })?.name
-        return typeof name === 'string' ? name : ''
-      })
-      .filter((name) => name.length > 0)
-  } catch {
-    return []
-  }
-}
-
 export interface AppLogsSectionProps {
   appId: string
+  canManage: boolean
+  /** 默认激活 Tab（/monitor 深链落到「使用分析」），缺省 logs */
+  defaultTab?: AppLogsTab
 }
 
 /**
- * 应用对话日志分区：服务端分页列表 + 会话消息详情抽屉。
- * 仅团队 Admin+ 访问（入口由 AppWorkspace 控制）。
+ * 应用日志分区（Tab 容器，仅团队 Admin+ 访问，入口由 AppWorkspace 控制）：
+ * - 日志（默认）：会话日志服务端分页列表 + 会话消息详情抽屉（复用对话页 ChatMessageList 会话式排版）；
+ * - 安全事件：内容脱敏规则命中审计（原「安全」分区卡片，2026-10-27 并入）；
+ * - 使用分析：用量汇总与按模型分布（原「监控」分区并入，「监控」菜单已移除，/monitor 深链落到本 Tab）。
  */
-export function AppLogsSection({ appId }: AppLogsSectionProps) {
+export function AppLogsSection({ appId, canManage, defaultTab }: AppLogsSectionProps) {
   const { t } = useTranslation()
-  const neutral = useNeutralColors()
+  const { token } = theme.useToken()
+  const cssVars = useMemo(() => chatCssVars(token), [token])
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<AppLogItem[]>([])
   const [total, setTotal] = useState(0)
@@ -238,13 +211,47 @@ export function AppLogsSection({ appId }: AppLogsSectionProps) {
     [t],
   )
 
-  const orderedMessages = useMemo(
-    () => [...detailMessages].sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0)),
+  // 与正式对话页同口径还原会话现场：仅保留 user 与 assistant（有正文或工具调用）消息，
+  // 工具调用随 assistant 消息以折叠卡展示；tool/system 中间行不进会话视图
+  const displayMessages = useMemo<DisplayMessage[]>(
+    () =>
+      [...detailMessages]
+        .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
+        .filter(
+          (m) =>
+            m.role === 'user' ||
+            (m.role === 'assistant' && ((m.content ?? '').trim().length > 0 || parseHistoryToolCalls(m.toolCalls))),
+        )
+        .map((m) => ({
+          id: String(m.messageId ?? crypto.randomUUID()),
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content ?? '',
+          toolCalls: parseHistoryToolCalls(m.toolCalls),
+        })),
     [detailMessages],
   )
 
-  return (
-    <div>
+  // 会话归属用户显示名：normal 用用户名，其余按 id 兜底（仅作用户侧头像字母）
+  const detailUserLabel = detailSession
+    ? detailSession.userType === 'normal'
+      ? detailSession.createUserName || `#${detailSession.ownerId ?? '-'}`
+      : `#${detailSession.ownerId ?? '-'}`
+    : 'U'
+
+  const copyMessage = useCallback(
+    async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text)
+        feedback.success(t('appChat.copied'))
+      } catch {
+        // 忽略剪贴板不可用
+      }
+    },
+    [t],
+  )
+
+  const logList = (
+    <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
       <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
         <Form.Item name="keyword">
           <Input
@@ -286,6 +293,23 @@ export function AppLogsSection({ appId }: AppLogsSectionProps) {
           },
         }}
       />
+    </Space>
+  )
+
+  // 非管理员仅保留日志 Tab（安全事件与使用分析为 Admin+ 内容，入口本就不可达，防御性收窄）
+  const tabItems = [
+    { key: 'logs', label: t('appLogs.tabLogs'), children: logList },
+    ...(canManage
+      ? [
+          { key: 'events', label: t('appLogs.tabEvents'), children: <AppSecurityEventsCard appId={appId} canManage={canManage} /> },
+          { key: 'usage', label: t('appLogs.tabUsage'), children: <AppMonitorSection appId={appId} /> },
+        ]
+      : []),
+  ]
+
+  return (
+    <div>
+      <Tabs defaultActiveKey={defaultTab ?? 'logs'} items={tabItems} />
 
       <Drawer
         open={detailOpen}
@@ -299,37 +323,17 @@ export function AppLogsSection({ appId }: AppLogsSectionProps) {
           <div style={{ padding: spacing.lg, textAlign: 'center' }}>
             <Spin />
           </div>
-        ) : orderedMessages.length === 0 ? (
-          <Text type="secondary">{t('appLogs.detailEmpty')}</Text>
         ) : (
-          <Space direction="vertical" size={spacing.sm} style={{ width: '100%' }}>
-            {orderedMessages.map((message, index) => {
-              const role = message.role ?? 'system'
-              const toolNames = parseToolNames(message.toolCalls)
-              return (
-                <div
-                  key={message.messageId ?? `${message.seq ?? index}`}
-                  style={{
-                    border: `1px solid ${neutral.border}`,
-                    borderRadius: radius.default,
-                    padding: spacing.sm,
-                  }}
-                >
-                  <Space size={spacing.xs} wrap style={{ marginBottom: spacing.xs }}>
-                    <Tag color={ROLE_COLOR[role] ?? 'default'}>{t(roleLabelKey(role))}</Tag>
-                    {toolNames.map((name, i) => (
-                      <Tag key={`${name}-${i}`} color="geekblue">
-                        {name}
-                      </Tag>
-                    ))}
-                  </Space>
-                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {message.content || ''}
-                  </div>
-                </div>
-              )
-            })}
-          </Space>
+          // 注入 --mc-* 主题变量后复用 app-chat.css 会话排版：用户消息靠右、助手消息靠左带头像
+          <div style={cssVars}>
+            <ChatMessageList
+              messages={displayMessages}
+              sending={false}
+              userName={detailUserLabel}
+              onCopy={copyMessage}
+              emptyState={<Text type="secondary">{t('appLogs.detailEmpty')}</Text>}
+            />
+          </div>
         )}
       </Drawer>
     </div>

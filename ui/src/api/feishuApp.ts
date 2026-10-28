@@ -44,6 +44,8 @@ export interface CreateFeishuAppPayload {
 export interface UpdateFeishuAppPayload {
   name: string
   description?: string
+  /** 为空表示保持不变；修改后自动重连 */
+  appId?: string
   /** 为空表示保持不变 */
   appSecret?: string
   /** 为空表示保持不变 */
@@ -98,12 +100,13 @@ export async function createFeishuApp(payload: CreateFeishuAppPayload): Promise<
   return res?.value as unknown as string
 }
 
-/** 更新飞书应用连接（名称/描述/密钥/域名/启停） */
+/** 更新飞书应用连接（名称/AppID/密钥/域名/启停；appId、appSecret、domain 留空表示保持不变） */
 export async function updateFeishuApp(feishuAppId: string, payload: UpdateFeishuAppPayload): Promise<void> {
   const client = getApiClient()
   await client.api.feishu_app.byId(toGuid(feishuAppId)).put({
     name: payload.name,
     description: payload.description ?? null,
+    appId: payload.appId || null,
     appSecret: payload.appSecret || null,
     domain: payload.domain ?? null,
     isDisable: payload.isDisable,

@@ -117,7 +117,7 @@ public class CreateFeishuAppCommandHandler : IRequestHandler<CreateFeishuAppComm
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        _connectionManager.ApplyCreate(entity.Id, entity.AppId, entity.AppSecret, entity.Domain);
+        await _connectionManager.ApplyCreateAsync(entity.Id, entity.AppId, entity.AppSecret, entity.Domain);
 
         return new SimpleGuid
         {

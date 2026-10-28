@@ -45,7 +45,7 @@ export function OAuthLogin() {
           return
         }
         try {
-          await oauthBindByCode({ code, oAuthId })
+          await oauthBindByCode({ code, oAuthId, redirectUrl: window.location.origin })
           notifyOAuthBindResult({ type: 'oauth_bind_success', oAuthId })
         } catch (error) {
           // 错误由全局请求中间件在弹窗内提示，但弹窗随即关闭，此处把后端返回的错误信息传给主界面展示。
@@ -66,7 +66,7 @@ export function OAuthLogin() {
         return
       }
       try {
-        const res = await oauthLogin({ code, oAuthId })
+        const res = await oauthLogin({ code, oAuthId, redirectUrl: window.location.origin })
         if (res?.isBindUser && res.loginCommandResponse) {
           applyLoginResponse(res.loginCommandResponse)
           feedback.success(t('auth.loginSuccess'))

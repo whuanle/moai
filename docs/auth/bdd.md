@@ -92,13 +92,14 @@ Feature: 令牌刷新
 Feature: 第三方登录（OAuth）
   @AUTH-S13 @auto:e2e
   Scenario: 获取第三方登录方式列表
-    When 匿名请求第三方登录方式列表
-    Then 返回每个提供商拼好的授权跳转地址（含 client_id/response_type/scope/state/redirect_uri）
+    When 匿名请求第三方登录方式列表（登录页携带自身来源 redirectUrl）
+    Then 返回每个提供商按各自协议拼好的授权跳转地址（state=oauthId、redirect_uri={登录页来源}/oauth_login，未携带 redirectUrl 时回退 {WebUI}/oauth_login；参数差异：默认 OIDC 用 client_id/response_type/scope，钉钉附 scope=openid corpid 与 prompt=consent，企业微信用 login_type=CorpApp/appid=CorpID/agentid）
 
-  @AUTH-S14 @manual
-  Scenario: 回跳地址不合法被拒绝（实际行为：任意地址均放行，缺陷记录）
-    When 请求列表时携带回跳地址 http://evil.com
-    Then 实际返回 200 且地址未校验（设计应为 400「不合法的跳转地址」；Controller 空参构造 Query 导致校验为死代码，见 [SDD 已知问题](./sdd.md)）
+  @AUTH-S14 @auto:e2e
+  Scenario: 回跳地址跟随登录页来源
+    When 请求列表时携带 redirectUrl（内网穿透等场景，前端访问域名可与 WebUI 配置不同）
+    Then 回调地址使用该来源拼装（仅接受 http/https），发起登录后飞书换 token 的 redirect_uri 与授权时保持一致
+    But 非 http/https 协议的 redirectUrl 返回请求错误（400）"不合法的跳转地址"
 
   @AUTH-S15 @auto:e2e
   Scenario: 已绑定的第三方账号直通登录
@@ -127,6 +128,14 @@ Feature: 第三方登录（OAuth）
     Given 该第三方账号（ProviderId+Sub）已绑定
     When 再次对其一键注册
     Then 返回冲突（409）提示该 OAuth 用户已被注册
+
+  @AUTH-S25 @manual
+  Scenario: 企业微信授权码换取用户身份
+    Given 企业微信连接器已配置（CorpID/Secret/AgentId，应用可信域名含 WebUI）
+    When 以企业微信扫码授权回跳的 code 发起登录
+    Then 按 gettoken→getuserinfo→user/get 取 userid 作为 Sub 并尽力补全姓名与头像
+    And 应用无通讯录读权限时回退以 userid 作展示名，不阻断登录
+    And 后续绑定/一键注册流程与 @AUTH-S15 ~ @AUTH-S19 一致
 
 Feature: 前端登录链路
   @AUTH-S20 @manual

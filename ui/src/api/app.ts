@@ -6,11 +6,23 @@ import { uploadImageWithKey } from '@/utils/storage'
 /** 应用类型：agent=Agent 应用，workflow=流程应用（对齐后端 AppType 枚举） */
 export type AppKind = 'agent' | 'workflow'
 
+/** 应用开通的外部渠道（应用的对外服务入口，如飞书/钉钉机器人单聊） */
+export interface AppExternalChannel {
+  /** 渠道类型：feishu=飞书，dingtalk=钉钉（未回填机器人 dingtalk id 时用 AppKey 兜底生成链接） */
+  channelType?: 'feishu' | 'dingtalk' | null
+  /** 打开渠道对话的链接（飞书为 applink、钉钉为 jumprobot 机器人单聊地址），新窗口打开唤起客户端 */
+  chatUrl?: string | null
+}
+
 export interface AppItem {
   /** 后端 Guid 序列化为字符串 */
   appId?: string | null
   /** 后端 long 序列化为字符串 */
   teamId?: string | number | null
+  /** 所属团队名称（团队已解散时为空串） */
+  teamName?: string | null
+  /** 使用次数（累计会话数，与用量监控会话数同口径） */
+  useCount?: number | null
   name?: string | null
   description?: string | null
   appType?: AppKind | null
@@ -29,6 +41,8 @@ export interface AppItem {
   /** 发布时间，未发布为 null */
   publishTime?: string | null
   createTime?: string | null
+  /** 应用开通的外部渠道列表（如飞书/钉钉机器人单聊入口），未开通为空 */
+  externalChannels?: AppExternalChannel[] | null
 }
 
 export interface AppsResult {
@@ -109,6 +123,7 @@ export async function createApp(payload: {
 
 /**
  * 基础信息更新：名称、描述、分类、授权开关（应用类型创建后不可修改；头像走独立接口）。
+ * 版本号不随基础信息修改，只能在发布或申请上架时设置。
  * 公开（is_public）只能通过「上架审核」由系统管理员审批后设置，此处不再提供。
  */
 export async function updateApp(
@@ -278,12 +293,25 @@ export async function getCompactionDefaults(): Promise<AgentCompactionDefaults> 
   }
 }
 
+/** 长期记忆默认提示词（应用未配置 memory.prompt 时生效的平台默认值） */
+export interface MemoryDefaults {
+  prompt: string
+}
+
+/** 查询长期记忆默认提示词（登录用户可用，配置页占位展示） */
+export async function getMemoryDefaults(): Promise<MemoryDefaults> {
+  const client = getApiClient()
+  const res = await client.api.app.agent.memoryDefaults.get()
+  const raw = res as unknown as Partial<MemoryDefaults> | undefined
+  return { prompt: raw?.prompt ?? '' }
+}
+
 // ==================== 应用发布 ====================
 
-/** 发布应用（发布后团队成员可进入对话），仅团队 Admin+ 且仅 Agent 应用 */
-export async function publishApp(appId: string): Promise<void> {
+/** 发布应用（发布后团队成员可进入对话），仅团队 Admin+ 且仅 Agent 应用；version（aaa.bb.cc）可选，携带时把应用版本更新为该值并随发布生效 */
+export async function publishApp(appId: string, version?: string): Promise<void> {
   const client = getApiClient()
-  await client.api.app.byId(appId).publish.post()
+  await client.api.app.byId(appId).publish.post({ version })
 }
 
 /** 取消发布应用，仅团队 Admin+ */
@@ -346,6 +374,36 @@ export async function getAppSessionMessages(sessionId: string): Promise<AspAppSe
   const client = getApiClient()
   const res = await client.api.app.session.bySessionId(sessionId).messages.get()
   return (res?.items ?? []) as AspAppSessionMessageItem[]
+}
+
+/** 会话上下文用量：累计 token 与生效对话模型的上下文窗口上限（contextWindow 未知为 0） */
+export interface AppSessionContextUsage {
+  sessionId: string
+  modelName: string
+  contextWindow: number
+  inputTokens: number
+  outTokens: number
+  totalTokens: number
+  /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
+  cachedTokens: number
+  /** 当前上下文占用（最近一次模型调用的输入 token；上下文压缩后随下一轮回落） */
+  contextTokens: number
+}
+
+/** 查询会话上下文用量（热态优先、落库兜底），用于对话输入区的上下文占用环形指示 */
+export async function getAppSessionContextUsage(sessionId: string): Promise<AppSessionContextUsage> {
+  const client = getApiClient()
+  const res = await client.api.app.session.bySessionId(sessionId).contextUsage.get()
+  return {
+    sessionId: String(res?.sessionId ?? sessionId),
+    modelName: res?.modelName ?? '',
+    contextWindow: toFiniteNumber(res?.contextWindow),
+    inputTokens: toFiniteNumber(res?.inputTokens),
+    outTokens: toFiniteNumber(res?.outTokens),
+    totalTokens: toFiniteNumber(res?.totalTokens),
+    cachedTokens: toFiniteNumber(res?.cachedTokens),
+    contextTokens: toFiniteNumber(res?.contextTokens),
+  }
 }
 
 /** 重命名会话 */
@@ -458,6 +516,8 @@ export interface AppUsageSummary {
   promptTokens: number
   completionTokens: number
   totalTokens: number
+  /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
+  cachedTokens: number
 }
 
 export interface AppUsageModelItem {
@@ -467,10 +527,14 @@ export interface AppUsageModelItem {
   promptTokens: number
   completionTokens: number
   totalTokens: number
+  /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
+  cachedTokens: number
 }
 
 /** 应用使用活动统计（会话/用户/消息维度） */
 export interface AppUsageActivityStats {
+  /** 累计使用次数（会话创建计数，删除会话不减少） */
+  useCount: number
   sessionCount: number
   userCount: number
   messageCount: number
@@ -491,6 +555,7 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
   const stats = res?.stats
   return {
     stats: {
+      useCount: toFiniteNumber(stats?.useCount),
       sessionCount: toFiniteNumber(stats?.sessionCount),
       userCount: toFiniteNumber(stats?.userCount),
       messageCount: toFiniteNumber(stats?.messageCount),
@@ -501,6 +566,7 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
       promptTokens: toFiniteNumber(summary?.promptTokens),
       completionTokens: toFiniteNumber(summary?.completionTokens),
       totalTokens: toFiniteNumber(summary?.totalTokens),
+      cachedTokens: toFiniteNumber(summary?.cachedTokens),
     },
     byModel: (res?.byModel ?? []).map((item) => ({
       modelId: item.modelId,
@@ -509,6 +575,7 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
       promptTokens: toFiniteNumber(item.promptTokens),
       completionTokens: toFiniteNumber(item.completionTokens),
       totalTokens: toFiniteNumber(item.totalTokens),
+      cachedTokens: toFiniteNumber(item.cachedTokens),
     })),
   }
 }

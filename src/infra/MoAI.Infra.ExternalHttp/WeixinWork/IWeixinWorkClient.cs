@@ -18,10 +18,10 @@ public interface IWeixinWorkClient
     /// 根据 code 获取成员信息（企业成员或外部联系人）.
     /// </summary>
     /// <param name="accessToken">接口调用凭证</param>
-    /// <param name="code">成员授权获取到的 code</param>
+    /// <param name="request">成员授权获取到的 code</param>
     /// <returns>获取用户身份的结果</returns>
     [Post("/cgi-bin/auth/getuserinfo")]
-    Task<GetUserInfoResult> GetUserInfoAsync(string accessToken, string code);
+    Task<GetUserInfoResult> GetUserInfoAsync([AliasAs("access_token")] string accessToken, [Body] GetUserInfoByCodeRequest request);
 
     /// <summary>
     /// 获取访问用户敏感信息.
@@ -30,7 +30,16 @@ public interface IWeixinWorkClient
     /// <param name="request">包含 user_ticket 的请求体</param>
     /// <returns>获取用户敏感信息的结果</returns>
     [Post("/cgi-bin/auth/getuserdetail")]
-    Task<GetUserDetailResult> GetUserDetailAsync(string accessToken, [Body] GetUserDetailRequest request);
+    Task<GetUserDetailResult> GetUserDetailAsync([AliasAs("access_token")] string accessToken, [Body] GetUserDetailRequest request);
+
+    /// <summary>
+    /// 读取通讯录成员信息（姓名/头像），需要应用具备通讯录读权限.
+    /// </summary>
+    /// <param name="accessToken">接口调用凭证</param>
+    /// <param name="userId">成员 userid</param>
+    /// <returns>成员信息结果</returns>
+    [Get("/cgi-bin/user/get")]
+    Task<GetUserResult> GetUserAsync([AliasAs("access_token")] string accessToken, [AliasAs("userid")] string userId);
 
     /// <summary>
     /// 获取企业微信 access_token.

@@ -28,6 +28,12 @@ public class ApplyPublicationCommand : IRequest<SimpleLong>, IUserIdContext, IMo
     /// </summary>
     public string? ApplyReason { get; init; }
 
+    /// <summary>
+    /// 应用版本号 aaa.bb.cc（如 1.2.0），可空；上架即把最新的团队发布上架，不携带时自动记录应用当前版本号.
+    /// 携带时校验格式且不能低于应用当前版本. 存库编码 aaa*10000 + bb*100 + cc（与 MoAI.App.Shared.AppVersionHelper 同规则）.
+    /// </summary>
+    public string? Version { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -42,5 +48,9 @@ public class ApplyPublicationCommand : IRequest<SimpleLong>, IUserIdContext, IMo
         validate.RuleFor(x => x.ResourceType).IsInEnum().WithMessage("资源类型不正确.");
         validate.RuleFor(x => x.ResourceId).NotEmpty().WithMessage("资源 id 不能为空.").MaximumLength(64).WithMessage("资源 id 最长 64 个字符.");
         validate.RuleFor(x => x.ApplyReason).MaximumLength(255).WithMessage("申请说明最长 255 个字符.");
+        validate.RuleFor(x => x.Version).Matches(@"^\d{1,3}\.\d{1,2}\.\d{1,2}$").When(x => !string.IsNullOrWhiteSpace(x.Version))
+            .WithMessage("应用版本号格式不正确，应为 aaa.bb.cc（如 1.2.0）.");
+        validate.RuleFor(x => x.Version).Empty().When(x => x.ResourceType != PublicationResourceType.App)
+            .WithMessage("仅应用申请上架需要版本号.");
     }
 }

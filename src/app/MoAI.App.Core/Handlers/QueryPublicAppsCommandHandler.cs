@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Enums;
 
@@ -60,6 +61,8 @@ public class QueryPublicAppsCommandHandler : IRequestHandler<QueryPublicAppsComm
             })
             .ToListAsync(cancellationToken);
 
+        var channelMap = await AppExternalChannelHelper.GetChannelsAsync(_databaseContext, rows.Select(x => x.Id).ToList(), cancellationToken);
+
         var items = rows
             .Select(x => new AppItem
             {
@@ -75,8 +78,17 @@ public class QueryPublicAppsCommandHandler : IRequestHandler<QueryPublicAppsComm
                 IsPublic = x.IsPublic,
                 PublishStatus = x.PublishStatus,
                 PublishTime = x.PublishTime,
-                CreateTime = x.CreateTime
+                CreateTime = x.CreateTime,
+                ExternalChannels = channelMap.TryGetValue(x.Id, out var channels) ? channels : []
             })
+            .ToList();
+
+        await AppListItemHelper.FillTeamAndUsageAsync(_databaseContext, items, cancellationToken);
+
+        // 应用广场按使用次数降序，同次数按发布时间倒序（未发布快照兜底创建时间）
+        items = items
+            .OrderByDescending(x => x.UseCount)
+            .ThenByDescending(x => x.PublishTime ?? x.CreateTime)
             .ToList();
 
         return new QueryPublicAppsCommandResponse

@@ -91,6 +91,9 @@ node local-dev/hot-board-e2e.mjs
 | @DYN-S43 | local-dev/dynamic-plugin-e2e.mjs（公开图片直传完成 → 设置头像 200 → 列表回读 avatarPath 一致） | PASS 99/99（2026-09-17） |
 | @DYN-S44 | local-dev/dynamic-plugin-e2e.mjs（未登记 objectKey → 404 头像文件不存在或未完成上传） | PASS 99/99（2026-09-17） |
 | @DYN-S45 | local-dev/dynamic-plugin-e2e.mjs（匿名 401、普通用户 403） | PASS 99/99（2026-09-17） |
+| @DYN-S121 | local-dev/dynamic-plugin-e2e.mjs（save 携带已登记 objectKey → 200 且列表回读 avatarPath 一致）；[DynamicPluginPanel.test.tsx](../../ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx)（新建弹窗渲染头像上传入口） | e2e PASS 165/0/SKIP 4、vitest PASS 7/7（2026-10-26） |
+| @DYN-S122 | local-dev/dynamic-plugin-e2e.mjs（编辑不传 avatarPath → 200 且头像保持不变） | PASS 165/0/SKIP 4（2026-10-26） |
+| @DYN-S123 | local-dev/dynamic-plugin-e2e.mjs（伪 objectKey → 404 且实例不创建） | PASS 165/0/SKIP 4（2026-10-26） |
 | @DYN-S50 | local-dev/ops-p1-plugins-e2e.mjs（`S50a~i` http 拨测 200/500、tcp 通/拒、dns 解析、内网防护默认拒+放行、非法方法与协议 400） | PASS 39/39（2026-09-29） |
 | @DYN-S51 | local-dev/ops-p1-plugins-e2e.mjs（`S51a~k` version 免鉴权、problems 解析+主机富化+SeverityMin、body auth 命中子路径、header auth 命中根路径、hosts/triggers、登录失败归一） | PASS 39/39（2026-09-29） |
 | @DYN-S52 | local-dev/ops-p1-plugins-e2e.mjs（`S52a~l` info 分节/指定节段、dbsize、slowlog、client_list、config_get、key_info 含不存在键、缺参 400、错误密码归一） | PASS 39/39（2026-09-29） |

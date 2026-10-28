@@ -12,6 +12,7 @@ using MoAI.Auth;
 using MoAI.Classify;
 using MoAI.Common;
 using MoAI.Database;
+using MoAI.DingTalk;
 using MoAI.Feishu;
 using MoAI.Filters;
 using MoAI.Gateway;
@@ -30,6 +31,7 @@ using MoAI.Team;
 using MoAI.TeamPlugin;
 using MoAI.Timer;
 using MoAI.Variable;
+using MoAI.WeixinWork;
 using MoAI.Wiki;
 
 namespace MoAI;
@@ -60,6 +62,8 @@ namespace MoAI;
 [InjectModule<AIPluginCoreModule>]
 [InjectModule<AiCoreModule>]
 [InjectModule<FeishuCoreModule>]
+[InjectModule<DingTalkCoreModule>]
+[InjectModule<WeixinWorkCoreModule>]
 [InjectModule<PublicationCoreModule>]
 [InjectModule<PromptCoreModule>]
 [InjectModule<ClassifyCoreModule>]

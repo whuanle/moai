@@ -58,7 +58,7 @@ public class FeishuAppController : ControllerBase
     }
 
     /// <summary>
-    /// 更新飞书应用连接（名称、描述、AppSecret、域名、禁用），需要团队 Admin 及以上角色；AppSecret 为空表示保持不变.
+    /// 更新飞书应用连接（名称、AppID、AppSecret、域名、禁用），需要团队 Admin 及以上角色；AppID/AppSecret/域名为空表示保持不变.
     /// </summary>
     /// <param name="id">飞书应用记录 id.</param>
     /// <param name="req">更新请求.</param>
@@ -72,6 +72,7 @@ public class FeishuAppController : ControllerBase
             FeishuAppId = id,
             Name = req.Name,
             Description = req.Description,
+            AppId = req.AppId,
             AppSecret = req.AppSecret,
             Domain = req.Domain,
             IsDisable = req.IsDisable

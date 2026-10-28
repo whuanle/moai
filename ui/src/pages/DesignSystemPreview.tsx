@@ -40,6 +40,7 @@ import {
   fontFamily,
   colorPrimary,
   controlHeight,
+  themePresets,
 } from '@/design-system/theme'
 import type { TableColumnsType } from 'antd'
 import type { ReactNode } from 'react'
@@ -365,12 +366,13 @@ function ThemeSection() {
   const { t } = useTranslation()
   const themeKey = useAppStore((state) => state.themeKey)
   const toggleTheme = useAppStore((state) => state.toggleTheme)
+  const preset = themePresets[themeKey]
   return (
     <Space direction="vertical" size="middle">
-      <Text type="secondary">当前主题：{themeKey === 'dark' ? '暗色 Dark' : '亮色 Light'}</Text>
+      <Text type="secondary">当前主题：{t(preset.nameKey)}</Text>
       <Space>
         <Switch
-          checked={themeKey === 'dark'}
+          checked={preset.mode === 'dark'}
           checkedChildren="暗色"
           unCheckedChildren="亮色"
           onChange={() => toggleTheme()}

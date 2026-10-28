@@ -18,6 +18,5 @@ public class SettingsCoreModule : IModule
         context.Services.AddScoped<IKnowledgeGraphSettingsService, KnowledgeGraphSettingsService>();
         context.Services.AddScoped<IWikiSettingsService, WikiSettingsService>();
         context.Services.AddScoped<ISandboxSettingsService, SandboxSettingsService>();
-        context.Services.AddScoped<IAgentSettingsService, AgentSettingsService>();
     }
 }

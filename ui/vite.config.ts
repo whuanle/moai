@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { cpSync, createReadStream, existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -17,6 +18,28 @@ function copyMonacoToPublic(): { name: string; configureServer: () => void; writ
     cpSync(src, dest, { recursive: true })
   }
   return { name: 'copy-monaco-to-public', configureServer: run, writeBundle: run }
+}
+
+/**
+ * 把 vditor 运行时按需资源复制到 public/vendor/vditor/dist（编辑器 cdn 选项指向 /vendor/vditor，避免外网 CDN）.
+ * 只复制用到子集：lute（markdown 引擎 WASM，必需）、i18n/icons（界面）、highlight.js（代码高亮）、katex（公式）；
+ * mermaid/mathjax/graphviz/echarts 等重型图示引擎不随仓库分发，提示词正文用不到（滥用时降级为普通代码块）.
+ */
+function copyVditorToPublic(): { name: string; configureServer: () => void; writeBundle: () => void } {
+  const src = join(__dirname, 'node_modules', 'vditor', 'dist')
+  const dest = join(__dirname, 'public', 'vendor', 'vditor', 'dist')
+  const run = () => {
+    if (!existsSync(src)) return
+    rmSync(dest, { recursive: true, force: true })
+    mkdirSync(join(dest, 'js'), { recursive: true })
+    for (const dir of ['lute', 'i18n', 'icons', 'highlight.js', 'katex']) {
+      cpSync(join(src, 'js', dir), join(dest, 'js', dir), { recursive: true })
+    }
+    for (const dir of ['css', 'images']) {
+      cpSync(join(src, dir), join(dest, dir), { recursive: true })
+    }
+  }
+  return { name: 'copy-vditor-to-public', configureServer: run, writeBundle: run }
 }
 
 /**
@@ -46,8 +69,12 @@ function serveEmbedWidget() {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), copyMonacoToPublic(), serveEmbedWidget()],
+export default defineConfig(({ mode }) => {
+  // 内网穿透联调（企业微信等外部渠道要求公网可信域名）：ui/.env.local 配置 MOAI_ALLOWED_HOSTS 放行自定义 Host，
+  // 逗号分隔，前导点匹配整个子域（如 .local.example.com 放行 4000.local.example.com）
+  const env = loadEnv(mode, __dirname, '')
+  return {
+  plugins: [react(), copyMonacoToPublic(), copyVditorToPublic(), serveEmbedWidget()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -73,6 +100,9 @@ export default defineConfig({
   server: {
     port: 4000,
     host: true,
+    allowedHosts: env.MOAI_ALLOWED_HOSTS
+      ? env.MOAI_ALLOWED_HOSTS.split(',').map((h) => h.trim()).filter(Boolean)
+      : [],
     // 必须关闭：Vite 内置 cors 只放行 localhost 系 origin，会抢答 /api 预检且对
     // Origin: null（file:// 宿主页，悬浮组件的典型嵌入场景）不带 ACAO，把请求挡在代理之前。
     // 关闭后预检穿透到后端，由后端 CORS 策略统一回答（AllowAnyOrigin → *）。
@@ -126,5 +156,6 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: false,
   },
+  }
 })
 

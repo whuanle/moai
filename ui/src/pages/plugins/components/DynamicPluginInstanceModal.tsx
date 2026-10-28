@@ -7,7 +7,7 @@ import { getKnowledgeGraphs, getKnowledgeGraphSchema } from '@/api/knowledgeGrap
 import { pluginApi, type DynamicPluginTemplate } from '@/api/plugin'
 import { saveTeamDynamicPlugin } from '@/api/team-plugin'
 import { feedback } from '@/design-system'
-import { PluginAvatarUpload } from './PluginAvatarUpload'
+import { PluginAvatarPendingUpload, PluginAvatarUpload } from './PluginAvatarUpload'
 
 interface DynamicFormValues {
   instanceKey: string
@@ -120,12 +120,15 @@ export function DynamicPluginInstanceModal({
   const [kgEnabled, setKgEnabled] = useState(true)
   const [kgGraphsLoading, setKgGraphsLoading] = useState(false)
   const kgGraphsLoadedRef = useRef(false)
+  /** 新建态暂存的头像 ObjectKey：保存时随命令提交（插件记录尚未生成，无法先登记）. */
+  const [pendingAvatarPath, setPendingAvatarPath] = useState<string | null>(null)
   /** 最近一次自动生成的实例 key（团队模式）：用户手改过（当前值不等于它）后切换模板不再覆盖. */
   const lastAutoKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     kgGraphsLoadedRef.current = false
+    setPendingAvatarPath(null)
     if (editing) {
       form.setFieldsValue({
         instanceKey: editing.instanceKey ?? editing.pluginName ?? '',
@@ -231,6 +234,7 @@ export function DynamicPluginInstanceModal({
           description: values.description ?? '',
           classifyId: values.classifyId ?? 0,
           config: values.config ?? '{}',
+          avatarPath: editing ? undefined : pendingAvatarPath,
         })
       }
       feedback.success(t('plugins.updateSuccess'))
@@ -256,14 +260,18 @@ export function DynamicPluginInstanceModal({
       width={640}
     >
       <Form form={form} layout="vertical">
-        {scope === 'system' && editing && (
+        {scope === 'system' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <PluginAvatarUpload
-              pluginId={editing.id ?? ''}
-              objectKey={editing.avatarPath}
-              title={editing.title}
-              onChanged={onSaved}
-            />
+            {editing ? (
+              <PluginAvatarUpload
+                pluginId={editing.id ?? ''}
+                objectKey={editing.avatarPath}
+                title={editing.title}
+                onChanged={onSaved}
+              />
+            ) : (
+              <PluginAvatarPendingUpload objectKey={pendingAvatarPath} onObjectKeyChange={setPendingAvatarPath} />
+            )}
             <Typography.Text type="secondary">{t('plugins.avatarTip')}</Typography.Text>
           </div>
         )}

@@ -1,8 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ThemeKey } from '@/design-system/theme'
+import { defaultThemeKeyByMode, isThemeKey, themePresets, type ThemeKey } from '@/design-system/theme'
 
-export type ThemeMode = ThemeKey
 export type Locale = 'zh-CN' | 'en-US'
 
 export interface ServerInfo {
@@ -63,9 +62,9 @@ interface AppState {
 
 const getInitialTheme = (): ThemeKey => {
   const saved = localStorage.getItem('moai-web-theme')
-  if (saved === 'light' || saved === 'dark') return saved
-  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark'
-  return 'light'
+  if (isThemeKey(saved)) return saved
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return defaultThemeKeyByMode.dark
+  return defaultThemeKeyByMode.light
 }
 
 const getInitialLocale = (): Locale => {
@@ -89,7 +88,8 @@ export const useAppStore = create<AppState>()(
         set({ themeKey: key })
       },
       toggleTheme: () => {
-        const next = get().themeKey === 'dark' ? 'light' : 'dark'
+        const currentMode = themePresets[get().themeKey].mode
+        const next = defaultThemeKeyByMode[currentMode === 'dark' ? 'light' : 'dark']
         localStorage.setItem('moai-web-theme', next)
         set({ themeKey: next })
       },

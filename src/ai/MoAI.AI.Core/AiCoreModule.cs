@@ -4,7 +4,9 @@ using Microsoft.Agents.AI.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MoAI.AI.Services;
+using MoAI.DingTalk.Services;
 using MoAI.Feishu.Services;
+using MoAI.WeixinWork.Services;
 
 namespace MoAI.AI;
 
@@ -59,6 +61,10 @@ public class AiCoreModule : IModule
         // A2A 任务注册表：tasks/get 查询与 tasks/cancel 跨请求中断（单例共享，进程内尽力而为）
         context.Services.AddSingleton<MoAI.AI.A2a.AppA2aTaskRegistry>();
 
+        // 会话热态用量只读门面：跨模块（App.Core）读取热态 token 累计，与 AppChatHotStore 共享同一单例
+        context.Services.AddSingleton<MoAI.AI.Services.IAgentChatUsageReader>(sp =>
+            sp.GetRequiredService<MoAI.AI.Services.AppChatHotStore>());
+
         // 应用安全审计：单例事件通道 + 后台批量落库（app_security_event）
         context.Services.AddSingleton<MoAI.AI.Services.AppSecurityAuditChannel>();
         context.Services.AddHostedService<MoAI.AI.Services.AppSecurityAuditStoreService>();
@@ -68,5 +74,11 @@ public class AiCoreModule : IModule
 
         // 应用渠道的飞书消息处理器（群聊/私聊消息 → 应用 Agent → 回复）；单例：内部按 chat_id 加锁串行
         context.Services.AddSingleton<IFeishuEventHandler, AppFeishuMessageHandler>();
+
+        // 应用渠道的钉钉消息处理器（群聊/私聊消息 → 应用 Agent → 回复）；单例：内部按 conversationId 加锁串行
+        context.Services.AddSingleton<IDingTalkEventHandler, AppDingTalkMessageHandler>();
+
+        // 应用渠道的企业微信消息处理器（单聊/群聊消息 → 应用 Agent → 回复）；单例：内部按会话 key 加锁串行
+        context.Services.AddSingleton<IWeixinWorkEventHandler, AppWeixinWorkMessageHandler>();
     }
 }

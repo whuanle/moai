@@ -42,24 +42,28 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
                 Name = c.Name,
                 IconUrl = c.IconUrl,
                 Provider = c.Provider,
+                AgentId = c.AgentId,
                 RedirectUrl = c.AuthorizeUrl
             })
             .ToListAsync(cancellationToken);
 
         List<QueryAllOAuthPrividerCommandResponseItem> list = new();
 
-        if (request.RedirectUrl != null && request.RedirectUrl.Host != new Uri(_systemOptions.WebUI).Host)
-        {
-            throw new BusinessException($"不合法的跳转地址") { StatusCode = 400 };
-        }
-
-        var loopbackRedirectUrl = _systemOptions.WebUI + $"/oauth_login";
+        // 回调地址跟随登录页的实际访问来源（内网穿透等场景前端域名与 WebUI 配置不同），
+        // 未携带 redirectUrl 时回退 SystemOptions.WebUI；提供方后台的回调域白名单是安全边界
+        var loopbackOrigin = _systemOptions.WebUI.TrimEnd('/');
         if (request.RedirectUrl != null)
         {
-            loopbackRedirectUrl += $"?redirectUri={request.RedirectUrl}";
+            if (request.RedirectUrl.Scheme != Uri.UriSchemeHttp && request.RedirectUrl.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new BusinessException($"不合法的跳转地址") { StatusCode = 400 };
+            }
+
+            loopbackOrigin = request.RedirectUrl.GetLeftPart(UriPartial.Authority);
         }
 
-        loopbackRedirectUrl = WebUtility.UrlEncode(loopbackRedirectUrl);
+        // 与换 token 时的 redirect_uri（GetProfileAsync 回填同一来源）保持逐字符一致，飞书等提供方要求两步完全匹配
+        var loopbackRedirectUrl = WebUtility.UrlEncode($"{loopbackOrigin}/oauth_login");
 
         foreach (var item in items)
         {
@@ -78,6 +82,12 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
                 // 钉钉的授权地址需要特殊处理
                 // https://login.dingtalk.com/oauth2/auth?redirect_uri=https%3A%2F%2Fwww.aaaaa.com%2Fa%2Fb&response_type=code&client_id=dingbbbbbbb&scope=openid corpid&state=dddd&prompt=consent
                 oauthRedirrctUrl = $"{item.RedirectUrl}?client_id={item.Key}&response_type=code&scope=openid%20corpid&state={item.OAuthId}&prompt=consent&redirect_uri={loopbackRedirectUrl}";
+            }
+            else if (provider == OAuthPrivider.WeixinWork)
+            {
+                // 企业微信 Web 登录需要企业 CorpID（key）与应用 agentid
+                // https://login.work.weixin.qq.com/wwlogin/sso/login?login_type=CorpApp&appid=CORPID&agentid=AGENTID&redirect_uri=REDIRECT_URI&state=STATE
+                oauthRedirrctUrl = $"{item.RedirectUrl}?login_type=CorpApp&appid={item.Key}&agentid={item.AgentId}&state={item.OAuthId}&redirect_uri={loopbackRedirectUrl}";
             }
 
             list.Add(new QueryAllOAuthPrividerCommandResponseItem

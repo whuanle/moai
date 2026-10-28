@@ -1,20 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CameraOutlined } from '@ant-design/icons'
-import { Avatar, Button, Card, Form, Input, Select, Space, Upload, Typography, theme } from 'antd'
+import { CameraOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
+import { Avatar, Button, Card, Form, Input, Segmented, Select, Space, Tooltip, Upload, theme } from 'antd'
 import type { UploadProps } from 'antd'
-import type { TextAreaRef } from 'antd/es/input/TextArea'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Page, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+import { VditorMarkdownEditor, type VditorEditorMode } from '@/components/VditorMarkdownEditor'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createPrompt, getPromptDetail, setPromptAvatar, updatePrompt } from '@/api/prompt'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
-import { ReactMarkdownPreview } from './PromptDetailModal'
-import { MarkdownToolbar } from './MarkdownToolbar'
-import { applyMarkdownEdit, type MarkdownAction, type MarkdownStrings } from './markdown'
-
-const { Text } = Typography
 
 const CONTENT_MAX = 10000
 
@@ -24,10 +19,15 @@ interface PromptEditorFormValues {
   description?: string
 }
 
-/**
- * 提示词编辑器独立页：顶部基本信息，下方 Markdown 工具栏 + 左编辑右实时预览，支持上传头像。
- * 路由：/prompts/new、/prompts/:promptId/edit（个人）；/team/:teamId/prompt/new、/team/:teamId/prompt/:promptId/edit（团队）。
- */
+/** 浏览器草稿：未保存内容落 localStorage，刷新/重开页面可恢复，保存成功后清除 */
+interface PromptDraft {
+  name?: string
+  promptClassId?: number
+  description?: string
+  content?: string
+  mode?: VditorEditorMode
+}
+
 export function PromptEditor() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -42,16 +42,64 @@ export function PromptEditor() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [content, setContent] = useState('')
+  const [mode, setMode] = useState<VditorEditorMode>('ir')
   const [avatarObjectKey, setAvatarObjectKey] = useState('')
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [classifies, setClassifies] = useState<Classify[]>([])
   const [form] = Form.useForm<PromptEditorFormValues>()
   const nameValue = Form.useWatch('name', form)
-  const textareaRef = useRef<TextAreaRef>(null)
+
+  const contentRef = useRef(content)
+  contentRef.current = content
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+  const draftKey = isEdit ? `moai-prompt-draft:edit:${promptId}` : `moai-prompt-draft:new:t${teamId}`
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /** 入队时捕获的待写草稿（卸载 flush 用，不依赖已卸载的表单实例） */
+  const pendingDraftRef = useRef<PromptDraft | null>(null)
+  /** 恢复提示只弹一次（StrictMode 双调用 effect 时避免重复 toast） */
+  const restoreToastShownRef = useRef(false)
 
   const classOptions = useMemo(
     () => classifies.map((c) => ({ value: Number(c.classifyId), label: classifyLabel(c) })),
     [classifies],
+  )
+
+  /** 草稿落 localStorage */
+  const writeDraft = useCallback(() => {
+    const draft = pendingDraftRef.current
+    if (!draft) return
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(draft))
+    } catch {
+      // 存储不可用（隐私模式/超限）时静默放弃草稿
+    }
+  }, [draftKey])
+
+  /** 草稿防抖落 localStorage（表单值变化与编辑器输入共用；值在入队时捕获，定时器触发时表单可能已卸载） */
+  const queueDraftSave = useCallback(
+    (values?: PromptEditorFormValues) => {
+      const v = values ?? form.getFieldsValue()
+      pendingDraftRef.current = {
+        name: v.name,
+        promptClassId: v.promptClassId,
+        description: v.description,
+        content: contentRef.current,
+        mode: modeRef.current,
+      }
+      clearTimeout(draftTimer.current)
+      draftTimer.current = setTimeout(writeDraft, 500)
+    },
+    [form, writeDraft],
+  )
+
+  // 卸载时立即落一次草稿，保留最后几百毫秒的输入
+  useEffect(
+    () => () => {
+      clearTimeout(draftTimer.current)
+      writeDraft()
+    },
+    [writeDraft],
   )
 
   useEffect(() => {
@@ -64,29 +112,81 @@ export function PromptEditor() {
   }, [])
 
   useEffect(() => {
-    if (!isEdit) return
     let cancelled = false
-    getPromptDetail(promptId)
-      .then((detail) => {
-        if (cancelled || !detail) return
-        form.setFieldsValue({
-          name: detail.name ?? undefined,
-          promptClassId: detail.promptClassId || undefined,
-          description: detail.description ?? undefined,
+    const applyDetail = () => {
+      getPromptDetail(promptId)
+        .then((detail) => {
+          if (cancelled || !detail) return
+          form.setFieldsValue({
+            name: detail.name ?? undefined,
+            promptClassId: detail.promptClassId || undefined,
+            description: detail.description ?? undefined,
+          })
+          setContent(detail.content ?? '')
+          setAvatarObjectKey(detail.avatarPath ?? '')
+          // 服务端内容就位后，叠加本地未保存草稿（刷新/误关场景）
+          try {
+            const raw = localStorage.getItem(draftKey)
+            if (raw) {
+              const draft = JSON.parse(raw) as PromptDraft
+              const hasDraft = Boolean(draft.content?.trim() || draft.name || draft.description)
+              if (hasDraft) {
+                form.setFieldsValue({
+                  name: draft.name || undefined,
+                  promptClassId: draft.promptClassId || undefined,
+                  description: draft.description || undefined,
+                })
+                setContent(draft.content ?? '')
+                if (draft.mode) setMode(draft.mode)
+                if (!restoreToastShownRef.current) {
+                  restoreToastShownRef.current = true
+                  feedback.info(t('prompt.draftRestored'))
+                }
+              }
+            }
+          } catch {
+            // 草稿损坏则忽略，展示服务端内容
+          }
         })
-        setContent(detail.content ?? '')
-        setAvatarObjectKey(detail.avatarPath ?? '')
-      })
-      .catch(() => {
-        // 错误已由全局请求中间件统一提示
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+        .catch(() => {
+          // 错误已由全局请求中间件统一提示
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }
+    if (isEdit) {
+      applyDetail()
+    } else {
+      // 新建页：恢复上次未保存的草稿
+      setLoading(false)
+      try {
+        const raw = localStorage.getItem(draftKey)
+        if (raw) {
+          const draft = JSON.parse(raw) as PromptDraft
+          const hasDraft = Boolean(draft.content?.trim() || draft.name || draft.description)
+          if (hasDraft) {
+            form.setFieldsValue({
+              name: draft.name || undefined,
+              promptClassId: draft.promptClassId || undefined,
+              description: draft.description || undefined,
+            })
+            setContent(draft.content ?? '')
+            if (draft.mode) setMode(draft.mode)
+            if (!restoreToastShownRef.current) {
+              restoreToastShownRef.current = true
+              feedback.info(t('prompt.draftRestored'))
+            }
+          }
+        }
+      } catch {
+        // 草稿损坏则忽略
+      }
+    }
     return () => {
       cancelled = true
     }
-  }, [isEdit, promptId, form])
+  }, [isEdit, promptId, draftKey, form, t])
 
   const backToList = useCallback(() => {
     navigate(teamId > 0 ? `/team/${teamId}/prompts` : '/prompts')
@@ -118,37 +218,6 @@ export function PromptEditor() {
     return Upload.LIST_IGNORE
   }
 
-  const toolStrings = useMemo<MarkdownStrings>(
-    () => ({
-      text: t('prompt.toolText'),
-      code: t('prompt.toolCode'),
-      linkText: t('prompt.toolLinkText'),
-      linkUrl: 'https://',
-      tableHeader: t('prompt.toolTableHeader'),
-      tableCell: t('prompt.toolTableCell'),
-    }),
-    [t],
-  )
-
-  const handleToolbar = (action: MarkdownAction) => {
-    // antd TextArea 的 ref 是 TextAreaRef，原生元素在 resizableTextArea.textArea
-    const textarea = textareaRef.current?.resizableTextArea?.textArea
-    if (!textarea) return
-    const result = applyMarkdownEdit(
-      textarea.value,
-      { start: textarea.selectionStart, end: textarea.selectionEnd },
-      action,
-      toolStrings,
-    )
-    // 手动插入不受 maxLength 限制，这里与输入框上限保持一致
-    const next = result.content.slice(0, CONTENT_MAX)
-    setContent(next)
-    requestAnimationFrame(() => {
-      textarea.focus()
-      textarea.setSelectionRange(Math.min(result.selectionStart, next.length), Math.min(result.selectionEnd, next.length))
-    })
-  }
-
   const handleSave = async () => {
     const values = await form.validateFields()
     if (!content.trim()) {
@@ -177,6 +246,9 @@ export function PromptEditor() {
         })
         feedback.success(t('prompt.createSuccess'))
       }
+      // 先取消未触发的防抖写入，避免已保存内容被重新写回草稿
+      clearTimeout(draftTimer.current)
+      localStorage.removeItem(draftKey)
       backToList()
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -186,25 +258,6 @@ export function PromptEditor() {
   }
 
   const listTitle = teamId > 0 ? t('team.prompts') : t('nav.prompts')
-  const paneStyle = {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    minWidth: 0,
-    border: `1px solid ${token.colorBorder}`,
-    borderRadius: token.borderRadiusLG,
-    overflow: 'hidden' as const,
-    background: token.colorBgContainer,
-  }
-  const paneHeaderStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    padding: '6px 12px',
-    borderBottom: `1px solid ${token.colorBorder}`,
-    background: token.colorFillQuaternary,
-    flexShrink: 0,
-  }
 
   return (
     <Page
@@ -213,17 +266,9 @@ export function PromptEditor() {
         ...(teamId > 0 ? [{ title: <Link to={`/team/${teamId}/prompts`}>{listTitle}</Link> }] : []),
         { title: isEdit ? t('prompt.editorEdit') : t('prompt.editorCreate') },
       ]}
-      extra={
-        <Space>
-          <Button onClick={backToList}>{t('prompt.cancel')}</Button>
-          <Button type="primary" loading={saving} onClick={() => void handleSave()}>
-            {isEdit ? t('prompt.save') : t('prompt.create')}
-          </Button>
-        </Space>
-      }
     >
       <Card styles={{ body: { padding: spacing.md, marginBottom: spacing.md } }} loading={loading}>
-        <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: spacing.md, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*">
             <div style={{ position: 'relative', lineHeight: 0, cursor: 'pointer' }} title={t('prompt.avatar')}>
               <Avatar size={64} src={avatarObjectKey ? resolveStorageUrl(avatarObjectKey) : undefined} style={{ opacity: avatarUploading ? 0.55 : 1 }}>
@@ -250,70 +295,62 @@ export function PromptEditor() {
               </div>
             </div>
           </Upload>
-          <Form form={form} layout="vertical" style={{ flex: 1, minWidth: 320 }}>
+          <Form form={form} layout="vertical" style={{ flex: 1, minWidth: 320 }} onValuesChange={(_, all) => queueDraftSave(all)}>
             <div style={{ display: 'flex', gap: spacing.md, flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <Form.Item
                 name="name"
                 label={t('prompt.name')}
                 rules={[{ required: true, message: t('prompt.namePlaceholder') }, { max: 20, message: `${t('prompt.name')} ≤ 20` }]}
-                style={{ marginBottom: 0, width: 240 }}
+                style={{ marginBottom: 0, width: 200 }}
               >
                 <Input placeholder={t('prompt.namePlaceholder')} maxLength={20} allowClear />
               </Form.Item>
               <Form.Item name="promptClassId" label={t('prompt.class')} style={{ marginBottom: 0, width: 200 }}>
                 <Select allowClear placeholder={t('prompt.classAll')} options={classOptions} />
               </Form.Item>
-              <Form.Item name="description" label={t('prompt.desc')} rules={[{ max: 255 }]} style={{ marginBottom: 0, flex: 1, minWidth: 260 }}>
-                <Input placeholder={t('prompt.descPlaceholder')} maxLength={255} allowClear />
-              </Form.Item>
+              {/* 保存/取消与名称同行（底部对齐），避免页头右侧按钮留下大片空白 */}
+              <Space style={{ alignSelf: 'flex-end' }}>
+                <Button onClick={backToList}>{t('prompt.cancel')}</Button>
+                <Button type="primary" loading={saving} onClick={() => void handleSave()}>
+                  {isEdit ? t('prompt.save') : t('prompt.create')}
+                </Button>
+              </Space>
             </div>
+            <Form.Item name="description" label={t('prompt.desc')} rules={[{ max: 255 }]} style={{ marginBottom: 0, marginTop: spacing.md }}>
+              <Input placeholder={t('prompt.descPlaceholder')} maxLength={255} allowClear />
+            </Form.Item>
           </Form>
         </div>
       </Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
-        <MarkdownToolbar onAction={handleToolbar} />
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {content.length} / {CONTENT_MAX}
-        </Text>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <Segmented
+          size="small"
+          value={mode}
+          onChange={(v) => {
+            const next = v as VditorEditorMode
+            setMode(next)
+            queueDraftSave()
+          }}
+          options={[
+            { label: <Tooltip title={t('prompt.modeWysiwyg')}><EyeOutlined aria-label={t('prompt.modeWysiwyg')} /></Tooltip>, value: 'ir' },
+            { label: <Tooltip title={t('prompt.modeSource')}><CodeOutlined aria-label={t('prompt.modeSource')} /></Tooltip>, value: 'sv' },
+          ]}
+        />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md, height: 'calc(100vh - 352px)', minHeight: 420 }}>
-        <section style={paneStyle}>
-          <div style={paneHeaderStyle}>
-            <Text strong style={{ fontSize: 13 }}>
-              {t('prompt.content')}
-            </Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Markdown
-            </Text>
-          </div>
-          <Input.TextArea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={t('prompt.editorPlaceholder')}
-            variant="borderless"
-            maxLength={CONTENT_MAX}
-            style={{ flex: 1, minHeight: 0, resize: 'none', padding: spacing.md, fontSize: 13, fontFamily: 'SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace' }}
-          />
-        </section>
-        <section style={paneStyle}>
-          <div style={paneHeaderStyle}>
-            <Text strong style={{ fontSize: 13 }}>
-              {t('prompt.preview')}
-            </Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {t('prompt.previewLive')}
-            </Text>
-          </div>
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: `8px ${spacing.md}px` }}>
-            {content.trim() ? (
-              <ReactMarkdownPreview content={content} />
-            ) : (
-              <Text type="secondary">{t('prompt.previewEmpty')}</Text>
-            )}
-          </div>
-        </section>
-      </div>
+      {!loading && (
+        <VditorMarkdownEditor
+          value={content}
+          onChange={(v) => {
+            contentRef.current = v
+            setContent(v)
+            queueDraftSave()
+          }}
+          mode={mode}
+          placeholder={t('prompt.editorPlaceholder')}
+          maxLength={CONTENT_MAX}
+          style={{ height: 'calc(100vh - 242px)', minHeight: 420 }}
+        />
+      )}
     </Page>
   )
 }

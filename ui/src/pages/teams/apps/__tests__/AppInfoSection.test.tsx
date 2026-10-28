@@ -3,7 +3,6 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { AppInfoSection } from '../AppInfoSection'
 import type { AppDetail } from '../AppConfigSection'
 import { deleteApp, updateApp } from '@/api/app'
-import { applyPublication, getTeamPublicationList } from '@/api/publication'
 
 vi.mock('@/api/classify', () => ({
   classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
@@ -14,12 +13,6 @@ vi.mock('@/api/app', () => ({
   updateApp: vi.fn().mockResolvedValue(undefined),
   deleteApp: vi.fn().mockResolvedValue(undefined),
   uploadAppAvatar: vi.fn().mockResolvedValue(''),
-}))
-
-vi.mock('@/api/publication', () => ({
-  applyPublication: vi.fn().mockResolvedValue('1'),
-  getTeamPublicationList: vi.fn().mockResolvedValue([]),
-  withdrawPublication: vi.fn().mockResolvedValue(undefined),
 }))
 
 const DETAIL: AppDetail = {
@@ -36,7 +29,6 @@ const DETAIL: AppDetail = {
 function renderSection(detail: AppDetail = DETAIL, canManage = true, onDeleted = vi.fn()) {
   return render(
     <AppInfoSection
-      teamId={3}
       appId={detail.appId ?? 'a1'}
       detail={detail}
       canManage={canManage}
@@ -57,33 +49,12 @@ describe('AppInfoSection（应用信息分区）', () => {
     expect(await waitFor(() => expect((screen.getByLabelText('应用名称') as HTMLInputElement).value).toBe('客服助手'))).toBeTruthy()
     expect((screen.getByLabelText('应用描述') as HTMLTextAreaElement).value).toBe('售前售后问答')
     expect(screen.getByText('Agent 应用')).toBeTruthy()
-    expect(getTeamPublicationList).toHaveBeenCalledWith(3, expect.objectContaining({ resourceType: 'app' }))
-  })
-
-  it('未公开时管理员可申请上架：填写理由后提交', async () => {
-    renderSection()
-
-    const applyBtn = await screen.findByRole('button', { name: /申请上架/ })
-    fireEvent.click(applyBtn)
-
-    const reason = await screen.findByPlaceholderText(/上架理由/)
-    fireEvent.change(reason, { target: { value: '对外提供客服问答' } })
-    fireEvent.click(screen.getByRole('button', { name: /提交申请/ }))
-
-    await waitFor(() => {
-      expect(applyPublication).toHaveBeenCalledWith({
-        resourceType: 'app',
-        resourceId: 'a1',
-        applyReason: '对外提供客服问答',
-      })
-    })
   })
 
   it('修改名称后保存：提交 updateApp 并回调刷新', async () => {
     const onReload = vi.fn()
     render(
       <AppInfoSection
-        teamId={3}
         appId="a1"
         detail={DETAIL}
         canManage
@@ -106,6 +77,21 @@ describe('AppInfoSection（应用信息分区）', () => {
       })
       expect(onReload).toHaveBeenCalled()
     })
+  })
+
+  it('不再提供版本号输入（版本号只能在发布/申请上架时设置）', async () => {
+    render(
+      <AppInfoSection
+        appId="a1"
+        detail={{ ...DETAIL, version: 10203 }}
+        canManage
+        onReload={vi.fn()}
+        onDeleted={vi.fn()}
+      />,
+    )
+
+    await screen.findByLabelText('应用名称')
+    expect(screen.queryByLabelText('应用版本')).toBeNull()
   })
 
   it('普通成员只读：无保存入口并提示需要团队管理员', async () => {
@@ -143,5 +129,19 @@ describe('AppInfoSection（应用信息分区）', () => {
     await waitFor(() => expect(deleteApp).toHaveBeenCalledOnce())
     expect(onDeleted).not.toHaveBeenCalled()
     expect(screen.getByLabelText('应用名称')).toHaveValue('客服助手')
+  })
+
+  it('内部应用不再展示上架状态（已拆分至上架管理分区）', async () => {
+    renderSection()
+
+    await screen.findByLabelText('应用名称')
+    expect(screen.queryByText('上架状态')).toBeNull()
+    expect(screen.queryByRole('button', { name: /申请上架/ })).toBeNull()
+  })
+
+  it('外部应用展示访问授权开关', async () => {
+    renderSection({ ...DETAIL, isExternal: true })
+
+    expect(await screen.findByText('需要授权访问')).toBeTruthy()
   })
 })

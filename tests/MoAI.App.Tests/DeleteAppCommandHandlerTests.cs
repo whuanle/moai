@@ -9,6 +9,7 @@ using MoAI.App.Commands;
 using MoAI.App.Controllers;
 using MoAI.App.Handlers;
 using MoAI.App.Queries;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
@@ -79,6 +80,12 @@ public class DeleteAppCommandHandlerTests
         db.Context.FeishuAppBindings.AddRange(
             new FeishuAppBindingEntity { Id = 1, FeishuAppId = feishuId, ChannelType = (int)FeishuChannelType.App, ChannelId = app.Id.ToString() },
             new FeishuAppBindingEntity { Id = 2, FeishuAppId = feishuId, ChannelType = (int)FeishuChannelType.WikiSource, ChannelId = "source-id" });
+        db.Context.DingTalkAppBindings.AddRange(
+            new DingTalkAppBindingEntity { Id = 1, DingTalkAppId = Guid.CreateVersion7(), ChannelType = (int)DingTalkChannelType.App, ChannelId = app.Id.ToString() },
+            new DingTalkAppBindingEntity { Id = 2, DingTalkAppId = Guid.CreateVersion7(), ChannelType = (int)DingTalkChannelType.App, ChannelId = other.Id.ToString() });
+        db.Context.WeixinWorkAppBindings.AddRange(
+            new WeixinWorkAppBindingEntity { Id = 1, WeixinWorkAppId = Guid.CreateVersion7(), ChannelType = (int)WeixinWorkChannelType.App, ChannelId = app.Id.ToString() },
+            new WeixinWorkAppBindingEntity { Id = 2, WeixinWorkAppId = Guid.CreateVersion7(), ChannelType = (int)WeixinWorkChannelType.App, ChannelId = other.Id.ToString() });
         var sessionId = Guid.CreateVersion7();
         db.Context.AppAgentSessions.Add(new AppAgentSessionEntity { Id = sessionId, AppId = app.Id, TeamId = 7, Title = "历史" });
         await db.Context.SaveChangesAsync();
@@ -89,6 +96,8 @@ public class DeleteAppCommandHandlerTests
         Assert.NotEqual(0, await db.Context.Apps.IgnoreQueryFilters().Where(x => x.Id == app.Id).Select(x => x.IsDeleted).SingleAsync());
         Assert.True(await db.Context.Apps.AnyAsync(x => x.Id == other.Id));
         Assert.Single(await db.Context.FeishuAppBindings.ToListAsync());
+        Assert.Equal(other.Id.ToString(), (await db.Context.DingTalkAppBindings.SingleAsync()).ChannelId);
+        Assert.Equal(other.Id.ToString(), (await db.Context.WeixinWorkAppBindings.SingleAsync()).ChannelId);
         Assert.Single(await db.Context.FeishuApps.ToListAsync());
         Assert.True(await db.Context.AppAgentSessions.AnyAsync(x => x.Id == sessionId));
         var repeated = await Assert.ThrowsAsync<BusinessException>(() => new DeleteAppCommandHandler(db.Context)
@@ -161,7 +170,7 @@ public class DeleteAppCommandHandlerTests
 
         var detail = await Assert.ThrowsAsync<BusinessException>(() => new QueryAppCommandHandler(db.Context, teams.Object)
             .Handle(new QueryAppCommand { AppId = target.Id }, CancellationToken.None));
-        var create = await Assert.ThrowsAsync<BusinessException>(() => new CreateAppSessionCommandHandler(db.Context, teams.Object)
+        var create = await Assert.ThrowsAsync<BusinessException>(() => new CreateAppSessionCommandHandler(db.Context, teams.Object, Mock.Of<IAppUsageCounter>())
             .Handle(new CreateAppSessionCommand { AppId = target.Id }, CancellationToken.None));
         var messages = await Assert.ThrowsAsync<BusinessException>(() => new QueryAppSessionMessagesCommandHandler(db.Context, new SystemOptions { Storage = new() })
             .Handle(new QueryAppSessionMessagesCommand { SessionId = sessionId }, CancellationToken.None));

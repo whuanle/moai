@@ -16,7 +16,9 @@
 | @AUTH-S24 | [local-dev/user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs)（UM-36a~c：登录/刷新 token typ=normal 且 sub 一致；回归刷新链路漏设 UserType 导致内部用户被误标外部） | PASS 37/37（2026-09-20） |
 | @AUTH-S4、@AUTH-S11、@AUTH-S12、@AUTH-S18 | @manual 代码走查（Login/RefreshToken Handler 分支；refresh TTL>7 天与 oauth:bind 过期路径） | PASS（2026-09-01） |
 | @AUTH-S13、@AUTH-S15 ~ @AUTH-S17、@AUTH-S19 | OAuth 全链路 12/12（本地 mock OIDC Provider，存档 [../user-management/sop.md](../user-management/sop.md) 第三轮） | PASS 12/12（2026-09-02） |
-| @AUTH-S14 | `curl "http://127.0.0.1:5210/api/auth/oauth_prividers?redirectUrl=http://evil.com"` | **200（非 400）**——复核确认死代码缺陷（2026-09-01） |
+| @AUTH-S25 | URL 拼接部分见 [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs)（login_type/appid/agentid 断言）；真实换码链路 @manual（需企业微信真实应用凭据） | PASS 17/17（URL 部分，2026-10-27） |
+| @AUTH-S14 | [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs)（穿透来源跟随 + ftp 协议 400） | PASS 20/20（2026-10-27，死代码已修复并重设计为跟随登录页来源） |
+| @AUTH-S13、@AUTH-S14 | 缺陷修复回归：授权 `redirect_uri` 误拼 `?redirectUri=` 后缀与飞书换 token 不一致（登录/绑定均报「第三方接口错误」，根因见 [SOP 排障](./sop.md)）；删后缀 + 删伪 PKCE `code_verifier`；URL 级断言（origin/pathname）与冒烟脚本兼容，真实飞书换 token @manual（重启后端后浏览器复测） | build 0 error（2026-10-27） |
 | @AUTH-S20 ~ @AUTH-S23 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)；轮 11 独立验证 auth 前端链路） | PASS（2026-09-01/09-02） |
 
 ## 回归命令（后端运行于 :5210）

@@ -1,6 +1,6 @@
 // 动态插件 E2E（场景 @DYN-Sn；后端默认 http://127.0.0.1:5000，可用 DYN_BASE 覆盖）
 // 覆盖：实例列表/创建/编辑/运行/删除/门禁（S1~S14）+ 内置模板注册与各模板失败路径（S15/S17/S19~S21/S23~S31）
-//   + SQL 只读查询守卫（S30：拒绝写操作与多条语句、放行合法只读语句）+ 插件头像（S43~S45）。
+//   + SQL 只读查询守卫（S30：拒绝写操作与多条语句、放行合法只读语句）+ 插件头像（S43~S45，S121~S123 创建携带/编辑不传不改动/伪 key 拒绝）。
 // S16/S22（博查真实检索成功）需真实 API Key 与外网，脚本内以 SKIP 标注；
 // S32/S33（PostgreSQL/MySQL 真实查询成功路径）用环境变量提供连接串（PG_E2E_CONNECTION / MYSQL_E2E_CONNECTION），
 // 脚本内解析成 Host/Port/Database/Username/Password 离散配置后再创建实例，未提供则 SKIP。
@@ -496,6 +496,20 @@ async function main() {
   const avMember = await api('POST', `/api/ai/plugin/manage/${avItem.id}/avatar`, { token: member.token, body: { objectKey: avPre.json.objectKey } })
   check('DYN-S45 门禁：匿名 401、普通用户 403', avAnon.status === 401 && avMember.status === 403, `anon=${avAnon.status} member=${avMember.status}`)
   await del(admin, AV)
+
+  // ---- S121~S123 保存命令直带 avatarPath（新建即落头像；编辑不传不改动；伪 key 拒绝且实例不创建）----
+  const AV2 = `dyn_avatar2_${TS}`
+  const av2Create = await save(admin, { pluginKey: AV2, templeteKey: 'dynamic_greet', title: 'E2E 头像2', description: 'e2e', classifyId: 0, config: '{"Prefix":"Hi"}', avatarPath: avPre.json.objectKey })
+  const av2Item = (await instances(admin)).find((x) => x.pluginName === AV2)
+  check('DYN-S121 创建时携带 avatarPath 直接落头像', av2Create.status === 200 && av2Item?.avatarPath === avPre.json.objectKey, `${av2Create.status} ${String(av2Item?.avatarPath).slice(0, 48)}`)
+  const av2Edit = await save(admin, { pluginKey: AV2, templeteKey: 'dynamic_greet', title: 'E2E 头像2b', description: 'e2e', classifyId: 0, config: '{"Prefix":"Hi"}' })
+  const av2After = (await instances(admin)).find((x) => x.pluginName === AV2)
+  check('DYN-S122 编辑不传 avatarPath 头像保持不变', av2Edit.status === 200 && av2After?.avatarPath === avPre.json.objectKey && av2After?.title === 'E2E 头像2b', `${av2Edit.status} ${String(av2After?.avatarPath).slice(0, 48)}`)
+  const av2BadKey = `dyn_avbad_${TS}`
+  const av2Bad = await save(admin, { pluginKey: av2BadKey, templeteKey: 'dynamic_greet', title: 'E2E 头像坏', description: 'e2e', classifyId: 0, config: '{}', avatarPath: 'public/images/no_such_file.png' })
+  const av2BadListed = (await instances(admin)).some((x) => x.pluginName === av2BadKey)
+  check('DYN-S123 伪 avatarPath 拒绝 404 且实例不创建', av2Bad.status === 404 && !av2BadListed, `${av2Bad.status} listed=${av2BadListed}`)
+  await del(admin, AV2)
 
   // ---- S70 系统插件页不含团队自有插件（团队隔离过滤）----
   const TP_KEY = `dyn_tp_${TS}`

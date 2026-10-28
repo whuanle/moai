@@ -29,6 +29,7 @@ public class AiModelUsageCounter : IAiModelUsageCounter
         Guid useResourceId,
         int promptTokens,
         int completionTokens,
+        int cachedTokens = 0,
         CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(teamId);
@@ -36,6 +37,7 @@ public class AiModelUsageCounter : IAiModelUsageCounter
         ArgumentOutOfRangeException.ThrowIfNegative(useType);
         ArgumentOutOfRangeException.ThrowIfNegative(promptTokens);
         ArgumentOutOfRangeException.ThrowIfNegative(completionTokens);
+        ArgumentOutOfRangeException.ThrowIfNegative(cachedTokens);
 
         var dimension = new AiModelUsageCounterDimension(modelId, teamId, userId, useType, useResourceId);
         Dictionary<string, long> counters = new()
@@ -46,6 +48,7 @@ public class AiModelUsageCounter : IAiModelUsageCounter
         AddPositive(counters, dimension, AiModelUsageMetric.Prompt, promptTokens);
         AddPositive(counters, dimension, AiModelUsageMetric.Completion, completionTokens);
         AddPositive(counters, dimension, AiModelUsageMetric.Total, (long)promptTokens + completionTokens);
+        AddPositive(counters, dimension, AiModelUsageMetric.Cached, cachedTokens);
 
         return _mediator.Send(
             new IncrementCounterActivatorCommand

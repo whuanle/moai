@@ -134,6 +134,7 @@ public class PublishAppWorkflowCommandHandler : IRequestHandler<PublishAppWorkfl
         }
 
         app.PublishTime = DateTimeOffset.Now;
+        app.PublishVersion = app.Version;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

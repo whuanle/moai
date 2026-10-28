@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { AppChannelGuide } from './AppChannelGuide'
 import {
   createFeishuApp,
   deleteFeishuApp,
@@ -21,25 +22,27 @@ interface AppChannelsSectionProps {
   isPublished: boolean
 }
 
-interface CreateFormValues {
+interface FormValues {
   name: string
   appId: string
-  appSecret: string
+  appSecret?: string
   domain?: string
   description?: string
 }
 
 /**
  * 应用工作台「外部渠道」分区：把已发布内部 Agent 应用接入飞书（用户在飞书发消息即与本应用对话）。
- * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、停用/启用、删除；删除即彻底移除连接，不保留可复用的连接。
+ * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、编辑（名称/AppID/密钥/域名/描述，密钥留空保持不变）、停用/启用、删除；
+ * 删除即彻底移除连接，不保留可复用的连接。
  */
 export function AppChannelsSection({ teamId, appId, canManage, isPublished }: AppChannelsSectionProps) {
   const { t } = useTranslation()
-  const [form] = Form.useForm<CreateFormValues>()
+  const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<FeishuAppItemView[]>([])
   const [createOpen, setCreateOpen] = useState(false)
-  const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState<FeishuAppItemView>()
+  const [submitting, setSubmitting] = useState(false)
   const [actionKey, setActionKey] = useState<string>()
 
   const load = useCallback(async () => {
@@ -77,20 +80,51 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     }
   }
 
-  const handleCreate = async (values: CreateFormValues) => {
-    setCreating(true)
+  const openCreate = () => {
+    setEditing(undefined)
+    form.resetFields()
+    setCreateOpen(true)
+  }
+
+  const openEdit = (record: FeishuAppItemView) => {
+    setEditing(record)
+    form.resetFields()
+    form.setFieldsValue({
+      name: record.name,
+      appId: record.appId,
+      domain: record.domain || undefined,
+      description: record.description || undefined,
+      appSecret: undefined,
+    })
+    setCreateOpen(true)
+  }
+
+  const handleSubmit = async (values: FormValues) => {
+    setSubmitting(true)
     try {
-      // 创建连接即绑定到当前应用，连接与绑定后端同一事务落库
-      await createFeishuApp({
-        teamId,
-        name: values.name,
-        description: values.description || undefined,
-        appId: values.appId,
-        appSecret: values.appSecret,
-        domain: values.domain || undefined,
-        channelType: 'app',
-        channelId: appId,
-      })
+      if (editing) {
+        // 密钥留空表示保持不变；不改变当前启停状态
+        await updateFeishuApp(editing.feishuAppId, {
+          name: values.name,
+          description: values.description || undefined,
+          appId: values.appId || undefined,
+          appSecret: values.appSecret || undefined,
+          domain: values.domain || undefined,
+          isDisable: editing.isDisable,
+        })
+      } else {
+        // 创建连接即绑定到当前应用，连接与绑定后端同一事务落库
+        await createFeishuApp({
+          teamId,
+          name: values.name,
+          description: values.description || undefined,
+          appId: values.appId,
+          appSecret: values.appSecret!,
+          domain: values.domain || undefined,
+          channelType: 'app',
+          channelId: appId,
+        })
+      }
       feedback.success(t('appChannels.operateSuccess'))
       setCreateOpen(false)
       form.resetFields()
@@ -98,7 +132,7 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     } catch {
       // 错误已由全局请求中间件统一提示（如 AppID 已建过连接返回 409）
     } finally {
-      setCreating(false)
+      setSubmitting(false)
     }
   }
 
@@ -142,9 +176,12 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     columns.push({
       title: t('appChannels.columnActions'),
       key: 'actions',
-      width: 150,
+      width: 190,
       render: (_, record) => (
         <Space size={spacing.sm}>
+          <Button type="link" size="small" onClick={() => openEdit(record)}>
+            {t('appChannels.edit')}
+          </Button>
           {record.isDisable ? (
             <Button
               type="link"
@@ -181,43 +218,47 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     })
   }
 
+  // 接入指引默认收缩，点击展开后按步骤逐条分行展示
+  const guidePanel = <AppChannelGuide ns="appChannels" />
+
+  const refreshButton = (
+    <Button onClick={load} loading={loading}>
+      {t('ds.table.refresh')}
+    </Button>
+  )
+
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      <Alert type="info" showIcon message={t('appChannels.hintTitle')} description={t('appChannels.hint')} />
       {!isPublished && <Alert type="warning" showIcon message={t('appChannels.unpublishedHint')} />}
-      <DSCard title={t('appChannels.cardTitle')}>
-        <DataTable
-          rowKey="feishuAppId"
-          columns={columns}
-          dataSource={boundItems}
-          loading={loading}
-          onRefresh={load}
-          refreshLoading={loading}
-          pagination={false}
-          toolbar={
-            canManage ? (
-              <Space>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-                  {t('appChannels.addFeishu')}
-                </Button>
-              </Space>
-            ) : undefined
-          }
-        />
+      <DSCard
+        title={t('appChannels.cardTitle')}
+        extra={
+          <Space>
+            {canManage && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                {t('appChannels.addFeishu')}
+              </Button>
+            )}
+            {refreshButton}
+          </Space>
+        }
+      >
+        {guidePanel}
+        <DataTable rowKey="feishuAppId" columns={columns} dataSource={boundItems} loading={loading} pagination={false} />
       </DSCard>
 
       <Modal
-        title={t('appChannels.createTitle')}
+        title={editing ? t('appChannels.editTitle') : t('appChannels.createTitle')}
         open={createOpen}
         onCancel={() => setCreateOpen(false)}
         maskClosable={false}
-        confirmLoading={creating}
-        okText={t('appChannels.createOk')}
+        confirmLoading={submitting}
+        okText={editing ? t('appChannels.editOk') : t('appChannels.createOk')}
         cancelText={t('appManage.cancel')}
         onOk={() => form.submit()}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleCreate} style={{ marginTop: spacing.md }}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: spacing.md }}>
           <Form.Item
             name="name"
             label={t('appChannels.fieldName')}
@@ -235,9 +276,9 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
           <Form.Item
             name="appSecret"
             label={t('appChannels.fieldAppSecret')}
-            rules={[{ required: true, max: 128 }]}
+            rules={[{ required: !editing, max: 128 }]}
           >
-            <Input.Password maxLength={128} placeholder={t('appChannels.fieldAppSecretPlaceholder')} autoComplete="new-password" />
+            <Input.Password maxLength={128} placeholder={editing ? t('appChannels.fieldAppSecretKeepPlaceholder') : t('appChannels.fieldAppSecretPlaceholder')} autoComplete="new-password" />
           </Form.Item>
           <Form.Item name="domain" label={t('appChannels.fieldDomain')} rules={[{ max: 100, type: 'url' }]}>
             <Input maxLength={100} placeholder={t('appChannels.fieldDomainPlaceholder')} />

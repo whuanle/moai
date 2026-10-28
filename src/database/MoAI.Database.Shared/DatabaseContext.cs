@@ -130,6 +130,26 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<FeishuAppBindingEntity> FeishuAppBindings { get; set; }
 
     /// <summary>
+    /// 钉钉应用，一个钉钉开放平台企业内部应用对应一条 Stream 长连接，机器人消息统一接收后按绑定转发.
+    /// </summary>
+    public virtual DbSet<DingTalkAppEntity> DingTalkApps { get; set; }
+
+    /// <summary>
+    /// 钉钉应用绑定，将钉钉应用绑定到团队应用等渠道；应用渠道独占.
+    /// </summary>
+    public virtual DbSet<DingTalkAppBindingEntity> DingTalkAppBindings { get; set; }
+
+    /// <summary>
+    /// 企业微信应用，一个企业微信管理端自建应用对应一条连接，回调消息统一接收后按绑定转发.
+    /// </summary>
+    public virtual DbSet<WeixinWorkAppEntity> WeixinWorkApps { get; set; }
+
+    /// <summary>
+    /// 企业微信应用绑定，将企业微信应用绑定到团队应用等渠道；应用渠道独占.
+    /// </summary>
+    public virtual DbSet<WeixinWorkAppBindingEntity> WeixinWorkAppBindings { get; set; }
+
+    /// <summary>
     /// 文件列表.
     /// </summary>
     public virtual DbSet<FileEntity> Files { get; set; }

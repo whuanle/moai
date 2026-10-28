@@ -41,6 +41,29 @@ if (app.Environment.IsDevelopment())
         options.AddDocument("external", "AI External API");
     });
 }
+else
+{
+    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留外部接口文档供第三方接入方获取
+    // （Path 不含 {documentName} 占位符时 DocumentName 为固定绑定，NSwag 不会响应其它文档名）
+    app.UseOpenApi(c =>
+    {
+        c.Path = "/openapi/external.json";
+        c.DocumentName = "external";
+    });
+
+    // 其余 /openapi/**、/scalar/** 明确 404，避免落入 SPA 回退返回 index.html
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/openapi") ||
+            context.Request.Path.StartsWithSegments("/scalar"))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        await next(context);
+    });
+}
 
 // 私有网络访问（PNA）：浏览器对「公网/受限来源页面 → 本机服务」的请求会在预检中携带
 // Access-Control-Request-Private-Network，要求响应显式带回 Allow 头才放行。外部悬浮组件

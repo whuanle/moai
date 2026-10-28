@@ -10,8 +10,6 @@ import {
   saveSetting,
   SandboxLimitDefaults,
   SettingKeys,
-  AgentCompactionDefaults,
-  AGENT_COMPACTION_LIMITS,
   resetSystemLogo,
   updateSystemLogo,
 } from '@/api/settings'
@@ -22,48 +20,6 @@ import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
 import { resolveStorageUrl } from '@/utils/storage'
 
 const { Text } = Typography
-
-/** 解析压缩默认参数 JSON（与后端 AgentCompactionDefaultsSettings.Parse 对齐：非法字段回退内置默认并钳制范围） */
-function parseCompactionJson(raw: string) {
-  const clamp = (value: unknown, min: number, max: number, fallback: number) => {
-    const n = typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10)
-    return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : fallback
-  }
-  let parsed: Record<string, unknown> = {}
-  try {
-    parsed = JSON.parse(raw) as Record<string, unknown>
-  } catch {
-    parsed = {}
-  }
-  const limits = AGENT_COMPACTION_LIMITS
-  return {
-    toolResultTriggerMessages: clamp(
-      parsed.toolResultTriggerMessages,
-      limits.toolResultTriggerMessages.min,
-      limits.toolResultTriggerMessages.max,
-      AgentCompactionDefaults.toolResultTriggerMessages,
-    ),
-    summarizeTriggerTokens: clamp(
-      parsed.summarizeTriggerTokens,
-      limits.summarizeTriggerTokens.min,
-      limits.summarizeTriggerTokens.max,
-      AgentCompactionDefaults.summarizeTriggerTokens,
-    ),
-    preserveTurns: clamp(
-      parsed.preserveTurns,
-      limits.preserveTurns.min,
-      limits.preserveTurns.max,
-      AgentCompactionDefaults.preserveTurns,
-    ),
-    hardTokenLimit: clamp(
-      parsed.hardTokenLimit,
-      limits.hardTokenLimit.min,
-      limits.hardTokenLimit.max,
-      AgentCompactionDefaults.hardTokenLimit,
-    ),
-    enableSummarization: parsed.enableSummarization === true,
-  }
-}
 
 interface SettingItem {
   key?: string | null
@@ -152,13 +108,6 @@ export function Settings() {
   const [siteName, setSiteName] = useState('')
   const [siteNameDirty, setSiteNameDirty] = useState(false)
   const [savingSiteName, setSavingSiteName] = useState(false)
-  const [savingCompaction, setSavingCompaction] = useState(false)
-  const [compactionToolResult, setCompactionToolResult] = useState<number>(AgentCompactionDefaults.toolResultTriggerMessages)
-  const [compactionSummarizeTokens, setCompactionSummarizeTokens] = useState<number>(AgentCompactionDefaults.summarizeTriggerTokens)
-  const [compactionPreserveTurns, setCompactionPreserveTurns] = useState<number>(AgentCompactionDefaults.preserveTurns)
-  const [compactionHardLimit, setCompactionHardLimit] = useState<number>(AgentCompactionDefaults.hardTokenLimit)
-  const [compactionSummarization, setCompactionSummarization] = useState<boolean>(AgentCompactionDefaults.enableSummarization)
-  const [compactionDirty, setCompactionDirty] = useState(false)
 
   useEffect(() => {
     void load()
@@ -193,13 +142,6 @@ export function Settings() {
       setLogoPath(valueOf(SettingKeys.systemLogo).trim())
       setSiteName(valueOf(SettingKeys.systemName).trim())
       setSiteNameDirty(false)
-      const compaction = parseCompactionJson(valueOf(SettingKeys.agentCompactionDefaults))
-      setCompactionToolResult(compaction.toolResultTriggerMessages)
-      setCompactionSummarizeTokens(compaction.summarizeTriggerTokens)
-      setCompactionPreserveTurns(compaction.preserveTurns)
-      setCompactionHardLimit(compaction.hardTokenLimit)
-      setCompactionSummarization(compaction.enableSummarization)
-      setCompactionDirty(false)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -266,48 +208,6 @@ export function Settings() {
       void load()
     } finally {
       setSavingSandbox(false)
-    }
-  }
-
-  async function handleSaveCompaction() {
-    const limits = AGENT_COMPACTION_LIMITS
-    if (
-      !Number.isInteger(compactionToolResult) ||
-      compactionToolResult < limits.toolResultTriggerMessages.min ||
-      compactionToolResult > limits.toolResultTriggerMessages.max ||
-      !Number.isInteger(compactionSummarizeTokens) ||
-      compactionSummarizeTokens < limits.summarizeTriggerTokens.min ||
-      compactionSummarizeTokens > limits.summarizeTriggerTokens.max ||
-      !Number.isInteger(compactionPreserveTurns) ||
-      compactionPreserveTurns < limits.preserveTurns.min ||
-      compactionPreserveTurns > limits.preserveTurns.max ||
-      !Number.isInteger(compactionHardLimit) ||
-      compactionHardLimit < limits.hardTokenLimit.min ||
-      compactionHardLimit > limits.hardTokenLimit.max
-    ) {
-      feedback.error(t('settings.compaction.invalidValue'))
-      return
-    }
-    setSavingCompaction(true)
-    try {
-      await saveSetting(
-        SettingKeys.agentCompactionDefaults,
-        JSON.stringify({
-          toolResultTriggerMessages: compactionToolResult,
-          summarizeTriggerTokens: compactionSummarizeTokens,
-          preserveTurns: compactionPreserveTurns,
-          hardTokenLimit: compactionHardLimit,
-          enableSummarization: compactionSummarization,
-          summarizerModelId: '',
-        }),
-      )
-      feedback.success(t('settings.saveSuccess'))
-      setCompactionDirty(false)
-    } catch {
-      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
-      void load()
-    } finally {
-      setSavingCompaction(false)
     }
   }
 
@@ -615,99 +515,6 @@ export function Settings() {
               loading={savingSandbox}
               disabled={!sandboxDirty || loading}
               onClick={handleSaveSandbox}
-            >
-              {t('settings.save')}
-            </Button>
-          </div>
-        </CollapsibleCard>
-
-        <CollapsibleCard title={t('settings.compaction.title')}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: spacing.md }}>
-            <Field label={t('settings.compaction.toolResult.name')}>
-              <InputNumber
-                value={compactionToolResult}
-                min={AGENT_COMPACTION_LIMITS.toolResultTriggerMessages.min}
-                max={AGENT_COMPACTION_LIMITS.toolResultTriggerMessages.max}
-                precision={0}
-                aria-label={t('settings.compaction.toolResult.name')}
-                onChange={(value) => {
-                  setCompactionToolResult(typeof value === 'number' ? value : AgentCompactionDefaults.toolResultTriggerMessages)
-                  setCompactionDirty(true)
-                }}
-                style={{ width: 200 }}
-              />
-              <Text type="secondary">{t('settings.compaction.toolResult.desc')}</Text>
-            </Field>
-            <Field label={t('settings.compaction.preserveTurns.name')}>
-              <InputNumber
-                value={compactionPreserveTurns}
-                min={AGENT_COMPACTION_LIMITS.preserveTurns.min}
-                max={AGENT_COMPACTION_LIMITS.preserveTurns.max}
-                precision={0}
-                aria-label={t('settings.compaction.preserveTurns.name')}
-                onChange={(value) => {
-                  setCompactionPreserveTurns(typeof value === 'number' ? value : AgentCompactionDefaults.preserveTurns)
-                  setCompactionDirty(true)
-                }}
-                style={{ width: 200 }}
-              />
-              <Text type="secondary">{t('settings.compaction.preserveTurns.desc')}</Text>
-            </Field>
-            <Field label={t('settings.compaction.summarizeTokens.name')}>
-              <InputNumber
-                value={compactionSummarizeTokens}
-                min={AGENT_COMPACTION_LIMITS.summarizeTriggerTokens.min}
-                max={AGENT_COMPACTION_LIMITS.summarizeTriggerTokens.max}
-                precision={0}
-                aria-label={t('settings.compaction.summarizeTokens.name')}
-                onChange={(value) => {
-                  setCompactionSummarizeTokens(typeof value === 'number' ? value : AgentCompactionDefaults.summarizeTriggerTokens)
-                  setCompactionDirty(true)
-                }}
-                style={{ width: 200 }}
-              />
-              <Text type="secondary">{t('settings.compaction.summarizeTokens.desc')}</Text>
-            </Field>
-            <Field label={t('settings.compaction.hardLimit.name')}>
-              <InputNumber
-                value={compactionHardLimit}
-                min={AGENT_COMPACTION_LIMITS.hardTokenLimit.min}
-                max={AGENT_COMPACTION_LIMITS.hardTokenLimit.max}
-                precision={0}
-                aria-label={t('settings.compaction.hardLimit.name')}
-                onChange={(value) => {
-                  setCompactionHardLimit(typeof value === 'number' ? value : AgentCompactionDefaults.hardTokenLimit)
-                  setCompactionDirty(true)
-                }}
-                style={{ width: 200 }}
-              />
-              <Text type="secondary">{t('settings.compaction.hardLimit.desc')}</Text>
-            </Field>
-          </div>
-          <div style={{ marginTop: spacing.md, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }}>
-            <div style={{ minWidth: 0 }}>
-              <Text strong>{t('settings.compaction.summarization.name')}</Text>
-              <br />
-              <Text type="secondary">{t('settings.compaction.summarization.desc')}</Text>
-            </div>
-            <Switch
-              checked={compactionSummarization}
-              onChange={(checked) => {
-                setCompactionSummarization(checked)
-                setCompactionDirty(true)
-              }}
-            />
-          </div>
-          <div style={{ marginTop: spacing.md }}>
-            <Text type="secondary">{t('settings.compaction.overrideHint')}</Text>
-          </div>
-
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
-            <Button
-              type="primary"
-              loading={savingCompaction}
-              disabled={!compactionDirty || loading}
-              onClick={handleSaveCompaction}
             >
               {t('settings.save')}
             </Button>

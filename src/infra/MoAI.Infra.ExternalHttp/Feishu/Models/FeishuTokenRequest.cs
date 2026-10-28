@@ -25,7 +25,9 @@ public class FeishuTokenRequest
     [JsonPropertyName("redirect_uri")]
     public string RedirectUri { get; set; }
 
+    // 仅授权侧启用 PKCE（code_challenge）时才传，当前授权链接未使用，null 不序列化
     [JsonPropertyName("code_verifier")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string CodeVerifier { get; set; }
 
     [JsonPropertyName("scope")]

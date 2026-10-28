@@ -120,8 +120,8 @@ public sealed class MemoryService : IMemoryService
 
         var settings = resolution.Settings;
         var types = query.Types is { Count: > 0 }
-            ? query.Types.Where(settings.IsTypeEnabled).ToList()
-            : EnabledTypes(settings);
+            ? query.Types.Distinct().ToList()
+            : AllTypes();
 
         // 记忆仅本应用内检索（各应用向量模型与维度不同，不做跨应用检索）
         var top = Math.Clamp(query.TopK <= 0 ? settings.RetrievalTopK : query.TopK, 1, AgentMemorySettings.MaxRetrievalTopK);
@@ -155,11 +155,6 @@ public sealed class MemoryService : IMemoryService
         if (content.Length > MaxMemoryContentLength)
         {
             content = content[..MaxMemoryContentLength];
-        }
-
-        if (!settings.IsTypeEnabled(request.MemoryType))
-        {
-            throw new InvalidOperationException("该记忆类型未启用.");
         }
 
         var shard = await GetShardAsync(request.AppId, request.UserId, cancellationToken);
@@ -428,7 +423,7 @@ public sealed class MemoryService : IMemoryService
                 _ => AgentMemorySettings.TypeSemantic,
             };
 
-            if (content.Length == 0 || importance < 3 || content.Length > MaxMemoryContentLength || !settings.IsTypeEnabled(type))
+            if (content.Length == 0 || importance < 3 || content.Length > MaxMemoryContentLength)
             {
                 continue;
             }
@@ -576,7 +571,7 @@ public sealed class MemoryService : IMemoryService
                 continue;
             }
 
-            if ((action == "UPDATE" || action == "ADD") && settings.IsTypeEnabled(type))
+            if (action == "UPDATE" || action == "ADD")
             {
                 if (action == "UPDATE" && relatedId != Guid.Empty)
                 {
@@ -811,9 +806,8 @@ public sealed class MemoryService : IMemoryService
         await _databaseContext.SaveChangesAsync(cancellationToken);
     }
 
-    private static List<int> EnabledTypes(AgentMemorySettings settings)
+    private static List<int> AllTypes()
         => new[] { AgentMemorySettings.TypeSemantic, AgentMemorySettings.TypeEpisodic, AgentMemorySettings.TypeProcedural }
-            .Where(settings.IsTypeEnabled)
             .ToList();
 
     private static string TypeName(int memoryType) => memoryType switch

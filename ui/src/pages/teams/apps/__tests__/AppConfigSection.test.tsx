@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { AppConfigSection, type AppDetail } from '../AppConfigSection'
-import { getAppAgentConfig, getApps, getSandboxLimits, publishApp, saveAppAgentConfig } from '@/api/app'
+import { getAppAgentConfig, getAppSecurity, getApps, getSandboxLimits, publishApp, saveAppAgentConfig, saveAppSecurity } from '@/api/app'
 import { getTeamGatewayModels } from '@/api/gateway'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getSkillOptions } from '@/api/skills'
@@ -25,6 +25,20 @@ vi.mock('@/api/app', () => ({
   saveAppAgentConfig: vi.fn().mockResolvedValue(undefined),
   publishApp: vi.fn().mockResolvedValue(undefined),
   createDebugSession: vi.fn().mockResolvedValue('s1'),
+  getAppSecurity: vi.fn().mockResolvedValue({
+    appId: 'a1',
+    enabled: false,
+    maskToolResult: true,
+    maskToolArgs: false,
+    maskModelOutput: false,
+    maskInput: false,
+    rules: [],
+    modelOutputRules: [],
+  }),
+  getMemoryDefaults: vi.fn().mockResolvedValue({ prompt: '平台默认记忆提示词' }),
+  saveAppSecurity: vi.fn().mockResolvedValue(undefined),
+  SECURITY_RULE_TYPES: ['phone', 'idCard', 'email', 'bankCard', 'custom'],
+  SECURITY_STRATEGIES: ['redact', 'mask', 'hash', 'block', 'flag'],
 }))
 
 vi.mock('@/api/agentChat', () => ({
@@ -43,6 +57,15 @@ vi.mock('@/api/team-plugin', () => ({
 
 vi.mock('@/api/wiki', () => ({
   getWikis: vi.fn(),
+  getWikiModelOptions: vi.fn().mockResolvedValue({
+    embeddingModels: [{ id: 'emb-1', name: '桩向量模型', modelKind: 'embedding' }],
+  }),
+}))
+
+vi.mock('@/api/memory', () => ({
+  clearAppMemory: vi.fn().mockResolvedValue(undefined),
+  getAppMemoryStats: vi.fn().mockResolvedValue({ totalMemories: 0, userCount: 0 }),
+  getMyMemories: vi.fn().mockResolvedValue({ items: [], total: 0, memoryEnabled: true }),
 }))
 
 vi.mock('@/api/knowledgeGraph', () => ({
@@ -145,16 +168,121 @@ describe('AppConfigSection（应用配置分区）', () => {
     })
   })
 
-  it('呈现 Agent 配置表单（模型/提示词/插件/流程应用/默认技能/知识库）', async () => {
+  it('呈现七张收缩卡片（基础配置/用户提示/能力扩展/沙箱/安全审批/内容脱敏/长期记忆），前五张默认展开、内容脱敏与长期记忆默认收起', async () => {
     renderSection()
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    expect(screen.getByText('用户提示')).toBeTruthy()
+    expect(screen.getByText('能力扩展')).toBeTruthy()
+    expect(screen.getByText('沙箱')).toBeTruthy()
+    expect(screen.getByText('安全审批')).toBeTruthy()
+    expect(screen.getByText('内容脱敏')).toBeTruthy()
+    expect(screen.getByText('长期记忆')).toBeTruthy()
+    expect(document.querySelectorAll('.ant-collapse').length).toBe(7)
+    // 「内容脱敏」「长期记忆」为后并入的收缩卡片，默认收起；其余五张默认展开
+    const headers = Array.from(document.querySelectorAll('.ant-collapse-header')) as HTMLElement[]
+    const collapsedTitles = ['内容脱敏', '长期记忆']
+    headers.forEach((node) => {
+      const collapsed = collapsedTitles.some((title) => node.textContent?.includes(title))
+      expect(node.getAttribute('aria-expanded')).toBe(collapsed ? 'false' : 'true')
+    })
     expect(screen.getByText('对话模型')).toBeTruthy()
     expect(screen.getByText('提示词')).toBeTruthy()
     expect(screen.getByText('插件')).toBeTruthy()
     expect(screen.getByText('流程应用')).toBeTruthy()
     expect(screen.getByText('默认技能')).toBeTruthy()
     expect(screen.getByText('知识库')).toBeTruthy()
+  })
+
+  it('内容脱敏收缩卡片：展开后显示设置且无独立保存按钮，随「保存设置」一次提交主配置与脱敏设置', async () => {
+    renderSection()
+
+    // 默认收起：设置未挂载、未请求（卡片头标题「内容脱敏」展开前唯一）
+    const header = (await screen.findByText('内容脱敏')).closest('.ant-collapse-header') as HTMLElement
+    expect(screen.queryByText('工具调用结果')).toBeNull()
+    expect(getAppSecurity).not.toHaveBeenCalled()
+
+    fireEvent.click(header)
+    // 展开后卡片头标题与面板内总开关标签各一个「内容脱敏」（面板异步加载，waitFor 等两者齐）
+    await waitFor(() => expect(screen.getAllByText('内容脱敏').length).toBe(2))
+    // 面板内容渲染提交与注册 effect 刷出之间有间隙：先刷出注册回调，再点保存（否则本click拿不到回调走纯主配置分支）
+    await act(async () => {})
+    expect(screen.getByText('工具调用结果')).toBeTruthy()
+    expect(screen.getByText('用户输入')).toBeTruthy()
+
+    // 面板不再有独立保存按钮，统一走页面「保存设置」：security 与 agent-config 一次提交
+    expect(screen.queryByRole('button', { name: /^保\s*存$/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => expect(saveAppSecurity).toHaveBeenCalledWith('a1', expect.objectContaining({ enabled: false })))
+    await waitFor(() => expect(saveAppAgentConfig).toHaveBeenCalled())
+  })
+
+  it('内容脱敏未展开（未注册保存回调）时，「保存设置」仅提交主配置', async () => {
+    renderSection()
+
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+
+    await waitFor(() => expect(saveAppAgentConfig).toHaveBeenCalled())
+    expect(saveAppSecurity).not.toHaveBeenCalled()
+  })
+
+  it('长期记忆收缩卡片：默认收起不挂载，展开后配置随「保存设置」并入主配置 memory 节', async () => {
+    renderSection()
+
+    // 默认收起：面板未挂载、无记忆设置内容
+    const header = (await screen.findByText('长期记忆')).closest('.ant-collapse-header') as HTMLElement
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByText('开启长期记忆')).toBeNull()
+
+    fireEvent.click(header)
+    expect(await screen.findByText('开启长期记忆')).toBeTruthy()
+    // 面板加载完成即注册 memory 节回调：先刷出注册 effect 再交互
+    await act(async () => {})
+
+    // 开启总开关（表单项内定位，避免命中页面其他卡片的开关）并选定向量化模型
+    const masterItem = screen.getByText('开启长期记忆').closest('.ant-form-item')
+    fireEvent.click(masterItem!.querySelector('button[role="switch"]')!)
+    await screen.findByText('向量化模型')
+    fireEvent.mouseDown(screen.getByText('选择该团队可用的向量化模型'))
+    fireEvent.click(await screen.findByText('桩向量模型'))
+
+    // 面板无独立保存/发布按钮，统一走页面「保存设置」：memory 节并入 agent-config 一次提交
+    expect(screen.queryByRole('button', { name: /^保\s*存$/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /重新发布/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            memory: expect.objectContaining({ enabled: true, embeddingModelId: 'emb-1' }),
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('长期记忆未展开（未注册回调）时保存不携带 memory 节，保持加载时原值', async () => {
+    renderSection()
+
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+
+    await waitFor(() => expect(saveAppAgentConfig).toHaveBeenCalled())
+    const payload = vi.mocked(saveAppAgentConfig).mock.calls[0][1]
+    expect(payload.executionSettings?.memory).toBeUndefined()
+  })
+
+  it('收缩卡片可折叠：点击沙箱卡片头收起，再次点击展开', async () => {
+    renderSection()
+
+    const header = (await screen.findByText('沙箱')).closest('.ant-collapse-header') as HTMLElement
+    expect(header.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(header)
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(header)
+    expect(header.getAttribute('aria-expanded')).toBe('true')
   })
 
   it('回显团队可用模型与本团队知识库、已绑定插件', async () => {
@@ -181,11 +309,11 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection()
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
     await waitFor(() => expect(screen.getByText('请选择对话模型')).toBeTruthy())
     expect(screen.queryByText('00000000-0000-0000-0000-000000000000')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
@@ -242,13 +370,16 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection({ ...AGENT_DETAIL, isExternal: true })
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
     expect(screen.getByText(/不支持沙箱与技能/)).toBeTruthy()
     expect(screen.queryByText('默认技能')).toBeNull()
+    expect(screen.queryByText('沙箱')).toBeNull()
     expect(screen.queryByText('启用沙箱')).toBeNull()
+    // 外部应用面向匿名/外部用户不开放记忆，不渲染「长期记忆」卡片
+    expect(screen.queryByText('长期记忆')).toBeNull()
     expect(screen.queryByText('沙箱自动放行')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
@@ -270,7 +401,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect((textarea as HTMLTextAreaElement).value).toBe('你是客服助手')
 
     fireEvent.change(textarea, { target: { value: '你是售前客服' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith('a1', {
@@ -316,11 +447,11 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection()
 
-    expect(await screen.findByText('审批策略')).toBeTruthy()
+    expect(await screen.findByText('安全审批')).toBeTruthy()
     expect(screen.getByText('沙箱自动放行')).toBeTruthy()
     expect(screen.getByText('自动放行插件')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
@@ -351,8 +482,8 @@ describe('AppConfigSection（应用配置分区）', () => {
 
     renderSection()
 
-    expect(await screen.findByText('审批策略')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    expect(await screen.findByText('安全审批')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
     // 未绑定的插件从自动放行白名单中剔除（后端强校验，前端先收敛）
     await waitFor(() =>
@@ -395,7 +526,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     const afterAdd = screen.getAllByPlaceholderText('例如：帮我总结一份文档的核心要点')
     fireEvent.change(afterAdd[afterAdd.length - 1], { target: { value: '写一段产品介绍' } })
 
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
     // 空白项被过滤，非空项去首尾空格后提交
     await waitFor(() =>
@@ -429,7 +560,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect((opening as HTMLTextAreaElement).value).toBe('你好，我是售前助手')
 
     fireEvent.change(opening, { target: { value: '你好，很高兴见到你' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
@@ -490,7 +621,7 @@ describe('AppConfigSection（应用配置分区）', () => {
       expect(texts.some((text) => text.includes('外部库接入'))).toBe(false)
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
@@ -526,7 +657,7 @@ describe('AppConfigSection（应用配置分区）', () => {
       expect(texts.some((text) => text.includes('客服助手'))).toBe(false)
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /保存配置/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
@@ -569,8 +700,8 @@ describe('AppConfigSection（应用配置分区）', () => {
   it('普通成员只读：无保存入口并提示需要团队管理员', async () => {
     renderSection({ ...AGENT_DETAIL, myRole: 0 }, false)
 
-    expect(await screen.findByText('Agent 配置')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /保存配置/ })).toBeNull()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /保存设置/ })).toBeNull()
     expect(screen.getByText(/创建与配置需要团队管理员/)).toBeTruthy()
   })
 })

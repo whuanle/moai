@@ -4,7 +4,7 @@ import i18n from '@/i18n'
 import { refreshServerInfo } from '@/api/auth'
 import { useAppStore } from '@/store/app'
 import { FeedbackBridge } from '@/design-system'
-import { getAntdLocale, getThemeConfig } from '@/design-system/theme'
+import { getAntdLocale, getThemeConfig, getThemePreset } from '@/design-system/theme'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -24,9 +24,13 @@ export function AppProviders({ children }: AppProvidersProps) {
     void refreshServerInfo()
   }, [])
 
-  // 主题桥：把 themeKey 落到 <html data-theme>，供 index.css 等全局样式做暗色覆盖（body 背景/滚动条等 antd 管不到的地方）
+  // 主题桥：把预设落到 <html>（data-theme=预设 key、data-theme-mode=亮暗、--moai-bg-layout=页面底色），
+  // 供 index.css 等全局样式做模式覆盖（body 背景/滚动条等 antd 管不到的地方）
   useEffect(() => {
+    const preset = getThemePreset(themeKey)
     document.documentElement.dataset.theme = themeKey
+    document.documentElement.dataset.themeMode = preset.mode
+    document.documentElement.style.setProperty('--moai-bg-layout', preset.palette.bgLayout)
   }, [themeKey])
 
   return (

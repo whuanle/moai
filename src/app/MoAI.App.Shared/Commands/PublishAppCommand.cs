@@ -16,6 +16,12 @@ public class PublishAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext,
     /// </summary>
     public Guid AppId { get; init; }
 
+    /// <summary>
+    /// 应用版本号 aaa.bb.cc（如 1.0.3），可空；携带时必须严格大于应用当前版本（更新当前版本并随发布快照生效），不携带时保持原版本号.
+    /// 存库编码 aaa*10000 + bb*100 + cc.
+    /// </summary>
+    public string? Version { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -27,6 +33,8 @@ public class PublishAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext,
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<PublishAppCommand> validate)
     {
-        validate.RuleFor(x => x.AppId).NotEmpty().WithMessage("应用 id 不正确.");
+        // AppId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
+        validate.RuleFor(x => x.Version).Matches(AppVersionHelper.Pattern).When(x => !string.IsNullOrWhiteSpace(x.Version))
+            .WithMessage("应用版本号格式不正确，应为 aaa.bb.cc（如 1.0.3）.");
     }
 }

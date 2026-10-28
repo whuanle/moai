@@ -8,6 +8,7 @@ export interface OAuthConnectionItem {
   provider?: string | null
   key?: string | null
   wellKnown?: string | null
+  agentId?: string | null
   authorizeUrl?: string | null
   createTime?: string | null
   createUserName?: string | null
@@ -22,6 +23,7 @@ export interface CreateOAuthConnectionPayload {
   secret: string
   iconUrl: string
   wellKnown?: string
+  agentId?: string
 }
 
 export type UpdateOAuthConnectionPayload = Omit<CreateOAuthConnectionPayload, 'secret' | 'wellKnown'> & {
@@ -29,10 +31,16 @@ export type UpdateOAuthConnectionPayload = Omit<CreateOAuthConnectionPayload, 's
   wellKnown?: string
 }
 
-export async function getOAuthConnections(): Promise<OAuthConnectionItem[]> {
+export interface OAuthConnectionList {
+  items: OAuthConnectionItem[]
+  /** 回调地址（{WebUI}/oauth_login），需配置到提供方后台的重定向/回调域名白名单 */
+  redirectUri: string
+}
+
+export async function getOAuthConnections(): Promise<OAuthConnectionList> {
   const client = getApiClient()
   const res = await client.api.oauthconnect.connections.get()
-  return res?.items ?? []
+  return { items: res?.items ?? [], redirectUri: res?.redirectUri ?? '' }
 }
 
 export async function createOAuthConnection(payload: CreateOAuthConnectionPayload): Promise<void> {

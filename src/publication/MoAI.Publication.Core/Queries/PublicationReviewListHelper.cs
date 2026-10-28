@@ -32,6 +32,8 @@ internal static class PublicationReviewListHelper
             .Where(t => teamIds.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, t => t.Name, cancellationToken);
 
+        var avatars = await BuildResourceAvatarMapAsync(entities, databaseContext, cancellationToken);
+
         var items = entities.Select(x => new PublicationReviewItem
         {
             PublicationId = x.Id,
@@ -40,7 +42,9 @@ internal static class PublicationReviewListHelper
             ResourceName = x.ResourceName,
             TeamId = x.TeamId,
             TeamName = teamNames.TryGetValue(x.TeamId, out var teamName) ? teamName : string.Empty,
+            ResourceAvatar = avatars.TryGetValue(Key((PublicationResourceType)x.ResourceType, x.ResourceId), out var avatar) ? avatar : string.Empty,
             ApplyReason = x.ApplyReason,
+            PublishVersion = x.PublishVersion,
             State = (PublicationState)x.State,
             ReviewComment = x.ReviewComment,
             ReviewTime = x.ReviewTime,
@@ -53,4 +57,70 @@ internal static class PublicationReviewListHelper
         await userInfoFillService.FillAsync(items, cancellationToken);
         return items;
     }
+
+    /// <summary>
+    /// 按资源类型批量查询头像（应用=Apps.Avatar，提示词/技能=AvatarPath），key 为 "type:resourceId".
+    /// </summary>
+    private static async Task<Dictionary<string, string>> BuildResourceAvatarMapAsync(
+        List<PublicationReviewEntity> entities,
+        DatabaseContext databaseContext,
+        CancellationToken cancellationToken)
+    {
+        var avatars = new Dictionary<string, string>();
+
+        var appIds = entities
+            .Where(x => x.ResourceType == (int)PublicationResourceType.App && Guid.TryParse(x.ResourceId, out _))
+            .Select(x => Guid.Parse(x.ResourceId))
+            .Distinct().ToList();
+        if (appIds.Count > 0)
+        {
+            var appAvatars = await databaseContext.Apps
+                .AsNoTracking()
+                .Where(a => appIds.Contains(a.Id))
+                .Select(a => new { a.Id, a.Avatar })
+                .ToListAsync(cancellationToken);
+            foreach (var row in appAvatars)
+            {
+                avatars[Key(PublicationResourceType.App, row.Id.ToString())] = row.Avatar ?? string.Empty;
+            }
+        }
+
+        var promptIds = entities
+            .Where(x => x.ResourceType == (int)PublicationResourceType.Prompt && int.TryParse(x.ResourceId, out _))
+            .Select(x => int.Parse(x.ResourceId))
+            .Distinct().ToList();
+        if (promptIds.Count > 0)
+        {
+            var promptAvatars = await databaseContext.Prompts
+                .AsNoTracking()
+                .Where(x => promptIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.AvatarPath })
+                .ToListAsync(cancellationToken);
+            foreach (var row in promptAvatars)
+            {
+                avatars[Key(PublicationResourceType.Prompt, row.Id.ToString())] = row.AvatarPath ?? string.Empty;
+            }
+        }
+
+        var skillIds = entities
+            .Where(x => x.ResourceType == (int)PublicationResourceType.Skill && Guid.TryParse(x.ResourceId, out _))
+            .Select(x => Guid.Parse(x.ResourceId))
+            .Distinct().ToList();
+        if (skillIds.Count > 0)
+        {
+            var skillAvatars = await databaseContext.Skills
+                .AsNoTracking()
+                .Where(x => skillIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.AvatarPath })
+                .ToListAsync(cancellationToken);
+            foreach (var row in skillAvatars)
+            {
+                avatars[Key(PublicationResourceType.Skill, row.Id.ToString())] = row.AvatarPath ?? string.Empty;
+            }
+        }
+
+        return avatars;
+    }
+
+    private static string Key(PublicationResourceType type, string resourceId) => $"{(int)type}:{resourceId}";
 }

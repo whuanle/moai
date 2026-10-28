@@ -45,8 +45,8 @@
 分档统一口径：**GET 与 `*/list` 结尾 = 读档，其余 = 写档**；同口径在中间件（前置拦截）与控制器（兜底）各实现一次。
 
 ### 知识库 `/api/external/wiki/*`（读 `wiki_read` / 写 `wiki_write`）
-- 读（5）：`POST /list`、`GET /{wikiId}`、`POST /{wikiId}/documents/list`、`GET /{wikiId}/documents/{documentId}/content`、`GET /{wikiId}/documents/{documentId}/embedding`
-- 写（9）：`PUT /{wikiId}/embedding-config`、`POST /{wikiId}/documents/preupload|complete`、`DELETE /{wikiId}/documents`、`PUT /{wikiId}/documents/{documentId}/rename`、`POST /{wikiId}/documents/{documentId}/extract|partition|ai-partition|embedding`
+- 读（7）：`POST /list`、`GET /{wikiId}`、`POST /{wikiId}/documents/list`、`GET /{wikiId}/documents/{documentId}/content`、`GET /{wikiId}/documents/{documentId}/embedding`、`GET /{wikiId}/documents/{documentId}/download`、`POST /{wikiId}/recall/list`（向量召回，复用 wiki_mcp 的召回命令；`/list` 后缀即读档口径，勿改名去掉后缀）
+- 写（10）：`PUT /{wikiId}/embedding-config`、`POST /{wikiId}/documents/preupload|complete`、`DELETE /{wikiId}/documents`、`PUT /{wikiId}/documents/{documentId}/rename`、`POST /{wikiId}/documents/{documentId}/extract|partition|ai-partition|embedding`、`POST /{wikiId}/documents/{documentId}/chunks/metadata/generate`
 - MCP 端点（已上线）：`/external/wiki/{wikiId}/mcp`（要求 `wiki_mcp`，不叠加读写档；三只读工具=知识库列表/文件搜索/向量召回，见 wiki sdd D35）
 
 ### 知识图谱 `/api/external/knowledge-graph/*`（读 `kg_read` / 写 `kg_write`）
@@ -111,7 +111,7 @@
 - **i18n 扁平键**：`common.json` 的 `gateway.scope.*` 是 `gateway` 组内的带点扁平键，脚本加键**禁止** `setdefault` 同名嵌套父对象（空对象会让 i18next 深查找不回退，t() 返回裸 key，页面标签全坏且无报错）。
 - **默认口径多处一致性**（DB DEFAULT / handler 默认 / E2E 断言）——KG 上线时 38 vs 230 不一致导致 KX 全红 403。
 - **缓存失效钩子挂在管理端 handler**：删除/改范围后下一请求即生效（TA-36 验证），别依赖 TTL 到期。
-- **Scalar 2.17 单文档绑定**：`AddDocument` 是覆盖语义，双文档用双页面 `/scalar`（v1）+ `/scalar/external`（external），原始 JSON 为 `/openapi/v1.json`、`/openapi/external.json`。
+- **Scalar 2.17 单文档绑定**：`AddDocument` 是覆盖语义，双文档用双页面 `/scalar`（v1）+ `/scalar/external`（external），原始 JSON 为 `/openapi/v1.json`、`/openapi/external.json`；均为 Development 专属，部署后仅 `/openapi/external.json` 可用（v1 与 Scalar 不注册，其余 openapi/scalar 路径明确 404）。
 - **双前缀判定顺序**（历史）：`moai-ac-` 以 `moai-` 开头，前缀分流时接入 key 判定必须在前；团队 key 下线后仅剩 `moai-ac-` 单前缀，中间件 key 直连提取同样只认 `moai-ac-`。
 
 ## 9. 证据索引
@@ -119,7 +119,7 @@
 | 面 | 脚本 | 现状 |
 |---|---|---|
 | 范围体系总账户 | `local-dev/team-apikey-scope-e2e.mjs`（TA-25~28/32/33/34/36/38/39） | 21/21 |
-| 知识库外部接口 | `local-dev/wiki-external-e2e.mjs`（WX-01~06） | 30/30 |
+| 知识库外部接口 | `local-dev/wiki-external-e2e.mjs`（WX-01~10） | 46/46 |
 | 知识图谱外部接口 | `local-dev/kg-external-e2e.mjs`（KX-01~14） | 101/101 |
 | 知识图谱 MCP | `local-dev/kg-mcp-e2e.mjs`（KGM-S1~S7） | 35/35 |
 | 应用 ACP | `local-dev/app-acp-e2e.mjs`（@ACP-S1~S19） | 21/21 |

@@ -318,7 +318,7 @@ Scenario: 多选生成策略
   And 任务仅按所选策略生成对应元数据类型，未勾选策略不生成
 ```
 
-> 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-06），不复用 WK-\*。授权模型：应用 token 即团队级授权，设计见 [sdd.md §4.1](./sdd.md#41-外部开放接口apexternalwiki)。
+> 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-10），不复用 WK-\*。授权模型：应用 token 即团队级授权，端点清单见 [../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)。
 
 ## Feature: 召回测试（文档范围过滤 + AI 优化问题 + AI 生成回答）
 
@@ -428,6 +428,37 @@ Scenario: 知识库读/写功能范围
   Then 成功入库
   When 以旧应用接入 key 的 token 读写
   Then 按接入勾选范围放行（存量接入默认读写全量）
+
+@WX-08 @auto:e2e
+Scenario: 原文件下载
+  When 下载已上传文档
+  Then 返回预签名下载地址且原始文件字节与上传一致
+  When 下载不存在的文档
+  Then 返回不存在
+
+@WX-09 @auto:e2e
+Scenario: 向量召回检索
+  Given 知识库内已有完成向量化的文档
+  When 以查询文本召回
+  Then 命中该文档切片并返回相似度得分与相邻上下文
+  When 限定返回条数或文档范围过滤
+  Then 结果条数与范围受参数约束
+  When 提交非法参数（条数越界或空查询）
+  Then 返回参数错误
+  When 以只读范围 key 召回或以只写范围 key 召回
+  Then 分别放行与禁止（召回属读档）
+
+@WX-10 @auto:e2e
+Scenario: 切片元数据生成
+  Given 文档已完成切割
+  When 以团队可用的对话模型生成全部切片元数据
+  Then 按策略生成大纲/问题/关键词/摘要/聚合且条数可预期，详情可回读
+  When 指定策略或指定切片重新生成
+  Then 仅生成所选策略或切片
+  When 以追加模式再次生成
+  Then 保留已有元数据并累计
+  When 对未切割文档生成元数据或选用非对话模型或不存在的模型
+  Then 分别返回参数错误、参数错误与不存在
 ```
 
 ## Feature: 外部源（飞书文档 / 网页爬虫）

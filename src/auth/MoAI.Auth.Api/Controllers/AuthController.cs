@@ -86,9 +86,9 @@ public class AuthController : ControllerBase
     /// <returns>返回 <see cref="QueryAllOAuthPrividerCommandResponse"/>.</returns>
     [HttpGet("oauth_prividers")]
     [AllowAnonymous]
-    public async Task<QueryAllOAuthPrividerCommandResponse> QueryAllOAuthProviders(CancellationToken ct)
+    public async Task<QueryAllOAuthPrividerCommandResponse> QueryAllOAuthProviders([FromQuery] Uri? redirectUrl, CancellationToken ct)
     {
-        return await _mediator.Send(new QueryAllOAuthPrividerCommand(), ct);
+        return await _mediator.Send(new QueryAllOAuthPrividerCommand { RedirectUrl = redirectUrl }, ct);
     }
 
     /// <summary>

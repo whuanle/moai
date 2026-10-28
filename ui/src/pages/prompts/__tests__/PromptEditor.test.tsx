@@ -3,7 +3,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { PromptEditor } from '../PromptEditor'
 import { createPrompt, getPromptDetail, updatePrompt, setPromptAvatar } from '@/api/prompt'
-import { classifyApi } from '@/api/classify'
 
 vi.mock('@/api/prompt', () => ({
   getPromptDetail: vi.fn().mockResolvedValue(undefined),
@@ -26,6 +25,32 @@ vi.mock('@/api/kiota', () => ({
   getApiClient: vi.fn(() => ({})),
 }))
 
+// Vditor 依赖浏览器 API 与 WASM，jsdom 下以受控 textarea 替身验证接线（value/onChange/mode/maxLength 透传）
+vi.mock('@/components/VditorMarkdownEditor', () => ({
+  VditorMarkdownEditor: ({
+    value,
+    onChange,
+    mode,
+    placeholder,
+    maxLength,
+  }: {
+    value: string
+    onChange: (v: string) => void
+    mode?: string
+    placeholder?: string
+    maxLength?: number
+  }) => (
+    <textarea
+      data-testid="vditor-markdown-editor"
+      data-mode={mode}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}))
+
 function renderEditor(initialPath: string) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
@@ -38,35 +63,48 @@ function renderEditor(initialPath: string) {
   )
 }
 
+function getEditor() {
+  return screen.getByTestId('vditor-markdown-editor') as HTMLTextAreaElement
+}
+
 describe('PromptEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
-  it('新建页输入 Markdown 内容，右侧实时预览渲染标题', async () => {
+  it('新建页所见即所得编辑器输入内容，保存以 teamId=0 调用创建接口', async () => {
     renderEditor('/prompts/new')
 
     fireEvent.change(await screen.findByPlaceholderText('请输入提示词名称'), { target: { value: '翻译助手' } })
-    const editor = screen.getByPlaceholderText(/支持 Markdown 语法/)
-    fireEvent.change(editor, { target: { value: '# 翻译官\n你是翻译助手' } })
-
-    expect(await screen.findByRole('heading', { level: 1, name: '翻译官' })).toBeInTheDocument()
-    expect(screen.getByText('你是翻译助手')).toBeInTheDocument()
-  })
-
-  it('新建提交以 teamId=0 调用创建接口', async () => {
-    renderEditor('/prompts/new')
-
-    fireEvent.change(await screen.findByPlaceholderText('请输入提示词名称'), { target: { value: '代码评审' } })
-    fireEvent.change(screen.getByPlaceholderText(/支持 Markdown 语法/), { target: { value: '请评审代码' } })
+    fireEvent.change(getEditor(), { target: { value: '# 翻译官\n你是翻译助手' } })
     fireEvent.click(screen.getAllByRole('button', { name: '新建提示词' })[0])
 
     await waitFor(() => {
-      expect(createPrompt).toHaveBeenCalledWith(expect.objectContaining({ teamId: 0, name: '代码评审', content: '请评审代码' }))
+      expect(createPrompt).toHaveBeenCalledWith(
+        expect.objectContaining({ teamId: 0, name: '翻译助手', content: '# 翻译官\n你是翻译助手' }),
+      )
     })
   })
 
-  it('编辑页回填详情并调用更新接口', async () => {
+  it('编辑器透传内容上限 10000', async () => {
+    renderEditor('/prompts/new')
+
+    expect(await getEditor()).toHaveAttribute('maxlength', '10000')
+  })
+
+  it('内容为空时保存被拦截，不调用创建接口', async () => {
+    renderEditor('/prompts/new')
+
+    fireEvent.change(await screen.findByPlaceholderText('请输入提示词名称'), { target: { value: '空内容' } })
+    fireEvent.click(screen.getAllByRole('button', { name: '新建提示词' })[0])
+
+    await waitFor(() => {
+      expect(createPrompt).not.toHaveBeenCalled()
+    })
+  })
+
+  it('编辑页回填详情到所见即所得编辑器并调用更新接口', async () => {
     vi.mocked(getPromptDetail).mockResolvedValue({
       promptId: 5, name: '旧名称', description: '', content: '# 旧内容', promptClassId: 0, isPublic: false, teamId: 0, avatarPath: '',
     })
@@ -74,10 +112,10 @@ describe('PromptEditor', () => {
 
     expect(await screen.findByPlaceholderText('请输入提示词名称')).toHaveValue('旧名称')
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 1, name: '旧内容' })).toBeInTheDocument()
+      expect(getEditor()).toHaveValue('# 旧内容')
     })
 
-    fireEvent.change(screen.getByPlaceholderText(/支持 Markdown 语法/), { target: { value: '# 新内容' } })
+    fireEvent.change(getEditor(), { target: { value: '# 新内容' } })
     // antd 两字按钮自动插入空格：保 存
     fireEvent.click(screen.getAllByRole('button', { name: /保\s*存/ })[0])
 
@@ -91,7 +129,7 @@ describe('PromptEditor', () => {
     renderEditor('/team/7/prompt/new')
 
     fireEvent.change(await screen.findByPlaceholderText('请输入提示词名称'), { target: { value: '团队周报' } })
-    fireEvent.change(screen.getByPlaceholderText(/支持 Markdown 语法/), { target: { value: '生成周报' } })
+    fireEvent.change(getEditor(), { target: { value: '生成周报' } })
     fireEvent.click(screen.getAllByRole('button', { name: '新建提示词' })[0])
 
     await waitFor(() => {
@@ -99,30 +137,61 @@ describe('PromptEditor', () => {
     })
   })
 
-  it('工具栏加粗：选中文本后插入语法并实时预览', async () => {
+  it('模式切换：所见即所得与纯源码互切并透传给编辑器', async () => {
     renderEditor('/prompts/new')
 
-    const editor = (await screen.findByPlaceholderText(/支持 Markdown 语法/)) as HTMLTextAreaElement
-    fireEvent.change(editor, { target: { value: '加粗示例' } })
-    editor.setSelectionRange(0, 4)
-    fireEvent.click(screen.getByRole('button', { name: '加粗' }))
-
-    expect(editor.value).toBe('**加粗示例**')
-    await waitFor(() => {
-      // rAF 中恢复光标到语法内
-      expect(editor.selectionStart).toBe(2)
-    })
-    expect(await screen.findByText('加粗示例')).toBeInTheDocument()
+    expect(await getEditor()).toHaveAttribute('data-mode', 'ir')
+    // 切换器为图标（眼睛/代码），选项顺序固定：0=所见即所得、1=纯源码
+    const segmentItems = () => document.querySelectorAll('.ant-segmented-item')
+    fireEvent.click(segmentItems()[1])
+    expect(getEditor()).toHaveAttribute('data-mode', 'sv')
+    fireEvent.click(segmentItems()[0])
+    expect(getEditor()).toHaveAttribute('data-mode', 'ir')
   })
 
-  it('工具栏标题：对当前行插入 H2 前缀', async () => {
+  it('输入内容自动落浏览器草稿，重开页面恢复', async () => {
+    const { unmount } = renderEditor('/prompts/new')
+
+    fireEvent.change(await screen.findByPlaceholderText('请输入提示词名称'), { target: { value: '草稿用户' } })
+    fireEvent.change(getEditor(), { target: { value: '# 未保存内容' } })
+    await waitFor(() => {
+      expect(localStorage.getItem('moai-prompt-draft:new:t0')).not.toBeNull()
+    })
+    unmount()
+
+    renderEditor('/prompts/new')
+    expect(await screen.findByPlaceholderText('请输入提示词名称')).toHaveValue('草稿用户')
+    await waitFor(() => {
+      expect(getEditor()).toHaveValue('# 未保存内容')
+    })
+    // 「已恢复草稿」toast 依赖真实应用的 FeedbackBridge，jsdom 下不渲染，浏览器走查验证
+  })
+
+  it('编辑页草稿覆盖服务端内容（未保存修改不丢失）', async () => {
+    vi.mocked(getPromptDetail).mockResolvedValue({
+      promptId: 5, name: '服务端名称', description: '', content: '# 服务端内容', promptClassId: 0, isPublic: false, teamId: 0, avatarPath: '',
+    })
+    localStorage.setItem('moai-prompt-draft:edit:5', JSON.stringify({ name: '服务端名称', content: '# 本地草稿内容' }))
+    renderEditor('/prompts/5/edit')
+
+    await waitFor(() => {
+      expect(getEditor()).toHaveValue('# 本地草稿内容')
+    })
+    expect(screen.getByPlaceholderText('请输入提示词名称')).toHaveValue('服务端名称')
+  })
+
+  it('保存成功后清除草稿', async () => {
     renderEditor('/prompts/new')
 
-    const editor = (await screen.findByPlaceholderText(/支持 Markdown 语法/)) as HTMLTextAreaElement
-    fireEvent.change(editor, { target: { value: '标题文字' } })
-    editor.setSelectionRange(2, 2)
-    fireEvent.click(screen.getByRole('button', { name: '二级标题' }))
+    fireEvent.change(await screen.findByPlaceholderText('请输入提示词名称'), { target: { value: '保存即清' } })
+    fireEvent.change(getEditor(), { target: { value: '内容' } })
+    fireEvent.click(screen.getAllByRole('button', { name: '新建提示词' })[0])
 
-    expect(editor.value).toBe('## 标题文字')
+    await waitFor(() => {
+      expect(createPrompt).toHaveBeenCalled()
+    })
+    await waitFor(() => {
+      expect(localStorage.getItem('moai-prompt-draft:new:t0')).toBeNull()
+    })
   })
 })

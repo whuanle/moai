@@ -55,6 +55,11 @@ public partial class OauthConnectionEntity : IFullAudited
     public string WellKnown { get; set; } = default!;
 
     /// <summary>
+    /// 企业微信应用 agentid，仅 weixinwork 提供商使用.
+    /// </summary>
+    public string? AgentId { get; set; }
+
+    /// <summary>
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }

@@ -26,6 +26,7 @@ Feature: 查询连接器列表
     When 请求连接器列表
     Then 返回全部未删除的连接器（不分页）
     And 每项含 id/name/iconUrl/provider/key/wellKnown/authorizeUrl 及审计字段
+    And 返回全局回调地址 redirectUri（{WebUI}/oauth_login），管理员需将其填到提供方后台的重定向/回调配置中放通
 
   @OC-S4 @auto:e2e
   Scenario: 已软删除的连接器不出现在列表
@@ -77,6 +78,24 @@ Feature: 创建连接器
   Scenario: 发现端点不可达
     When 提交 provider: "custom" 且 wellKnown 指向无法访问的地址
     Then 返回服务器错误 500（缺陷记录：外部 HTTP 失败未转业务异常）
+
+  @OC-S26 @manual
+  Scenario: 创建企业微信连接器
+    When 提交 { name, provider: "weixinWork", key(企业 CorpID), secret, iconUrl, agentId }
+    Then 操作成功
+    And 授权地址为内置的 https://login.work.weixin.qq.com/wwlogin/sso/login
+    And 列表中回显 agentId
+
+  @OC-S27 @manual
+  Scenario: 企业微信缺少 AgentId 被拒
+    When 提交 provider: "weixinWork" 且 agentId 为空
+    Then 返回请求错误（400）"企业微信应用 AgentId 不能为空."
+
+  @OC-S28 @manual
+  Scenario: 更新企业微信连接器
+    When 修改 agentId 并保存（secret 留空）
+    Then 操作成功且 agentId 已更新，secret 保持原值
+    And 登录页跳转地址中的 agentid 参数同步为新值
 
 Feature: 更新连接器
   Background:
@@ -145,12 +164,17 @@ Feature: 前端连接器页（/oauthconnect）
   Scenario: 管理员看到连接器表格
     Given admin 登录并进入 /oauthconnect
     Then 展示连接器表格（刷新 + 新建按钮）
+    And 每行展示回调地址（{WebUI}/oauth_login，可复制），而非提供方授权端点
     And 每行提供 编辑 / 删除（二次确认）操作
 
   @OC-S22 @manual
   Scenario: 新建表单按提供商联动
     When 选择 provider 为 feishu 或 dingTalk
     Then 隐藏"发现端点"输入并自动填充默认图标
+    And 提供商下方展示回调地址提示（完整 `{WebUI}/oauth_login`，可复制）
+    When 选择 weixinWork
+    Then 隐藏"发现端点"输入并展示"应用 AgentId"必填项（占位 `1000002`，附填写指引）
+    And 回调提示切换为企业微信「授权回调域」只需填域名部分（复制仅复制域名）
     When 选择 custom
     Then "发现端点"必填，输入框占位提示 `https://.../.well-known/openid-configuration`
 
@@ -165,4 +189,14 @@ Feature: 前端连接器页（/oauthconnect）
     Given member 登录
     When 直接访问 /oauthconnect
     Then 重定向到 /apps 应用广场（接口层同时返回 403）
+
+  @OC-S25 @manual
+  Scenario: 图标上传带正方形提示与裁剪
+    Given admin 打开新建/编辑连接器表单
+    When 查看图标项
+    Then 图标预览右侧提示"登录页图标按正方形展示，建议上传 1:1 正方形图片"
+    When 点击上传图标并选择本地图片
+    Then 弹出正方形裁剪窗（初始完整显示并居中，全向拖动定位，滑块/滚轮缩放：放大可铺满视口、缩小查看全图）
+    And 确认后按视口内容导出正方形 PNG（未铺满处留白透明）并上传，回填图标地址
+    And 取消/关闭裁剪窗时不产生上传
 ```

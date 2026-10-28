@@ -22,7 +22,7 @@ export interface Feishu_appItemRequestBuilder extends BaseRequestBuilder<Feishu_
      */
      delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 更新飞书应用连接（名称、描述、AppSecret、域名、禁用），需要团队 Admin 及以上角色；AppSecret 为空表示保持不变.
+     * 更新飞书应用连接（名称、AppID、AppSecret、域名、禁用），需要团队 Admin 及以上角色；AppID/AppSecret/域名为空表示保持不变.
      * @param body 更新飞书应用连接，需要团队 Admin 及以上角色；AppSecret 为空表示保持不变，更新后自动重连.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -40,7 +40,7 @@ export interface Feishu_appItemRequestBuilder extends BaseRequestBuilder<Feishu_
      */
      toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 更新飞书应用连接（名称、描述、AppSecret、域名、禁用），需要团队 Admin 及以上角色；AppSecret 为空表示保持不变.
+     * 更新飞书应用连接（名称、AppID、AppSecret、域名、禁用），需要团队 Admin 及以上角色；AppID/AppSecret/域名为空表示保持不变.
      * @param body 更新飞书应用连接，需要团队 Admin 及以上角色；AppSecret 为空表示保持不变，更新后自动重连.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

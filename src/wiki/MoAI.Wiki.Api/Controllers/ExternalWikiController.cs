@@ -141,6 +141,20 @@ public class ExternalWikiController : ControllerBase
     }
 
     /// <summary>
+    /// 获取文档原始文件的预签名下载地址（2 分钟有效，客户端直下，不经平台转发文件流）（外部语义：团队级授权）.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="documentId">文档 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="SimpleString"/> 包含下载 URL.</returns>
+    [HttpGet("{wikiId:long}/documents/{documentId:long}/download")]
+    public async Task<SimpleString> DownloadDocument(long wikiId, long documentId, CancellationToken ct)
+    {
+        var caller = RequireCaller(requireWrite: false);
+        return await _mediator.Send(new DownloadExternalWikiDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId }, ct);
+    }
+
+    /// <summary>
     /// 重命名文档（外部语义：团队级授权）.
     /// </summary>
     /// <param name="wikiId">知识库 id.</param>
@@ -226,6 +240,35 @@ public class ExternalWikiController : ControllerBase
     {
         var caller = RequireCaller(requireWrite: false);
         return await _mediator.Send(new QueryExternalDocumentEmbeddingCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId }, ct);
+    }
+
+    /// <summary>
+    /// 为文档切片生成元数据（对话模型生成大纲/问题/关键词/摘要/聚合）；需先切割，未传切片 id 时处理全部切片，返回生成条数（外部语义：团队级授权）.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="documentId">文档 id.</param>
+    /// <param name="req">元数据生成请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="SimpleInt"/> 生成元数据条数.</returns>
+    [HttpPost("{wikiId:long}/documents/{documentId:long}/chunks/metadata/generate")]
+    public async Task<SimpleInt> GenerateChunksMetadata(long wikiId, long documentId, [FromBody] GenerateExternalDocumentChunksMetadataCommand req, CancellationToken ct)
+    {
+        var caller = RequireCaller(requireWrite: true);
+        return await _mediator.Send(new GenerateExternalDocumentChunksMetadataCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId, MetadataModelId = req.MetadataModelId, ChunkIds = req.ChunkIds, AppendExisting = req.AppendExisting, StrategyTypes = req.StrategyTypes }, ct);
+    }
+
+    /// <summary>
+    /// 知识库向量召回：在知识库范围内检索与查询最相关的切片（含相似度得分与相邻上下文），需文档已向量化（外部语义：团队级授权）.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="req">召回请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryExternalWikiRecallCommandResponse"/>.</returns>
+    [HttpPost("{wikiId:long}/recall/list")]
+    public async Task<QueryExternalWikiRecallCommandResponse> Recall(long wikiId, [FromBody] QueryExternalWikiRecallCommand req, CancellationToken ct)
+    {
+        var caller = RequireCaller(requireWrite: false);
+        return await _mediator.Send(new QueryExternalWikiRecallCommand { Caller = caller, WikiId = wikiId, Query = req.Query, Top = req.Top, MinScore = req.MinScore, DocumentIds = req.DocumentIds }, ct);
     }
 
     private ExternalWikiCaller RequireCaller(bool requireWrite)

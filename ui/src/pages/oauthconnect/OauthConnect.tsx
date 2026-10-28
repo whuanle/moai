@@ -5,6 +5,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@ant
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { Page, DataTable, feedback } from '@/design-system'
+import { ImageSquareCropModal } from '@/components/ImageSquareCropModal'
 import { useAppStore } from '@/store/app'
 import type { OAuthPrivider } from '@/api/client/models'
 import { resolveStorageUrl, uploadImage } from '@/utils/storage'
@@ -27,6 +28,7 @@ interface FormValues {
   secret?: string
   iconUrl: string
   wellKnown?: string
+  agentId?: string
 }
 
 const providerTagColor: Record<string, string> = {
@@ -34,11 +36,13 @@ const providerTagColor: Record<string, string> = {
   feishu: 'geekblue',
   dingtalk: 'cyan',
   dingTalk: 'cyan',
+  wechatwork: 'green',
+  weixinWork: 'green',
   github: 'purple',
   gitHub: 'purple',
 }
 
-// 飞书、钉钉登录没有发现端点，默认图标地址（内置渠道逻辑）
+// 飞书、钉钉登录没有发现端点，默认图标地址（内置渠道逻辑）；企业微信无稳定公共图标源，由管理员上传
 const providerDefaults: Record<string, { iconUrl?: string }> = {
   feishu: {
     iconUrl:
@@ -59,6 +63,9 @@ function providerLabel(provider: string | null | undefined): string {
     case 'dingTalk':
     case 'dingtalk':
       return 'DingTalk'
+    case 'wechatwork':
+    case 'weixinWork':
+      return 'WeCom'
     case 'gitHub':
     case 'github':
       return 'GitHub'
@@ -68,7 +75,7 @@ function providerLabel(provider: string | null | undefined): string {
 }
 
 function providerNoDiscovery(provider: string | undefined): boolean {
-  return provider === 'feishu' || provider === 'dingTalk' || provider === 'dingtalk'
+  return provider === 'feishu' || provider === 'dingTalk' || provider === 'dingtalk' || provider === 'weixinWork'
 }
 
 interface IconPickerProps {
@@ -79,12 +86,26 @@ interface IconPickerProps {
 function IconPicker({ value, onChange }: IconPickerProps) {
   const { t } = useTranslation()
   const [uploading, setUploading] = useState(false)
+  const [cropSource, setCropSource] = useState<{ file: File; url: string } | null>(null)
   const preview = resolveStorageUrl(value)
 
-  const handleUpload = async (file: File) => {
+  // 选择图片后先进入正方形裁剪，确认再上传，保证登录页方形展示效果
+  const handleFileSelected = (file: File) => {
+    setCropSource({ file, url: URL.createObjectURL(file) })
+  }
+
+  const closeCrop = () => {
+    setCropSource((current) => {
+      if (current) URL.revokeObjectURL(current.url)
+      return null
+    })
+  }
+
+  const handleCropConfirm = async (cropped: File) => {
+    closeCrop()
     setUploading(true)
     try {
-      const objectKey = await uploadImage(file)
+      const objectKey = await uploadImage(cropped)
       onChange?.(objectKey)
     } catch {
       feedback.error(t('oauthconnect.iconUploadFailed'))
@@ -106,7 +127,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
           accept="image/*"
           showUploadList={false}
           customRequest={({ file }) => {
-            if (file instanceof File) void handleUpload(file)
+            if (file instanceof File) handleFileSelected(file)
           }}
         >
           <Button icon={<UploadOutlined />} loading={uploading}>
@@ -114,13 +135,25 @@ function IconPicker({ value, onChange }: IconPickerProps) {
           </Button>
         </Upload>
       </Space.Compact>
-      {preview && (
-        <img
-          src={preview}
-          alt={t('oauthconnect.icon')}
-          style={{ width: 100,  borderRadius: 4, objectFit: 'contain' }}
-        />
-      )}
+      <Space size={12} align="center">
+        {preview && (
+          <img
+            src={preview}
+            alt={t('oauthconnect.icon')}
+            style={{ width: 64, height: 64, borderRadius: 4, objectFit: 'contain' }}
+          />
+        )}
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {t('oauthconnect.iconSquareHint')}
+        </Text>
+      </Space>
+      <ImageSquareCropModal
+        open={cropSource !== null}
+        src={cropSource?.url}
+        fileName={cropSource?.file.name}
+        onConfirm={(file) => void handleCropConfirm(file)}
+        onCancel={closeCrop}
+      />
     </Space>
   )
 }
@@ -134,6 +167,7 @@ export function OauthConnect() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [items, setItems] = useState<OAuthConnectionItem[]>([])
+  const [redirectUri, setRedirectUri] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<OAuthConnectionItem | null>(null)
 
@@ -141,7 +175,8 @@ export function OauthConnect() {
     setLoading(true)
     try {
       const res = await getOAuthConnections()
-      setItems(res)
+      setItems(res.items)
+      setRedirectUri(res.redirectUri)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -169,6 +204,7 @@ export function OauthConnect() {
       key: record.key ?? '',
       iconUrl: record.iconUrl ?? '',
       wellKnown: record.wellKnown ?? '',
+      agentId: record.agentId ?? '',
       secret: '',
     })
     setModalOpen(true)
@@ -176,9 +212,13 @@ export function OauthConnect() {
 
   const handleProviderChange = (value: string) => {
     const defaults = providerDefaults[value]
-    // 飞书、钉钉没有发现端点，清空 wellKnown
+    // 飞书、钉钉、企业微信没有发现端点，清空 wellKnown
     if (providerNoDiscovery(value)) {
       form.setFieldValue('wellKnown', undefined)
+    }
+    // 仅企业微信使用 agentId，切换提供商时清空
+    if (value !== 'weixinWork') {
+      form.setFieldValue('agentId', undefined)
     }
     // 自动填充内置渠道的默认图标（不覆盖已上传/已填写的图标）
     if (defaults?.iconUrl && !form.getFieldValue('iconUrl')) {
@@ -198,6 +238,7 @@ export function OauthConnect() {
           secret: values.secret,
           iconUrl: values.iconUrl,
           wellKnown: values.wellKnown,
+          agentId: values.agentId,
         })
       } else {
         await createOAuthConnection({
@@ -207,6 +248,7 @@ export function OauthConnect() {
           secret: values.secret ?? '',
           iconUrl: values.iconUrl,
           wellKnown: values.wellKnown,
+          agentId: values.agentId,
         })
       }
       feedback.success(t('oauthconnect.saveSuccess'))
@@ -232,7 +274,8 @@ export function OauthConnect() {
   const providerOptions = [
     { value: 'custom', label: 'Custom OAuth' },
     { value: 'feishu', label: 'Feishu（飞书）' },
-    { value: 'dingTalk', label: 'DingTalk（钉钉）' }
+    { value: 'dingTalk', label: 'DingTalk（钉钉）' },
+    { value: 'weixinWork', label: 'WeCom（企业微信）' }
   ]
 
   const columns: TableColumnsType<OAuthConnectionItem> = [
@@ -264,14 +307,16 @@ export function OauthConnect() {
       },
     },
     {
-      title: t('oauthconnect.colAuthorize'),
-      dataIndex: 'authorizeUrl',
+      title: t('oauthconnect.colCallback'),
+      key: 'redirectUri',
       ellipsis: true,
-      render: (url: string | null) =>
-        url ? (
-          <Text style={{ fontSize: 12 }} copyable>
-            {url}
-          </Text>
+      render: () =>
+        redirectUri ? (
+          <Tooltip title={t('oauthconnect.callbackTip')}>
+            <Text style={{ fontSize: 12 }} copyable>
+              {redirectUri}
+            </Text>
+          </Tooltip>
         ) : (
           '-'
         ),
@@ -381,6 +426,25 @@ export function OauthConnect() {
             name="provider"
             label={t('oauthconnect.provider')}
             rules={[{ required: true }]}
+            extra={
+              redirectUri ? (
+                provider === 'weixinWork' ? (
+                  <Text
+                    style={{ fontSize: 12 }}
+                    copyable={{ text: new URL(redirectUri).host }}
+                  >
+                    {t('oauthconnect.callbackWeComTip', { host: new URL(redirectUri).host })}
+                  </Text>
+                ) : (
+                  <Text
+                    style={{ fontSize: 12 }}
+                    copyable={{ text: redirectUri }}
+                  >
+                    {t('oauthconnect.callbackTip')}：{redirectUri}
+                  </Text>
+                )
+              ) : undefined
+            }
           >
             <Select options={providerOptions} disabled={Boolean(editing)} onChange={handleProviderChange} />
           </Form.Item>
@@ -420,6 +484,23 @@ export function OauthConnect() {
               ]}
             >
               <Input placeholder="https://.../.well-known/openid-configuration" />
+            </Form.Item>
+          )}
+          {provider === 'weixinWork' && (
+            <Form.Item
+              name="agentId"
+              label={t('oauthconnect.agentId')}
+              rules={[
+                {
+                  validator: (_, value) =>
+                    !value
+                      ? Promise.reject(new Error(t('oauthconnect.agentIdRequired')))
+                      : Promise.resolve(),
+                },
+              ]}
+              extra={t('oauthconnect.agentIdHint')}
+            >
+              <Input placeholder="1000002" />
             </Form.Item>
           )}
         </Form>

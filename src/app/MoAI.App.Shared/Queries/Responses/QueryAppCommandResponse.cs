@@ -68,6 +68,16 @@ public class QueryAppCommandResponse
     public DateTimeOffset? PublishTime { get; set; }
 
     /// <summary>
+    /// 线上版本号（发布时快照的 int 编码，显示 aaa.bb.cc），未发布或存量已发布应用为 null.
+    /// </summary>
+    public int? PublishVersion { get; set; }
+
+    /// <summary>
+    /// 应用版本号（int 编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc），默认 10000=1.0.0.
+    /// </summary>
+    public int Version { get; set; }
+
+    /// <summary>
     /// 对话开场白（仅 Agent 应用，取自应用配置），未配置为空串.
     /// </summary>
     public string OpeningStatement { get; set; } = string.Empty;

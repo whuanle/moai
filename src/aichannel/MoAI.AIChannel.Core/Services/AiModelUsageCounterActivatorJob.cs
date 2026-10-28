@@ -72,10 +72,10 @@ public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
         return _databaseContext.Database.ExecuteSqlInterpolatedAsync($$"""
             INSERT INTO ai_model_token_audit
                 (model_id, team_id, user_id, use_type, use_resource_id,
-                 completion_tokens, prompt_tokens, total_tokens, count,
+                 completion_tokens, prompt_tokens, total_tokens, cached_tokens, count,
                  create_user_id, create_time, update_user_id, update_time, is_deleted)
             SELECT {{dimension.ModelId}}, {{dimension.TeamId}}, {{dimension.UserId}}, {{dimension.UseType}}, {{dimension.UseResourceId}},
-                   {{increment.CompletionTokens}}, {{increment.PromptTokens}}, {{increment.TotalTokens}}, {{increment.Count}},
+                   {{increment.CompletionTokens}}, {{increment.PromptTokens}}, {{increment.TotalTokens}}, {{increment.CachedTokens}}, {{increment.Count}},
                    {{dimension.UserId}}, timezone('utc', now()), {{dimension.UserId}}, timezone('utc', now()), 0
             WHERE EXISTS (
                 SELECT 1 FROM ai_model
@@ -86,6 +86,7 @@ public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
                 completion_tokens = ai_model_token_audit.completion_tokens + EXCLUDED.completion_tokens,
                 prompt_tokens = ai_model_token_audit.prompt_tokens + EXCLUDED.prompt_tokens,
                 total_tokens = ai_model_token_audit.total_tokens + EXCLUDED.total_tokens,
+                cached_tokens = ai_model_token_audit.cached_tokens + EXCLUDED.cached_tokens,
                 count = ai_model_token_audit.count + EXCLUDED.count,
                 update_user_id = EXCLUDED.update_user_id,
                 update_time = EXCLUDED.update_time;
@@ -99,6 +100,8 @@ public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
         public long PromptTokens { get; private set; }
 
         public long TotalTokens { get; private set; }
+
+        public long CachedTokens { get; private set; }
 
         public long Count { get; private set; }
 
@@ -117,6 +120,9 @@ public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
                     break;
                 case AiModelUsageMetric.Total:
                     TotalTokens += value;
+                    break;
+                case AiModelUsageMetric.Cached:
+                    CachedTokens += value;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(metric));

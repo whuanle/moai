@@ -11,12 +11,7 @@ public class SyncAIModelCommandResponse
     public int Total { get; init; }
 
     /// <summary>
-    /// 本次新增数量.
+    /// 候选模型列表（只探测不落库，由用户挑选后通过 import 接口导入）.
     /// </summary>
-    public int Added { get; init; }
-
-    /// <summary>
-    /// 已存在跳过数量.
-    /// </summary>
-    public int Skipped { get; init; }
+    public List<SyncAIModelCandidateItem> Items { get; init; } = new();
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckOutlined, CloseOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
@@ -8,6 +8,8 @@ import { DataTable, Page, PageToolbar, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
+import { formatAppVersion } from '@/utils/appVersion'
+import { resolveStorageUrl } from '@/utils/storage'
 import {
   getPublicationList,
   reviewPublication,
@@ -120,13 +122,22 @@ export function Publications() {
       {
         title: t('publications.colResource'),
         key: 'resource',
-        width: 240,
+        width: 260,
         render: (_, record) => (
           <Space size={spacing.xs}>
             {renderResourceType(record.resourceType)}
+            <Avatar shape="square" size={28} src={record.resourceAvatar ? resolveStorageUrl(record.resourceAvatar) : undefined}>
+              {(record.resourceName || record.resourceId || '?').slice(0, 1).toUpperCase()}
+            </Avatar>
             <Text strong>{record.resourceName || record.resourceId || '-'}</Text>
           </Space>
         ),
+      },
+      {
+        title: t('publications.colVersion'),
+        dataIndex: 'publishVersion',
+        width: 90,
+        render: (v: number | null | undefined) => (v == null ? '-' : <Tag>v{formatAppVersion(v)}</Tag>),
       },
       { title: t('publications.colTeam'), dataIndex: 'teamName', width: 150, render: (v: string | null) => v || '-' },
       { title: t('publications.colApplicant'), dataIndex: 'createUserName', width: 110, render: (v: string | null) => v || '-' },

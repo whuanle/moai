@@ -63,6 +63,18 @@ public class UpdateFeishuAppCommandHandler : IRequestHandler<UpdateFeishuAppComm
             throw new BusinessException("连接名称已存在，请更换后重试.") { StatusCode = 409 };
         }
 
+        // AppID 可编辑（填错凭证无需删除重建），保持全局唯一
+        if (!string.IsNullOrWhiteSpace(request.AppId) && request.AppId != entity.AppId)
+        {
+            var appIdExist = await _databaseContext.FeishuApps
+                .AnyAsync(x => x.AppId == request.AppId && x.Id != entity.Id, cancellationToken);
+
+            if (appIdExist)
+            {
+                throw new BusinessException("该飞书应用已创建过连接.") { StatusCode = 409 };
+            }
+        }
+
         entity.Name = request.Name;
         entity.Description = request.Description ?? string.Empty;
         entity.IsDisable = request.IsDisable;
@@ -74,6 +86,11 @@ public class UpdateFeishuAppCommandHandler : IRequestHandler<UpdateFeishuAppComm
         if (!string.IsNullOrWhiteSpace(request.Domain))
         {
             entity.Domain = request.Domain;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.AppId))
+        {
+            entity.AppId = request.AppId;
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);

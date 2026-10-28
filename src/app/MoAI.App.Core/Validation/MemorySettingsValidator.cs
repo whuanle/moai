@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MoAI.AI.Models;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.App.Validation;
@@ -91,6 +92,15 @@ public static class MemorySettingsValidator
             if (!maxPerUser.TryGetInt32(out var value) || value < 10 || value > MaxPerUser)
             {
                 throw new BusinessException($"单用户记忆条数上限必须是 10~{MaxPerUser} 之间的整数.") { StatusCode = 400 };
+            }
+        }
+
+        if (memory.TryGetProperty("prompt", out var prompt) && prompt.ValueKind == JsonValueKind.String)
+        {
+            var text = prompt.GetString();
+            if (!string.IsNullOrEmpty(text) && text.Length > AgentMemorySettings.MaxPromptLength)
+            {
+                throw new BusinessException($"记忆提示词长度不能超过 {AgentMemorySettings.MaxPromptLength} 字.") { StatusCode = 400 };
             }
         }
     }

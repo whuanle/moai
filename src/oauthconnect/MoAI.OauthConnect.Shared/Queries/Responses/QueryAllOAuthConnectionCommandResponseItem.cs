@@ -38,6 +38,11 @@ public class QueryAllOAuthConnectionCommandResponseItem : AuditsInfo
     public string WellKnown { get; set; } = default!;
 
     /// <summary>
+    /// 企业微信应用 agentid，仅 weixinwork 提供商使用.
+    /// </summary>
+    public string? AgentId { get; set; }
+
+    /// <summary>
     /// 登录跳转地址.
     /// </summary>
     public string AuthorizeUrl { get; set; } = default!;

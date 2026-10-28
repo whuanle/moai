@@ -31,9 +31,11 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
     promptTokens: 0,
     completionTokens: 0,
     totalTokens: 0,
+    cachedTokens: 0,
   })
   const [byModel, setByModel] = useState<AppUsageModelItem[]>([])
   const [stats, setStats] = useState<AppUsageActivityStats>({
+    useCount: 0,
     sessionCount: 0,
     userCount: 0,
     messageCount: 0,
@@ -54,9 +56,9 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
       })
       .catch(() => {
         if (cancelled) return
-        setSummary({ callCount: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0 })
+        setSummary({ callCount: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, cachedTokens: 0 })
         setByModel([])
-        setStats({ sessionCount: 0, userCount: 0, messageCount: 0, lastActiveTime: null })
+        setStats({ useCount: 0, sessionCount: 0, userCount: 0, messageCount: 0, lastActiveTime: null })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -97,6 +99,12 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
       {
         title: t('appMonitor.completionTokens'),
         dataIndex: 'completionTokens',
+        width: 140,
+        render: (v: number | null) => formatInt(v),
+      },
+      {
+        title: t('appMonitor.cachedTokens'),
+        dataIndex: 'cachedTokens',
         width: 140,
         render: (v: number | null) => formatInt(v),
       },
@@ -144,9 +152,27 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
             <Statistic title={t('appMonitor.totalTokens')} value={formatInt(summary.totalTokens)} />
           </Card>
         </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title={t('appMonitor.cachedTokens')}
+              value={formatInt(summary.cachedTokens)}
+              suffix={
+                summary.promptTokens > 0 && summary.cachedTokens > 0
+                  ? `(${Math.round((summary.cachedTokens / summary.promptTokens) * 100)}%)`
+                  : undefined
+              }
+            />
+          </Card>
+        </Col>
       </Row>
 
       <Row gutter={[spacing.md, spacing.md]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic title={t('appMonitor.useCount')} value={formatInt(stats.useCount)} />
+          </Card>
+        </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic title={t('appMonitor.userCount')} value={formatInt(stats.userCount)} />
@@ -183,7 +209,7 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
           loading={loading}
           pagination={false}
           locale={{ emptyText: t('appMonitor.empty') }}
-          scroll={{ x: 860 }}
+          scroll={{ x: 1000 }}
         />
       </Card>
     </div>

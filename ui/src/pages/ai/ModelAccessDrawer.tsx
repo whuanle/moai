@@ -276,12 +276,13 @@ export function ModelAccessDrawer({ model, open, onClose, onVisibilityChanged }:
   const teamOptions = useMemo(
     () =>
       teams
+        .filter((team) => !team.isDisable)
         .filter((team) => !authorizedItems.some((item) => item.teamId === Number(team.teamId)))
         .map((team) => ({
           value: Number(team.teamId),
-          label: `${team.name}${team.isDisable ? `（${t('models.teamDisabled')}）` : ''}`,
+          label: `${team.name}`,
         })),
-    [teams, authorizedItems, t],
+    [teams, authorizedItems],
   )
 
   const columns: TableColumnsType<(typeof authorizedItems)[number]> = [

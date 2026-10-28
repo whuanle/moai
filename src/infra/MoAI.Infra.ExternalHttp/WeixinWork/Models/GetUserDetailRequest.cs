@@ -4,6 +4,8 @@
 #pragma warning disable SA1600 // Elements should be documented
 #pragma warning disable CA1002 // 不要公开泛型列表
 #pragma warning disable CA2227 // 集合属性应为只读
+using System.Text.Json.Serialization;
+
 namespace MoAI.Infra.WeixinWork.Models;
 
 /// <summary>
@@ -14,5 +16,6 @@ public class GetUserDetailRequest
     /// <summary>
     /// USER_TICKET 成员票据.
     /// </summary>
+    [JsonPropertyName("user_ticket")]
     public string UserTicket { get; set; } = default!;
 }

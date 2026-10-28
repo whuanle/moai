@@ -68,12 +68,17 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         var userId = context.UserId;
         var sessionId = context.SessionId;
 
+        // 记忆提示词：应用配置的 guidance（空则用平台默认），追加为每只记忆工具的描述，
+        // 让模型在工具列表里直接看到如何管理与使用记忆
+        var promptSuffix = "\n\n【记忆管理约定】\n"
+            + (string.IsNullOrWhiteSpace(settings.Prompt) ? AgentMemorySettings.DefaultPrompt : settings.Prompt.Trim());
+
         var searchTool = new AppTool
         {
             Name = SearchToolName,
             Title = "记忆检索",
             Description = "检索当前用户的跨会话长期记忆（偏好/事实、事件经历、方法经验），适合回答「我之前说过什么/我们上次聊到哪」类问题；" +
-                "每轮对话开头系统已自动注入相关记忆，只有当自动记忆不够时才需要主动调用。topK 可选（1-20，默认 5）。",
+                "每轮对话开头系统已自动注入相关记忆，只有当自动记忆不够时才需要主动调用。topK 可选（1-20，默认 5）。" + promptSuffix,
             Kind = "memory",
             ParametersExample = "{\"query\":\"要检索的记忆关键词或问题\",\"topK\":5}",
             InvokeAsync = (argsJson, ct) => SearchAsync(appId, userId, settings, argsJson, ct),
@@ -84,7 +89,7 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
             Name = SaveToolName,
             Title = "记忆保存",
             Description = "把值得长期记住的信息写入当前用户记忆（用户明确要求记住，或出现重要的稳定偏好/事实/约定）。" +
-                "type：semantic=事实偏好（默认）、episodic=事件经历、procedural=方法经验；与既有记忆高度相似时自动合并更新。",
+                "type：semantic=事实偏好（默认）、episodic=事件经历、procedural=方法经验；与既有记忆高度相似时自动合并更新。" + promptSuffix,
             Kind = "memory",
             ParametersExample = "{\"content\":\"要记住的一句话，包含具体细节\",\"type\":\"semantic\"}",
             InvokeAsync = (argsJson, ct) => SaveAsync(appId, teamId, userId, sessionId, settings, argsJson, ct),
@@ -94,7 +99,7 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         {
             Name = ForgetToolName,
             Title = "记忆遗忘",
-            Description = "删除当前用户的一条记忆（用户明确要求忘记/更正某条信息时使用）；先用 memory_search 找到记忆 id。",
+            Description = "删除当前用户的一条记忆（用户明确要求忘记/更正某条信息时使用）；先用 memory_search 找到记忆 id。" + promptSuffix,
             Kind = "memory",
             ParametersExample = "{\"memoryId\":\"要删除的记忆 id\"}",
             InvokeAsync = (argsJson, ct) => ForgetAsync(appId, userId, argsJson, ct),
@@ -142,11 +147,6 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         if (string.IsNullOrWhiteSpace(content))
         {
             return AppToolResult.Fail("缺少参数 content（要记住的内容）.");
-        }
-
-        if (!settings.IsTypeEnabled(type))
-        {
-            return AppToolResult.Fail("该记忆类型未启用.");
         }
 
         var item = await _memoryService.SaveAsync(new MemorySaveRequest

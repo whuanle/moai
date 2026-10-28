@@ -55,6 +55,11 @@ public partial class AiModelTokenAuditEntity : IFullAudited
     public int PromptTokens { get; set; }
 
     /// <summary>
+    /// 缓存命中的输入数量（模型响应 usage 上报，未上报为 0）.
+    /// </summary>
+    public int CachedTokens { get; set; }
+
+    /// <summary>
     /// 总数量.
     /// </summary>
     public int TotalTokens { get; set; }

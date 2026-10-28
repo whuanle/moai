@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using MoAI.App.Services;
 using MoAI.AI.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -42,18 +43,20 @@ public sealed class AppA2aServer
     private readonly AppChatHotStore _hotStore;
     private readonly AppChatFlushService _flushService;
     private readonly AppA2aTaskRegistry _taskRegistry;
+    private readonly IAppUsageCounter _appUsageCounter;
     private readonly ILogger<AppA2aServer> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppA2aServer"/> class.
     /// </summary>
-    public AppA2aServer(DatabaseContext databaseContext, AppAgentFactory agentFactory, AppChatHotStore hotStore, AppChatFlushService flushService, AppA2aTaskRegistry taskRegistry, ILogger<AppA2aServer> logger)
+    public AppA2aServer(DatabaseContext databaseContext, AppAgentFactory agentFactory, AppChatHotStore hotStore, AppChatFlushService flushService, AppA2aTaskRegistry taskRegistry, IAppUsageCounter appUsageCounter, ILogger<AppA2aServer> logger)
     {
         _databaseContext = databaseContext;
         _agentFactory = agentFactory;
         _hotStore = hotStore;
         _flushService = flushService;
         _taskRegistry = taskRegistry;
+        _appUsageCounter = appUsageCounter;
         _logger = logger;
     }
 
@@ -461,6 +464,10 @@ public sealed class AppA2aServer
         };
         _databaseContext.AppAgentSessions.Add(session);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 使用次数 +1（Redis 计数器，删除会话不回退）
+        await _appUsageCounter.IncrementAsync(appId, cancellationToken);
+
         return session.Id;
     }
 

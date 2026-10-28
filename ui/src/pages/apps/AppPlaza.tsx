@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { FireFilled, ReloadOutlined, SearchOutlined, TeamOutlined } from '@ant-design/icons'
 import { Avatar, Button, Col, Empty, Input, Row, Spin, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, Page, useNeutralColors } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { brandColors, colorPrimary, spacing } from '@/design-system/theme'
+import { ExternalChannelEntry } from '@/components/ExternalChannelEntry'
 import { resolveStorageUrl } from '@/utils/storage'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { getPublicApps, type AppItem } from '@/api/app'
@@ -138,6 +139,10 @@ export function AppPlaza() {
                           </div>
                           <div style={{ marginTop: 2 }}>{renderKind(item.appType)}</div>
                         </div>
+                        {/* 已开通外部渠道（如飞书）时在卡片右上角展示渠道入口 */}
+                        <div style={{ marginLeft: 'auto', alignSelf: 'flex-start' }}>
+                          <ExternalChannelEntry channels={item.externalChannels} />
+                        </div>
                       </div>
                       <Paragraph
                         type="secondary"
@@ -161,10 +166,31 @@ export function AppPlaza() {
                           marginTop: 'auto',
                           borderTop: `1px solid ${neutral.border}`,
                           paddingTop: spacing.sm,
+                          minWidth: 0,
                         }}
                       >
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {t('appPlaza.teamId', { id: item.teamId ?? '-' })}
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 12,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <TeamOutlined style={{ flexShrink: 0, color: colorPrimary }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.teamName || '-'}
+                          </span>
+                        </Text>
+                        <Text
+                          type="secondary"
+                          style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
+                        >
+                          <FireFilled style={{ color: brandColors.warning }} />
+                          {t('appPlaza.useCount', { count: item.useCount ?? 0 })}
                         </Text>
                       </div>
                     </div>

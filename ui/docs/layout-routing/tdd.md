@@ -15,6 +15,7 @@
 | @FE-LR-S8 ~ @FE-LR-S17 | @manual 浏览器走查（[SOP 第 3 节](./sop.md)） | PASS（2026-09-01，见 SOP 存档） |
 | @FE-LR-S22 | @manual 浏览器实测（dev :4000）：/team/1、/team/1/apps、/team/1/knowledge、/team/1/app/:id（应用设计）、/team/1/app/:id/chat（应用对话）均无一级侧边栏（展开/收起按钮 0 个），页面二级导航与返回入口正常 | PASS 5/5（2026-09-17）；2026-10-05 复核 /chat 命中 FULLSCREEN_PATH 真全屏（Content padding 0），对话页满屏无四周留白 |
 | @FE-LR-S23 | @manual 浏览器实测：/team 列表与一级菜单页下一级侧边栏恢复展开（收起菜单按钮存在） | PASS（2026-09-17；2026-09-28 复核） |
+| @FE-LR-S15、@FE-LR-S24 | @manual 浏览器走查 + [ui/src/design-system/theme/\_\_tests\_\_/config.test.ts](../../src/design-system/theme/__tests__/config.test.ts)（8 套预设结构/亮暗算法/默认预设/非法 key 回退） | 单测 PASS 6/6（2026-10-26）；预设切换走查待 dev server 复核 |
 
 ## 回归命令
 

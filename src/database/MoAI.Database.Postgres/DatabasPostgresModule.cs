@@ -84,6 +84,15 @@ public class DatabasPostgresModule : IModule
             //dbContext.Database.Migrate();
             dbContext.Database.EnsureCreated();
 
+            // EnsureCreated 不会为已存在的表补列：oauth_connection.agent_id（企业微信登录）为后加列，
+            // 用幂等 DDL 给存量库补齐，否则旧部署升级后 OAuth 查询会因缺列报 42703.
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE oauth_connection ADD COLUMN IF NOT EXISTS agent_id character varying(100) NULL");
+
+            // app.use_count（应用累计使用次数）为后加列，幂等补齐
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE app ADD COLUMN IF NOT EXISTS use_count integer NOT NULL DEFAULT 0");
+
             // 种子数据(如 user/setting/classify)使用显式 Id 插入，不会推进 serial/identity 序列，
             // 会导致后续自增时主键冲突。此处将所有序列同步到对应表当前最大 Id，保证后续插入不冲突。
             dbContext.Database.ExecuteSqlRaw(

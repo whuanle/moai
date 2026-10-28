@@ -47,6 +47,12 @@ internal partial class AppAgentSessionConfiguration : IEntityTypeConfiguration<A
         entity.Property(e => e.InputTokens)
             .HasComment("输入token累计")
             .HasColumnName("input_tokens");
+        entity.Property(e => e.CachedTokens)
+            .HasComment("缓存命中的输入token累计（模型响应 usage 上报，未上报为 0）")
+            .HasColumnName("cached_tokens");
+        entity.Property(e => e.ContextTokens)
+            .HasComment("当前上下文占用（最近一次模型调用的输入 token；上下文压缩后随下一轮回落）")
+            .HasColumnName("context_tokens");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除，0=未删除（legacy bigint 约定）")
             .HasColumnName("is_deleted");

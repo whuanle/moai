@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Divider, Input, InputNumber, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
+import { Alert, Button, Divider, Form, Input, InputNumber, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import {
   getAppSecurity,
-  getAppSecurityEvents,
   saveAppSecurity,
   SECURITY_RULE_TYPES,
   SECURITY_STRATEGIES,
-  type AppSecurityEventItem,
   type AppSecurityRuleItem,
   type SecurityRuleType,
   type SecurityStrategy,
@@ -21,21 +19,15 @@ export interface AppSecuritySectionProps {
   canManage: boolean
 }
 
-interface ScopeSwitchProps {
-  description: string
-  checked: boolean
-  disabled?: boolean
-  onChange: (checked: boolean) => void
-}
-
-/** 作用域开关行：开关 + 一行作用说明 */
-function ScopeSwitch({ description, checked, disabled, onChange }: ScopeSwitchProps) {
-  return (
-    <Space>
-      <Switch size="small" checked={checked} disabled={disabled} onChange={onChange} />
-      <Typography.Text type="secondary">{description}</Typography.Text>
-    </Space>
-  )
+export interface AppSecuritySettingsPanelProps {
+  appId: string
+  canManage: boolean
+  /**
+   * 宿主统一保存回调注册（Agent 应用「配置」分区嵌入态使用）：传入后面板不渲染自己的保存按钮、
+   * 不再自行提示成功，由宿主页「保存设置」把主配置与脱敏设置一次提交；校验或提交失败向上抛错中断宿主保存。
+   * 注册在配置加载完成后才生效，避免宿主在回显前保存到默认值。
+   */
+  registerSave?: (save: (() => Promise<void>) | null) => void
 }
 
 interface RuleSetEditorProps {
@@ -44,7 +36,7 @@ interface RuleSetEditorProps {
   onChange: (rules: AppSecurityRuleItem[]) => void
 }
 
-/** 规则编辑器（内嵌在对应选项卡片内，不单独成卡）：规则行维护 + 空态提示 */
+/** 规则编辑器（内嵌在对应开关下，不单独成区）：规则行维护 + 空态提示 */
 function RuleSetEditor({ rules, canManage, onChange }: RuleSetEditorProps) {
   const { t } = useTranslation()
 
@@ -74,7 +66,7 @@ function RuleSetEditor({ rules, canManage, onChange }: RuleSetEditorProps) {
   const keepLastEditable = (rule: AppSecurityRuleItem) => rule.strategy === 'mask' && (rule.type === 'custom' || rule.type === 'bankCard')
 
   return (
-    <Space direction="vertical" size={spacing.sm} style={{ width: '100%' }}>
+    <Space direction="vertical" size={spacing.sm} style={{ width: '100%', marginBottom: spacing.sm }}>
       <Space style={{ width: '100%', justifyContent: 'space-between' }}>
         <Space>
           {t('appSecurity.rulesTitle')}
@@ -161,102 +153,15 @@ function RuleSetEditor({ rules, canManage, onChange }: RuleSetEditorProps) {
   )
 }
 
-interface SecurityEventsCardProps {
-  appId: string
-  canManage: boolean
-}
-
-const EVENT_PAGE_SIZE = 10
-
-/** 安全事件列表：规则命中审计（按时间倒序，仅管理员可见） */
-function SecurityEventsCard({ appId, canManage }: SecurityEventsCardProps) {
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
-  const [items, setItems] = useState<AppSecurityEventItem[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-
-  const load = useCallback(
-    async (pageNo: number) => {
-      setLoading(true)
-      try {
-        const res = await getAppSecurityEvents(appId, pageNo, EVENT_PAGE_SIZE)
-        setItems(res.items)
-        setTotal(res.total)
-        setPage(res.pageNo)
-      } catch {
-        // 错误已由全局请求中间件统一提示
-      } finally {
-        setLoading(false)
-      }
-    },
-    [appId],
-  )
-
-  useEffect(() => {
-    if (canManage) {
-      void load(1)
-    }
-  }, [canManage, load])
-
-  if (!canManage) {
-    return null
-  }
-
-  const columns = [
-    { title: t('appSecurity.events.colTime'), dataIndex: 'createTime', render: (v: string) => formatTime(v) },
-    { title: t('appSecurity.events.colScope'), dataIndex: 'scope', render: (v: string) => t(`appSecurity.scope.${v}`) },
-    {
-      title: t('appSecurity.events.colRule'),
-      render: (_: unknown, record: AppSecurityEventItem) =>
-        record.ruleName || t(`appSecurity.type.${record.ruleType}`),
-    },
-    {
-      title: t('appSecurity.events.colAction'),
-      dataIndex: 'action',
-      render: (v: string) => t(`appSecurity.action.${v}`),
-    },
-    { title: t('appSecurity.events.colCount'), dataIndex: 'hitCount', width: 80 },
-  ]
-
-  return (
-    <DSCard title={t('appSecurity.eventsTitle')}>
-      <DataTable<AppSecurityEventItem>
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        rowKey="id"
-        onRefresh={() => void load(page)}
-        refreshLoading={loading}
-        pagination={{
-          current: page,
-          pageSize: EVENT_PAGE_SIZE,
-          total,
-          onChange: (p) => void load(p),
-        }}
-      />
-    </DSCard>
-  )
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-}
-
 /**
- * 应用「安全」分区：内容脱敏配置（Agent 应用与流程应用通用）。
- * 每个选项独立成组且常显：内容脱敏卡片内嵌规则编辑器（开启才可维护，关闭不清空已配规则）；
- * 用户输入/工具调用结果/工具调用参数沿用内容规则；模型回复卡片内嵌自己专属的规则编辑器，与内容规则相互独立。
- * 每条规则可选处理策略（redact/mask/hash/block/flag）；安全事件卡片展示规则命中审计。
- * 保存后对对话与运行记录即时生效。
+ * 内容脱敏设置面板：总开关 + 各作用域开关 + 各自内嵌的规则编辑器（security 接口保存后即时生效，不经发布快照）。
+ * Agent 应用内嵌「配置」分区「内容脱敏」收缩卡片：经 registerSave 把保存回调注册给宿主页，
+ * 由页面「保存设置」把主配置与脱敏设置一次提交（面板不渲染保存按钮、不自行提示成功）；
+ * 流程应用保持「配置 → 安全」二级页（AppSecuritySection），面板自带保存按钮。
+ * 内容脱敏与模型回复各自维护独立规则（开启才显示编辑器，关闭不清空已配规则）；
+ * 用户输入/工具调用结果/工具调用参数沿用内容规则；每条规则可选处理策略（redact/mask/hash/block/flag）。
  */
-export function AppSecuritySection({ appId, canManage }: AppSecuritySectionProps) {
+export function AppSecuritySettingsPanel({ appId, canManage, registerSave }: AppSecuritySettingsPanelProps) {
   const { t } = useTranslation()
 
   const [loading, setLoading] = useState(true)
@@ -292,11 +197,13 @@ export function AppSecuritySection({ appId, canManage }: AppSecuritySectionProps
     void load()
   }, [load])
 
-  const handleSave = async () => {
+  /** 执行保存：自定义正则缺失时提示并抛错（嵌入态中断宿主整体保存；独立态由按钮 catch，全局中间件已提示） */
+  const saveRef = useRef<() => Promise<void>>(async () => {})
+  saveRef.current = async () => {
     const invalid = [...rules, ...modelOutputRules].some((rule) => rule.type === 'custom' && !rule.pattern?.trim())
     if (invalid) {
       feedback.error(t('appSecurity.patternRequired'))
-      return
+      throw new Error('custom pattern required')
     }
 
     setSaving(true)
@@ -311,91 +218,75 @@ export function AppSecuritySection({ appId, canManage }: AppSecuritySectionProps
         rules,
         modelOutputRules,
       })
-      feedback.success(t('appSecurity.saveSuccess'))
+      // 嵌入态由宿主「保存设置」统一提示成功
+      if (!registerSave) feedback.success(t('appSecurity.saveSuccess'))
       await load()
-    } catch {
-      // 错误已由全局请求中间件统一提示
     } finally {
       setSaving(false)
     }
   }
+
+  // 嵌入态：配置加载完成后才注册保存回调（加载中不注册，防宿主在回显前把默认值存库）；卸载/换应用时注销
+  useEffect(() => {
+    if (!registerSave || loading) return
+    registerSave(() => saveRef.current())
+    return () => registerSave(null)
+  }, [registerSave, loading])
 
   if (loading) {
     return null
   }
 
   return (
-    <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
-      {!canManage && <Alert type="info" showIcon message={t('appManage.memberHint')} />}
-
-      <DSCard title={t('appSecurity.masterTitle')}>
-        <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
-          <ScopeSwitch
-            description={t('appSecurity.enabledDesc')}
-            checked={enabled}
-            disabled={!canManage}
-            onChange={setEnabled}
-          />
-          {enabled && (
-            <>
-              <Divider style={{ margin: 0 }} />
-              <RuleSetEditor rules={rules} canManage={canManage} onChange={setRules} />
-            </>
-          )}
-        </Space>
-      </DSCard>
-
-      <DSCard title={t('appSecurity.scopeToolResult')}>
-        <ScopeSwitch
-          description={t('appSecurity.scopeToolResultDesc')}
-          checked={maskToolResult}
-          disabled={!canManage}
-          onChange={setMaskToolResult}
-        />
-      </DSCard>
-
-      <DSCard title={t('appSecurity.scopeToolArgs')}>
-        <ScopeSwitch
-          description={t('appSecurity.scopeToolArgsDesc')}
-          checked={maskToolArgs}
-          disabled={!canManage}
-          onChange={setMaskToolArgs}
-        />
-      </DSCard>
-
-      <DSCard title={t('appSecurity.scopeModelOutput')}>
-        <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
-          <ScopeSwitch
-            description={t('appSecurity.scopeModelOutputDesc')}
-            checked={maskModelOutput}
-            disabled={!canManage}
-            onChange={setMaskModelOutput}
-          />
-          {maskModelOutput && (
-            <>
-              <Divider style={{ margin: 0 }} />
-              <RuleSetEditor rules={modelOutputRules} canManage={canManage} onChange={setModelOutputRules} />
-            </>
-          )}
-        </Space>
-      </DSCard>
-
-      <DSCard title={t('appSecurity.scopeInput')}>
-        <ScopeSwitch
-          description={t('appSecurity.scopeInputDesc')}
-          checked={maskInput}
-          disabled={!canManage || !enabled}
-          onChange={setMaskInput}
-        />
-      </DSCard>
-
-      <SecurityEventsCard appId={appId} canManage={canManage} />
-
-      {canManage && (
-        <Button type="primary" loading={saving} onClick={() => void handleSave()}>
+    <div>
+      <Form layout="vertical" disabled={!canManage}>
+        <Form.Item label={t('appSecurity.masterTitle')} extra={t('appSecurity.enabledDesc')} style={{ marginBottom: spacing.sm }}>
+          <Switch checked={enabled} onChange={setEnabled} />
+        </Form.Item>
+        {enabled && <RuleSetEditor rules={rules} canManage={canManage} onChange={setRules} />}
+        <Divider style={{ margin: `${spacing.md}px 0` }} />
+        <Form.Item label={t('appSecurity.scopeToolResult')} extra={t('appSecurity.scopeToolResultDesc')} style={{ marginBottom: spacing.sm }}>
+          <Switch checked={maskToolResult} onChange={setMaskToolResult} />
+        </Form.Item>
+        <Form.Item label={t('appSecurity.scopeToolArgs')} extra={t('appSecurity.scopeToolArgsDesc')} style={{ marginBottom: spacing.sm }}>
+          <Switch checked={maskToolArgs} onChange={setMaskToolArgs} />
+        </Form.Item>
+        <Form.Item label={t('appSecurity.scopeModelOutput')} extra={t('appSecurity.scopeModelOutputDesc')} style={{ marginBottom: spacing.sm }}>
+          <Switch checked={maskModelOutput} onChange={setMaskModelOutput} />
+        </Form.Item>
+        {maskModelOutput && <RuleSetEditor rules={modelOutputRules} canManage={canManage} onChange={setModelOutputRules} />}
+        <Divider style={{ margin: `${spacing.md}px 0` }} />
+        <Form.Item label={t('appSecurity.scopeInput')} extra={t('appSecurity.scopeInputDesc')} style={{ marginBottom: 0 }}>
+          {/* 用户输入脱敏受内容脱敏总开关门控（总开关关闭时不可开启） */}
+          <Switch checked={maskInput} disabled={!enabled} onChange={setMaskInput} />
+        </Form.Item>
+      </Form>
+      {canManage && !registerSave && (
+        <Button
+          type="primary"
+          style={{ marginTop: spacing.md }}
+          loading={saving}
+          onClick={() => void saveRef.current().catch(() => {})}
+        >
           {t('appSecurity.save')}
         </Button>
       )}
+    </div>
+  )
+}
+
+/**
+ * 应用「安全」分区（流程应用「配置 → 安全」二级页）：成员提示 + 内容脱敏设置面板。
+ * Agent 应用已不挂独立「安全」菜单，安全设置由「配置」分区「安全」收缩卡片承载（AppSecuritySettingsPanel）；
+ * 安全事件审计移至「日志」分区（AppSecurityEventsCard）。
+ */
+export function AppSecuritySection({ appId, canManage }: AppSecuritySectionProps) {
+  const { t } = useTranslation()
+
+  return (
+    <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
+      {!canManage && <Alert type="info" showIcon message={t('appManage.memberHint')} />}
+      <AppSecuritySettingsPanel appId={appId} canManage={canManage} />
     </Space>
   )
 }

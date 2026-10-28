@@ -40,7 +40,7 @@ public class OAuthBindAccountByCodeCommandHandler : IRequestHandler<OAuthBindAcc
         var oauthBindUserProfile = default(OAuthBindUserProfile);
         try
         {
-            oauthBindUserProfile = await _profileService.GetProfileAsync(request.OAuthId, request.Code, cancellationToken);
+            oauthBindUserProfile = await _profileService.GetProfileAsync(request.OAuthId, request.Code, request.RedirectUrl, cancellationToken);
         }
         catch (BusinessException)
         {

@@ -18,6 +18,11 @@ public class AppItem
     public long TeamId { get; set; }
 
     /// <summary>
+    /// 所属团队名称.
+    /// </summary>
+    public string TeamName { get; set; } = default!;
+
+    /// <summary>
     /// 应用名称.
     /// </summary>
     public string Name { get; set; } = default!;
@@ -71,4 +76,14 @@ public class AppItem
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }
+
+    /// <summary>
+    /// 使用次数（累计会话数，与用量监控的会话数同口径；团队列表接口不填充）.
+    /// </summary>
+    public int UseCount { get; set; }
+
+    /// <summary>
+    /// 应用开通的外部渠道列表（如飞书机器人单聊入口），未开通为空列表.
+    /// </summary>
+    public IReadOnlyList<AppExternalChannelItem> ExternalChannels { get; set; } = [];
 }

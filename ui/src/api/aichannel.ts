@@ -16,6 +16,7 @@ import type {
   QueryAIModelListCommandResponseItem,
   SyncAIModelCommand,
   SyncAIModelCommandResponse,
+  SyncAIModelCandidateItem,
   UpdateAIChannelCommand,
   UpdateAIModelAuthorizationCommand,
   UpdateAIModelCommand,
@@ -29,6 +30,8 @@ export type AIChannelItem = QueryAIChannelListCommandResponseItem
 export type AIModelItem = QueryAIModelListCommandResponseItem
 /** 模型元数据（Kiota 生成类型别名）. */
 export type AIModelMeta = AIChannelModelMeta
+/** 同步候选模型（Kiota 生成类型别名）. */
+export type SyncModelCandidate = SyncAIModelCandidateItem
 
 export interface CreateAIChannelPayload {
   providerKey: string
@@ -131,7 +134,7 @@ async function importModels(payload: ImportAIModelPayload): Promise<void> {
 async function syncModel(channelId: string): Promise<SyncAIModelCommandResponse> {
   const client = getApiClient()
   const res = await client.api.ai.model.sync.post({ channelId: channelId as Guid } as SyncAIModelCommand)
-  return res ?? { total: 0, added: 0, skipped: 0 }
+  return res ?? { total: 0, items: [] }
 }
 
 /** 模型授权与额度查询响应（Kiota 生成类型别名）. */
