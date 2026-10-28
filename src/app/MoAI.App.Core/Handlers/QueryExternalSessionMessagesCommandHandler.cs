@@ -29,6 +29,7 @@ public class QueryExternalSessionMessagesCommandHandler : IRequestHandler<QueryE
         var externalUserId = ExternalAppAccessValidator.EnsureExternalUser(request.Context);
 
         var session = await _databaseContext.AppAgentSessions
+            .Where(x => _databaseContext.Apps.Any(app => app.Id == x.AppId))
             .Where(x => x.Id == request.SessionId)
             .Select(x => new { x.Id, x.Title, x.AppId, x.TeamId, x.CreateUserId })
             .FirstOrDefaultAsync(cancellationToken);

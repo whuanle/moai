@@ -83,6 +83,17 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      */
     get userconfig(): UserconfigRequestBuilder;
     /**
+     * 删除应用，保留历史记录；仅团队 Owner/Admin 可操作，被其它应用引用时拒绝删除.
+     * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
+     * @returns {Promise<EmptyCommandResponse>}
+     * @throws {BusinessValidationResult} error when the service returns a 400 status code
+     * @throws {BusinessValidationResult} error when the service returns a 401 status code
+     * @throws {BusinessValidationResult} error when the service returns a 403 status code
+     * @throws {BusinessValidationResult} error when the service returns a 409 status code
+     * @throws {BusinessValidationResult} error when the service returns a 500 status code
+     */
+     delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
+    /**
      * 查询应用详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAppCommandResponse>}
@@ -105,6 +116,12 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * @throws {BusinessValidationResult} error when the service returns a 500 status code
      */
      put(body: UpdateAppCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
+    /**
+     * 删除应用，保留历史记录；仅团队 Owner/Admin 可操作，被其它应用引用时拒绝删除.
+     * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
+     * @returns {RequestInformation}
+     */
+     toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
      * 查询应用详情，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -172,6 +189,19 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
  * Metadata for all the requests in the request builder.
  */
 export const AppItemRequestBuilderRequestsMetadata: RequestsMetadata = {
+    delete: {
+        uriTemplate: AppItemRequestBuilderUriTemplate,
+        responseBodyContentType: "application/json",
+        errorMappings: {
+            400: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
+            401: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
+            403: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
+            409: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
+            500: createBusinessValidationResultFromDiscriminatorValue as ParsableFactory<Parsable>,
+        },
+        adapterMethodName: "send",
+        responseBodyFactory:  createEmptyCommandResponseFromDiscriminatorValue,
+    },
     get: {
         uriTemplate: AppItemRequestBuilderUriTemplate,
         responseBodyContentType: "application/json",

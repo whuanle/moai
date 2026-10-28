@@ -28,7 +28,9 @@ internal sealed class TestSqliteContext : IDisposable
         var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
         var services = new ServiceCollection();
-        services.AddSingleton(Mock.Of<MoAI.Infra.Services.IIdProvider>());
+        var idProvider = new Mock<MoAI.Infra.Services.IIdProvider>();
+        idProvider.Setup(x => x.NextId()).Returns(1);
+        services.AddSingleton(idProvider.Object);
         services.AddSingleton(Mock.Of<MoAI.Infra.Services.IUserContextProvider>());
         var provider = services.BuildServiceProvider();
         var options = new DbContextOptionsBuilder<DatabaseContext>().UseSqlite(connection).Options;

@@ -221,6 +221,7 @@ export function AppWorkspace() {
           detail={detail}
           canManage={canManage}
           onReload={() => load(true)}
+          onDeleted={() => navigate(isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}/apps`, { replace: true })}
         />
       )
     }

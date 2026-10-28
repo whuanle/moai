@@ -39,6 +39,8 @@ docker run -d --name moai -p 8080:8080 \
 
 要点：Compose 以 `.env` 为唯一来源生成 `configs/system.json`（挂载路径由 `MOAI_CONFIG_FILE` 指定），无需手写；存储为纯 S3 实现，`Storage.Endpoint` 须浏览器可达（可用 `.env` 的 `S3_ENDPOINT` 配自定义域名，见 [docker.md 3.1](./docker.md)）；`rustfs-init` 自动建桶；OpenSandbox 为独立容器、沙箱镜像只拉不部署；图数据库按需接入（[docker.md 第 7 节](./docker.md)）。
 
+可选图数据库统一管理：见 [docker.md 第 7 节](./docker.md#7-知识图谱可选接入-memgraph)（[@DEP-S19](./bdd.md#dep-s19)、[@DEP-S20](./bdd.md#dep-s20)）。
+
 ## 3. 升级 / 回滚
 
 ```bash

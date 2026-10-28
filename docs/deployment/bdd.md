@@ -125,4 +125,18 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Given 已 docker login（免密推送）
     When 执行 bash deploy/publish.sh
     Then 推送 whuanle/moai:<tag> 与 whuanle/moai:latest
+
+Feature: 可选知识图谱数据库
+  @DEP-S19 @manual
+  Scenario: 图数据库统一管理且默认按需启动
+    Given 团队需要使用知识图谱且本机连接端口可用
+    When 单独启动图数据库服务
+    Then 图数据库归入现有平台容器分组且可以执行查询
+    And 未选择图数据库能力时默认部署不启动该服务
+
+  @DEP-S20 @manual
+  Scenario: 图数据库正常重启后保留数据
+    Given 图数据库已保存测试节点
+    When 正常重启图数据库
+    Then 测试节点仍可查询
 ```

@@ -2,12 +2,17 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { AppWorkspace } from '../AppWorkspace'
-import { getAppAgentConfig, getAppDetail, publishApp } from '@/api/app'
+import { deleteApp, getAppAgentConfig, getAppDetail, publishApp } from '@/api/app'
 
 vi.mock('@/api/classify', () => ({
   classifyApi: { getClassifies: vi.fn().mockResolvedValue([]) },
   classifyLabel: (c: { emoji?: string | null; name?: string | null }) => [c?.emoji, c?.name].filter(Boolean).join(' '),
   ClassifyType: { Plugin: 'plugin', App: 'app', Kb: 'kb', Prompt: 'prompt', Skill: 'skill' },
+}))
+vi.mock('@/api/publication', () => ({
+  getTeamPublicationList: vi.fn().mockResolvedValue([]),
+  applyPublication: vi.fn(),
+  withdrawPublication: vi.fn(),
 }))
 vi.mock('@/api/app', () => ({
   getAppDetail: vi.fn(),
@@ -33,6 +38,7 @@ vi.mock('@/api/app', () => ({
   getMemoryDefaults: vi.fn().mockResolvedValue({ prompt: '平台默认记忆提示词' }),
   SECURITY_RULE_TYPES: ['phone', 'idCard', 'email', 'bankCard', 'custom'],
   updateApp: vi.fn(),
+  deleteApp: vi.fn().mockResolvedValue(undefined),
   uploadAppAvatar: vi.fn(),
   publishApp: vi.fn(),
   unpublishApp: vi.fn(),
@@ -62,6 +68,8 @@ function renderPage(path = '/team/3/app/a1') {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/team/:teamId/app/:appId/:section?" element={<AppWorkspace />} />
+        <Route path="/team/:teamId/apps" element={<div>内部应用列表</div>} />
+        <Route path="/team/:teamId/externalApps" element={<div>外部应用列表</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -80,6 +88,22 @@ describe('AppWorkspace（应用工作台）', () => {
       publishStatus: 0,
       myRole: 2,
     } as never)
+  })
+
+  it.each([
+    { isExternal: false, list: '内部应用列表' },
+    { isExternal: true, list: '外部应用列表' },
+  ])('删除成功返回对应列表：$list', async ({ isExternal, list }) => {
+    vi.mocked(getAppDetail).mockResolvedValue({
+      appId: 'a1', teamId: '3', name: '客服助手', appType: 'agent',
+      isExternal, publishStatus: 0, myRole: 2,
+    } as never)
+    renderPage('/team/3/app/a1/info')
+    fireEvent.click(await screen.findByRole('button', { name: '删除应用' }))
+    const buttons = await screen.findAllByRole('button', { name: '删除应用' })
+    fireEvent.click(buttons[buttons.length - 1])
+    expect(await screen.findByText(list)).toBeTruthy()
+    expect(deleteApp).toHaveBeenCalledExactlyOnceWith('a1')
   })
 
   it('内部应用展示配置/信息/日志/外部渠道菜单项：内容脱敏与长期记忆并入配置收缩卡片、监控并入日志 Tab，无独立安全/记忆/监控菜单与访问点', async () => {

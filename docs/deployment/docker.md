@@ -14,7 +14,7 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 
 两种形态的**唯一差异是外部依赖从哪来**；`moai` 容器本身完全一致，配置统一通过 `configs/system.json` 注入。
 
-> 图数据库（Memgraph / Neo4j）**不内置**。知识图谱模块为可选能力，需要时按 [第 7 节](#7-知识图谱可选接入-memgraph) 单独部署并接入。
+> 知识图谱为可选能力：Compose 提供按需启动的 Memgraph，也可接入外部 Memgraph / Neo4j，见 [第 7 节](#7-知识图谱可选接入-memgraph)。
 
 ## 2. 前置条件
 
@@ -241,23 +241,22 @@ PUSH=0 bash deploy/publish.sh
 
 ## 7. 知识图谱（可选接入 Memgraph）
 
-知识图谱模块不随 compose 内置。需要时单独部署图数据库并接入：
+Compose 提供 `knowledgegraph` profile 下的 `memgraph` 服务，默认部署不启动。需要时在仓库根目录执行：
 
 ```bash
-docker run -itd --name memgraph \
-  -p 7687:7687 -p 17444:7444 \
-  -v memgraph_data:/var/lib/memgraph \
-  -e MEMGRAPH="--storage-snapshot-interval-sec=300 --storage-snapshot-on-exit=true" \
-  memgraph/memgraph-mage
+docker compose up -d memgraph
+docker compose ps memgraph
 ```
+
+容器名 `moai-memgraph`，Docker Desktop 中与其他依赖同属 `moai` 分组；数据卷为 `moai_memgraph_data`。仅发布本机 `127.0.0.1:7687`，同一 Compose 网络内可通过服务名访问。
 
 然后在 MoAI「系统设置 → 图数据库」中开启并填写：
 
-- 连接地址：`bolt://<host>:7687`（MoAI 容器内访问宿主机用 `bolt://host.docker.internal:7687`，Linux 需给 moai 容器加 `--add-host host.docker.internal:host-gateway`）
+- 连接地址：本地 `dotnet run` 填 `bolt://127.0.0.1:7687`；同一 Compose 内的 MoAI 容器填 `bolt://memgraph:7687`；外部数据库填其可达地址
 - 用户名/密码：留空（Memgraph 社区版默认无鉴权）
 - 方言：`memgraph`（接入外部 Neo4j 时选 `neo4j`）
 
-> 社区版 Memgraph 默认纯内存，务必保留 `--storage-snapshot-interval-sec` 与 `--storage-snapshot-on-exit=true`，否则容器重启丢图。
+> Compose 已配置 300 秒快照与正常退出快照，须保留数据卷；异常退出仍可能丢失最近快照后的变更。默认未设数据库账号，仅用于本机/可信容器网络；不要直接开放公网端口。
 
 ## 8. 升级 / 回滚 / 备份
 

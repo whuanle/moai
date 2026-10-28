@@ -23,6 +23,7 @@
   - 组合约束：内部应用 `is_auth` 必须为 false、外部应用 `is_public` 必须为 false；创建/更新时校验（非法组合 400）。
   - **废弃 `enable_foreign`**：已从实体/配置/命令/DTO/前端移除（库列一并删除）。
 - 名称在**团队未删除范围内唯一**（应用层校验，重名 409）；`app` 表无 partial 唯一索引（沿用既有表设计，冲突由 Handler 兜底）。
+- **应用删除（2026-10-23）**：内部/外部 Agent 与流程应用统一由团队 Owner/Admin 删除，Controller 做角色门禁，Handler 使用框架软删除；其他存续应用的草稿或发布快照仍引用目标时拒绝删除。历史数据和渠道连接保留，飞书、钉钉与企业微信的应用渠道绑定随目标应用解除；按会话标识访问时同步校验应用存在性，避免绕过已删除应用；名称可重新使用。行为见 [@AP-S109](./bdd.md#ap-s109)~[@AP-S112](./bdd.md#ap-s112)，验证见 [TDD](./tdd.md)。
 - 审计属性由 `DatabaseContext` 审计钩子自动注入；`is_deleted` 沿用 legacy **bigint**（0=未删除）。
 - 与既有 `app_chatapp` / `app_workflow_design` 等 legacy 表无关联，本期不读写它们。
 

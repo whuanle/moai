@@ -87,6 +87,12 @@ export async function getAppDetail(appId: string) {
   return client.api.app.byId(appId).get()
 }
 
+/** 删除应用（软删除），仅团队管理员可操作。 */
+export async function deleteApp(appId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.byId(appId).delete()
+}
+
 export async function createApp(payload: {
   teamId: number
   name: string
