@@ -201,31 +201,6 @@
       },
       "invalidTtl": "存活时间上限必须是 60~604800 之间的整数（秒）",
       "invalidFormat": "数量格式无效：CPU 例如 4 或 2000m；内存例如 8Gi 或 512Mi"
-    },
-    "compaction": {
-      "title": "Agent 上下文压缩默认参数",
-      "toolResult": {
-        "name": "工具结果折叠阈值（消息数）",
-        "desc": "消息数超过该值时折叠旧工具结果"
-      },
-      "preserveTurns": {
-        "name": "滑动窗口保留轮数",
-        "desc": "超过保留轮数的旧对话轮次被折叠"
-      },
-      "summarizeTokens": {
-        "name": "摘要触发 token",
-        "desc": "启用摘要后，token 超过该值触发旧对话摘要"
-      },
-      "hardLimit": {
-        "name": "紧急截断 token 上限",
-        "desc": "上下文超过该值时强制截断最旧消息"
-      },
-      "summarization": {
-        "name": "启用 LLM 摘要压缩",
-        "desc": "开启后超过摘要触发阈值时用摘要模型压缩旧对话；关闭则仅做无损压缩"
-      },
-      "overrideHint": "应用可在其执行参数中按字段覆盖上述默认值。",
-      "invalidValue": "压缩参数取值超出允许范围。"
     }
   },
   "oauthconnect": {
@@ -1994,6 +1969,9 @@
     "versionRequired": "请填写应用版本号",
     "applyVersionHint": "上架自动记录应用当前发布版本（当前 {{version}}），无需单独填写。",
     "applyReasonLabel": "申请理由",
+    "externalPublishCard": "发布",
+    "externalPublishHint": "外部应用直接发布即生效，无需审批；外部用户通过访问点使用已发布的版本。",
+    "externalUnpublishConfirm": "确定撤回发布？撤回后外部用户将无法访问该应用。",
     "groupMemory": "长期记忆",
     "groupMemoryDesc": "长期记忆开关、向量化模型、记忆提示词与检索参数"
   },
@@ -2200,7 +2178,8 @@
     "a2aAddressPlaceholder": "正在获取服务地址……",
     "a2aMethods": "JSON-RPC 方法",
     "a2aAuthHint": "POST 端点为 A2A JSON-RPC（message/send、message/stream、tasks/get、tasks/cancel），GET {地址}/agent.json 为 Agent Card；鉴权携带勾选「应用 A2A」范围的应用接入 key。",
-    "menuPublication": "上架管理"
+    "menuPublication": "上架管理",
+    "menuPublish": "发布"
   },
   "appChannels": {
     "cardTitle": "飞书渠道",

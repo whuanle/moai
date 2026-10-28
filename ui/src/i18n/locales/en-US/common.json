@@ -201,31 +201,6 @@
       },
       "invalidTtl": "Lifetime limit must be an integer between 60 and 604800 seconds",
       "invalidFormat": "Invalid quantity format: CPU e.g. 4 or 2000m; memory e.g. 8Gi or 512Mi"
-    },
-    "compaction": {
-      "title": "Agent Context Compaction Defaults",
-      "toolResult": {
-        "name": "Tool result collapse threshold (messages)",
-        "desc": "Older tool results are collapsed beyond this message count"
-      },
-      "preserveTurns": {
-        "name": "Sliding window turns",
-        "desc": "Conversation turns beyond this count are folded"
-      },
-      "summarizeTokens": {
-        "name": "Summarization trigger tokens",
-        "desc": "When summarization is enabled, older turns are summarized beyond this token count"
-      },
-      "hardLimit": {
-        "name": "Hard truncation token limit",
-        "desc": "Oldest messages are force-truncated beyond this token count"
-      },
-      "summarization": {
-        "name": "Enable LLM summarization",
-        "desc": "When enabled, older turns are compressed by a summarizer model beyond the trigger threshold; otherwise lossless compaction only"
-      },
-      "overrideHint": "Apps may override these defaults field by field in their execution settings.",
-      "invalidValue": "Compaction values are out of the allowed range."
     }
   },
   "oauthconnect": {
@@ -1994,6 +1969,9 @@
     "versionRequired": "Please enter the app version",
     "applyVersionHint": "Listing records the app's current published version ({{version}}) automatically; no need to enter it.",
     "applyReasonLabel": "Reason",
+    "externalPublishCard": "Publish",
+    "externalPublishHint": "External apps go live immediately after publishing — no approval required. External users use the published version via access points.",
+    "externalUnpublishConfirm": "Unpublish this app? External users will no longer be able to access it.",
     "groupMemory": "Long-term Memory",
     "groupMemoryDesc": "Memory switch, embedding model, memory prompt and retrieval settings"
   },
@@ -2131,7 +2109,8 @@
     "a2aAddressPlaceholder": "Fetching server address……",
     "a2aMethods": "JSON-RPC methods",
     "a2aAuthHint": "POST endpoint speaks A2A JSON-RPC (message/send, message/stream, tasks/get, tasks/cancel); GET {address}/agent.json serves the Agent Card. Auth via an app access key with the \"App A2A\" scope.",
-    "menuPublication": "Publication"
+    "menuPublication": "Publication",
+    "menuPublish": "Publish"
   },
   "appChannels": {
     "cardTitle": "Feishu Channels",

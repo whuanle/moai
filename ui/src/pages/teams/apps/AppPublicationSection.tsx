@@ -44,6 +44,7 @@ export interface AppPublicationSectionProps {
  * 版本号只能递增不能回退；发布即把当前草稿推入快照，幂等可重发）与「撤回发布」（撤回时已上架的应用自动下架）；
  * 「上架管理（应用市场）」卡——公开（is_public）需系统管理员审批，未公开可「申请上架」（无需填版本号，自动记录应用当前发布版本）、
  * 已公开可「下架」；「申请记录」卡展示历次申请。成员只读。
+ * 外部应用（detail.isExternal）无上架审批概念：仅渲染「团队应用」发布卡，直接发布即生效，不加载申请记录。
  */
 export function AppPublicationSection({ teamId, appId, detail, canManage, configStatus, onConfigStatusChange, onReload }: AppPublicationSectionProps) {
   const { t } = useTranslation()
@@ -59,7 +60,12 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
   const [applyForm] = Form.useForm<{ applyReason?: string }>()
   const [publishForm] = Form.useForm<{ version: string }>()
 
+  // 外部应用：无上架审批概念（不公开到平台），分区收敛为仅发布
+  const isExternal = detail?.isExternal === true
+
   const loadPublications = useCallback(async () => {
+    // 外部应用不公开到平台，无上架申请记录可查
+    if (isExternal) return
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setPublicationLoading(true)
     try {
@@ -71,7 +77,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
     } finally {
       setPublicationLoading(false)
     }
-  }, [teamId, appId])
+  }, [teamId, appId, isExternal])
 
   useEffect(() => {
     void loadPublications()
@@ -278,9 +284,11 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
 
   return (
     <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
-      {/* 卡片一：团队应用——团队发布状态与发布入口（发布/重新发布带版本号弹窗、撤回发布）；发布=团队内可用最新版 */}
-      <DSCard title={t('appManage.teamAppCard')}>
+      {/* 卡片一：团队应用——团队发布状态与发布入口（发布/重新发布带版本号弹窗、撤回发布）；发布=团队内可用最新版；
+          外部应用仅此一卡：直接发布即生效，外部用户通过访问点使用已发布版本 */}
+      <DSCard title={t(isExternal ? 'appManage.externalPublishCard' : 'appManage.teamAppCard')}>
         <Space direction="vertical" size={spacing.sm} style={{ width: '100%' }}>
+          {isExternal && <Text type="secondary" style={{ fontSize: fontSize.xs }}>{t('appManage.externalPublishHint')}</Text>}
           <Space size={spacing.sm} wrap>
             <Text type="secondary">{t('appManage.publicationOnlineVersion')}</Text>
             {isPublished ? (
@@ -299,7 +307,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
                 )}
                 {canManage && (
                   <Popconfirm
-                    title={t('appManage.unpublishConfirm')}
+                    title={t(isExternal ? 'appManage.externalUnpublishConfirm' : 'appManage.unpublishConfirm')}
                     okText={t('appManage.confirm')}
                     cancelText={t('appManage.cancel')}
                     onConfirm={() => {
@@ -338,7 +346,9 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
           </Space>
         </Space>
       </DSCard>
-      {/* 卡片二：上架管理（应用市场）——公开状态、市场发布版本号与下架（上架=全平台可用） */}
+      {/* 卡片二：上架管理（应用市场）——公开状态、市场发布版本号与下架（上架=全平台可用）；外部应用不公开到平台，隐藏此卡与申请记录 */}
+      {!isExternal && (
+        <>
       <DSCard title={t('appManage.sectionPublication')}>
         <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
           <Text type="secondary">{t('appManage.publicationHint')}</Text>
@@ -422,6 +432,9 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
           locale={{ emptyText: t('appManage.publicationRecordsEmpty') }}
         />
       </DSCard>
+        </>
+      )}
+      {!isExternal && (
       <Modal
         open={applyOpen}
         title={t('appManage.applyPublication')}
@@ -448,6 +461,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
           </Form.Item>
         </Form>
       </Modal>
+      )}
       {/* 发布弹窗（自工作台头部迁入）：版本号只在团队发布时设置，只能递增不能回退 */}
       <Modal
         open={publishOpen}

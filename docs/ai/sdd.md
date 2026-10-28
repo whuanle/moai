@@ -122,7 +122,7 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
 
 ## 增量设计（2026-10-12：压缩系统默认合并 + 子代理执行器 + 长期记忆挂点 + 派发器异常日志）
 
-- **压缩参数三级合并**：`AppCompactionStrategyFactory` 注入 `IAgentSettingsService`（Settings 模块），压缩参数按「应用 executionSettings 显式字段 > 系统设置 `AGENT_COMPACTION_DEFAULTS` > 内置常量」字段级合并（JsonNode 存在性判断）；`AppAgentExecutionSettings.Parse` 行为不变。
+- **压缩参数两级合并（2026-10-28 修订，系统设置级已下线，见 [../settings/sdd.md](../settings/sdd.md)）**：`AppCompactionStrategyFactory` 不再注入 Settings 模块，压缩参数按「应用 executionSettings 显式字段 > `AppAgentExecutionSettings` 内置默认值（16/16000/8/64000/关）」字段级合并（JsonNode 存在性判断）；`AppAgentExecutionSettings.Parse` 行为不变。
 - **子代理执行器 `SubAgentInvoker`**：主代理经 `spawn_subagent`（`SubAgentAppToolProvider`，Order=16，仅自我克隆）委派任务；子代理以本应用同配置在全新空上下文执行（`InlineChatHistoryProvider` 空历史、审批强制 auto、会话 id 沿用主会话复用沙箱、结论截断回传），`AppAgentBuildContext.IsSubAgent=true` 使 spawn 工具与记忆贡献者自动退出（深度固定 1）。**工具提供者禁止构造注入 `ISubAgentInvoker`**（AppContextProviderFactory → 全部工具提供者构成 DI 环），与 WorkflowAppToolProvider 同法惰性解析。
 - **长期记忆挂点**（实现见 [../memory/sdd.md](../memory/sdd.md)）：`MemoryAppToolProvider`（Order=22，memory_search/save/forget）+ `MemoryContextProviderContributor`（Order=30，每轮按用户消息检索注入；MAF `InvokingCoreAsync` 返回 null 会抛 `ArgumentNullException(aiContext)`，无可注入必须透传 `context.AIContext`）+ `AppChatFlushService` 落库后经 `IMemoryExtractionTrigger` 投递 MQ 提取任务（失败仅告警）。
 - **派发器异常日志**：`AppAgentDispatcher` 构造注入 logger，装配/运行两阶段异常记录堆栈（此前非 BusinessException 一律静默转为「对话运行失败」文案，排障困难）。

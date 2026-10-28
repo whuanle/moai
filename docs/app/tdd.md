@@ -272,3 +272,4 @@ cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck &&
 | @AP-S101 | local-dev/app-usecount-e2e.mjs（AU-03 删除会话后立即不回退 + AU-04 跨计数落库周期仍为 3） | PASS 13/13（2026-10-27） |
 | @AP-S102 | local-dev/app-usecount-e2e.mjs（AU-05 使用分析 useCount=3 / sessionCount=2 / userCount=1 双口径）+ AppLogsSection.test.tsx（使用分析卡片含累计使用次数） | PASS 13/13、9/9（2026-10-27） |
 | @AP-S103 | local-dev/app-usecount-e2e.mjs（AU-06 调试会话不进正式列表不推计数） | PASS 13/13（2026-10-27） |
+| @AP-S108 | AppPublicationSection.test.tsx（外部应用仅展示发布卡：发布带版本号预填 1.0.1/重新发布与撤回发布入口/无上架管理（应用市场）与申请记录卡且不请求申请列表）+ AppWorkspace.test.tsx（外部应用菜单含「发布」项、不含「上架管理」） | PASS 15/15、5/5（2026-10-28） |

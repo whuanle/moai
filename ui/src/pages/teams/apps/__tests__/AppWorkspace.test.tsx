@@ -98,7 +98,7 @@ describe('AppWorkspace（应用工作台）', () => {
     expect(screen.queryByRole('menuitem', { name: /访问点/ })).toBeNull()
   })
 
-  it('外部应用额外展示访问点菜单项，不展示外部渠道', async () => {
+  it('外部应用额外展示访问点与发布菜单项，不展示外部渠道与上架管理', async () => {
     vi.mocked(getAppDetail).mockResolvedValue({
       appId: 'a2',
       teamId: '3',
@@ -113,6 +113,9 @@ describe('AppWorkspace（应用工作台）', () => {
     renderPage('/team/3/app/a2')
 
     expect(await screen.findByRole('menuitem', { name: /访问点/ })).toBeTruthy()
+    // 外部应用无上架审批：菜单为「发布」（非「上架管理」），直接发布带版本号
+    expect(screen.getByRole('menuitem', { name: /发布/ })).toBeTruthy()
+    expect(screen.queryByRole('menuitem', { name: /上架管理/ })).toBeNull()
     expect(screen.queryByRole('menuitem', { name: /外部渠道/ })).toBeNull()
   })
 

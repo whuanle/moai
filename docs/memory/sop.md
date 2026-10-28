@@ -15,7 +15,6 @@ EnsureCreated 只对空库生效，存量库按顺序手动执行（幂等）：
 ```bash
 psql ... -f asserts/app_user_config.sql     # 补 memory_mode 列
 psql ... -f asserts/app_memory_shard.sql    # 建分片登记表
-psql ... -f asserts/setting.sql             # 补 AGENT_COMPACTION_DEFAULTS 设置种子
 ```
 
 缺列的典型报错：`column a.memory_mode does not exist`（userconfig 接口 500）。向量表 `__agent_mem_{appId}` 由首次写入自动创建，无需手动建。

@@ -11,33 +11,28 @@ using Microsoft.Extensions.Logging;
 using MoAI.AI.Models;
 using MoAI.AIChannel.Services;
 using MoAI.Database.Entities;
-using MoAI.Settings.Models;
-using MoAI.Settings.Services;
 
 namespace MoAI.AI.Services;
 
 /// <summary>
 /// 应用上下文压缩策略工厂：按 execution_settings 组装「工具结果折叠 → 摘要（可选）→ 滑动窗口 → 紧急截断」管线，
-/// 压缩参数按「应用显式配置 &gt; 系统默认（AGENT_COMPACTION_DEFAULTS 设置项）&gt; 内置常量」字段级合并.
+/// 压缩参数按「应用显式配置 &gt; <see cref="AppAgentExecutionSettings"/> 内置默认值」字段级合并.
 /// </summary>
 [InjectOnScoped]
 public sealed class AppCompactionStrategyFactory
 {
     private readonly IAiModelResolver _modelResolver;
     private readonly IChatClientProvider _chatClientProvider;
-    private readonly IAgentSettingsService _agentSettingsService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppCompactionStrategyFactory"/> class.
     /// </summary>
     /// <param name="modelResolver">模型解析.</param>
     /// <param name="chatClientProvider">对话客户端提供者.</param>
-    /// <param name="agentSettingsService">Agent 运行时系统默认参数读取服务.</param>
-    public AppCompactionStrategyFactory(IAiModelResolver modelResolver, IChatClientProvider chatClientProvider, IAgentSettingsService agentSettingsService)
+    public AppCompactionStrategyFactory(IAiModelResolver modelResolver, IChatClientProvider chatClientProvider)
     {
         _modelResolver = modelResolver;
         _chatClientProvider = chatClientProvider;
-        _agentSettingsService = agentSettingsService;
     }
 
     /// <summary>
@@ -48,8 +43,7 @@ public sealed class AppCompactionStrategyFactory
     /// <returns>压缩策略.</returns>
     public async Task<CompactionStrategy> BuildAsync(AppAgentConfigEntity? config, CancellationToken cancellationToken = default)
     {
-        var defaults = await _agentSettingsService.GetAgentCompactionDefaultsAsync(cancellationToken).ConfigureAwait(false);
-        var settings = ResolveSettings(config?.ExecutionSettings, defaults);
+        var settings = ResolveSettings(config?.ExecutionSettings);
         var strategies = new List<CompactionStrategy>
         {
             new ToolResultCompactionStrategy(CompactionTriggers.MessagesExceed(settings.ToolResultTriggerMessages)),
@@ -71,22 +65,13 @@ public sealed class AppCompactionStrategyFactory
     }
 
     /// <summary>
-    /// 字段级合并压缩参数：应用 execution_settings 显式携带的字段覆盖系统默认，未携带的字段用系统默认.
+    /// 字段级合并压缩参数：应用 execution_settings 显式携带的字段覆盖内置默认值，未携带的字段用内置默认值.
     /// </summary>
     /// <param name="executionSettingsJson">应用执行参数 JSON.</param>
-    /// <param name="defaults">系统默认压缩参数.</param>
     /// <returns>合并后的压缩参数.</returns>
-    private static AppAgentExecutionSettings ResolveSettings(string? executionSettingsJson, AgentCompactionDefaultsSettings defaults)
+    private static AppAgentExecutionSettings ResolveSettings(string? executionSettingsJson)
     {
-        var settings = new AppAgentExecutionSettings
-        {
-            ToolResultTriggerMessages = defaults.ToolResultTriggerMessages,
-            SummarizeTriggerTokens = defaults.SummarizeTriggerTokens,
-            PreserveTurns = defaults.PreserveTurns,
-            HardTokenLimit = defaults.HardTokenLimit,
-            EnableSummarization = defaults.EnableSummarization,
-            SummarizerModelId = defaults.SummarizerModelId,
-        };
+        var settings = new AppAgentExecutionSettings();
 
         if (string.IsNullOrWhiteSpace(executionSettingsJson))
         {

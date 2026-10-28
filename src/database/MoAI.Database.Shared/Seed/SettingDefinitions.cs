@@ -64,11 +64,6 @@ public static class SettingDefinitions
     /// </summary>
     public const string SystemNameKey = "SYSTEM_NAME";
 
-    /// <summary>
-    /// Agent 上下文压缩默认参数（JSON），应用未显式配置的字段按该默认值执行.
-    /// </summary>
-    public const string AgentCompactionDefaultsKey = "AGENT_COMPACTION_DEFAULTS";
-
     private static readonly List<SettingDefinition> BackingField = new()
     {
         new SettingDefinition
@@ -147,13 +142,6 @@ public static class SettingDefinitions
             Name = "网站名称",
             Description = "仅影响前端展示（侧边栏标题与浏览器标签页），留空使用配置文件默认名称.",
             DefaultValue = string.Empty
-        },
-        new SettingDefinition
-        {
-            Key = AgentCompactionDefaultsKey,
-            Name = "Agent 上下文压缩默认参数",
-            Description = "JSON 对象：toolResultTriggerMessages（工具结果折叠触发消息数）、summarizeTriggerTokens（摘要触发 token）、preserveTurns（滑动窗口保留轮数）、hardTokenLimit（紧急截断 token 上限）、enableSummarization（是否启用 LLM 摘要）、summarizerModelId（摘要模型 id，留空回落应用对话模型）；应用在执行参数中显式配置的字段优先生效.",
-            DefaultValue = "{\"toolResultTriggerMessages\":16,\"summarizeTriggerTokens\":16000,\"preserveTurns\":8,\"hardTokenLimit\":64000,\"enableSummarization\":false,\"summarizerModelId\":\"\"}"
         }
     };
 

@@ -47,7 +47,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 
 **前后端对接**（[真源](./docs/api_interface.md)）
 - 流程：写后端 Controller → `cd src/MoAI && dotnet run` → `cd ui && npm run syncapi`
-- 接口文档由 NSwag 自动生成，`/openapi/v1.json`，仅 Development 暴露；勿手写接口文档
+- 接口文档由 NSwag 自动生成：`/openapi/v1.json` 与 Scalar 仅 Development 暴露；外部接口文档 `/openapi/external.json` 全环境暴露（部署后唯一保留，其余 openapi/scalar 路径 404）；勿手写接口文档
 - 前后对接务必使用 kiota，禁止自行拼接 http 请求
 
 **文档**（[真源](./docs/DOC-STANDARD.md)）
@@ -89,6 +89,7 @@ node local-dev/wiki-workflow-e2e.mjs     # WK 27（默认工作流配置 + 多�
 node local-dev/wiki-recall-e2e.mjs      # WK 47（召回测试：参数校验/团队门禁 + 向量召回/文档范围过滤/相似度阈值 + AI 优化问题与生成回答 + 重排序接入与渠道故障降级 + 相邻片段上下文去重 @WK-S42；内置本地 OpenAI 兼容桩模型，无需真实模型渠道）
 node local-dev/wiki-source-e2e.mjs      # WS 66（外部源：权限与校验 + 爬虫真实抓取全链路 + 增量哈希比对 + 父页无变化仍发现新页面 + 强制全量 + 文档分页筛选 + 更新挡板/cron 语义 + 停用后同步 409 + 飞书源假凭证创建兜底 + 删除不删已入库文档；自带本地站点桩，无需外网）
 node local-dev/wiki-mcp-e2e.mjs         # WM 33（知识库 MCP 服务器：接入 key 鉴权/wiki_mcp 范围/wikiId 归属门禁 + 三只读工具（知识库列表/文件搜索/向量召回）+ 切片序号与相邻上下文去重 @WM-S7 + 无状态协议行为；内置本地桩 embedding）
+node local-dev/wiki-external-e2e.mjs    # WX 46（知识库外部开放接口：上传/提取/切割/AI 切割/向量化/删除/重命名/过滤 + 原文件下载 @WX-08 + 向量召回 recall/list 与读档分档 @WX-09 + 切片元数据生成 @WX-10；内置桩 embedding + 对话元数据桩，无需真实模型渠道）
 node local-dev/kg-text2cypher-e2e.mjs    # KT（知识图谱 Text2Cypher：实例绑定校验/schema 自描述/只读守卫/$kgId 隔离/行数截断/接入图；依赖 Memgraph，需含 kg_cypher_query 的新构建）
 node local-dev/kg-search-e2e.mjs         # KGS 46（知识图谱图检索：向量化同步/语义检索/绑定校验/工作流节点/召回测试；本地桩渠道，需含 SP-A 的新构建）
 node local-dev/kg-external-e2e.mjs       # KX 101（知识图谱外部接口：应用 token/团队隔离/类型节点边 CRUD/批量整批拒绝/kg_read·kg_write 分档/批量导入（类型名引用+业务 key 幂等 upsert+逐条失败报告）/validateOnly 预检/按 key 同步闭环（keys/list+edges/batch-delete）；依赖 Memgraph）

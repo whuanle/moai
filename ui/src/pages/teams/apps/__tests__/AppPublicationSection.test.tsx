@@ -157,6 +157,29 @@ describe('AppPublicationSection（上架管理分区）', () => {
     r2.unmount()
   })
 
+  it('外部应用：仅展示发布卡（发布带版本号/撤回发布），无上架审批与申请记录且不加载申请列表', async () => {
+    const { onReload } = renderSection({ ...DETAIL, isExternal: true }, true, 1)
+
+    expect(await screen.findByText(/外部应用直接发布即生效/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: /重新发布/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /撤回发布/ })).toBeTruthy()
+    // 外部应用不公开到平台：无上架管理（应用市场）卡与申请记录卡，也不请求申请列表
+    expect(screen.queryByText('上架管理（应用市场）')).toBeNull()
+    expect(screen.queryByText('申请记录')).toBeNull()
+    expect(getTeamPublicationList).not.toHaveBeenCalled()
+
+    // 发布弹窗仍带版本号：自动预填严格递增的下一版本（1.0.0 → 1.0.1），确认后携带版本发布
+    fireEvent.click(screen.getByRole('button', { name: /重新发布/ }))
+    const versionInput = await screen.findByLabelText('应用版本')
+    expect((versionInput as HTMLInputElement).value).toBe('1.0.1')
+    fireEvent.click(screen.getByRole('button', { name: /确\s*定/ }))
+
+    await waitFor(() => {
+      expect(publishApp).toHaveBeenCalledWith('a1', '1.0.1')
+      expect(onReload).toHaveBeenCalled()
+    })
+  })
+
   it('审核中：展示待审核标签并可撤回申请，撤回后刷新申请记录与工作台数据', async () => {
     vi.mocked(getTeamPublicationList).mockResolvedValue([
       record({ publicationId: '8', state: 'pending', reviewComment: null, reviewTime: null, updateUserName: null }),

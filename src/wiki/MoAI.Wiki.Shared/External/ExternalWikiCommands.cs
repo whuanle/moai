@@ -337,6 +337,35 @@ public class GetExternalWikiDocumentContentCommand : IRequest<SimpleString>, IMo
 }
 
 /// <summary>
+/// 获取知识库文档原始文件的预签名下载地址（外部接口）.
+/// 与读取提取后正文的 <see cref="GetExternalWikiDocumentContentCommand"/> 不同，本命令返回原始上传文件的下载 URL.
+/// </summary>
+public class DownloadExternalWikiDocumentCommand : IRequest<SimpleString>, IModelValidator<DownloadExternalWikiDocumentCommand>
+{
+    /// <summary>
+    /// 外部调用方身份，由 Controller 从接入 token 解析填充.
+    /// </summary>
+    [JsonIgnore]
+    public ExternalWikiCaller Caller { get; init; } = default!;
+
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
+    public long WikiId { get; init; }
+
+    /// <summary>
+    /// 文档 id.
+    /// </summary>
+    public long DocumentId { get; init; }
+
+    /// <inheritdoc/>
+    public static void Validate(AbstractValidator<DownloadExternalWikiDocumentCommand> validate)
+    {
+        // WikiId/DocumentId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段（无）.
+    }
+}
+
+/// <summary>
 /// 提取知识库文档内容（外部接口）.
 /// 文档上传后默认未提取内容，需先执行本命令生成内容，之后才能进行切割。
 /// </summary>
@@ -519,6 +548,59 @@ public class EmbedExternalDocumentCommand : IRequest<EmbeddingDocumentCommandRes
 }
 
 /// <summary>
+/// 为知识库文档切片生成元数据（外部接口）.
+/// 需先切割生成切片；未传切片 id 时处理该文档全部切片，返回生成的元数据条数.
+/// </summary>
+public class GenerateExternalDocumentChunksMetadataCommand : IRequest<SimpleInt>, IModelValidator<GenerateExternalDocumentChunksMetadataCommand>
+{
+    /// <summary>
+    /// 外部调用方身份，由 Controller 从接入 token 解析填充.
+    /// </summary>
+    [JsonIgnore]
+    public ExternalWikiCaller Caller { get; init; } = default!;
+
+    /// <summary>
+    /// 知识库 id.
+    /// </summary>
+    public long WikiId { get; init; }
+
+    /// <summary>
+    /// 文档 id.
+    /// </summary>
+    public long DocumentId { get; init; }
+
+    /// <summary>
+    /// 元数据生成使用的对话模型 id.
+    /// </summary>
+    public Guid MetadataModelId { get; init; }
+
+    /// <summary>
+    /// 目标切片 id；为空时表示当前文档全部切片.
+    /// </summary>
+    public IReadOnlyCollection<long> ChunkIds { get; init; } = Array.Empty<long>();
+
+    /// <summary>
+    /// 是否保留切片已有元数据并追加本次生成结果.
+    /// </summary>
+    public bool AppendExisting { get; init; }
+
+    /// <summary>
+    /// 元数据生成策略（可多选）；为空或空集合时生成全套（大纲/问题/关键词/摘要/聚合）.
+    /// </summary>
+    public IReadOnlyCollection<MetadataGenerationStrategy>? StrategyTypes { get; init; }
+
+    /// <inheritdoc/>
+    public static void Validate(AbstractValidator<GenerateExternalDocumentChunksMetadataCommand> validate)
+    {
+        // WikiId/DocumentId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
+        validate.RuleFor(x => x.MetadataModelId)
+            .NotEmpty().WithMessage("请选择元数据生成模型.");
+        validate.RuleForEach(x => x.ChunkIds)
+            .GreaterThan(0).WithMessage("切片 id 无效.");
+    }
+}
+
+/// <summary>
 /// 知识库向量召回（外部接口）：在单个知识库范围内检索与查询最相关的资料切片.
 /// </summary>
 public class QueryExternalWikiRecallCommand : IRequest<QueryExternalWikiRecallCommandResponse>, IModelValidator<QueryExternalWikiRecallCommand>
@@ -557,7 +639,7 @@ public class QueryExternalWikiRecallCommand : IRequest<QueryExternalWikiRecallCo
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryExternalWikiRecallCommand> validate)
     {
-        validate.RuleFor(x => x.WikiId).GreaterThan(0).WithMessage("知识库 id 不正确.");
+        // WikiId 由 Controller 从路由参数回填（MCP 工具由参数/路由解析），自动验证发生在回填之前，因此此处不校验.
         validate.RuleFor(x => x.Query).NotEmpty().WithMessage("请输入查询文本.").MaximumLength(1000).WithMessage("查询文本长度不能超过 1000.");
         validate.RuleFor(x => x.Top).InclusiveBetween(1, 50).WithMessage("返回条数必须在 1-50 之间.");
         validate.RuleFor(x => x.MinScore).InclusiveBetween(0d, 1d).WithMessage("相似度阈值必须在 0-1 之间.").When(x => x.MinScore.HasValue);

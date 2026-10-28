@@ -41,7 +41,8 @@ const CONFIG_GROUP_SECTIONS = ['info', 'publication', 'security', 'logs', 'monit
  * - 内部应用：左侧菜单承载 配置/信息/上架管理/日志/外部渠道（外部应用另有访问点），「配置」分区为左配置栏 + 右调试对话，
  *   安全（内容脱敏）与长期记忆并入「配置」分区收缩卡片；「日志」为 Tab 容器（日志/安全事件/使用分析，原「监控」分区并入、菜单移除）；
  * - 流程应用：头部 Tab（设计/调试/配置/运行历史），「调试」为会话式对话，「配置」下挂二级菜单（信息/上架管理/安全/日志/外部渠道，功能与内部应用一致）。
- * 面包屑与「进入对话/返回列表」页级操作在此；发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）。
+ * 面包屑与「进入对话/返回列表」页级操作在此；发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）；
+ * 外部应用同一分区收敛为「发布」（仅团队发布卡，无上架审批与申请记录，外部应用不公开到平台）。
  */
 export function AppWorkspace() {
   const { t } = useTranslation()
@@ -84,10 +85,12 @@ export function AppWorkspace() {
       { key: 'config', icon: <SettingOutlined />, label: t('appWorkspace.menuConfig') },
       { key: 'info', icon: <InfoCircleOutlined />, label: t('appWorkspace.menuInfo') },
     )
-    // 上架管理：内部应用单独成页（申请记录/拒绝原因/版本与草稿），外部应用不开放公开到平台
-    if (!isExternal) {
-      menuItems.push({ key: 'publication', icon: <CloudUploadOutlined />, label: t('appWorkspace.menuPublication') })
-    }
+    // 上架管理：内部应用单独成页（申请记录/拒绝原因/版本与草稿）；外部应用无上架审批，仅「发布」入口（发布弹窗带版本号）
+    menuItems.push({
+      key: 'publication',
+      icon: <CloudUploadOutlined />,
+      label: t(isExternal ? 'appWorkspace.menuPublish' : 'appWorkspace.menuPublication'),
+    })
     if (canManage) {
       menuItems.push(
         // 安全（内容脱敏）与长期记忆不再单独成菜单：Agent 应用并入「配置」分区收缩卡片（流程应用仍保留安全二级页）

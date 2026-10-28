@@ -25,7 +25,7 @@ ui/src/api/client/ 重新生成
 - 文档地址：`http://127.0.0.1:5000/openapi/v1.json`（内部接口，前端 Kiota 默认源）
 - 外部接口单独成文档：`http://127.0.0.1:5000/openapi/external.json`（`/api/external` 全部外部接口，前端 Kiota 不消费）
 - 可视化页面（Scalar）：`http://127.0.0.1:5000/scalar`，页面左上角下拉切换 `AI API`（v1 内部）与 `AI External API`（外部）两份文档；外部文档也可直达 `/scalar/external`
-- **仅在 Development 环境暴露**（`Program.cs` 中 `UseOpenApi` 包在 `IsDevelopment()` 分支里）
+- **暴露策略按环境区分**（`Program.cs`）：v1 文档与 Scalar 仅 Development 暴露；`/openapi/external.json` 全环境暴露——部署（非 Development）后仅保留此文档供第三方接入方获取，其余 `/openapi/**`、`/scalar/**` 一律 404（不落入 SPA 回退）
 - 文档的 `servers` 会写入 `MoAI:Server` 配置与实际监听地址，前端同步后 baseUrl 自动一致
 
 启动后端：
@@ -81,7 +81,7 @@ npm run syncapi
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| `openapi/v1.json` 404 | 非 Development 环境 | 加 `ASPNETCORE_ENVIRONMENT=Development` |
+| `openapi/v1.json` 404 | 非 Development 环境（v1 与 Scalar 仅开发暴露，部署后只有 `/openapi/external.json`） | 加 `ASPNETCORE_ENVIRONMENT=Development` |
 | syncapi 连接被拒 | 后端没起，或端口与 `MoAI:Port` 不一致 | 确认后端已启动，并显式传正确端口 |
 | 生成后类型报错 | Kiota 版本不匹配 | 锁定 `1.0.0-preview.93`，不要用 `^` 升级 |
 | 接口改了但前端没变 | 旧 `client/` 未清理 | 脚本已自动删除重建；仍异常则手动删 `src/api/client/` 后重跑 |

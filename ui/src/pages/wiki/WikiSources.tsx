@@ -9,7 +9,7 @@ import {
   ReloadOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
-import { Button, Drawer, Form, Input, Modal, Popconfirm, Space, Switch, Tag, Tooltip, Typography } from 'antd'
+import { Button, Col, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { DataTable, feedback } from '@/design-system'
@@ -605,6 +605,7 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
         maskClosable={false}
         destroyOnHidden
         width={640}
+        styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
       >
         <Form form={form} layout="vertical">
           {editing ? (
@@ -727,51 +728,75 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
 /**
  * 飞书文档源字段：沿用原有「选择已有连接 / 新建连接」两种绑定方式与节点参数。
  * 抽到独立组件是为了让爬虫源与飞书源的字段互不干扰，避免隐藏字段被一并校验。
- */function WikiSourceFeishuFields({ editing }: { editing: boolean }) {
+ * 布局对齐 WikiSourceCrawlerFormFields：长字段通栏，短字段/数字/开关双列，避免数字框与开关被拉伸成整行。
+ */
+function WikiSourceFeishuFields({ editing }: { editing: boolean }) {
   const { t } = useTranslation()
   return (
-    <>
-      <Form.Item label={t('wiki.source.feishuHint')} style={{ marginBottom: spacing.sm }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.source.feishuHintText')}</Text>
-      </Form.Item>
-      <Form.Item
-        name={'nodeToken' as never}
-        label={t('wiki.source.nodeToken')}
-        rules={[{ required: !editing, message: t('wiki.source.nodeTokenRequired') }, { max: 128 }]}
-      >
-        <Input placeholder={t('wiki.source.nodeTokenPlaceholder')} maxLength={128} />
-      </Form.Item>
-      <Form.Item
-        name={'feishuAppId' as never}
-        label={t('wiki.source.feishuApp')}
-        extra={t('wiki.source.feishuAppExtra')}
-      >
-        <Input placeholder={t('wiki.source.feishuAppPlaceholder')} maxLength={64} />
-      </Form.Item>
-      <Form.Item name={'newAppName' as never} label={t('wiki.source.newAppName')} rules={[{ max: 50 }]}>
-        <Input placeholder={t('wiki.source.newAppNamePlaceholder')} maxLength={50} />
-      </Form.Item>
-      <Form.Item name={'newAppId' as never} label={t('wiki.source.newAppId')} rules={[{ max: 64 }]}>
-        <Input placeholder="cli_xxxxxxxx" maxLength={64} />
-      </Form.Item>
-      <Form.Item name={'newAppSecret' as never} label={t('wiki.source.newAppSecret')} rules={[{ max: 128 }]}>
-        <Input.Password placeholder="AppSecret" maxLength={128} />
-      </Form.Item>
-      <Form.Item name={'newAppDomain' as never} label={t('wiki.source.newAppDomain')} extra={t('wiki.source.newAppDomainExtra')} rules={[{ max: 100 }]}>
-        <Input placeholder="https://open.feishu.cn" maxLength={100} />
-      </Form.Item>
-      <Form.Item name={'includeSubNodes' as never} valuePropName="checked" label={t('wiki.source.includeSubNodes')} initialValue>
-        <Switch />
-      </Form.Item>
-      <Form.Item name={'feishuMaxDepth' as never} label={t('wiki.source.maxDepth')} extra={t('wiki.source.maxDepthHint')}>
-        <Input type="number" min={0} max={10} />
-      </Form.Item>
-      <Form.Item name={'maxDocuments' as never} label={t('wiki.source.maxDocuments')} extra={t('wiki.source.maxDocumentsHint')}>
-        <Input type="number" min={0} max={1000} />
-      </Form.Item>
-      <Form.Item name={'isEventSubscription' as never} valuePropName="checked" label={t('wiki.source.eventSubscription')} extra={t('wiki.source.eventSubscriptionHint')}>
-        <Switch />
-      </Form.Item>
-    </>
+    <Row gutter={[16, 0]}>
+      <Col span={24}>
+        <Form.Item label={t('wiki.source.feishuHint')} style={{ marginBottom: spacing.sm }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.source.feishuHintText')}</Text>
+        </Form.Item>
+      </Col>
+      <Col span={24}>
+        <Form.Item
+          name={'nodeToken' as never}
+          label={t('wiki.source.nodeToken')}
+          rules={[{ required: !editing, message: t('wiki.source.nodeTokenRequired') }, { max: 128 }]}
+        >
+          <Input placeholder={t('wiki.source.nodeTokenPlaceholder')} maxLength={128} />
+        </Form.Item>
+      </Col>
+      <Col span={24}>
+        <Form.Item
+          name={'feishuAppId' as never}
+          label={t('wiki.source.feishuApp')}
+          extra={t('wiki.source.feishuAppExtra')}
+        >
+          <Input placeholder={t('wiki.source.feishuAppPlaceholder')} maxLength={64} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'newAppName' as never} label={t('wiki.source.newAppName')} rules={[{ max: 50 }]}>
+          <Input placeholder={t('wiki.source.newAppNamePlaceholder')} maxLength={50} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'newAppId' as never} label={t('wiki.source.newAppId')} rules={[{ max: 64 }]}>
+          <Input placeholder="cli_xxxxxxxx" maxLength={64} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'newAppSecret' as never} label={t('wiki.source.newAppSecret')} rules={[{ max: 128 }]}>
+          <Input.Password placeholder="AppSecret" maxLength={128} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'newAppDomain' as never} label={t('wiki.source.newAppDomain')} extra={t('wiki.source.newAppDomainExtra')} rules={[{ max: 100 }]}>
+          <Input placeholder="https://open.feishu.cn" maxLength={100} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'feishuMaxDepth' as never} label={t('wiki.source.maxDepth')} extra={t('wiki.source.maxDepthHint')}>
+          <InputNumber min={0} max={10} precision={0} style={{ width: '100%' }} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'maxDocuments' as never} label={t('wiki.source.maxDocuments')} extra={t('wiki.source.maxDocumentsHint')}>
+          <InputNumber min={0} max={1000} precision={0} style={{ width: '100%' }} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'includeSubNodes' as never} valuePropName="checked" label={t('wiki.source.includeSubNodes')} initialValue>
+          <Switch />
+        </Form.Item>
+      </Col>
+      <Col xs={24} sm={12}>
+        <Form.Item name={'isEventSubscription' as never} valuePropName="checked" label={t('wiki.source.eventSubscription')} extra={t('wiki.source.eventSubscriptionHint')}>
+          <Switch />
+        </Form.Item>
+      </Col>
+    </Row>
   )
 }
