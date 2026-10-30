@@ -26,6 +26,9 @@ internal partial class UserOauthConnectionConfiguration : IEntityTypeConfigurati
 
         entity.HasIndex(e => new { e.ProviderId, e.Sub, e.IsDeleted }, "idx_user_oauth_provider_id_sub_is_deleted_uindex").IsUnique();
 
+        entity.HasIndex(e => new { e.ProviderId, e.UnionId }, "idx_user_oauth_provider_id_union_id")
+            .HasFilter("union_id IS NOT NULL");
+
         entity.Property(e => e.Id)
             .HasComment("id")
             .HasColumnName("id");
@@ -47,6 +50,10 @@ internal partial class UserOauthConnectionConfiguration : IEntityTypeConfigurati
             .HasMaxLength(50)
             .HasComment("用户oauth对应的唯一id")
             .HasColumnName("sub");
+        entity.Property(e => e.UnionId)
+            .HasMaxLength(100)
+            .HasComment("用户oauth对应的租户级唯一id（飞书 union_id，跨应用一致）")
+            .HasColumnName("union_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

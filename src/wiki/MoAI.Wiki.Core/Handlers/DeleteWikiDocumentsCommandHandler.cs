@@ -7,6 +7,7 @@ using MoAI.Infra.Services;
 using MoAI.Storage.Services;
 using MoAI.Team.Services;
 using MoAI.Wiki.Commands;
+using MoAI.Wiki.Services;
 
 namespace MoAI.Wiki.Handlers;
 
@@ -19,6 +20,7 @@ public class DeleteWikiDocumentsCommandHandler : IRequestHandler<DeleteWikiDocum
     private readonly IStorageService _storageService;
     private readonly ITeamService _teamService;
     private readonly IUserContextProvider _userContextProvider;
+    private readonly WikiDocumentProcessingService _processingService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiDocumentsCommandHandler"/> class.
@@ -27,12 +29,14 @@ public class DeleteWikiDocumentsCommandHandler : IRequestHandler<DeleteWikiDocum
     /// <param name="storageService">存储领域服务.</param>
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
-    public DeleteWikiDocumentsCommandHandler(DatabaseContext databaseContext, IStorageService storageService, ITeamService teamService, IUserContextProvider userContextProvider)
+    /// <param name="processingService">文档内容处理服务.</param>
+    public DeleteWikiDocumentsCommandHandler(DatabaseContext databaseContext, IStorageService storageService, ITeamService teamService, IUserContextProvider userContextProvider, WikiDocumentProcessingService processingService)
     {
         _databaseContext = databaseContext;
         _storageService = storageService;
         _teamService = teamService;
         _userContextProvider = userContextProvider;
+        _processingService = processingService;
     }
 
     /// <inheritdoc/>
@@ -76,6 +80,9 @@ public class DeleteWikiDocumentsCommandHandler : IRequestHandler<DeleteWikiDocum
         await _storageService.DeleteFilesAsync(fileIds, cancellationToken);
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 删除关联的内嵌图片附件登记，并清理不再被引用的图片文件
+        await _processingService.DeleteDocumentImagesAsync((int)request.WikiId, deletedDocumentIds, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

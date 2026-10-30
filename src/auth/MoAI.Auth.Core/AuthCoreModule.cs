@@ -15,5 +15,6 @@ public class AuthCoreModule : IModule
     public void ConfigureServices(ServiceContext context)
     {
         context.Services.AddScoped<IOAuthUserProfileService, OAuthUserProfileService>();
+        context.Services.AddScoped<IEmailCodeService, EmailCodeService>();
     }
 }

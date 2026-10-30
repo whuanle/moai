@@ -257,7 +257,7 @@ async function main() {
     const body = { teamId: TID, name }
     if (scopes) body.scopes = scopes
     const r = await api('POST', '/api/access-app', { token: owner.token, body })
-    return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? '') }
+    return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? ''), secret: String(r.json?.secret ?? '') }
   }
   const K1 = await mkKey(`acp-k1-${TS}`, ['app_acp', 'app_chat'])
   const K2 = await mkKey(`acp-k2-${TS}`, ['wiki_read'])
@@ -319,7 +319,7 @@ async function main() {
 
   // ===== ACP-S11 用户 token 路径（外部应用 A3：用户 token 换取要求 IsExternal） =====
   const EXT_UID = `acp-user-${TS}`
-  const tok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, appId: A3, externalUserId: EXT_UID, nickname: 'acp用户' } })
+  const tok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, secret: K1.secret, appId: A3, externalUserId: EXT_UID, nickname: 'acp用户' } })
   const userToken = String(tok.json?.accessToken ?? '')
   const snU = await acp({ token: userToken }, A3, { jsonrpc: '2.0', id: 9, method: 'session/new', params: {} })
   const SIDU = String(snU.json?.result?.sessionId ?? '')
@@ -374,7 +374,7 @@ async function main() {
   check('ACP-S17 吊销 app_acp 后立即 403', revoked.status === 403 && revoked.json?.error?.code === 'insufficient_scope', JSON.stringify(revoked.json).slice(0, 120))
 
   // ===== ACP-S18 app token（无外部用户语义）403 =====
-  const appTok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key } })
+  const appTok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, secret: K1.secret } })
   const appTokAcp = await acp({ token: String(appTok.json?.accessToken ?? '') }, A1, { jsonrpc: '2.0', id: 20, method: 'initialize', params: {} })
   check('ACP-S18 app token 403 external_user_token_unsupported',
     appTokAcp.status === 403 && appTokAcp.json?.error?.code === 'external_user_token_unsupported', JSON.stringify(appTokAcp.json).slice(0, 140))

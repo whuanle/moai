@@ -34,6 +34,13 @@ public class DeleteAIModelCommandHandler : IRequestHandler<DeleteAIModelCommand,
             throw new BusinessException("未找到模型，请检查 id 是否正确.") { StatusCode = 404 };
         }
 
+        var channelExist = await _databaseContext.AiChannels
+            .AnyAsync(x => x.Id == model.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);
+        if (!channelExist)
+        {
+            throw new BusinessException("未找到模型，请检查 id 是否正确.") { StatusCode = 404 };
+        }
+
         model.IsDeleted = 1;
         _databaseContext.Update(model);
         await _databaseContext.SaveChangesAsync(cancellationToken);

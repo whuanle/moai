@@ -20,6 +20,16 @@ public class QueryAppUserConfigCommandResponse
     /// </summary>
     public bool MemoryEnabled { get; init; }
 
+    /// <summary>
+    /// 用户全局记忆接入模式：0=默认（应用允许时接入）；1=不接入全局记忆.
+    /// </summary>
+    public int MemoryGlobalMode { get; init; }
+
+    /// <summary>
+    /// 应用是否允许用户接入全局记忆（memory.allowGlobalMemory；false 时前端不展示全局接入开关）.
+    /// </summary>
+    public bool MemoryGlobalAllowed { get; init; }
+
 
     /// <summary>
     /// 用户当前勾选的技能 id 列表（应用默认技能的子集）；

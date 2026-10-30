@@ -27,7 +27,7 @@ namespace MoAI.AI.Services;
 public sealed class WorkflowAppToolProvider : IAppToolProvider
 {
     /// <summary>工具名前缀（与插件工具名隔离，避免同名冲突）.</summary>
-    private const string ToolNamePrefix = "workflow__";
+    private const string ToolNamePrefix = MoAI.AI.AppToolApprovalContract.WorkflowToolPrefix;
 
     /// <summary>结果序列化选项：中文不转义，减少 token 占用、便于模型阅读.</summary>
     private static readonly JsonSerializerOptions ResultSerializerOptions = new(JsonSerializerDefaults.Web)
@@ -84,15 +84,11 @@ public sealed class WorkflowAppToolProvider : IAppToolProvider
         var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var app in apps)
         {
-            var name = ToolNamePrefix + app.Name;
             // 同名流程应用加短 id 后缀避免工具名冲突（上游按名去重会静默丢弃后者）
-            if (!usedNames.Add(name))
+            var name = MoAI.AI.AppResourceToolNaming.PrefixedToolName(ToolNamePrefix, app.Name, app.Id, usedNames);
+            if (name.Length == 0)
             {
-                name = $"{name}_{app.Id.ToString("N")[..8]}";
-                if (!usedNames.Add(name))
-                {
-                    continue;
-                }
+                continue;
             }
 
             var title = string.IsNullOrWhiteSpace(app.Name) ? "流程应用" : app.Name;
@@ -163,9 +159,9 @@ public sealed class WorkflowAppToolProvider : IAppToolProvider
     }
 
     /// <summary>
-    /// 从工具参数 JSON 提取流程输入：对象取 query（兼容别名键），JSON 字符串取其值，其余按原文返回.
+    /// 从工具参数 JSON 提取输入文本：对象取 query（兼容别名键），JSON 字符串取其值，其余按原文返回.
     /// </summary>
-    private static string ExtractQuery(string? argsJson)
+    internal static string ExtractQuery(string? argsJson)
     {
         if (string.IsNullOrWhiteSpace(argsJson))
         {

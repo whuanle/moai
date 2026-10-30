@@ -6,9 +6,9 @@
 | 组件 | 用途 | 必填 props |
 |---|---|---|
 | `Page` | 页面容器+页头 | - |
-| `PageToolbar` | 页头工具行（筛选左/操作右，无筛选则操作左） | - |
-| `QueryBar` | 独立查询表单（`extra` 可在查询/重置右侧追加操作按钮） | - |
-| `DataTable` | 表格 | `columns`, `dataSource` |
+| `PageToolbar` | 页头工具行（筛选左/操作右，无筛选则操作左）；裸排在页面底色上 | - |
+| `QueryBar` | 独立查询表单（`extra` 可在查询/重置右侧追加操作按钮）；裸排在页面底色上 | - |
+| `DataTable` | 表格；容器底色卡片承载（灰表头/分页收在卡片内） | `columns`, `dataSource` |
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |
 | `Card` | 通用卡片 | - |
@@ -17,6 +17,15 @@
 | `StatCard` | 统计/指标卡 | `title`, `value` |
 | `Chat` | 对话布局 | `messages` |
 | `useFeedback` | 消息/通知统一出口 | -（hook） |
+| `CronExpressionInput` | 5 段 cron 调度表达式选择器（常用/自定义双模式，人话描述 + 下次执行预览，展示时区换算，文案走 `ds.cron.*`） | 受控 `value`/`onChange` |
+
+## CronExpressionInput
+
+表单内的 cron 表达式输入（`ui/src/design-system/components/CronExpressionInput/`），替代散落各处的「裸 Input + 快选链接」写法（首站：团队自动化定时器；wiki 外部源后续接入）：
+
+- **受控协议**：`value` 为 5 段表达式（**提交口径 UTC**），非法或未完成选择时 `onChange('')` 交由表单必填校验兜底。
+- **时区**：`displayOffsetMinutes` 指定展示/选择时区相对 UTC 的分钟偏移（如北京 480）；控件按该时区选择，生成时换算为 UTC。每月 1 日叠加向西借位（跨月界）无法用标准 cron 表达时该日期动态禁用。
+- **纯函数**：`cron.ts` 单独导出（`isValidCron`/`presetToCron`/`cronToPreset`/`nextCronRun` 等），可脱离组件复用。
 
 ## 反馈约定
 

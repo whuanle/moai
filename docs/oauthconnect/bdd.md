@@ -199,4 +199,20 @@ Feature: 前端连接器页（/oauthconnect）
     Then 弹出正方形裁剪窗（初始完整显示并居中，全向拖动定位，滑块/滚轮缩放：放大可铺满视口、缩小查看全图）
     And 确认后按视口内容导出正方形 PNG（未铺满处留白透明）并上传，回填图标地址
     And 取消/关闭裁剪窗时不产生上传
-```
+
+Feature: 渠道用户识别联动（绑定记录增强与企微原生登录）
+  渠道对话反查 user_oauth_connection 归属用户的前提：绑定记录尽量多存跨应用一致的标识。飞书绑定时同时记录 union_id（租户级唯一，跨应用一致）；企业微信连接器登录改走原生接口（sub=userid，与渠道回调 FromUserName 同源）。
+
+  @OC-S29 @manual
+  Scenario: 飞书绑定记录 union_id
+    Given 用户以飞书第三方登录注册或绑定账号
+    When 换取用户资料成功（资料含 open_id 与 union_id）
+    Then 绑定记录同时落 sub=open_id 与 union_id
+    And 同一绑定再次登录仍按 sub 匹配（登录匹配逻辑不变）
+
+  @OC-S30 @manual
+  Scenario: 企业微信连接器走原生登录
+    Given 存在 provider=weixinWork 的连接器
+    When 用户以该连接器发起第三方登录并携带有效 code
+    Then 平台调企业微信接口换取 userid（sub=userid），与机器人回调的 FromUserName 同源
+    And 渠道对话可凭 userid 反查绑定归属其账号

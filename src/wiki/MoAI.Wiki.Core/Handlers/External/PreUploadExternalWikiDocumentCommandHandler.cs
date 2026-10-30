@@ -43,9 +43,10 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
         await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 
         var extension = Path.GetExtension(request.FileName);
-        if (string.IsNullOrEmpty(extension) || !FileStoreHelper.DocumentFormats.Any(x => string.Equals(x, extension, StringComparison.OrdinalIgnoreCase)))
+        var allowedFileTypes = await _wikiSettingsService.GetAllowedFileTypesAsync(cancellationToken);
+        if (string.IsNullOrEmpty(extension) || !allowedFileTypes.Any(x => string.Equals(x, extension, StringComparison.OrdinalIgnoreCase)))
         {
-            throw new BusinessException("不支持该文件格式.") { StatusCode = 400 };
+            throw new BusinessException($"不支持的文件格式，知识库仅允许上传：{string.Join(" ", allowedFileTypes)}.") { StatusCode = 400 };
         }
 
         var maxFileSizeMb = await _wikiSettingsService.GetMaxFileSizeMbAsync(cancellationToken);

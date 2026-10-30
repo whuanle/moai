@@ -69,6 +69,11 @@ public class TeamTimerExecutionItem : AuditsInfo
     public string? AppInstanceId { get; set; }
 
     /// <summary>
+    /// 定时执行产生的 Agent 会话 id（可在应用日志页查看完整对话），流程应用为 null.
+    /// </summary>
+    public Guid? SessionId { get; set; }
+
+    /// <summary>
     /// 应用回答文本.
     /// </summary>
     public string? Result { get; set; }

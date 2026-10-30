@@ -18,6 +18,11 @@ public class ImportAIModelCommand : IRequest<EmptyCommandResponse>, IModelValida
     public Guid ChannelId { get; init; }
 
     /// <summary>
+    /// 所属团队 id，0=系统渠道；由 Controller 按路由回填，请求体无需传递.
+    /// </summary>
+    public int TeamId { get; set; }
+
+    /// <summary>
     /// 待导入的模型列表.
     /// </summary>
     public List<AIChannelModelMeta> Items { get; init; } = new();

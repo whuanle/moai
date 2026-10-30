@@ -54,6 +54,11 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<Guid> WorkflowApps { get; set; } = new List<Guid>();
 
     /// <summary>
+    /// 绑定为工具的 Agent 应用 id 列表（元素为 app.id，uuid，本团队已发布内部 Agent 应用）.
+    /// </summary>
+    public IReadOnlyList<Guid> AgentApps { get; set; } = new List<Guid>();
+
+    /// <summary>
     /// 应用默认使用的技能 id 列表（元素为 skill.id，uuid），用户可在应用设置中取消勾选.
     /// </summary>
     public IReadOnlyList<Guid> Skills { get; set; } = new List<Guid>();

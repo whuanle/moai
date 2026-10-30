@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Subsystem</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
+		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+		<ProjectReference Include="..\..\org\MoAI.Org.Shared\MoAI.Org.Shared.csproj" />
+		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Subsystem.Shared\MoAI.Subsystem.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

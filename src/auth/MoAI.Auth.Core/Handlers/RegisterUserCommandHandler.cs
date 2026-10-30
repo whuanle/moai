@@ -8,6 +8,9 @@ using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Auth.Commands;
+using MoAI.Auth.Models;
+using MoAI.Auth.Services;
+using MoAI.Account.Services;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -21,6 +24,8 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     private readonly DatabaseContext _dbContext;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
     private readonly IRsaProvider _rsaProvider;
+    private readonly IEmailCodeService _emailCodeService;
+    private readonly IReadOnlyList<IUserRegistrationHook> _registrationHooks;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RegisterUserCommandHandler"/> class.
@@ -28,11 +33,15 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     /// <param name="dbContext"></param>
     /// <param name="logger"></param>
     /// <param name="rsaProvider"></param>
-    public RegisterUserCommandHandler(DatabaseContext dbContext, ILogger<RegisterUserCommandHandler> logger, IRsaProvider rsaProvider)
+    /// <param name="emailCodeService">邮箱验证码服务（注册验证码开关开启时校验）.</param>
+    /// <param name="registrationHooks">注册增强钩子（默认角色等），无实现时为空集合.</param>
+    public RegisterUserCommandHandler(DatabaseContext dbContext, ILogger<RegisterUserCommandHandler> logger, IRsaProvider rsaProvider, IEmailCodeService emailCodeService, IEnumerable<IUserRegistrationHook> registrationHooks)
     {
         _dbContext = dbContext;
         _logger = logger;
         _rsaProvider = rsaProvider;
+        _emailCodeService = emailCodeService;
+        _registrationHooks = registrationHooks.ToList();
     }
 
     /// <inheritdoc/>
@@ -79,6 +88,17 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
             }
         }
 
+        // 注册验证码：开关开启时必须携带邮箱验证码并校验通过（在插入用户的 try 之外校验，保留精确的业务状态码）
+        if (await _emailCodeService.IsRegisterCodeRequiredAsync(cancellationToken))
+        {
+            if (string.IsNullOrWhiteSpace(request.EmailCode))
+            {
+                throw new BusinessException("请输入邮箱验证码.") { StatusCode = 400 };
+            }
+
+            await _emailCodeService.VerifyAndConsumeAsync(EmailCodePurpose.Register, request.Email, request.EmailCode, cancellationToken);
+        }
+
         try
         {
             // 使用 PBKDF2 算法生成哈希值
@@ -96,6 +116,25 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
 
             await _dbContext.Users.AddAsync(userEntity);
             await _dbContext.SaveChangesAsync(cancellationToken);
+
+            // 注册增强钩子（组织默认角色等）：在用户 id 生成后执行，只入列由主流程统一提交；
+            // 尽力而为，失败不影响注册结果
+            try
+            {
+                foreach (var hook in _registrationHooks)
+                {
+                    await hook.OnUserRegisteredAsync(userEntity.Id, cancellationToken);
+                }
+
+                if (_dbContext.ChangeTracker.HasChanges())
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
+            catch (Exception hookEx)
+            {
+                _logger.LogWarning(hookEx, "用户注册增强钩子执行失败，跳过附加动作.{UserId}", userEntity.Id);
+            }
 
             return new SimpleLong
             {

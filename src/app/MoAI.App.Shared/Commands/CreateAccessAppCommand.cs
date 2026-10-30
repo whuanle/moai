@@ -29,7 +29,7 @@ public class CreateAccessAppCommand : IRequest<CreateAccessAppCommandResponse>, 
     public string? Description { get; init; }
 
     /// <summary>
-    /// 功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），model 授权应用接入 key 直连使用模型网关，
+    /// 功能范围代码列表（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a），
     /// 知识库维度限制该接入签发 token 的知识库范围；不传默认读写全量，空列表=纯对话接入（token 无知识库权限）.
     /// </summary>
     public List<string>? Scopes { get; init; }

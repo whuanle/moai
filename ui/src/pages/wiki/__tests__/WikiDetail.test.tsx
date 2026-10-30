@@ -11,7 +11,7 @@ vi.mock('@/api/wiki', () => ({
   getWikiModelOptions: vi.fn(),
   updateWikiEmbeddingConfig: vi.fn().mockResolvedValue(undefined),
   updateWikiRerankModel: vi.fn().mockResolvedValue(undefined),
-  getWikiUploadLimit: vi.fn().mockResolvedValue(0),
+  getWikiUploadLimit: vi.fn().mockResolvedValue({ maxFileSizeMb: 0, allowedFileTypes: [] }),
 }))
 
 vi.mock('@/api/kiota', () => ({

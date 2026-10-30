@@ -61,6 +61,28 @@ public class AppMemoryController : ControllerBase
     }
 
     /// <summary>
+    /// 编辑本人的一条长期记忆（保留原 id 与创建时间，内容重嵌向量）.
+    /// </summary>
+    /// <param name="id">应用 id.</param>
+    /// <param name="memoryId">记忆 id.</param>
+    /// <param name="req">编辑请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id:guid}/memory/mine/{memoryId:guid}")]
+    public async Task<EmptyCommandResponse> UpdateMyMemory([FromRoute] Guid id, [FromRoute] Guid memoryId, [FromBody] UpdateMyMemoryCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateMyMemoryCommand
+        {
+            AppId = id,
+            MemoryId = memoryId,
+            Content = req.Content,
+            MemoryType = req.MemoryType,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 清空本人在该应用内的全部长期记忆（危险操作，前端需二次确认）.
     /// </summary>
     /// <param name="id">应用 id.</param>

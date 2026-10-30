@@ -183,6 +183,36 @@ Feature: 单聊/群聊消息回复（回调推送全链路）
     When 企业微信成员发送文本消息
     Then 平台不运行应用 Agent 也不回复，仅记日志
 
+Feature: 渠道用户识别与会话归属
+  发送者若已通过第三方登录绑定企业微信（user_oauth_connection 记录 userid，回调推送 FromUserName 即 userid），渠道对话自动归属其 MoAI 账号：会话在网页端应用会话列表可见、可续聊；未绑定/歧义/停用一律保持匿名（现状不变）。
+
+  @WX-S31 @manual
+  Scenario: 已绑定第三方登录的发送者会话自动归属
+    Given 发送者已用企业微信第三方登录绑定 MoAI 账号（绑定记录含 userid）
+    When 该成员向应用发送文本消息
+    Then 新会话归属到该用户（归属用户、用户类型为站内用户）
+    And 该用户在网页端应用会话列表可见该会话并可继续对话
+
+  @WX-S32 @manual
+  Scenario: 未绑定或无法唯一定位时保持匿名
+    Given 发送者未绑定第三方登录，或绑定标识命中多个不同账号，或命中的账号已被停用
+    When 发送文本消息
+    Then 会话保持匿名（不归属任何用户），任何站内用户的会话列表都不可见
+
+  @WX-S33 @manual
+  Scenario: 群聊中已绑定成员各自独立会话
+    Given 同一群聊中多个成员各自绑定过第三方登录
+    When 各自 @应用 发消息
+    Then 每个成员拥有独立会话（互不串上下文），归属各自的账号
+    And 未绑定成员仍共享匿名会话
+
+  @WX-S34 @manual
+  Scenario: 流程应用经渠道对话
+    Given 连接已绑定到已发布的内部流程应用
+    When 企业微信成员向应用发送文本消息
+    Then 平台运行流程应用并把结束节点回复文本发回该会话
+    And 会话归属规则与 Agent 应用一致
+
 Feature: 应用工作台外部渠道页（企业微信分区）
   @WX-S27 @auto:vitest
   Scenario: 企业微信分区展示与过滤
@@ -192,19 +222,19 @@ Feature: 应用工作台外部渠道页（企业微信分区）
     And 渠道表格只回显接入到当前应用的连接（名称、企业 ID/AgentId、状态、接入时间）
     And 应用未发布时提示企业微信消息不会被处理
 
-  @WX-S27 @auto:vitest
+  @WX-S28 @auto:vitest
   Scenario: 从应用页接入企业微信应用
     When 管理员填写连接名称、企业 ID、AgentId、Secret、回调 Token 与 EncodingAESKey 后提交接入
     Then 平台创建企业微信应用连接即绑定到当前应用（单次调用，创建与绑定原子生效）
 
-  @WX-S27 @auto:vitest
+  @WX-S29 @auto:vitest
   Scenario: 编辑回显与回调地址
     Given 企业微信分区存在接入到当前应用的连接
     When 管理员打开编辑弹窗
     Then 表单回显名称/企业 ID/AgentId 并展示本连接的回调地址
     But 密钥类字段留空表示保持不变，不改变当前启停状态
 
-  @WX-S27 @auto:vitest
+  @WX-S30 @auto:vitest
   Scenario: 企业微信渠道连接管理操作
     Given 企业微信分区存在接入到当前应用的连接
     When 管理员停用或删除该连接
@@ -212,4 +242,3 @@ Feature: 应用工作台外部渠道页（企业微信分区）
     When 管理员启用已停用的连接
     Then 直接生效无需确认
     But 普通成员进入页面时不可见任何操作入口
-```

@@ -17,19 +17,23 @@ src/timer/
 
 - `TeamTimerScheduler`：每定时器一个 Hangfire 周期任务（key `team-timer:{timerId:N}`），走 `IRecurringJobService`（UTC cron）；`ValidateCron` 做落库前校验（5 段 + 字段取值范围）。
 - `TeamTimerRunJobCommand(+Handler)`：调度触发入口；定时器已删/停用返回 `IsCancel=true` 移除任务；触发即建执行记录并刷新 `last_run_time`。
-- `TeamTimerAppInvoker`：无头执行分发——Agent 应用走发布快照 `AppAgentConfigSnapshot.ResolveEffectiveConfig(preferPublished:true)` → `IWorkflowNodeAiInvoker.AgentAppAsync`（与流程 agentApp 节点/正式对话同口径）；流程应用走 `IWorkflowAppChatInvoker`（UseDraft=false，每次新生成 SessionId，不产生用户可见会话）。
+- `TeamTimerAppInvoker`：无头执行分发——**Agent 应用（2026-10-30 起）走正式会话链路**：每次执行创建独立 `app_agent_session`（`UserType=Timer` 标记来源）→ `AppAgentFactory.CreateAsync`（发布快照 + UsageCapturing token 记账 + Postgres 落库历史，与网页对话/飞书渠道同口径）→ `RunAsync` → 快照写热态 + `AppChatFlushService.FlushAsync`（压缩消息落库 + token 聚合回写 + AI 提炼标题），管理员在应用「日志」页可见完整会话，本人会话列表按 `UserType != Timer` 排除；流程应用走 `IWorkflowAppChatInvoker`（UseDraft=false，每次新生成 SessionId 仅作 sys.conversationId，不落会话，记录流程实例 id）。返回 `(回答文本, 实例id, 会话id)`，执行记录写 `session_id`（Agent 应用）。
+- `TeamTimerStaleExecutionSweeper`：HostedService（启动即扫 + 每 5 分钟），开始超 30 分钟仍 Running 的执行记录置终态失败（进程重启遗留僵尸兜底）。
 - `TeamTimerExecutor`：执行状态机 Pending→Running→(Success | Retrying→…)→Success/Failed；失败按 `maxRetryCount`/`retryIntervalSeconds` 用 `IBackgroundJobClient.Schedule` 延迟重试（重试同行累计 `attempt_count`）；应用删除/禁用属非瞬时错误直接终态不重试。
 - 身份：Handler 一律用命令携带的 `ContextUserId`（不注入 IUserContextProvider）；Hangfire 线程无用户上下文，身份取 job params/实体冗余字段（审计 CreateUserId 记 0 是平台既有行为，执行记录以 `trigger_user_id` 为准）。Controller 对路由参数构造的命令（update/delete/run）注入 `IUserContextProvider` 显式回填 `ContextUserId`——AutoAssignUserIdFilter 只对绑定的 action 参数赋值，控制器内 `new` 的命令必须手工携带（variable 更新接口同做法）。
 
 ## 3. 数据
 
 - `team_timer`（TeamTimerEntity，IFullAudited，uuid 主键）：team_id、name（团队内唯一，partial unique is_deleted=0）、app_id、app_type（绑定时快照）、cron_expression、input_content(text)、is_enabled、max_retry_count(0-5)、retry_interval_seconds(10-3600)、last_run_time。
+- 列表响应 `TeamTimerItem` 另带 `LastExecutionStatus`（TimerExecutionStatus?，最近一次执行状态）：Handler 对当前页 timerIds 批量 `GroupBy(TimerId) + OrderByDescending(CreateTime) + First` 查 `team_timer_executions`（EF 翻译为子查询聚合，一条 SQL）；`TryGetValue` 必须以返回值区分「未执行过」（out 失败时是 0=Pending，勿当状态用）。
 - `team_timer_execution`（TeamTimerExecutionEntity）：timer_id、team_id（冗余）、trigger_type(0=调度 1=手动)、trigger_user_id、status(0=等待 1=执行中 2=成功 3=失败 4=待重试)、attempt_count、start/end_time、duration_ms、next_retry_time、app_instance_id（流程实例）、result/error_message(text)；索引 (timer_id, create_time)。
 - 增量 DDL：`asserts/team_timer.sql`（存量库手动 psql 执行，无 EF Migration）。
 
 ## 4. 关键决策
 
-- **cron 统一 UTC**（复用 `IRecurringJobService` 既有口径，与知识库外部源一致）；前端快选预设按北京时间换算并标注。
+- **cron 统一 UTC**（复用 `IRecurringJobService` 既有口径，与知识库外部源一致）；前端用 design-system `CronExpressionInput` 组件（`ui/src/design-system/components/CronExpressionInput/`）按北京时间（UTC+8）选择并自动换算，含常用/自定义双模式、人话描述与下次执行预览（纯函数 `cron.ts` 可复用，wiki 外部源等场景后续接入）。
+- **前端菜单名「自动化」**：i18n `team.timers` 展示为「自动化/Automation」（菜单 key、路由 section、后端实体仍为 timer/timers，不改契约）；表单与提示文案统一称「自动化任务」，执行内容字段展示为「执行指令」（inputContent 契约不变）。
+- **绑定应用下拉仅列已发布应用**：前端 load 后直接过滤 `publishStatus !== 1`（不再 disabled 展示），空时显示空态提示；后端创建/更新校验（@TIMER-S2）保持兜底。
 - **绑定即校验已发布**：创建/更新要求应用存在、本团队、未禁用、Agent/流程类型且 PublishStatus=1；执行期再校验一次，避免历史里全是"未发布"失败。
 - **手动执行不改调度**：`POST {id}/run` 入队一次执行并计入历史；停用的定时器也允许立即执行（调试用）。
 - **删除保留历史**：定时器软删；执行历史查询对 timer 用 `IgnoreQueryFilters` 取归属以完成权限校验，删除后历史仍可查看。
@@ -39,5 +43,6 @@ src/timer/
 ## 5. 已知问题 / 边界
 
 - cron 语义校验为字段级（取值范围 + 结构），不校验"2 月 30 日"类组合；此类表达式由 Hangfire 在触发时报错（JobInfo.Error），下次调度时间将为空。
-- Agent 应用无头执行不落会话消息（与 agentApp 节点一致），历史里只有最终回答文本；流程应用记录实例 id 可跳转运行历史。
+- **Agent 应用定时执行落会话（2026-10-30 起，见 @TIMER-S14）**：早期「无头执行不落会话」的决策已推翻；定时执行消耗的 token 会聚到会话与模型审计（日志页可见），但**不计入 app-usage 使用次数**（保持「用户主动使用」口径）；流程应用保持实例模式不落会话。
 - 定时器执行消耗真实模型 token，无独立配额限制。
+- **执行超时（2026-10-30 起）**：单次尝试上限 10 分钟（`TeamTimerExecutor.ExecutionTimeout`，取消令牌贯穿 `AgentAppAsync`/`WorkflowAppChatInvoker` 直至模型流式与流程引擎），超时按失败进入重试状态机；`TeamTimerStaleExecutionSweeper`（HostedService，启动即扫 + 每 5 分钟）把开始时间超过 30 分钟仍 Running 的记录（宿主重启遗留的僵尸）置为终态失败。

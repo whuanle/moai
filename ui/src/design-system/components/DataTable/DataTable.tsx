@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Table } from 'antd'
+import { Button, ConfigProvider, Table, theme } from 'antd'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +24,7 @@ export function DataTable<RecordType extends object>({
   ...rest
 }: DataTableProps<RecordType>) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const showTotal = (total: number) => t('ds.table.total', { total })
   const resolvedPagination =
     pagination === false
@@ -31,7 +32,18 @@ export function DataTable<RecordType extends object>({
       : ({ showSizeChanger: true, showTotal, ...pagination } as TableProps<RecordType>['pagination'])
 
   return (
-    <div>
+    // 容器底色卡片（与 Card 同语言）：灰表头/白表体/分页整体承载在卡片内，
+    // 与上方裸工具行（页面底色）拉开层级；overflow hidden 让表头随卡片圆角裁切。
+    // 纵向额外占位 = tableCardChromeHeight（上下边框），sticky 表格滚动高度计算需计入。
+    <div
+      style={{
+        background: token.colorBgContainer,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        borderRadius: token.borderRadiusLG,
+        boxShadow: token.boxShadowTertiary,
+        overflow: 'hidden',
+      }}
+    >
       {(toolbar || onRefresh) && (
         <div
           style={{
@@ -39,7 +51,7 @@ export function DataTable<RecordType extends object>({
             alignItems: 'center',
             gap: spacing.md,
             flexWrap: 'wrap',
-            marginBottom: spacing.md,
+            margin: `${spacing.md}px ${spacing.md}px 0`,
           }}
         >
           {toolbar}

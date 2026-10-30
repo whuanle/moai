@@ -101,6 +101,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     vi.mocked(getMyPrompts).mockResolvedValue([
       { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0 },
@@ -372,6 +374,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     let finishRun: (() => void) | undefined
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
@@ -424,6 +428,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
       handlers.onToolCallEnd?.({
@@ -464,6 +470,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
       handlers.onToolCallEnd?.({

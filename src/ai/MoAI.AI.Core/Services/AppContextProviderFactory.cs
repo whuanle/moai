@@ -64,6 +64,11 @@ public sealed class AppAgentBuildContext
     public IReadOnlyList<Guid> WorkflowAppIds { get; init; } = [];
 
     /// <summary>
+    /// 绑定为工具的 Agent 应用 id（执行时按其发布快照无头单轮调用）.
+    /// </summary>
+    public IReadOnlyList<Guid> AgentAppIds { get; init; } = [];
+
+    /// <summary>
     /// 绑定的技能 id.
     /// </summary>
     public IReadOnlyList<Guid> SkillIds { get; init; } = [];

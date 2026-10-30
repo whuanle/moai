@@ -88,6 +88,7 @@ Feature: 技能归属与三级权限
     When Alice 创建个人技能（teamId=0）
     Then 创建成功，Alice 的技能选项（includePersonal）包含该技能
     And Bob 的技能选项不包含 Alice 的个人技能
+    And 技能选项项携带头像路径（avatarPath，未设置为空，2026-10-30 增补）
 
   @SKL-S2 @auto:e2e
   Scenario: 团队技能仅团队管理员可创建

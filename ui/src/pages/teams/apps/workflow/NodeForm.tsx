@@ -12,7 +12,7 @@ import { useClientContext, useNodeRender, WorkflowDragService, WorkflowNodeLines
 import { getWikis } from '@/api/wiki'
 import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
 import { getTeamPluginFunctions, getTeamPlugins } from '@/api/team-plugin'
-import { getTeamGatewayModels } from '@/api/gateway'
+import { getTeamAvailableModels } from '@/api/aichannel'
 import { getMyPrompts, getPromptDetail, getTeamPrompts } from '@/api/prompt'
 import { getWorkflowAgentOptions } from '@/api/workflow'
 import { useWorkflowDesignerStore } from './store'
@@ -370,7 +370,7 @@ function ModelSelectSection({
     if (!teamId) return
     let cancelled = false
     setLoading(true)
-    getTeamGatewayModels(teamId)
+    getTeamAvailableModels(teamId)
       .then((res) => {
         if (cancelled) return
         setModels(

@@ -35,6 +35,8 @@
 | [user-management](./user-management/) | UM | 管理员用户治理（列表/授权/禁用/重置密码）；[📘 HTML 操作指南](./user-management/manual.html)（含截图） |
 | [settings](./settings/) | SET | 系统设置项（SettingDefinitions 注册表） |
 | [oauthconnect](./oauthconnect/) | OC | 第三方登录连接器管理 |
+| [subsystem](./subsystem/) | SUB | 子系统注册与接入（appid/密钥/token/心跳在线/团队授权） |
+| [org](./org/) | ORG | 角色组织（全局层级角色树 + path 物化路径前缀匹配 + 用户角色分配，仅管理员） |
 | [classify](./classify/) | CLS | 分类管理（plugin/app/kb 三类，仅管理员） |
 | [aiplugin-static](./aiplugin-static/) | STP | 静态插件（列表合并去重、运行抽屉、编辑写回） |
 | [aiplugin-dynamic](./aiplugin-dynamic/) | DYN | 动态插件（实例创建/编辑/删除、模板+配置、运行实例） |
@@ -45,7 +47,7 @@
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
 | [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、所有权转让；团队不可解散，仅平台管理员可禁用 |
-| [gateway](./gateway/) | GW | 团队/应用接入 key 与外部接口范围体系（功能范围分档、key 直连、Redis 缓存、中间件拦截）；**细节总账 [external-api-scope-system.md](./gateway/external-api-scope-system.md)** |
+| [gateway](./gateway/) | GW | 应用接入 key 与外部接口范围体系（功能范围分档、key 直连、中间件拦截）；**团队模型网关已下线**（模型仅供应用内部调用，后续由独立子系统承接）；**细节总账 [external-api-scope-system.md](./gateway/external-api-scope-system.md)** |
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱维护 + 外部接入只读；Memgraph/Neo4j 双方言 Bolt 访问、单库 kgId 隔离；图览画布 + 一跳邻接；`KG_ENABLED` 门禁，Member 全只读，名称全局唯一） |

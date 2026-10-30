@@ -1,14 +1,24 @@
 import { getApiClient } from '@/api/kiota'
 
-/** 应用接入可选功能范围（模型网关 + 知识库/知识图谱维度 + 应用对话 + 两域 MCP + 应用 ACP） */
-export type AccessAppScope = 'model' | 'wiki_read' | 'wiki_write' | 'wiki_mcp' | 'kg_read' | 'kg_write' | 'kg_mcp' | 'app_chat' | 'app_acp'
+/** 应用接入可选功能范围（知识库/知识图谱维度 + 应用对话 + 两域 MCP + 应用 ACP/A2A） */
+export type AccessAppScope =
+  | 'model'
+  | 'wiki_read'
+  | 'wiki_write'
+  | 'wiki_mcp'
+  | 'kg_read'
+  | 'kg_write'
+  | 'kg_mcp'
+  | 'app_chat'
+  | 'app_acp'
+  | 'app_a2a'
 
 export interface AccessAppItem {
   /** 后端 Guid 序列化为字符串 */
   accessAppId?: string | null
   name?: string | null
   description?: string | null
-  /** 接入 key（明文，可再次查看；前端默认掩码、点击展开） */
+  /** 接入 appid（明文，可再次查看；前端默认掩码、点击展开） */
   key?: string | null
   createTime?: string | null
   /** 最近使用时间（通过模型网关调用时刷新） */
@@ -25,8 +35,10 @@ export interface AccessAppsResult {
 
 export interface CreatedAccessApp {
   accessAppId?: string | null
-  /** key 原文，仅创建时返回一次 */
+  /** appid 原文，仅创建时返回一次 */
   key?: string | null
+  /** 接入密钥原文，仅创建时返回一次（换取 token 时携带） */
+  secret?: string | null
   keyPrefix?: string | null
 }
 
@@ -39,7 +51,7 @@ export async function getAccessApps(teamId: number): Promise<AccessAppsResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
-/** 创建应用接入，返回 key 原文（仅此一次） */
+/** 创建应用接入，返回 appid 与密钥原文（仅此一次） */
 export async function createAccessApp(payload: {
   teamId: number
   name: string
@@ -54,10 +66,10 @@ export async function createAccessApp(payload: {
     description: payload.description,
     scopes: payload.scopes,
   })
-  return { accessAppId: res?.accessAppId, key: res?.key, keyPrefix: res?.keyPrefix }
+  return { accessAppId: res?.accessAppId, key: res?.key, secret: res?.secret, keyPrefix: res?.keyPrefix }
 }
 
-/** 更新应用接入（名称/描述；key 不可改） */
+/** 更新应用接入（名称/描述；appid 不可改） */
 export async function updateAccessApp(
   accessAppId: string,
   payload: { name: string; description?: string; scopes?: string[] },
@@ -68,6 +80,13 @@ export async function updateAccessApp(
     description: payload.description,
     scopes: payload.scopes,
   })
+}
+
+/** 重置应用接入密钥，新密钥原文仅此一次返回，旧密钥立即失效 */
+export async function resetAccessAppSecret(accessAppId: string): Promise<string | null | undefined> {
+  const client = getApiClient()
+  const res = await client.api.accessApp.byId(accessAppId).resetSecret.post()
+  return res?.secret
 }
 
 /** 删除应用接入（软删除） */

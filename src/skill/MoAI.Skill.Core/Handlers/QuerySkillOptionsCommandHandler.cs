@@ -38,6 +38,7 @@ public class QuerySkillOptionsCommandHandler : IRequestHandler<QuerySkillOptions
                 Key = x.Key,
                 Name = x.Name,
                 Description = x.Description,
+                AvatarPath = string.IsNullOrWhiteSpace(x.AvatarPath) ? null : x.AvatarPath,
                 IsSystem = x.IsSystem,
                 TeamId = x.TeamId,
                 UseCount = x.UseCount,

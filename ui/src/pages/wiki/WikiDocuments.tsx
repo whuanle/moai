@@ -18,6 +18,7 @@ import { spacing } from '@/design-system/theme'
 import { formatFileSize } from '@/utils/format'
 import { formatDateTime } from '@/utils/datetime'
 import { BatchWorkflowModal } from './BatchWorkflowModal'
+import { WIKI_DEFAULT_FILE_TYPES } from '@/api/settings'
 import {
   getWikiDocuments,
   preUploadWikiDocument,
@@ -37,14 +38,6 @@ interface UploadStatus {
   status: 'waiting' | 'uploading' | 'success' | 'error'
   progress: number
   message?: string
-}
-
-/** 支持的文件扩展名 */
-const SUPPORTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.md', '.xls', '.xlsx', '.ppt', '.pptx', '.csv', '.json', '.xml', '.html', '.htm']
-
-const isSupported = (file: File): boolean => {
-  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
-  return SUPPORTED_EXTENSIONS.includes(ext)
 }
 
 const getErrorMessage = (error: unknown, defaultMessage: string): string => {
@@ -81,14 +74,26 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   const [uploading, setUploading] = useState(false)
   // 知识库上传文件大小上限（MB），0 表示不限制
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(0)
+  // 允许上传的文件类型（系统设置），读取失败时回退内置默认
+  const [allowedFileTypes, setAllowedFileTypes] = useState<string[]>(WIKI_DEFAULT_FILE_TYPES)
 
   useEffect(() => {
     getWikiUploadLimit()
-      .then(setMaxFileSizeMb)
+      .then(({ maxFileSizeMb: mb, allowedFileTypes: types }) => {
+        setMaxFileSizeMb(mb)
+        if (types.length > 0) {
+          setAllowedFileTypes(types)
+        }
+      })
       .catch(() => {
-        // 读取失败按不限制处理，超限时服务端仍会拦截
+        // 读取失败按默认类型与不限制处理，超限时服务端仍会拦截
       })
   }, [])
+
+  const isFileTypeAllowed = (file: File): boolean => {
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+    return allowedFileTypes.includes(ext)
+  }
 
   const load = useCallback(
     async (page = pageNo, size = pageSize, keyword = searchText, embedding = embeddingFilter) => {
@@ -195,7 +200,7 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   }
 
   const handleSelectFiles: UploadProps['beforeUpload'] = (file) => {
-    if (!isSupported(file)) {
+    if (!isFileTypeAllowed(file)) {
       feedback.error(t('wiki.doc.unsupportedType'))
       return Upload.LIST_IGNORE
     }
@@ -481,7 +486,7 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
           </Button>,
         ]}
       >
-        <Upload.Dragger multiple showUploadList={false} beforeUpload={handleSelectFiles} accept={SUPPORTED_EXTENSIONS.join(',')}>
+        <Upload.Dragger multiple showUploadList={false} beforeUpload={handleSelectFiles} accept={allowedFileTypes.join(',')}>
           <p className="ant-upload-drag-icon">
             <UploadOutlined />
           </p>

@@ -7,12 +7,12 @@ import {
   StopOutlined,
   UserSwitchOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Descriptions, Form, Input, Modal, Popconfirm, Skeleton, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Badge, Button, Descriptions, Form, Input, Modal, Popconfirm, Skeleton, Space, Tag, Typography } from 'antd'
 import type { DescriptionsProps, TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { Page, DataTable, QueryBar, feedback } from '@/design-system'
-import { controlHeight, spacing } from '@/design-system/theme'
+import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { refreshUserProfile } from '@/api/auth'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -29,11 +29,11 @@ import {
 const { Text } = Typography
 
 const pageVerticalPadding = spacing.lg * 2
-const queryBarHeight = controlHeight + spacing.lg
+const queryBarHeight = controlHeight + spacing.md
 const tableHeaderHeight = 55
 const tablePaginationHeight = 57
 const usersPageHeight = `calc(100vh - ${pageVerticalPadding}px)`
-const usersTableScrollY = `calc(100vh - ${pageVerticalPadding + queryBarHeight + tableHeaderHeight + tablePaginationHeight}px)`
+const usersTableScrollY = `calc(100vh - ${pageVerticalPadding + queryBarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
 
 interface PasswordFormValues {
   newPassword: string
@@ -165,31 +165,28 @@ export function Users() {
 
   const renderStatus = (record: UserListItem) =>
     record.isDisable ? (
-      <Tag color="error">{t('users.statusDisabled')}</Tag>
+      <Badge status="default" text={t('users.statusDisabled')} />
     ) : (
-      <Tag color="success">{t('users.statusNormal')}</Tag>
+      <Badge status="success" text={t('users.statusNormal')} />
     )
 
-  /** 头像 + 用户名 + 昵称合并展示，释放列宽给邮箱等长文本列 */
+  /** 头像 + 用户名 */
   const renderUser = (record: UserListItem) => {
     const userName = record.userName || '-'
-    const nickName = record.nickName?.trim()
     const avatarUrl = resolveStorageUrl(record.avatar ?? null)
     return (
       <Space>
         <Avatar size={36} src={avatarUrl || undefined} alt={userName}>
           {userName.slice(0, 1).toUpperCase()}
         </Avatar>
-        <div style={{ lineHeight: 1.4, minWidth: 0 }}>
-          <div>{userName}</div>
-          {nickName && nickName !== userName && (
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {nickName}
-            </Text>
-          )}
-        </div>
+        <span>{userName}</span>
       </Space>
     )
+  }
+
+  const renderNickName = (v: string | null | undefined) => {
+    const nickName = v?.trim()
+    return nickName ? nickName : '-'
   }
 
   const columns: TableColumnsType<UserListItem> = useMemo(
@@ -197,22 +194,30 @@ export function Users() {
       {
         title: t('users.colUser'),
         key: 'user',
-        width: 160,
+        width: 200,
         render: (_, record) => renderUser(record),
+      },
+      {
+        title: t('users.colNickName'),
+        dataIndex: 'nickName',
+        width: 140,
+        ellipsis: true,
+        render: (v: string | null) => renderNickName(v),
       },
       {
         title: t('users.colEmail'),
         dataIndex: 'email',
+        width: 260,
         ellipsis: true,
         render: (v: string | null) => v || '-',
       },
-      { title: t('users.colPhone'), dataIndex: 'phone', width: 130, render: (v: string | null) => v || '-' },
-      { title: t('users.colRole'), key: 'role', width: 100, render: (_, record) => renderRole(record) },
-      { title: t('users.colStatus'), key: 'status', width: 75, render: (_, record) => renderStatus(record) },
+      { title: t('users.colPhone'), dataIndex: 'phone', width: 150, render: (v: string | null) => v || '-' },
+      { title: t('users.colRole'), key: 'role', width: 110, render: (_, record) => renderRole(record) },
+      { title: t('users.colStatus'), key: 'status', width: 90, render: (_, record) => renderStatus(record) },
       {
         title: t('users.colCreateTime'),
         dataIndex: 'createTime',
-        width: 150,
+        width: 170,
         render: (v: string | null) => (
           <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
         ),
@@ -220,34 +225,34 @@ export function Users() {
       {
         title: t('users.colActions'),
         key: 'actions',
-        width: 160,
+        width: 340,
         fixed: 'right',
         render: (_, record) => {
           const protectedRow = isProtected(record)
           return (
             <Space size={0}>
-              <Tooltip title={t('users.view')}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EyeOutlined />}
-                  aria-label={t('users.view')}
-                  onClick={() => void openDetail(record)}
-                />
-              </Tooltip>
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                aria-label={t('users.view')}
+                onClick={() => void openDetail(record)}
+              >
+                {t('users.view')}
+              </Button>
               {isRoot && !protectedRow && (
                 <Popconfirm
                   title={t(record.isAdmin ? 'users.unsetAdminConfirm' : 'users.setAdminConfirm')}
                   onConfirm={() => void handleToggleAdmin(record)}
                 >
-                  <Tooltip title={t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<UserSwitchOutlined />}
-                      aria-label={t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
-                    />
-                  </Tooltip>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<UserSwitchOutlined />}
+                    aria-label={t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
+                  >
+                    {t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
+                  </Button>
                 </Popconfirm>
               )}
               {!protectedRow && (
@@ -256,31 +261,31 @@ export function Users() {
                   okButtonProps={{ danger: !record.isDisable }}
                   onConfirm={() => void handleToggleDisable(record)}
                 >
-                  <Tooltip title={t(record.isDisable ? 'users.enable' : 'users.disable')}>
-                    <Button
-                      type="text"
-                      size="small"
-                      danger={!record.isDisable}
-                      icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
-                      aria-label={t(record.isDisable ? 'users.enable' : 'users.disable')}
-                    />
-                  </Tooltip>
+                  <Button
+                    type="link"
+                    size="small"
+                    danger={!record.isDisable}
+                    icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
+                    aria-label={t(record.isDisable ? 'users.enable' : 'users.disable')}
+                  >
+                    {t(record.isDisable ? 'users.enable' : 'users.disable')}
+                  </Button>
                 </Popconfirm>
               )}
               {!protectedRow && (
-                <Tooltip title={t('users.resetPassword')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<KeyOutlined />}
-                    aria-label={t('users.resetPassword')}
-                    onClick={() => {
-                      setTarget(record)
-                      form.resetFields()
-                      setModalOpen(true)
-                    }}
-                  />
-                </Tooltip>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<KeyOutlined />}
+                  aria-label={t('users.resetPassword')}
+                  onClick={() => {
+                    setTarget(record)
+                    form.resetFields()
+                    setModalOpen(true)
+                  }}
+                >
+                  {t('users.resetPassword')}
+                </Button>
               )}
             </Space>
           )
@@ -347,7 +352,7 @@ export function Users() {
             dataSource={items}
             loading={loading}
             sticky
-            scroll={{ x: 880, y: usersTableScrollY }}
+            scroll={{ x: 1460, y: usersTableScrollY }}
             pagination={{
               current: pageNo,
               pageSize,

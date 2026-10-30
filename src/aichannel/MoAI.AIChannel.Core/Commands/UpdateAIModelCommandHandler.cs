@@ -35,6 +35,13 @@ public class UpdateAIModelCommandHandler : IRequestHandler<UpdateAIModelCommand,
             throw new BusinessException("未找到模型，请检查 id 是否正确.") { StatusCode = 404 };
         }
 
+        var channelExist = await _databaseContext.AiChannels
+            .AnyAsync(x => x.Id == model.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);
+        if (!channelExist)
+        {
+            throw new BusinessException("未找到模型，请检查 id 是否正确.") { StatusCode = 404 };
+        }
+
         // 同一渠道下变更模型标识时需查重.
         if (model.ModelId != request.Meta.ModelId)
         {

@@ -583,7 +583,7 @@ public class WikiEmbeddingService
                     select new { m, c };
 
         var candidates = await query.ToListAsync(cancellationToken);
-        var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+        var model = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (model == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

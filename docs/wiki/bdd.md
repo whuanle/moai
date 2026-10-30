@@ -213,10 +213,11 @@ Scenario: 上传完成后 markdown 自动入库
 
 @WK-S20 @auto:vitest
 Scenario: 不支持的文件类型自动提取被拒
-  Given 文档后缀不在 Maomi.ToMarkdown 支持范围
+  Given 文档后缀不在 Maomi.ToMarkdown 支持范围且不在纯文本兜底范围（二进制文件，起始 8KB 含 NUL 字节）
   When 上传完成触发自动提取
   Then 自动提取抛错被捕获，文档创建不受影响（isContentExtracted = false）
   And 操作页展示「内容未提取」，可手动重试
+  But 管理员放开的未知文本类扩展名（.csv/.sh/.cs 等）按纯文本兜底提取成功（见 @WK-S43）
 
 @WK-S21 @auto:e2e
 Scenario: 向量化前置校验
@@ -242,6 +243,49 @@ Scenario: 超管设置知识库最大文件大小并全局生效
   Then 返回 400（文件大小超过知识库上限）
   When 预上传恰好等于上限或恢复默认 50（或设为 0 不限制）后的文件
   Then 预上传通过（平台硬上限 1GB 仍然生效）
+```
+
+## Feature: 系统设置：知识库允许上传的文件类型（v2）
+
+> 设置项定义与保存校验见 [@SET-S44](../settings/bdd.md#set-s44)~[@SET-S46](../settings/bdd.md#set-s46)。
+
+```gherkin
+@WK-S43 @auto:e2e
+Scenario: 超管设置知识库允许上传的文件类型并全局生效
+  When 超管保存设置项 WIKI_ALLOWED_FILE_TYPES（逗号分隔扩展名，默认与文档/文本提取能力对齐，图片暂不支持）
+  Then 团队成员访问 upload-limit 查询接口返回 allowedFileTypes（供上传控件 accept 与前端预检）
+  When 团队成员预上传不在允许类型内的文件（网页端与外部开放接口同一入口）
+  Then 返回 400 且错误信息携带允许类型清单
+  When 超管恢复默认允许类型
+  Then 原被拒绝的类型预上传通过
+  And 管理员放开的未知文本类扩展名（如 .sh）上传后按纯文本兜底提取入库，二进制文件提取失败不产出乱码
+```
+
+## Feature: 文档内嵌图片附件（提取 pdf/word/excel/ppt 落出的图片资产，先存后用、不做 OCR）
+
+```gherkin
+@WK-S44 @auto:e2e
+Scenario: 提取文档时内嵌图片作为附件登记并可下载
+  When 团队成员上传含 2 张内嵌图片的 word 文档（上传完成即自动提取）
+  Then 文档图片列表返回 2 项，按文档内序号排列且含文件名/扩展名/大小/预签名下载地址
+  And 已提取正文不含图片引用（失效临时路径不进入切割与向量化），文本内容保留
+  When 逐张下载图片附件
+  Then 返回字节与文档内原始图片完全一致
+  When 上传含 1 张内嵌图片的 pdf 文档并提取
+  Then 图片列表返回 1 项且页码解析为 1
+```
+
+```gherkin
+@WK-S45 @auto:e2e
+Scenario: 图片附件的生命周期与共享保护
+  When 对含图文档重新执行提取
+  Then 图片列表仍为原有项数（替换登记不重复）
+  When 另一份不同文档包含同一批图片（图片按内容寻址共享）后删除原文档
+  Then 另一文档的图片仍可下载且字节一致，被删文档的图片列表返回 404
+  When 非团队成员访问图片列表、伪造图片 id 下载
+  Then 一律返回 404
+  When 上传不含图片的纯文本文档并提取
+  Then 图片列表返回空数组
 ```
 
 ## Feature: 默认工作流与批量处理（多选文件一键执行）

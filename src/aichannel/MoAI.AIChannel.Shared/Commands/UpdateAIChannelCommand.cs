@@ -16,6 +16,11 @@ public class UpdateAIChannelCommand : IRequest<EmptyCommandResponse>, IModelVali
     public Guid ChannelId { get; set; }
 
     /// <summary>
+    /// 所属团队 id，0=系统渠道；由 Controller 按路由回填，请求体无需传递.
+    /// </summary>
+    public int TeamId { get; set; }
+
+    /// <summary>
     /// 渠道标识，对应 models.json 中的 provider id.
     /// </summary>
     public string ProviderKey { get; init; } = default!;

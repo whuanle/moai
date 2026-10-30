@@ -6,7 +6,7 @@
 ## 项目简介
 
 开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
-已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、AI 网关、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉/企业微信机器人接入对话）。进度见 [rounds-log.md](./docs/rounds-log.md)。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉/企业微信机器人接入对话，Agent/流程应用，按第三方登录绑定自动归属站内用户会话）、子系统注册与接入（appid+一次性密钥/token 换取+refresh 轮换/心跳在线/团队授权全员或指定/委托 SSO 登录）+ 应用接入统一表（团队 moai-ac- 与系统级 moai-sa- 同表分域，appid+密钥，重置密钥，token 换取）+ 系统资源协作面 /api/subsys/system/*（组织/用户/团队治理按 scope 分档，供 ERP 等系统推送）、角色组织（全局层级角色树/path 物化路径/用户角色分配/默认角色注册自动赋予，仅管理员）。**团队模型网关已下线**：模型仅供建模应用（对话/工作流/知识库等）内部调用，不再对外提供直连模型网关（后续由独立子系统承接），见 [docs/gateway/sdd.md](./docs/gateway/sdd.md)。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
@@ -15,7 +15,9 @@ src/MoAI/         组合宿主（Program.cs、MainModule、OpenApiModule）
 src/{auth,account,settings,oauthconnect,storage,common,infra,database,hangfire}/   平台底座
 src/{classify,team,teamplugin,variable,wiki,app,publication}/                      团队协作
 src/{feishu,dingtalk,weixinwork}/                                                       外部渠道（飞书/钉钉/企业微信机器人接入）
-src/{aichannel,aimodel,aiplugin,skill,gateway}/                                   AI 业务层
+src/subsystem/                                                                      子系统接入 + 应用接入统一表 + 系统资源协作面
+src/org/                                                                           角色组织（全局层级角色树/path 物化路径/用户角色分配）
+src/{aichannel,aimodel,aiplugin,skill}/                                       AI 业务层（团队模型网关已下线，见 docs/gateway/sdd.md）
 src/{ai,admin,plugin}/                                                             在建
 ui/               前端（React 19 + TS + Vite + antd 5 + zustand + Kiota）
 docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NET 单测
@@ -47,7 +49,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 
 **前后端对接**（[真源](./docs/api_interface.md)）
 - 流程：写后端 Controller → `cd src/MoAI && dotnet run` → `cd ui && npm run syncapi`
-- 接口文档由 NSwag 自动生成：`/openapi/v1.json` 与 Scalar 仅 Development 暴露；外部接口文档 `/openapi/external.json` 全环境暴露（部署后唯一保留，其余 openapi/scalar 路径 404）；勿手写接口文档
+- 接口文档由 NSwag 自动生成：`/openapi/v1.json` 与 Scalar 仅 Development 暴露；外部接口 `/openapi/external.json` 与子系统协作面 `/openapi/subsys.json`（/api/subsys/*，机器 token 鉴权）全环境暴露（部署后仅保留这两份，其余 openapi/scalar 路径 404）；勿手写接口文档
 - 前后对接务必使用 kiota，禁止自行拼接 http 请求
 
 **文档**（[真源](./docs/DOC-STANDARD.md)）
@@ -57,7 +59,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 ## 文档索引
 
 - [docs/README.md](./docs/README.md) — 文档地图（L0）与模块四件套索引
-- [docs/gateway/external-api-scope-system.md](./docs/gateway/external-api-scope-system.md) — 团队资源外部接口与范围体系细节总账（scope 位表、端点分档、缓存与失效、新增资源组清单、踩坑）
+- [docs/gateway/external-api-scope-system.md](./docs/gateway/external-api-scope-system.md) — 团队资源外部接口与范围体系细节总账（scope 位表、端点分档、新增资源组清单、踩坑；模型网关已下线）
 - [cqrs-conventions.md](./docs/cqrs-conventions.md) ｜ [api_interface.md](./docs/api_interface.md) ｜ [DOC-STANDARD.md](./docs/DOC-STANDARD.md)
 - [aiplugin-authoring.md](./docs/aiplugin-authoring.md) ｜ [settings.md](./docs/settings.md) ｜ [storage-file-layout.md](./docs/storage-file-layout.md)
 - [ui/AGENTS.md](./ui/AGENTS.md) — 前端专属入口（动 `ui/` 时读这份）
@@ -84,40 +86,49 @@ cd ui && npm run typecheck && npm run lint && npm run test
 # E2E（需后端运行中）
 node local-dev/user-management-e2e.mjs   # UM 37
 node local-dev/team-e2e.mjs              # TM 47
-node local-dev/wiki-e2e.mjs              # WK 32
+node local-dev/wiki-e2e.mjs              # WK 47（CRUD 门禁/统计字段 + 上传大小上限 @WK-S26 + 允许上传文件类型设置：默认回显/收窄 400 带允许清单/恢复放行 @WK-S43 + 文档内嵌图片附件：登记/下载/页码/重提取替换/跨文档共享保护 @WK-S44~S45；桩 docx/pdf 脚本自带）
 node local-dev/wiki-workflow-e2e.mjs     # WK 27（默认工作流配置 + 多选批量工作流：切割/生成元数据/向量化三步自由组合与单步执行、错误隔离与参数校验；依赖模型渠道的场景在环境无可用模型时自动跳过）
 node local-dev/wiki-recall-e2e.mjs      # WK 47（召回测试：参数校验/团队门禁 + 向量召回/文档范围过滤/相似度阈值 + AI 优化问题与生成回答 + 重排序接入与渠道故障降级 + 相邻片段上下文去重 @WK-S42；内置本地 OpenAI 兼容桩模型，无需真实模型渠道）
 node local-dev/wiki-source-e2e.mjs      # WS 66（外部源：权限与校验 + 爬虫真实抓取全链路 + 增量哈希比对 + 父页无变化仍发现新页面 + 强制全量 + 文档分页筛选 + 更新挡板/cron 语义 + 停用后同步 409 + 飞书源假凭证创建兜底 + 删除不删已入库文档；自带本地站点桩，无需外网）
 node local-dev/wiki-mcp-e2e.mjs         # WM 33（知识库 MCP 服务器：接入 key 鉴权/wiki_mcp 范围/wikiId 归属门禁 + 三只读工具（知识库列表/文件搜索/向量召回）+ 切片序号与相邻上下文去重 @WM-S7 + 无状态协议行为；内置本地桩 embedding）
-node local-dev/wiki-external-e2e.mjs    # WX 46（知识库外部开放接口：上传/提取/切割/AI 切割/向量化/删除/重命名/过滤 + 原文件下载 @WX-08 + 向量召回 recall/list 与读档分档 @WX-09 + 切片元数据生成 @WX-10；内置桩 embedding + 对话元数据桩，无需真实模型渠道）
+node local-dev/wiki-external-e2e.mjs    # WX 52（知识库外部开放接口：上传/提取/切割/AI 切割/向量化/删除/重命名/过滤 + 原文件下载 @WX-08 + 向量召回 recall/list 与读档分档 @WX-09 + 切片元数据生成 @WX-10 + 允许上传文件类型设置与放开 .sh 纯文本兜底提取 @WX-11；内置桩 embedding + 对话元数据桩，无需真实模型渠道）
 node local-dev/kg-text2cypher-e2e.mjs    # KT（知识图谱 Text2Cypher：实例绑定校验/schema 自描述/只读守卫/$kgId 隔离/行数截断/接入图；依赖 Memgraph，需含 kg_cypher_query 的新构建）
 node local-dev/kg-search-e2e.mjs         # KGS 46（知识图谱图检索：向量化同步/语义检索/绑定校验/工作流节点/召回测试；本地桩渠道，需含 SP-A 的新构建）
 node local-dev/kg-external-e2e.mjs       # KX 101（知识图谱外部接口：应用 token/团队隔离/类型节点边 CRUD/批量整批拒绝/kg_read·kg_write 分档/批量导入（类型名引用+业务 key 幂等 upsert+逐条失败报告）/validateOnly 预检/按 key 同步闭环（keys/list+edges/batch-delete）；依赖 Memgraph）
 node local-dev/kg-mcp-e2e.mjs            # KGM 35（知识图谱 MCP：kg_mcp 鉴权门禁/工具域隔离（wiki 端点不掺 KG 工具）/图谱列表/schema/节点搜索/向量召回（本地桩 embedding）/协议行为；依赖 Memgraph）
 node local-dev/kg-import-e2e.mjs         # KG 20（知识图谱导入：AI 导入桩模型全链路（KG-S26）+ JSON 结构化导入（KG-S29：类型名引用/业务 key upsert/预检/逐条报告/幂等/超限/疑似重复检测）；依赖 Memgraph）
 node local-dev/variable-e2e.mjs          # VR 30（变量：{key} SmartFormat 插值 + 私密解密 + 未匹配/JSON 花括号字面保留 + 增删改查权限）
-node local-dev/team-timer-smoke.mjs      # TIMER 22（团队定时器：CRUD/门禁 + cron 校验 + Hangfire 下次调度回显 + 立即执行成功落历史 + 失败重试终态 + 停用移除调度 + 删除保留历史；自带桩模型，零真实依赖）
+node local-dev/team-timer-smoke.mjs      # TIMER 28（团队自动化：CRUD/门禁 + cron 校验 + Hangfire 下次调度回显 + 立即执行成功落历史 + 失败重试终态 + 停用移除调度 + 删除保留历史 + 列表执行状态 lastExecutionStatus + 执行落会话 userType=timer 管理员日志页可见/本人列表排除 @TIMER-S14；自带桩模型，零真实依赖）
 node local-dev/team-plugin-e2e.mjs       # TP 47（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显 + 系统插件 key 全局保留与授权团队可用）
-node local-dev/app-e2e.mjs               # AP 209（含 AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段 + AP-97 版本号只在发布/上架时设置且只能递增不能回退 + AP-98/99 会话上下文用量查询：门禁/零值回显/对话后热态累计与生效模型回显/缓存命中捕获与使用分析聚合，AP-99d 含约 120s 审计落库轮询）
+node local-dev/app-e2e.mjs               # AP 217（含 AP-60 审批策略 a~q：六类绑定资源白名单校验/自动放通/知识库检索多源全量判定 + AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段 + AP-97 版本号只在发布/上架时设置且只能递增不能回退 + AP-98/99 会话上下文用量查询：门禁/零值回显/对话后热态累计与生效模型回显/缓存命中捕获与使用分析聚合，AP-99d 含约 120s 审计落库轮询）
 node local-dev/app-usecount-e2e.mjs      # AU 13（应用使用次数计数：会话创建推 Redis 计数每分钟批量落库 + 删除会话不回退 + 累计/存活双口径 + 调试会话不计入；含约 75s 计数周期等待）
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
-node local-dev/settings-logo-e2e.mjs    # SET 18（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认）
+node local-dev/settings-logo-e2e.mjs    # SET 28（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认；登录页背景图：上传/生效/恢复 + serverinfo 暴露 loginBackgroundPath + 门禁与伪造防护）
+node local-dev/settings-smtp-e2e.mjs     # SET 34（SMTP 邮件服务：八项保存回读/大小写归一/格式校验/门禁/未启用与未配置防护 + 测试邮件发送与 AUTH 认证全链路；内置本地 SMTP 桩，零真实依赖）
+node local-dev/auth-email-code-e2e.mjs   # AUTH 34（注册/找回密码邮箱验证码：serverinfo 双开关回显/未启用 SMTP 拒绝/发码 60s 冷却/验证码一次性与错 5 次作废/默认与自定义模板 SmartFormat 插值/重置密码旧号失效全链路 + 验证码模板设置保存校验；内置本地 SMTP 桩，零真实依赖）
 node local-dev/workflow-e2e.mjs          # WF 130（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量/对话实时过程：CUSTOM 节点事件 + AI 正文流式/图片理解节点：桩视觉模型多模态全链路·非视觉模型拒绝·来源防护；内置桩视觉模型零依赖，存量依赖真实模型的用例在环境无模型时失败属预期）
 node local-dev/publication-e2e.mjs       # PB 49（上架审核：申请/审批/撤回，is_public 审批制；上架自动取最新团队发布版本，携带版本需递增）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）
 node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载工具调用自增 use_count + options/userconfig 双接口回显；本地桩模型）
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
-node local-dev/team-apikey-scope-e2e.mjs  # TA 21（应用接入 key 功能范围：范围回显/非法代码 400/网关 model 门禁/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连网关与知识库/缓存立即性；团队接入 key 已下线）
-node local-dev/gateway-e2e.mjs            # GW 15（模型网关：应用接入 key 两种鉴权头直连/路由团队校验/已下线 moai- 前缀 401/keys 端点移除）
+node local-dev/team-apikey-scope-e2e.mjs  # TA 24（应用接入 key 功能范围：范围回显/非法代码 400/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连知识库/密钥兑换语义：缺密钥 401、错密钥 401、重置后旧密钥失效新密钥可换 @TA-40~42 + 模型网关下线断言；团队接入 key 已下线）
+node local-dev/ai-channel-auth-e2e.mjs    # AC 23（渠道级批量授权：授权视图统计+并集回显/全量替换所有私有模型/公开模型不受影响/模型列表 authorizedTeamNames 回显/团队可用性联动（/ai/model/available）/清空/admin 门禁/团队渠道 400）
+node local-dev/team-aichannel-e2e.mjs     # TC 35（团队自有模型渠道：门禁/渠道模型 CRUD/同步导入桩/聚合可用模型 isTeamChannel 标记（/ai/model/available）/模型网关下线断言/团队隔离/额度端点下线；内置 OpenAI 兼容桩，零真实依赖）
+node local-dev/subsystem-e2e.mjs          # SUB 53（子系统注册与接入+委托 SSO：root 门禁/appid+一次性密钥（PBKDF2 哈希落库）/token 换取+机器 token refresh 轮换 @SUB-S45/心跳在线 60s TTL/停用即拒/密钥重置/团队授权全员与指定/删除释放 appid + 委托码签发-兑换-刷新全链路与门禁；零外部依赖）
+node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000  # SAA 61（系统应用接入统一表：管理 CRUD+重置密钥/appid+密钥与 access_token 双轨鉴权 @SAA-S17~S29/refresh 轮换/停用双轨 403/scope 分档 @SAA-S30~S33/系统资源接口：用户 upsert 幂等推送+禁用+root 保护 @SAA-S34~S42、组织角色树与用户角色分配 @SAA-S43~S49、团队与成员治理 @SAA-S50~S56；零外部依赖，需后端运行中）
+node local-dev/org-e2e.mjs                # ORG 38（角色组织：管理员门禁/角色树创建与 path 物化路径计算/同父重名 409/子树整体迁移重写 path/防环/删除保护与级联解绑/用户角色分配·去重·整体覆盖 + 默认角色：设置·清空·注册自动获得·删除联动；零外部依赖）
 node local-dev/aimodel-sync-e2e.mjs       # AM 14（模型同步挑选导入：sync 只探测不落库 + 候选项 recognized/exists/modelKind + import 默认停用 + 再 sync exists 标记；内置 /models 桩服务，零真实依赖）
-node local-dev/external-app-e2e.mjs       # EA 76（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话/悬浮组件 tokenProvider·onRequest 拦截器与全局 mount）
+node local-dev/model-catalog-e2e.mjs      # MC 16（模型目录在线同步：catalog/sync 门禁 401/403 + configs/models.json 优先内置目录且按时间戳自动重载 + configs 损坏回退不崩 + 真实下载 opencode 目录覆盖 configs 立即生效；下载场景需外网或 HTTPS_PROXY 可达 models.opencode.ai，网络不通时该场景失败属预期）
+node local-dev/external-app-e2e.mjs       # EA 75（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话/悬浮组件 tokenProvider·onRequest 拦截器与全局 mount + 模型网关下线断言）
 node local-dev/app-acp-e2e.mjs            # ACP 21（应用 ACP：app_acp scope 门禁 + JSON-RPC initialize/session/* + Agent/Workflow 应用 ACP 对话 + cancel 中断 + 范围缓存立即性；内置桩模型与确定性流程编排，零 SKIP）
 node local-dev/security-strategies-e2e.mjs  # SEC 23（应用安全五策略：输入检查点/工具参数预检拦截/回复哈希/事件审计/模型回复缓冲拦截/注入启发式；内置回显桩模型，零真实依赖）
 node local-dev/app-a2a-e2e.mjs          # A2A 20（应用 A2A 协议：app_a2a 门禁/Agent Card/message-send 与 stream（SSE 事件序列）/tasks-get·cancel/会话续聊与落库/用户 token/范围立即性）
 node local-dev/subagent-e2e.mjs          # SA 10（子代理协作：spawn_subagent 委派全链路 + 深度固定 1 桩捕获断言 + 未开启不注册；本地桩模型）
-node local-dev/agent-memory-e2e.mjs      # MEM 32（长期记忆：工具显式写入 + flush→MQ 两段式自动提取 + 每轮注入 + 用户隔离/模式 + 删除清空 + 压缩折叠视图 + 向量化模型/维度锁定（写入记忆后换模型/维度 400、关闭保留参照系、同模型重开、清空后解锁按新维度写入）；本地桩 embedding+chat，零 SKIP）
+node local-dev/agent-app-tool-e2e.mjs    # AP 21（Agent 应用绑定为工具：绑定校验/回显/null 不清空/互绑与传递环 400/含自身节点流程放行（流程侧守卫负责）/agent__ 无头单轮全链路按发布快照/history 透传/解绑下线；本地桩模型，零 SKIP）
+node local-dev/agent-memory-e2e.mjs      # MEM 36（长期记忆：平台未开启时应用开启 400 + 工具显式写入 + flush→MQ 两段式自动提取 + 每轮注入 + 用户隔离/模式 + 删除清空 + 压缩折叠视图 + 统一模型锁定（有任意记忆换平台模型/维度 400、应用关闭重开不受影响、root 清空全部后解锁换模型恢复写入）；模型/维度统一系统设置、应用配置剥离模型字段；本地桩 embedding+chat，零 SKIP，收尾还原 MEMORY_* 设置）
+node local-dev/memory-management-e2e.mjs # MEM 54（记忆管理：跨应用总览/应用记忆编辑 + 个人全局记忆 CRUD/用户隔离/应用记忆存为全局 + 三级开关：平台 MEMORY_ENABLED 总开关/管理员 allowGlobalMemory/用户接入开关 + 全局跨应用注入与注入不丢上下文 + memory_save scope=global/forget 全局兜底 + MEMORY_* 统一设置门禁校验与模型锁定（应用配置剥离模型字段）/root 清空全部记忆（应用+全局）解锁；本地桩 embedding+chat，零 SKIP，收尾自清理；中断残留先跑 memory-global-reset.mjs）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 169（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70 + 插件头像 S43~S45/创建携带 avatarPath S121~S123；真实 Key/真库用例环境门控 SKIP）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/jina-search-e2e.mjs       # DYN 18（Jina 搜索/网页阅读成功路径与解析，自建桩服务按请求体 q/url 区分端点，无需真实 Key）

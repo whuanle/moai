@@ -17,6 +17,7 @@ public class DeleteExternalWikiDocumentsCommandHandler : IRequestHandler<DeleteE
     private readonly DatabaseContext _databaseContext;
     private readonly IStorageService _storageService;
     private readonly IExternalWikiAuthorizer _externalWikiAuthorizer;
+    private readonly WikiDocumentProcessingService _processingService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteExternalWikiDocumentsCommandHandler"/> class.
@@ -24,11 +25,13 @@ public class DeleteExternalWikiDocumentsCommandHandler : IRequestHandler<DeleteE
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="storageService">存储领域服务.</param>
     /// <param name="externalWikiAuthorizer">外部知识库授权器.</param>
-    public DeleteExternalWikiDocumentsCommandHandler(DatabaseContext databaseContext, IStorageService storageService, IExternalWikiAuthorizer externalWikiAuthorizer)
+    /// <param name="processingService">文档内容处理服务.</param>
+    public DeleteExternalWikiDocumentsCommandHandler(DatabaseContext databaseContext, IStorageService storageService, IExternalWikiAuthorizer externalWikiAuthorizer, WikiDocumentProcessingService processingService)
     {
         _databaseContext = databaseContext;
         _storageService = storageService;
         _externalWikiAuthorizer = externalWikiAuthorizer;
+        _processingService = processingService;
     }
 
     /// <inheritdoc/>
@@ -72,6 +75,9 @@ public class DeleteExternalWikiDocumentsCommandHandler : IRequestHandler<DeleteE
         await _storageService.DeleteFilesAsync(fileIds, cancellationToken);
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 删除关联的内嵌图片附件登记，并清理不再被引用的图片文件
+        await _processingService.DeleteDocumentImagesAsync((int)request.WikiId, deletedDocumentIds, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

@@ -13,6 +13,10 @@ import { resolveStorageUrl } from '@/utils/storage'
 const MEMORY_MODE_OFF = 1
 const MEMORY_MODE_APP_ONLY = 2
 
+/** 用户全局记忆接入模式（对齐后端 AgentMemorySettings.UserGlobalMode*）：仅 接入（0）/ 不接入（1）两态 */
+const MEMORY_GLOBAL_ON = 0
+const MEMORY_GLOBAL_OFF = 1
+
 /** 面板宽度持久化键与取值范围 */
 const PANEL_WIDTH_KEY = 'moai:chat:settings-width'
 const DEFAULT_PANEL_WIDTH = 460
@@ -56,6 +60,9 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
   // 长期记忆偏好（仅 开启/关闭 两态；明细管理在「管理记忆」页）
   const [memoryEnabled, setMemoryEnabled] = useState(false)
   const [draftMemoryMode, setDraftMemoryMode] = useState(MEMORY_MODE_APP_ONLY)
+  // 全局记忆接入偏好（应用 allowGlobalMemory 时展示；仅 接入/不接入 两态）
+  const [memoryGlobalAllowed, setMemoryGlobalAllowed] = useState(false)
+  const [draftMemoryGlobalMode, setDraftMemoryGlobalMode] = useState(MEMORY_GLOBAL_ON)
   // 面板宽度：左缘手柄拖拽调整，localStorage 持久化
   const [panelWidth, setPanelWidth] = useState(() => {
     const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY))
@@ -102,6 +109,8 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
         setMemoryEnabled(cfg.memoryEnabled)
         // 未设置（0）按开启生效；面板只呈现 开启/关闭 两态
         setDraftMemoryMode(cfg.memoryMode === 1 ? MEMORY_MODE_OFF : MEMORY_MODE_APP_ONLY)
+        setMemoryGlobalAllowed(cfg.memoryGlobalAllowed)
+        setDraftMemoryGlobalMode(cfg.memoryGlobalMode === 1 ? MEMORY_GLOBAL_OFF : MEMORY_GLOBAL_ON)
       })
       .catch(() => undefined)
       .finally(() => setLoading(false))
@@ -175,6 +184,10 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
         skills: draftSkills,
         toolApprovalMode: draftApprovalMode,
         ...(memoryEnabled ? { memoryMode: draftMemoryMode } : {}),
+        // 全局接入偏好仅应用允许且记忆未关闭时提交
+        ...(memoryEnabled && memoryGlobalAllowed && draftMemoryMode !== MEMORY_MODE_OFF
+          ? { memoryGlobalMode: draftMemoryGlobalMode }
+          : {}),
       })
       feedback.success(t('appChat.settingsSaved'))
       onSaved(draftPromptId, draftApprovalMode)
@@ -184,13 +197,18 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
     } finally {
       setSaving(false)
     }
-  }, [appId, draftApprovalMode, draftMemoryMode, draftPromptId, draftSkills, memoryEnabled, onClose, onSaved, t])
+  }, [appId, draftApprovalMode, draftMemoryGlobalMode, draftMemoryMode, draftPromptId, draftSkills, memoryEnabled, memoryGlobalAllowed, onClose, onSaved, t])
 
   const skills = visibleSkills()
 
   const memoryModeOptions = [
     { value: MEMORY_MODE_APP_ONLY, label: t('appChat.memoryModeOn'), hint: t('appChat.memoryModeOnHint') },
     { value: MEMORY_MODE_OFF, label: t('appChat.memoryModeOff'), hint: t('appChat.memoryModeOffHint') },
+  ]
+
+  const memoryGlobalOptions = [
+    { value: MEMORY_GLOBAL_ON, label: t('appChat.memoryGlobalOn'), hint: t('appChat.memoryGlobalOnHint') },
+    { value: MEMORY_GLOBAL_OFF, label: t('appChat.memoryGlobalOff'), hint: t('appChat.memoryGlobalOffHint') },
   ]
 
   // 关闭时不渲染，避免与专家面板重复挂载同名列表项
@@ -364,6 +382,25 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
                     </Tooltip>
                   ))}
                 </div>
+                {memoryGlobalAllowed && (
+                  <>
+                    <div className="moai-chat__settings-section">{t('appChat.memoryGlobalSection')}</div>
+                    <div className="moai-chat__settings-modes">
+                      {memoryGlobalOptions.map((option) => (
+                        <Tooltip key={option.value} title={draftMemoryMode === MEMORY_MODE_OFF ? t('appChat.memoryGlobalDisabledByOff') : option.hint} placement="top">
+                          <button
+                            type="button"
+                            disabled={draftMemoryMode === MEMORY_MODE_OFF}
+                            className={`moai-chat__settings-mode${draftMemoryMode !== MEMORY_MODE_OFF && draftMemoryGlobalMode === option.value ? ' is-active' : ''}`}
+                            onClick={() => setDraftMemoryGlobalMode(option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <div style={{ padding: '4px 12px 12px' }}>
                   <Button
                     size="small"

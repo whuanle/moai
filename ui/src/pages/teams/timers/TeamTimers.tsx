@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
+import { Badge, Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import {
   CaretRightOutlined,
   DeleteOutlined,
@@ -14,14 +14,16 @@ import {
   PlusOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { DataTable, feedback } from '@/design-system'
+import { CronExpressionInput, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { getApps, type AppItem } from '@/api/app'
 import {
+  TIMER_STATUS,
   createTeamTimer,
   deleteTeamTimer,
   getTeamTimers,
+  isTimerStatusActive,
   runTeamTimer,
   updateTeamTimer,
   type TeamTimerItem,
@@ -30,13 +32,8 @@ import { TimerRunsDrawer } from './TimerRunsDrawer'
 
 const { Text } = Typography
 
-/** cron 快选预设：统一按 UTC 提交，界面标注北京时间 */
-const CRON_PRESETS = [
-  { labelKey: 'timer.preset.hourly', value: '0 * * * *' },
-  { labelKey: 'timer.preset.daily9', value: '0 1 * * *' },
-  { labelKey: 'timer.preset.daily18', value: '0 10 * * *' },
-  { labelKey: 'timer.preset.weekly9', value: '0 1 * * 1' },
-] as const
+/** 调度表达式选择器的展示时区：北京时间（提交值仍为 UTC） */
+const CRON_DISPLAY_OFFSET_MINUTES = 480
 
 interface TimerFormValues {
   name: string
@@ -108,11 +105,20 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
     void load()
   }, [load])
 
+  // 有执行中的任务时每 5 秒自动刷新列表，状态翻到终态后停止
+  const hasActiveRun = items.some((x) => isTimerStatusActive(x.lastExecutionStatus))
+  useEffect(() => {
+    if (!hasActiveRun) return
+    const pollId = window.setInterval(() => void load(), 5000)
+    return () => window.clearInterval(pollId)
+  }, [hasActiveRun, load])
+
   const loadApps = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
     try {
       const res = await getApps(teamId)
-      setApps(res.items ?? [])
+      // 仅已发布应用可被定时执行，未发布的直接不出现在下拉
+      setApps((res.items ?? []).filter((app) => app.publishStatus === 1))
     } catch {
       // 错误已由全局请求中间件统一提示
     }
@@ -154,7 +160,8 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
         inputContent: values.inputContent,
         isEnabled: values.isEnabled,
         maxRetryCount: values.maxRetryCount,
-        retryIntervalSeconds: values.retryIntervalSeconds,
+        // 不开启重试（0 次）时间隔输入框不渲染，validateFields 返回值缺该字段；统一兜底默认 60
+        retryIntervalSeconds: values.maxRetryCount > 0 ? (values.retryIntervalSeconds ?? 60) : 60,
       }
       if (editing?.timerId) {
         await updateTeamTimer(String(editing.timerId), payload)
@@ -259,12 +266,30 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
     )
   }
 
+  /** 执行状态：活跃（等待/执行中/待重试）蓝点呼吸提示，终态显示结果，未执行过为 - */
+  const renderExecStatus = (record: TeamTimerItem) => {
+    const status = record.lastExecutionStatus
+    if (!status) return <Text type="secondary">-</Text>
+    const text = t(`timer.status.${status}`)
+    if (isTimerStatusActive(status)) {
+      return <Badge status="processing" text={text} />
+    }
+    if (status === TIMER_STATUS.Success) {
+      return <Badge status="success" text={text} />
+    }
+    if (status === TIMER_STATUS.Failed) {
+      return <Badge status="error" text={text} />
+    }
+    return <Text type="secondary">{text}</Text>
+  }
+
   return (
     <>
       <DataTable<TeamTimerItem>
         rowKey="timerId"
         loading={loading}
         dataSource={items}
+        scroll={{ x: 'max-content' }}
         onRefresh={() => void load()}
         refreshLoading={loading}
         toolbar={
@@ -326,8 +351,16 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
             render: (_, record) => renderCron(record),
           },
           {
+            title: t('timer.colExecStatus'),
+            key: 'execStatus',
+            width: 110,
+            render: (_, record) => renderExecStatus(record),
+          },
+          {
             title: t('timer.colInput'),
             dataIndex: 'inputContent',
+            width: 260,
+            // 执行指令常含超长无空格 URL：必须约束宽度 + ellipsis，否则 auto 布局把整行撑出容器
             ellipsis: { showTitle: true },
           },
           {
@@ -439,17 +472,16 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
               showSearch
               optionFilterProp="title"
               placeholder={t('timer.appPlaceholder')}
+              notFoundContent={t('timer.appEmptyPublished')}
               options={apps.map((app) => ({
                 value: String(app.appId),
                 title: app.name ?? '',
-                disabled: app.publishStatus !== 1,
                 label: (
                   <Space size={spacing.xs}>
                     <span>{app.name}</span>
                     <Tag color={app.appType === 'workflow' ? 'purple' : 'blue'} style={{ marginInlineEnd: 0 }}>
                       {app.appType === 'workflow' ? t('timer.appTypeWorkflow') : t('timer.appTypeAgent')}
                     </Tag>
-                    {app.publishStatus !== 1 && <Tag color="warning" style={{ marginInlineEnd: 0 }}>{t('timer.appUnpublished')}</Tag>}
                   </Space>
                 ),
               }))}
@@ -457,36 +489,11 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
           </Form.Item>
           <Form.Item
             name="cron"
-            label={`${t('timer.cron')}（UTC）`}
-            rules={[
-              { required: true, message: t('timer.cronRequired') },
-              {
-                validator: (_, value: string) => {
-                  const fields = (value ?? '').trim().split(/\s+/)
-                  if (fields.length !== 5) {
-                    return Promise.reject(new Error(t('timer.cronInvalid')))
-                  }
-                  return Promise.resolve()
-                },
-              },
-            ]}
+            label={t('timer.cron')}
+            rules={[{ required: true, message: t('timer.cronRequired') }]}
             extra={t('timer.cronHint')}
           >
-            <Input
-              placeholder="0 1 * * *"
-              addonAfter={
-                <Space size={spacing.sm} wrap>
-                  {CRON_PRESETS.map((preset) => (
-                    <Typography.Link
-                      key={preset.labelKey}
-                      onClick={() => form.setFieldValue('cron', preset.value)}
-                    >
-                      {t(preset.labelKey)}
-                    </Typography.Link>
-                  ))}
-                </Space>
-              }
-            />
+            <CronExpressionInput displayOffsetMinutes={CRON_DISPLAY_OFFSET_MINUTES} />
           </Form.Item>
           <Form.Item
             name="inputContent"

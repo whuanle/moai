@@ -44,6 +44,11 @@ public sealed class AppAgentConfigSnapshot
     public string WorkflowApps { get; set; } = "[]";
 
     /// <summary>
+    /// 绑定的 Agent 应用ID列表（作为工具使用），JSON 数组文本.
+    /// </summary>
+    public string AgentApps { get; set; } = "[]";
+
+    /// <summary>
     /// 应用默认使用的技能ID列表，JSON 数组文本.
     /// </summary>
     public string Skills { get; set; } = "[]";
@@ -83,6 +88,7 @@ public sealed class AppAgentConfigSnapshot
             GraphIds = string.IsNullOrWhiteSpace(config.GraphIds) ? "[]" : config.GraphIds,
             Plugins = string.IsNullOrWhiteSpace(config.Plugins) ? "[]" : config.Plugins,
             WorkflowApps = string.IsNullOrWhiteSpace(config.WorkflowApps) ? "[]" : config.WorkflowApps,
+            AgentApps = string.IsNullOrWhiteSpace(config.AgentApps) ? "[]" : config.AgentApps,
             Skills = string.IsNullOrWhiteSpace(config.Skills) ? "[]" : config.Skills,
             ExecutionSettings = string.IsNullOrWhiteSpace(config.ExecutionSettings) ? "{}" : config.ExecutionSettings,
             OpeningStatement = config.OpeningStatement ?? string.Empty,
@@ -146,6 +152,7 @@ public sealed class AppAgentConfigSnapshot
             GraphIds = snapshot.GraphIds,
             Plugins = snapshot.Plugins,
             WorkflowApps = snapshot.WorkflowApps,
+            AgentApps = snapshot.AgentApps,
             Skills = snapshot.Skills,
             ExecutionSettings = snapshot.ExecutionSettings,
             OpeningStatement = snapshot.OpeningStatement,

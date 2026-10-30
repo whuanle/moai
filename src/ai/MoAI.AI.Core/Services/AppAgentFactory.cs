@@ -215,6 +215,7 @@ public sealed class AppAgentFactory
             GraphIds = ParseGraphIds(effectiveConfig.GraphIds),
             PluginIds = ParsePluginIds(effectiveConfig.Plugins),
             WorkflowAppIds = ParsePluginIds(effectiveConfig.WorkflowApps),
+            AgentAppIds = ParsePluginIds(effectiveConfig.AgentApps),
             SkillIds = effectiveSkillIds,
             ToolApprovalMode = MoAI.AI.AppToolApprovalContract.IsValidMode(toolApprovalMode)
                 ? toolApprovalMode!
@@ -310,6 +311,7 @@ public sealed class AppAgentFactory
             GraphIds = config.GraphIds,
             Plugins = config.Plugins,
             WorkflowApps = config.WorkflowApps,
+            AgentApps = config.AgentApps,
             Skills = "[]",
             ExecutionSettings = JsonSerializer.Serialize(settings, JsonOptions),
             OpeningStatement = config.OpeningStatement ?? string.Empty,

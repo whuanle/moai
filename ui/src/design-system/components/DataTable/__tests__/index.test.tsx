@@ -50,4 +50,15 @@ describe('DataTable', () => {
     )
     expect(screen.getByText('自定义工具')).toBeInTheDocument()
   })
+  it('renders as a container-colored card to separate from bare toolbar row', () => {
+    // 测试环境无应用 ConfigProvider，断言取 antd 默认主题 token 值（colorBgContainer/colorBorderSecondary/borderRadiusLG）
+    const { container } = render(
+      <DataTable dataSource={[]} columns={[{ title: 'c', dataIndex: 'x' }]} pagination={false} />,
+    )
+    const card = container.firstElementChild as HTMLElement
+    expect(card).toHaveStyle({ background: '#ffffff' })
+    expect(card).toHaveStyle({ border: '1px solid #f0f0f0' })
+    expect(card).toHaveStyle({ 'border-radius': '8px' })
+    expect(card).toHaveStyle({ overflow: 'hidden' })
+  })
 })

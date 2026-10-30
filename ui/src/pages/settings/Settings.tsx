@@ -1,19 +1,35 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, InputNumber, Popconfirm, Select, Switch, Typography } from 'antd'
-import { CaretRightOutlined } from '@ant-design/icons'
+import { Button, Input, InputNumber, Popconfirm, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
+import { CaretRightOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { refreshServerInfo } from '@/api/auth'
 import {
+  clearAllMemory,
+  getGlobalMemoryModelOptions,
+  type GlobalMemoryModelOption,
+} from '@/api/memory'
+import {
   getSettings,
+  MEMORY_DEFAULT_DIMENSIONS,
+  normalizeWikiFileTypes,
+  parseWikiFileTypes,
   SANDBOX_TTL_LIMITS,
   saveSetting,
+  sendTestEmail,
   SandboxLimitDefaults,
   SettingKeys,
+  SMTP_DEFAULTS,
+  SMTP_SECURITY_OPTIONS,
+  WIKI_DEFAULT_FILE_TYPES,
+  resetLoginBackground,
   resetSystemLogo,
+  updateLoginBackground,
   updateSystemLogo,
+  type SmtpSecurity,
 } from '@/api/settings'
 import { AvatarUpload, Card, feedback, useNeutralColors, Page, spacing } from '@/design-system'
+import { radius } from '@/design-system/theme'
 import { DEFAULT_LOGO_SRC } from '@/layouts/useSystemLogo'
 import { useAppStore } from '@/store/app'
 import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
@@ -82,6 +98,90 @@ function CollapsibleCard({ title, defaultExpanded = false, children }: Collapsib
   )
 }
 
+interface BackgroundUploadBoxProps {
+  src: string
+  uploading: boolean
+  placeholder: string
+  uploadTip: string
+  onSelect: (file: File) => void
+}
+
+/** 登录页背景图上传入口：宽幅预览图即点击上传区，悬停显示遮罩，上传中显示加载. */
+function BackgroundUploadBox({ src, uploading, placeholder, uploadTip, onSelect }: BackgroundUploadBoxProps) {
+  const { token } = antdTheme.useToken()
+  const [hovering, setHovering] = useState(false)
+  const showMask = hovering || uploading
+
+  return (
+    <Upload
+      beforeUpload={(file) => {
+        onSelect(file)
+        return Upload.LIST_IGNORE
+      }}
+      showUploadList={false}
+      accept="image/*"
+      disabled={uploading}
+    >
+      <div
+        role="button"
+        aria-label={uploadTip}
+        title={uploadTip}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        style={{
+          position: 'relative',
+          width: 216,
+          height: 120,
+          flexShrink: 0,
+          borderRadius: radius.lg,
+          overflow: 'hidden',
+          cursor: uploading ? 'not-allowed' : 'pointer',
+          border: `1px solid ${token.colorBorderSecondary}`,
+          background: src
+            ? undefined
+            : `linear-gradient(180deg, ${token.colorBgLayout} 0%, ${token.colorPrimaryBg} 100%)`,
+        }}
+      >
+        {src ? (
+          <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: token.colorTextTertiary,
+              fontSize: 12,
+            }}
+          >
+            {placeholder}
+          </span>
+        )}
+        {showMask && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              background: token.colorBgMask,
+              color: token.colorTextLightSolid,
+              fontSize: 12,
+            }}
+          >
+            {uploading ? <Spin size="small" /> : <UploadOutlined />}
+            <span>{uploadTip}</span>
+          </div>
+        )}
+      </div>
+    </Upload>
+  )
+}
+
 export function Settings() {
   const { t } = useTranslation()
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
@@ -96,6 +196,7 @@ export function Settings() {
   const [graphDirty, setGraphDirty] = useState(false)
   const [savingWiki, setSavingWiki] = useState(false)
   const [wikiMaxFileSize, setWikiMaxFileSize] = useState(0)
+  const [wikiFileTypes, setWikiFileTypes] = useState<string[]>(WIKI_DEFAULT_FILE_TYPES)
   const [wikiDirty, setWikiDirty] = useState(false)
   const [savingSandbox, setSavingSandbox] = useState(false)
   const [sandboxMaxTtl, setSandboxMaxTtl] = useState<number>(SandboxLimitDefaults.maxTtlSeconds)
@@ -105,9 +206,36 @@ export function Settings() {
   const [logoPath, setLogoPath] = useState('')
   const [logoUploading, setLogoUploading] = useState(false)
   const [resettingLogo, setResettingLogo] = useState(false)
+  const [loginBgPath, setLoginBgPath] = useState('')
+  const [loginBgUploading, setLoginBgUploading] = useState(false)
+  const [resettingLoginBg, setResettingLoginBg] = useState(false)
   const [siteName, setSiteName] = useState('')
   const [siteNameDirty, setSiteNameDirty] = useState(false)
   const [savingSiteName, setSavingSiteName] = useState(false)
+  const [savingEmail, setSavingEmail] = useState(false)
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [emailHost, setEmailHost] = useState('')
+  const [emailPort, setEmailPort] = useState<number>(SMTP_DEFAULTS.port)
+  const [emailSecurity, setEmailSecurity] = useState<SmtpSecurity>(SMTP_DEFAULTS.security)
+  const [emailUsername, setEmailUsername] = useState('')
+  const [emailPassword, setEmailPassword] = useState('')
+  const [emailFromAddress, setEmailFromAddress] = useState('')
+  const [emailFromName, setEmailFromName] = useState('')
+  const [registerCodeEnabled, setRegisterCodeEnabled] = useState(false)
+  const [registerCodeSubject, setRegisterCodeSubject] = useState('')
+  const [registerCodeBody, setRegisterCodeBody] = useState('')
+  const [resetCodeSubject, setResetCodeSubject] = useState('')
+  const [resetCodeBody, setResetCodeBody] = useState('')
+  const [emailDirty, setEmailDirty] = useState(false)
+  const [testTo, setTestTo] = useState('')
+  const [sendingTest, setSendingTest] = useState(false)
+  const [savingMemory, setSavingMemory] = useState(false)
+  const [clearingMemory, setClearingMemory] = useState(false)
+  const [memoryEnabled, setMemoryEnabled] = useState(false)
+  const [memoryModelId, setMemoryModelId] = useState('')
+  const [memoryDimensions, setMemoryDimensions] = useState<number>(MEMORY_DEFAULT_DIMENSIONS)
+  const [memoryModels, setMemoryModels] = useState<GlobalMemoryModelOption[]>([])
+  const [memoryDirty, setMemoryDirty] = useState(false)
 
   useEffect(() => {
     void load()
@@ -127,6 +255,7 @@ export function Settings() {
       setGraphDirty(false)
       const parsedMaxFileSize = Number.parseInt(valueOf(SettingKeys.wikiMaxFileSize), 10)
       setWikiMaxFileSize(Number.isFinite(parsedMaxFileSize) && parsedMaxFileSize >= 0 ? parsedMaxFileSize : 50)
+      setWikiFileTypes(parseWikiFileTypes(valueOf(SettingKeys.wikiAllowedFileTypes)))
       setWikiDirty(false)
       const parsedSandboxTtl = Number.parseInt(valueOf(SettingKeys.sandboxMaxTtl), 10)
       setSandboxMaxTtl(
@@ -140,8 +269,42 @@ export function Settings() {
       setSandboxMaxMemory(sandboxMemory || SandboxLimitDefaults.maxMemory)
       setSandboxDirty(false)
       setLogoPath(valueOf(SettingKeys.systemLogo).trim())
+      setLoginBgPath(valueOf(SettingKeys.loginBackground).trim())
       setSiteName(valueOf(SettingKeys.systemName).trim())
       setSiteNameDirty(false)
+      setEmailEnabled(valueOf(SettingKeys.smtpEnabled) === 'true')
+      setEmailHost(valueOf(SettingKeys.smtpHost).trim())
+      const parsedPort = Number.parseInt(valueOf(SettingKeys.smtpPort), 10)
+      setEmailPort(
+        Number.isFinite(parsedPort) && parsedPort >= 1 && parsedPort <= 65535 ? parsedPort : SMTP_DEFAULTS.port,
+      )
+      const security = valueOf(SettingKeys.smtpSecurity).trim().toLowerCase()
+      setEmailSecurity((SMTP_SECURITY_OPTIONS as readonly string[]).includes(security) ? (security as SmtpSecurity) : SMTP_DEFAULTS.security)
+      setEmailUsername(valueOf(SettingKeys.smtpUsername).trim())
+      setEmailPassword(valueOf(SettingKeys.smtpPassword))
+      setEmailFromAddress(valueOf(SettingKeys.smtpFromAddress).trim())
+      setEmailFromName(valueOf(SettingKeys.smtpFromName).trim())
+      setRegisterCodeEnabled(valueOf(SettingKeys.registerEmailCodeEnabled) === 'true')
+      setRegisterCodeSubject(valueOf(SettingKeys.smtpRegisterCodeSubject))
+      setRegisterCodeBody(valueOf(SettingKeys.smtpRegisterCodeBody))
+      setResetCodeSubject(valueOf(SettingKeys.smtpResetCodeSubject))
+      setResetCodeBody(valueOf(SettingKeys.smtpResetCodeBody))
+      setEmailDirty(false)
+      setTestTo('')
+      setMemoryEnabled(valueOf(SettingKeys.memoryEnabled) === 'true')
+      setMemoryModelId(valueOf(SettingKeys.memoryEmbeddingModel).trim())
+      const parsedMemoryDimensions = Number.parseInt(valueOf(SettingKeys.memoryEmbeddingDimensions), 10)
+      setMemoryDimensions(
+        Number.isFinite(parsedMemoryDimensions) && parsedMemoryDimensions >= 1 && parsedMemoryDimensions <= 2000
+          ? parsedMemoryDimensions
+          : MEMORY_DEFAULT_DIMENSIONS,
+      )
+      setMemoryDirty(false)
+      try {
+        setMemoryModels(await getGlobalMemoryModelOptions())
+      } catch {
+        // 模型选项加载失败不影响其余设置展示
+      }
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -170,9 +333,16 @@ export function Settings() {
   }
 
   async function handleSaveWiki() {
+    // 扩展名归一失败（为空/非法/重复）时前端拦截，不发起任何保存请求
+    const normalizedFileTypes = normalizeWikiFileTypes(wikiFileTypes)
+    if (!normalizedFileTypes) {
+      feedback.error(t('settings.wikiUpload.invalidFileTypes'))
+      return
+    }
     setSavingWiki(true)
     try {
       await saveSetting(SettingKeys.wikiMaxFileSize, String(wikiMaxFileSize ?? 0))
+      await saveSetting(SettingKeys.wikiAllowedFileTypes, normalizedFileTypes.join(','))
       feedback.success(t('settings.saveSuccess'))
       setWikiDirty(false)
     } catch {
@@ -227,6 +397,100 @@ export function Settings() {
     }
   }
 
+  async function handleSaveEmail() {
+    if (
+      !Number.isInteger(emailPort) ||
+      emailPort < 1 ||
+      emailPort > 65535
+    ) {
+      feedback.error(t('settings.email.invalidPort'))
+      return
+    }
+    setSavingEmail(true)
+    try {
+      // 先写开关再写连接项，开启状态下连接项随后覆盖生效
+      await saveSetting(SettingKeys.smtpEnabled, emailEnabled ? 'true' : 'false')
+      await saveSetting(SettingKeys.smtpHost, emailHost.trim())
+      await saveSetting(SettingKeys.smtpPort, String(emailPort))
+      await saveSetting(SettingKeys.smtpSecurity, emailSecurity)
+      await saveSetting(SettingKeys.smtpUsername, emailUsername.trim())
+      await saveSetting(SettingKeys.smtpPassword, emailPassword)
+      await saveSetting(SettingKeys.smtpFromAddress, emailFromAddress.trim())
+      await saveSetting(SettingKeys.smtpFromName, emailFromName.trim())
+      await saveSetting(SettingKeys.registerEmailCodeEnabled, registerCodeEnabled ? 'true' : 'false')
+      await saveSetting(SettingKeys.smtpRegisterCodeSubject, registerCodeSubject.trim())
+      await saveSetting(SettingKeys.smtpRegisterCodeBody, registerCodeBody)
+      await saveSetting(SettingKeys.smtpResetCodeSubject, resetCodeSubject.trim())
+      await saveSetting(SettingKeys.smtpResetCodeBody, resetCodeBody)
+      feedback.success(t('settings.saveSuccess'))
+      setEmailDirty(false)
+    } catch {
+      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
+      void load()
+    } finally {
+      setSavingEmail(false)
+    }
+  }
+
+  async function handleSaveMemory() {
+    if (memoryEnabled && !memoryModelId) {
+      feedback.error(t('settings.memory.modelRequired'))
+      return
+    }
+    if (!Number.isInteger(memoryDimensions) || memoryDimensions < 1 || memoryDimensions > 2000) {
+      feedback.error(t('settings.memory.invalidDimensions'))
+      return
+    }
+    setSavingMemory(true)
+    try {
+      // 先写模型与维度，再写开关：开启校验要求模型已保存
+      await saveSetting(SettingKeys.memoryEmbeddingModel, memoryModelId)
+      await saveSetting(SettingKeys.memoryEmbeddingDimensions, String(memoryDimensions))
+      await saveSetting(SettingKeys.memoryEnabled, memoryEnabled ? 'true' : 'false')
+      feedback.success(t('settings.saveSuccess'))
+      setMemoryDirty(false)
+    } catch {
+      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
+      void load()
+    } finally {
+      setSavingMemory(false)
+    }
+  }
+
+  async function handleClearAllMemory() {
+    setClearingMemory(true)
+    try {
+      await clearAllMemory()
+      feedback.success(t('settings.memory.clearSuccess'))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setClearingMemory(false)
+    }
+  }
+
+  async function handleSendTestEmail() {
+    // 测试邮件使用已保存的服务端配置，本地未保存的修改不参与发送
+    if (emailDirty) {
+      feedback.error(t('settings.email.testSaveFirst'))
+      return
+    }
+    const to = testTo.trim()
+    if (!to) {
+      feedback.error(t('settings.email.testToRequired'))
+      return
+    }
+    setSendingTest(true)
+    try {
+      await sendTestEmail(to)
+      feedback.success(t('settings.email.testSuccess'))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setSendingTest(false)
+    }
+  }
+
   async function handleLogoUpload(file: File) {
     if (!file.type.startsWith('image/')) {
       feedback.error(t('settings.logo.typeError'))
@@ -264,6 +528,43 @@ export function Settings() {
     }
   }
 
+  async function handleLoginBgUpload(file: File) {
+    if (!file.type.startsWith('image/')) {
+      feedback.error(t('settings.loginBg.typeError'))
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      feedback.error(t('settings.loginBg.sizeError'))
+      return
+    }
+    setLoginBgUploading(true)
+    try {
+      const objectKey = await updateLoginBackground(file)
+      setLoginBgPath(objectKey)
+      // 刷新全局 serverInfo，登录页背景立即生效
+      await refreshServerInfo()
+      feedback.success(t('settings.loginBg.uploadSuccess'))
+    } catch {
+      void load()
+    } finally {
+      setLoginBgUploading(false)
+    }
+  }
+
+  async function handleLoginBgReset() {
+    setResettingLoginBg(true)
+    try {
+      await resetLoginBackground()
+      setLoginBgPath('')
+      await refreshServerInfo()
+      feedback.success(t('settings.loginBg.resetSuccess'))
+    } catch {
+      void load()
+    } finally {
+      setResettingLoginBg(false)
+    }
+  }
+
   if (!isRoot) {
     return <Navigate to="/apps" replace />
   }
@@ -271,22 +572,76 @@ export function Settings() {
   return (
     <Page>
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-        <CollapsibleCard title={t('settings.siteName.title')} defaultExpanded>
-          <Field label={t('settings.siteName.name')}>
-            <Input
-              value={siteName}
-              maxLength={50}
-              showCount
-              placeholder={t('settings.siteName.placeholder')}
-              aria-label={t('settings.siteName.name')}
-              onChange={(e) => {
-                setSiteName(e.target.value)
-                setSiteNameDirty(true)
-              }}
-              style={{ maxWidth: 360 }}
-            />
-            <Text type="secondary">{t('settings.siteName.desc')}</Text>
-          </Field>
+        <CollapsibleCard title={t('settings.site.title')} defaultExpanded>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
+            <Field label={t('settings.siteName.name')}>
+              <Input
+                value={siteName}
+                maxLength={50}
+                showCount
+                placeholder={t('settings.siteName.placeholder')}
+                aria-label={t('settings.siteName.name')}
+                onChange={(e) => {
+                  setSiteName(e.target.value)
+                  setSiteNameDirty(true)
+                }}
+                style={{ maxWidth: 360 }}
+              />
+              <Text type="secondary">{t('settings.siteName.desc')}</Text>
+            </Field>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+              <AvatarUpload
+                src={resolveStorageUrl(logoPath) || DEFAULT_LOGO_SRC}
+                shape="square"
+                size={96}
+                uploading={logoUploading}
+                onSelect={handleLogoUpload}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Text strong>{t('settings.logo.name')}</Text>
+                <br />
+                <Text type="secondary">{t('settings.logo.desc')}</Text>
+              </div>
+              {logoPath && (
+                <Popconfirm
+                  title={t('settings.logo.resetConfirm')}
+                  onConfirm={handleLogoReset}
+                  disabled={resettingLogo}
+                >
+                  <Button danger loading={resettingLogo}>
+                    {t('settings.logo.reset')}
+                  </Button>
+                </Popconfirm>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+              <BackgroundUploadBox
+                src={resolveStorageUrl(loginBgPath)}
+                uploading={loginBgUploading}
+                placeholder={t('settings.loginBg.placeholder')}
+                uploadTip={t('settings.loginBg.upload')}
+                onSelect={handleLoginBgUpload}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Text strong>{t('settings.loginBg.name')}</Text>
+                <br />
+                <Text type="secondary">{t('settings.loginBg.desc')}</Text>
+              </div>
+              {loginBgPath && (
+                <Popconfirm
+                  title={t('settings.loginBg.resetConfirm')}
+                  onConfirm={handleLoginBgReset}
+                  disabled={resettingLoginBg}
+                >
+                  <Button danger loading={resettingLoginBg}>
+                    {t('settings.loginBg.reset')}
+                  </Button>
+                </Popconfirm>
+              )}
+            </div>
+          </div>
 
           <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
             <Button
@@ -300,31 +655,49 @@ export function Settings() {
           </div>
         </CollapsibleCard>
 
-        <CollapsibleCard title={t('settings.logo.title')} defaultExpanded>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-            <AvatarUpload
-              src={resolveStorageUrl(logoPath) || DEFAULT_LOGO_SRC}
-              shape="square"
-              size={96}
-              uploading={logoUploading}
-              onSelect={handleLogoUpload}
+        <CollapsibleCard title={t('settings.wikiUpload.title')}>
+          <Field label={t('settings.wikiUpload.maxFileSize.name')}>
+            <InputNumber
+              value={wikiMaxFileSize}
+              min={0}
+              max={1024}
+              precision={0}
+              addonAfter="MB"
+              aria-label={t('settings.wikiUpload.maxFileSize.name')}
+              onChange={(value) => {
+                setWikiMaxFileSize(typeof value === 'number' ? value : 0)
+                setWikiDirty(true)
+              }}
+              style={{ width: 200 }}
             />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Text strong>{t('settings.logo.name')}</Text>
-              <br />
-              <Text type="secondary">{t('settings.logo.desc')}</Text>
-            </div>
-            {logoPath && (
-              <Popconfirm
-                title={t('settings.logo.resetConfirm')}
-                onConfirm={handleLogoReset}
-                disabled={resettingLogo}
-              >
-                <Button danger loading={resettingLogo}>
-                  {t('settings.logo.reset')}
-                </Button>
-              </Popconfirm>
-            )}
+            <Text type="secondary">{t('settings.wikiUpload.maxFileSize.desc')}</Text>
+          </Field>
+          <Field label={t('settings.wikiUpload.fileTypes.name')}>
+            <Select
+              mode="tags"
+              open={false}
+              tokenSeparators={[',']}
+              value={wikiFileTypes}
+              aria-label={t('settings.wikiUpload.fileTypes.name')}
+              placeholder={t('settings.wikiUpload.fileTypes.placeholder')}
+              onChange={(value) => {
+                setWikiFileTypes(value)
+                setWikiDirty(true)
+              }}
+              style={{ maxWidth: 560 }}
+            />
+            <Text type="secondary">{t('settings.wikiUpload.fileTypes.desc')}</Text>
+          </Field>
+
+          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              loading={savingWiki}
+              disabled={!wikiDirty || loading}
+              onClick={handleSaveWiki}
+            >
+              {t('settings.save')}
+            </Button>
           </div>
         </CollapsibleCard>
 
@@ -431,30 +804,249 @@ export function Settings() {
           </div>
         </CollapsibleCard>
 
-        <CollapsibleCard title={t('settings.wikiUpload.title')}>
-          <Field label={t('settings.wikiUpload.maxFileSize.name')}>
-            <InputNumber
-              value={wikiMaxFileSize}
-              min={0}
-              max={1024}
-              precision={0}
-              addonAfter="MB"
-              aria-label={t('settings.wikiUpload.maxFileSize.name')}
-              onChange={(value) => {
-                setWikiMaxFileSize(typeof value === 'number' ? value : 0)
-                setWikiDirty(true)
+        <CollapsibleCard title={t('settings.email.title')}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Text strong>{t('settings.email.enable.name')}</Text>
+              <br />
+              <Text type="secondary">{t('settings.email.enable.desc')}</Text>
+            </div>
+            <Switch
+              checked={emailEnabled}
+              loading={loading}
+              onChange={(checked) => {
+                setEmailEnabled(checked)
+                setEmailDirty(true)
               }}
-              style={{ width: 200 }}
             />
-            <Text type="secondary">{t('settings.wikiUpload.maxFileSize.desc')}</Text>
-          </Field>
+          </div>
+
+          {emailEnabled && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.md,
+                marginTop: spacing.lg,
+              }}
+            >
+              <div style={{ display: 'flex', gap: spacing.md }}>
+                <div style={{ flex: 2, minWidth: 0 }}>
+                  <Field label={t('settings.email.host.name')}>
+                    <Input
+                      value={emailHost}
+                      placeholder={t('settings.email.host.placeholder')}
+                      aria-label={t('settings.email.host.name')}
+                      onChange={(e) => {
+                        setEmailHost(e.target.value)
+                        setEmailDirty(true)
+                      }}
+                    />
+                  </Field>
+                </div>
+                <div style={{ width: 160, flexShrink: 0 }}>
+                  <Field label={t('settings.email.port.name')}>
+                    <InputNumber
+                      value={emailPort}
+                      min={1}
+                      max={65535}
+                      precision={0}
+                      aria-label={t('settings.email.port.name')}
+                      onChange={(value) => {
+                        setEmailPort(typeof value === 'number' ? value : SMTP_DEFAULTS.port)
+                        setEmailDirty(true)
+                      }}
+                      style={{ width: '100%' }}
+                    />
+                  </Field>
+                </div>
+                <div style={{ width: 260, flexShrink: 0 }}>
+                  <Field label={t('settings.email.security.name')}>
+                    <Select
+                      value={emailSecurity}
+                      aria-label={t('settings.email.security.name')}
+                      onChange={(value) => {
+                        setEmailSecurity(value)
+                        setEmailDirty(true)
+                      }}
+                      options={[
+                        { value: 'ssl', label: t('settings.email.securitySsl') },
+                        { value: 'starttls', label: t('settings.email.securityStarttls') },
+                        { value: 'none', label: t('settings.email.securityNone') },
+                      ]}
+                      style={{ width: '100%' }}
+                    />
+                  </Field>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: spacing.md }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Field label={t('settings.email.username.name')}>
+                    <Input
+                      value={emailUsername}
+                      placeholder={t('settings.email.username.placeholder')}
+                      aria-label={t('settings.email.username.name')}
+                      onChange={(e) => {
+                        setEmailUsername(e.target.value)
+                        setEmailDirty(true)
+                      }}
+                    />
+                  </Field>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Field label={t('settings.email.password.name')}>
+                    <Input.Password
+                      value={emailPassword}
+                      placeholder={t('settings.email.password.placeholder')}
+                      aria-label={t('settings.email.password.name')}
+                      onChange={(e) => {
+                        setEmailPassword(e.target.value)
+                        setEmailDirty(true)
+                      }}
+                    />
+                  </Field>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: spacing.md }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Field label={t('settings.email.fromAddress.name')}>
+                    <Input
+                      value={emailFromAddress}
+                      placeholder={t('settings.email.fromAddress.placeholder')}
+                      aria-label={t('settings.email.fromAddress.name')}
+                      onChange={(e) => {
+                        setEmailFromAddress(e.target.value)
+                        setEmailDirty(true)
+                      }}
+                    />
+                  </Field>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Field label={t('settings.email.fromName.name')}>
+                    <Input
+                      value={emailFromName}
+                      placeholder={t('settings.email.fromName.placeholder')}
+                      aria-label={t('settings.email.fromName.name')}
+                      onChange={(e) => {
+                        setEmailFromName(e.target.value)
+                        setEmailDirty(true)
+                      }}
+                    />
+                  </Field>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.md,
+                  marginTop: spacing.sm,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <Text strong>{t('settings.email.registerCode.name')}</Text>
+                  <br />
+                  <Text type="secondary">{t('settings.email.registerCode.desc')}</Text>
+                </div>
+                <Switch
+                  checked={registerCodeEnabled}
+                  onChange={(checked) => {
+                    setRegisterCodeEnabled(checked)
+                    setEmailDirty(true)
+                  }}
+                />
+              </div>
+              <Field label={t('settings.email.registerCodeSubject.name')}>
+                <Input
+                  value={registerCodeSubject}
+                  placeholder={t('settings.email.registerCodeSubject.placeholder')}
+                  aria-label={t('settings.email.registerCodeSubject.name')}
+                  maxLength={500}
+                  onChange={(e) => {
+                    setRegisterCodeSubject(e.target.value)
+                    setEmailDirty(true)
+                  }}
+                />
+              </Field>
+              <Field label={t('settings.email.registerCodeBody.name')}>
+                <Input.TextArea
+                  value={registerCodeBody}
+                  placeholder={t('settings.email.registerCodeBody.placeholder')}
+                  aria-label={t('settings.email.registerCodeBody.name')}
+                  rows={3}
+                  maxLength={2000}
+                  onChange={(e) => {
+                    setRegisterCodeBody(e.target.value)
+                    setEmailDirty(true)
+                  }}
+                />
+              </Field>
+              <Field label={t('settings.email.resetCodeSubject.name')}>
+                <Input
+                  value={resetCodeSubject}
+                  placeholder={t('settings.email.resetCodeSubject.placeholder')}
+                  aria-label={t('settings.email.resetCodeSubject.name')}
+                  maxLength={500}
+                  onChange={(e) => {
+                    setResetCodeSubject(e.target.value)
+                    setEmailDirty(true)
+                  }}
+                />
+              </Field>
+              <Field label={t('settings.email.resetCodeBody.name')}>
+                <Input.TextArea
+                  value={resetCodeBody}
+                  placeholder={t('settings.email.resetCodeBody.placeholder')}
+                  aria-label={t('settings.email.resetCodeBody.name')}
+                  rows={3}
+                  maxLength={2000}
+                  onChange={(e) => {
+                    setResetCodeBody(e.target.value)
+                    setEmailDirty(true)
+                  }}
+                />
+                <Text type="secondary">{t('settings.email.templateTip')}</Text>
+              </Field>
+            </div>
+          )}
+
+          {emailEnabled && (
+            <Field label={t('settings.email.testTo.name')}>
+              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
+                <Input
+                  value={testTo}
+                  placeholder={t('settings.email.testTo.placeholder')}
+                  aria-label={t('settings.email.testTo.name')}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  style={{ maxWidth: 360 }}
+                />
+                <Button
+                  icon={<MailOutlined />}
+                  loading={sendingTest}
+                  disabled={loading}
+                  onClick={handleSendTestEmail}
+                >
+                  {t('settings.email.testSend')}
+                </Button>
+              </div>
+              {emailDirty && <Text type="secondary">{t('settings.email.testSaveFirst')}</Text>}
+            </Field>
+          )}
 
           <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
             <Button
               type="primary"
-              loading={savingWiki}
-              disabled={!wikiDirty || loading}
-              onClick={handleSaveWiki}
+              loading={savingEmail}
+              disabled={!emailDirty || loading}
+              onClick={handleSaveEmail}
             >
               {t('settings.save')}
             </Button>
@@ -515,6 +1107,98 @@ export function Settings() {
               loading={savingSandbox}
               disabled={!sandboxDirty || loading}
               onClick={handleSaveSandbox}
+            >
+              {t('settings.save')}
+            </Button>
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title={t('settings.memory.title')}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Text strong>{t('settings.memory.enable.name')}</Text>
+              <br />
+              <Text type="secondary">{t('settings.memory.enable.desc')}</Text>
+            </div>
+            <Switch
+              checked={memoryEnabled}
+              loading={loading}
+              onChange={(checked) => {
+                setMemoryEnabled(checked)
+                setMemoryDirty(true)
+              }}
+            />
+          </div>
+
+          {memoryEnabled && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.md,
+                marginTop: spacing.lg,
+              }}
+            >
+              <Field label={t('settings.memory.model.name')}>
+                <Select
+                  value={memoryModelId || undefined}
+                  aria-label={t('settings.memory.model.name')}
+                  placeholder={t('settings.memory.model.placeholder')}
+                  onChange={(value) => {
+                    setMemoryModelId(value)
+                    setMemoryDirty(true)
+                  }}
+                  options={memoryModels
+                    .filter((item) => item.id)
+                    .map((item) => ({ value: String(item.id), label: item.name || '-' }))}
+                  style={{ maxWidth: 420 }}
+                />
+                <Text type="secondary">{t('settings.memory.model.desc')}</Text>
+              </Field>
+              <Field label={t('settings.memory.dimensions.name')}>
+                <InputNumber
+                  value={memoryDimensions}
+                  min={1}
+                  max={2000}
+                  precision={0}
+                  aria-label={t('settings.memory.dimensions.name')}
+                  onChange={(value) => {
+                    setMemoryDimensions(typeof value === 'number' ? value : MEMORY_DEFAULT_DIMENSIONS)
+                    setMemoryDirty(true)
+                  }}
+                  style={{ width: 200 }}
+                />
+                <Text type="secondary">{t('settings.memory.dimensions.desc')}</Text>
+              </Field>
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <Popconfirm
+                  title={t('settings.memory.clearConfirm')}
+                  okText={t('common.ok')}
+                  cancelText={t('common.cancel')}
+                  onConfirm={handleClearAllMemory}
+                  disabled={clearingMemory}
+                >
+                  <Button danger loading={clearingMemory}>
+                    {t('settings.memory.clear')}
+                  </Button>
+                </Popconfirm>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              loading={savingMemory}
+              disabled={!memoryDirty || loading}
+              onClick={handleSaveMemory}
             >
               {t('settings.save')}
             </Button>

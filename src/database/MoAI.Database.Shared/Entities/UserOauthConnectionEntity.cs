@@ -35,6 +35,11 @@ public partial class UserOauthConnectionEntity : IFullAudited
     public string Sub { get; set; } = default!;
 
     /// <summary>
+    /// 用户oauth对应的租户级唯一id（飞书 union_id，跨应用一致；其他平台为空）.
+    /// </summary>
+    public string? UnionId { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public long CreateUserId { get; set; }

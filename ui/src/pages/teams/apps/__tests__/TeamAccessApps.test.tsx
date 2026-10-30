@@ -1,13 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TeamAccessApps } from '../TeamAccessApps'
-import { createAccessApp, getAccessApps } from '@/api/access-app'
+import { createAccessApp, getAccessApps, resetAccessAppSecret } from '@/api/access-app'
 
 vi.mock('@/api/access-app', () => ({
   getAccessApps: vi.fn(),
-  createAccessApp: vi.fn().mockResolvedValue({ accessAppId: 'x', key: 'moai-ac-secret', keyPrefix: 'moai-ac-abc' }),
+  createAccessApp: vi.fn().mockResolvedValue({ accessAppId: 'x', key: 'moai-ac-secret', secret: 's'.repeat(48), keyPrefix: 'moai-ac-abc' }),
   updateAccessApp: vi.fn().mockResolvedValue(undefined),
   deleteAccessApp: vi.fn().mockResolvedValue(undefined),
+  resetAccessAppSecret: vi.fn(),
 }))
 
 describe('TeamAccessApps（团队应用接入分区）', () => {
@@ -54,6 +55,30 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
       ),
     )
     expect(await screen.findByText('moai-ac-secret')).toBeTruthy()
+  })
+
+  it('创建后同时展示 appid 与一次性密钥', async () => {
+    render(<TeamAccessApps teamId={1} canManage />)
+    await screen.findByText('ERP 接入')
+
+    fireEvent.click(screen.getByRole('button', { name: /新建接入/ }))
+    fireEvent.change(await screen.findByPlaceholderText('请输入接入名称'), { target: { value: '官网接入' } })
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+
+    expect(await screen.findByText('s'.repeat(48))).toBeTruthy()
+    expect(screen.getByText(/密钥（仅本次显示/)).toBeTruthy()
+  })
+
+  it('重置密钥后一次性展示新密钥', async () => {
+    vi.mocked(resetAccessAppSecret).mockResolvedValue('r'.repeat(48))
+    render(<TeamAccessApps teamId={1} canManage />)
+    await screen.findByText('ERP 接入')
+
+    fireEvent.click(screen.getByRole('button', { name: '重置密钥' }))
+    fireEvent.click(await screen.findByRole('button', { name: /确 定|OK|确定/ }))
+
+    expect(await screen.findByText('r'.repeat(48))).toBeTruthy()
+    expect(resetAccessAppSecret).toHaveBeenCalledWith('01924f5e-0000-7000-8000-0000000000c1')
   })
 
   it('普通成员无管理入口', async () => {

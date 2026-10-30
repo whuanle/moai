@@ -50,6 +50,12 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public IReadOnlyCollection<Guid>? WorkflowApps { get; init; }
 
     /// <summary>
+    /// 绑定为工具的 Agent 应用 id 列表（元素为 app.id，uuid），须为本团队已发布内部 Agent 应用且不含自身；
+    /// null 表示保持已保存的 Agent 应用绑定不变.
+    /// </summary>
+    public IReadOnlyCollection<Guid>? AgentApps { get; init; }
+
+    /// <summary>
     /// 应用默认使用的技能 id 列表（元素为 skill.id，uuid），须为启用中的系统内置/市场公开/本团队技能；
     /// 用户进入对话后可在应用设置中取消勾选；null 表示保持已保存的技能不变.
     /// </summary>

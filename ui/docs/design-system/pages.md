@@ -31,9 +31,16 @@
 - 约定：不要手动用 `Space` 拼装左右两段，一律交给 `PageToolbar` 的 `filters` / `actions` 两个插槽。
 - 其余独立（不依赖 `PageToolbar`）的查询表单用 `QueryBar`，用于展示「字段 + 查询/重置」的脱离工具行场景。
 
+### 工具行与表格视觉（Dify 模式）
+
+`PageToolbar` / `QueryBar` **裸排在页面底色上**（不另起卡片），`DataTable` 以**容器底色卡片**承载（`colorBgContainer` 底 + `colorBorderSecondary` 边框 + 圆角，与 `Card` 同语言，灰表头/分页收在卡片内）。工具行与卡片之间仅隔同色留白，表格灰表头在卡片内天然分层——亮色主题里页面底色与表头灰底接近，靠卡片边界而非底色差区分。
+
+- DataTable 卡片纵向额外占位为 `tableCardChromeHeight`（`@/design-system/theme`）；列表页用 `calc(100vh - …)` 计算 sticky 表格 `scroll.y` 时需计入（卡片上下边框 2px）。
+
 ## 自查清单（AI 生成页面后逐项勾选）
 - [ ] 页面根节点使用 `Page` 包裹。
 - [ ] 列表页工具行使用 `PageToolbar`（筛选在左、操作在右；无筛选时操作左对齐），未手动拼 `Space`。
+- [ ] sticky 表格 `scroll.y` 计算已计入 DataTable 卡片占位（`tableCardChromeHeight`），表格无溢出双滚动条。
 - [ ] 列表页使用 `DataTable`，未散落 antd Table。
 - [ ] 多数据列表页使用剩余高度布局：查询/工具栏在上，表格区域 `flex: 1; min-height: 0`，`DataTable.scroll.y` 让表格内容滚动，分页贴近底部且页面底部无大块空白。
 - [ ] 颜色/间距取 token，无魔法值。

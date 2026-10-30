@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateAIChannelCommand, type BusinessValidationResult, type EmptyCommandResponse, type UpdateAIChannelCommand } from '../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { AuthorizationRequestBuilderRequestsMetadata, type AuthorizationRequestBuilder } from './authorization/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/ai/channel/{id}
  */
 export interface ChannelItemRequestBuilder extends BaseRequestBuilder<ChannelItemRequestBuilder> {
+    /**
+     * The authorization property
+     */
+    get authorization(): AuthorizationRequestBuilder;
     /**
      * 删除 AI 渠道（仅管理员可访问）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -51,6 +57,14 @@ export interface ChannelItemRequestBuilder extends BaseRequestBuilder<ChannelIte
  * Uri template for the request builder.
  */
 export const ChannelItemRequestBuilderUriTemplate = "{+baseurl}/api/ai/channel/{id}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const ChannelItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ChannelItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    authorization: {
+        requestsMetadata: AuthorizationRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

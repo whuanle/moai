@@ -11,6 +11,8 @@
 
 	<ItemGroup>
 	  <PackageReference Include="MimeKit" />
+	  <!-- 钉住 MimeKit 的传递依赖，规避 CVE-2026-84008（NU1903） -->
+	  <PackageReference Include="System.Security.Cryptography.Pkcs" />
 	</ItemGroup>
 
 </Project>

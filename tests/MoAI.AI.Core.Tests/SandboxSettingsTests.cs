@@ -57,6 +57,6 @@ public class SandboxSettingsTests
         var settings = AppAgentExecutionSettings.Parse("{ not json");
 
         Assert.Null(settings.Sandbox);
-        Assert.Equal(12, settings.ToolResultTriggerMessages);
+        Assert.Equal(16, settings.ToolResultTriggerMessages);
     }
 }

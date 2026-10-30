@@ -61,6 +61,7 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             GraphIds = AppAgentConfigJson.ParseLongList(config?.GraphIds),
             Plugins = AppAgentConfigJson.ParseGuidList(config?.Plugins),
             WorkflowApps = AppAgentConfigJson.ParseGuidList(config?.WorkflowApps),
+            AgentApps = AppAgentConfigJson.ParseGuidList(config?.AgentApps),
             Skills = AppAgentConfigJson.ParseGuidList(config?.Skills),
             ExecutionSettings = AppAgentConfigJson.ParseJsonObject(config?.ExecutionSettings),
             OpeningStatement = config?.OpeningStatement ?? string.Empty,

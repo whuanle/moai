@@ -16,6 +16,9 @@ export interface PageToolbarProps {
  * 页头工具栏，统一 Dify 布局规则：
  * - 有筛选栏：筛选栏在左、操作按钮在右。
  * - 无筛选栏：操作按钮直接靠左。
+ *
+ * 视觉：裸排在页面底色上（Dify 模式，不另起卡片），与下方 DataTable 的容器底色卡片
+ * 之间仅隔同色留白；表格的灰表头收在卡片内，天然分层。
  */
 export function PageToolbar({ filters, actions }: PageToolbarProps) {
   const hasFilters = Boolean(filters)
@@ -25,7 +28,7 @@ export function PageToolbar({ filters, actions }: PageToolbarProps) {
         display: 'flex',
         alignItems: 'center',
         gap: spacing.md,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
       }}
     >
       {hasFilters && (

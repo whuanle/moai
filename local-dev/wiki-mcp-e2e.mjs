@@ -371,7 +371,7 @@ async function main() {
   check('WM-S6d 通知返回 202', note.status === 202, `${note.status}`)
 
   // 回归：外部 REST 知识库接口不受 MCP 上线影响
-  const appToken = await api('POST', '/api/external/token', { body: { accessAppKey: ACCESS_KEY } })
+  const appToken = await api('POST', '/api/external/token', { body: { accessAppKey: ACCESS_KEY, secret: acc.json?.secret } })
   const restList = await api('POST', `/api/external/wiki/${W1}/documents/list`, { token: appToken.json?.accessToken, body: { pageNo: 1, pageSize: 10 } })
   check('WM-S6e 外部 REST 接口回归 200', restList.status === 200 && Array.isArray(restList.json?.items), `${restList.status} ${restList.text.slice(0, 120)}`)
 

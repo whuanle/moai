@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateAccessAppCommand, type BusinessValidationResult, type EmptyCommandResponse, type UpdateAccessAppCommand } from '../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { ResetSecretRequestBuilderRequestsMetadata, type ResetSecretRequestBuilder } from './resetSecret/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/access-app/{id}
  */
 export interface AccessAppItemRequestBuilder extends BaseRequestBuilder<AccessAppItemRequestBuilder> {
+    /**
+     * The resetSecret property
+     */
+    get resetSecret(): ResetSecretRequestBuilder;
     /**
      * 删除应用接入（软删除），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -51,6 +57,14 @@ export interface AccessAppItemRequestBuilder extends BaseRequestBuilder<AccessAp
  * Uri template for the request builder.
  */
 export const AccessAppItemRequestBuilderUriTemplate = "{+baseurl}/api/access-app/{id}";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const AccessAppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AccessAppItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    resetSecret: {
+        requestsMetadata: ResetSecretRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

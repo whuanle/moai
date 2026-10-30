@@ -82,10 +82,10 @@ async function main() {
 
   try {
     // ===== KX-01 接入点换应用 token；列表仅含本团队 managed 图谱 =====
-    const tok1 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY1 } })
+    const tok1 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY1, secret: acc1.json?.secret } })
     check('KX-01a accessAppKey 换应用 token 200 tokenType=app', tok1.status === 200 && tok1.json?.tokenType === 'app' && typeof tok1.json?.accessToken === 'string', `${tok1.status} ${tok1.text.slice(0, 120)}`)
     const AT1 = tok1.json?.accessToken
-    const tok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2 } })
+    const tok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
     const AT2 = tok2.json?.accessToken
 
     const list1 = await api('POST', '/api/external/knowledge-graph/list', { token: AT1, body: {} })
@@ -301,7 +301,7 @@ async function main() {
       const ID_RO = accRO.json?.accessAppId
       check('KX-09a 创建 kg_read 只读接入 200', accRO.status === 200, `${accRO.status} ${accRO.text.slice(0, 120)}`)
 
-      const tokRO = await api('POST', '/api/external/token', { body: { accessAppKey: KEY_RO } })
+      const tokRO = await api('POST', '/api/external/token', { body: { accessAppKey: KEY_RO, secret: accRO.json?.secret } })
       const AT_RO = tokRO.json?.accessToken
       check('KX-09b 只读接入换应用 token 200', tokRO.status === 200, `${tokRO.status}`)
 
@@ -402,7 +402,7 @@ async function main() {
 
       // 只读 token：导入/批删是写档 403，by-key 是读档放行（验证新路由分档正确）
       const accRO2 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入导入只读-' + TS, description: 'import scope e2e', scopes: ['kg_read'] } })
-      const tokRO2 = await api('POST', '/api/external/token', { body: { accessAppKey: accRO2.json?.key } })
+      const tokRO2 = await api('POST', '/api/external/token', { body: { accessAppKey: accRO2.json?.key, secret: accRO2.json?.secret } })
       const AT_RO2 = tokRO2.json?.accessToken
       check('KX-11d kg_read token 导入 403', (await api('POST', xkg(G1) + '/import', { token: AT_RO2, body: importBody })).status === 403)
       check('KX-11e kg_read token 批删 403', (await api('POST', xkg(G1) + '/nodes/batch-delete', { token: AT_RO2, body: { keys: ['kx-p-1'] } })).status === 403)

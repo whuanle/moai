@@ -71,9 +71,24 @@ public class AccessAppController : ControllerBase
             Name = req.Name,
             Description = req.Description,
             Scopes = req.Scopes,
+            Status = req.Status,
         };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 重置应用接入密钥，新密钥原文仅此一次返回；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">接入 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="ResetAccessAppSecretCommandResponse"/>.</returns>
+    [HttpPost("{id:guid}/reset-secret")]
+    public Task<ResetAccessAppSecretCommandResponse> ResetAccessAppSecret([FromRoute] Guid id, CancellationToken ct)
+    {
+        var cmd = new ResetAccessAppSecretCommand { AccessAppId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>

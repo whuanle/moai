@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryAIChannelListCommandResponseFromDiscriminatorValue, serializeCreateAIChannelCommand, serializeEmptyCommandResponse, type BusinessValidationResult, type CreateAIChannelCommand, type EmptyCommandResponse, type QueryAIChannelListCommandResponse } from '../../../models/index.js';
 // @ts-ignore
-import { ChannelItemRequestBuilderRequestsMetadata, type ChannelItemRequestBuilder } from './item/index.js';
+import { ChannelItemRequestBuilderNavigationMetadata, ChannelItemRequestBuilderRequestsMetadata, type ChannelItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -65,6 +65,7 @@ export const ChannelRequestBuilderUriTemplate = "{+baseurl}/api/ai/channel";
 export const ChannelRequestBuilderNavigationMetadata: Record<Exclude<keyof ChannelRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
         requestsMetadata: ChannelItemRequestBuilderRequestsMetadata,
+        navigationMetadata: ChannelItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
 };

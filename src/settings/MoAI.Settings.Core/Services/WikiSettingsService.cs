@@ -42,4 +42,21 @@ public class WikiSettingsService : IWikiSettingsService
 
         return maxFileSizeMb;
     }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> GetAllowedFileTypesAsync(CancellationToken cancellationToken)
+    {
+        var key = SettingDefinitions.WikiAllowedFileTypesKey;
+        var value = await _databaseContext.Settings
+            .Where(s => s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return WikiFileTypes.Default;
+        }
+
+        return WikiFileTypes.ParseOrDefault(value);
+    }
 }

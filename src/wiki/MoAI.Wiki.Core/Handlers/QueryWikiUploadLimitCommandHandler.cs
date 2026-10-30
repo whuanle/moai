@@ -25,11 +25,13 @@ public class QueryWikiUploadLimitCommandHandler : IRequestHandler<QueryWikiUploa
     public async Task<QueryWikiUploadLimitCommandResponse> Handle(QueryWikiUploadLimitCommand request, CancellationToken cancellationToken)
     {
         var maxFileSizeMb = await _wikiSettingsService.GetMaxFileSizeMbAsync(cancellationToken);
+        var allowedFileTypes = await _wikiSettingsService.GetAllowedFileTypesAsync(cancellationToken);
 
         return new QueryWikiUploadLimitCommandResponse
         {
             MaxFileSizeMb = maxFileSizeMb,
-            MaxFileSizeBytes = (long)maxFileSizeMb * 1024 * 1024
+            MaxFileSizeBytes = (long)maxFileSizeMb * 1024 * 1024,
+            AllowedFileTypes = allowedFileTypes.ToList()
         };
     }
 }

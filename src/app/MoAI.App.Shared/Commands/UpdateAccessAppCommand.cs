@@ -28,9 +28,14 @@ public class UpdateAccessAppCommand : IRequest<EmptyCommandResponse>, IUserIdCon
     public string? Description { get; init; }
 
     /// <summary>
-    /// 新功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），null=不修改；空列表=纯对话接入.
+    /// 新功能范围代码列表（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a），null=不修改；空列表=纯对话接入.
     /// </summary>
     public List<string>? Scopes { get; init; }
+
+    /// <summary>
+    /// 状态（enabled/disabled），null=不修改；停用后协作面调用立即拒绝.
+    /// </summary>
+    public AccessAppStatus? Status { get; init; }
 
     /// <inheritdoc/>
     [JsonIgnore]

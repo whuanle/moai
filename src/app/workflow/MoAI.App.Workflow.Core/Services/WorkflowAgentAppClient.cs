@@ -82,6 +82,8 @@ public class WorkflowAgentAppClient : IWorkflowAgentAppClient
             throw new WorkflowException("Agent 应用未配置对话模型");
         }
 
+        // 运行期调用链防护（纵深防御）：流程节点调用的 Agent 入链，其 Agent 应用工具再调用祖先应用时可检出
+        using var chainScope = AppToolCallChain.Push(agentAppId);
         return await _aiInvoker.AgentAppAsync(new WorkflowNodeAgentAppRequest
         {
             App = app,

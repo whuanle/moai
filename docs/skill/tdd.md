@@ -46,7 +46,7 @@
 | @SKL-S5~S7 | local-dev/skill-userconfig-e2e.mjs（UC-01~08） | PASS 20/20（2026-09-16） |
 | @SKL-S8 | @manual（需沙箱+模型，浏览器走查，见 sop.md 第 5 节） | 待走查 |
 | @SKL-S9 | ui/src/pages/teams/apps/__tests__/AppUserSettings.test.tsx | PASS 3/3（2026-09-16） |
-| @SKL-S10 | ui/src/pages/teams/apps/__tests__/AppConfigSection.test.tsx | PASS 7/7（2026-09-16） |
+| @SKL-S10 | ui/src/pages/teams/apps/__tests__/AppConfigSection.test.tsx（含技能多选头像渲染断言，2026-10-30 增补） | PASS 23/23（2026-10-30） |
 
 同批回归：`dotnet build src/MoAI/MoAI.csproj` 0 error；前端 vitest **289/289**、typecheck 0、lint 0 error（10 个存量 warning）；存量 `publication-e2e` 34/34、`prompt-e2e` 46/46（PublicationReviewEntity.ReviewTime 修复后回归）。
 

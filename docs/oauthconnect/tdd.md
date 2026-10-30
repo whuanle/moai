@@ -17,6 +17,13 @@
 | @OC-S21 ~ @OC-S24 | @manual 浏览器走查（[SOP 第 3 节](./sop.md)） | PASS（2026-09-01/02，全页面回归） |
 | @OC-S25 | [ImageSquareCropModal.test.tsx](../../ui/src/components/__tests__/ImageSquareCropModal.test.tsx)（组件冒烟 3/3 + `clampCropOffset` 全向拖动约束 3/3）+ @manual 浏览器走查（[SOP 第 3 节](./sop.md)） | PASS（2026-10-27）；交互走查待回归 |
 | @OC-S26 ~ @OC-S28 | [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs)（创建/AgentId 校验与回显/固定授权地址/登录页 URL 拼接/回调地址 redirectUri/更新同步/删除清理）+ @manual 浏览器走查（表单联动 [@OC-S22](./bdd.md#oc-s22)） | PASS 18/18（2026-10-27） |
+| @OC-S29 ~ @OC-S30 | @manual（需真实飞书/企业微信凭证完成一次登录绑定，改动见 2026-10-28 证据摘要） | 待验收 |
+
+## 证据摘要（2026-10-28，渠道用户识别联动：union_id 列 + 企微原生登录路由）
+
+- `user_oauth_connection` 增 `union_id`（varchar(100) 可空）：实体/配置/索引 + `DatabasPostgresModule` 幂等补列与索引（存量库启动自动补齐）；`OpenIdUserProfile` 增 `UnionId`；飞书取资料时带出（`FeishuUserInfo.UnionId`），注册/绑定三处落库点写入；登录匹配仍按 Sub，不变。
+- `OAuthUserProfileService.GetProfileAsync` 接线 WeixinWork → 既有 `GetOpenIdFromWeixinWorkAsync`（Sub=userid；原为死代码，企微连接器登录此前落入 custom OIDC 分支实际不可用）。
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/cum` → 0 error。消费方（渠道对话反查绑定归属用户）见 [../feishu/sdd.md](../feishu/sdd.md)。
 
 ## 回归命令
 

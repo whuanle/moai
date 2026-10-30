@@ -52,6 +52,9 @@
 | POST | `/api/team/{id}/avatar` | 设置头像（objectKey 须为已登记上传文件） | Empty |
 | GET | `/api/team/{id}/users` | 成员列表 | `QueryTeamUsersCommandResponse` |
 | POST | `/api/team/{id}/users` | 添加成员 `{userId, role}` | Empty |
+| POST | `/api/team/{id}/users/batch` | 批量添加成员 `{userIds[], role}`，跳过已入团/不存在并回传明细 | `AddTeamUsersCommandResponse` |
+| GET | `/api/team/{id}/org/role/list` | 组织角色平铺列表（团队侧只读视图，仅 Owner/Admin，复用组织查询） | `QueryOrgRolesCommandResponse` |
+| GET | `/api/team/{id}/org/role/{roleId}/users` | 某组织角色下用户清单（团队侧只读视图，仅 Owner/Admin） | `QueryOrgRoleUsersCommandResponse` |
 | PUT | `/api/team/{id}/user/{userId}/role` | 改角色 `{role}` | Empty |
 | DELETE | `/api/team/{id}/user/{userId}` | 移除/退出 | Empty |
 | GET | `/api/admin/team/list` | 管理员分页查全部团队（含负责人/成员数/禁用态），支持名称/简介模糊 + 禁用状态筛选 | `QueryAdminTeamListCommandResponse` |
@@ -70,6 +73,7 @@
 - **D6 禁用仅状态标记**：`team.is_disable` 为既有列，本轮只做「标记 + 列表展示 + 状态筛选」，不做跨模块级联停用（知识库/网关/插件仍可访问），级联留待后续轮次（见 §6）。
 - **D7 转让目标可为任意用户**：管理员转让不要求目标已在团——非成员自动入团并成为 Owner，原 Owner 降为 Admin；目标已是 Owner 时 400。区别于团队内转让（`PUT /team/{id}/owner`，要求操作者本人是 Owner 且目标须已在团）。
 - **D8 团队详情页导航收敛**：详情页无「团队信息」分区（信息卡与菜单项已移除，团队资料维护走「设置」分区）；面包屑为「主页（→ /dashboard）/ 团队头像+团队名称」，默认分区与越权/非法子路由回落分区均为「内部应用」（见 [@TM-S17](./bdd.md#tm-s17)）。
+- **D9 批量添加与团队侧组织视图**（2026-10-29，见 [@TM-S19](./bdd.md#tm-s19)/[@TM-S20](./bdd.md#tm-s20)）：添加成员改为弹窗（组织树按组织批量选人 + 关键字实时搜索全站用户，前端 `TeamMemberAddModal`）。批量端点整批校验（非空/去重/≤200），对已入团与不存在用户**跳过而非整批拒绝**，回传 `addedCount/skippedUserIds/notFoundUserIds` 供前端分层提示；授予 Admin 仍需 Owner。组织树数据不复制 Org 模块实现——Team.Api 引用 `MoAI.Org.Shared` 经 MediatR 复用 `QueryOrgRolesCommand`/`QueryOrgRoleUsersCommand`（两个 Handler 本身无门禁逻辑，团队侧门禁统一走 `EnsureTeamManagerAsync`，Admin 起可读；组织管理面 `/org/*` 仍仅管理员）。内联用户下拉已移除，单添加端点 `POST /users` 与 `candidates` 搜索接口保留（后者供弹窗实时搜索）。
 
 ## 6. 已知问题 / 下阶段
 

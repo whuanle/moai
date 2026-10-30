@@ -23,14 +23,14 @@
 
 ```
 src/auth/
-├── MoAI.Auth.Shared/   Commands/{Login,RegisterUser,OAuthLogin,OAuthRegister,RefreshToken}Command + Responses
+├── MoAI.Auth.Shared/   Commands/{Login,RegisterUser,SendEmailCode,ResetPasswordByEmail,OAuthLogin,OAuthRegister,RefreshToken}Command + Responses
 │                       Queries/{QueryRepeatedUserName,QueryAllOAuthPrivider}Command
-│                       Services/{ITokenProvider,IOAuthUserProfileService}、Models/OAuthBindUserProfile
-├── MoAI.Auth.Core/     Handlers/ 五个 CommandHandler + Queries/ 两个 QueryHandler
-│                       Services/OAuthUserProfileService（飞书 open_id / 钉钉 union_id / 企业微信 userid / 自定义 OIDC）
+│                       Services/{ITokenProvider,IOAuthUserProfileService,IEmailCodeService}、Models/{OAuthBindUserProfile,EmailCodePurpose}
+├── MoAI.Auth.Core/     Handlers/ 七个 CommandHandler + Queries/ 两个 QueryHandler
+│                       Services/{OAuthUserProfileService,EmailCodeService（验证码生成/Redis 存储/模板发送）,EmailCodeTemplate（SmartFormat 白名单插值）}
 └── MoAI.Auth.Api/      AuthController（[Route("/auth")]，全部 [AllowAnonymous]，部署加 /api 前缀）
 src/account/            TokenProvider（RS256 签发/校验）
-ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx、utils/{rsa,jwt}.ts
+ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,OAuthLogin}.tsx、utils/{rsa,jwt}.ts
 ```
 
 ## API 契约
@@ -38,7 +38,9 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx
 | 方法 | 路由 | 说明 |
 |---|---|---|
 | POST | `/auth/login` | userName（用户名或邮箱）+ RSA 密文密码 → token 对 |
-| POST | `/auth/register` | 五字段 → 新用户 id；Handler 解密后校验强度（`(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$`） |
+| POST | `/auth/register` | 五字段（+可选 emailCode）→ 新用户 id；Handler 解密后校验强度（`(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$`）；注册验证码开启时先校验邮箱验证码 |
+| POST | `/auth/email_code/send` | purpose（register/resetPassword）+ email → 发送验证码；注册用途需 SMTP+开关双开启且邮箱未占用（409），找回用途需 SMTP 启用（未注册 404） |
+| POST | `/auth/reset_password` | email + 6 位验证码 + RSA 新密码 → 重置密码；需 SMTP 邮件服务启用 |
 | POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId` |
 | POST | `/auth/oauth_register` | tempOAuthBindId → 一键注册并登录 |
 | GET | `/auth/oauth_prividers` | 匿名；可选 `redirectUrl`（登录页来源），回调地址跟随该来源，未携带回退 `WebUI`；返回各提供商拼好的授权地址 |
@@ -54,6 +56,7 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,OAuthLogin}.tsx
 4. 授权地址按提供商特殊拼接：默认 `scope=openid profile`、飞书 scope 为空、钉钉 `openid corpid`+`prompt=consent`、企业微信 `login_type=CorpApp&appid={CorpID}&agentid={AgentId}`；`state={OAuthId}`；`redirect_uri` **跟随登录页来源**（前端把 `window.location.origin` 作为 `redirectUrl` 传入 `oauth_prividers`/`oauth_login`/账号绑定接口，仅接受 http/https，未携带回退 `WebUI`）——内网穿透测试前端域名与 WebUI 配置不同时零后端配置；提供方后台的回调域白名单是安全边界。飞书换 token 的 `redirect_uri` 必须与授权时**逐字符一致**（两步均拼 `{来源}/oauth_login`，授权地址不得附加其他参数，2026-10-27 修复不一致缺陷），故同源透传到 `GetProfileAsync`。企业微信换身份链路（`IWeixinWorkClient`）：gettoken(corpid+secret) → getuserinfo(code)→userid → user/get 尽力补姓名头像（通讯录无权限/失败回退 userid，不阻断）。
 5. 前端：401 且非 login 接口 → 清用户态跳 `/login`（`kiota.ts` FilterRequestHandler）；Access Token 过期（60 秒宽限）且 Refresh 有效时静默续期；OAuthLogin 用 `useRef` 防 StrictMode 重复消费一次性 code。
 6. **所有内部签发 token 的处理器必须显式设 `UserType = Normal`**（Login/Refresh/OAuthLogin/OAuthRegister）：claim `typ` 缺失会解析为 None，下游 `app_agent_session.user_type` 落 0，对话日志把内部用户误标为外部用户（2026-09-20 修复 Refresh/OAuth 两类三处漏设，回归 [@AUTH-S24](./bdd.md#auth-s24)；存量数据见 `asserts/app_agent_session_user_type_fix.sql`）。
+7. **邮箱验证码**（[@AUTH-S28](./bdd.md#auth-s28) ~ [@AUTH-S32](./bdd.md#auth-s32)）：6 位数字（`RandomNumberGenerator` CSPRNG），Redis `emailcode:{purpose}:{email}`（10 分钟 TTL）+ `emailcode:cd:*`（60 秒发送冷却），错 5 次作废；邮件发送成功才落验证码，失败可立即重试。找回密码可用性**仅取决于 SMTP 邮件服务是否启用**（未启用由管理员在用户管理重置），注册验证码需 SMTP + `REGISTER_EMAIL_CODE_ENABLED` 双条件；两者经 `serverinfo` 匿名回显给前端渲染开关。邮件主题/正文模板存于系统设置，`EmailCodeTemplate` 以 SmartFormat 白名单插值（仅 `{code}/{siteName}/{expireMinutes}`，其余花括号字面保留，策略同 variable 模块 `TeamVariableTemplate`；auth 为底座层不反向依赖 variable，独立实现）；模板留空回退内置默认。auth 模块因此新增对 `MoAI.Settings.Shared` 的项目引用（只用接口，实现注册在 SettingsCoreModule）。
 
 ## 已知问题
 

@@ -62,6 +62,8 @@ export interface SkillOption {
   key?: string | null
   name?: string | null
   description?: string | null
+  /** 技能头像存储路径，未设置为 null */
+  avatarPath?: string | null
   isSystem?: boolean | null
   /** 所属团队 id，0=系统内置或个人技能 */
   teamId?: number | null

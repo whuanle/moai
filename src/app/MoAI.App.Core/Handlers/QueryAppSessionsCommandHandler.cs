@@ -4,6 +4,7 @@ using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Models;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -50,7 +51,8 @@ public class QueryAppSessionsCommandHandler : IRequestHandler<QueryAppSessionsCo
         }
 
         var rows = await _databaseContext.AppAgentSessions
-            .Where(x => x.AppId == request.AppId && x.CreateUserId == request.ContextUserId)
+            // 定时任务会话（UserType=Timer）只在管理员日志页展示，不进入本人会话列表
+            .Where(x => x.AppId == request.AppId && x.CreateUserId == request.ContextUserId && x.UserType != (int)UserType.Timer)
             .OrderByDescending(x => x.LastMessageTime)
             .Select(x => new
             {

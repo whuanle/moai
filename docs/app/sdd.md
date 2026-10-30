@@ -161,7 +161,7 @@
 
 > `modelId` 为 `ai_model.id`（uuid，可空）；传 null/空 Guid 表示不选择模型。`wikiIds` 为 `wiki.id`，`plugins` 为 `plugin.id`，`graphIds` 为 `knowledge_graph.id`（long，仅本团队托管图）。
 
-`QueryAppUserConfigCommandResponse` 字段新增：`toolApprovalMode`（auto/approval，无配置行默认 auto）与 `toolApprovalExemptNames`/`toolApprovalExemptPrefixes`（审批卡豁免工具清单，源自 `MoAI.AI.AppToolApprovalContract`，与 AI 模块闸口同源）。保存接口 `PUT /api/app/{id}/userconfig` 请求体新增可选 `toolApprovalMode`（null=不修改，非法值 400）。
+`QueryAppUserConfigCommandResponse` 字段新增：`toolApprovalMode`（auto/approval，无配置行默认 auto）与 `toolApprovalExemptNames`/`toolApprovalExemptPrefixes`（审批卡豁免工具清单，源自 `MoAI.AI.AppToolApprovalContract`，与 AI 模块闸口同源；检索与技能装载纳入审批范围后豁免清单为空，保留契约字段）及 `toolApprovalAutoApprovedNames`/`toolApprovalAutoApprovedPrefixes`（审批策略六类白名单按发布快照解析出的自动放行工具名与前缀，前端据此免展示审批卡）。保存接口 `PUT /api/app/{id}/userconfig` 请求体新增可选 `toolApprovalMode`（null=不修改，非法值 400）。
 
 `QueryAppAgentConfigCommandResponse` 字段：`appId / teamId / appType / prompt / modelId / wikiIds(long[]) / plugins(uuid[]) / graphIds(long[]) / skills(uuid[]) / executionSettings / openingStatement / openingStatementEnabled / quickInputs(string[]) / status / myRole`。
 
@@ -172,7 +172,8 @@
 3. `wikiIds`：逐个比对 `wiki.team_id == app.team_id`，越权 400；
 4. `plugins`：`plugin.team_id == teamId`（团队自有）**或** `plugin.is_system && team_id == 0 && (is_public || plugin_team_authorization 已授权本团队)`，越权 400；
 5. `graphIds`：逐个校验为本团队 **managed** 托管图（他团队/不存在/接入图一律 400，文案「包含不属于该团队或不支持检索的知识图谱，请重新选择.」），去重后落库；
-6. `prompt` 最长 4000（`IModelValidator`，超长 400，先于 Handler 执行）。
+6. `toolApproval` 六类自动放通白名单（插件/流程应用/Agent 应用/技能为 Guid 串数组，知识库/知识图谱为数字数组）：须全部在**生效绑定列表**范围内（插件/知识库/图谱按本次请求解析；流程应用/Agent 应用/技能未携带时按库中现值，外部应用技能固定空），越界或结构不合法 400；
+7. `prompt` 最长 4000（`IModelValidator`，超长 400，先于 Handler 执行）。
 
 校验在写入前完成，失败时**不产生任何写入**（E2E AP-17d 验证）。`WikiIds`/`Plugins` 在库内是 JSON 数组文本，读写经 `AppAgentConfigJson` 收口（非法 JSON 解析为空列表而非抛异常）。
 
@@ -186,10 +187,10 @@
 ## 5. 前端设计（团队页「应用」分区）
 
 - **入口唯一**：`/team/:id/apps`，即团队页左侧分区菜单的「应用」（`SectionKey = 'apps'`）。组件 `ui/src/pages/teams/apps/TeamApps.tsx`，与 `TeamWikis` / `TeamPlugins` 同构；`ui/src/api/app.ts` 为唯一封装层。
-- 分区菜单顺序：信息 / **应用** / **外部应用** / 成员 / 模型网关 / 知识库 / 插件 / 环境变量 / 设置；默认落在「信息」。
+- 分区菜单顺序：信息 / **应用** / **外部应用** / 成员 / 知识库 / 插件 / 环境变量 / 设置；默认落在「信息」。（原「模型网关」分区随团队模型网关下线移除，2026-10-29）
 - **角色可见性（前端渲染层）**：
   - Owner/Admin：全部分区可见。
-  - Member：只保留 信息 / 应用 / 知识库；**外部应用、成员、模型网关、插件、环境变量、设置被隐藏**，直接改 URL 访问也会回落到「信息」。
+  - Member：只保留 信息 / 应用 / 知识库；**外部应用、成员、插件、环境变量、设置被隐藏**，直接改 URL 访问也会回落到「信息」。
   - 该收敛只影响渲染，真正的门禁仍在后端 Handler（Member 写操作 403、非成员 404）。
 - 分区内容（收窄为**单团队**）：**卡片网格**（`Row`/`Col`，与 `/wiki` 卡片同构）——卡片含 头像 + 名称 + 类型标签，描述（2 行省略），底部一行 创建时间 + 发布状态 + 「公开到平台」状态标签（已公开/未公开，`isPublic`）；**卡片右上角「管理」**（仅 `canManage` 渲染）进入应用管理页。列表顶部左侧为说明文案（管理员为「卡片右上角管理」提示，Member 为只读说明），右侧为「新建应用」。
 - **「外部应用」分区**（`TeamExternalApps.tsx`，仅 Owner/Admin 可见）：列表展示 `isExternal=true` 的应用，卡片底部展示 发布状态 + 「需授权/免授权」(`isAuth`)；支持新建（含头像与 `isAuth` 开关）、发布/取消发布，并可进入应用管理页配置模型/提示词/插件/知识库。内部用户的应用分区看不到这些应用。
@@ -204,7 +205,7 @@
 - **路由**：`/team/:teamId/app/:appId`（**无分区参数**）；页面为**单页左右分栏**（`Page` 面包屑 + `Row`/`Col`），**左侧「应用信息」、右侧「Agent 配置」**，不做左侧菜单/分区切换。
 - **左栏 应用信息**（`DSCard` 标题「应用信息」）：头像（选中即上传生效，走 `POST /{id}/avatar`）+ 类型（只读标签）+ 名称 + 描述 + **（内部）「公开到平台」/（外部）「需要授权访问」开关** + 「保存信息」（`PUT /{id}`）。即原编辑弹窗改为页内表单，`TeamApps` 不再有编辑入口。
 - **右栏 Agent 配置**（`DSCard` 标题「Agent 配置」）：对话模型 + 提示词 + 允许使用的插件 + 允许使用的知识库 + 「保存配置」（`PUT /{id}/agent-config`）。四个字段**同一份配置状态、同一个保存按钮**，一次提交完整配置。
-  - **对话模型**：`Select`（单选、可清空），选项来自 **`GET /api/team/{id}/gateway/models`**（团队可用网关模型：公开模型 + 已授权本团队的私有模型）——与团队「模型网关」分区同源，**取值范围天然等于「该团队有权使用」**。空值表示不指定模型（落空 Guid）。
+  - **对话模型**：`Select`（单选、可清空），选项来自 **`GET /api/team/{id}/ai/model/available`**（团队可用模型：公开模型 + 已授权本团队的私有模型 + 团队自有渠道模型，同名去重团队自有优先；原团队模型网关 models 查询已迁至 aichannel 模块）——**取值范围天然等于「该团队有权使用」**。空值表示不指定模型（落空 Guid）。
   - **插件 / 知识库**：`Select mode="multiple"`，选项来自 **`GET /api/team/{id}/plugin/list`**（团队可访问插件）与 **`GET /api/wiki/list?teamId=`**（本团队知识库）；`PluginId` 为空 Guid 的内存静态插件（无 DB 记录）在展示层被过滤，不可绑定。
   - **提示词**：`Input.TextArea`（maxLength 4000 + `showCount`）。
 - **流程应用**：右栏**不渲染配置项**，只展示「流程应用的配置能力尚未开放」提示；左栏仍是完整基础信息。
@@ -218,7 +219,7 @@
 
 ### 5.3 应用接入（`ui/src/pages/teams/apps/TeamAccessApps.tsx`，团队页「应用接入」分区）
 
-- 分区菜单顺序：信息 / 内部应用 / 外部应用 / **应用接入** / 成员 / 模型网关 / 知识库 / 插件 / 环境变量 / 设置；「应用接入」仅 Owner/Admin 可见。
+- 分区菜单顺序：信息 / 内部应用 / 外部应用 / **应用接入** / 成员 / 知识库 / 插件 / 环境变量 / 设置；「应用接入」仅 Owner/Admin 可见。
 - 列表：接入名称、**key（明文，回显完整 key；前端默认掩码，点击展开 / 复制）**、授权的外部应用标签、创建时间；支持新建 / 编辑 / 删除（`Popconfirm`）。
 - 新建/编辑弹窗：名称（≤20）+ 描述（≤255）+ 授权外部应用多选（选项来自 `GET /app/external/list`，即本团队外部应用）；创建后弹「接入 key」窗口，列表中可再次查看/复制。
 - 封装层 `ui/src/api/access-app.ts`；文案 `accessApp.*`、`team.accessApps`，zh-CN / en-US 同步。
@@ -227,7 +228,7 @@
 
 - **左侧菜单**：`config`（配置）/ `info`（信息，2026-09-19 增补，仅 Agent 应用，位于配置之后，成员可见）/ `publication`（上架管理，2026-10-26 增补，内部应用可见含成员）/ `logs`（日志，Tab 容器）；外部应用（`is_external=true`）额外 `access`（访问点）。**2026-10-27 菜单收敛**：Agent 应用移除独立 `security`（安全）菜单，安全（内容脱敏）并入「配置」分区收缩卡片（`/security` 深链回落 `config`）；移除独立 `monitor`（监控）菜单，「日志」改 Tab 容器（日志默认/安全事件/使用分析），旧 `/monitor` 深链渲染日志分区并落到「使用分析」Tab（Agent 与流程应用一致，`monitor` 仍是合法 section 但菜单不单列）；流程应用头部「配置」Tab 二级菜单保留 `security` 页（`AppSecuritySection` = 成员提示 + `AppSecuritySettingsPanel` 设置面板）。采用与 `WikiDetail`/`TeamManage` 一致的 `Layout` + `Sider` + `Menu`，菜单项带图标（Setting/InfoCircle/Profile/AreaChart/Api）；`section` 非法或缺省回落 `config`。原 `AppManage.tsx` 单页左右分栏已删除，配置内容迁入 `AppConfigSection`。
 - **分区可见性（前端渲染层）**：`logs`/`monitor` 仅团队 Owner/Admin 可见；`access` 仅 Owner/Admin 且外部应用可见；Member 只有 `config`/`info`/`publication`（后两者只读，无调试），深链 `/logs` 回落 `config`。
-- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=11`）为 Agent 配置，2026-10-26 起拆为 Collapse 收缩卡片（前五张默认全部展开、点卡片头收起，收起不丢表单状态）：基础配置（对话模型/上下文压缩/子代理协作）、用户提示（提示词/对话开场白/快捷输入）、能力扩展（插件/流程应用/技能/知识库/知识图谱）、沙箱（执行参数 + 审批模式沙箱自动放行开关，外部应用整卡不渲染）、安全审批（自动放行插件白名单）；2026-10-27 增第六张**内容脱敏**卡片（自独立「安全」分区并入）——默认收起、展开才挂载 `AppSecuritySettingsPanel` 并请求 `GET /security`，仅 Admin+ 渲染；「保存设置」一次提交全部卡片：主配置走 agent-config（草稿/发布快照），内容脱敏经面板 `registerSave` 注册回调随同提交 security 接口（即时生效不经发布快照；校验/提交失败中断整体保存，卡片未展开或加载中未注册则本次仅保存主配置）；左栏内部滚动（`maxHeight: calc(100vh - 160px)`）；右栏（`lg=13`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存配置后**静默刷新**（`load(true)`），不卸载调试面板。基础信息（头像/名称/描述/授权与上架状态）自 2026-09-19 起拆至「信息」分区。右栏卡片 2026-10-13 起不带标题（「调试」+提示+清空在面板内部头部，避免双标题），并定高 `calc(100vh - 160px)` + 卡片 body 弹性列布局：消息区内部滚动、输入框停靠底部（与正式对话页一致）；`AppDebugChat` 根节点 `flex:1/minHeight:0` 填充卡片。
+- **配置分区**（`AppConfigSection.tsx`）：左栏（`lg=11`）为 Agent 配置，拆为 Collapse 收缩卡片（前四张默认展开、点卡片头收起，收起不丢表单状态）：基础配置（对话模型/上下文压缩/子代理协作）、用户提示（提示词/对话开场白/快捷输入）、能力扩展（插件/流程应用/Agent 应用/技能/知识库/知识图谱）、沙箱（执行参数 + 审批模式沙箱自动放行开关，外部应用整卡不渲染）；内容脱敏（默认收起、展开才挂载 `AppSecuritySettingsPanel` 并请求 `GET /security`，仅 Admin+ 渲染）与长期记忆（默认收起，仅内部应用）为后两张卡片。**能力扩展自动放通列表（2026-10-30 改版）**：六类资源选择器选中资源后，下方以 `AutoPassList` 逐行生成绑定资源列表（应用类带头像、隔行底色），行右侧「自动放通」Checkbox 写入 `executionSettings.toolApproval` 六类白名单（独立「安全审批」卡片已删除）；保存时白名单收敛为当前绑定资源子集（外部应用技能固定空），卡片顶部提示审批模式语义与知识库/图谱多源全量放通规则。「保存设置」一次提交全部卡片：主配置走 agent-config（草稿/发布快照），内容脱敏经面板 `registerSave` 注册回调随同提交 security 接口（即时生效不经发布快照；校验/提交失败中断整体保存，卡片未展开或加载中未注册则本次仅保存主配置）；左栏内部滚动（`maxHeight: calc(100vh - 160px)`）；右栏（`lg=13`）为**调试对话** `AppDebugChat`（仅 Agent 应用且 Admin+；否则提示）。保存配置后**静默刷新**（`load(true)`），不卸载调试面板。基础信息（头像/名称/描述/授权与上架状态）自 2026-09-19 起拆至「信息」分区。右栏卡片 2026-10-13 起不带标题（「调试」+提示+清空在面板内部头部，避免双标题），并定高 `calc(100vh - 160px)` + 卡片 body 弹性列布局：消息区内部滚动、输入框停靠底部（与正式对话页一致）；`AppDebugChat` 根节点 `flex:1/minHeight:0` 填充卡片。
 - **信息分区**（`AppInfoSection.tsx`，2026-09-19 增补）：应用基础信息维护（头像上传/类型标签/名称/描述/分类/外部应用访问授权开关；版本号 2026-10-27 起移出本分区，只能在发布/申请上架时设置，见下）。保存信息/头像后 `onReload` 静默刷新；Member 表单只读且无保存入口。内部应用的上架状态区块 2026-10-26 起拆至「上架管理」分区（见下）。
 - **上架管理分区**（`AppPublicationSection.tsx`，2026-10-26 增补）：内部应用（含流程应用「配置」二级菜单）单独成页管理公开（is_public）申请，公开审批流仍走 publication 模块（[@PB-S4](../publication/bdd.md#pb-s4)~[@PB-S11](../publication/bdd.md#pb-s11)）。三张卡片：① 概览——当前状态（未申请/审核中/已公开/已驳回）+ 申请上架/重新申请/撤回申请（Admin+，撤回为物理删除记录）；② 版本与草稿——线上发布快照（`publishStatus`/`publishTime`）与当前草稿状态（工作台 `configStatus`：0=有未发布变更）；③ 申请记录——`GET /api/publication/team-list`（成员可读）按 `resourceId` 过滤的历次申请 `DataTable`（状态/申请理由/审批意见即拒绝原因/申请人/申请时间/审批人与审批时间，待审核行可撤回），被驳回时概览以 Alert 展示最近一次拒绝原因。行为见 [@AP-S92](./bdd.md#ap-s92)。**外部应用收敛为「发布」分区**（2026-10-28 增补）：外部 Agent 应用菜单项为「发布」（非「上架管理」），分区由 `detail.isExternal` 派生仅渲染团队发布卡（发布/重新发布带版本号弹窗 + 撤回发布，撤回确认文案针对外部用户），不渲染「上架管理（应用市场）」与「申请记录」卡、不请求团队申请列表；后端 `POST /app/{id}/publish` 本就支持外部 Agent 应用（无审批，直接生效），外部流程应用仍走编排设计器发布。行为见 [@AP-S108](./bdd.md#ap-s108)。
 - **应用版本号（2026-10-26 增补，2026-10-27 收敛设置时机）**：`app.version` int 编码 `aaa*10000 + bb*100 + cc`（显示 `aaa.bb.cc`，新建默认 10000=1.0.0），int 编码便于直接比较大小；`app.publish_version` 发布时快照当前版本（撤回发布清空，存量已发布应用为 null 直至重新发布）。**版本号只在团队发布时设置（申请上架自动取最新团队发布版本），且只能递增不能回退**：`POST /app/{id}/publish` 请求体可选携带 `version`（`aaa.bb.cc` 文本，正则 `^\d{1,3}\.\d{1,2}\.\d{1,2}$`；携带=更新当前版本并随发布快照生效，不携带=保持原值、快照取当前版本；body 可省略兼容旧调用），`POST /api/publication/apply` 的 `version` 可空——上架把最新的团队发布上架，缺省自动记录应用当前发布版本，携带时校验格式且不能低于当前版本；发布链路要求携带版本号**严格大于**当前版本（int 编码直接比较，相同或更低一律 400；前端发布弹窗就地拦截 + Handler 再验；不携带版本号的快捷重发保持原值不受影响）；`PUT /app/{id}` 基础信息**不再接受 version**（命令与 Handler 已删除该字段，请求携带被忽略）。互转与校验收敛在 `MoAI.App.Shared/AppVersionHelper`，Handler 防御性再验；应用详情下发 `version`/`publishVersion` int。存量库执行 [asserts/app_version.sql](../../asserts/app_version.sql)。前端 `ui/src/utils/appVersion.ts` 同规则互转（含 `nextAppVersion` 计算下一版本：patch 段 +1、段满进位）：「上架管理」分区团队应用卡发布弹窗自动预填下一版本号（含格式与严格递增拦截）、上架申请弹窗只读展示当前发布版本，「版本与草稿」展示线上/当前版本号并在不一致时提示「版本未发布」（存量数据兼容展示）。行为见 [@AP-S93](./bdd.md#ap-s93)/[@AP-S97](./bdd.md#ap-s97)/[@AP-S98](./bdd.md#ap-s98)。
@@ -269,7 +270,7 @@
 - **D19（绑定校验在应用层，越权 400）**：`wiki_ids`/`plugins` 取值为「该团队有权使用」的资源，校验放在 `SaveAppAgentConfigCommandHandler`（wiki 按 `team_id`、plugin 按团队自有或系统公开/已授权），**不建物理外键**（沿用 D10）；内容越权返回 **400**（区别于角色的 403），且校验先于写入，失败不落库。
 - **D20（配置保存为整体替换）**：管理页所有配置项共用一个 `PUT /agent-config`，提交时携带完整 `{modelId, prompt, wikiIds, plugins}`。不做「按字段局部更新」的接口，避免并发/漏字段导致绑定被静默清空。
 - **D21（管理页不做左侧菜单，单页左右分栏）**：初版管理页照 `WikiDetail` 用「左 `Menu` 分区 + 右 `Content`」，把基础信息/插件/知识库/提示词拆成四个分区。实际使用中配置项只有四项、且互相有关联（模型 + 提示词 + 插件 + 知识库共同定义一次对话），分区切换反而要来回跳，于是**去掉左侧菜单**，改为**一页左右两栏**：左栏应用信息、右栏 Agent 配置。路由随之简化为 `/team/:teamId/app/:appId`（去掉 `:section?`），页面内不再有 URL 级的子状态。
-- **D22（对话模型取值范围 = 团队可用网关模型）**：`modelId` 写 `ai_model.id`（D9），取值来源**复用团队「模型网关」的既有查询** `GET /api/team/{id}/gateway/models`（公开模型 + `ai_model_authorization` 已授权本团队的私有模型，且模型与渠道均启用），不在应用模块另造一份模型可见性逻辑。服务端同样按这套口径复核（`SaveAppAgentConfigCommandHandler.ValidateModelIdAsync`）：模型不存在/未启用/渠道停用 → 400，私有模型未授权本团队 → 400。**未选模型允许**（落空 Guid），此时是否回落到默认模型属于会话运行阶段的事。
+- **D22（对话模型取值范围 = 团队可用模型）**：`modelId` 写 `ai_model.id`（D9），取值来源 `GET /api/team/{id}/ai/model/available`（公开模型 + `ai_model_authorization` 已授权本团队的私有模型 + 团队自有渠道模型，且模型与渠道均启用；原团队「模型网关」查询随网关下线迁至 aichannel 模块），不在应用模块另造一份模型可见性逻辑。服务端同样按这套口径复核（`SaveAppAgentConfigCommandHandler.ValidateModelIdAsync`）：模型不存在/未启用/渠道停用 → 400，私有模型未授权本团队 → 400。**未选模型允许**（落空 Guid），此时是否回落到默认模型属于会话运行阶段的事。
 - **D23（`is_external` 唯一区分内外，废弃 `enable_foreign`）**：`false`=内部应用、`true`=外部应用；`is_auth` 仅外部应用有意义（是否需要应用接入授权），`is_public` 仅内部应用有意义（是否公开到平台）。创建/更新校验组合：内部应用 `isAuth=true` 或外部应用 `isPublic=true` → 400。旧列 `enable_foreign` 从库与代码移除。
 - **D24（内部应用可见性隔离 + 公开广场）**：`QueryApps` 固定过滤 `is_external=false`（内部用户看不到外部应用）；外部应用走独立 `/app/external/list`（Admin+）。内部应用 `is_public && 已发布 && !is_disable` 时，`GET /app/public/list` 对任意登录用户可见，非成员可读详情（`myRole=-1`）、查/建自己的会话并对话；外部应用禁止走内部会话。
 - **D25（外部应用在团队内管理）**：外部应用仍属团队、由团队 Admin+ 在「外部应用」分区创建与配置，复用同一套 `app_agent_config`；是否可被外部访问由 `is_auth` 与发布状态决定，实际外部访问链路（应用接入 key、外部 token、`/external` 端点）为下阶段（见设计文档）。
@@ -295,18 +296,18 @@
 
 ### 工具人工审批（D-工具审批）
 
-- 契约与键格式集中于 `MoAI.AI.AppToolApprovalContract`（AI.Shared，App.Core 引用之，避免环形依赖）：请求头 `X-Moai-Tool-Approval`（auto/approval，未携带按 auto）、Redis 键 `appagent:toolapproval:{id}`（记录）与 `appagent:toolapproval:pending:{sessionId}`（hash: field=审批 id, value=工具名，供决策接口按会话+工具名定位）。
-- 闸口位置在 `AppToolContextProvider.InvokeJsonAsync`（call_tool 唯一同步调用点）：审批模式且工具 Kind ∈ {sandbox, dynamic, static, mcp, openapi} 时先 `AppToolApprovalService.WaitDecisionAsync`（400ms 轮询，最长 300 秒）再执行；拒绝/超时向模型返回说明性错误 JSON，对话流不断。
+- 契约与键格式集中于 `MoAI.AI.AppToolApprovalContract`（AI.Shared，App.Core 引用之，避免环形依赖）：请求头 `X-Moai-Tool-Approval`（auto/approval，未携带按 auto）、Redis 键 `appagent:toolapproval:{id}`（记录）与 `appagent:toolapproval:pending:{sessionId}`（hash: field=审批 id, value=工具名，供决策接口按会话+工具名定位）；工具名/前缀契约常量（检索/技能/流程/Agent 工具名等）亦集中于此，闸口装配与 userconfig 下发同源。
+- 闸口位置在 `AppToolContextProvider.InvokeJsonAsync`（call_tool 唯一同步调用点）：审批模式且工具 Kind ∈ {sandbox, dynamic, static, mcp, openapi, workflow, agentapp, skill, wiki, graph}（内部工具 memory/subagent 除外）时先 `AppToolApprovalService.WaitDecisionAsync`（400ms 轮询，最长 300 秒）再执行；拒绝/超时向模型返回说明性错误 JSON，对话流不断。知识库/知识图谱检索与技能装载自六类白名单改版（2026-10-30）起纳入审批范围（此前豁免，属行为变更：存量应用未配置白名单时审批模式下检索/装载同样挂起）。
 - 审批模式为**用户级**偏好（`app_user_config.tool_approval_mode`），随每轮对话 SSE 请求头即时下发（改模式无需重启/下一轮即生效）；外部渠道/飞书等无请求头场景恒为自动模式。
-- 前端审批卡由 AG-UI `TOOL_CALL_END` 事件解析 call_tool 内层 `toolName/argumentsJson` 驱动；豁免清单由 userconfig 下发（`search_knowledge_base` 与 `skill_*` 前缀），保证前后端判定同源。
+- 前端审批卡由 AG-UI `TOOL_CALL_END` 事件解析 call_tool 内层 `toolName/argumentsJson` 驱动；豁免/自动放行清单均由 userconfig 下发（豁免清单当前为空，自动放行清单按 D45 解析），保证前后端判定同源。
 - 审批等待期间 SSE 连接保持（无字节输出），Kestrel 无空闲响应超时；反向代理场景需放宽读超时（>300 秒）。
 
-### 审批策略（D45 插件白名单与沙箱自动放行）
+### 审批策略（D45 六类绑定资源自动放通与沙箱自动放行）
 
-- **D45 审批策略（2026-09-20）**：审批模式下的**应用级**放行白名单，存 `execution_settings.toolApproval` 节（`{ autoApprovePlugins: ["<pluginId>"], sandboxAutoApproved: bool }`，与沙箱配置同载体）——免加列、随 D42 快照整行发布（发布后改草稿不影响线上放行）。契约 `MoAI.AI.AppToolApprovalPolicy`（AI.Shared，闸口/保存校验/userconfig 三方共用）。
-  - 判定：`AppTool` 新增 `SourceId`（插件/流程应用 id，由 Plugin/Workflow 提供者填充），闸口在 Kind 命中重要工具后再查策略——沙箱开关命中 `kind=sandbox`，或 `SourceId` 在插件白名单内 → 直接执行，不建待审批记录；其余工具仍按 D-工具审批挂起。用户切回自动模式则策略无差别全放行（既有语义）。
-  - 保存校验：白名单必须是本次绑定插件的子集（未绑定/非法 id/结构不合法一律 400）；前端保存前先收敛（解绑插件自动剔出白名单）。
-  - 下发：userconfig 按发布快照解析策略并展开为**工具名**清单（静态/动态=插件名，MCP/OpenAPI=`{插件名}__{函数名}`，拼装契约 `AppPluginToolNaming`）与沙箱前缀 `sandbox_`，前端据此免展示审批卡（与豁免清单同一判定函数）。
+- **D45 审批策略（2026-09-20，2026-10-30 扩至六类）**：审批模式下的**应用级**放行白名单，存 `execution_settings.toolApproval` 节（`{ autoApprovePlugins: [uuid], autoApproveWorkflowApps: [uuid], autoApproveAgentApps: [uuid], autoApproveSkills: [uuid], autoApproveWikis: [long], autoApproveGraphs: [long], sandboxAutoApproved: bool }`，与沙箱配置同载体）——免加列、随 D42 快照整行发布（发布后改草稿不影响线上放行）。契约 `MoAI.AI.AppToolApprovalPolicy`（AI.Shared，闸口/保存校验/userconfig 三方共用）。
+  - 判定：单源工具按 `AppTool.SourceId`（插件/流程应用/Agent 应用 id，由 Plugin/Workflow/Agent 提供者填充；技能装载工具补 `SourceId=skill.Id`）命中**各自类型**的白名单即放行（类型间隔离，同一 id 不跨类放行）；沙箱开关命中 `kind=sandbox`；多源检索工具（知识库/图谱）携带 `SourceLongIds`（全部绑定资源 id），须**全部命中白名单**才放行，任一未命中挂起。命中即直接执行不建待审批记录；其余工具仍按 D-工具审批挂起。用户切回自动模式则策略无差别全放行（既有语义）。
+  - 保存校验：六类白名单必须是**生效绑定列表**的子集（插件/知识库/图谱按本次请求；流程应用/Agent 应用/技能未携带时按库中现值，外部应用技能固定空；未绑定/非法 id/结构不合法一律 400）；前端保存前先收敛（解绑资源自动剔出白名单）。
+  - 下发：userconfig 按发布快照解析策略并展开为**工具名**清单（静态/动态=插件名，MCP/OpenAPI=`{插件名}__{函数名}`〔`AppPluginToolNaming`〕，流程应用=`workflow__{应用名}`、Agent 应用=`agent__{应用名}`〔同名加短 id 后缀，`AppResourceToolNaming` 与闸口装配同一去重规则〕，技能=`skill_{key}`，知识库/图谱=其全部绑定资源放通时下发检索工具名）与沙箱前缀 `sandbox_`，前端据此免展示审批卡（与豁免清单同一判定函数）。
   - 行为见 [@AP-S65](./bdd.md#ap-s65)~[@AP-S68](./bdd.md#ap-s68)。
 
 ### 外部应用能力限制（D46 沙箱与技能强制关闭）
@@ -420,7 +421,7 @@
 
 - **上下文压缩设置化（2026-10-28 修订：系统级默认参数已下线，见 [../settings/sdd.md](../settings/sdd.md)）**：`AppConfigSection`「上下文压缩」卡片组（摘要开关 + 摘要模型 + 四个阈值 InputNumber）保留。`GET /api/app/agent/compaction-defaults`（登录可用）改为直接下发内置默认值（16/16000/8/64000，摘要默认关，与运行时合并基线一致，不再读系统设置），**输入框直接预填**（应用显式配置优先，未配置字段填内置默认），保存即写入显式配置并随发布快照生效（原「留空走系统默认」占位方案因用户反馈弃用）。运行时按「应用显式 > 内置」两级合并兜底，见 [../ai/sdd.md](../ai/sdd.md)。
 - **子代理协作**：配置区新增「子代理协作」卡片组（开关 + 单任务超时 30~1800s + 结果回传上限 500~100000 字符）；运行时见 [../ai/sdd.md](../ai/sdd.md)；外部应用固定关闭（保存强校验 + 装配兜底）。
-- **长期记忆分区（2026-10-13 修订）**：「配置」分区「长期记忆」收缩卡片（`AppMemorySettingsPanel`，2026-10-27 起由工作台独立 `memory` 分区并入，默认收起、展开才加载，仅内部应用且 Admin+ 渲染，旧 `/memory` 深链回落配置分区）：总开关级联（向量化模型/维度、记忆提示词、自动提取、检索条数、单用户上限；共享范围随跨应用移除；记忆类型由 AI 自行判定，2026-10-27 起后端移除 `EnableSemantic/EnableEpisodic/EnableProcedural` 类型限制，存量配置的关闭值不再生效）+ 应用记忆统计（`GET .../memory/stats`：总条数/用户数）+ 危险区「清空应用全部记忆」；「管理记忆」按钮已移除（入口仅保留对话页设置面板）；面板无自己的保存/发布按钮，经 `registerSettings` 把 memory 节注册给宿主页，随「保存设置」并入 executionSettings 一次提交（卡片未展开未注册时保持加载时原值），关闭态也回传模型/维度保持锁定参照系）；记忆提示词（`memory.prompt`，≤2000 字）留空用平台默认——`GET /api/app/agent/memory-defaults` 拉取默认值展示为占位符，后端把它追加为记忆工具描述（见 [../memory/sdd.md](../memory/sdd.md) D-M3 与 [@MEM-S22/S23](../memory/bdd.md#mem-s22)）；应用内已有记忆时模型/维度控件锁定（文案「写入记忆后不可更换」，后端硬校验见 [../memory/sdd.md](../memory/sdd.md) D-M6 与 [@MEM-S18~S21](../memory/bdd.md#mem-s18)）。
+- **长期记忆分区（2026-10-30 随记忆设置统一修订）**：「配置」分区「长期记忆」收缩卡片（`AppMemorySettingsPanel`，2026-10-27 起由工作台独立 `memory` 分区并入，默认收起、展开才加载，仅内部应用且 Admin+ 渲染，旧 `/memory` 深链回落配置分区）：总开关级联（记忆提示词、自动提取、检索条数、单用户上限；记忆类型由 AI 自行判定，后端已移除 `EnableSemantic/EnableEpisodic/EnableProcedural` 类型限制）+ **统一向量化模型只读回显**（模型/维度自 2026-10-30 起统一由系统设置 `MEMORY_*` 决定，应用配置不接收模型字段（保存剥离、memory 节不携带），面板经 `GET /api/app/agent/memory-defaults` 回显平台模型名/维度，平台未开启长期记忆时应用开关禁用）+ 应用记忆统计（`GET .../memory/stats`：总条数/用户数）+ 危险区「清空应用全部记忆」；「管理记忆」按钮已移除（入口仅保留对话页设置面板）；面板无自己的保存/发布按钮，经 `registerSettings` 把 memory 节注册给宿主页，随「保存设置」并入 executionSettings 一次提交（卡片未展开未注册时保持加载时原值）；记忆提示词（`memory.prompt`，≤2000 字）留空用平台默认——`GET /api/app/agent/memory-defaults` 拉取默认值展示为占位符，后端把它追加为记忆工具描述（见 [../memory/sdd.md](../memory/sdd.md) D-M3 与 [@MEM-S22/S23](../memory/bdd.md#mem-s22)）；模型/维度变更锁定的职责上移平台设置层（见 [../memory/sdd.md](../memory/sdd.md) D-M10 与 [@MEM-S18~S21](../memory/bdd.md#mem-s18)）。
 - **面板专家/技能卡片化（2026-10-12 三次修订）**：应用设置面板的专家与技能改为**卡片网格**（两列，头像/名称/来源 Tag/描述，选中态高亮+角标）并各配搜索框；默认按**最热门十个**展示（专家按 `useCount` 降序；技能暂无使用计数，按应用默认技能目录顺序即管理员配置优先级），搜索按名称命中优先、同层按热度排序，均截断前十；已选项不在前十时置顶展示（搜索态只显示命中项）。专家为单选（点击已选=取消），技能为多选。
 - **用户记忆偏好（2026-10-12 二次修订）**：对话页设置面板「长期记忆」卡仅 **开启/关闭** 两态 + 「管理记忆」入口（不展示记忆明细，不设「跟随默认」避免用户无法判断应用是否开启记忆；未设置按开启生效）；设置面板宽度可拖拽调整（左缘可见手柄，默认 460，范围 360~760，localStorage 持久化；CSS 原生 resize 手柄在全高面板右下角不可发现，已弃用）。独立「我的记忆」管理页（路由 `team/:teamId/app/:appId/memory/mine`，MyMemoryPage）：分页查看本人记忆 + 删除单条 + 清空本应用（均 Popconfirm，不可编辑），工作台「长期记忆」分区与对话面板均有入口。**跨应用记忆功能整体移除**（各应用向量模型与维度不同无法统一检索），记忆仅应用内使用。`userconfig` 契约 `memoryMode/memoryEnabled`（见 [@MEM-S9](./bdd.md#mem-s9) 与 [../memory/bdd.md](../memory/bdd.md)）。
 - 前端 i18n：`appManage.compaction*/subAgent*`、`appMemory.*`、`appChat.memory*`、`appManage.groupMemory/groupMemoryDesc`（zh-CN/en-US 同步；`appWorkspace.menuMemory`、`appMemory.title` 已随分区并入删除，`settings.compaction*` 已于 2026-10-28 随系统级默认参数下线删除）。
@@ -447,3 +448,13 @@
 - **口径（同日三轮修正）**：环形/`contextTokens` 为**当前上下文占用=最近一轮模型调用的输入 token**（`prompt_tokens` 即完整请求上下文；上下文压缩后随下一轮回落），而非累计值——累计口径在压缩后不回落、会虚高。热态 `AppAgentUsageAggregate.LastPromptTokens`（替换语义）+ `app_agent_session.context_tokens`。缓存命中行始终显示（未上报为 0）。
 - **坑**：GET 端点 Command 在 Controller 手动构造（非模型绑定参数），`AddFluentValidationAutoValidation` 不触发——空 guid 行为与 `GET .../messages` 一致由 Handler 归一 404。
 - **缓存命中（同日二轮）**：MEAI 10.9 `UsageDetails.CachedInputTokenCount`（OpenAI 兼容 `prompt_tokens_details.cached_tokens`）经 `UsageCapturingChatClient` 双路径捕获；数据落三处——热态聚合/`app_agent_session.cached_tokens`（环形 Tooltip）/`ai_model_token_audit.cached_tokens`（使用分析汇总与按模型聚合）。计数器 `IAiModelUsageCounter.IncrementAsync` 加可选 `cachedTokens`（网关直连暂传 0）；`AiModelUsageMetric` 增 `Cached`。存量库增列 `asserts/app_cache_tokens.sql`。
+
+## 增量设计（2026-10-30：Agent 应用绑定为工具，Agent 复用团队其它 Agent）
+
+- **动机**：Agent 已能把流程应用绑定为工具（@AP-S61~63），补齐另一半——绑定**其它 Agent 应用**作为 `agent__*` 工具，多绑定组合扩展能力（用户需求）。
+- **数据**：`app_agent_config.agent_apps`（JSON Guid 数组文本，`asserts/app_agent_config_agent_apps.sql`，语义同 workflow_apps）；`AppAgentConfigSnapshot` 同步加 `agentApps`（发布快照整行携带，D42 契约扩展）。
+- **契约**：`SaveAppAgentConfigCommand`/`QueryAppAgentConfigCommandResponse` 增 `agentApps`（null=保持原绑定）；保存校验：本团队、内部、未禁用、Agent 类型、已发布、**不含自身**；环防护见下。前端「能力扩展」卡与「流程应用」并列新增「Agent 应用」多选（排除自身，i18n `appManage.sectionAgentApps/agentApps*` 四件）；同日二轮：两个应用多选的选项与已选标签统一升级为**头像 + 名称**渲染（`renderAppOption`：`resolveStorageUrl` 解析 avatarPath、无头像首字母回退、`title` 字符串供 optionFilterProp 搜索），与团队应用列表头像口径一致；同日三轮：**插件多选同渲染**（能力扩展「插件」与「安全审批」白名单共用 `renderPluginOption`，后端 `TeamPluginItem` 增 `avatarPath` 随团队插件列表下发，见 [../teamplugin/bdd.md](../teamplugin/bdd.md) @TP-S10）；同日四轮：**技能多选同渲染**（`renderSkillOption`，后端 `SkillOptionItem` 增 `avatarPath` 随 `/api/skill/options` 下发，见 [../skill/bdd.md](../skill/bdd.md) @SKL-S1）。
+- **执行形态（无头单轮）**：`AgentAppToolProvider`（AI.Core，Order 12，Kind=`agentapp`）注册 `agent__<应用名>`（同名短 id 后缀去重）；调用参数 `query`（复用流程工具的提取规则）+ 可选 `history`（`[{role,content}]`，非 assistant 按 user，截最近 10 条）→ 校验目标应用并按 `ResolveEffectiveConfig(preferPublished:true)` 解析 → `IWorkflowNodeAiInvoker.AgentAppAsync`（携带目标自身工具链、`InlineChatHistoryProvider(history)`，**从 IServiceProvider 惰性解析防 DI 构造环**，同 WorkflowAppToolProvider 备注）→ 回复文本作为工具结果；异常转工具错误文本不中断对话。装配点三处补 `AgentAppIds`：`AppAgentFactory`（子代理与外部克隆继承）、`SubAgentInvoker`、`WorkflowNodeAiInvoker.AgentAppAsync`（流程 agentApp 节点调用的 Agent 也可再调 Agent 工具）。
+- **环防护三层**：①保存期（App.Core → `AppBindingCycleGuard.EnsureNoCycleFromAgentAsync`）**仅沿 Agent→Agent（agent_apps）边**做闭包：互绑（A↔B）与传递环（A→B→C→A 绑 C→A）400 拒绝；**刻意不拦截「Agent 绑定含自身节点的流程」**——该类环维持既有语义由流程侧守卫负责（@WF-S26：流程保存/发布/调试锁定 + 运行期根流程 BFS），Agent 侧保存放行（早期实现曾误拒，会破坏 WF-26h 场景）。②守卫下沉：`AgentWorkflowCycleGuard`（Workflow.Core）泛化为 App.Shared 的 `AppBindingCycleGuard`（BFS 三类边：agent_apps / workflow_apps / agentApp 节点，流程定义 JsonDocument 直读不依赖引擎），Workflow.Core 侧保留强类型 `CollectAgentAppIds` 薄入口，五处调用点语义不变。③运行期：AI.Core 新增 `AppToolCallChain`（AsyncLocal 祖先链）——Agent 工具调用前目标已在链上即拒绝（兜住保存竞态/快照回退），`WorkflowAgentAppClient` 调 AgentAppAsync 时同样入链（纵深防御）。
+- **验证**：`local-dev/agent-app-tool-e2e.mjs`（@AP-S109~S111）21/21（校验/回显/null 不清空/互绑与传递环 400/无头单轮全链路/发布快照/ history 透传/解绑下线）；前端 AppConfigSection.test.tsx 23/23；subagent-e2e 回归 10/10。
+- **坑**：AppController 的 Save 端点手工逐字段重建命令（非直接透传），新增请求字段必须同步补映射，否则静默丢失（本次 agentApps 初版即漏，表现为保存 200 但绑定不落库）。

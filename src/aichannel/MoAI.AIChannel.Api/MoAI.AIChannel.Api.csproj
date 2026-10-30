@@ -9,6 +9,7 @@
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIChannel.Shared\MoAI.AIChannel.Shared.csproj" />
+		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

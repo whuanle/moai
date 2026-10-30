@@ -7,20 +7,29 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MoAI.AIChannel.Models;
+using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 
 namespace MoAI.AIChannel.Services;
 
 /// <summary>
 /// 后端内置模型目录（models.json）加载与查询服务.
+/// 加载优先级：configs/models.json（可在线同步或手动放置的最新目录）→ 程序内置 models.json；
+/// 按文件时间戳自动重载，无需重启.
 /// </summary>
 public class AIModelCatalogService
 {
-    private static readonly string CatalogPath = Path.Combine(AppContext.BaseDirectory, "models.json");
+    /// <summary>
+    /// 程序内置目录文件（随程序打包）.
+    /// </summary>
+    public static readonly string EmbeddedCatalogPath = Path.Combine(AppContext.BaseDirectory, "models.json");
+
+    private static readonly string ConfigsCatalogPath = Path.Combine(AppConst.ConfigsPath, "models.json");
 
     private readonly ILogger<AIModelCatalogService> _logger;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Dictionary<string, Dictionary<string, AIChannelModelMeta>>? _cache;
+    private (string Path, DateTime WriteTimeUtc, long Length)? _cacheStamp;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AIModelCatalogService"/> class.
@@ -29,6 +38,55 @@ public class AIModelCatalogService
     public AIModelCatalogService(ILogger<AIModelCatalogService> logger)
     {
         _logger = logger;
+    }
+
+    /// <summary>
+    /// 解析 models.json 原文为目录结构，格式非法抛 <see cref="JsonException"/>.
+    /// </summary>
+    /// <param name="raw">models.json 原文.</param>
+    /// <returns>provider id → 模型元数据字典.</returns>
+    public static Dictionary<string, Dictionary<string, AIChannelModelMeta>> ParseCatalog(string raw)
+    {
+        using var doc = JsonDocument.Parse(raw);
+        var root = doc.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            // 统一抛 JsonException，调用方按格式非法处理
+            throw new JsonException("models.json 根节点必须是对象.");
+        }
+
+        var catalog = new Dictionary<string, Dictionary<string, AIChannelModelMeta>>(StringComparer.Ordinal);
+
+        foreach (var provider in root.EnumerateObject())
+        {
+            if (!provider.Value.TryGetProperty("models", out var modelsElement) || modelsElement.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var providerModels = new Dictionary<string, AIChannelModelMeta>(StringComparer.Ordinal);
+            foreach (var model in modelsElement.EnumerateObject())
+            {
+                var meta = ParseModel(model.Name, model.Value);
+                if (meta != null)
+                {
+                    providerModels[meta.ModelId] = meta;
+                }
+            }
+
+            catalog[provider.Name] = providerModels;
+        }
+
+        return catalog;
+    }
+
+    /// <summary>
+    /// 失效内存缓存，下次查询时重新加载目录文件.
+    /// </summary>
+    public void InvalidateCache()
+    {
+        _cache = null;
+        _cacheStamp = null;
     }
 
     /// <summary>
@@ -97,7 +155,8 @@ public class AIModelCatalogService
 
     private async Task<Dictionary<string, Dictionary<string, AIChannelModelMeta>>> EnsureLoadedAsync(CancellationToken cancellationToken)
     {
-        if (_cache != null)
+        var stamp = CurrentStamp();
+        if (_cache != null && _cacheStamp == stamp)
         {
             return _cache;
         }
@@ -105,12 +164,13 @@ public class AIModelCatalogService
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (_cache != null)
+            if (_cache != null && _cacheStamp == stamp)
             {
                 return _cache;
             }
 
             _cache = Load();
+            _cacheStamp = CurrentStamp();
             return _cache;
         }
         finally
@@ -119,46 +179,51 @@ public class AIModelCatalogService
         }
     }
 
+    private static string? ResolveCatalogPath()
+    {
+        if (File.Exists(ConfigsCatalogPath))
+        {
+            return ConfigsCatalogPath;
+        }
+
+        return File.Exists(EmbeddedCatalogPath) ? EmbeddedCatalogPath : null;
+    }
+
+    private static (string Path, DateTime WriteTimeUtc, long Length)? CurrentStamp()
+    {
+        var path = ResolveCatalogPath();
+        if (path == null)
+        {
+            return null;
+        }
+
+        var info = new FileInfo(path);
+        return (path, info.LastWriteTimeUtc, info.Length);
+    }
+
     private Dictionary<string, Dictionary<string, AIChannelModelMeta>> Load()
     {
-        if (!File.Exists(CatalogPath))
+        var path = ResolveCatalogPath();
+        if (path == null)
         {
-            _logger.LogWarning("模型目录文件不存在：{Path}", CatalogPath);
+            _logger.LogWarning("模型目录文件不存在：内置 {Embedded} 与 {Configs} 均未找到", EmbeddedCatalogPath, ConfigsCatalogPath);
             return new Dictionary<string, Dictionary<string, AIChannelModelMeta>>();
         }
 
         try
         {
-            var raw = File.ReadAllText(CatalogPath);
-            using var doc = JsonDocument.Parse(raw);
-            var root = doc.RootElement;
-            var catalog = new Dictionary<string, Dictionary<string, AIChannelModelMeta>>(StringComparer.Ordinal);
-
-            foreach (var provider in root.EnumerateObject())
-            {
-                if (!provider.Value.TryGetProperty("models", out var modelsElement) || modelsElement.ValueKind != JsonValueKind.Object)
-                {
-                    continue;
-                }
-
-                var providerModels = new Dictionary<string, AIChannelModelMeta>(StringComparer.Ordinal);
-                foreach (var model in modelsElement.EnumerateObject())
-                {
-                    var meta = ParseModel(model.Name, model.Value);
-                    if (meta != null)
-                    {
-                        providerModels[meta.ModelId] = meta;
-                    }
-                }
-
-                catalog[provider.Name] = providerModels;
-            }
-
-            return catalog;
+            return ParseCatalog(File.ReadAllText(path));
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "模型目录解析失败：{Path}", CatalogPath);
+            // configs 目录的文件由用户手动放置或在线同步，解析失败时回退内置目录，避免整目录不可用
+            if (string.Equals(path, ConfigsCatalogPath, StringComparison.OrdinalIgnoreCase) && File.Exists(EmbeddedCatalogPath))
+            {
+                _logger.LogError(ex, "configs 模型目录解析失败，回退内置目录：{Path}", path);
+                return ParseCatalog(File.ReadAllText(EmbeddedCatalogPath));
+            }
+
+            _logger.LogError(ex, "模型目录解析失败：{Path}", path);
             throw new BusinessException("模型目录 models.json 解析失败.") { StatusCode = 500 };
         }
     }

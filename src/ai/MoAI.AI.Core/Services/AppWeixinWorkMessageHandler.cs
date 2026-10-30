@@ -26,6 +26,8 @@ namespace MoAI.AI.Services;
 /// 应用渠道的企业微信消息处理器：接收自建应用回调消息（单聊/群聊），按「企业微信应用 + 会话（chatId 或成员 userid）」
 /// 定位或创建应用 Agent 会话（与 AG-UI 同一套会话管线：热态快照 + 历史提供者 + 落库压缩），运行 Agent 后
 /// 通过应用消息接口把回复发回成员/群聊.
+/// <para>发送者若已通过第三方登录绑定企业微信（user_oauth_connection 命中 userid），会话自动归属该
+/// 内部用户（网页端会话列表可见可续聊）；未绑定时保持匿名会话. 群聊中已绑定的成员各自独立会话.</para>
 /// <para>单例注册：内部按会话 key 加锁串行执行，避免同一会话并发写历史错序.</para>
 /// </summary>
 public sealed class AppWeixinWorkMessageHandler : IWeixinWorkEventHandler
@@ -107,23 +109,29 @@ public sealed class AppWeixinWorkMessageHandler : IWeixinWorkEventHandler
             .Select(x => new { x.TeamId, x.AppType, x.PublishStatus, x.IsDisable, x.IsExternal })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // 仅已发布的内部 Agent 应用对外服务；未发布/禁用/外部应用静默忽略
-        if (app == null || app.IsDisable || app.IsExternal || app.AppType != (int)AppType.Agent || app.PublishStatus != 1)
+        // 仅已发布的内部 Agent/Workflow 应用对外服务；未发布/禁用/外部应用静默忽略
+        if (app == null || app.IsDisable || app.IsExternal || app.PublishStatus != 1
+            || (app.AppType != (int)AppType.Agent && app.AppType != (int)AppType.Workflow))
         {
             _logger.LogInformation("企业微信消息忽略（应用不可用），appId={AppId} messageId={MessageId}.", appId, message.MessageId);
             return string.Empty;
         }
 
+        // 发送者绑定过第三方登录则归属其内部用户，否则匿名（userId=0）
+        var matchService = scope.ServiceProvider.GetRequiredService<ChannelUserMatchService>();
+        var matchedUserId = await matchService.MatchAsync(
+            OAuthPrivider.WeixinWork,
+            [message.FromUserId],
+            cancellationToken);
+
         var hotStore = scope.ServiceProvider.GetRequiredService<AppChatHotStore>();
         var conversationId = ResolveConversationId(message);
-        var sessionId = await ResolveSessionIdAsync(scope, message.WeixinWorkAppId, conversationId, app.TeamId, appId, cancellationToken);
+        var sessionId = await ResolveSessionIdAsync(scope, message.WeixinWorkAppId, conversationId, app.TeamId, appId, matchedUserId, cancellationToken);
 
         try
         {
             var factory = scope.ServiceProvider.GetRequiredService<AppAgentFactory>();
-
-            // 企业微信成员不映射内部用户：userId=0，用量计入团队/应用维度；企业微信会话暂不支持专家提示词
-            var agent = await factory.CreateAsync(appId, app.TeamId, userId: 0, sessionId, isDebug: false, promptId: 0, cancellationToken);
+            var agent = await factory.CreateAsync(appId, app.TeamId, userId: matchedUserId ?? 0, sessionId, isDebug: false, promptId: 0, cancellationToken);
             var session = await LoadSessionAsync(agent, hotStore, sessionId, cancellationToken);
 
             var response = await agent.RunAsync([new ChatMessage(ChatRole.User, text)], session, cancellationToken: cancellationToken);
@@ -152,11 +160,12 @@ public sealed class AppWeixinWorkMessageHandler : IWeixinWorkEventHandler
     /// <summary>
     /// 定位或创建「企业微信应用 + 会话」对应的 Agent 会话；会话键群聊取 chatId、单聊取成员 userid，
     /// 映射存 Redis（30 天滑动），映射丢失时自愈为新建会话（旧会话成为孤儿但不再被使用）.
+    /// <para>归属用户时映射键带用户后缀：群聊中各绑定成员拥有独立会话，未归属走共享匿名会话.</para>
     /// </summary>
-    private async Task<Guid> ResolveSessionIdAsync(IServiceScope scope, Guid weixinWorkAppId, string conversationId, int teamId, Guid appId, CancellationToken cancellationToken)
+    private async Task<Guid> ResolveSessionIdAsync(IServiceScope scope, Guid weixinWorkAppId, string conversationId, int teamId, Guid appId, long? matchedUserId, CancellationToken cancellationToken)
     {
         var redisDatabase = scope.ServiceProvider.GetRequiredService<IRedisDatabase>();
-        var key = ChatSessionKey(weixinWorkAppId, conversationId);
+        var key = ChatSessionKey(weixinWorkAppId, conversationId, matchedUserId);
 
         var mapped = await redisDatabase.Database.StringGetAsync(key);
         if (mapped.HasValue && Guid.TryParse(mapped.ToString(), out var sessionId))
@@ -172,7 +181,8 @@ public sealed class AppWeixinWorkMessageHandler : IWeixinWorkEventHandler
             TeamId = teamId,
             AppId = appId,
             Title = AppAgentConstants.DefaultSessionTitle,
-            UserType = (int)UserType.External,
+            UserType = matchedUserId.HasValue ? (int)UserType.Normal : (int)UserType.External,
+            CreateUserId = matchedUserId ?? 0,
             LastMessageTime = DateTimeOffset.Now,
         };
         databaseContext.AppAgentSessions.Add(session);
@@ -182,7 +192,7 @@ public sealed class AppWeixinWorkMessageHandler : IWeixinWorkEventHandler
         await scope.ServiceProvider.GetRequiredService<IAppUsageCounter>().IncrementAsync(appId, cancellationToken);
 
         await redisDatabase.Database.StringSetAsync(key, session.Id.ToString(), ChatSessionTtl);
-        _logger.LogInformation("企业微信会话已创建，weixinWorkAppId={WeixinWorkAppId} conversationId={ConversationId} sessionId={SessionId}.", weixinWorkAppId, conversationId, session.Id);
+        _logger.LogInformation("企业微信会话已创建，weixinWorkAppId={WeixinWorkAppId} conversationId={ConversationId} sessionId={SessionId} userId={UserId}.", weixinWorkAppId, conversationId, session.Id, matchedUserId ?? 0);
         return session.Id;
     }
 
@@ -240,7 +250,10 @@ public sealed class AppWeixinWorkMessageHandler : IWeixinWorkEventHandler
 
     private static string ChatLockKey(Guid weixinWorkAppId, string chatId, string fromUserId) => $"{weixinWorkAppId:N}:{ResolveChatId(chatId, fromUserId)}";
 
-    private static string ChatSessionKey(Guid weixinWorkAppId, string conversationId) => $"weixinwork:chat:{weixinWorkAppId:N}:{conversationId}";
+    private static string ChatSessionKey(Guid weixinWorkAppId, string conversationId, long? matchedUserId)
+        => matchedUserId.HasValue
+            ? $"weixinwork:chat:{weixinWorkAppId:N}:{conversationId}:u{matchedUserId.Value}"
+            : $"weixinwork:chat:{weixinWorkAppId:N}:{conversationId}";
 
     private static string ResolveChatId(string chatId, string fromUserId) => string.IsNullOrEmpty(chatId) ? fromUserId : chatId;
 }

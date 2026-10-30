@@ -40,6 +40,13 @@ public class UpdateAIModelAuthorizationCommandHandler : IRequestHandler<UpdateAI
             throw new BusinessException("公开模型对所有团队可用，无需设置团队授权.") { StatusCode = 400 };
         }
 
+        var isTeamChannel = await _databaseContext.AiChannels
+            .AnyAsync(x => x.Id == model.ChannelId && x.TeamId > 0, cancellationToken);
+        if (isTeamChannel)
+        {
+            throw new BusinessException("团队自有渠道模型仅本团队可用，无需设置团队授权.") { StatusCode = 400 };
+        }
+
         var teamIds = request.TeamIds.Distinct().ToList();
 
         var existTeamIds = await _databaseContext.Teams
@@ -69,7 +76,6 @@ public class UpdateAIModelAuthorizationCommandHandler : IRequestHandler<UpdateAI
         var removedTeamIds = currentTeamIds.Except(existTeamIds).ToList();
         if (removedTeamIds.Count > 0)
         {
-            // 取消授权的同时移除该团队的额度规则与余额，未授权团队不应残留额度.
             var removeAuthorizations = await _databaseContext.AiModelAuthorizations
                 .Where(x => x.AiModelId == request.ModelId && removedTeamIds.Contains(x.TeamId))
                 .ToListAsync(cancellationToken);
@@ -77,28 +83,6 @@ public class UpdateAIModelAuthorizationCommandHandler : IRequestHandler<UpdateAI
             {
                 authorization.IsDeleted = 1;
                 _databaseContext.Update(authorization);
-            }
-
-            var removeLimits = await _databaseContext.AiModelLimits
-                .Where(x => x.ModelId == request.ModelId && removedTeamIds.Contains(x.TeamId))
-                .ToListAsync(cancellationToken);
-            var removeLimitIds = removeLimits.Select(x => x.Id).ToList();
-            foreach (var limit in removeLimits)
-            {
-                limit.IsDeleted = 1;
-                _databaseContext.Update(limit);
-            }
-
-            if (removeLimitIds.Count > 0)
-            {
-                var removeQuotas = await _databaseContext.AiModelQuota
-                    .Where(x => removeLimitIds.Contains(x.LimitId))
-                    .ToListAsync(cancellationToken);
-                foreach (var quota in removeQuotas)
-                {
-                    quota.IsDeleted = 1;
-                    _databaseContext.Update(quota);
-                }
             }
         }
 

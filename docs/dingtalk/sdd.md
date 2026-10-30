@@ -41,11 +41,12 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 `MoAI.AI.Core` 实现（引用 DingTalk.Shared 契约），与 AG-UI、飞书渠道共用同一套应用 Agent 管线：
 
 1. **过滤**：只处理 Topic `/v1.0/im/bot/messages/get`；`msgType=text`；提取 `text.content` 并去掉群聊 `@机器人名 ` 前缀（钉钉正文可能带 @ 前缀文本）。钉钉不回推机器人自身消息，无回路问题。
-2. **应用门禁**：绑定的 app 必须存在、未禁用、内部应用、Agent 类型且已发布，否则静默忽略（记日志）。
-3. **会话定位**：按「钉钉应用 + conversationId」在 Redis（`dingtalk:chat:{dingTalkAppId}:{conversationId}`，30 天滑动）映射到 `app_agent_session`；未命中则新建会话（`UserType=External`）。映射丢失自愈为新建会话。
-4. **运行**：`AppAgentFactory.CreateAsync(appId, teamId, userId:0, sessionId, isDebug:false)` 装配 Agent（含插件/知识库/沙箱工具与压缩管线），加载热态快照 → `RunAsync` → 提取最后一条 Assistant 文本。
-5. **回复与落库**：回复经 `IDingTalkApiClient.SendTextMessageAsync` 发回推送体携带的会话 webhook（截断 3000 字符）；会话序列化回热态 + `AppChatFlushService.FlushAsync` 落库。业务异常（如未配置模型）把异常消息作为回复返回给用户。
-6. **串行化**：同一 conversationId 用进程内信号量串行；钉钉用户不映射内部用户（`userId=0`），用量计入团队/应用维度。
+2. **应用门禁**：绑定的 app 必须存在、未禁用、内部应用、Agent/Workflow 类型且已发布，否则静默忽略（记日志）。
+3. **发送者识别**：解析推送体 `senderId`（即 unionId，跨应用一致）与 `senderStaffId`，经 `ChannelUserMatchService` 反查 `user_oauth_connection`（钉钉 OAuth 绑定记录 `sub` 即 unionId）：命中唯一且用户可用则会话归属该内部用户，否则匿名（`userId=0`）。见关键决策 6。
+4. **会话定位**：按「钉钉应用 + conversationId（归属时追加 `:u{userId}`）」在 Redis（`dingtalk:chat:{dingTalkAppId}:{conversationId}`，30 天滑动）映射到 `app_agent_session`；未命中则新建会话（归属用户时 `CreateUserId=用户id、UserType=Normal`，匿名时 `UserType=External`）。映射丢失自愈为新建会话。
+5. **运行**：`AppAgentFactory.CreateAsync(appId, teamId, userId:(归属或0), sessionId, isDebug:false)` 装配 Agent（含插件/知识库/沙箱工具与压缩管线；Workflow 应用由工厂内部转流程执行返回最终回复），加载热态快照 → `RunAsync` → 提取最后一条 Assistant 文本。
+6. **回复与落库**：回复经 `IDingTalkApiClient.SendTextMessageAsync` 发回推送体携带的会话 webhook（截断 3000 字符）；会话序列化回热态 + `AppChatFlushService.FlushAsync` 落库。业务异常（如未配置模型）把异常消息作为回复返回给用户。
+7. **串行化**：同一 conversationId 用进程内信号量串行。
 
 ## 数据
 
@@ -76,7 +77,7 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 3. **收帧线程同步 ack**：SDK 的 `Reply` 即对同一 WebSocket 发帧，在收帧线程上同步发送与系统消息回复天然串行（避免并发写 WebSocket）；业务处理转线程池，钉钉侧重发由 message_id 去重器吸收。
 4. **禁用即断连**：`is_disable=true` 断开且不重连；推送到达时若应用已禁用/删除，转发器二次校验后丢弃。
 5. **假凭证优雅降级**：Stream 网关返回 `authFailed` 时 SDK 内部重试仅记日志，不影响宿主与其它连接；修正凭证保存即重连。
-6. **钉钉用户不映射内部用户**：`userId=0`，会话 `UserType=External`；与飞书渠道一致。
+6. **发送者可识别则归属、否则匿名**：识别键 = 推送体 `senderId`（unionId）+ `senderStaffId`，钉钉 OAuth 绑定记录 `sub` 即 unionId，跨应用天然一致；命中多个不同账号、账号停用/删除一律降级匿名。归属会话 `CreateUserId=用户id、UserType=Normal`（网页端可见可续聊），匿名会话保持 `userId=0、UserType=External`；归属会话的 Redis 键带 `:u{userId}` 后缀（群聊中各绑定成员独立会话）。与飞书渠道同构，见 [../feishu/sdd.md](../feishu/sdd.md)。
 
 ## 已知问题
 

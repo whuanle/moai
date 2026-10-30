@@ -5,7 +5,6 @@ using MoAI;
 using MoAI.AI;
 using MoAI.AI.A2a;
 using MoAI.AI.Acp;
-using MoAI.Gateway;
 using MoAI.KnowledgeGraph;
 using MoAI.KnowledgeGraph.Mcp;
 using MoAI.Wiki;
@@ -33,22 +32,29 @@ if (app.Environment.IsDevelopment())
     {
         c.Path = "/openapi/{documentName}.json";
     });
-    // API 文档：/scalar 同页下拉切换 v1（内部接口）与 external（外部接口）两份文档，
-    // 原始文档分别为 /openapi/v1.json 与 /openapi/external.json（外部文档也可直接访问 /scalar/external）
+    // API 文档：/scalar 同页下拉切换 v1（内部接口）、external（外部接口）与 subsys（子系统协作接口）三份文档，
+    // 原始文档分别为 /openapi/v1.json、/openapi/external.json 与 /openapi/subsys.json（也可直接访问 /scalar/external、/scalar/subsys）
     app.MapScalarApiReference(options =>
     {
         options.AddDocument("v1", "AI API", isDefault: true);
         options.AddDocument("external", "AI External API");
+        options.AddDocument("subsys", "AI Subsystem API");
     });
 }
 else
 {
-    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留外部接口文档供第三方接入方获取
+    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留外部接口文档与子系统协作文档供接入方获取
     // （Path 不含 {documentName} 占位符时 DocumentName 为固定绑定，NSwag 不会响应其它文档名）
     app.UseOpenApi(c =>
     {
         c.Path = "/openapi/external.json";
         c.DocumentName = "external";
+    });
+
+    app.UseOpenApi(c =>
+    {
+        c.Path = "/openapi/subsys.json";
+        c.DocumentName = "subsys";
     });
 
     // 其余 /openapi/**、/scalar/** 明确 404，避免落入 SPA 回退返回 index.html
@@ -92,6 +98,8 @@ app.UseAuthorization();
 
 // 自定义鉴权中间件
 app.UseMiddleware<MoAI.App.ExternalAuthenticationMiddleware>();
+app.UseMiddleware<MoAI.Subsystem.SubsystemAuthenticationMiddleware>();
+app.UseMiddleware<MoAI.Subsystem.SystemAccessKeyMiddleware>();
 app.UseMoAI();
 
 // 配置静态文件服务（支持 SPA）
@@ -136,8 +144,6 @@ app.MapKnowledgeGraphMcp();
 
 app.MapControllers();
 
-// 团队模型网关（OpenAI/Anthropic 兼容 /v1 端点）
-app.MapGatewayEndpoints();
 
 // Agent 应用对话（AG-UI SSE 端点 /api/app/{appId}/chat）
 app.MapAppAgentEndpoints();

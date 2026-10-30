@@ -29,7 +29,10 @@ export async function refreshServerInfo(): Promise<ServerInfo> {
     publicStoreUrl: res?.publicStoreUrl ?? '',
     rsaPublic: res?.rsaPublic ?? '',
     logoPath: res?.logoPath ?? '',
+    loginBackgroundPath: res?.loginBackgroundPath ?? '',
     name: res?.name ?? '',
+    registerEmailCodeRequired: res?.registerEmailCodeRequired ?? false,
+    passwordResetEnabled: res?.passwordResetEnabled ?? false,
   }
   useAppStore.getState().setServerInfo(info)
   return info
@@ -58,6 +61,8 @@ export async function register(payload: {
   nickName?: string
   phone?: string
   password: string
+  /** 邮箱验证码（服务端开启注册验证码时必填） */
+  emailCode?: string
 }): Promise<void> {
   const info = await getServerInfo()
   const encryptedPassword = rsaEncrypt(info.rsaPublic, payload.password)
@@ -68,7 +73,22 @@ export async function register(payload: {
     nickName: payload.nickName,
     phone: payload.phone,
     password: encryptedPassword,
+    emailCode: payload.emailCode,
   })
+}
+
+/** 发送邮箱验证码（注册 / 找回密码；服务端校验开关与 SMTP 配置） */
+export async function sendEmailCode(email: string, purpose: 'register' | 'resetPassword'): Promise<void> {
+  const client = getAnonymousClient()
+  await client.api.auth.email_code.send.post({ email, purpose })
+}
+
+/** 通过邮箱验证码重置密码（找回密码；需 SMTP 邮件服务已启用） */
+export async function resetPasswordByEmail(email: string, code: string, newPassword: string): Promise<void> {
+  const info = await getServerInfo()
+  const encryptedPassword = rsaEncrypt(info.rsaPublic, newPassword)
+  const client = getAnonymousClient()
+  await client.api.auth.reset_password.post({ email, code, newPassword: encryptedPassword })
 }
 
 export async function refreshAccessToken(refreshToken: string): Promise<UserInfo | null> {

@@ -5,8 +5,9 @@ import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
 import { radius, spacing } from '@/design-system/theme'
-import { getOAuthProviders, login, type OAuthProviderItem } from '@/api/auth'
+import { getOAuthProviders, getServerInfo, login, type OAuthProviderItem } from '@/api/auth'
 import { AppLogo } from '@/layouts/components/AppLogo'
+import { useLoginBackgroundSrc, useSystemName } from '@/layouts/useSystemLogo'
 import { resolveStorageUrl } from '@/utils/storage'
 
 interface LoginFormValues {
@@ -19,8 +20,16 @@ export function Login() {
   const feedback = useFeedback()
   const navigate = useNavigate()
   const { token } = antdTheme.useToken()
+  const loginBackground = useLoginBackgroundSrc()
+  const systemName = useSystemName()
   const [loading, setLoading] = useState(false)
   const [providers, setProviders] = useState<OAuthProviderItem[]>([])
+  const [resetEnabled, setResetEnabled] = useState(false)
+
+  // 登录页在 AppLayout 之外，浏览器标签页标题需要自行同步网站名称
+  useEffect(() => {
+    document.title = systemName
+  }, [systemName])
 
   useEffect(() => {
     let cancelled = false
@@ -28,6 +37,12 @@ export function Login() {
       try {
         const items = await getOAuthProviders(window.location.origin)
         if (!cancelled) setProviders(items)
+      } catch {
+        // 错误已由全局请求中间件统一提示
+      }
+      try {
+        const info = await getServerInfo()
+        if (!cancelled) setResetEnabled(info.passwordResetEnabled)
       } catch {
         // 错误已由全局请求中间件统一提示
       }
@@ -42,7 +57,11 @@ export function Login() {
     try {
       await login(values.username, values.password)
       feedback.success(t('auth.loginSuccess'))
-      navigate('/apps', { replace: true })
+      // 支持登录后回跳（仅本站相对路径，如 /sso/authorize?client=...），其余回应用广场
+      const params = new URLSearchParams(window.location.search)
+      const redirect = params.get('redirect')
+      const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/apps'
+      navigate(safeRedirect, { replace: true })
     } catch (error) {
       // 错误已由全局请求中间件统一提示
       console.error('Login failed:', error)
@@ -59,7 +78,9 @@ export function Login() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.lg,
-        background: `linear-gradient(180deg, ${token.colorBgLayout} 0%, ${token.colorPrimaryBg} 100%)`,
+        background: loginBackground
+          ? `url("${loginBackground}") center/cover no-repeat`
+          : `linear-gradient(180deg, ${token.colorBgLayout} 0%, ${token.colorPrimaryBg} 100%)`,
       }}
     >
       <Card
@@ -70,9 +91,9 @@ export function Login() {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: spacing.lg }}>
-          <AppLogo size={48} alt="MoAI" style={{ marginBottom: spacing.sm }} />
+          <AppLogo size={48} alt={systemName} style={{ marginBottom: spacing.sm }} />
           <Typography.Title level={3} style={{ marginBottom: 4 }}>
-            {t('auth.loginTitle')}
+            {systemName}
           </Typography.Title>
           <Typography.Text type="secondary">{t('auth.loginSubtitle')}</Typography.Text>
         </div>
@@ -91,6 +112,11 @@ export function Login() {
           >
             <Input.Password prefix={<LockOutlined />} placeholder={t('auth.passwordPlaceholder')} size="large" />
           </Form.Item>
+          {resetEnabled && (
+            <Typography.Text type="secondary" style={{ display: 'block', textAlign: 'right', marginTop: -12, marginBottom: 8 }}>
+              <Link to="/forgot-password">{t('auth.forgot.title')}</Link>
+            </Typography.Text>
+          )}
           <Form.Item style={{ marginBottom: 12 }}>
             <Button type="primary" htmlType="submit" block size="large" loading={loading}>
               {t('auth.login')}

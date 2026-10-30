@@ -25,7 +25,7 @@ public sealed class AgentMemorySettings
     public const int TypeProcedural = 2;
 
     /// <summary>
-    /// 默认向量维度（应用未显式配置时）.
+    /// 默认向量维度（系统设置 MEMORY_EMBEDDING_DIMENSIONS 未配置时的兜底值）.
     /// </summary>
     public const int DefaultEmbeddingDimensions = 1024;
 
@@ -57,7 +57,8 @@ public sealed class AgentMemorySettings
         "2. 用户明确要求记住或忘记时必须调用记忆工具；对话中出现稳定偏好、重要约定、项目背景等值得长期保留的信息时也建议保存；\n" +
         "3. 保存内容要具体（含数字/名称/约定等细节），与既有记忆高度相似时工具会自动合并更新，不要重复保存；\n" +
         "4. 回答前先参考系统注入的相关记忆，自动注入不够用时用 memory_search 主动检索；\n" +
-        "5. 用户要求忘记或更正信息时，先用 memory_search 找到对应记忆 id，再调用 memory_forget 删除。";
+        "5. 用户要求忘记或更正信息时，先用 memory_search 找到对应记忆 id，再调用 memory_forget 删除；\n" +
+        "6. 用户要求「全局记住/在所有应用记住」时，memory_save 的 scope 用 global（应用未开放全局接入时改用应用内记忆并告知用户）。";
 
     /// <summary>
     /// 默认相似度阈值（余弦相似度 0~1）.
@@ -80,6 +81,16 @@ public sealed class AgentMemorySettings
     public const int UserModeAppOnly = 2;
 
     /// <summary>
+    /// 用户全局记忆接入模式：默认（应用允许时接入全局记忆）.
+    /// </summary>
+    public const int UserGlobalModeOn = 0;
+
+    /// <summary>
+    /// 用户全局记忆接入模式：不接入全局记忆（应用内记忆不受影响）.
+    /// </summary>
+    public const int UserGlobalModeOff = 1;
+
+    /// <summary>
     /// 记忆去重相似度阈值：候选与既有记忆相似度达到该值时合并更新而非新增.
     /// </summary>
     public const double DedupeScoreThreshold = 0.92;
@@ -90,12 +101,18 @@ public sealed class AgentMemorySettings
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// 向量化模型 id（ai_model.id，须为 embedding 模型），开启后锁定；更换需先清空应用记忆.
+    /// 允许用户接入个人全局记忆（跨应用记忆）：开启后用户可在对话设置中自行开关全局接入；关闭时用户记忆仅在本应用内使用.
+    /// </summary>
+    public bool AllowGlobalMemory { get; set; }
+
+    /// <summary>
+    /// 向量化模型 id（ai_model.id）：统一由系统设置（MEMORY_EMBEDDING_MODEL）决定，应用配置不再存储；
+    /// 此属性仅供运行时由平台记忆设置回填（历史快照中的存量值会被覆盖）.
     /// </summary>
     public Guid EmbeddingModelId { get; set; }
 
     /// <summary>
-    /// 向量维度（1~2000，pgvector HNSW 上限）.
+    /// 向量维度（1~2000，pgvector HNSW 上限）：统一由系统设置（MEMORY_EMBEDDING_DIMENSIONS）决定，运行时回填.
     /// </summary>
     public int EmbeddingDimensions { get; set; } = DefaultEmbeddingDimensions;
 
@@ -162,4 +179,11 @@ public sealed class AgentMemorySettings
     /// <param name="userMode">用户存储的记忆模式.</param>
     /// <returns>生效模式常量.</returns>
     public int ResolveUserMode(int userMode) => userMode == UserModeOff ? UserModeOff : UserModeAppOnly;
+
+    /// <summary>
+    /// 解析用户生效全局接入模式：仅 不接入（1） / 接入（其余值）两态（应用未允许时该值不生效）.
+    /// </summary>
+    /// <param name="userGlobalMode">用户存储的全局接入模式.</param>
+    /// <returns>生效全局接入模式常量.</returns>
+    public int ResolveUserGlobalMode(int userGlobalMode) => userGlobalMode == UserGlobalModeOff ? UserGlobalModeOff : UserGlobalModeOn;
 }

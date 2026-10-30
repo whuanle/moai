@@ -87,10 +87,6 @@ const OPENING_MESSAGE_ID = 'opening-statement'
 const CONTEXT_RING_SIZE = 14
 const CONTEXT_RING_STROKE = 2
 
-/** 审批卡豁免工具的兜底规则（后端 userconfig 未返回时使用，与 AppToolApprovalContract 保持一致） */
-const DEFAULT_EXEMPT_NAMES = ['search_knowledge_base']
-const DEFAULT_EXEMPT_PREFIXES = ['skill_']
-
 /** 会话消息分桶的空态占位（保持引用稳定） */
 const NO_MESSAGES: DisplayMessage[] = []
 
@@ -174,9 +170,10 @@ export function AppChat() {
 
   // 工具审批模式（auto/approval）：随每轮对话请求头下发，并持久化到用户级应用配置
   const [approvalMode, setApprovalMode] = useState<ToolApprovalMode>('auto')
+  // 审批卡豁免/自动放通工具清单：随 userconfig 下发（检索与技能装载已纳入审批范围，无整类豁免）
   const exemptRef = useRef<ApprovalExemptRef>({
-    names: DEFAULT_EXEMPT_NAMES,
-    prefixes: DEFAULT_EXEMPT_PREFIXES,
+    names: [],
+    prefixes: [],
     autoNames: [],
     autoPrefixes: [],
   })
@@ -279,8 +276,8 @@ export function AppChat() {
         setSelectedPromptId((prev) => (prev === 0 ? cfg.promptId : prev))
         setApprovalMode(cfg.toolApprovalMode)
         exemptRef.current = {
-          names: cfg.toolApprovalExemptNames.length > 0 ? cfg.toolApprovalExemptNames : DEFAULT_EXEMPT_NAMES,
-          prefixes: cfg.toolApprovalExemptPrefixes.length > 0 ? cfg.toolApprovalExemptPrefixes : DEFAULT_EXEMPT_PREFIXES,
+          names: cfg.toolApprovalExemptNames,
+          prefixes: cfg.toolApprovalExemptPrefixes,
           autoNames: cfg.toolApprovalAutoApprovedNames,
           autoPrefixes: cfg.toolApprovalAutoApprovedPrefixes,
         }
@@ -479,7 +476,7 @@ export function AppChat() {
     [activeSessionId, cleanupSessionStream, loadSessions, navigateSession, urlSessionId],
   )
 
-  /** 审批模式下无需审批卡的工具：只读/技能装载豁免，以及审批策略自动放行（白名单插件/沙箱） */
+  /** 审批模式下无需审批卡的工具：审批策略自动放通（六类绑定资源白名单/沙箱开关解析出的工具名与前缀） */
   const isExemptTool = useCallback(
     (name: string) =>
       exemptRef.current.names.includes(name) ||

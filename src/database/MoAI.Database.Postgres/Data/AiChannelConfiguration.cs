@@ -28,6 +28,9 @@ internal partial class AiChannelConfiguration : IEntityTypeConfiguration<AiChann
 
         entity.HasIndex(e => e.ProviderKey, "idx_ai_channel_provider_key");
 
+        entity.HasIndex(e => e.TeamId, "idx_ai_channel_team_id")
+            .HasFilter("(is_deleted = 0)");
+
         entity.Property(e => e.Id)
             .HasDefaultValueSql("uuid_generate_v4()")
             .HasComment("id")
@@ -69,6 +72,9 @@ internal partial class AiChannelConfiguration : IEntityTypeConfiguration<AiChann
             .HasMaxLength(50)
             .HasComment("渠道标识，对应 models.json 中的 provider id")
             .HasColumnName("provider_key");
+        entity.Property(e => e.TeamId)
+            .HasComment("所属团队 id，0=系统渠道，大于 0=团队自有渠道")
+            .HasColumnName("team_id");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

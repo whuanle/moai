@@ -85,6 +85,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
             UserId = userContext.UserId,
             ProviderId = oauthConnectionEntity.Id,
             Sub = oauthBindUserProfile.Profile.Sub,
+            UnionId = oauthBindUserProfile.Profile.UnionId,
         };
 
         await _databaseContext.UserOauthConnections.AddAsync(oauthEntity, cancellationToken);

@@ -22,6 +22,12 @@ public class TeamTimerExecutor
 {
     private const int MaxErrorMessageLength = 4000;
 
+    /// <summary>
+    /// 单次尝试的执行超时：模型渠道挂死/流程引擎长时间无响应时强制取消，
+    /// 按失败进入重试状态机（token 贯穿模型流式与流程引擎，可协作取消）.
+    /// </summary>
+    private static readonly TimeSpan ExecutionTimeout = TimeSpan.FromMinutes(10);
+
     private readonly DatabaseContext _databaseContext;
     private readonly TeamTimerAppInvoker _appInvoker;
     private readonly IBackgroundJobClient _backgroundJobClient;
@@ -89,11 +95,13 @@ public class TeamTimerExecutor
 
         try
         {
-            var (result, appInstanceId) = await _appInvoker.InvokeAsync(timer, app, CancellationToken.None);
+            using var timeoutCts = new CancellationTokenSource(ExecutionTimeout);
+            var (result, appInstanceId, sessionId) = await _appInvoker.InvokeAsync(timer, app, timeoutCts.Token);
 
             execution.Status = (int)TimerExecutionStatus.Success;
             execution.Result = result;
             execution.AppInstanceId = appInstanceId;
+            execution.SessionId = sessionId;
             execution.EndTime = DateTimeOffset.Now;
             execution.DurationMs = (long?)(execution.EndTime - execution.StartTime)?.TotalMilliseconds;
             await _databaseContext.SaveChangesAsync();
@@ -105,29 +113,46 @@ public class TeamTimerExecutor
                 execution.AttemptCount,
                 execution.DurationMs);
         }
+        catch (OperationCanceledException)
+        {
+            // 执行超时（ExecutionTimeout 触发），转为明确的超时错误进入重试状态机
+            await FailWithRetryAsync(execution, timer, new TimeoutException($"执行超时（上限 {ExecutionTimeout.TotalMinutes:0} 分钟），本次尝试已终止."));
+        }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "定时器执行失败. TimerId={TimerId}, ExecutionId={ExecutionId}, Attempt={Attempt}", timer.Id, executionId, execution.AttemptCount);
-
-            execution.ErrorMessage = Truncate(ex.ToString());
-
-            // 已失败尝试次数（首次记 1）未超过重试上限则安排下一次延迟重试
-            if (execution.AttemptCount <= timer.MaxRetryCount)
-            {
-                var delay = TimeSpan.FromSeconds(Math.Max(10, timer.RetryIntervalSeconds));
-                execution.Status = (int)TimerExecutionStatus.Retrying;
-                execution.NextRetryTime = DateTimeOffset.Now.Add(delay);
-                await _databaseContext.SaveChangesAsync();
-
-                _backgroundJobClient.Schedule<TeamTimerExecutor>(x => x.RunAsync(executionId), delay);
-                return;
-            }
-
-            execution.Status = (int)TimerExecutionStatus.Failed;
-            execution.EndTime = DateTimeOffset.Now;
-            execution.DurationMs = (long?)(execution.EndTime - execution.StartTime)?.TotalMilliseconds;
-            await _databaseContext.SaveChangesAsync();
+            await FailWithRetryAsync(execution, timer, ex);
         }
+    }
+
+    /// <summary>
+    /// 失败处理：记录错误信息，未超出重试上限则安排延迟重试，否则落终态失败.
+    /// </summary>
+    /// <param name="execution">执行记录.</param>
+    /// <param name="timer">定时器.</param>
+    /// <param name="ex">失败原因.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private async Task FailWithRetryAsync(TeamTimerExecutionEntity execution, TeamTimerEntity timer, Exception ex)
+    {
+        _logger.LogWarning(ex, "定时器执行失败. TimerId={TimerId}, ExecutionId={ExecutionId}, Attempt={Attempt}", timer.Id, execution.Id, execution.AttemptCount);
+
+        execution.ErrorMessage = Truncate(ex.ToString());
+
+        // 已失败尝试次数（首次记 1）未超过重试上限则安排下一次延迟重试
+        if (execution.AttemptCount <= timer.MaxRetryCount)
+        {
+            var delay = TimeSpan.FromSeconds(Math.Max(10, timer.RetryIntervalSeconds));
+            execution.Status = (int)TimerExecutionStatus.Retrying;
+            execution.NextRetryTime = DateTimeOffset.Now.Add(delay);
+            await _databaseContext.SaveChangesAsync();
+
+            _backgroundJobClient.Schedule<TeamTimerExecutor>(x => x.RunAsync(execution.Id), delay);
+            return;
+        }
+
+        execution.Status = (int)TimerExecutionStatus.Failed;
+        execution.EndTime = DateTimeOffset.Now;
+        execution.DurationMs = (long?)(execution.EndTime - execution.StartTime)?.TotalMilliseconds;
+        await _databaseContext.SaveChangesAsync();
     }
 
     private async Task FailFinalAsync(TeamTimerExecutionEntity execution, string message)

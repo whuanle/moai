@@ -26,6 +26,14 @@
 - E2E：`node local-dev/team-e2e.mjs` → **PASS 68/68**（2026-09-18，真实 HTTP :5210）；TM-12 改为断言解散接口下线（405）且团队仍在，收尾清理改为管理员禁用归档；`node local-dev/gateway-e2e.mjs` → **23/23**（清理改为禁用）；kg/kg-external/wiki/wiki-external/wiki-doc 脚本的解散清理同步改为管理员禁用。
 - 前端：`TeamManage.test.tsx` → **PASS 15/15**（Owner/非 Owner 设置页均无解散按钮）；`npm run typecheck`、`npm run lint` 全绿。
 
+### 2026-10-29 添加成员弹窗：组织架构批量选人 + 全站实时搜索（@TM-S19/S20/S21）
+
+- 需求：成员管理移除内联「搜索并选择用户」下拉，改为点「添加成员」弹模态窗——左侧组织架构树按组织批量选人，关键字实时搜索全站用户。
+- 后端：新增 `POST /api/team/{id}/users/batch`（`AddTeamUsersCommand`，整批校验非空/去重/≤200，跳过已入团与不存在用户并回传明细）与团队侧只读组织视图 `GET /api/team/{id}/org/role/list`、`GET /api/team/{id}/org/role/{roleId}/users`（Team.Api 引用 `MoAI.Org.Shared` 经 MediatR 复用组织查询，门禁在 TeamController）；Kiota 客户端已 `npm run syncapi` 重新生成。
+- 后端构建：`dotnet build src/MoAI/MoAI.csproj` → **0 错误**（2026-10-29，独立输出目录构建，:5000 存量实例锁 bin 不影响编译结论）。
+- E2E：`node local-dev/team-e2e.mjs` → **PASS 85/85**（2026-10-29，真实 HTTP :5210，新增 TM-18a~i 批量添加 + TM-17a~h 组织视图）。
+- 前端：成员工具栏改「添加成员」按钮 + 新组件 `TeamMemberAddModal`（组织树/多选/全选/已选标签移除/300ms 防抖搜索/已是成员禁选）；i18n `team.*` zh/en 同步（新增 10 键，移除孤儿键 `addMemberPlaceholder`/`addSuccess`）；`TeamManage.test.tsx` → **PASS 18/18**；`npm run typecheck`、`npm run lint` 全绿。
+
 ## 映射表
 
 | 场景 | 验证物 | 结果（日期） |
@@ -49,6 +57,10 @@
 | @TM-S15 / @TM-S15b / @TM-S16（前端） | ui/src/pages/admin/__tests__/AdminTeams.test.tsx | PASS 3/3（2026-09-10） |
 | @TM-S16b | @manual（代码走查：两个列表 Handler 的 Owner 字典改 GroupBy 首条容错；MoAI.Team.Core 构建 0 错误） | PASS（2026-09-14） |
 | @TM-S17 | ui/src/pages/teams/__tests__/TeamManage.test.tsx | PASS 15/15（2026-09-17） |
+| @TM-S18 | ui/src/pages/teams/__tests__/TeamManage.test.tsx（成员列昵称主行断言） | PASS 15/15（2026-10-29） |
+| @TM-S19 | team-e2e.mjs（TM-18a-i：批量校验/权限/跳过明细/成员列表） | PASS 85/85（2026-10-29） |
+| @TM-S20 | team-e2e.mjs（TM-17a-h：401/404/403 门禁与组织数据） | PASS 85/85（2026-10-29） |
+| @TM-S21 | ui/src/pages/teams/__tests__/TeamManage.test.tsx（弹窗组织选人/已是成员禁选/实时搜索） | PASS 18/18（2026-10-29） |
 | 前端页面 | ui/src/pages/teams/__tests__/Teams.test.tsx | PASS 4/4（2026-09-02） |
 | 浏览器走查 | @manual（登录 → 团队菜单 → 建团/成员管理） | PASS（2026-09-02） |
 

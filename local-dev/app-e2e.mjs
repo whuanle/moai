@@ -416,7 +416,7 @@ async function main() {
     let usableModelId = ''
     if (adminToken) {
       const all = await api('GET', '/api/ai/model', { token: adminToken })
-      const priv = (all.json?.items ?? []).find((m) => !m.isPublic)
+      const priv = (all.json?.items ?? []).find((m) => !m.isPublic && m.enabled)
       if (priv) {
         const cur = await api('GET', `/api/ai/model/${priv.id}/authorization`, { token: adminToken })
         const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
@@ -427,7 +427,7 @@ async function main() {
       console.log('SKIP | AP-20 无 admin 账号（admin/abcd123456），仅校验无权模型被拒')
     }
 
-    const gm = await api('GET', `/api/team/${TID}/gateway/models`, { token: owner.token })
+    const gm = await api('GET', `/api/team/${TID}/ai/model/available`, { token: owner.token })
     check('AP-20a 团队可用模型列表与授权一致',
       gm.status === 200 && (usableModelId ? (gm.json?.items ?? []).map((i) => String(i.aiModelId)).includes(usableModelId) : (gm.json?.items ?? []).length === 0),
       `${gm.status} ${gm.text.slice(0, 160)}`)
@@ -1062,6 +1062,92 @@ async function main() {
         const rejectedText5 = chat5.reply.includes('拒绝') || chat5.reply.includes('62D2')
         check('AP-60j 重新发布后插件回到人工审批', chat5.status === 200 && rejectedText5 && dec5Status === 'rejected',
           `${chat5.status} reply=${chat5.reply.slice(0, 160)} dec=${dec5Status}`)
+
+        // ===== 六类白名单扩展：流程应用/Agent 应用/技能/知识库/知识图谱 =====
+        // 未绑定资源加入自动放通白名单一律 400（流程应用/知识库两形态代表 Guid 与 long 校验）
+        const badWf = await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [], plugins: [], modelId: MODEL_ID,
+          executionSettings: { toolApproval: { autoApproveWorkflowApps: ['01924f5e-0000-7000-8000-00000000bbbb'] } },
+        } })
+        check('AP-60k 未绑定的流程应用加入自动放通 400', badWf.status === 400, `${badWf.status} ${badWf.text.slice(0, 140)}`)
+        const badWiki = await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [], plugins: [], modelId: MODEL_ID,
+          executionSettings: { toolApproval: { autoApproveWikis: [999999999] } },
+        } })
+        check('AP-60l 未绑定的知识库加入自动放通 400', badWiki.status === 400, `${badWiki.status} ${badWiki.text.slice(0, 140)}`)
+
+        // 绑定 Agent 应用与知识库并入白名单：userconfig 下发 agent__/search 工具名，审批模式直接执行
+        // 应用名 ≤20 字符（CreateAppCommand 校验），工具名据此拼接（与 AgentAppToolProvider 同规则）
+        const B_NAME = `ag60t-${TS}`
+        const cb = await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: B_NAME, appType: 'agent' } })
+        const APP_B = String(cb.json?.value ?? '')
+        await api('PUT', `/api/app/${APP_B}/agent-config`, { token: adminToken, body: { prompt: '你是B号助手', wikiIds: [], plugins: [], modelId: MODEL_ID } })
+        await api('POST', `/api/app/${APP_B}/publish`, { token: adminToken })
+        const cw = await api('POST', '/api/wiki', { token: adminToken, body: { teamId: TID, name: `ap60-wiki-${TS}` } })
+        const WIKI_ID = Number(cw.json?.value ?? 0)
+        const agentTool = `agent__${B_NAME}`
+        const saveExt = await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [WIKI_ID], plugins: [String(bindable.pluginId)], agentApps: [APP_B], modelId: MODEL_ID,
+          executionSettings: {
+            sandbox: { enabled: true },
+            toolApproval: {
+              autoApprovePlugins: [String(bindable.pluginId)],
+              autoApproveAgentApps: [APP_B],
+              autoApproveWikis: [WIKI_ID],
+              sandboxAutoApproved: false,
+            },
+          },
+        } })
+        check('AP-60m 绑定 Agent 应用与知识库的自动放通白名单保存并发布',
+          cb.status === 200 && saveExt.status === 200 && WIKI_ID > 0 && (await api('POST', `/api/app/${APP_ID}/publish`, { token: adminToken })).status === 200,
+          `create=${cb.status} ${cb.text.slice(0, 100)} save=${saveExt.status} wiki=${WIKI_ID} ${saveExt.text.slice(0, 120)}`)
+        const uc2 = await api('GET', `/api/app/${APP_ID}/userconfig`, { token: adminToken })
+        const names2 = uc2.json?.toolApprovalAutoApprovedNames ?? []
+        check('AP-60n userconfig 下发 agent__ 与知识库检索自动放行工具名',
+          uc2.status === 200 && names2.includes(agentTool) && names2.includes('search_knowledge_base'),
+          `names=${JSON.stringify(names2).slice(0, 200)}`)
+
+        // 审批模式运行时：白名单 Agent 应用工具与全量放通的知识库检索直接执行（决策接口 missing）
+        const sess6 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-agent' } })
+        const SID6 = String(sess6.json?.value ?? '')
+        const chat6 = await chatSse(SID6, `CALL:${agentTool}`)
+        const dec6 = await api('POST', `/api/app/session/${SID6}/tool-approval`, { token: adminToken, body: { toolName: agentTool, approved: false } })
+        check('AP-60o 审批模式下白名单 Agent 应用直接执行（无人工等待）',
+          chat6.status === 200 && chat6.reply.includes('工具回显:') && !chat6.reply.includes('工具不存在') && dec6.json?.status === 'missing',
+          `${chat6.status} reply=${chat6.reply.slice(0, 160)} dec=${dec6.json?.status}`)
+        const sess7 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-wiki' } })
+        const SID7 = String(sess7.json?.value ?? '')
+        const chat7 = await chatSse(SID7, 'CALL:search_knowledge_base')
+        const dec7 = await api('POST', `/api/app/session/${SID7}/tool-approval`, { token: adminToken, body: { toolName: 'search_knowledge_base', approved: false } })
+        check('AP-60p 审批模式下全量白名单知识库检索直接执行（无人工等待）',
+          chat7.status === 200 && chat7.reply.includes('工具回显:') && !chat7.reply.includes('工具不存在') && dec7.json?.status === 'missing',
+          `${chat7.status} reply=${chat7.reply.slice(0, 160)} dec=${dec7.json?.status}`)
+
+        // 检索工具多源判定：绑定第二个知识库但不在白名单 → 任一未放通即挂起，拒绝后不执行
+        const cw2 = await api('POST', '/api/wiki', { token: adminToken, body: { teamId: TID, name: `ap60-wiki2-${TS}` } })
+        const WIKI_ID2 = Number(cw2.json?.value ?? 0)
+        await api('PUT', cfgUrl, { token: adminToken, body: {
+          prompt: 'p', wikiIds: [WIKI_ID, WIKI_ID2], plugins: [String(bindable.pluginId)], agentApps: [APP_B], modelId: MODEL_ID,
+          executionSettings: {
+            sandbox: { enabled: true },
+            toolApproval: { autoApprovePlugins: [String(bindable.pluginId)], autoApproveAgentApps: [APP_B], autoApproveWikis: [WIKI_ID], sandboxAutoApproved: false },
+          },
+        } })
+        await api('POST', `/api/app/${APP_ID}/publish`, { token: adminToken })
+        const sess8 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-wiki-gate' } })
+        const SID8 = String(sess8.json?.value ?? '')
+        const chat8Promise = chatSse(SID8, 'CALL:search_knowledge_base')
+        let dec8Status = ''
+        for (let i = 0; i < 100; i++) {
+          await new Promise((r) => setTimeout(r, 300))
+          const dec = await api('POST', `/api/app/session/${SID8}/tool-approval`, { token: adminToken, body: { toolName: 'search_knowledge_base', approved: false } })
+          if (dec.json?.status === 'rejected') { dec8Status = dec.json.status; break }
+        }
+        const chat8 = await chat8Promise
+        const rejected8 = chat8.reply.includes('拒绝') || chat8.reply.includes('62D2')
+        check('AP-60q 任一绑定知识库未放通时检索挂起人工审批（多源全量判定）',
+          chat8.status === 200 && rejected8 && dec8Status === 'rejected',
+          `${chat8.status} reply=${chat8.reply.slice(0, 160)} dec=${dec8Status}`)
 
         // 清理桩模型/渠道（应用留给台账）
         await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [MODEL_ID] } })

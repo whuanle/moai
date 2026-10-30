@@ -16,6 +16,7 @@ import {
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import {
+  CloudDownloadOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
@@ -38,6 +39,8 @@ import { DataTable, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { ModelAccessDrawer } from './ModelAccessDrawer'
+import { ChannelAccessModal } from './ChannelAccessModal'
+import { Typography } from 'antd'
 import { formatDateTime } from '@/utils/datetime'
 
 const kindColor: Record<string, string> = {
@@ -261,6 +264,34 @@ function ChannelModelsPanel({
         ),
     },
     {
+      title: t('models.colAuthorizedTeams'),
+      key: 'authorizedTeams',
+      width: 220,
+      render: (_, record) => {
+        if (record.isPublic !== false) {
+          return <Tag color="green">{t('models.authAllTeams')}</Tag>
+        }
+        const names = record.authorizedTeamNames ?? []
+        if (names.length === 0) {
+          return <Typography.Text type="secondary">{t('models.authNone')}</Typography.Text>
+        }
+        const shown = names.slice(0, 2)
+        const rest = names.slice(2)
+        return (
+          <Space size={[4, 4]} wrap>
+            {shown.map((n) => (
+              <Tag key={n}>{n}</Tag>
+            ))}
+            {rest.length > 0 && (
+              <Tooltip title={names.join('、')}>
+                <Tag>+{rest.length}</Tag>
+              </Tooltip>
+            )}
+          </Space>
+        )
+      },
+    },
+    {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
       width: 80,
@@ -338,7 +369,7 @@ function ChannelModelsPanel({
       columns={columns}
       dataSource={visibleModels}
       loading={loading}
-      scroll={{ x: 1220 }}
+      scroll={{ x: 1440 }}
       pagination={false}
       size="small"
       rowSelection={{
@@ -413,12 +444,15 @@ export function Models() {
   const [modelKind, setModelKind] = useState<string | undefined>()
   const [accessModel, setAccessModel] = useState<AIModelItem | null>(null)
   const [accessOpen, setAccessOpen] = useState(false)
+  const [channelAuthChannel, setChannelAuthChannel] = useState<AIChannelItem | null>(null)
+  const [channelAuthOpen, setChannelAuthOpen] = useState(false)
 
   const [syncModalOpen, setSyncModalOpen] = useState(false)
   const [syncChannel, setSyncChannel] = useState<AIChannelItem | null>(null)
   const [syncCandidates, setSyncCandidates] = useState<SyncModelCandidate[]>([])
   const [syncSelectedIds, setSyncSelectedIds] = useState<React.Key[]>([])
   const [importing, setImporting] = useState(false)
+  const [syncingCatalog, setSyncingCatalog] = useState(false)
   const appliedKind = modelKind ?? editingModel?.modelKind ?? 'conversation'
   const kindCaps = kindCapabilitySettings(appliedKind)
 
@@ -439,6 +473,21 @@ export function Models() {
     } catch {
       // 目录加载失败时记录为空，不阻塞页面
       setCatalog([])
+    }
+  }
+
+  // 从 models.opencode.ai 下载最新模型目录到服务端 configs，渠道同步即按最新目录匹配元数据
+  const handleSyncCatalog = async () => {
+    setSyncingCatalog(true)
+    try {
+      const res = await aichannelApi.syncCatalog()
+      feedback.success(
+        t('models.syncCatalogSuccess', { providers: res.providerCount, models: res.modelCount }),
+      )
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setSyncingCatalog(false)
     }
   }
 
@@ -735,6 +784,18 @@ export function Models() {
       fixed: 'right' as const,
       render: (_, record) => (
         <Space size={0}>
+          <Tooltip title={t('models.channelAuth')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<TeamOutlined />}
+              aria-label={t('models.channelAuth')}
+              onClick={() => {
+                setChannelAuthChannel(record)
+                setChannelAuthOpen(true)
+              }}
+            />
+          </Tooltip>
           <Tooltip title={t('models.edit')}>
             <Button
               type="text"
@@ -849,9 +910,14 @@ export function Models() {
           ),
         }}
         toolbar={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateChannel}>
-            {t('models.addChannel')}
-          </Button>
+          <Space size={12} wrap>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateChannel}>
+              {t('models.addChannel')}
+            </Button>
+            <Button icon={<CloudDownloadOutlined />} loading={syncingCatalog} onClick={() => void handleSyncCatalog()}>
+              {t('models.syncCatalog')}
+            </Button>
+          </Space>
         }
         onRefresh={loadChannels}
         refreshLoading={channelLoading}
@@ -1011,6 +1077,18 @@ export function Models() {
         onVisibilityChanged={() => {
           const channelId = accessModel?.channelId
           if (channelId) {
+            void loadModelsForChannel(channelId)
+          }
+        }}
+      />
+
+      <ChannelAccessModal
+        channel={channelAuthChannel}
+        open={channelAuthOpen}
+        onClose={() => setChannelAuthOpen(false)}
+        onSaved={() => {
+          const channelId = channelAuthChannel?.id
+          if (channelId && modelsByChannel[channelId]) {
             void loadModelsForChannel(channelId)
           }
         }}

@@ -1,9 +1,10 @@
 // Agent 应用长期记忆 E2E（后端 127.0.0.1:5210）
-// 覆盖：配置校验（未选向量化模型 400）→ 门禁（非成员 404/管理员清空 Member 403）
+// 覆盖：平台门禁（系统设置未开启长期记忆时应用开启 400）→ 配置保存与回显（模型/维度统一在系统设置，应用配置不携带）
+//       → 门禁（非成员 404/管理员清空 Member 403）
 //       → memory_save 工具显式写入 → mine 列表 → 自动提取（flush → MQ → mem0 两段：抽取+合并）落库
-//       → 每轮相关记忆注入（MEMORY_HIT）→ 向量化模型/维度锁定（写入记忆后换模型/换维度 400、关闭保留参照系、同模型重开 200）
+//       → 每轮相关记忆注入（MEMORY_HIT）→ 平台模型锁定（有任意记忆时换模型/换维度 400、应用关闭再开启不受影响）
 //       → 用户隔离（B 不可见）→ 用户开关两态（跨应用功能已移除，记忆仅应用内使用）
-//       → 单条删除/清空本应用/清空应用 → 清空后解锁（换模型+维度发布后按新维度写入可查询）
+//       → 单条删除/清空本应用/清空应用 → 清空后解锁（平台换模型+维度，恢复后写入可查询）
 //       → 压缩参数下 flush 视图折叠工具结果（toolResultTriggerMessages=2）。
 // 模型策略：本地 OpenAI 兼容桩（/v1/embeddings 确定性哈希向量 + /v1/chat/completions 提示词条件行为），零 SKIP。
 import crypto from 'node:crypto'
@@ -223,19 +224,24 @@ async function cleanupStubModels(adminToken, channelId) {
   if (adminToken && channelId) await api('DELETE', `/api/ai/channel/${channelId}`, { token: adminToken })
 }
 
-const memorySettings = (embedId, extra = {}) => ({
+const memorySettings = (extra = {}) => ({
   sandbox: { enabled: false },
-  memory: { enabled: true, embeddingModelId: embedId, embeddingDimensions: 1024, autoExtract: true, minScore: 0.2, ...extra },
+  // 向量化模型/维度统一由系统设置（MEMORY_*）决定：应用配置不再携带这两个字段
+  memory: { enabled: true, autoExtract: true, minScore: 0.2, ...extra },
 })
 
-async function saveConfig(token, appId, modelId, embedId, extra = {}) {
+async function saveConfig(token, appId, modelId, extra = {}) {
   return api('PUT', `/api/app/${appId}/agent-config`, {
     token,
     body: {
       prompt: '你是测试助手', wikiIds: [], plugins: [], modelId,
-      executionSettings: memorySettings(embedId, extra),
+      executionSettings: memorySettings(extra),
     },
   })
+}
+
+async function saveSetting(token, key, value) {
+  return api('PUT', '/api/settings', { token, body: { key, value } })
 }
 
 async function newSession(token, appId, title) {
@@ -298,21 +304,31 @@ async function main() {
   if (!models) { console.log('FAIL | 桩模型创建失败，终止'); process.exit(1) }
 
   try {
-    // ===== 配置校验 =====
+    // ===== 配置校验（平台门禁：系统设置未开启长期记忆） =====
     const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用-' + TS, appType: 'agent' } })
     const APP1 = String(ca.json?.value ?? '')
 
-    const bad = await api('PUT', `/api/app/${APP1}/agent-config`, {
-      token: owner.token,
-      body: { prompt: 'x', wikiIds: [], plugins: [], modelId: models.conversationModelId, executionSettings: { memory: { enabled: true } } },
-    })
-    check('AM-01 开启记忆未选向量化模型 400', bad.status === 400, `${bad.status} ${bad.text.slice(0, 120)}`)
+    const bad = await saveConfig(owner.token, APP1, models.conversationModelId)
+    check('AM-01 平台未开启长期记忆时应用开启 400', bad.status === 400 && bad.text.includes('平台未开启长期记忆'), `${bad.status} ${bad.text.slice(0, 120)}`)
 
-    const good = await saveConfig(owner.token, APP1, models.conversationModelId, models.embeddingModelId)
+    // 平台记忆设置：先模型与维度，再开总开关（root；统一模型为桩 embedding 模型，已授权该团队）
+    const setModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', models.embeddingModelId)
+    const setDims = await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')
+    const setEnabled = await saveSetting(adminToken, 'MEMORY_ENABLED', 'true')
+    check('AM-01b 平台记忆设置保存（模型/维度/开关）', setModel.status === 200 && setDims.status === 200 && setEnabled.status === 200,
+      `${setModel.status}/${setDims.status}/${setEnabled.status} ${setModel.text.slice(0, 120)}`)
+    const badEnabled = await saveSetting(adminToken, 'MEMORY_ENABLED', 'yes')
+    check('AM-01c 平台开关非法值 400', badEnabled.status === 400, `${badEnabled.status} ${badEnabled.text.slice(0, 120)}`)
+    const badModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', 'not-a-guid')
+    check('AM-01d 平台模型非法值 400', badModel.status === 400, `${badModel.status} ${badModel.text.slice(0, 120)}`)
+
+    const good = await saveConfig(owner.token, APP1, models.conversationModelId)
     check('AM-02 记忆配置保存 200', good.status === 200, `${good.status} ${good.text.slice(0, 120)}`)
 
     const cfgBack = await api('GET', `/api/app/${APP1}/agent-config`, { token: owner.token })
-    check('AM-03 记忆配置回显 enabled 且无应用级共享范围', cfgBack.json?.executionSettings?.memory?.enabled === true && cfgBack.json?.executionSettings?.memory?.scopeDefault === undefined,
+    check('AM-03 记忆配置回显 enabled 且不携带模型/维度字段', cfgBack.json?.executionSettings?.memory?.enabled === true
+      && cfgBack.json?.executionSettings?.memory?.embeddingModelId === undefined
+      && cfgBack.json?.executionSettings?.memory?.embeddingDimensions === undefined,
       cfgBack.text.slice(0, 200))
 
     check('AM-04 发布应用 200', (await api('POST', `/api/app/${APP1}/publish`, { token: owner.token })).status === 200)
@@ -352,12 +368,12 @@ async function main() {
     const chat3 = await chatSse(APP1, owner.token, SID3, '我的发票抬头是什么？')
     check('AM-10 相关记忆自动注入上下文', chat3.reply.includes('MEMORY_HIT'), `reply=${chat3.reply.slice(0, 80)}`)
 
-    // ===== 向量化模型/维度锁定（写入第一条记忆后不可更换，需先清空应用全部记忆） =====
-    const lockModel = await saveConfig(owner.token, APP1, models.conversationModelId, models.embeddingModelId2)
-    check('AM-10b 已有记忆更换向量化模型 400', lockModel.status === 400 && lockModel.text.includes('清空'), `${lockModel.status} ${lockModel.text.slice(0, 140)}`)
+    // ===== 平台模型/维度锁定（应用或全局任一记忆存在即锁，须先清空全部记忆；应用配置不再存模型，关闭再开启不受影响） =====
+    const lockModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', models.embeddingModelId2)
+    check('AM-10b 已有记忆更换平台向量化模型 400', lockModel.status === 400 && lockModel.text.includes('清空'), `${lockModel.status} ${lockModel.text.slice(0, 140)}`)
 
-    const lockDims = await saveConfig(owner.token, APP1, models.conversationModelId, models.embeddingModelId, { embeddingDimensions: 768 })
-    check('AM-10c 已有记忆更换向量维度 400', lockDims.status === 400, `${lockDims.status} ${lockDims.text.slice(0, 140)}`)
+    const lockDims = await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '768')
+    check('AM-10c 已有记忆更换平台向量维度 400', lockDims.status === 400, `${lockDims.status} ${lockDims.text.slice(0, 140)}`)
 
     const disableMemory = await api('PUT', `/api/app/${APP1}/agent-config`, {
       token: owner.token,
@@ -365,16 +381,16 @@ async function main() {
     })
     check('AM-10d 关闭记忆仍可保存 200', disableMemory.status === 200, `${disableMemory.status} ${disableMemory.text.slice(0, 140)}`)
 
-    // 关闭不解除锁定：草稿保留生效模型/维度作为参照系（换模型后重新开启仍会被拦）
+    // 关闭态草稿不携带模型/维度（统一在系统设置），平台锁定不因应用关闭而解除
     const cfgDisabled = await api('GET', `/api/app/${APP1}/agent-config`, { token: owner.token })
-    check('AM-10e 关闭态草稿保留生效模型与维度',
+    check('AM-10e 关闭态草稿不携带模型字段',
       cfgDisabled.json?.executionSettings?.memory?.enabled === false
-      && cfgDisabled.json?.executionSettings?.memory?.embeddingModelId === models.embeddingModelId
-      && cfgDisabled.json?.executionSettings?.memory?.embeddingDimensions === 1024,
+      && cfgDisabled.json?.executionSettings?.memory?.embeddingModelId === undefined
+      && cfgDisabled.json?.executionSettings?.memory?.embeddingDimensions === undefined,
       cfgDisabled.text.slice(0, 220))
 
-    const reEnable = await saveConfig(owner.token, APP1, models.conversationModelId, models.embeddingModelId)
-    check('AM-10f 同模型重新开启 200', reEnable.status === 200, `${reEnable.status} ${reEnable.text.slice(0, 140)}`)
+    const reEnable = await saveConfig(owner.token, APP1, models.conversationModelId)
+    check('AM-10f 重新开启记忆 200（模型口径随平台设置）', reEnable.status === 200, `${reEnable.status} ${reEnable.text.slice(0, 140)}`)
 
     // ===== 用户隔离 =====
     await api('POST', `/api/app/${APP1}/session`, { token: memberB.token, body: { title: 'b-session' } })
@@ -401,6 +417,9 @@ async function main() {
     // mine/all 端点已随跨应用功能下线
     check('AM-16b 清空全部端点已下线 404', (await api('DELETE', `/api/app/${APP1}/memory/mine/all`, { token: owner.token })).status === 404)
 
+    // 等待最近一轮对话（AM-16 重新开启后的注入对话）的异步提取落地完成，避免清空后又被延迟写入
+    await new Promise((r) => setTimeout(r, 9000))
+
     // ===== 单条删除 / 清空 =====
     const mineA = await mine(owner.token, APP1)
     const firstId = (mineA.json?.items ?? [])[0]?.id
@@ -408,7 +427,8 @@ async function main() {
     check('AM-20 重复删除同条 404', firstId && (await api('DELETE', `/api/app/${APP1}/memory/mine/${firstId}`, { token: owner.token })).status === 404)
 
     check('AM-21 清空本应用记忆 200', (await api('DELETE', `/api/app/${APP1}/memory/mine`, { token: owner.token })).status === 200)
-    check('AM-22 清空后本人记忆为空', ((await mine(owner.token, APP1)).json?.items ?? []).length === 0)
+    const afterClear = await mine(owner.token, APP1)
+    check('AM-22 清空后本人记忆为空', (afterClear.json?.items ?? []).length === 0, `residual=${JSON.stringify((afterClear.json?.items ?? []).map((x) => x.content))}`)
 
     // 再写入一条（工具路径）→ 团队管理员清空应用全部用户记忆
     const SID7 = await newSession(owner.token, APP1, 'am-管理员清空前')
@@ -419,15 +439,19 @@ async function main() {
     check('AM-23 Owner 清空应用全部记忆 200', (await api('DELETE', `/api/app/${APP1}/memory`, { token: owner.token })).status === 200)
     check('AM-24 清空后应用内记忆为空', ((await mine(owner.token, APP1)).json?.items ?? []).length === 0)
 
-    // ===== 清空后解锁：换模型+换维度可保存，发布后按新维度写入与检索 =====
-    const unlocked = await saveConfig(owner.token, APP1, models.conversationModelId, models.embeddingModelId2, { embeddingDimensions: 768 })
-    check('AM-24b 清空后更换模型与维度 200', unlocked.status === 200, `${unlocked.status} ${unlocked.text.slice(0, 140)}`)
+    // ===== 清空后解锁：平台换模型/维度恢复可用，恢复口径后写入与检索正常 =====
+    const unlockedModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', models.embeddingModelId2)
+    const unlockedDims = await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '768')
+    check('AM-24b 清空后平台模型与维度可更换 200', unlockedModel.status === 200 && unlockedDims.status === 200, `${unlockedModel.status}/${unlockedDims.status} ${unlockedModel.text.slice(0, 140)}`)
+    const restoreModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', models.embeddingModelId)
+    const restoreDims = await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')
+    check('AM-24b2 平台模型与维度恢复 200', restoreModel.status === 200 && restoreDims.status === 200, `${restoreModel.status}/${restoreDims.status}`)
     check('AM-24c 重新发布 200', (await api('POST', `/api/app/${APP1}/publish`, { token: owner.token })).status === 200)
 
-    const SID9 = await newSession(owner.token, APP1, 'am-新维度写入')
-    await chatSse(APP1, owner.token, SID9, '请记住：七百六十八维记忆写入')
-    const poll9 = await pollMine(owner.token, APP1, (items) => items.some((x) => (x.content ?? '').includes('七百六十八维')), 30000)
-    check('AM-24d 新维度记忆写入可查询', poll9.ok, `count=${poll9.items.length} items=${poll9.items.map((x) => x.content?.slice(0, 20)).join('|')}`)
+    const SID9 = await newSession(owner.token, APP1, 'am-解锁写入')
+    await chatSse(APP1, owner.token, SID9, '请记住：解锁后的记忆写入')
+    const poll9 = await pollMine(owner.token, APP1, (items) => items.some((x) => (x.content ?? '').includes('解锁后的记忆写入')), 30000)
+    check('AM-24d 解锁恢复后记忆写入可查询', poll9.ok, `count=${poll9.items.length} items=${poll9.items.map((x) => x.content?.slice(0, 20)).join('|')}`)
 
     // ===== 压缩：flush 视图折叠旧工具结果（toolResultTriggerMessages=2） =====
     const ca3 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '压缩应用-' + TS, appType: 'agent' } })
@@ -436,7 +460,7 @@ async function main() {
       token: owner.token,
       body: {
         prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
-        executionSettings: { memory: { enabled: true, embeddingModelId: models.embeddingModelId, embeddingDimensions: 1024, scopeDefault: 'app' }, toolResultTriggerMessages: 2, preserveTurns: 6, hardTokenLimit: 24000 },
+        executionSettings: { memory: { enabled: true, scopeDefault: 'app' }, toolResultTriggerMessages: 2, preserveTurns: 6, hardTokenLimit: 24000 },
       },
     })
     await api('POST', `/api/app/${APP3}/publish`, { token: owner.token })
@@ -451,6 +475,14 @@ async function main() {
     const toolMsgs = (msgs.json?.items ?? []).filter((m) => String(m.role).toLowerCase() === 'tool')
     check('AM-25 压缩后落库视图工具结果不超过阈值', toolMsgs.length > 0 && toolMsgs.length <= 2, `toolMsgs=${toolMsgs.length} total=${(msgs.json?.items ?? []).length}`)
   } finally {
+    // 平台记忆设置恢复（脚本会临时开启 MEMORY_*，收尾还原避免污染开发实例）：
+    // 先清空平台全部记忆（脚本遗留的应用记忆会锁住模型重置），再重置设置键
+    if (adminToken) {
+      await api('DELETE', '/api/memory/all', { token: adminToken })
+      await saveSetting(adminToken, 'MEMORY_ENABLED', 'false')
+      await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', '')
+      await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')
+    }
     await cleanupStubModels(adminToken, models.channelId)
     stub.close()
   }

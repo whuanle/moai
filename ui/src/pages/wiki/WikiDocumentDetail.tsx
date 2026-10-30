@@ -1,20 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FileTextOutlined, ScissorOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import { DownloadOutlined, FileTextOutlined, ScissorOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import Editor, { loader } from '@monaco-editor/react'
-import { Alert, Button, Card, Checkbox, Col, Form, Input, InputNumber, Modal, Row, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
+import { Alert, Button, Card, Checkbox, Col, Form, Image, Input, InputNumber, Modal, Row, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { feedback, Page } from '@/design-system'
 import { spacing, themePresets } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { aichannelApi } from '@/api/aichannel'
+import { formatFileSize } from '@/utils/format'
 import {
   aiPartitionWikiDocument,
+  downloadWikiDocumentImage,
   extractWikiDocumentContent,
   generateWikiDocumentChunkMetadata,
   generateWikiDocumentChunksMetadata,
   getWikiDocumentContent,
   getWikiDocumentEmbedding,
+  getWikiDocumentImages,
   partitionWikiDocument,
   triggerDocumentEmbedding,
   type WikiDocumentPartitionOverlapUnit,
@@ -23,6 +26,7 @@ import {
   type WikiDocumentChunkMetadataItem,
   type WikiDocumentEmbeddingChunkItem,
   type WikiDocumentEmbeddingResult,
+  type WikiDocumentImageItem,
   type WikiMetadataGenerationStrategy,
 } from '@/api/wiki'
 
@@ -121,6 +125,7 @@ export function WikiDocumentDetail() {
   const [fullContent, setFullContent] = useState<string | null>(null)
   const [loadingFull, setLoadingFull] = useState(false)
   const [expandedChunks, setExpandedChunks] = useState<Set<string>>(new Set())
+  const [images, setImages] = useState<WikiDocumentImageItem[]>([])
   const [embedForm] = Form.useForm<EmbedFormValues>()
   const [partitionForm] = Form.useForm<PartitionFormValues>()
   const [aiPartitionForm] = Form.useForm<AiPartitionFormValues>()
@@ -198,6 +203,47 @@ export function WikiDocumentDetail() {
     void load()
   }, [load])
 
+  // 内嵌图片附件列表：预签名地址 2 分钟有效，随页面加载/重新提取刷新
+  const loadImages = useCallback(async () => {
+    if (!Number.isFinite(wikiId) || wikiId <= 0 || !Number.isFinite(documentId) || documentId <= 0) return
+    try {
+      setImages(await getWikiDocumentImages(wikiId, documentId))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }, [wikiId, documentId])
+
+  useEffect(() => {
+    if (isMember) void loadImages()
+  }, [isMember, loadImages])
+
+  const handleDownloadImage = async (image: WikiDocumentImageItem) => {
+    try {
+      const url = await downloadWikiDocumentImage(wikiId, documentId, Number(image.imageId))
+      if (!url) {
+        feedback.error(t('wiki.doc.downloadFailed'))
+        return
+      }
+      const resp = await fetch(url)
+      if (!resp.ok) {
+        feedback.error(t('wiki.doc.downloadFailed'))
+        return
+      }
+      const blob = await resp.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = image.fileName || 'image'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(objectUrl)
+      feedback.success(t('wiki.doc.downloadStarted'))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
   useEffect(() => {
     const teamId = Number(params.teamId)
     if (!Number.isFinite(teamId) || teamId <= 0) return
@@ -234,6 +280,7 @@ export function WikiDocumentDetail() {
       await extractWikiDocumentContent(wikiId, documentId)
       feedback.success(t('wiki.doc.extractSuccess'))
       void load()
+      void loadImages()
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -480,6 +527,44 @@ export function WikiDocumentDetail() {
             </div>
           )}
         </Card>
+
+        {isMember && (
+          <Card title={t('wiki.doc.imagesTitle')} styles={{ body: { padding: spacing.lg } }}>
+            {images.length === 0 ? (
+              <Typography.Text type="secondary">{t('wiki.doc.imagesEmpty')}</Typography.Text>
+            ) : (
+              <Image.PreviewGroup>
+                <Row gutter={[spacing.md, spacing.md]}>
+                  {images.map((image) => (
+                    <Col key={image.imageId} xs={12} sm={8} md={6} lg={4}>
+                      <Space direction="vertical" size={spacing.xs} style={{ width: '100%' }}>
+                        <Image
+                          src={image.downloadUrl ?? undefined}
+                          alt={image.fileName ?? ''}
+                          height={120}
+                          width="100%"
+                          style={{ borderRadius: 6, objectFit: 'cover' }}
+                        />
+                        <Text ellipsis style={{ fontSize: 12 }}>
+                          {image.fileName}
+                        </Text>
+                        <Space size={4} wrap>
+                          {image.pageNumber != null && <Tag>{t('wiki.doc.imagesPage', { page: image.pageNumber })}</Tag>}
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {formatFileSize(Number(image.fileSize ?? 0))}
+                          </Text>
+                        </Space>
+                        <Button size="small" icon={<DownloadOutlined />} onClick={() => void handleDownloadImage(image)}>
+                          {t('wiki.doc.imagesDownload')}
+                        </Button>
+                      </Space>
+                    </Col>
+                  ))}
+                </Row>
+              </Image.PreviewGroup>
+            )}
+          </Card>
+        )}
 
         {isMember && (
           <Card title={t('wiki.doc.partitionTitle')} styles={{ body: { padding: spacing.lg } }}>

@@ -41,11 +41,12 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 `MoAI.AI.Core` 实现（引用 WeixinWork.Shared 契约），与 AG-UI、钉钉/飞书渠道共用同一套应用 Agent 管线：
 
 1. **过滤**：只处理 `MsgType=text`；正文去掉群聊 `@应用名 ` 前缀；`event`（进入会话等）与其它类型忽略。
-2. **应用门禁**：绑定的 app 必须存在、未禁用、内部应用、Agent 类型且已发布，否则静默忽略（记日志）。
-3. **会话定位**：群聊按 ChatId、单聊按成员 userid 作会话键，Redis（`weixinwork:chat:{weixinWorkAppId}:{会话键}`，30 天滑动）映射到 `app_agent_session`；未命中则新建会话（`UserType=External`）。
-4. **运行**：`AppAgentFactory.CreateAsync(appId, teamId, userId:0, sessionId, isDebug:false)` 装配 Agent，加载热态快照 → `RunAsync` → 提取最后一条 Assistant 文本。
-5. **回复与落库**：回复经 `IWeixinWorkApiClient.SendTextMessageAsync` 发回（群聊 appchat/send、单聊 message/send，超长按 UTF-8 字节截断 2048）；会话序列化回热态 + `AppChatFlushService.FlushAsync` 落库。业务异常（如未配置模型）把异常消息作为回复发给用户。
-6. **串行化**：同一会话键用进程内信号量串行；企业微信成员不映射内部用户（`userId=0`），用量计入团队/应用维度。
+2. **应用门禁**：绑定的 app 必须存在、未禁用、内部应用、Agent/Workflow 类型且已发布，否则静默忽略（记日志）。
+3. **发送者识别**：推送 `FromUserName`（成员 userid）作为识别键，经 `ChannelUserMatchService` 反查 `user_oauth_connection`（企业微信连接器原生登录绑定记录 `sub` 即 userid）：命中唯一且用户可用则会话归属该内部用户，否则匿名（`userId=0`）。见关键决策 7。
+4. **会话定位**：群聊按 ChatId、单聊按成员 userid 作会话键（归属时追加 `:u{userId}`），Redis（`weixinwork:chat:{weixinWorkAppId}:{会话键}`，30 天滑动）映射到 `app_agent_session`；未命中则新建会话（归属用户时 `CreateUserId=用户id、UserType=Normal`，匿名时 `UserType=External`）。
+5. **运行**：`AppAgentFactory.CreateAsync(appId, teamId, userId:(归属或0), sessionId, isDebug:false)` 装配 Agent（Workflow 应用由工厂内部转流程执行返回最终回复），加载热态快照 → `RunAsync` → 提取最后一条 Assistant 文本。
+6. **回复与落库**：回复经 `IWeixinWorkApiClient.SendTextMessageAsync` 发回（群聊 appchat/send、单聊 message/send，超长按 UTF-8 字节截断 2048）；会话序列化回热态 + `AppChatFlushService.FlushAsync` 落库。业务异常（如未配置模型）把异常消息作为回复发给用户。
+7. **串行化**：同一会话键用进程内信号量串行。
 
 ## 数据
 
@@ -62,7 +63,7 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 4. **receiveid 比对**：解密明文尾部的 receiveid（企业 ID）与连接配置比对，防止回调 URL 被探测/串扰。
 5. **可选 API 地址（`api_endpoint`）**：连接级覆盖 API 域名（默认官方），E2E 桩与代理场景零配置注入——沿用飞书 `domain` 字段模式。
 6. **在线语义**：回调模式下连接启用即可接收（回调端点随宿主常驻），`IsOnline = !IsDisable`；无长连接生命周期可展示。
-7. **企业微信成员不映射内部用户**：`userId=0`，会话 `UserType=External`；与钉钉/飞书渠道一致。
+7. **发送者可识别则归属、否则匿名**：识别键 = 回调 `FromUserName`（成员 userid），企业微信连接器原生登录绑定记录 `sub` 即 userid；命中多个不同账号、账号停用/删除一律降级匿名。归属会话 `CreateUserId=用户id、UserType=Normal`（网页端可见可续聊），匿名会话保持 `userId=0、UserType=External`；归属会话的 Redis 键带 `:u{userId}` 后缀（群聊中各绑定成员独立会话）。与钉钉/飞书渠道同构，见 [../feishu/sdd.md](../feishu/sdd.md)。
 
 ## 已知问题
 

@@ -70,7 +70,9 @@ describe('Users', () => {
     await waitFor(() => {
       expect(getUsers).toHaveBeenCalled()
     })
-    expect(await screen.findByText('bob')).toBeInTheDocument()
+    // 用户列显示用户名，昵称列独立展示昵称
+    expect(await screen.findByText('Bob')).toBeInTheDocument()
+    expect(screen.getByText('bob')).toBeInTheDocument()
     // root 行自身的危险操作应禁用
     const rows = document.querySelectorAll('table tr')
     expect(rows.length).toBeGreaterThan(1)
@@ -78,7 +80,7 @@ describe('Users', () => {
 
   it('root 自己所在行不渲染危险操作，普通用户行渲染完整操作', async () => {
     renderUsers()
-    expect(await screen.findByText('bob')).toBeInTheDocument()
+    expect(await screen.findByText('Bob')).toBeInTheDocument()
 
     const findRow = (text: string) =>
       Array.from(document.querySelectorAll('table tr')).find((r) => r.textContent?.includes(text))

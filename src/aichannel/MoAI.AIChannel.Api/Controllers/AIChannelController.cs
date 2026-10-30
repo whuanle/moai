@@ -88,6 +88,34 @@ public class AIChannelController : ControllerBase
         return await _mediator.Send(new DeleteAIChannelCommand { ChannelId = id }, ct);
     }
 
+    /// <summary>
+    /// 查询渠道级授权视图（仅管理员可访问）：模型数量统计 + 各私有模型授权团队的并集.
+    /// </summary>
+    /// <param name="id">渠道 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryAIChannelAuthorizationCommandResponse"/>.</returns>
+    [HttpGet("{id}/authorization")]
+    public async Task<QueryAIChannelAuthorizationCommandResponse> QueryAuthorization(Guid id, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryAIChannelAuthorizationCommand { ChannelId = id }, ct);
+    }
+
+    /// <summary>
+    /// 渠道级批量授权（仅管理员可访问）：将渠道下所有私有模型的授权团队全量替换，公开模型不受影响.
+    /// </summary>
+    /// <param name="id">渠道 id.</param>
+    /// <param name="req">请求体，携带授权团队 id 集合.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id}/authorization")]
+    public async Task<EmptyCommandResponse> UpdateAuthorization(Guid id, [FromBody] UpdateAIChannelAuthorizationCommand req, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        req.ChannelId = id;
+        return await _mediator.Send(req, ct);
+    }
+
     private async Task EnsureAdminAsync(CancellationToken ct)
     {
         var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);

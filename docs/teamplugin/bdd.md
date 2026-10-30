@@ -74,7 +74,7 @@ Scenario: 列表返回团队自有插件与可用系统插件
   And 存在公开系统插件 S_public 与私有系统插件 S_private（已授权 T）
   When Member 查询 T 的插件列表
   Then 返回 D、C、S_public、S_private，且 D/C 标记为团队自有，S_* 标记为系统插件
-  And isTeamOwned 按来源正确
+  And isTeamOwned 按来源正确，插件头像路径（avatarPath）随项下发（未设置头像与内存静态插件为空，2026-10-30 增补）
 
 @TP-S11 @auto:e2e
 Scenario: 私有系统插件未授权则不可见

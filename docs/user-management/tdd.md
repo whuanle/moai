@@ -8,8 +8,9 @@
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
 | @UM-S1 ~ @UM-S21（全部后端场景） | [local-dev/user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs)（真实 HTTP，34 断言） | PASS 34/34（2026-09-02） |
-| @UM-S22、@UM-S23 | [ui/src/pages/users/__tests__/Users.test.tsx](../../ui/src/pages/users/__tests__/Users.test.tsx)（3 用例） | PASS 3/3（2026-09-02） |
+| @UM-S22、@UM-S23、@UM-S27 | [ui/src/pages/users/__tests__/Users.test.tsx](../../ui/src/pages/users/__tests__/Users.test.tsx)（3 用例） | PASS 3/3（2026-10-30） |
 | @UM-S24 ~ @UM-S26 | @manual 浏览器走查（[SOP 第 5 节](./sop.md)） | PASS（2026-09-02，见 SOP 验收记录） |
+| @UM-S28 | @manual 浏览器走查（详情弹窗昵称展示） | 待走查（2026-10-30 新增场景） |
 
 ## 回归命令
 
@@ -20,5 +21,5 @@ cd ui && npx vitest run src/pages/users
 
 ## 覆盖率说明
 
-- 后端 21 个场景全部自动化；前端 3 个 vitest + 3 个手动（弹窗校验/确认框为 UI 交互细节）。
+- 后端 21 个场景全部自动化；前端 3 个 vitest + 4 个手动（弹窗校验/确认框/详情弹窗昵称为 UI 交互细节）。
 - 已知未覆盖：并发禁用竞态（低风险，缓存失效后必拦）。

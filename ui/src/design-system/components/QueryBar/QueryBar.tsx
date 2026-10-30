@@ -24,7 +24,10 @@ export function QueryBar({ form, onSearch, onReset, loading, children, extra }: 
       <Form
         form={activeForm}
         layout="inline"
-        style={{ marginBottom: spacing.lg }}
+        style={{
+          // 裸排在页面底色上（Dify 模式），与下方 DataTable 的容器底色卡片之间仅隔同色留白
+          marginBottom: spacing.md,
+        }}
         onFinish={(values) => onSearch?.(values)}
       >
         {children}

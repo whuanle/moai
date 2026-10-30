@@ -6,6 +6,7 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Wiki.External;
 using MoAI.Wiki.Services;
+using MoAI.AIChannel.Services;
 
 namespace MoAI.Wiki.Handlers;
 
@@ -66,18 +67,7 @@ public class UpdateExternalWikiEmbeddingCommandHandler : IRequestHandler<UpdateE
 
     private async Task EnsureAuthorizedAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
     {
-        var isPublic = await _databaseContext.AiModels
-            .Where(x => x.Id == modelId)
-            .Select(x => x.IsPublic)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (isPublic)
-        {
-            return;
-        }
-
-        var authorized = await _databaseContext.AiModelAuthorizations
-            .AnyAsync(x => x.AiModelId == modelId && x.TeamId == teamId, cancellationToken);
-        if (!authorized)
+        if (!await _databaseContext.IsTeamUsableModelAsync(teamId, modelId, cancellationToken))
         {
             throw new BusinessException("该模型未授权给你的团队使用.") { StatusCode = 403 };
         }

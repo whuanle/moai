@@ -11,10 +11,7 @@ public enum TeamApiKeyScopes
     /// </summary>
     None = 0,
 
-    /// <summary>
-    /// 模型网关：/api/aigateway/{"{teamId}"}/v1/* 开放接口.
-    /// </summary>
-    Model = 1,
+    // 位值 1 为已下线的模型网关（model）保留，不再使用；存量 access_app.scopes 中的该位为无效残留，忽略即可.
 
     /// <summary>
     /// 知识库读：外部接口查询/搜索/读取知识库与文档内容.
@@ -73,12 +70,12 @@ public static class TeamApiKeyScopeCodes
     public const TeamApiKeyScopes ExternalDimensions = TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp | TeamApiKeyScopes.AppA2a;
 
     /// <summary>
-    /// 应用接入（access_app）允许勾选的范围：模型网关 + 知识库/知识图谱维度 + 应用对话 + 应用 ACP.
+    /// 应用接入（access_app）允许勾选的范围：知识库/知识图谱维度 + 应用对话 + 应用 ACP/A2A.
     /// </summary>
-    public const TeamApiKeyScopes AccessAppAllowed = TeamApiKeyScopes.Model | TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.AppChat | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp | TeamApiKeyScopes.AppA2a;
+    public const TeamApiKeyScopes AccessAppAllowed = TeamApiKeyScopes.WikiRead | TeamApiKeyScopes.WikiWrite | TeamApiKeyScopes.WikiMcp | TeamApiKeyScopes.AppChat | TeamApiKeyScopes.KgRead | TeamApiKeyScopes.KgWrite | TeamApiKeyScopes.KgMcp | TeamApiKeyScopes.AppAcp | TeamApiKeyScopes.AppA2a;
 
     /// <summary>
-    /// 应用接入「未传 scopes」时的默认范围：外部资源全量（存量行为口径，不含需显式勾选的 model 直连）.
+    /// 应用接入「未传 scopes」时的默认范围：外部资源全量（存量行为口径）.
     /// </summary>
     public const TeamApiKeyScopes AccessAppDefault = ExternalDimensions | TeamApiKeyScopes.AppChat;
 
@@ -87,7 +84,6 @@ public static class TeamApiKeyScopeCodes
     /// </summary>
     public static readonly IReadOnlyDictionary<string, TeamApiKeyScopes> Codes = new Dictionary<string, TeamApiKeyScopes>(StringComparer.Ordinal)
     {
-        ["model"] = TeamApiKeyScopes.Model,
         ["wiki_read"] = TeamApiKeyScopes.WikiRead,
         ["wiki_write"] = TeamApiKeyScopes.WikiWrite,
         ["app_chat"] = TeamApiKeyScopes.AppChat,

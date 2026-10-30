@@ -36,7 +36,7 @@ public class AccessAppItem
     public DateTimeOffset? LastUsedTime { get; set; }
 
     /// <summary>
-    /// 功能范围代码列表（model/wiki_read/wiki_write/wiki_mcp），model 授权 key 直连使用模型网关，知识库维度决定签发 token 的知识库权限.
+    /// 功能范围代码列表（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a），知识库维度决定签发 token 的知识库权限.
     /// </summary>
     public List<string> Scopes { get; set; } = new();
 }
@@ -63,7 +63,7 @@ public class QueryAccessAppsCommandResponse
 }
 
 /// <summary>
-/// 创建应用接入响应，密钥原文仅在创建时返回一次.
+/// 创建应用接入响应，appid 与密钥原文仅在创建时返回一次.
 /// </summary>
 public class CreateAccessAppCommandResponse
 {
@@ -73,12 +73,17 @@ public class CreateAccessAppCommandResponse
     public Guid AccessAppId { get; set; }
 
     /// <summary>
-    /// 密钥原文（仅此一次）.
+    /// 接入 appid 原文（moai-ac- 前缀，仅此一次）.
     /// </summary>
     public string Key { get; set; } = default!;
 
     /// <summary>
-    /// 密钥展示前缀.
+    /// 接入密钥原文（仅此一次；经 /api/external/token 换取 token 时须携带）.
+    /// </summary>
+    public string Secret { get; set; } = default!;
+
+    /// <summary>
+    /// key 展示前缀.
     /// </summary>
     public string KeyPrefix { get; set; } = default!;
 }

@@ -36,18 +36,19 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 
 ### 前端入口：应用工作台「外部渠道」分区
 
-`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部 Agent 应用的 Admin+ 可见（流程应用暂不支持对话渠道、外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；**只提供「接入飞书应用」（创建连接即绑定到当前应用，`channelType=app` + `channelId=appId` 随创建命令单次调用、连接与绑定同一事务落库）、停用/启用、删除三种操作**——不提供「绑定已有连接」与「解绑」，删除即彻底移除连接（级联解绑，不保留可复用连接，删除后同 AppID 可重新接入）；应用未发布时提示消息不会被处理（对应消费侧发布门禁）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
+`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部应用（Agent/流程）的 Admin+ 可见（外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；**只提供「接入飞书应用」（创建连接即绑定到当前应用，`channelType=app` + `channelId=appId` 随创建命令单次调用、连接与绑定同一事务落库）、停用/启用、删除三种操作**——不提供「绑定已有连接」与「解绑」，删除即彻底移除连接（级联解绑，不保留可复用连接，删除后同 AppID 可重新接入）；应用未发布时提示消息不会被处理（对应消费侧发布门禁）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
 
 ## 应用渠道回复链路（AppFeishuMessageHandler）
 
 `MoAI.AI.Core` 实现（引用 Feishu.Shared 契约，避免基座反向依赖 AI 运行时），与 AG-UI 共用同一套应用 Agent 管线：
 
 1. **过滤**：只处理 `im.message.receive_v1`；`sender_type=user`（忽略机器人防回路）；`message_type=text`；提取 `content.text` 并去掉 `@_user_N` 占位符（群聊 @机器人 场景）。
-2. **应用门禁**：绑定的 app 必须存在、未禁用、内部应用、Agent 类型且已发布，否则静默忽略（记日志）。
-3. **会话定位**：按「飞书应用 + chat_id」在 Redis（`feishu:chat:{feishuAppId}:{chatId}`，30 天滑动）映射到 `app_agent_session`；未命中则新建会话（`UserType=External`、标题由落库时按首条用户消息生成；`CreateUserId=0` 后台审计）。映射丢失自愈为新建会话。
-4. **运行**：`AppAgentFactory.CreateAsync(appId, teamId, userId:0, sessionId, isDebug:false)` 装配 Agent（含插件/知识库/沙箱工具与压缩管线），加载热态快照（与 `AppAgentSessionStore` 同一逻辑）→ `RunAsync` → 提取最后一条 Assistant 文本。
-5. **回复与落库**：回复经 `IFeishuApiClient.SendTextMessageAsync` 发回原 chat_id（截断 3000 字符）；会话序列化回热态 + `AppChatFlushService.FlushAsync` 落库（消息、token 聚合、冷快照）。业务异常（如未配置模型）把异常消息作为回复返回给用户。
-6. **串行化**：同一 chat_id 用进程内信号量串行，避免并发写历史错序；用量计入团队/应用维度（userId=0）。
+2. **应用门禁**：绑定的 app 必须存在、未禁用、内部应用、Agent/Workflow 类型且已发布，否则静默忽略（记日志）。
+3. **发送者识别**：解析事件 `sender.sender_id`（open_id/union_id，原样丢弃改为识别键），经 `ChannelUserMatchService` 反查 `user_oauth_connection`（命中 `sub` 或 `union_id` 且用户可用）：命中唯一则会话归属该内部用户，否则匿名（`userId=0`）。见关键决策 7。
+4. **会话定位**：按「飞书应用 + chat_id（归属时追加 `:u{userId}`）」在 Redis（`feishu:chat:{feishuAppId}:{chatId}`，30 天滑动）映射到 `app_agent_session`；未命中则新建会话（归属用户时 `CreateUserId=用户id、UserType=Normal`，匿名时 `UserType=External`）。映射丢失自愈为新建会话。
+5. **运行**：`AppAgentFactory.CreateAsync(appId, teamId, userId:(归属或0), sessionId, isDebug:false)` 装配 Agent（含插件/知识库/沙箱工具与压缩管线；Workflow 应用由工厂内部转流程执行返回最终回复），加载热态快照（与 `AppAgentSessionStore` 同一逻辑）→ `RunAsync` → 提取最后一条 Assistant 文本。
+6. **回复与落库**：回复经 `IFeishuApiClient.SendTextMessageAsync` 发回原 chat_id（截断 3000 字符）；会话序列化回热态 + `AppChatFlushService.FlushAsync` 落库（消息、token 聚合、冷快照）。业务异常（如未配置模型）把异常消息作为回复返回给用户。
+7. **串行化**：同一 chat_id 用进程内信号量串行，避免并发写历史错序。
 
 ## 数据
 
@@ -66,15 +67,13 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 
 ## 关键决策
 
-## 关键决策
-
 1. **连接复用而非转发总线**：每 AppID 一条连接由飞书模块独占；业务模块不感知 WSS，只消费 `IFeishuEventHandler`。
 2. **应用渠道创建即绑定、订阅渠道 Handler 查重**：应用渠道随创建命令在同一事务内写入绑定（新建连接无存量绑定，互斥天然满足），不暴露独立绑定操作；订阅型渠道仍由 `BindFeishuAppCommand` 查重返回 409，唯一过滤索引防并发窗口——应用渠道为**独占**、订阅型渠道（外部源）为**一对多**（同一条长连接的事件广播给所有绑定渠道，`FeishuEventForwarder` 按渠道类型分组投递）。
 3. **收帧线程零阻塞**：转发器立即 ack，业务处理转线程池；飞书侧重发由 event_id 去重器吸收。
 4. **禁用即断连**：`is_disable=true` 断开且不重连；事件到达时若应用已禁用/删除，转发器二次校验后丢弃。
 5. **删连接级联解绑、删除即彻底移除**：删除 feishu_app 同时软删其绑定；应用渠道体系下删除不留存可复用连接，同 AppID 可立即重建并接入原渠道。
 6. **回复走既有 Agent 会话管线**：飞书会话与 AG-UI 会话同构（热态/落库/压缩/工具全复用），不另建存储；chat↔session 映射放 Redis（30 天滑动）而非加列。
-7. **飞书用户不映射内部用户**：`userId=0`，会话 `UserType=External`；用量计入团队/应用维度。
+7. **发送者可识别则归属、否则匿名**：识别键 = 事件 open_id + union_id（双键，`sub` 命中任一即可）——open_id 按应用隔离，机器人与 OAuth 登录共用一个飞书应用时靠 open_id 命中，跨应用靠 union_id（绑定列，存量旧绑定重新绑定一次即获得）；命中多个不同账号、账号停用/删除一律降级匿名，宁可不归属不归错人。归属会话 `CreateUserId=用户id、UserType=Normal`（网页端可见可续聊、日志显示归属人），匿名会话保持 `userId=0、UserType=External`；归属会话的 Redis 键带 `:u{userId}` 后缀（群聊中各绑定成员独立会话）。
 8. **应用列表带出外部渠道入口**：应用模块从绑定关系反查启用的连接（不含 AppSecret），团队/公开应用列表 DTO 携带 `externalChannels`（channelType=feishu + applink 机器人单聊 chatUrl，域名由连接域名 `open.` → `applink.` 推导，禁用连接不回显）；站内卡片据此显示飞书入口。见 [@FS-S29~S30](./bdd.md#fs-s29)。
 
 ## 已知问题

@@ -84,6 +84,7 @@ public sealed class SkillAppToolProvider : IAppToolProvider
                 Title = skill.Name,
                 Description = $"{skill.Description} 调用本工具可加载该技能的脚本与使用说明。",
                 Kind = "skill",
+                SourceId = skill.Id,
                 ParametersExample = "{}",
                 InvokeAsync = (args, ct) => LoadSkillAsync(session, skill, sandboxEnabled, ct),
             });

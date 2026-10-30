@@ -28,6 +28,8 @@
 		<PackageReference Include="SSH.NET" />
 		<!-- 邮件插件（smtp_email_send / imap_email_query）所需的 SMTP/IMAP 协议栈 -->
 		<PackageReference Include="MailKit" />
+		<!-- 钉住 MailKit/Microsoft.Data.SqlClient 的传递依赖，规避 CVE-2026-84008（NU1903） -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" />
 	</ItemGroup>
 
 	<ItemGroup>

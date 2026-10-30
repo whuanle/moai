@@ -19,7 +19,7 @@ public sealed class GraphAppToolProvider : IAppToolProvider
     /// <summary>
     /// 知识图谱检索工具名称.
     /// </summary>
-    public const string ToolName = "search_knowledge_graph";
+    public const string ToolName = MoAI.AI.AppToolApprovalContract.GraphSearchToolName;
 
     private const int DefaultTopK = 5;
 
@@ -66,6 +66,7 @@ public sealed class GraphAppToolProvider : IAppToolProvider
             Title = "知识图谱检索",
             Description = "在应用绑定的知识图谱中检索实体及其直接关系，适合「A 和 B 什么关系」「与 X 相关联的有哪些实体」类问题；仅返回一跳关系，跨多步的链式问题建议拆步提问；需要文档原文片段时改用知识库检索。topK 可选（1-20，默认 5，为每张绑定图谱各自的召回数）。",
             Kind = "graph",
+            SourceLongIds = graphIds,
             ParametersExample = "{\"query\":\"要检索的关键词或问题\",\"topK\":5}",
             InvokeAsync = (argsJson, ct) => SearchAsync(graphIds, argsJson, ct),
         };

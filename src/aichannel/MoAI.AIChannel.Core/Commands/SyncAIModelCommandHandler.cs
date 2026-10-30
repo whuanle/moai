@@ -37,7 +37,7 @@ public class SyncAIModelCommandHandler : IRequestHandler<SyncAIModelCommand, Syn
     public async Task<SyncAIModelCommandResponse> Handle(SyncAIModelCommand request, CancellationToken cancellationToken)
     {
         var channel = await _databaseContext.AiChannels
-            .FirstOrDefaultAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);
 
         if (channel == null)
         {

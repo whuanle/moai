@@ -23,6 +23,26 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AccessAppEntity> AccessApps { get; set; }
 
     /// <summary>
+    /// 子系统.
+    /// </summary>
+    public virtual DbSet<SubsystemEntity> Subsystems { get; set; }
+
+    /// <summary>
+    /// 子系统团队授权.
+    /// </summary>
+    public virtual DbSet<SubsystemTeamAuthEntity> SubsystemTeamAuths { get; set; }
+
+    /// <summary>
+    /// 组织角色.
+    /// </summary>
+    public virtual DbSet<OrgRoleEntity> OrgRoles { get; set; }
+
+    /// <summary>
+    /// 组织角色成员绑定.
+    /// </summary>
+    public virtual DbSet<OrgUserRoleEntity> OrgUserRoles { get; set; }
+
+    /// <summary>
     /// 模型渠道.
     /// </summary>
     public virtual DbSet<AiChannelEntity> AiChannels { get; set; }
@@ -33,19 +53,9 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
-    /// 授权模型给哪些团队使用，额度以团队为单位共享.
+    /// 授权模型给哪些团队使用.
     /// </summary>
     public virtual DbSet<AiModelAuthorizationEntity> AiModelAuthorizations { get; set; }
-
-    /// <summary>
-    /// ai模型额度规则，一行=某主体在一个重置周期内的tokens上限，只能用于系统模型.
-    /// </summary>
-    public virtual DbSet<AiModelLimitEntity> AiModelLimits { get; set; }
-
-    /// <summary>
-    /// ai模型额度余额，按规则维度记录当前周期已消耗与剩余，剩余=total_limit-used_tokens.
-    /// </summary>
-    public virtual DbSet<AiModelQuotumEntity> AiModelQuota { get; set; }
 
     /// <summary>
     /// 统计不同模型的token使用量，该表不是实时刷新的，按模型+团队+用户+业务来源维度累加.
@@ -279,6 +289,11 @@ public partial class DatabaseContext : DbContext
     /// 文档内容.
     /// </summary>
     public virtual DbSet<WikiDocumentContentEntity> WikiDocumentContents { get; set; }
+
+    /// <summary>
+    /// 知识库文档内嵌图片附件，文档提取时落出的图片资产登记.
+    /// </summary>
+    public virtual DbSet<WikiDocumentImageEntity> WikiDocumentImages { get; set; }
 
     /// <summary>
     /// 知识库外部源，飞书文档/爬虫等外部数据入口，持有同步方式与工作流预设.

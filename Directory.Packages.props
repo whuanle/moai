@@ -52,8 +52,7 @@
     <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.Redis" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.SQLServer" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.SemanticKernelPlugin" Version="0.98.250508.3" />
-    <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.24" />
-    <!--<PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="2.0.0-preview.31" />-->
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.11.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Abstractions" Version="1.68.0" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.68.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.68.0" />
@@ -105,6 +104,8 @@
     <PackageVersion Include="StackExchange.Redis" Version="3.1.31" />
     <PackageVersion Include="Stef.ModelContextProtocol.SemanticKernel" Version="0.6.1" />
     <PackageVersion Include="System.Linq.Async" Version="7.0.0" />
+    <!-- 钉住 MimeKit/MailKit/Microsoft.Data.SqlClient 的传递依赖（CVE-2026-84008，>=10.0.0 <=10.0.12 受影响） -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
     <PackageVersion Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="13.0.1" />

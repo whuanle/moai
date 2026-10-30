@@ -25,10 +25,4 @@
 	  <PackageReference Include="OllamaSharp" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-			<_Parameter1>MoAI.Gateway.Core.Tests</_Parameter1>
-		</AssemblyAttribute>
-	</ItemGroup>
-
 </Project>

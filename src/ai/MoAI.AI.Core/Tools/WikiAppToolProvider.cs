@@ -19,12 +19,12 @@ public sealed class WikiAppToolProvider : IAppToolProvider
     /// <summary>
     /// 知识库检索工具名称.
     /// </summary>
-    public const string ToolName = "search_knowledge_base";
+    public const string ToolName = MoAI.AI.AppToolApprovalContract.WikiSearchToolName;
 
     /// <summary>
     /// 知识库片段获取工具名称.
     /// </summary>
-    public const string ChunkToolName = "get_knowledge_base_chunk";
+    public const string ChunkToolName = MoAI.AI.AppToolApprovalContract.WikiChunkToolName;
 
     private const int TopPerWiki = 5;
     private const int MaxChunkIndexes = 10;
@@ -58,6 +58,7 @@ public sealed class WikiAppToolProvider : IAppToolProvider
             Title = "知识库检索",
             Description = "在应用绑定的知识库中检索与问题相关的资料片段，返回命中的文档、片段在文档中的序号（chunkIndex，从 0 开始）、文档切片总数（totalChunks）、得分与相邻上下文片段（context）。如某文档的片段信息不足以回答，可再用 get_knowledge_base_chunk 按文档 id 与片段序号获取该文档的其它片段。",
             Kind = "wiki",
+            SourceLongIds = wikiIds,
             ParametersExample = "{\"query\":\"要检索的关键词或问题\"}",
             InvokeAsync = (argsJson, ct) => SearchAsync(wikiIds, argsJson, ct),
         };
@@ -68,6 +69,7 @@ public sealed class WikiAppToolProvider : IAppToolProvider
             Title = "知识库片段获取",
             Description = "按文档 id 与片段序号（chunkIndex，从 0 开始）获取知识库文档的原文片段，一次最多 10 个序号。用于检索结果上下文不足时继续读取同一文档的其它片段（例如命中片段的前一段或后几段）。documentId 与可用序号范围来自 search_knowledge_base 的返回。",
             Kind = "wiki",
+            SourceLongIds = wikiIds,
             ParametersExample = "{\"documentId\":123,\"chunkIndexes\":[3,4]}",
             InvokeAsync = (argsJson, ct) => GetChunksAsync(wikiIds, argsJson, ct),
         };

@@ -10,8 +10,14 @@ export interface ServerInfo {
   rsaPublic: string
   /** 网站 Logo（存储 ObjectKey，空串表示使用默认 /logo.svg） */
   logoPath: string
+  /** 登录页背景图（存储 ObjectKey，空串表示使用默认渐变背景） */
+  loginBackgroundPath: string
   /** 网站名称（系统设置可改，空串表示使用前端内置默认名） */
   name: string
+  /** 注册是否需要邮箱验证码（SMTP 已启用且注册验证码开关开启） */
+  registerEmailCodeRequired: boolean
+  /** 是否允许通过邮箱找回密码（SMTP 邮件服务已启用） */
+  passwordResetEnabled: boolean
 }
 
 export interface UserInfo {

@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps, TableColumnsType } from 'antd'
 import {
   AppstoreAddOutlined,
   AppstoreOutlined,
-  ApiOutlined,
   BookOutlined,
+  CloudServerOutlined,
   ClusterOutlined,
-  ClockCircleOutlined,
   GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
   ProfileOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   StopOutlined,
@@ -33,13 +33,12 @@ import { TeamSkills } from '@/pages/teams/skills/TeamSkills'
 import { TeamApps } from '@/pages/teams/apps/TeamApps'
 import { TeamExternalApps } from '@/pages/teams/apps/TeamExternalApps'
 import { TeamAccessApps } from '@/pages/teams/apps/TeamAccessApps'
-import { TeamGateway } from '@/pages/teams/TeamGateway'
+import { TeamChannels } from '@/pages/teams/channels/TeamChannels'
 import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
 import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
 import { TeamKnowledgeGraphs } from '@/pages/teams/knowledgegraph/TeamKnowledgeGraphs'
+import { TeamMemberAddModal } from '@/pages/teams/members/TeamMemberAddModal'
 import {
-  addTeamUser,
-  getTeamCandidates,
   getTeamDetail,
   getTeamUsers,
   removeTeamUser,
@@ -47,7 +46,7 @@ import {
   updateTeam,
   updateTeamUserRole,
   uploadTeamAvatar,
-  type TeamCandidateItem,
+  type AddTeamUsersResult,
   type TeamUserItem,
 } from '@/api/team'
 
@@ -60,7 +59,7 @@ const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
 /** 分区顺序：成员可见的使用分区在前，Owner/Admin 管理分区在后 */
-const SECTION_KEYS = ['apps', 'prompts', 'skills', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'timers', 'settings'] as const
+const SECTION_KEYS = ['apps', 'prompts', 'skills', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'channels', 'plugins', 'variables', 'timers', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /** 进入团队默认落在内部应用 */
@@ -70,11 +69,7 @@ const DEFAULT_SECTION: SectionKey = 'apps'
  * 仅团队 Owner/Admin 可见的管理分区。
  * 普通成员进入团队只能「使用」：可见 内部应用 / 提示词 / 技能 / 知识库 / 知识图谱，看不到团队管理与应用配置入口。
  */
-const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'timers', 'settings']
-
-interface MemberFormValues {
-  userId: number
-}
+const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'channels', 'plugins', 'variables', 'timers', 'settings']
 
 interface TeamDetail {
   teamId?: string | number | null
@@ -106,12 +101,10 @@ export function TeamManage() {
   const [members, setMembers] = useState<TeamUserItem[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [memberKeyword, setMemberKeyword] = useState('')
-  const [addForm] = Form.useForm<MemberFormValues>()
+  const [addModalOpen, setAddModalOpen] = useState(false)
   const [settingsForm] = Form.useForm<{ name: string; description?: string }>()
   const [savingInfo, setSavingInfo] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [candidates, setCandidates] = useState<TeamCandidateItem[]>([])
-  const [searching, setSearching] = useState(false)
 
   const loadDetail = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
@@ -170,29 +163,10 @@ export function TeamManage() {
     return true
   }
 
-  const handleAddMember = async () => {
-    const values = await addForm.validateFields()
-    try {
-      await addTeamUser(teamId, { userId: values.userId, role: ROLE_MEMBER })
-      feedback.success(t('team.addSuccess'))
-      addForm.resetFields()
-      setCandidates([])
-      await reloadMembers()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
+  const handleAddModalSuccess = async (result: AddTeamUsersResult) => {
+    setAddModalOpen(false)
+    if (result.addedCount > 0) await reloadMembers()
   }
-
-  const handleSearchCandidates = useCallback(async (keyword: string) => {
-    setSearching(true)
-    try {
-      setCandidates(await getTeamCandidates(teamId, keyword))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSearching(false)
-    }
-  }, [teamId])
 
   const handleChangeRole = async (member: TeamUserItem, role: number) => {
     try {
@@ -273,6 +247,9 @@ export function TeamManage() {
     )
   }, [members, memberKeyword])
 
+  /** 现有成员 userId 集合（字符串化 long），添加成员弹窗据此标记「已是成员」并禁选 */
+  const memberUserIdSet = useMemo(() => new Set(members.map((m) => String(m.userId))), [members])
+
   const memberColumns: TableColumnsType<TeamUserItem> = useMemo(
     () => [
       {
@@ -283,9 +260,11 @@ export function TeamManage() {
             <Avatar size={32}>{(record.nickName || record.userName || '?').slice(0, 1).toUpperCase()}</Avatar>
             <div>
               <div style={{ fontWeight: 500 }}>{record.nickName || record.userName || '-'}</div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.userName}
-              </Text>
+              {record.nickName && record.nickName !== record.userName && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  @{record.userName}
+                </Text>
+              )}
             </div>
           </Space>
         ),
@@ -377,10 +356,10 @@ export function TeamManage() {
     { key: 'externalApps', icon: <GlobalOutlined />, label: t('team.externalApps') },
     { key: 'accessApps', icon: <KeyOutlined />, label: t('team.accessApps') },
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
-    { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
+    { key: 'channels', icon: <CloudServerOutlined />, label: t('team.channels') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
-    { key: 'timers', icon: <ClockCircleOutlined />, label: t('team.timers') },
+    { key: 'timers', icon: <RobotOutlined />, label: t('team.timers') },
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
   ].filter((item) => visibleSections.includes(item.key as SectionKey))
 
@@ -446,37 +425,14 @@ export function TeamManage() {
                       style={{ width: 220 }}
                     />
                     {isOwner && (
-                      <Form form={addForm} layout="inline" style={{ display: 'flex', gap: spacing.sm }}>
-                        <Form.Item
-                          name="userId"
-                          rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}
-                          style={{ marginBottom: 0, flex: 1, minWidth: 240 }}
-                        >
-                          <Select
-                            showSearch
-                            placeholder={t('team.addMemberPlaceholder')}
-                            filterOption={false}
-                            onSearch={(v) => void handleSearchCandidates(v)}
-                            onFocus={() => void handleSearchCandidates('')}
-                            notFoundContent={searching ? null : t('team.addMemberNoResult')}
-                            loading={searching}
-                            options={candidates.map((c) => ({
-                              value: Number(c.userId),
-                              label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
-                            }))}
-                          />
-                        </Form.Item>
-                        <Button type="primary" icon={<UserAddOutlined />} onClick={() => void handleAddMember()}>
-                          {t('team.addMember')}
-                        </Button>
-                      </Form>
+                      <Button type="primary" icon={<UserAddOutlined />} onClick={() => setAddModalOpen(true)}>
+                        {t('team.addMember')}
+                      </Button>
                     )}
                   </div>
                 }
               />
             </DSCard>
-          ) : activeSection === 'gateway' ? (
-            <TeamGateway teamId={teamId} />
           ) : activeSection === 'prompts' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamPrompts teamId={teamId} canManage={isAdminPlus} />
@@ -492,6 +448,10 @@ export function TeamManage() {
           ) : activeSection === 'knowledgegraph' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamKnowledgeGraphs teamId={teamId} />
+            </DSCard>
+          ) : activeSection === 'channels' ? (
+            <DSCard styles={{ body: { padding: spacing.lg } }}>
+              <TeamChannels teamId={teamId} />
             </DSCard>
           ) : activeSection === 'plugins' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
@@ -541,6 +501,13 @@ export function TeamManage() {
           )}
         </Content>
       </Layout>
+      <TeamMemberAddModal
+        open={addModalOpen}
+        teamId={teamId}
+        memberUserIds={memberUserIdSet}
+        onCancel={() => setAddModalOpen(false)}
+        onSuccess={(result) => void handleAddModalSuccess(result)}
+      />
     </Page>
   )
 }

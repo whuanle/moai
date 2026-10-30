@@ -25,6 +25,8 @@ namespace MoAI.AI.Services;
 /// <summary>
 /// 应用渠道的飞书消息处理器：接收 im.message.receive_v1（群聊/私聊），按「飞书应用 + chat_id」定位或创建
 /// 应用 Agent 会话（与 AG-UI 同一套会话管线：热态快照 + 历史提供者 + 落库压缩），运行 Agent 后把回复发回原会话.
+/// <para>发送者若已通过第三方登录绑定飞书（user_oauth_connection 命中 open_id/union_id），会话自动归属该
+/// 内部用户（网页端会话列表可见可续聊）；未绑定时保持匿名会话. 群聊中已绑定的成员各自独立会话.</para>
 /// <para>单例注册：内部按 chat_id 加锁串行执行，避免同一会话并发写历史错序.</para>
 /// </summary>
 public sealed class AppFeishuMessageHandler : IFeishuEventHandler
@@ -125,22 +127,28 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
             .Select(x => new { x.TeamId, x.AppType, x.PublishStatus, x.IsDisable, x.IsExternal })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // 仅已发布的内部 Agent 应用对外服务；未发布/禁用/外部应用静默忽略
-        if (app == null || app.IsDisable || app.IsExternal || app.AppType != (int)AppType.Agent || app.PublishStatus != 1)
+        // 仅已发布的内部 Agent/Workflow 应用对外服务；未发布/禁用/外部应用静默忽略
+        if (app == null || app.IsDisable || app.IsExternal || app.PublishStatus != 1
+            || (app.AppType != (int)AppType.Agent && app.AppType != (int)AppType.Workflow))
         {
             _logger.LogInformation("飞书消息忽略（应用不可用），appId={AppId} eventId={EventId}.", appId, message.EventId);
             return string.Empty;
         }
 
+        // 发送者绑定过第三方登录则归属其内部用户，否则匿名（userId=0）
+        var matchService = scope.ServiceProvider.GetRequiredService<ChannelUserMatchService>();
+        var matchedUserId = await matchService.MatchAsync(
+            OAuthPrivider.Feishu,
+            [received.OpenId, received.UnionId],
+            cancellationToken);
+
         var hotStore = scope.ServiceProvider.GetRequiredService<AppChatHotStore>();
-        var sessionId = await ResolveSessionIdAsync(scope, message.FeishuAppId, received.ChatId, app.TeamId, appId, cancellationToken);
+        var sessionId = await ResolveSessionIdAsync(scope, message.FeishuAppId, received.ChatId, app.TeamId, appId, matchedUserId, cancellationToken);
 
         try
         {
             var factory = scope.ServiceProvider.GetRequiredService<AppAgentFactory>();
-
-            // 飞书用户不映射内部用户：userId=0，用量计入团队/应用维度；飞书会话暂不支持专家提示词
-            var agent = await factory.CreateAsync(appId, app.TeamId, userId: 0, sessionId, isDebug: false, promptId: 0, cancellationToken);
+            var agent = await factory.CreateAsync(appId, app.TeamId, userId: matchedUserId ?? 0, sessionId, isDebug: false, promptId: 0, cancellationToken);
             var session = await LoadSessionAsync(agent, hotStore, sessionId, cancellationToken);
 
             var response = await agent.RunAsync([new ChatMessage(ChatRole.User, text)], session, cancellationToken: cancellationToken);
@@ -167,13 +175,14 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
     }
 
     /// <summary>
-    /// 定位或创建「飞书应用 + chat_id」对应的 Agent 会话；映射存 Redis（30 天滑动），
+    /// 定位或创建「飞书应用 + chat_id (+用户)」对应的 Agent 会话；映射存 Redis（30 天滑动），
     /// 映射丢失时自愈为新建会话（旧会话成为孤儿但不再被使用）.
+    /// <para>归属用户时映射键带用户后缀：群聊中各绑定成员拥有独立会话，未归属走共享匿名会话.</para>
     /// </summary>
-    private async Task<Guid> ResolveSessionIdAsync(IServiceScope scope, Guid feishuAppId, string chatId, int teamId, Guid appId, CancellationToken cancellationToken)
+    private async Task<Guid> ResolveSessionIdAsync(IServiceScope scope, Guid feishuAppId, string chatId, int teamId, Guid appId, long? matchedUserId, CancellationToken cancellationToken)
     {
         var redisDatabase = scope.ServiceProvider.GetRequiredService<IRedisDatabase>();
-        var key = ChatSessionKey(feishuAppId, chatId);
+        var key = ChatSessionKey(feishuAppId, chatId, matchedUserId);
 
         var mapped = await redisDatabase.Database.StringGetAsync(key);
         if (mapped.HasValue && Guid.TryParse(mapped.ToString(), out var sessionId))
@@ -189,7 +198,8 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
             TeamId = teamId,
             AppId = appId,
             Title = AppAgentConstants.DefaultSessionTitle,
-            UserType = (int)UserType.External,
+            UserType = matchedUserId.HasValue ? (int)UserType.Normal : (int)UserType.External,
+            CreateUserId = matchedUserId ?? 0,
             LastMessageTime = DateTimeOffset.Now,
         };
         databaseContext.AppAgentSessions.Add(session);
@@ -199,7 +209,7 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
         await scope.ServiceProvider.GetRequiredService<IAppUsageCounter>().IncrementAsync(appId, cancellationToken);
 
         await redisDatabase.Database.StringSetAsync(key, session.Id.ToString(), ChatSessionTtl);
-        _logger.LogInformation("飞书会话已创建，feishuAppId={FeishuAppId} chatId={ChatId} sessionId={SessionId}.", feishuAppId, chatId, session.Id);
+        _logger.LogInformation("飞书会话已创建，feishuAppId={FeishuAppId} chatId={ChatId} sessionId={SessionId} userId={UserId}.", feishuAppId, chatId, session.Id, matchedUserId ?? 0);
         return session.Id;
     }
 
@@ -267,7 +277,10 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
 
     private static string ChatLockKey(Guid feishuAppId, string chatId) => $"{feishuAppId:N}:{chatId}";
 
-    private static string ChatSessionKey(Guid feishuAppId, string chatId) => $"feishu:chat:{feishuAppId:N}:{chatId}";
+    private static string ChatSessionKey(Guid feishuAppId, string chatId, long? matchedUserId)
+        => matchedUserId.HasValue
+            ? $"feishu:chat:{feishuAppId:N}:{chatId}:u{matchedUserId.Value}"
+            : $"feishu:chat:{feishuAppId:N}:{chatId}";
 
     /// <summary>
     /// im.message.receive_v1 事件体的最小解析视图.
@@ -278,6 +291,16 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
         /// 发送者类型：user/app.
         /// </summary>
         public string SenderType { get; init; } = string.Empty;
+
+        /// <summary>
+        /// 发送者 open_id（应用维度隔离）.
+        /// </summary>
+        public string OpenId { get; init; } = string.Empty;
+
+        /// <summary>
+        /// 发送者 union_id（租户维度，跨应用一致）.
+        /// </summary>
+        public string UnionId { get; init; } = string.Empty;
 
         /// <summary>
         /// 会话 id（oc_xxx）.
@@ -309,14 +332,23 @@ public sealed class AppFeishuMessageHandler : IFeishuEventHandler
                     => node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
 
                 var senderType = string.Empty;
+                var openId = string.Empty;
+                var unionId = string.Empty;
                 if (root.TryGetProperty("sender", out var senderNode))
                 {
                     senderType = GetString(senderNode, "sender_type");
+                    if (senderNode.TryGetProperty("sender_id", out var senderIdNode))
+                    {
+                        openId = GetString(senderIdNode, "open_id");
+                        unionId = GetString(senderIdNode, "union_id");
+                    }
                 }
 
                 return new FeishuReceivedMessage
                 {
                     SenderType = senderType,
+                    OpenId = openId,
+                    UnionId = unionId,
                     ChatId = GetString(messageNode, "chat_id"),
                     MessageType = GetString(messageNode, "message_type"),
                     Content = GetString(messageNode, "content"),

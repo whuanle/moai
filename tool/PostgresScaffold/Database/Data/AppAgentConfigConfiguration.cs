@@ -107,6 +107,10 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValueSql("'[]'::text")
             .HasComment("绑定的知识库ID列表，JSON 数组文本，元素为 wiki.id（整数），如 '[1,2]'")
             .HasColumnName("wiki_ids");
+        entity.Property(e => e.AgentApps)
+            .HasDefaultValueSql("'[]'::text")
+            .HasComment("绑定的 Agent 应用ID列表（作为工具使用），JSON 数组文本，元素为 app.id（uuid 字符串，须为本团队已发布内部 Agent 应用且不含自身），空为'[]'")
+            .HasColumnName("agent_apps");
         entity.Property(e => e.WorkflowApps)
             .HasDefaultValueSql("'[]'::text")
             .HasComment("绑定的流程应用ID列表（作为工具使用），JSON 数组文本，元素为 app.id（uuid 字符串，须为本团队已发布流程应用），空为'[]'")

@@ -133,13 +133,13 @@ public sealed class AppToolContextProvider : AIContextProvider
             return ErrorJson($"工具不存在：{toolName}。请先调用 list_tools 查看可用工具。");
         }
 
-        // 审批模式：重要工具（沙箱/插件等有外部副作用）挂起等待人工批准/拒绝；
-        // 审批策略（应用配置）白名单内的插件与沙箱自动放行，无需等待
+        // 审批模式：纳入审批范围的工具（沙箱/插件/应用/技能/知识库与图谱检索等）挂起等待人工批准/拒绝；
+        // 审批策略（应用配置）白名单命中的资源与沙箱开关自动放行，无需等待
         if (_approvalService != null
             && _approvalGate != null
             && _approvalGate.Mode == AppToolApprovalContract.ModeApproval
             && AppToolApprovalContract.KindRequiresApproval(tool.Kind)
-            && !_approvalGate.Policy.IsAutoApproved(tool.Kind, tool.SourceId))
+            && !_approvalGate.Policy.IsAutoApproved(tool.Kind, tool.SourceId, tool.SourceLongIds))
         {
             var decision = await _approvalService.WaitDecisionAsync(_approvalGate, tool.Name, tool.Title, argumentsJson).ConfigureAwait(false);
             if (decision != AppToolApprovalContract.StatusApproved)

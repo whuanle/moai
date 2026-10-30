@@ -14,6 +14,7 @@
 | @FS-S16~S18 | @manual（需真实飞书应用，走查 FeishuEventForwarder） | PASS 走查（2026-09-14） |
 | @FS-S19~S23 | @manual（需真实飞书应用 + 已配置模型的应用，验收步骤见 sop.md 第 3 节） | 待真实环境验收 |
 | @FS-S24~S25、S27~S28 | ui/src/pages/teams/apps/__tests__/AppChannelsSection.test.tsx、__tests__/AppWorkspace.test.tsx（`cd ui && npm run test`） | PASS 498/498（2026-10-08；@FS-S26 已随绑定/解绑下线退役） |
+| @FS-S32~S36 | @manual（渠道用户识别：需真实飞书应用 + 已绑定第三方登录的用户，改动与识别规则见 2026-10-28 证据摘要） | 待验收 |
 
 ## 证据摘要（2026-09-14）
 
@@ -55,3 +56,9 @@
 - 用户反馈「接入指引整段 Alert 把页面撑开」。`AppChannelsSection`：接入指引由卡片上方独立 Alert 改为卡片内 `Collapse`（ghost，默认收缩、点击展开）；「接入飞书应用」「刷新」按钮上移至卡片标题右侧（`Card extra`），移除 DataTable toolbar 独立一行；未发布警告保留卡片上方。
 - 验证：`npm run typecheck` 0 error；`npm run lint` 0 error；`AppChannelsSection.test.tsx` 9/9（三渠道分区合计 25/25）。
 - 迭代（同日，用户反馈指引展开后堆成一段）：指引文案按「N. 」序号拆分为有序列表逐条展示——新增共享组件 `AppChannelGuide`（三渠道分区共用）与 `utils/text.ts` `splitNumberedSteps`（zh/en 通用，去序号与段尾分号）；AppChannelsSection.test 增「默认收缩、展开逐条分行」断言。
+
+## 证据摘要（2026-10-28，渠道用户识别与会话归属 + 渠道放开流程应用）
+
+- 后端（三渠道 Handler 同构，飞书侧）：`FeishuReceivedMessage` 增解析 `sender.sender_id`（open_id/union_id）；`ChannelUserMatchService`（AI.Core 新增）按 open_id+union_id 双键反查 `user_oauth_connection`（命中唯一且用户可用才归属，歧义/停用/未命中降级匿名）；归属会话 `CreateUserId=用户id、UserType=Normal`、Redis 键带 `:u{userId}` 后缀（群聊中各绑定成员独立会话）；应用门禁放宽为 Agent/Workflow 双类型。`dotnet build src/MoAI/MoAI.csproj -o .builds/cum` → 0 error。
+- 配套：`user_oauth_connection` 增 `union_id` 列（幂等 DDL，启动自动补列，见 [../oauthconnect/tdd.md](../oauthconnect/tdd.md)）；飞书第三方登录绑定时同时记录 union_id。
+- 验收：@FS-S32~S36 需真实飞书应用与已绑定用户，留待人工验收（识别规则与降级矩阵见 [sdd](./sdd.md) 关键决策 7、[bdd](./bdd.md#fs-s32)）。

@@ -7,7 +7,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="ModelContextProtocol" />
-		<PackageReference Include="Microsoft.OpenApi.Readers" />
+		<PackageReference Include="Microsoft.OpenApi.YamlReader" />
 	</ItemGroup>
 
 	<ItemGroup>

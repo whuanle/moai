@@ -20,9 +20,19 @@ public sealed class MemoryResolution
     public int UserMode { get; init; }
 
     /// <summary>
+    /// 用户生效全局接入模式（AgentMemorySettings.UserGlobalMode* 常量）.
+    /// </summary>
+    public int UserGlobalMode { get; init; }
+
+    /// <summary>
     /// 记忆是否对该用户生效（开启且非关闭模式）.
     /// </summary>
     public bool IsEnabled => UserMode != AgentMemorySettings.UserModeOff;
+
+    /// <summary>
+    /// 是否允许该用户在本应用接入个人全局记忆（应用 allowGlobalMemory 且用户未关闭接入；平台开关由检索/写入路径另行校验）.
+    /// </summary>
+    public bool GlobalAllowed => IsEnabled && Settings.AllowGlobalMemory && UserGlobalMode != AgentMemorySettings.UserGlobalModeOff;
 }
 
 /// <summary>
@@ -108,14 +118,29 @@ public sealed class MemorySaveRequest
 public sealed class MemoryItem
 {
     /// <summary>
+    /// 记忆范围：应用内记忆（按应用隔离）.
+    /// </summary>
+    public const string ScopeApp = "app";
+
+    /// <summary>
+    /// 记忆范围：全局记忆（个人跨应用）.
+    /// </summary>
+    public const string ScopeGlobal = "global";
+
+    /// <summary>
     /// 记忆 id.
     /// </summary>
     public Guid Id { get; init; }
 
     /// <summary>
-    /// 所属应用 id.
+    /// 所属应用 id（全局记忆为空 Guid）.
     /// </summary>
     public Guid AppId { get; init; }
+
+    /// <summary>
+    /// 记忆范围（ScopeApp / ScopeGlobal）.
+    /// </summary>
+    public string Scope { get; init; } = ScopeApp;
 
     /// <summary>
     /// 记忆类型（0 语义 / 1 情景 / 2 程序）.
@@ -141,4 +166,30 @@ public sealed class MemoryItem
     /// 最近更新时间.
     /// </summary>
     public DateTimeOffset UpdateTime { get; init; }
+}
+
+/// <summary>
+/// 平台记忆设置（系统设置 MEMORY_* 解析结果）：应用记忆与全局记忆共用的总开关与向量化模型口径.
+/// </summary>
+public sealed class MemoryPlatformSettings
+{
+    /// <summary>
+    /// 是否开启长期记忆（总开关，管控应用记忆与全局记忆）.
+    /// </summary>
+    public bool Enabled { get; init; }
+
+    /// <summary>
+    /// 统一向量化模型 id（须为公开启用中的 embedding 模型）.
+    /// </summary>
+    public Guid EmbeddingModelId { get; init; }
+
+    /// <summary>
+    /// 统一向量维度（1~2000）.
+    /// </summary>
+    public int EmbeddingDimensions { get; init; }
+
+    /// <summary>
+    /// 配置是否完整可用（开启且已选模型）.
+    /// </summary>
+    public bool IsUsable => Enabled && EmbeddingModelId != Guid.Empty && EmbeddingDimensions > 0;
 }

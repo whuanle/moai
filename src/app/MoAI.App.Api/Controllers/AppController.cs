@@ -170,6 +170,7 @@ public class AppController : ControllerBase
             GraphIds = req.GraphIds,
             Plugins = req.Plugins,
             WorkflowApps = req.WorkflowApps,
+            AgentApps = req.AgentApps,
             Skills = req.Skills,
             OpeningStatement = req.OpeningStatement,
             OpeningStatementEnabled = req.OpeningStatementEnabled,

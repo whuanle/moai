@@ -6,6 +6,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="MailKit" />
+		<!-- 钉住 MailKit→MimeKit 的传递依赖，规避 CVE-2026-84008（NU1903） -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.Settings.Api\MoAI.Settings.Api.csproj" />
 	</ItemGroup>

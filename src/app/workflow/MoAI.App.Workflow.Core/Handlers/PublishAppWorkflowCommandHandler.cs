@@ -119,6 +119,7 @@ public class PublishAppWorkflowCommandHandler : IRequestHandler<PublishAppWorkfl
                 WikiIds = "[]",
                 Plugins = "[]",
                 Skills = "[]",
+                AgentApps = "[]",
                 ExecutionSettings = "{}",
                 OpeningStatement = string.Empty,
             };

@@ -84,25 +84,29 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
             InvokeAsync = (argsJson, ct) => SearchAsync(appId, userId, settings, argsJson, ct),
         };
 
+        var globalUsableHint = resolution.GlobalAllowed
+            ? "scope 可选 app（默认，仅本应用）/ global（个人全局记忆，在用户所有允许全局接入的应用中生效，用户要求「全局记住/所有应用都记住」时使用）。"
+            : string.Empty;
         var saveTool = new AppTool
         {
             Name = SaveToolName,
             Title = "记忆保存",
             Description = "把值得长期记住的信息写入当前用户记忆（用户明确要求记住，或出现重要的稳定偏好/事实/约定）。" +
-                "type：semantic=事实偏好（默认）、episodic=事件经历、procedural=方法经验；与既有记忆高度相似时自动合并更新。" + promptSuffix,
+                "type：semantic=事实偏好（默认）、episodic=事件经历、procedural=方法经验；与既有记忆高度相似时自动合并更新。" + globalUsableHint + promptSuffix,
             Kind = "memory",
-            ParametersExample = "{\"content\":\"要记住的一句话，包含具体细节\",\"type\":\"semantic\"}",
-            InvokeAsync = (argsJson, ct) => SaveAsync(appId, teamId, userId, sessionId, settings, argsJson, ct),
+            ParametersExample = "{\"content\":\"要记住的一句话，包含具体细节\",\"type\":\"semantic\",\"scope\":\"app\"}",
+            InvokeAsync = (argsJson, ct) => SaveAsync(appId, teamId, userId, sessionId, settings, resolution, argsJson, ct),
         };
 
+        var forgetHint = resolution.GlobalAllowed ? "（应用内与全局记忆的 id 均可删除）" : string.Empty;
         var forgetTool = new AppTool
         {
             Name = ForgetToolName,
             Title = "记忆遗忘",
-            Description = "删除当前用户的一条记忆（用户明确要求忘记/更正某条信息时使用）；先用 memory_search 找到记忆 id。" + promptSuffix,
+            Description = "删除当前用户的一条记忆（用户明确要求忘记/更正某条信息时使用）；先用 memory_search 找到记忆 id。" + forgetHint + promptSuffix,
             Kind = "memory",
             ParametersExample = "{\"memoryId\":\"要删除的记忆 id\"}",
-            InvokeAsync = (argsJson, ct) => ForgetAsync(appId, userId, argsJson, ct),
+            InvokeAsync = (argsJson, ct) => ForgetAsync(appId, userId, resolution, argsJson, ct),
         };
 
         return [searchTool, saveTool, forgetTool];
@@ -132,6 +136,7 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
             {
                 ["id"] = x.Id,
                 ["type"] = TypeName(x.MemoryType),
+                ["scope"] = x.Scope == MoAI.Memory.Models.MemoryItem.ScopeGlobal ? "global" : "app",
                 ["content"] = x.Content,
                 ["score"] = Math.Round(x.Score, 4),
                 ["updateTime"] = x.UpdateTime.ToString("yyyy-MM-dd"),
@@ -141,12 +146,31 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         return AppToolResult.Ok(payload.ToJsonString(JsonOptions));
     }
 
-    private async Task<AppToolResult> SaveAsync(Guid appId, int teamId, long userId, Guid sessionId, AgentMemorySettings settings, string? argsJson, CancellationToken cancellationToken)
+    private async Task<AppToolResult> SaveAsync(Guid appId, int teamId, long userId, Guid sessionId, AgentMemorySettings settings, MemoryResolution resolution, string? argsJson, CancellationToken cancellationToken)
     {
-        var (content, type) = ParseSaveArgs(argsJson);
+        var (content, type, scope) = ParseSaveArgs(argsJson);
         if (string.IsNullOrWhiteSpace(content))
         {
             return AppToolResult.Fail("缺少参数 content（要记住的内容）.");
+        }
+
+        // scope=global：写入个人全局记忆（应用允许接入且用户未关闭时可用），在用户所有允许全局的应用中生效
+        if (string.Equals(scope, "global", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!resolution.GlobalAllowed)
+            {
+                return AppToolResult.Fail("当前应用未开放全局记忆接入（管理员未允许或用户已关闭），请改用默认应用内记忆.");
+            }
+
+            try
+            {
+                var globalItem = await _memoryService.SaveGlobalAsync(userId, content, type, cancellationToken);
+                return AppToolResult.Ok($"已保存全局记忆 {globalItem.Id}（{TypeName(globalItem.MemoryType)}），将在用户所有允许全局接入的应用中生效.");
+            }
+            catch (MoAI.Infra.Exceptions.BusinessException ex)
+            {
+                return AppToolResult.Fail(ex.Message);
+            }
         }
 
         var item = await _memoryService.SaveAsync(new MemorySaveRequest
@@ -163,7 +187,7 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         return AppToolResult.Ok($"已保存记忆 {item.Id}（{TypeName(item.MemoryType)}）.");
     }
 
-    private async Task<AppToolResult> ForgetAsync(Guid appId, long userId, string? argsJson, CancellationToken cancellationToken)
+    private async Task<AppToolResult> ForgetAsync(Guid appId, long userId, MemoryResolution resolution, string? argsJson, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(argsJson) || argsJson.Trim() == "{}"
             || !JsonDocument.Parse(argsJson).RootElement.TryGetProperty("memoryId", out var idNode)
@@ -173,6 +197,13 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         }
 
         var deleted = await _memoryService.DeleteAsync(appId, memoryId, userId, cancellationToken);
+
+        // 应用内未命中且该应用接入全局记忆时，按全局记忆兜底删除（memory_search 的全局结果带 scope=global）
+        if (!deleted && resolution.GlobalAllowed)
+        {
+            deleted = await _memoryService.DeleteGlobalAsync(userId, memoryId, cancellationToken);
+        }
+
         return deleted
             ? AppToolResult.Ok("已删除该记忆.")
             : AppToolResult.Fail("记忆不存在或不属于当前用户.");
@@ -203,11 +234,11 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
         }
     }
 
-    private static (string? Content, int Type) ParseSaveArgs(string? argsJson)
+    private static (string? Content, int Type, string? Scope) ParseSaveArgs(string? argsJson)
     {
         if (string.IsNullOrWhiteSpace(argsJson) || argsJson.Trim() == "{}")
         {
-            return (null, AgentMemorySettings.TypeSemantic);
+            return (null, AgentMemorySettings.TypeSemantic, null);
         }
 
         try
@@ -228,11 +259,14 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
                 };
             }
 
-            return (content, type);
+            var scope = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("scope", out var s) && s.ValueKind == JsonValueKind.String
+                ? s.GetString()
+                : null;
+            return (content, type, scope);
         }
         catch (JsonException)
         {
-            return (null, AgentMemorySettings.TypeSemantic);
+            return (null, AgentMemorySettings.TypeSemantic, null);
         }
     }
 

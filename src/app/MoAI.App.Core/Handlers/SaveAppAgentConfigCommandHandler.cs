@@ -1,13 +1,14 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
+using MoAI.App.Services;
 using MoAI.App.Validation;
 using MoAI.Database;
-using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Database.Seed;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.Models;
@@ -105,9 +106,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         var pluginIds = await ValidatePluginIdsAsync(app.TeamId, request.Plugins, cancellationToken);
         var skillIds = await ValidateSkillIdsAsync(app.TeamId, request.Skills, cancellationToken);
         var workflowAppIds = await ValidateWorkflowAppIdsAsync(app.TeamId, request.WorkflowApps, cancellationToken);
-
-        // 审批策略（execution_settings.toolApproval）：自动放行插件白名单必须是本次绑定插件的子集
-        ValidateToolApprovalPolicy(request.ExecutionSettings, pluginIds);
+        var agentAppIds = await ValidateAgentAppIdsAsync(app, request.AgentApps, cancellationToken);
 
         // 子代理协作（execution_settings.subAgent）：取值范围限幅校验
         if (request.ExecutionSettings != null)
@@ -119,6 +118,25 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
 
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
+
+        // 循环嵌套防护：本次保存携带 Agent 应用绑定时，以保存后的草稿全量（请求值 ?? 库中现值）
+        // 仅沿 Agent→Agent 工具边做闭包检测（流程工具相关的环由流程侧守卫负责，Agent 侧保存不拒绝）
+        if (request.AgentApps != null)
+        {
+            var effectiveAgentTools = agentAppIds ?? AppAgentConfigJson.ParseGuidList(config?.AgentApps);
+            await AppBindingCycleGuard.EnsureNoCycleFromAgentAsync(_databaseContext, app.Id, effectiveAgentTools, cancellationToken);
+        }
+
+        // 审批策略（execution_settings.toolApproval）：六类自动放行白名单必须是生效绑定列表的子集
+        // （流程/Agent 应用与技能未携带时保持原值，按库中现值校验；外部应用技能固定为空）
+        ValidateToolApprovalPolicy(
+            request.ExecutionSettings,
+            pluginIds,
+            workflowAppIds ?? AppAgentConfigJson.ParseGuidList(config?.WorkflowApps),
+            agentAppIds ?? AppAgentConfigJson.ParseGuidList(config?.AgentApps),
+            app.IsExternal ? [] : skillIds ?? AppAgentConfigJson.ParseGuidList(config?.Skills),
+            wikiIds,
+            graphIds);
 
         var wikiJson = AppAgentConfigJson.SerializeWikiIds(wikiIds);
         var graphJson = AppAgentConfigJson.SerializeGraphIds(graphIds);
@@ -134,11 +152,10 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             SandboxSettingsLimitValidator.Validate(request.ExecutionSettings!.Value, sandboxLimits);
         }
 
-        // 长期记忆（execution_settings.memory）：开启时校验模型可用性；已有用户记忆后模型/维度锁定，
-        // 并把生效配置的模型/维度补齐进落库 JSON（请求未携带或关闭时也保留，作为锁定参照系）
+        // 长期记忆（execution_settings.memory）：向量化模型/维度统一由系统设置决定，开启时校验平台总开关
         if (executionJson != null)
         {
-            executionJson = await ValidateAndNormalizeMemoryAsync(app, config, executionJson, cancellationToken);
+            executionJson = await ValidateAndNormalizeMemoryAsync(executionJson, cancellationToken);
         }
 
         if (config == null)
@@ -154,6 +171,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 GraphIds = graphJson,
                 Plugins = pluginJson,
                 WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds ?? []),
+                AgentApps = AppAgentConfigJson.SerializePluginIds(agentAppIds ?? []),
                 Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
                 ExecutionSettings = executionJson ?? "{}",
                 OpeningStatement = request.OpeningStatement ?? string.Empty,
@@ -181,6 +199,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             if (workflowAppIds != null)
             {
                 config.WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds);
+            }
+
+            // 仅在请求显式携带 Agent 应用列表时覆盖，避免旧前端保存时清空 Agent 应用绑定
+            if (agentAppIds != null)
+            {
+                config.AgentApps = AppAgentConfigJson.SerializePluginIds(agentAppIds);
             }
 
             // 仅在请求显式携带技能列表时覆盖，避免旧前端保存时清空技能配置
@@ -253,13 +277,14 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             return Guid.Empty;
         }
 
+        // 与 AiModelResolver 同口径：团队自有渠道 / 公开模型 / 授权模型均可用.
         var row = await _databaseContext.AiModels
             .Where(x => x.Id == modelId.Value && x.Enabled)
             .Join(
                 _databaseContext.AiChannels.Where(c => c.Enabled),
                 m => m.ChannelId,
                 c => c.Id,
-                (m, c) => new { m.Id, m.IsPublic })
+                (m, c) => new { m.Id, m.IsPublic, c.TeamId })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (row == null)
@@ -267,7 +292,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             throw new BusinessException("选择的模型不可用，请重新选择.") { StatusCode = 400 };
         }
 
-        if (row.IsPublic)
+        if (row.IsPublic || row.TeamId == teamId)
         {
             return row.Id;
         }
@@ -426,6 +451,44 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
     }
 
     /// <summary>
+    /// 校验 Agent 应用绑定：仅允许绑定本团队已发布、未禁用的内部 Agent 应用且不含自身（执行时按其发布快照驱动），
+    /// 去重后返回；null 表示请求未携带该字段（保持原值）.
+    /// </summary>
+    private async Task<List<Guid>?> ValidateAgentAppIdsAsync(AppEntity app, IReadOnlyCollection<Guid>? agentAppIds, CancellationToken cancellationToken)
+    {
+        if (agentAppIds == null)
+        {
+            return null;
+        }
+
+        var ids = agentAppIds.Where(x => x != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        if (ids.Contains(app.Id))
+        {
+            throw new BusinessException("Agent 应用不能绑定自身作为工具.") { StatusCode = 400 };
+        }
+
+        var validCount = await _databaseContext.Apps
+            .CountAsync(x => ids.Contains(x.Id)
+                && x.TeamId == app.TeamId
+                && !x.IsExternal
+                && !x.IsDisable
+                && x.AppType == (int)AppType.Agent
+                && x.PublishStatus == 1, cancellationToken);
+
+        if (validCount != ids.Count)
+        {
+            throw new BusinessException("包含不存在、未发布或无权使用的 Agent 应用，请重新选择.") { StatusCode = 400 };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
     /// 校验技能：仅允许配置启用中的系统内置/市场公开/本团队技能（用户自选范围与管理端一致），去重后返回；
     /// null 表示请求未携带技能字段（保持原值）.
     /// </summary>
@@ -455,17 +518,14 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
     }
 
     /// <summary>
-    /// 校验并规范化长期记忆配置（execution_settings.memory）：开启时模型必须为该团队可用的 embedding 模型；
-    /// 应用内已有用户记忆后向量化模型与维度锁定（不同模型/维度的向量完全不可比，混写即破坏检索），
-    /// 参照系为生效配置（发布快照优先，即向量本体的实际写入口径）——关闭再开启、换模型、改维度同责，需先清空应用全部记忆；
-    /// 请求未携带模型/维度时沿用生效配置补齐落库，关闭或未携带 memory 节时同样保留生效模型/维度，保证运行时解析口径与既有向量一致.
+    /// 校验并规范化长期记忆配置（execution_settings.memory）：向量化模型/维度统一由系统设置（MEMORY_*）决定，
+    /// 应用配置不接收 embeddingModelId/embeddingDimensions（携带时剥离，历史存量值随保存收敛）；
+    /// 开启记忆时要求平台已开启长期记忆且已选统一向量化模型，否则拒绝.
     /// </summary>
-    /// <param name="app">应用行.</param>
-    /// <param name="config">当前配置行（草稿，可能为 null）.</param>
     /// <param name="executionJson">本次保存的执行参数 JSON 文本.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>规范化后的执行参数 JSON 文本.</returns>
-    private async Task<string> ValidateAndNormalizeMemoryAsync(AppEntity app, AppAgentConfigEntity? config, string executionJson, CancellationToken cancellationToken)
+    private async Task<string> ValidateAndNormalizeMemoryAsync(string executionJson, CancellationToken cancellationToken)
     {
         var root = JsonNode.Parse(executionJson) as JsonObject;
         if (root == null)
@@ -473,113 +533,59 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             return executionJson;
         }
 
-        var memory = root.TryGetPropertyValue("memory", out var memoryNode) && memoryNode is JsonObject memoryObject
-            ? memoryObject
-            : null;
-        var requestEnabled = memory?["enabled"] is JsonValue enabledNode && enabledNode.TryGetValue<bool>(out var enabledFlag) && enabledFlag;
-
-        // 生效配置（发布快照优先）是向量本体的实际写入口径，作为变更锁定参照系
-        var effective = AppAgentConfigSnapshot.ResolveEffectiveConfig(
-            app,
-            config ?? new AppAgentConfigEntity { TeamId = app.TeamId, AppId = app.Id },
-            preferPublished: true);
-        var effectiveMemory = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(effective.ExecutionSettings);
-        var effectiveModelId = effectiveMemory?.EmbeddingModelId ?? Guid.Empty;
-        var effectiveDimensions = effectiveMemory is { EmbeddingDimensions: > 0 } ? effectiveMemory.EmbeddingDimensions : 0;
-
-        var hasMemories = await _databaseContext.AppMemoryShards.AsNoTracking()
-            .AnyAsync(x => x.AppId == app.Id && x.MemoryCount > 0, cancellationToken);
-
-        if (requestEnabled)
+        if (!root.TryGetPropertyValue("memory", out var memoryNode) || memoryNode is not JsonObject memory)
         {
-            var modelId = memory!["embeddingModelId"] is JsonValue modelNode && modelNode.TryGetValue<string>(out var modelText)
-                && Guid.TryParse(modelText, out var parsedModel)
-                ? parsedModel
-                : Guid.Empty;
-            if (modelId == Guid.Empty)
-            {
-                throw new BusinessException("开启长期记忆必须选择向量化模型.") { StatusCode = 400 };
-            }
-
-            var requestDimensions = memory["embeddingDimensions"] is JsonValue dimsNode && dimsNode.TryGetValue<int>(out var parsedDims) && parsedDims > 0
-                ? parsedDims
-                : 0;
-
-            // 已有用户记忆后模型/维度锁定：与生效配置不一致即拒绝（无论草稿此前是否处于关闭态）
-            if (hasMemories && effectiveModelId != Guid.Empty
-                && (effectiveModelId != modelId || (requestDimensions > 0 && requestDimensions != effectiveDimensions)))
-            {
-                throw new BusinessException("应用内已有用户记忆，向量化模型与维度不可更换，请先清空应用全部记忆.") { StatusCode = 400 };
-            }
-
-            await ValidateMemoryModelAvailableAsync(app, modelId, cancellationToken);
+            return executionJson;
         }
 
-        // 落库补齐：保留生效模型/维度，避免关闭或字段缺失后运行时口径漂移（如维度缺失回落默认 1024 而既有向量为其他维度）
-        if (memory == null && hasMemories && effectiveModelId != Guid.Empty)
-        {
-            memory = new JsonObject
-            {
-                ["enabled"] = false,
-                ["embeddingModelId"] = effectiveModelId.ToString(),
-            };
-            if (effectiveDimensions > 0)
-            {
-                memory["embeddingDimensions"] = effectiveDimensions;
-            }
+        // 模型/维度统一在系统设置：应用配置一律不落库
+        memory.Remove("embeddingModelId");
+        memory.Remove("embeddingDimensions");
 
-            root["memory"] = memory;
-        }
-        else if (memory != null && effectiveModelId != Guid.Empty && (requestEnabled || hasMemories))
+        var requestEnabled = memory.TryGetPropertyValue("enabled", out var enabledNode)
+            && enabledNode is JsonValue enabledValue && enabledValue.TryGetValue<bool>(out var enabledFlag) && enabledFlag;
+        if (requestEnabled && !await IsPlatformMemoryUsableAsync(cancellationToken))
         {
-            if (memory["embeddingModelId"] == null)
-            {
-                memory["embeddingModelId"] = effectiveModelId.ToString();
-            }
-
-            if (memory["embeddingDimensions"] == null && effectiveDimensions > 0)
-            {
-                memory["embeddingDimensions"] = effectiveDimensions;
-            }
+            throw new BusinessException("平台未开启长期记忆，请先在系统设置中开启.") { StatusCode = 400 };
         }
 
         return root.ToJsonString();
     }
 
     /// <summary>
-    /// 校验记忆向量化模型：须为启用中的 embedding 模型（公共或已授权该团队）.
+    /// 解析平台长期记忆是否可用（MEMORY_ENABLED=true 且已选统一向量化模型）.
     /// </summary>
-    private async Task ValidateMemoryModelAvailableAsync(AppEntity app, Guid modelId, CancellationToken cancellationToken)
+    private async Task<bool> IsPlatformMemoryUsableAsync(CancellationToken cancellationToken)
     {
-        var row = await _databaseContext.AiModels.AsNoTracking()
-            .Where(x => x.Id == modelId && x.Enabled && x.ModelKind == "embedding")
-            .Join(
-                _databaseContext.AiChannels.Where(c => c.Enabled),
-                m => m.ChannelId,
-                c => c.Id,
-                (m, c) => new { m.Id, m.IsPublic })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (row == null)
+        var keys = new[]
         {
-            throw new BusinessException("记忆向量化模型不可用，请选择启用中的 embedding 模型.") { StatusCode = 400 };
-        }
-
-        if (!row.IsPublic)
-        {
-            var authorized = await _databaseContext.AiModelAuthorizations.AsNoTracking()
-                .AnyAsync(x => x.TeamId == app.TeamId && x.AiModelId == modelId, cancellationToken);
-            if (!authorized)
-            {
-                throw new BusinessException("记忆向量化模型该团队无权使用.") { StatusCode = 400 };
-            }
-        }
+            SettingDefinitions.MemoryEnabledKey,
+            SettingDefinitions.MemoryEmbeddingModelKey,
+        };
+        var values = await _databaseContext.Settings.AsNoTracking()
+            .Where(s => keys.Contains(s.Key))
+            .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
+        string Resolve(string key) => values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : SettingDefinitions.Find(key)?.DefaultValue ?? string.Empty;
+        var enabled = string.Equals(Resolve(SettingDefinitions.MemoryEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
+        var hasModel = Guid.TryParse(Resolve(SettingDefinitions.MemoryEmbeddingModelKey).Trim(), out var modelId) && modelId != Guid.Empty;
+        return enabled && hasModel;
     }
 
     /// <summary>
     /// 校验审批策略（execution_settings.toolApproval）：sandboxAutoApproved 须为布尔值，
-    /// autoApprovePlugins 须为合法插件 id 数组且全部在本次绑定的插件范围内；未携带 toolApproval 节时跳过.
+    /// 六类自动放行白名单（插件/流程应用/Agent 应用/技能为字符串 id 数组，知识库/知识图谱为数字 id 数组）
+    /// 须全部在生效绑定列表范围内（请求未携带的绑定字段按库中现值）；未携带 toolApproval 节时跳过.
     /// </summary>
-    private static void ValidateToolApprovalPolicy(JsonElement? executionSettings, List<Guid> boundPluginIds)
+    private static void ValidateToolApprovalPolicy(
+        JsonElement? executionSettings,
+        IReadOnlyList<Guid> boundPluginIds,
+        IReadOnlyList<Guid> boundWorkflowAppIds,
+        IReadOnlyList<Guid> boundAgentAppIds,
+        IReadOnlyList<Guid> boundSkillIds,
+        IReadOnlyList<long> boundWikiIds,
+        IReadOnlyList<long> boundGraphIds)
     {
         if (executionSettings is null || executionSettings.Value.ValueKind is not JsonValueKind.Object)
         {
@@ -603,32 +609,65 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             throw new BusinessException("审批策略的沙箱自动放行开关必须为布尔值.") { StatusCode = 400 };
         }
 
-        if (!node.TryGetProperty("autoApprovePlugins", out var list)
-            || list.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        ValidateGuidWhitelist(node, "autoApprovePlugins", boundPluginIds, "审批策略的自动放行插件必须是插件 id 数组.", "自动放行插件必须为当前已绑定的插件，请先在插件列表中绑定.");
+        ValidateGuidWhitelist(node, "autoApproveWorkflowApps", boundWorkflowAppIds, "审批策略的自动放行流程应用必须是应用 id 数组.", "自动放行流程应用必须为当前已绑定的流程应用，请先绑定流程应用.");
+        ValidateGuidWhitelist(node, "autoApproveAgentApps", boundAgentAppIds, "审批策略的自动放行 Agent 应用必须是应用 id 数组.", "自动放行 Agent 应用必须为当前已绑定的 Agent 应用，请先绑定 Agent 应用.");
+        ValidateGuidWhitelist(node, "autoApproveSkills", boundSkillIds, "审批策略的自动放行技能必须是技能 id 数组.", "自动放行技能必须为当前已绑定的技能，请先绑定技能.");
+        ValidateLongWhitelist(node, "autoApproveWikis", boundWikiIds, "审批策略的自动放行知识库必须是知识库 id 数组.", "自动放行知识库必须为当前已绑定的知识库，请先绑定知识库.");
+        ValidateLongWhitelist(node, "autoApproveGraphs", boundGraphIds, "审批策略的自动放行知识图谱必须是知识图谱 id 数组.", "自动放行知识图谱必须为当前已绑定的知识图谱，请先绑定知识图谱.");
+    }
+
+    /// <summary>
+    /// 校验 Guid 白名单数组：须为字符串数组且全部在绑定列表内；未携带该键时跳过.
+    /// </summary>
+    private static void ValidateGuidWhitelist(JsonElement node, string property, IReadOnlyList<Guid> boundIds, string shapeErrorMessage, string rangeErrorMessage)
+    {
+        if (!node.TryGetProperty(property, out var list) || list.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
             return;
         }
 
         if (list.ValueKind != JsonValueKind.Array)
         {
-            throw new BusinessException("审批策略的自动放行插件必须是插件 id 数组.") { StatusCode = 400 };
+            throw new BusinessException(shapeErrorMessage) { StatusCode = 400 };
         }
 
-        var invalid = new List<string>();
         foreach (var item in list.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.String
                 || !Guid.TryParse(item.GetString(), out var id)
                 || id == Guid.Empty
-                || !boundPluginIds.Contains(id))
+                || !boundIds.Contains(id))
             {
-                invalid.Add(item.ToString());
+                throw new BusinessException(rangeErrorMessage) { StatusCode = 400 };
             }
         }
+    }
 
-        if (invalid.Count > 0)
+    /// <summary>
+    /// 校验 long 白名单数组：须为数字数组且全部在绑定列表内；未携带该键时跳过.
+    /// </summary>
+    private static void ValidateLongWhitelist(JsonElement node, string property, IReadOnlyList<long> boundIds, string shapeErrorMessage, string rangeErrorMessage)
+    {
+        if (!node.TryGetProperty(property, out var list) || list.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
-            throw new BusinessException("自动放行插件必须为当前已绑定的插件，请先在插件列表中绑定.") { StatusCode = 400 };
+            return;
+        }
+
+        if (list.ValueKind != JsonValueKind.Array)
+        {
+            throw new BusinessException(shapeErrorMessage) { StatusCode = 400 };
+        }
+
+        foreach (var item in list.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Number
+                || !item.TryGetInt64(out var id)
+                || id <= 0
+                || !boundIds.Contains(id))
+            {
+                throw new BusinessException(rangeErrorMessage) { StatusCode = 400 };
+            }
         }
     }
 

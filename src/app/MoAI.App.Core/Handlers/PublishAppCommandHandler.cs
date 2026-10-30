@@ -94,6 +94,7 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
                 Prompts = "[]",
                 QuickInputs = "[]",
                 WorkflowApps = "[]",
+                AgentApps = "[]",
                 ExecutionSettings = "{}",
                 OpeningStatement = string.Empty,
             };

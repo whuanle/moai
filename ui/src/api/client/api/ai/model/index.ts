@@ -8,6 +8,8 @@ import { BatchRequestBuilderRequestsMetadata, type BatchRequestBuilder } from '.
 // @ts-ignore
 import { BatchDeleteRequestBuilderRequestsMetadata, type BatchDeleteRequestBuilder } from './batchDelete/index.js';
 // @ts-ignore
+import { CatalogRequestBuilderNavigationMetadata, type CatalogRequestBuilder } from './catalog/index.js';
+// @ts-ignore
 import { ImportRequestBuilderRequestsMetadata, type ImportRequestBuilder } from './importEscaped/index.js';
 // @ts-ignore
 import { ModelItemRequestBuilderNavigationMetadata, ModelItemRequestBuilderRequestsMetadata, type ModelItemRequestBuilder } from './item/index.js';
@@ -28,6 +30,10 @@ export interface ModelRequestBuilder extends BaseRequestBuilder<ModelRequestBuil
      * The batchDelete property
      */
     get batchDelete(): BatchDeleteRequestBuilder;
+    /**
+     * The catalog property
+     */
+    get catalog(): CatalogRequestBuilder;
     /**
      * The import property
      */
@@ -110,6 +116,9 @@ export const ModelRequestBuilderNavigationMetadata: Record<Exclude<keyof ModelRe
     },
     batchDelete: {
         requestsMetadata: BatchDeleteRequestBuilderRequestsMetadata,
+    },
+    catalog: {
+        navigationMetadata: CatalogRequestBuilderNavigationMetadata,
     },
     importEscaped: {
         requestsMetadata: ImportRequestBuilderRequestsMetadata,

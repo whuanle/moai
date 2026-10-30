@@ -198,10 +198,28 @@ protected static void SeedData(ModelBuilder modelBuilder)
 | `KG_PASSWORD` | 图数据库密码 | `""` | 同上，明文存储，仅超级管理员可改 |
 | `KG_DIALECT` | 图数据库方言 | `"memgraph"` | memgraph / neo4j，影响内省与索引语句 |
 | `WIKI_MAX_FILE_SIZE_MB` | 知识库最大文件大小 | `"50"` | 0 表示不限制（平台硬上限 1GB） |
+| `WIKI_ALLOWED_FILE_TYPES` | 知识库允许上传的文件类型 | `".pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json"` | 逗号分隔扩展名白名单（每项 `.` 开头 1~16 位字母数字，≤100 项，保存校验并归一为小写去重），网页端与开放接口上传同时受限；默认与文档/文本提取能力对齐，放开的未知文本类型按纯文本兜底提取；经 `IWikiSettingsService.GetAllowedFileTypesAsync` 读取，`GET /api/wiki/upload-limit` 回显 `allowedFileTypes` |
 | `SANDBOX_MAX_TTL_SECONDS` | 沙箱存活时间上限 | `"86400"` | 每个应用沙箱最大存活时间（秒），保存时校验 60~604800；团队保存应用配置不得超出 |
 | `SANDBOX_MAX_CPU` | 沙箱 CPU 上限 | `"4"` | K8s 数量格式（如 `4`/`2000m`），保存时校验格式 |
 | `SANDBOX_MAX_MEMORY` | 沙箱内存上限 | `"8Gi"` | K8s 数量格式（如 `8Gi`/`512Mi`），保存时校验格式 |
 | `SYSTEM_LOGO` | 网站 Logo | `""` | 全局网站 Logo 的图片 ObjectKey，经专用 `POST /api/settings/logo` 写入（非空须为已登记上传的文件，空恢复默认）；匿名经 `serverinfo.logoPath` 读取 |
-| `SYSTEM_NAME` | 网站名称 | `""` | 仅前端展示（侧边栏标题与浏览器标签页），经通用 `PUT /api/settings` 写入（去空白后 ≤50 字符，空回退配置文件默认名称）；匿名经 `serverinfo.name` 读取 |
+| `SYSTEM_NAME` | 网站名称 | `""` | 仅前端展示（侧边栏标题、登录/注册页主标题与浏览器标签页），经通用 `PUT /api/settings` 写入（去空白后 ≤50 字符，空回退配置文件默认名称）；匿名经 `serverinfo.name` 读取 |
+| `LOGIN_BACKGROUND` | 登录页背景图 | `""` | 登录页整页背景图的 ObjectKey，经专用 `POST /api/settings/login-background` 写入（非空须为已登记上传的文件，空恢复默认渐变）；匿名经 `serverinfo.loginBackgroundPath` 读取 |
+| `SMTP_ENABLED` | SMTP 邮件服务 | `"false"` | 启用后平台通知经 SMTP 服务发送邮件；保存校验布尔 |
+| `SMTP_HOST` | SMTP 服务器地址 | `""` | 域名或 IP，≤255 字符；启用后为必填语义（空则发送被拒） |
+| `SMTP_PORT` | SMTP 端口 | `"465"` | 1~65535，保存校验；隐式 TLS 通常 465，STARTTLS 通常 587 |
+| `SMTP_SECURITY` | SMTP 加密方式 | `"ssl"` | ssl / starttls / none，保存校验并归一小写 |
+| `SMTP_USERNAME` | SMTP 登录账号 | `""` | ≤320 字符；内网免认证中继可留空（留空不认证） |
+| `SMTP_PASSWORD` | SMTP 登录密码 | `""` | 密码或授权码，≤200 字符，明文存储 |
+| `SMTP_FROM_ADDRESS` | 发件人地址 | `""` | 保存校验邮箱格式，留空回退登录账号 |
+| `SMTP_FROM_NAME` | 发件人显示名 | `""` | ≤100 字符 |
+| `REGISTER_EMAIL_CODE_ENABLED` | 注册需要邮箱验证码 | `"false"` | 开启后新用户注册必须先校验邮箱验证码；需 `SMTP_ENABLED="true"` 才生效，匿名经 `serverinfo.registerEmailCodeRequired` 读取两者合成结果 |
+| `SMTP_REGISTER_CODE_SUBJECT` | 注册验证码邮件主题 | `"{siteName} 注册验证码"` | 模板支持 `{code}` `{siteName}` `{expireMinutes}` 变量（SmartFormat 白名单插值），留空发送时回退内置默认；≤500 字符 |
+| `SMTP_REGISTER_CODE_BODY` | 注册验证码邮件正文 | `"你的注册验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件."` | 同上；≤2000 字符 |
+| `SMTP_RESET_CODE_SUBJECT` | 找回密码验证码邮件主题 | `"{siteName} 找回密码验证码"` | 同上；≤500 字符 |
+| `SMTP_RESET_CODE_BODY` | 找回密码验证码邮件正文 | `"你的找回密码验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件."` | 同上；≤2000 字符 |
+| `MEMORY_ENABLED` | 长期记忆 | `"false"` | 总开关：开启后应用才可开启记忆，用户可维护应用内记忆与个人跨应用记忆（全局记忆）；关闭时应用不可开启记忆。开启前须已选模型，保存校验布尔 |
+| `MEMORY_EMBEDDING_MODEL` | 记忆向量化模型 | `""` | 应用记忆与全局记忆**统一**使用的 embedding 模型 id（须公开启用中，Guid，保存校验格式）；统一模型已配置且平台已有任意记忆后锁定，更换需先清空全部记忆（memory 模块 D-M10） |
+| `MEMORY_EMBEDDING_DIMENSIONS` | 记忆向量维度 | `"1024"` | 1~2000，保存校验；与模型一起锁定（2026-10-30 起替代旧 `MEMORY_GLOBAL_*` 三键，asserts/setting.sql 幂等清理旧键） |
 
-> 成组配置供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的成组读取服务：知识图谱 `IKnowledgeGraphSettingsService`、知识库 `IWikiSettingsService`、沙箱上限 `ISandboxSettingsService`（含 K8s 数量解析器 `SandboxQuantity`），避免各模块自行拼 key 查表。沙箱上限在应用保存时的强校验见 [app 模块 D41](./app/sdd.md)。
+> 成组配置供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的成组读取服务：知识图谱 `IKnowledgeGraphSettingsService`、知识库 `IWikiSettingsService`、沙箱上限 `ISandboxSettingsService`（含 K8s 数量解析器 `SandboxQuantity`）、SMTP 邮件 `IEmailSettingsService`（成组读取）与 `IEmailSenderService`（通知邮件发送，MailKit，账号留空免认证），避免各模块自行拼 key 查表。沙箱上限在应用保存时的强校验见 [app 模块 D41](./app/sdd.md)。邮箱验证码模板项由 auth 模块直查消费（见 [auth/sdd](./auth/sdd.md) 决策 7）。

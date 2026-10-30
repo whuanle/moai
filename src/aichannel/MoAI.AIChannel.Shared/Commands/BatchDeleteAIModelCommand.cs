@@ -16,6 +16,11 @@ public class BatchDeleteAIModelCommand : IRequest<EmptyCommandResponse>, IModelV
     /// </summary>
     public List<Guid> ModelIds { get; init; } = new();
 
+    /// <summary>
+    /// 所属团队 id，0=系统渠道；由 Controller 按路由回填，请求体无需传递.
+    /// </summary>
+    public int TeamId { get; set; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<BatchDeleteAIModelCommand> validate)
     {

@@ -407,7 +407,7 @@ function FilterSection() {
         </Form.Item>
       </QueryBar>
       <Text type="secondary" style={{ fontSize: fontSize.xs }}>
-        上方为 QueryBar 筛选查询区（回车或点「查询」触发 onSearch，「重置」清空字段）。
+        上方为 QueryBar 筛选查询区（回车或点「查询」触发 onSearch，「重置」清空字段）；工具行裸排在页面底色上，表格由 DataTable 卡片承载。
       </Text>
     </Space>
   )

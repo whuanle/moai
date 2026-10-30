@@ -18,6 +18,7 @@ using MoAI.Wiki.Commands;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Services;
+using MoAI.AIChannel.Services;
 using Npgsql;
 
 namespace MoAI.Wiki.Handlers;
@@ -349,14 +350,7 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
             throw new BusinessException($"所选模型不是对话模型，无法用于{purpose}.") { StatusCode = 400 };
         }
 
-        if (model.IsPublic)
-        {
-            return;
-        }
-
-        var authorized = await _databaseContext.AiModelAuthorizations
-            .AnyAsync(x => x.AiModelId == modelId && x.TeamId == teamId, cancellationToken);
-        if (!authorized)
+        if (!await _databaseContext.IsTeamUsableModelAsync(teamId, modelId, cancellationToken))
         {
             throw new BusinessException($"{purpose}模型未授权给你的团队使用.") { StatusCode = 403 };
         }

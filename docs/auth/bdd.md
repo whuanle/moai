@@ -159,4 +159,70 @@ Feature: 前端登录链路
   Scenario: 注册页前端校验
     When 用户在注册页提交两次密码不一致或必填缺失
     Then 表单就地提示错误且不发起请求
+
+Feature: 邮箱验证码（注册与找回密码）
+  Background:
+    Given SMTP 邮件服务与注册验证码开关由超级管理员在系统设置中控制
+    And 客户端可匿名查询服务器信息获取两个能力开关
+
+  @AUTH-S26 @auto:e2e
+  Scenario: 找回密码入口随 SMTP 启用而开放
+    When 匿名查询服务器信息
+    Then SMTP 邮件服务启用时 passwordResetEnabled 为真，登录页展示忘记密码入口
+    And SMTP 邮件服务停用后该开关复位为假
+
+  @AUTH-S27 @auto:e2e
+  Scenario: 未启用 SMTP 邮件服务时不可自助找回密码
+    Given SMTP 邮件服务未启用
+    When 请求发送找回密码验证码或提交重置密码
+    Then 均返回请求错误（400）提示联系管理员重置（管理员可在用户管理中重置用户密码）
+
+  @AUTH-S28 @auto:e2e
+  Scenario: 找回密码发送验证码
+    When 对未注册邮箱请求找回密码验证码
+    Then 返回资源不存在（404）提示邮箱未注册
+    When 对已注册邮箱请求找回密码验证码
+    Then 6 位数字验证码邮件经 SMTP 服务发出，10 分钟内有效
+
+  @AUTH-S29 @auto:e2e
+  Scenario: 验证码发送冷却
+    When 同一邮箱同一用途 60 秒内再次请求发送验证码
+    Then 返回请求过多（429）提示发送过于频繁；发送失败时不占用冷却可立即重试
+
+  @AUTH-S30 @auto:e2e
+  Scenario: 验证码一次性与错误上限
+    When 验证码被成功消费一次后再次使用
+    Then 返回请求错误（400）提示已过期或未发送
+    When 同一验证码连续 5 次输入错误
+    Then 验证码作废，后续即使输入正确也返回请求错误（400）提示次数过多
+
+  @AUTH-S31 @auto:e2e
+  Scenario: 验证码邮件模板渲染
+    When 发送验证码邮件
+    Then 主题与正文按系统设置模板渲染，{code}/{siteName}/{expireMinutes} 替换为实际值
+    And 未配置模板时使用内置默认模板，模板中未知变量按字面保留
+
+  @AUTH-S32 @auto:e2e
+  Scenario: 验证码重置密码
+    When 携带错误验证码提交重置
+    Then 返回请求错误（400）
+    When 携带正确验证码与 RSA 加密新密码提交重置
+    Then 密码更新成功，旧密码登录被拒（401）且新密码可登录
+
+  @AUTH-S33 @auto:e2e
+  Scenario: 注册验证码开关回显
+    When 匿名查询服务器信息
+    Then 仅 SMTP 邮件服务启用且注册验证码开关开启时 registerEmailCodeRequired 为真，注册页展示验证码输入与发送按钮
+    And 关闭开关或停用 SMTP 后该标记为假
+
+  @AUTH-S34 @auto:e2e
+  Scenario: 开启后注册必须携带验证码
+    When 注册验证码开关开启后提交注册
+    Then 缺少验证码或验证码错误均返回请求错误（400）
+    And 携带正确验证码注册成功并可正常登录
+
+  @AUTH-S35 @auto:e2e
+  Scenario: 未开启注册验证码时直接注册
+    When 注册验证码开关关闭
+    Then 注册无需验证码（存量注册链路行为不变）
 ```

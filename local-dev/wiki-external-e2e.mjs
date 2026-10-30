@@ -1,7 +1,8 @@
 // 知识库外部接口 E2E（真实 HTTP；复用 kg-external-e2e / wiki-embedding-e2e 同款 helper；后端默认 127.0.0.1:5210）
-// 场景编号 WX-01..WX-10（新编号，不复用 WK-S* / KX-*）：/api/external/wiki 仅接受应用 token（团队级授权）
+// 场景编号 WX-01..WX-11（新编号，不复用 WK-S* / KX-*）：/api/external/wiki 仅接受应用 token（团队级授权）
 //   WX-08 原文件下载（预签名 URL 直下字节一致）；WX-09 向量召回（recall/list 读档分档）；
-//   WX-10 切片元数据生成（对话桩模型，全量/策略/追加/指定切片）
+//   WX-10 切片元数据生成（对话桩模型，全量/策略/追加/指定切片）；
+//   WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES：默认回显/保存格式校验/收窄门禁/放开 .sh 纯文本兜底提取）
 // 用法：node local-dev/wiki-external-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5210）
 // 前置：后端 + MinIO + RabbitMQ 可达。
 // 向量化模型：脚本自带本地 embedding 桩服务（同 bocha/paddleocr e2e 的自建桩口径），经管理接口临时登记
@@ -126,8 +127,8 @@ async function main() {
   const ACC1 = acc1.json?.accessAppId
   const ACC2 = acc2.json?.accessAppId
 
-  const tok1 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY1 } })
-  const tok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2 } })
+  const tok1 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY1, secret: acc1.json?.secret } })
+  const tok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
   const AT1 = tok1.json?.accessToken
   const AT2 = tok2.json?.accessToken
 
@@ -138,8 +139,8 @@ async function main() {
     const accWO = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入只写-' + TS, description: 'wiki external e2e', scopes: ['wiki_write'] }, token)
     ACC_RO = accRO.json?.accessAppId ?? 0
     ACC_WO = accWO.json?.accessAppId ?? 0
-    AT1_RO = (await api('POST', '/api/external/token', { body: { accessAppKey: accRO.json?.key } })).json?.accessToken
-    AT1_WO = (await api('POST', '/api/external/token', { body: { accessAppKey: accWO.json?.key } })).json?.accessToken
+    AT1_RO = (await api('POST', '/api/external/token', { body: { accessAppKey: accRO.json?.key, secret: accRO.json?.secret } })).json?.accessToken
+    AT1_WO = (await api('POST', '/api/external/token', { body: { accessAppKey: accWO.json?.key, secret: accWO.json?.secret } })).json?.accessToken
   }
 
   // ===== 向量化模型准备：本地桩渠道 + embedding 模型，临时授权给 T1（清理删除）=====
@@ -467,6 +468,57 @@ async function main() {
       check('WX-06d 内部用户 JWT 调外部接口 401/403', internal.status === 401 || internal.status === 403, `${internal.status}`)
     }
   } finally {
+    // ===== WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES，root 写，网页端与外部接口共用）=====
+    {
+      const DEFAULT_TYPES = '.pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json'
+      const putTypes = async (value) => api('PUT', '/api/settings', { token, body: { key: 'WIKI_ALLOWED_FILE_TYPES', value } })
+      const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex')
+      const xPreup = (fileName, fileSize, sha, contentType) => api('POST', xw(W1, '/documents/preupload'), { token: AT1, body: { fileName, contentType, fileSize, sha256: sha } })
+
+      // a) 恢复默认后设置项与 upload-limit 一致回显
+      await putTypes(DEFAULT_TYPES)
+      const dft = await api('GET', '/api/wiki/upload-limit', { token })
+      check('WX-11a 默认允许类型回读（网页端 upload-limit 与设置一致）', dft.status === 200 && Array.isArray(dft.json?.allowedFileTypes) && dft.json.allowedFileTypes.join(',') === DEFAULT_TYPES, JSON.stringify(dft.json?.allowedFileTypes))
+
+      // b) 保存格式校验：无点号 / 大小写归一后重复 / 空串均 400
+      const badNoDot = await putTypes('.pdf,pdf2,bad ext')
+      const badDup = await putTypes('.pdf,.PDF')
+      const badEmpty = await putTypes('  ')
+      check('WX-11b 非法类型串保存 400（无点号/重复/空串）', badNoDot.status === 400 && badDup.status === 400 && badEmpty.status === 400, `nodot=${badNoDot.status} dup=${badDup.status} empty=${badEmpty.status}`)
+
+      // c) 收窄为 .txt,.sh：外部接口 preupload 同步受限，.pdf 400 且提示允许清单
+      const narrow = await putTypes('.txt,.sh')
+      const lim = await api('GET', '/api/wiki/upload-limit', { token })
+      const noPdf = await xPreup(`wx11-${TS}.pdf`, 5, sha256Hex('pdf' + TS), 'application/pdf')
+      check('WX-11c 收窄后设置回显且非允许类型 preupload 400', narrow.status === 200 && lim.json?.allowedFileTypes?.join(',') === '.txt,.sh' && noPdf.status === 400 && noPdf.text.includes('.txt'), `narrow=${narrow.status} lim=${JSON.stringify(lim.json?.allowedFileTypes)} pdf=${noPdf.status} ${noPdf.text.slice(0, 120)}`)
+
+      // d) 放开的 .sh（未知文本类型）放行上传，complete 后自动提取走纯文本兜底
+      const shName = `wx11-${TS}.sh`
+      const shContent = Buffer.from(`#!/bin/bash\necho "wx11-${TS}"\n`, 'utf8')
+      const shPre = await xPreup(shName, shContent.length, sha256Hex(shContent), 'text/x-sh')
+      check('WX-11d 放开的 .sh preupload 200', shPre.status === 200, `${shPre.status} ${shPre.text.slice(0, 120)}`)
+      if (shPre.status === 200) {
+        await fetch(shPre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'text/x-sh' }, body: shContent })
+        const comp = await api('POST', xw(W1, '/documents/complete'), { token: AT1, body: { isSuccess: true, fileId: shPre.json.fileId, fileName: shName } })
+        let docId = 0
+        for (let i = 0; i < 10 && !docId; i++) {
+          const list = await api('POST', xw(W1, '/documents/list'), { token: AT1, body: { pageNo: 1, pageSize: 50, query: shName } })
+          const item = (list.json?.items ?? []).find((x) => Number(x.fileId) === Number(shPre.json.fileId))
+          if (item) docId = Number(item.documentId)
+          else await new Promise((r) => setTimeout(r, 1000))
+        }
+        // complete 内同步等待自动提取，返回后内容应已入库（未知类型按纯文本读取）
+        const c = docId ? await api('GET', xw(W1, `/documents/${docId}/content`), { token: AT1 }) : { status: 0, json: null }
+        check('WX-11e .sh 按纯文本兜底提取入库', c.status === 200 && String(c.json?.value ?? '').includes(`wx11-${TS}`), `doc=${docId} status=${c.status} ${(c.text ?? '').slice(0, 120)}`)
+        if (docId) await api('DELETE', xw(W1, '/documents'), { token: AT1, body: { documentIds: [docId] } })
+      }
+
+      // f) 恢复默认后 .pdf 放行
+      await putTypes(DEFAULT_TYPES)
+      const backPdf = await xPreup(`wx11-back-${TS}.pdf`, 5, sha256Hex('back' + TS), 'application/pdf')
+      check('WX-11f 恢复默认后 .pdf preupload 200', backPdf.status === 200, `${backPdf.status} ${backPdf.text.slice(0, 120)}`)
+    }
+
     // ===== 清理：删文档、知识库、桩模型/桩渠道、接入点、团队，关闭桩服务（可重复执行）=====
     const docIds = [DID, BID, JID].filter((id) => Number(id) > 0)
     if (docIds.length > 0 && AT1) {

@@ -21,7 +21,7 @@
 | @TP-S7 | team-plugin-e2e.mjs（TP-07） | 待执行 |
 | @TP-S8 | team-plugin-e2e.mjs（TP-08） | PASS（2026-09-10） |
 | @TP-S9 | team-plugin-e2e.mjs（TP-09a/b、TP-19a/b） | PASS（2026-09-10） |
-| @TP-S10 / @TP-S11 | team-plugin-e2e.mjs（TP-10b） | PASS（2026-09-10） |
+| @TP-S10 / @TP-S11 | team-plugin-e2e.mjs（TP-10b） | PASS（2026-09-10；2026-10-30 复验 47/47，项增 avatarPath 字段向后兼容） |
 | @TP-S12 / @TP-S13 / @TP-S15 | team-plugin-e2e.mjs（TP-12a、TP-13 跨团队、TP-26） | PASS（2026-09-10） |
 | @TP-S16 / @TP-S17 / @TP-S18 | team-plugin-e2e.mjs（TP-16a/b、TP-17、TP-18） | 待执行 |
 | @TP-S19 | team-plugin-e2e.mjs（TP-19a/b/c） | PASS（2026-09-10） |

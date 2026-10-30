@@ -215,7 +215,7 @@ async function main() {
     const body = { teamId: TID, name }
     if (scopes) body.scopes = scopes
     const r = await api('POST', '/api/access-app', { token: owner.token, body })
-    return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? '') }
+    return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? ''), secret: String(r.json?.secret ?? '') }
   }
   const K1 = await mkKey(`a2a-k1-${TS}`, ['app_a2a', 'app_chat'])
   const K2 = await mkKey(`a2a-k2-${TS}`, ['wiki_read'])
@@ -328,7 +328,7 @@ async function main() {
 
   // ===== A2A-S12 用户 token 路径（外部应用 A3）=====
   const EXT_UID = `a2a-user-${TS}`
-  const tok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, appId: A3, externalUserId: EXT_UID, nickname: 'a2a用户' } })
+  const tok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, secret: K1.secret, appId: A3, externalUserId: EXT_UID, nickname: 'a2a用户' } })
   const userToken = String(tok.json?.accessToken ?? '')
   const sendU = await a2a({ token: userToken }, A3, {
     jsonrpc: '2.0', id: 12, method: 'message/send',

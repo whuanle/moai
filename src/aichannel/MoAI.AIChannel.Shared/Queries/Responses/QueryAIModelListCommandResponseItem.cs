@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MoAI.Infra.Models;
 
 namespace MoAI.AIChannel.Queries.Responses;
@@ -137,4 +138,9 @@ public class QueryAIModelListCommandResponseItem : AuditsInfo
     /// 是否公开：true=所有团队可用；false=私有，仅授权团队可用.
     /// </summary>
     public bool IsPublic { get; set; }
+
+    /// <summary>
+    /// 授权团队名称集合（私有模型），公开模型为空集合.
+    /// </summary>
+    public List<string> AuthorizedTeamNames { get; set; } = new List<string>();
 }

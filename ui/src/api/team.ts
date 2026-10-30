@@ -1,4 +1,5 @@
 import { getApiClient } from '@/api/kiota'
+import type { OrgRoleItem, OrgRoleUserItem } from './org'
 import { uploadImageWithKey } from '@/utils/storage'
 
 /** 与生成客户端 TeamRoleObject 一致（后端枚举按字符串序列化）：0=Member 1=Admin 2=Owner */
@@ -84,6 +85,48 @@ export async function addTeamUser(teamId: number, payload: { userId: number; rol
   await client.api.team
     .byId(String(teamId))
     .users.post({ userId: String(payload.userId), role: ROLE_STR[payload.role] })
+}
+
+/** 批量添加成员结果（与生成客户端 AddTeamUsersCommandResponse 字段对齐，userId 为字符串化 long） */
+export interface AddTeamUsersResult {
+  /** 成功加入团队的成员数 */
+  addedCount: number
+  /** 已是团队成员被跳过的用户 id 集合 */
+  skippedUserIds: string[]
+  /** 不存在被跳过的用户 id 集合 */
+  notFoundUserIds: string[]
+}
+
+/** 批量添加团队成员（仅 Owner/Admin，授予 Admin 需 Owner），自动跳过已是成员与不存在的用户 */
+export async function addTeamUsers(teamId: number, userIds: number[], role = 0): Promise<AddTeamUsersResult> {
+  const client = getApiClient()
+  const res = await client.api.team
+    .byId(String(teamId))
+    .users.batch.post({ userIds: userIds.map(String), role: ROLE_STR[role] })
+  return {
+    addedCount: res?.addedCount ?? 0,
+    skippedUserIds: res?.skippedUserIds ?? [],
+    notFoundUserIds: res?.notFoundUserIds ?? [],
+  }
+}
+
+/** 团队侧组织角色平铺列表（复用组织查询的只读视图，仅团队 Owner/Admin，按 path 排序，前端按 parentId 组树） */
+export async function getTeamOrgRoles(teamId: number, search?: string): Promise<OrgRoleItem[]> {
+  const client = getApiClient()
+  const res = await client.api.team
+    .byId(String(teamId))
+    .org.role.list.get({ queryParameters: { search: search?.trim() || undefined } })
+  return res?.items ?? []
+}
+
+/** 团队侧某组织角色下的用户清单（复用组织查询的只读视图，仅团队 Owner/Admin） */
+export async function getTeamOrgRoleUsers(teamId: number, roleId: number, search?: string): Promise<OrgRoleUserItem[]> {
+  const client = getApiClient()
+  const res = await client.api.team
+    .byId(String(teamId))
+    .org.role.byRoleId(roleId)
+    .users.get({ queryParameters: { search: search?.trim() || undefined } })
+  return res?.items ?? []
 }
 
 export async function updateTeamUserRole(teamId: number, userId: number, role: number): Promise<void> {

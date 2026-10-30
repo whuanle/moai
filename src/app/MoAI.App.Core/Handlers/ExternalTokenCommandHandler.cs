@@ -5,7 +5,9 @@ using MoAI.App.Models;
 using MoAI.App.Queries.Responses;
 using MoAI.App.Services;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.Handlers;
@@ -62,10 +64,18 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
     private async Task<ExternalTokenCommandResponse> HandleWithAccessAppKeyAsync(ExternalTokenCommand request, CancellationToken cancellationToken)
     {
         var accessApp = await _databaseContext.AccessApps
-            .FirstOrDefaultAsync(x => x.Key == request.AccessAppKey, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Level == AccessAppLevel.Team && x.Key == request.AccessAppKey, cancellationToken);
         if (accessApp == null)
         {
             throw new BusinessException("应用接入 key 无效.") { StatusCode = 401 };
+        }
+
+        // 接入已设密钥则兑换必须携带并校验通过（appid 单独泄露不再足以换 token）；存量未设密钥的接入行为不变
+        if (!string.IsNullOrEmpty(accessApp.Secret)
+            && (string.IsNullOrEmpty(request.Secret)
+                || !PBKDF2Helper.VerifyHash(request.Secret, accessApp.Secret, accessApp.SecretSalt ?? string.Empty)))
+        {
+            throw new BusinessException("应用接入密钥无效.") { StatusCode = 401 };
         }
 
         // 应用 token：以接入身份访问其所属团队的资源（团队级授权）

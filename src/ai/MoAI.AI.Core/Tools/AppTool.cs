@@ -61,14 +61,20 @@ public sealed class AppTool
     public required string Description { get; init; }
 
     /// <summary>
-    /// 来源类型：static|dynamic|mcp|openapi|wiki|graph.
+    /// 来源类型：static|dynamic|mcp|openapi|wiki|graph|skill|sandbox|subagent|workflow|agentapp.
     /// </summary>
     public required string Kind { get; init; }
 
     /// <summary>
-    /// 工具来源资源 id（插件/流程应用 id），审批策略按其判定白名单自动放行；无来源（沙箱/知识库）为 null.
+    /// 工具来源资源 id（插件/流程应用/Agent 应用/技能 id），审批策略按其判定白名单自动放行；无来源（沙箱）为 null.
     /// </summary>
     public Guid? SourceId { get; init; }
+
+    /// <summary>
+    /// 多源工具覆盖的资源 id 列表（知识库/知识图谱 id）：一次调用检索全部绑定资源，
+    /// 审批策略须全部命中白名单才自动放行；单源工具为 null.
+    /// </summary>
+    public IReadOnlyList<long>? SourceLongIds { get; init; }
 
     /// <summary>
     /// 参数示例（JSON 文本），可为空.

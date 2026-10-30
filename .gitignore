@@ -404,3 +404,5 @@ local-dev/backend-*.log
 /preproc.xml
 /website
 .commandcode/
+# Mimosa security scan artifacts
+.mimosa/

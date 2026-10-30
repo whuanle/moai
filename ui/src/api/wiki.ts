@@ -41,11 +41,19 @@ export async function getWikis(teamId: number): Promise<WikisResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
-/** 查询知识库上传文件大小上限（MB），0 表示不限制 */
-export async function getWikiUploadLimit(): Promise<number> {
+/** 知识库上传约束：大小上限（MB，0 表示不限制）与允许上传的文件类型（小写扩展名） */
+export interface WikiUploadLimit {
+  maxFileSizeMb: number
+  allowedFileTypes: string[]
+}
+
+export async function getWikiUploadLimit(): Promise<WikiUploadLimit> {
   const client = getApiClient()
   const res = await client.api.wiki.uploadLimit.get()
-  return Number(res?.maxFileSizeMb ?? 0)
+  return {
+    maxFileSizeMb: Number(res?.maxFileSizeMb ?? 0),
+    allowedFileTypes: (res?.allowedFileTypes ?? []).map((x) => String(x)),
+  }
 }
 
 export function getWikiDetail(wikiId: number) {
@@ -193,6 +201,44 @@ export async function deleteWikiDocuments(wikiId: number, documentIds: number[])
 export async function downloadWikiDocument(wikiId: number, documentId: number): Promise<string> {
   const client = getApiClient()
   const res = await client.api.wiki.byId(String(wikiId)).documents.byDocumentId(String(documentId)).download.get()
+  return res?.value ?? ''
+}
+
+/** 文档内嵌图片附件项（文档提取 pdf/word/excel/ppt 时落出的图片资产） */
+export interface WikiDocumentImageItem {
+  imageId?: number | null
+  wikiId?: number | null
+  documentId?: number | null
+  fileId?: string | number | null
+  fileName?: string | null
+  /** 文件扩展名，如 .png */
+  fileType?: string | null
+  /** 文件大小（字节） */
+  fileSize?: number | null
+  /** 所在页码（pdf 提取可解析），null=未知 */
+  pageNumber?: number | null
+  /** 文档内序号，从 0 递增 */
+  imageIndex?: number | null
+  /** 预签名下载地址（有效期 2 分钟） */
+  downloadUrl?: string | null
+  createTime?: string | null
+}
+
+/** 查询知识库文档的内嵌图片附件列表 */
+export async function getWikiDocumentImages(wikiId: number, documentId: number): Promise<WikiDocumentImageItem[]> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).documents.byDocumentId(String(documentId)).images.get()
+  return res?.items ?? []
+}
+
+/** 获取文档内嵌图片附件的下载地址 */
+export async function downloadWikiDocumentImage(wikiId: number, documentId: number, imageId: number): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.wiki
+    .byId(String(wikiId))
+    .documents.byDocumentId(String(documentId))
+    .images.byImageId(String(imageId))
+    .download.get()
   return res?.value ?? ''
 }
 

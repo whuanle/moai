@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createCreateAccessAppCommandResponseFromDiscriminatorValue, serializeCreateAccessAppCommand, serializeCreateAccessAppCommandResponse, type BusinessValidationResult, type CreateAccessAppCommand, type CreateAccessAppCommandResponse } from '../../models/index.js';
 // @ts-ignore
-import { AccessAppItemRequestBuilderRequestsMetadata, type AccessAppItemRequestBuilder } from './item/index.js';
+import { AccessAppItemRequestBuilderNavigationMetadata, AccessAppItemRequestBuilderRequestsMetadata, type AccessAppItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -54,6 +54,7 @@ export const AccessAppRequestBuilderUriTemplate = "{+baseurl}/api/access-app";
 export const AccessAppRequestBuilderNavigationMetadata: Record<Exclude<keyof AccessAppRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
         requestsMetadata: AccessAppItemRequestBuilderRequestsMetadata,
+        navigationMetadata: AccessAppItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
     list: {

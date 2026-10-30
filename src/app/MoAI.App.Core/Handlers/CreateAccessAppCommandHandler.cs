@@ -6,6 +6,7 @@ using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -44,14 +45,14 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
             throw new BusinessException("只有团队管理员可以管理应用接入.") { StatusCode = 403 };
         }
 
-        var (secret, keyPrefix) = AccessAppKeyGenerator.New();
+        var (accessAppKey, keyPrefix) = AccessAppKeyGenerator.New();
 
-        // 不传 scopes 默认外部资源全量（读写+对话+知识图谱，与存量行为/列默认 230 一致），显式空列表=无资源权限（可仅勾 model 直连网关）；
+        // 不传 scopes 默认外部资源全量（读写+对话+知识图谱，与存量行为/列默认 230 一致），显式空列表=无资源权限；
         // handler 侧把关代码合法性（Validate 规则作为绑定直传时的前置校验）
         var scopes = TeamApiKeyScopeCodes.AccessAppDefault;
         if (request.Scopes != null)
         {
-            // 空列表合法=纯对话接入；非空列表须全部为应用接入允许代码（model/wiki_read/wiki_write/wiki_mcp）且不重复
+            // 空列表合法=纯对话接入；非空列表须全部为应用接入允许代码（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a）且不重复
             scopes = TeamApiKeyScopes.None;
             if (request.Scopes.Count > 0)
             {
@@ -65,14 +66,22 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
             }
         }
 
+        // appid（key）列内明文存储；密钥只存 PBKDF2 哈希，原文仅在创建结果中返回一次
+        var secret = AccessAppKeyGenerator.NewSecret();
+        var (secretHash, secretSalt) = PBKDF2Helper.ToHash(secret);
         var entity = new AccessAppEntity
         {
             Id = Guid.CreateVersion7(),
             TeamId = (int)request.TeamId,
+            Level = AccessAppLevel.Team,
             Name = request.Name,
             Description = request.Description ?? string.Empty,
-            Key = secret,
+            Key = accessAppKey,
+            KeyPrefix = keyPrefix,
+            Secret = secretHash,
+            SecretSalt = secretSalt,
             Scopes = (int)scopes,
+            Status = AccessAppStatus.Enabled,
         };
 
         _databaseContext.AccessApps.Add(entity);
@@ -81,7 +90,8 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
         return new CreateAccessAppCommandResponse
         {
             AccessAppId = entity.Id,
-            Key = secret,
+            Key = accessAppKey,
+            Secret = secret,
             KeyPrefix = keyPrefix,
         };
     }

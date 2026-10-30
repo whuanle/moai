@@ -142,6 +142,7 @@ async function main() {
   const list1 = await api('GET', `/api/timer/list?teamId=${TID}&pageNo=1&pageSize=20`, { token: adminToken })
   const item = (list1.json?.items ?? []).find((x) => String(x.timerId) === TIMER)
   check('TIMER-09 列表回显与下次调度时间', Boolean(item) && item.isEnabled === true && Boolean(item.nextRunTime) && item.appName.includes('定时器应用'), JSON.stringify(item?.nextRunTime))
+  check('TIMER-09b 新建未执行时列表无执行状态', Boolean(item) && item.lastExecutionStatus == null, JSON.stringify(item?.lastExecutionStatus))
 
   // ===== 门禁 =====
   const memberName = `tmem${TS}`
@@ -157,9 +158,25 @@ async function main() {
   // ===== 立即执行（成功）=====
   const run1 = await api('POST', `/api/timer/${TIMER}/run`, { token: adminToken })
   const EXEC1 = String(run1.json?.value ?? '')
-  check('TIMER-12 立即执行入队', run1.status === 200 && /^[0-9a-f-]{36}$/.test(EXEC1), `got ${run1.status}`)
+  check('TIMER-12 立即执行入队', run1.status === 200 && /^[0-9a-f-]{36}$/.test(EXEC1), `got ${run1.status} ${run1.text.slice(0, 200)}`)
   const done1 = await waitForTerminal(adminToken, TIMER)
   check('TIMER-13 执行成功且回答落历史', done1?.status === 'success' && String(done1.result ?? '').includes(SUCCESS_MARK) && Number(done1.attemptCount) === 1 && done1.triggerType === 'manual' && done1.triggerUserName === 'admin', JSON.stringify({ status: done1?.status, attempt: done1?.attemptCount, result: String(done1?.result ?? '').slice(0, 50) }))
+  const listItem1 = ((await api('GET', `/api/timer/list?teamId=${TID}&pageNo=1&pageSize=20`, { token: adminToken })).json?.items ?? []).find((x) => String(x.timerId) === TIMER)
+  check('TIMER-13b 列表回显最近执行状态 success', listItem1?.lastExecutionStatus === 'success', JSON.stringify(listItem1?.lastExecutionStatus))
+
+  // ===== 定时执行落会话：管理员日志页可见，本人会话列表排除 =====
+  const execDetail = (await api('GET', `/api/timer/${TIMER}/executions?pageNo=1&pageSize=5`, { token: adminToken })).json?.items?.[0]
+  const logs = await api('GET', `/api/app/${APP}/logs?pageNo=1&pageSize=20&userType=timer`, { token: adminToken })
+  const timerSession = (logs.json?.items ?? []).find((x) => String(x.sessionId) === String(execDetail?.sessionId ?? ''))
+  check('TIMER-13c 执行落会话且管理员日志页可见（userType=timer）', Boolean(execDetail?.sessionId) && Boolean(timerSession), JSON.stringify({ execSession: execDetail?.sessionId, total: logs.json?.totalCount }))
+  const sessionMessages = await api('GET', `/api/app/${APP}/logs/${execDetail.sessionId}/messages`, { token: adminToken })
+  const msgList = sessionMessages.json?.items ?? sessionMessages.json ?? []
+  const hasReply = (Array.isArray(msgList) ? msgList : []).some((m) => String(m.content ?? '').includes(SUCCESS_MARK))
+  check('TIMER-13d 会话消息详情含完整回答', hasReply, `messages=${Array.isArray(msgList) ? msgList.length : -1}`)
+  const mySessions = await api('GET', `/api/app/${APP}/session/list`, { token: adminToken })
+  const myList = mySessions.json?.items ?? (Array.isArray(mySessions.json) ? mySessions.json : [])
+  const leaked = myList.some((x) => String(x.id ?? x.sessionId) === String(execDetail.sessionId))
+  check('TIMER-13e 本人会话列表不出现定时任务会话', !leaked, `sessions=${myList.length}`)
   check('TIMER-14 手动触发刷新最近触发时间', Boolean(done1) && new Date(item.lastRunTime ?? 0).getTime() <= new Date(done1.createTime ?? Date.now()).getTime())
 
   // ===== 失败重试 =====
@@ -171,8 +188,9 @@ async function main() {
 
   const list2 = await api('GET', `/api/timer/${TIMER}/executions?pageNo=1&pageSize=10`, { token: adminToken })
   check('TIMER-16 执行历史默认 10 条倒序', list2.json?.totalCount === 2 && String(list2.json?.items?.[0]?.executionId) === String(done2.executionId), `total=${list2.json?.totalCount}`)
-  const lastRunTime2 = ((await api('GET', `/api/timer/list?teamId=${TID}&pageNo=1&pageSize=20`, { token: adminToken })).json?.items ?? []).find((x) => String(x.timerId) === TIMER)?.lastRunTime
-  check('TIMER-17 列表最近触发时间已刷新', Boolean(lastRunTime2))
+  const itemAfterFail = ((await api('GET', `/api/timer/list?teamId=${TID}&pageNo=1&pageSize=20`, { token: adminToken })).json?.items ?? []).find((x) => String(x.timerId) === TIMER)
+  check('TIMER-17 列表最近触发时间已刷新', Boolean(itemAfterFail?.lastRunTime))
+  check('TIMER-17b 重试终态后列表执行状态 failed', itemAfterFail?.lastExecutionStatus === 'failed', JSON.stringify(itemAfterFail?.lastExecutionStatus))
 
   // ===== 停用 → 移除调度 =====
   await api('PUT', `/api/timer/${TIMER}`, { token: adminToken, body: { name, appId: APP, cronExpression: '0 1 * * *', inputContent: '生成今日经营日报', isEnabled: false, maxRetryCount: 0, retryIntervalSeconds: 60 } })

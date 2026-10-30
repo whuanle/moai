@@ -30,7 +30,7 @@ public class UpdateAIChannelCommandHandler : IRequestHandler<UpdateAIChannelComm
         var channel = await _databaseContext.AiChannels
             .FirstOrDefaultAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0, cancellationToken);
 
-        if (channel == null)
+        if (channel == null || channel.TeamId != request.TeamId)
         {
             throw new BusinessException("未找到渠道，请检查 id 是否正确.") { StatusCode = 404 };
         }

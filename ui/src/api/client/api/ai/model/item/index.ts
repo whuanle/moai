@@ -6,8 +6,6 @@ import { createBusinessValidationResultFromDiscriminatorValue, createEmptyComman
 // @ts-ignore
 import { AuthorizationRequestBuilderRequestsMetadata, type AuthorizationRequestBuilder } from './authorization/index.js';
 // @ts-ignore
-import { QuotaRequestBuilderNavigationMetadata, type QuotaRequestBuilder } from './quota/index.js';
-// @ts-ignore
 import { type VisibilityRequestBuilder, VisibilityRequestBuilderRequestsMetadata } from './visibility/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
@@ -20,10 +18,6 @@ export interface ModelItemRequestBuilder extends BaseRequestBuilder<ModelItemReq
      * The authorization property
      */
     get authorization(): AuthorizationRequestBuilder;
-    /**
-     * The quota property
-     */
-    get quota(): QuotaRequestBuilder;
     /**
      * The visibility property
      */
@@ -75,9 +69,6 @@ export const ModelItemRequestBuilderUriTemplate = "{+baseurl}/api/ai/model/{id}"
 export const ModelItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ModelItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     authorization: {
         requestsMetadata: AuthorizationRequestBuilderRequestsMetadata,
-    },
-    quota: {
-        navigationMetadata: QuotaRequestBuilderNavigationMetadata,
     },
     visibility: {
         requestsMetadata: VisibilityRequestBuilderRequestsMetadata,

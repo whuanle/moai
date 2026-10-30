@@ -5,7 +5,6 @@ using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
-using MoAI.Gateway.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -17,25 +16,24 @@ public class UpdateAccessAppCommandHandler : IRequestHandler<UpdateAccessAppComm
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
-    private readonly ExternalKeyCache _keyCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateAccessAppCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    /// <param name="keyCache">外部接入 key 缓存.</param>
-    public UpdateAccessAppCommandHandler(DatabaseContext databaseContext, ITeamService teamService, ExternalKeyCache keyCache)
+    public UpdateAccessAppCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
-        _keyCache = keyCache;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(UpdateAccessAppCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _databaseContext.AccessApps.FirstOrDefaultAsync(x => x.Id == request.AccessAppId, cancellationToken);
+        var entity = await _databaseContext.AccessApps
+            .Where(x => x.Level == AccessAppLevel.Team)
+            .FirstOrDefaultAsync(x => x.Id == request.AccessAppId, cancellationToken);
 
         if (entity == null)
         {
@@ -57,7 +55,7 @@ public class UpdateAccessAppCommandHandler : IRequestHandler<UpdateAccessAppComm
         entity.Name = request.Name;
         entity.Description = request.Description ?? string.Empty;
 
-        // scopes=null 不修改；显式列表（可为空=纯对话接入）整体覆盖，代码合法性同创建口径（model/wiki_read/wiki_write/wiki_mcp）
+        // scopes=null 不修改；显式列表（可为空=纯对话接入）整体覆盖，代码合法性同创建口径（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a）
         if (request.Scopes != null)
         {
             var scopes = TeamApiKeyScopes.None;
@@ -75,10 +73,13 @@ public class UpdateAccessAppCommandHandler : IRequestHandler<UpdateAccessAppComm
             entity.Scopes = (int)scopes;
         }
 
+        if (request.Status.HasValue)
+        {
+            entity.Status = request.Status.Value;
+        }
+
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        // 范围变更删除缓存，key 直连与换 token 立即生效
-        await _keyCache.RemoveAccessKeyAsync(ApiKeyGenerator.Hash(entity.Key));
         return EmptyCommandResponse.Default;
     }
 }

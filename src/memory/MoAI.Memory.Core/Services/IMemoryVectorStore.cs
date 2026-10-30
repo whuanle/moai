@@ -39,4 +39,34 @@ public interface IMemoryVectorStore
     /// 删除应用记忆集合（应用删除时清理；集合不存在时静默跳过）.
     /// </summary>
     Task DeleteCollectionAsync(Guid appId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 确保全局记忆集合存在（不存在则建表与 HNSW 索引；维度取全局设置）.
+    /// </summary>
+    Task EnsureGlobalCollectionAsync(int dimensions, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量写入/更新全局记忆记录（维度取记录向量长度）.
+    /// </summary>
+    Task UpsertGlobalAsync(IReadOnlyList<AgentMemoryVectorRecord> records, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 删除指定全局记忆.
+    /// </summary>
+    Task DeleteGlobalAsync(IReadOnlyList<Guid> keys, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 全局记忆向量检索：按用户（与可选类型）过滤.
+    /// </summary>
+    Task<IReadOnlyList<(AgentMemoryVectorRecord Record, double Score)>> SearchGlobalAsync(ReadOnlyMemory<float> queryVector, int top, long userId, IReadOnlyList<int>? types, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 列举用户的全局记忆记录（上限条数保护，调用方自行排序分页）.
+    /// </summary>
+    Task<IReadOnlyList<AgentMemoryVectorRecord>> ListGlobalUserAsync(long userId, int max, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 删除全局记忆集合（root 清空全部全局记忆时调用；集合不存在时静默跳过）.
+    /// </summary>
+    Task DeleteGlobalCollectionAsync(CancellationToken cancellationToken = default);
 }

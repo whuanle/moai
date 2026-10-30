@@ -44,6 +44,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
   })
 
@@ -117,6 +119,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 0,
       memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     const { container } = render(
       <MemoryRouter>
@@ -169,6 +173,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 0,
       memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     const { container } = render(
       <MemoryRouter>
@@ -202,6 +208,44 @@ describe('AppUserSettings（应用设置面板）', () => {
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalledWith(11, 'auto')
       expect(onClose).toHaveBeenCalled()
+    })
+  })
+
+  it('应用允许全局接入时展示全局记忆开关，切换后随保存提交 memoryGlobalMode', async () => {
+    vi.mocked(getAppUserConfig).mockResolvedValue({
+      promptId: 11,
+      skills: [],
+      defaultSkills: [],
+      toolApprovalMode: 'auto',
+      toolApprovalExemptNames: [],
+      toolApprovalExemptPrefixes: [],
+      toolApprovalAutoApprovedNames: [],
+      toolApprovalAutoApprovedPrefixes: [],
+      memoryMode: 2,
+      memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: true,
+    })
+    renderPanel()
+
+    // 允许时展示「全局记忆（跨应用）」分区，默认接入生效
+    await waitFor(() => expect(screen.getByText('全局记忆（跨应用）')).toBeInTheDocument())
+    // 切到「仅本应用」并保存：携带 memoryGlobalMode=1
+    fireEvent.click(screen.getByRole('button', { name: '仅本应用' }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => {
+      expect(saveAppUserConfig).toHaveBeenCalledWith('a1', expect.objectContaining({ memoryMode: 2, memoryGlobalMode: 1 }))
+    })
+  })
+
+  it('应用未允许全局接入时不展示全局记忆开关，保存也不携带 memoryGlobalMode', async () => {
+    renderPanel()
+
+    await waitFor(() => expect(screen.getByText('长期记忆')).toBeInTheDocument())
+    expect(screen.queryByText('全局记忆（跨应用）')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => {
+      expect(saveAppUserConfig).toHaveBeenCalledWith('a1', expect.not.objectContaining({ memoryGlobalMode: expect.anything() }))
     })
   })
 })

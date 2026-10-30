@@ -42,7 +42,7 @@ ui/src/      api/usermanage.ts、pages/users/Users.tsx、路由 /users
 3. 重置密码复用注册管线：RSA(PKCS1) 解密 → 强度正则 → PBKDF2 加盐（见 [@UM-S24](./bdd.md#um-s24)）。
 4. 写操作后必须 `RemoveUserStateAsync` 失效 Redis 用户态（`moai:userstate:{id}`，1h TTL）——禁用即时生效依赖此（见 [../account/sdd.md](../account/sdd.md) 缓存节）。
 5. 前端 UI 按权限渲染：仅 isRoot 显示授权按钮；root 自己行不渲染危险操作（后端是最终防线）。
-6. 列表页 UI 约定（2026-09-02 优化）：操作列为固定右侧（`fixed:'right'`）图标按钮，一律带 Tooltip 与 `aria-label`，危险操作保留 Popconfirm；表头 `sticky`（页面滚动时表头常驻）；首列为合并用户列（头像+用户名，昵称次行灰字、与用户名同名时省略）；时间统一 `YYYY-MM-DD HH:mm` 单行；管理页不渲染解释性副标题（Page 仅传 title）。
+6. 列表页 UI 约定（2026-09-02 优化，2026-10-30 昵称独立列调整）：操作列为固定右侧（`fixed:'right'`）图标按钮，一律带 Tooltip 与 `aria-label`，危险操作保留 Popconfirm；表头 `sticky`（页面滚动时表头常驻）；首列为用户列（头像+用户名），邮箱列前为独立昵称列（空值显示 "-"）；详情弹窗头部以昵称为主显示名（@用户名次行灰字、与昵称同名时省略）；时间统一 `YYYY-MM-DD HH:mm` 单行；管理页不渲染解释性副标题（Page 仅传 title）。
 
 ## 已知问题
 

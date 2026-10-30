@@ -22,6 +22,11 @@ public class ExternalTokenCommand : IRequest<ExternalTokenCommandResponse>, IMod
     public string? AccessAppKey { get; init; }
 
     /// <summary>
+    /// 应用接入密钥（创建/重置时返回的原文）；接入已设密钥时必填，未设密钥的存量接入可不带.
+    /// </summary>
+    public string? Secret { get; init; }
+
+    /// <summary>
     /// 目标应用 id，用户 token 与匿名 token 必填.
     /// </summary>
     public Guid? AppId { get; init; }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Checkbox, Form, Input, Modal, Popconfirm, Radio, Space, Tag, Typography } from 'antd'
+import { Alert, Button, Checkbox, Form, Input, Modal, Popconfirm, Radio, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons'
+import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -10,6 +10,7 @@ import {
   createAccessApp,
   deleteAccessApp,
   getAccessApps,
+  resetAccessAppSecret,
   updateAccessApp,
   type AccessAppItem,
 } from '@/api/access-app'
@@ -65,14 +66,14 @@ interface AccessAppFormValues {
   scopes: string[]
 }
 
-/** 应用接入可选范围代码（模型网关 + 知识库读写 + 应用对话 + 知识图谱读写 + 两域 MCP + 应用 ACP） */
-const ACCESS_APP_SCOPES = ['model', 'wiki_read', 'wiki_write', 'app_chat', 'kg_read', 'kg_write', 'wiki_mcp', 'kg_mcp', 'app_acp', 'app_a2a'] as const
+/** 应用接入可选范围代码（知识库读写 + 应用对话 + 知识图谱读写 + 两域 MCP + 应用 ACP/A2A） */
+const ACCESS_APP_SCOPES = ['wiki_read', 'wiki_write', 'app_chat', 'kg_read', 'kg_write', 'wiki_mcp', 'kg_mcp', 'app_acp', 'app_a2a'] as const
 
 /** 按 读/写 两位范围代码推导三档档位 */
 type ResourceLevel = 'none' | 'read' | 'write'
 
 /**
- * 访问范围分组编辑器：按资源组授权——知识库 无/只读/可写 三档，模型网关/应用对话/MCP 为开关。
+ * 访问范围分组编辑器：按资源组授权——知识库 无/只读/可写 三档，应用对话/MCP 为开关。
  * value 即后端 scopes 代码列表（Form 受控）。
  */
 function ScopeGroupEditor({ value = [], onChange }: { value?: string[]; onChange?: (v: string[]) => void }) {
@@ -107,7 +108,7 @@ function ScopeGroupEditor({ value = [], onChange }: { value?: string[]; onChange
           </Radio.Group>
         </div>
       ))}
-      {(['model', 'app_chat', 'wiki_mcp', 'kg_mcp', 'app_acp', 'app_a2a'] as const).map((code) => (
+      {(['app_chat', 'wiki_mcp', 'kg_mcp', 'app_acp', 'app_a2a'] as const).map((code) => (
         <Checkbox key={code} checked={has(code)} onChange={(e) => toggle(code, e.target.checked)}>
           {t(`gateway.scope.${code}`)}
         </Checkbox>
@@ -134,7 +135,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AccessAppItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [createdKey, setCreatedKey] = useState<string | null>(null)
+  const [credentialShown, setCredentialShown] = useState<{ key?: string; secret?: string } | null>(null)
   const [form] = Form.useForm<AccessAppFormValues>()
 
   const load = useCallback(async () => {
@@ -190,7 +191,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           description: values.description,
           scopes: values.scopes ?? [],
         })
-        if (res.key) setCreatedKey(res.key)
+        if (res.key || res.secret) setCredentialShown({ key: res.key ?? undefined, secret: res.secret ?? undefined })
         feedback.success(t('accessApp.createSuccess'))
       }
       setModalOpen(false)
@@ -199,6 +200,17 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
       // 错误已由全局请求中间件统一提示
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleResetSecret = async (item: AccessAppItem) => {
+    if (!item.accessAppId) return
+    try {
+      const secret = await resetAccessAppSecret(item.accessAppId)
+      setCredentialShown({ secret: secret ?? undefined })
+      feedback.success(t('accessApp.resetSecretSuccess'))
+    } catch {
+      // 错误已由全局请求中间件统一提示
     }
   }
 
@@ -271,6 +283,11 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
             <Button type="link" size="small" onClick={() => openEdit(record)}>
               {t('accessApp.edit')}
             </Button>
+            <Popconfirm title={t('accessApp.resetSecretConfirm')} onConfirm={() => void handleResetSecret(record)}>
+              <Tooltip title={t('accessApp.resetSecret')}>
+                <Button type="text" size="small" icon={<KeyOutlined />} aria-label={t('accessApp.resetSecret')} />
+              </Tooltip>
+            </Popconfirm>
             <Popconfirm title={t('accessApp.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
               <Button type="link" size="small" danger>
                 {t('accessApp.delete')}
@@ -340,22 +357,32 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
 
       <Modal
         title={t('accessApp.keyTitle')}
-        open={createdKey !== null}
+        open={credentialShown !== null}
         maskClosable={false}
-        onCancel={() => setCreatedKey(null)}
+        onCancel={() => setCredentialShown(null)}
         footer={[
-          <Button key="copy" icon={<CopyOutlined />} onClick={() => void copyText(createdKey ?? '')}>
-            {t('common.copy')}
-          </Button>,
-          <Button key="ok" type="primary" onClick={() => setCreatedKey(null)}>
+          <Button key="ok" type="primary" onClick={() => setCredentialShown(null)}>
             {t('common.ok')}
           </Button>,
         ]}
       >
         <Alert type="warning" showIcon message={t('accessApp.keyWarning')} style={{ marginBottom: spacing.md }} />
-        <Paragraph code copyable={false} style={{ marginBottom: 0, wordBreak: 'break-all' }}>
-          {createdKey}
-        </Paragraph>
+        {credentialShown?.key && (
+          <>
+            <Text strong>{t('accessApp.appIdLabel')}</Text>
+            <Paragraph code copyable style={{ wordBreak: 'break-all' }}>
+              {credentialShown.key}
+            </Paragraph>
+          </>
+        )}
+        {credentialShown?.secret && (
+          <>
+            <Text strong>{t('accessApp.secretLabel')}</Text>
+            <Paragraph code copyable style={{ marginBottom: 0, wordBreak: 'break-all' }}>
+              {credentialShown.secret}
+            </Paragraph>
+          </>
+        )}
       </Modal>
     </div>
   )

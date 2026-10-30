@@ -36,6 +36,9 @@ internal partial class TeamTimerExecutionConfiguration : IEntityTypeConfiguratio
             .HasMaxLength(64)
             .HasComment("流程应用实例 id，Agent 应用为 null")
             .HasColumnName("app_instance_id");
+        entity.Property(e => e.SessionId)
+            .HasComment("定时执行产生的 Agent 会话 id（app_agent_session，user_type=4 timer），流程应用为 null")
+            .HasColumnName("session_id");
         entity.Property(e => e.AttemptCount)
             .HasComment("已尝试次数（首次执行记 1）")
             .HasColumnName("attempt_count");

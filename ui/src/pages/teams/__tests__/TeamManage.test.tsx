@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { TeamManage } from '../TeamManage'
 import { useAppStore } from '@/store/app'
-import { getTeamDetail, getTeamUsers, updateTeamUserRole } from '@/api/team'
+import { addTeamUsers, getTeamCandidates, getTeamDetail, getTeamOrgRoleUsers, getTeamOrgRoles, getTeamUsers, updateTeamUserRole } from '@/api/team'
 import { getApps } from '@/api/app'
 import { getVariables } from '@/api/variable'
 import { getTeamPlugins } from '@/api/team-plugin'
@@ -72,10 +72,13 @@ vi.mock('@/api/team', () => ({
     ownerNickName: 'O',
   }),
   getTeamUsers: vi.fn().mockResolvedValue([
-    { userId: '1', userName: 'owner', nickName: 'O', role: 2, joinTime: '2026-09-02T00:00:00Z' },
-    { userId: '2', userName: 'member', nickName: 'M', role: 0, joinTime: '2026-09-02T00:00:00Z' },
+    { userId: '1', userName: 'owner', nickName: 'OwnerNick', role: 2, joinTime: '2026-09-02T00:00:00Z' },
+    { userId: '2', userName: 'member', nickName: 'MemberNick', role: 0, joinTime: '2026-09-02T00:00:00Z' },
   ]),
   addTeamUser: vi.fn().mockResolvedValue(undefined),
+  addTeamUsers: vi.fn().mockResolvedValue({ addedCount: 0, skippedUserIds: [], notFoundUserIds: [] }),
+  getTeamOrgRoles: vi.fn().mockResolvedValue([]),
+  getTeamOrgRoleUsers: vi.fn().mockResolvedValue([]),
   removeTeamUser: vi.fn().mockResolvedValue(undefined),
   transferTeamOwner: vi.fn().mockResolvedValue(undefined),
   updateTeam: vi.fn().mockResolvedValue(undefined),
@@ -160,8 +163,10 @@ describe('TeamManage', () => {
     // 点击左侧菜单「成员管理」
     fireEvent.click(screen.getByText('成员管理'))
 
-    expect(await screen.findByText('owner')).toBeInTheDocument()
-    expect(screen.getByText('member')).toBeInTheDocument()
+    // 昵称为主显示名，@用户名作次要行（昵称与用户名不同时）
+    expect(await screen.findByText('OwnerNick')).toBeInTheDocument()
+    expect(screen.getByText('@owner')).toBeInTheDocument()
+    expect(screen.getByText('MemberNick')).toBeInTheDocument()
     expect(getTeamUsers).toHaveBeenCalledWith(7)
   })
 
@@ -328,5 +333,89 @@ describe('TeamManage', () => {
     expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
     expect(await screen.findByText('新建应用')).toBeInTheDocument()
     expect(getApps).toHaveBeenCalledWith(7)
+  })
+
+  it('Owner 点击添加成员打开弹窗：加载组织树并按组织选人批量加入', async () => {
+    ;(getTeamOrgRoles as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { orgRoleId: 10, name: '研发部', parentId: null, path: '/10/', userCount: 2, hasChildren: false, isDefault: false },
+    ])
+    ;(getTeamOrgRoleUsers as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { userId: '11', userName: 'u11', nickName: '研发甲', email: '', phone: '', avatar: '', isAdmin: false, isRoot: false, isDisable: false },
+      { userId: '2', userName: 'member', nickName: 'MemberNick', email: '', phone: '', avatar: '', isAdmin: false, isRoot: false, isDisable: false },
+    ])
+    ;(addTeamUsers as ReturnType<typeof vi.fn>).mockResolvedValue({ addedCount: 1, skippedUserIds: [], notFoundUserIds: [] })
+    renderManage()
+
+    fireEvent.click(await screen.findByText('成员管理'))
+    fireEvent.click(await screen.findByRole('button', { name: /添加成员/ }))
+
+    // 打开弹窗并加载组织树（查询一律限定在弹窗内，避免命中弹窗后方的成员表格）
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByText('研发部')).toBeInTheDocument()
+    expect(getTeamOrgRoles).toHaveBeenCalledWith(7)
+
+    // 点击组织节点加载该组织下的用户
+    fireEvent.click(within(dialog).getByText('研发部'))
+    await waitFor(() => expect(getTeamOrgRoleUsers).toHaveBeenCalledWith(7, 10))
+    expect(await within(dialog).findByText('研发甲')).toBeInTheDocument()
+
+    // 未选人时确定按钮禁用；勾选一名组织成员后可提交（antd 双字按钮文案自动插空格）
+    const okButton = within(dialog).getByRole('button', { name: /确\s*定/ })
+    expect(okButton).toBeDisabled()
+    const row = within(dialog).getByText('研发甲').closest('label') as HTMLElement
+    fireEvent.click(row.querySelector('input[type="checkbox"]') as HTMLInputElement)
+    expect(okButton).toBeEnabled()
+    fireEvent.click(okButton)
+
+    await waitFor(() => {
+      expect(addTeamUsers).toHaveBeenCalledWith(7, [11])
+    })
+    // 提交成功后关闭弹窗并刷新成员列表（jsdom 中 antd 关闭动画不结束，以刷新调用为准）
+    await waitFor(() => {
+      expect(getTeamUsers).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it('添加成员弹窗中已是成员的用户行禁选并带标记', async () => {
+    // 前面用例可能覆盖过 getTeamUsers 实现，这里显式固定成员集合（userId 2 = 已是成员）
+    ;(getTeamUsers as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { userId: '1', userName: 'owner', nickName: 'OwnerNick', role: 2, joinTime: '2026-09-02T00:00:00Z' },
+      { userId: '2', userName: 'member', nickName: 'MemberNick', role: 0, joinTime: '2026-09-02T00:00:00Z' },
+    ])
+    ;(getTeamOrgRoles as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { orgRoleId: 10, name: '研发部', parentId: null, path: '/10/', userCount: 1, hasChildren: false, isDefault: false },
+    ])
+    ;(getTeamOrgRoleUsers as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { userId: '2', userName: 'member', nickName: 'MemberNick', email: '', phone: '', avatar: '', isAdmin: false, isRoot: false, isDisable: false },
+    ])
+    renderManage()
+
+    fireEvent.click(await screen.findByText('成员管理'))
+    fireEvent.click(await screen.findByRole('button', { name: /添加成员/ }))
+
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByText('研发部'))
+    await waitFor(() => expect(getTeamOrgRoleUsers).toHaveBeenCalledWith(7, 10))
+    expect(await within(dialog).findByText('已是成员')).toBeInTheDocument()
+    const row = within(dialog).getByText('MemberNick').closest('label') as HTMLElement
+    const checkbox = row.querySelector('input[type="checkbox"]') as HTMLInputElement
+    expect(checkbox).toBeDisabled()
+  })
+
+  it('添加成员弹窗输入关键字实时搜索全站用户', async () => {
+    ;(getTeamCandidates as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { userId: '99', userName: 'newbie', nickName: '新人', avatar: '' },
+    ])
+    renderManage()
+
+    fireEvent.click(await screen.findByText('成员管理'))
+    fireEvent.click(await screen.findByRole('button', { name: /添加成员/ }))
+
+    const input = await screen.findByPlaceholderText('搜索用户名/昵称/邮箱，实时搜索全站用户')
+    fireEvent.change(input, { target: { value: 'new' } })
+    await waitFor(() => {
+      expect(getTeamCandidates).toHaveBeenCalledWith(7, 'new')
+    }, { timeout: 2000 })
+    expect(await screen.findByText('newbie')).toBeInTheDocument()
   })
 })

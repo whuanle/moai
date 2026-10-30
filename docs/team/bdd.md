@@ -214,3 +214,55 @@ Scenario: 进入团队默认落在内部应用分区
   When 直接打开 /team/{id}，或访问不可见/非法的分区子路由
   Then 页面回落到「内部应用」分区并加载团队应用列表，不渲染被越权访问的分区
 ```
+
+## Feature: 成员列昵称主显示名
+
+```gherkin
+@TM-S18 @auto:vitest
+Scenario: 成员列昵称为主显示名
+  When 成员管理页查看昵称与用户名不同的成员行
+  Then 该行以昵称为主行并以 @用户名 作次要行
+  And 昵称与用户名相同时不重复展示
+```
+
+## Feature: 添加成员弹窗（组织架构批量邀请）
+
+```gherkin
+@TM-S19 @auto:e2e
+Scenario: 批量添加成员
+  Given 我是 Owner，已备好多个候选用户
+  When 以空用户列表、超 200 人、重复 id 或 Owner 角色批量添加
+  Then 返回参数错误
+  When Admin 批量授予 Admin 角色
+  Then 返回禁止
+  When 批量添加三名新用户和一个不存在的用户
+  Then 返回成功且成功数为 3，不存在的用户出现在不存在明细中
+  When 对相同用户再次批量添加
+  Then 返回成功且成功数为 0，三名用户出现在「已是成员」跳过明细中
+  And 成员列表包含批量加入的用户
+  When Admin 批量添加 Member
+  Then 返回成功
+
+@TM-S20 @auto:e2e
+Scenario: 团队侧组织架构只读视图
+  Given 系统内已有组织角色及绑定用户
+  When 未登录或非团队成员查询团队组织架构
+  Then 返回未认证或不存在（不泄露存在性）
+  When 团队 Member 查询团队组织架构
+  Then 返回禁止
+  When 团队 Owner/Admin 查询团队组织架构
+  Then 返回组织角色平铺列表，命中角色含直属人数
+  When 查询某组织角色下的用户清单
+  Then 返回该组织绑定的用户集合
+  When 查询不存在的组织角色用户
+  Then 返回不存在
+
+@TM-S21 @auto:vitest
+Scenario: 添加成员弹窗组织选人与实时搜索
+  Given 我是 Owner 并进入成员管理
+  When 点击「添加成员」
+  Then 弹窗展示组织架构树，可按组织勾选多名用户批量加入，确定后刷新成员列表
+  And 已是团队成员的用户行禁选并带标记
+  When 在弹窗输入关键字
+  Then 实时搜索全站用户并展示结果
+```

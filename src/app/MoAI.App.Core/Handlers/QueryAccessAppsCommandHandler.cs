@@ -44,7 +44,7 @@ public class QueryAccessAppsCommandHandler : IRequestHandler<QueryAccessAppsComm
         }
 
         var rows = await _databaseContext.AccessApps
-            .Where(x => x.TeamId == request.TeamId)
+            .Where(x => x.Level == AccessAppLevel.Team && x.TeamId == request.TeamId)
             .OrderByDescending(x => x.CreateTime)
             .Select(x => new { x.Id, x.Name, x.Description, x.Key, x.CreateTime, x.LastUsedTime, x.Scopes })
             .ToListAsync(cancellationToken);

@@ -54,6 +54,32 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// 发送邮箱验证码（注册 / 找回密码；注册验证码需系统开启，找回密码需 SMTP 邮件服务已启用）.
+    /// </summary>
+    /// <param name="req">发送验证码请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("email_code/send")]
+    [AllowAnonymous]
+    public async Task<EmptyCommandResponse> SendEmailCode([FromBody] SendEmailCodeCommand req, CancellationToken ct)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 通过邮箱验证码重置密码（找回密码；需 SMTP 邮件服务已启用）.
+    /// </summary>
+    /// <param name="req">重置密码请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("reset_password")]
+    [AllowAnonymous]
+    public async Task<EmptyCommandResponse> ResetPasswordByEmail([FromBody] ResetPasswordByEmailCommand req, CancellationToken ct)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// OAuth 登录.
     /// </summary>
     /// <param name="req">OAuth 登录请求体.</param>

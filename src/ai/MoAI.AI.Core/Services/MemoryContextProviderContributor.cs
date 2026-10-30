@@ -116,17 +116,21 @@ public sealed class MemoryContextProviderContributor : IAppContextProviderContri
                 }
 
                 var builder = new StringBuilder();
-                builder.AppendLine("以下是该用户的跨会话长期记忆（自动召回，与当前问题相关），回答时可自然运用，不要逐条复述：");
+                builder.AppendLine("以下是该用户的跨会话长期记忆（自动召回，与当前问题相关），回答时可自然运用，不要逐条复述；标注「全局」的条目为用户在所有应用共享的个人全局记忆：");
                 foreach (var item in items.Take(MaxInjectItems))
                 {
                     var content = item.Content.Length > MaxContentLength ? item.Content[..MaxContentLength] + "…" : item.Content;
-                    builder.AppendLine($"- [{TypeName(item.MemoryType)}|{item.UpdateTime:yyyy-MM-dd}] {content}");
+                    var scopeText = item.Scope == MemoryItem.ScopeGlobal ? "全局|" : string.Empty;
+                    builder.AppendLine($"- [{scopeText}{TypeName(item.MemoryType)}|{item.UpdateTime:yyyy-MM-dd}] {content}");
                 }
 
-                return new AIContext
-                {
-                    Instructions = builder.ToString(),
-                };
+                // 追加到既有上下文指令（保留应用提示词/其他提供者贡献与对话消息）；
+                // 返回新建 AIContext 会整体替换累积上下文，导致用户消息与工具一并丢失
+                var instructions = context.AIContext.Instructions;
+                context.AIContext.Instructions = string.IsNullOrWhiteSpace(instructions)
+                    ? builder.ToString()
+                    : instructions + "\n\n" + builder.ToString();
+                return context.AIContext;
             }
             catch (Exception ex)
             {

@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using MoAI.AIChannel.Models;
 using MoAI.AIChannel.Queries;
 using MoAI.AIChannel.Queries.Responses;
 using MoAI.Database;
@@ -35,41 +34,17 @@ public class QueryAIModelAuthorizationCommandHandler : IRequestHandler<QueryAIMo
             throw new BusinessException("未找到模型，请检查 id 是否正确.") { StatusCode = 404 };
         }
 
-        var limits = await _databaseContext.AiModelLimits
-            .Where(x => x.ModelId == request.ModelId)
-            .Select(x => new { x.Id, x.TeamId, x.PeriodUnit, x.PeriodValue, x.LimitValue, x.ExpirationTime })
-            .ToListAsync(cancellationToken);
-
-        var quotas = await _databaseContext.AiModelQuota
-            .Where(x => x.ModelId == request.ModelId)
-            .Select(x => new { x.LimitId, x.UsedTokens })
-            .ToListAsync(cancellationToken);
-        var usedByLimitId = quotas.ToDictionary(x => x.LimitId, x => x.UsedTokens);
-
-        AIModelQuotaInfo? MapLimit(int teamId)
+        var isTeamChannel = await _databaseContext.AiChannels
+            .AnyAsync(x => x.Id == model.ChannelId && x.TeamId > 0, cancellationToken);
+        if (isTeamChannel)
         {
-            var limit = limits.FirstOrDefault(x => x.TeamId == teamId);
-            if (limit == null)
-            {
-                return null;
-            }
-
-            return new AIModelQuotaInfo
-            {
-                LimitId = limit.Id,
-                PeriodUnit = limit.PeriodUnit,
-                PeriodValue = limit.PeriodValue,
-                LimitValue = limit.LimitValue,
-                UsedTokens = usedByLimitId.GetValueOrDefault(limit.Id),
-                ExpirationTime = limit.ExpirationTime,
-            };
+            throw new BusinessException("团队自有渠道模型仅本团队可用，无团队授权概念.") { StatusCode = 400 };
         }
 
         var response = new QueryAIModelAuthorizationCommandResponse
         {
             ModelId = request.ModelId,
             IsPublic = model.IsPublic,
-            GlobalQuota = MapLimit(0),
             Items = new List<QueryAIModelAuthorizationCommandResponseItem>(),
         };
 
@@ -89,7 +64,6 @@ public class QueryAIModelAuthorizationCommandHandler : IRequestHandler<QueryAIMo
             {
                 TeamId = x.TeamId,
                 TeamName = x.Name,
-                Quota = MapLimit(x.TeamId),
             })
             .ToList();
 

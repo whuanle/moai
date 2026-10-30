@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Spin, Switch, theme } from 'antd'
+import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Spin, Switch, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card as DSCard, feedback } from '@/design-system'
@@ -17,7 +17,7 @@ import {
   type AppItem,
   type SandboxLimits,
 } from '@/api/app'
-import { getTeamGatewayModels } from '@/api/gateway'
+import { getTeamAvailableModels } from '@/api/aichannel'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
 import { getSkillOptions, type SkillOption } from '@/api/skills'
 import { getWikis, type WikiItem } from '@/api/wiki'
@@ -33,6 +33,71 @@ const EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
 
 /** 快捷输入上限（与后端 SaveAppAgentConfigCommand 校验一致），每条最长 200 字符由 Input maxLength 限制 */
 const MAX_QUICK_INPUTS = 10
+
+/** 审批策略：六类绑定资源的自动放通白名单（存于 executionSettings.toolApproval，键名与后端契约一致） */
+interface AutoPassState {
+  plugins: string[]
+  workflowApps: string[]
+  agentApps: string[]
+  skills: string[]
+  wikis: number[]
+  graphs: number[]
+}
+
+const EMPTY_AUTO_PASS: AutoPassState = { plugins: [], workflowApps: [], agentApps: [], skills: [], wikis: [], graphs: [] }
+
+/** 自动放通列表行：绑定资源 id、展示名与应用类头像 */
+interface AutoPassItem {
+  id: string | number
+  name: string
+  avatarPath?: string | null
+}
+
+interface AutoPassListProps {
+  items: AutoPassItem[]
+  checkedIds: Array<string | number>
+  onToggle: (id: string | number, checked: boolean) => void
+}
+
+/**
+ * 绑定资源自动放通列表：选择器选中资源后逐行展示（应用类带头像），右侧勾选「自动放通」——
+ * 审批模式下勾选资源的工具调用直接执行，未勾选的每次调用需人工批准（保存时收敛为当前绑定资源的子集）.
+ */
+function AutoPassList({ items, checkedIds, onToggle }: AutoPassListProps) {
+  const { t } = useTranslation()
+  const { token } = theme.useToken()
+  if (items.length === 0) return null
+  return (
+    <div style={{ marginTop: spacing.sm, borderRadius: token.borderRadius, border: `1px solid ${token.colorBorderSecondary}`, overflow: 'hidden' }}>
+      {items.map((item, index) => (
+        <div
+          key={String(item.id)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: spacing.sm,
+            padding: `${spacing.xs}px ${spacing.sm}px`,
+            background: index % 2 === 1 ? token.colorFillQuaternary : undefined,
+            borderTop: index === 0 ? undefined : `1px solid ${token.colorBorderSecondary}`,
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+            {item.avatarPath !== undefined && (
+              <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath) || undefined} alt={item.name}>
+                {item.name.slice(0, 1).toUpperCase()}
+              </Avatar>
+            )}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+          </span>
+          <Checkbox checked={checkedIds.includes(item.id)} onChange={(e) => onToggle(item.id, e.target.checked)}>
+            {t('appManage.autoPassToggle')}
+          </Checkbox>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export interface AppDetail {
   appId?: string | null
@@ -68,11 +133,13 @@ export interface AppConfigSectionProps {
 }
 
 /**
- * 应用「配置」分区：左栏把 Agent 配置拆为收缩卡片（基础配置/用户提示/能力扩展/沙箱/安全审批，
- * 默认全部展开；「内容脱敏」由原独立「安全」分区并入、默认收起；「长期记忆」由原独立「记忆」分区并入、默认收起，
- * 两者均仅管理员可见，长期记忆仅内部应用），右栏调试对话面板。「保存设置」一次提交全部卡片：
- * 主配置走 agent-config（草稿/发布快照，长期记忆 memory 节随主配置一并提交），内容脱敏走 security 接口即时生效。
- * 资源绑定只能选择该团队有权使用的模型/插件/知识库；基础信息（头像/名称/公开状态）在「信息」分区维护（AppInfoSection）。
+ * 应用「配置」分区：左栏把 Agent 配置拆为收缩卡片（基础配置/用户提示/能力扩展/沙箱，默认全部展开；
+ * 「内容脱敏」由原独立「安全」分区并入、默认收起；「长期记忆」由原独立「记忆」分区并入、默认收起，
+ * 两者均仅管理员可见，长期记忆仅内部应用），右栏调试对话面板。能力扩展各选择器选中资源后，
+ * 下方逐项列出绑定资源并按行勾选「自动放通」（审批模式策略，随执行参数 toolApproval 节保存）。
+ * 「保存设置」一次提交全部卡片：主配置走 agent-config（草稿/发布快照，长期记忆 memory 节随主配置一并提交），
+ * 内容脱敏走 security 接口即时生效。资源绑定只能选择该团队有权使用的模型/插件/知识库；
+ * 基础信息（头像/名称/公开状态）在「信息」分区维护（AppInfoSection）。
  */
 export function AppConfigSection({ teamId, appId, detail, loading, canManage, configStatus, onConfigStatusChange }: AppConfigSectionProps) {
   const navigate = useNavigate()
@@ -97,6 +164,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [pluginIds, setPluginIds] = useState<string[]>([])
   const [workflowAppIds, setWorkflowAppIds] = useState<string[]>([])
   const [workflowAppOptions, setWorkflowAppOptions] = useState<AppItem[]>([])
+  const [agentAppIds, setAgentAppIds] = useState<string[]>([])
+  const [agentAppOptions, setAgentAppOptions] = useState<AppItem[]>([])
   const [skillIds, setSkillIds] = useState<string[]>([])
   const [sandboxEnabled, setSandboxEnabled] = useState(false)
   const [sandboxTimeout, setSandboxTimeout] = useState<number | null>(null)
@@ -107,8 +176,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [sandboxEgress, setSandboxEgress] = useState('')
   const [sandboxLimits, setSandboxLimits] = useState<SandboxLimits | null>(null)
   const [executionSettings, setExecutionSettings] = useState<Record<string, unknown>>({})
-  // 审批策略：审批模式下自动放行的插件白名单与沙箱开关（存于 executionSettings.toolApproval）
-  const [autoApprovePluginIds, setAutoApprovePluginIds] = useState<string[]>([])
+  // 审批策略：六类绑定资源的自动放通白名单与沙箱开关（存于 executionSettings.toolApproval）
+  const [autoPass, setAutoPass] = useState<AutoPassState>(EMPTY_AUTO_PASS)
   const [sandboxAutoApproved, setSandboxAutoApproved] = useState(false)
   // 上下文压缩参数（存于 executionSettings 顶层字段；null=未配置，按平台系统默认执行）
   const [compactionToolResult, setCompactionToolResult] = useState<number | null>(null)
@@ -163,6 +232,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setGraphIds(config.graphIds ?? [])
         setPluginIds(config.plugins ?? [])
         setWorkflowAppIds(config.workflowApps ?? [])
+        setAgentAppIds(config.agentApps ?? [])
         setSkillIds(config.skills ?? [])
         const settings = config.executionSettings ?? {}
         setExecutionSettings(settings)
@@ -182,8 +252,18 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setSubAgentTimeout(typeof subAgent.timeoutSeconds === 'number' ? (subAgent.timeoutSeconds as number) : null)
         setSubAgentResultMaxChars(typeof subAgent.resultMaxChars === 'number' ? (subAgent.resultMaxChars as number) : null)
         const toolApproval = (settings.toolApproval ?? {}) as Record<string, unknown>
-        const autoPlugins = toolApproval.autoApprovePlugins
-        setAutoApprovePluginIds(Array.isArray(autoPlugins) ? autoPlugins.map((x) => String(x)) : [])
+        const asIdList = (value: unknown): string[] =>
+          Array.isArray(value) ? value.map((x) => String(x)).filter(Boolean) : []
+        const asLongList = (value: unknown): number[] =>
+          Array.isArray(value) ? value.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0) : []
+        setAutoPass({
+          plugins: asIdList(toolApproval.autoApprovePlugins),
+          workflowApps: asIdList(toolApproval.autoApproveWorkflowApps),
+          agentApps: asIdList(toolApproval.autoApproveAgentApps),
+          skills: asIdList(toolApproval.autoApproveSkills),
+          wikis: asLongList(toolApproval.autoApproveWikis),
+          graphs: asLongList(toolApproval.autoApproveGraphs),
+        })
         setSandboxAutoApproved(toolApproval.sandboxAutoApproved === true)
         const resource = (sandbox.resource ?? {}) as Record<string, unknown>
         setSandboxCpu(typeof resource.cpu === 'string' ? (resource.cpu as string) : '')
@@ -206,7 +286,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     setOptionsLoading(true)
     try {
       const [models, plugins, wikis, skills, apps, graphs] = await Promise.all([
-        getTeamGatewayModels(teamId),
+        getTeamAvailableModels(teamId),
         getTeamPlugins(teamId),
         getWikis(teamId),
         // 默认技能不含个人技能；配置后默认启用，用户在对话的应用设置中可取消勾选
@@ -234,6 +314,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         (apps.items ?? []).filter(
           (item) => item.appType === 'workflow' && item.publishStatus === 1 && item.appId,
         ),
+      )
+      // Agent 应用绑定候选：本团队已发布的 Agent 应用（对话中作为工具无头单轮调用，自身在选项派生时排除）
+      setAgentAppOptions(
+        (apps.items ?? []).filter((item) => item.appType === 'agent' && item.publishStatus === 1 && item.appId),
       )
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -325,9 +409,15 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         }
       }
 
-      // 审批策略：自动放行插件收敛为本次绑定插件的子集（后端强校验），避免解绑插件后保存失败
+      // 审批策略：六类自动放通白名单收敛为本次绑定资源的子集（后端强校验），避免解绑资源后保存失败
       const toolApproval = {
-        autoApprovePlugins: autoApprovePluginIds.filter((id) => pluginIds.includes(id)),
+        autoApprovePlugins: autoPass.plugins.filter((id) => pluginIds.includes(id)),
+        autoApproveWorkflowApps: autoPass.workflowApps.filter((id) => workflowAppIds.includes(id)),
+        autoApproveAgentApps: autoPass.agentApps.filter((id) => agentAppIds.includes(id)),
+        // 外部应用不支持技能：固定空列表（后端强校验拒绝非空）
+        autoApproveSkills: isExternal ? [] : autoPass.skills.filter((id) => skillIds.includes(id)),
+        autoApproveWikis: autoPass.wikis.filter((id) => wikiIds.includes(id)),
+        autoApproveGraphs: autoPass.graphs.filter((id) => graphIds.includes(id)),
         sandboxAutoApproved: isExternal ? false : sandboxAutoApproved,
       }
 
@@ -360,6 +450,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         graphIds,
         plugins: pluginIds,
         workflowApps: workflowAppIds,
+        agentApps: agentAppIds,
         // 外部应用不支持技能：固定空列表（后端强校验拒绝非空）
         skills: isExternal ? [] : skillIds,
         openingStatement,
@@ -394,20 +485,67 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     }
   }
 
-  const pluginSelectOptions = pluginOptions.map((item) => ({
-    value: String(item.pluginId),
-    label: item.title || item.pluginName || '-',
-  }))
+  /** 插件选项统一渲染：头像（存储路径解析，无头像回退标题首字母）+ 标题；title 字符串供搜索过滤 */
+  const renderPluginOption = (item: TeamPluginItemType): { value: string; label: ReactNode; title: string } => {
+    const name = item.title || item.pluginName || '-'
+    return {
+      value: String(item.pluginId),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath ?? null) || undefined} alt={name}>
+            {name.slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span>{name}</span>
+        </span>
+      ),
+    }
+  }
 
-  const skillSelectOptions = skillOptions.map((item) => ({
-    value: String(item.id),
-    label: item.name || item.key || '-',
-  }))
+  const pluginSelectOptions = pluginOptions.map(renderPluginOption)
 
-  const workflowAppSelectOptions = workflowAppOptions.map((item) => ({
-    value: String(item.appId),
-    label: item.name || '-',
-  }))
+  /** 技能选项统一渲染：头像（存储路径解析，无头像回退首字母）+ 名称；title 字符串供搜索过滤 */
+  const renderSkillOption = (item: SkillOption): { value: string; label: ReactNode; title: string } => {
+    const name = item.name || item.key || '-'
+    return {
+      value: String(item.id),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath ?? null) || undefined} alt={name}>
+            {name.slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span>{name}</span>
+        </span>
+      ),
+    }
+  }
+
+  const skillSelectOptions = skillOptions.map(renderSkillOption)
+
+  /** 应用类选项统一渲染：头像（存储路径解析，无头像回退首字母）+ 名称；title 字符串供搜索过滤 */
+  const renderAppOption = (item: AppItem): { value: string; label: ReactNode; title: string } => {
+    const name = item.name || '-'
+    return {
+      value: String(item.appId),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath ?? null) || undefined} alt={name}>
+            {name.slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span>{name}</span>
+        </span>
+      ),
+    }
+  }
+
+  const workflowAppSelectOptions = workflowAppOptions.map(renderAppOption)
+
+  // 排除自身：绑定自己会形成自身调用环（后端保存强校验，前端选项层先隐藏）
+  const agentAppSelectOptions = agentAppOptions
+    .filter((item) => String(item.appId) !== appId)
+    .map(renderAppOption)
 
   const wikiSelectOptions = wikiOptions
     .filter((item) => item.wikiId != null)
@@ -417,6 +555,45 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     value: Number(item.kgId),
     label: item.name || '-',
   }))
+
+  // 自动放通列表行：按当前选中 id 从选项派生（应用类带头像，与下拉选项同一取名列）
+  const appAutoPassItems = (ids: string[], options: AppItem[]): AutoPassItem[] =>
+    ids
+      .map((id) => options.find((item) => String(item.appId) === id))
+      .filter((item): item is AppItem => Boolean(item))
+      .map((item) => ({ id: String(item.appId), name: item.name || '-', avatarPath: item.avatarPath ?? null }))
+
+  const pluginAutoPassItems: AutoPassItem[] = pluginIds
+    .map((id) => pluginOptions.find((item) => String(item.pluginId) === id))
+    .filter((item): item is TeamPluginItemType => Boolean(item))
+    .map((item) => ({ id: String(item.pluginId), name: item.title || item.pluginName || '-' }))
+  const workflowAutoPassItems = appAutoPassItems(workflowAppIds, workflowAppOptions)
+  const agentAutoPassItems = appAutoPassItems(agentAppIds, agentAppOptions)
+  const skillAutoPassItems: AutoPassItem[] = skillIds
+    .map((id) => skillOptions.find((item) => String(item.id) === id))
+    .filter((item): item is SkillOption => Boolean(item))
+    .map((item) => ({ id: String(item.id), name: item.name || item.key || '-' }))
+  const wikiAutoPassItems: AutoPassItem[] = wikiIds
+    .map((id) => wikiOptions.find((item) => Number(item.wikiId) === id))
+    .filter((item): item is WikiItem => Boolean(item))
+    .map((item) => ({ id: Number(item.wikiId), name: item.name || '-' }))
+  const graphAutoPassItems: AutoPassItem[] = graphIds
+    .map((id) => graphOptions.find((item) => Number(item.kgId) === id))
+    .filter((item): item is KnowledgeGraphItem => Boolean(item))
+    .map((item) => ({ id: Number(item.kgId), name: item.name || '-' }))
+
+  const toggleAutoPassId = (key: 'plugins' | 'workflowApps' | 'agentApps' | 'skills', id: string, checked: boolean) => {
+    setAutoPass((prev) => ({
+      ...prev,
+      [key]: checked ? [...prev[key], id] : prev[key].filter((x) => x !== id),
+    }))
+  }
+  const toggleAutoPassLong = (key: 'wikis' | 'graphs', id: number, checked: boolean) => {
+    setAutoPass((prev) => ({
+      ...prev,
+      [key]: checked ? [...prev[key], id] : prev[key].filter((x) => x !== id),
+    }))
+  }
 
   return (
     <Row gutter={[spacing.md, spacing.md]} align="top">
@@ -689,7 +866,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                   },
                 ]}
               />
-              {/* 三、能力扩展：插件 + 流程应用 + 技能 + 知识库 + 知识图谱 */}
+              {/* 三、能力扩展：插件 + 流程应用 + Agent 应用 + 技能 + 知识库 + 知识图谱（选中后逐项配置审批模式自动放通） */}
               <Collapse
                 defaultActiveKey="capabilities"
                 items={[
@@ -697,7 +874,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     key: 'capabilities',
                     label: groupHeader(t('appManage.groupCapabilities'), t('appManage.groupCapabilitiesDesc')),
                     children: (
-                      <Form layout="vertical" disabled={!canManage}>
+                      <>
+                        <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: spacing.md }}>
+                          {t('appManage.capabilitiesAutoPassHint')}
+                        </div>
+                        <Form layout="vertical" disabled={!canManage}>
                         <Form.Item label={t('appManage.sectionPlugins')} extra={t('appManage.pluginsHint')}>
                           <Select
                             mode="multiple"
@@ -713,12 +894,17 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.pluginsEmpty')}
                           />
                         </Form.Item>
+                        <AutoPassList
+                          items={pluginAutoPassItems}
+                          checkedIds={autoPass.plugins}
+                          onToggle={(id, checked) => toggleAutoPassId('plugins', String(id), checked)}
+                        />
                         <Form.Item label={t('appManage.sectionWorkflowApps')} extra={t('appManage.workflowAppsHint')}>
                           <Select
                             mode="multiple"
                             allowClear
                             showSearch
-                            optionFilterProp="label"
+                            optionFilterProp="title"
                             style={{ width: '100%' }}
                             placeholder={t('appManage.workflowAppsPlaceholder')}
                             loading={optionsLoading}
@@ -728,22 +914,54 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.workflowAppsEmpty')}
                           />
                         </Form.Item>
+                        <AutoPassList
+                          items={workflowAutoPassItems}
+                          checkedIds={autoPass.workflowApps}
+                          onToggle={(id, checked) => toggleAutoPassId('workflowApps', String(id), checked)}
+                        />
+                        <Form.Item label={t('appManage.sectionAgentApps')} extra={t('appManage.agentAppsHint')}>
+                          <Select
+                            mode="multiple"
+                            allowClear
+                            showSearch
+                            optionFilterProp="title"
+                            style={{ width: '100%' }}
+                            placeholder={t('appManage.agentAppsPlaceholder')}
+                            loading={optionsLoading}
+                            value={agentAppIds}
+                            onChange={setAgentAppIds}
+                            options={agentAppSelectOptions}
+                            notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.agentAppsEmpty')}
+                          />
+                        </Form.Item>
+                        <AutoPassList
+                          items={agentAutoPassItems}
+                          checkedIds={autoPass.agentApps}
+                          onToggle={(id, checked) => toggleAutoPassId('agentApps', String(id), checked)}
+                        />
                         {!isExternal && (
+                          <>
                           <Form.Item label={t('appManage.sectionSkills')} extra={t('appManage.skillsHint')}>
                             <Select
                               mode="multiple"
                               allowClear
                               showSearch
-                              optionFilterProp="label"
-                              style={{ width: '100%' }}
-                              placeholder={t('appManage.skillsPlaceholder')}
-                              loading={optionsLoading}
-                              value={skillIds}
-                              onChange={setSkillIds}
-                              options={skillSelectOptions}
-                              notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.skillsEmpty')}
+                              optionFilterProp="title"
+                                style={{ width: '100%' }}
+                                placeholder={t('appManage.skillsPlaceholder')}
+                                loading={optionsLoading}
+                                value={skillIds}
+                                onChange={setSkillIds}
+                                options={skillSelectOptions}
+                                notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.skillsEmpty')}
+                              />
+                            </Form.Item>
+                            <AutoPassList
+                              items={skillAutoPassItems}
+                              checkedIds={autoPass.skills}
+                              onToggle={(id, checked) => toggleAutoPassId('skills', String(id), checked)}
                             />
-                          </Form.Item>
+                          </>
                         )}
                         <Form.Item label={t('appManage.sectionKnowledge')} extra={t('appManage.knowledgeHint')}>
                           <Select
@@ -760,6 +978,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.knowledgeEmpty')}
                           />
                         </Form.Item>
+                        <AutoPassList
+                          items={wikiAutoPassItems}
+                          checkedIds={autoPass.wikis}
+                          onToggle={(id, checked) => toggleAutoPassLong('wikis', Number(id), checked)}
+                        />
                         <Form.Item label={t('appManage.sectionGraphs')} extra={t('appManage.graphsHint')}>
                           <Select
                             mode="multiple"
@@ -775,7 +998,13 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.graphsEmpty')}
                           />
                         </Form.Item>
-                      </Form>
+                        <AutoPassList
+                          items={graphAutoPassItems}
+                          checkedIds={autoPass.graphs}
+                          onToggle={(id, checked) => toggleAutoPassLong('graphs', Number(id), checked)}
+                        />
+                        </Form>
+                      </>
                     ),
                   },
                 ]}
@@ -890,40 +1119,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                   ]}
                 />
               )}
-              {/* 五、安全审批：审批模式下自动放行的插件白名单 */}
-              <Collapse
-                defaultActiveKey="approval"
-                items={[
-                  {
-                    key: 'approval',
-                    label: groupHeader(t('appManage.groupApproval'), t('appManage.groupApprovalDesc')),
-                    children: (
-                      <>
-                        <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: spacing.sm }}>
-                          {t('appManage.toolApprovalHint')}
-                        </div>
-                        <Form layout="vertical" disabled={!canManage}>
-                          <Form.Item label={t('appManage.toolApprovalPlugins')} extra={t('appManage.toolApprovalPluginsHint')}>
-                            <Select
-                              mode="multiple"
-                              allowClear
-                              showSearch
-                              optionFilterProp="label"
-                              style={{ width: '100%' }}
-                              placeholder={t('appManage.toolApprovalPluginsPlaceholder')}
-                              value={autoApprovePluginIds}
-                              onChange={setAutoApprovePluginIds}
-                              options={pluginSelectOptions.filter((opt) => pluginIds.includes(opt.value))}
-                              notFoundContent={t('appManage.toolApprovalPluginsEmpty')}
-                            />
-                          </Form.Item>
-                        </Form>
-                      </>
-                    ),
-                  },
-                ]}
-              />
-              {/* 六、内容脱敏（原独立「安全」分区并入，展开才加载设置；随下方「保存设置」一并提交，security 接口即时生效不经发布快照） */}
+              {/* 五、内容脱敏（原独立「安全」分区并入，展开才加载设置；随下方「保存设置」一并提交，security 接口即时生效不经发布快照） */}
               {canManage && (
                 <Collapse
                   items={[
@@ -937,7 +1133,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                   ]}
                 />
               )}
-              {/* 七、长期记忆（原独立「记忆」分区并入，展开才加载设置；memory 节随「保存设置」并入主配置，随发布快照生效；
+              {/* 六、长期记忆（原独立「记忆」分区并入，展开才加载设置；memory 节随「保存设置」并入主配置，随发布快照生效；
                   外部应用面向匿名/外部用户不开放记忆） */}
               {canManage && !isExternal && (
                 <Collapse

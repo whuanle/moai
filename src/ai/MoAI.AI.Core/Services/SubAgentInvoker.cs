@@ -151,6 +151,7 @@ public sealed class SubAgentInvoker : ISubAgentInvoker
             GraphIds = ParseLongList(request.Config.GraphIds),
             PluginIds = ParseGuidList(request.Config.Plugins),
             WorkflowAppIds = ParseGuidList(request.Config.WorkflowApps),
+            AgentAppIds = ParseGuidList(request.Config.AgentApps),
             SkillIds = ParseGuidList(request.Config.Skills),
             ToolApprovalMode = AppToolApprovalContract.ModeAuto,
             IsSubAgent = true,

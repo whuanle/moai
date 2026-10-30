@@ -16,6 +16,7 @@
 
 | @DT-S27 | local-dev/dingtalk-e2e.mjs（DT-16a~b；绑定即露出、AppKey 兜底地址）+ MoAI.App.Tests AppExternalChannelHelperTests（钉钉 jumprobot 地址/未回填 AppKey 兜底/双渠道） | PASS 39/39 + 86/86（2026-10-26） |
 | @DT-S28 | @manual（需真实钉钉机器人首条消息触发回填；浏览器走查卡片钉钉图标与 jumprobot 地址） | PASS 走查（2026-10-26） |
+| @DT-S31~S34 | @manual（渠道用户识别：需真实钉钉应用 + 已绑定第三方登录的用户，改动与识别规则见 2026-10-28 证据摘要） | 待验收 |
 ## 证据摘要（2026-10-26）
 
 - 构建：`dotnet build src/MoAI/MoAI.csproj -o .builds/dingtalk` → 0 error（宿主 5000 实例运行中锁 bin 输出目录，按仓库惯例独立输出构建）。
@@ -68,3 +69,8 @@
 - 同飞书分区布局调整（用户反馈「接入指引整段 Alert 把页面撑开」）：`AppDingTalkChannelsSection` 接入指引改为卡片内 `Collapse` 默认收缩、点击展开；「接入钉钉应用」「刷新」上移卡片标题右侧（`Card extra`），移除 DataTable toolbar 行；未发布警告保留卡片上方。bdd @DT-S24 场景措辞同步。
 - 验证：`npm run typecheck` 0 error；`npm run lint` 0 error；`AppDingTalkChannelsSection.test.tsx` 8/8（三渠道分区合计 25/25）。
 - 迭代（同日，用户反馈指引展开后堆成一段）：指引文案按「N. 」序号拆分为有序列表逐条展示——新增共享组件 `AppChannelGuide`（三渠道分区共用）与 `utils/text.ts` `splitNumberedSteps`（zh/en 通用，去序号与段尾分号）；AppChannelsSection.test 增「默认收缩、展开逐条分行」断言。
+
+## 证据摘要（2026-10-28，渠道用户识别与会话归属 + 渠道放开流程应用）
+
+- 后端（钉钉侧）：`DingTalkReceivedMessage` 增解析 `senderId`（即 unionId，跨应用一致）与 `senderStaffId`；`ChannelUserMatchService`（AI.Core 新增）反查 `user_oauth_connection`（钉钉 OAuth 绑定 `sub` 即 unionId，命中唯一且用户可用才归属，歧义/停用/未命中降级匿名）；归属会话 `CreateUserId=用户id、UserType=Normal`、Redis 键带 `:u{userId}` 后缀；应用门禁放宽为 Agent/Workflow 双类型。`dotnet build src/MoAI/MoAI.csproj -o .builds/cum` → 0 error。
+- 验收：@DT-S31~S34 需真实钉钉应用与已绑定用户，留待人工验收（识别规则见 [sdd](./sdd.md) 关键决策 6、[bdd](./bdd.md#dt-s31)）。

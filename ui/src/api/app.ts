@@ -178,6 +178,8 @@ export interface AppAgentConfig {
   plugins?: string[] | null
   /** 绑定为工具的流程应用 id 列表（元素为 app.id，uuid 字符串，本团队已发布流程应用） */
   workflowApps?: string[] | null
+  /** 绑定为工具的 Agent 应用 id 列表（元素为 app.id，uuid 字符串，本团队已发布内部 Agent 应用且不含自身） */
+  agentApps?: string[] | null
   /** 应用默认使用的技能 id 列表（元素为 skill.id，uuid 字符串），用户可在应用设置中取消勾选 */
   skills?: string[] | null
   /** 对话执行参数（自由 JSON，含沙箱等扩展配置） */
@@ -209,6 +211,7 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     graphIds: (res?.graphIds ?? []).map((id) => Number(id)),
     plugins: (res?.plugins ?? []).map((id) => String(id)),
     workflowApps: (res?.workflowApps ?? []).map((id) => String(id)),
+    agentApps: (res?.agentApps ?? []).map((id) => String(id)),
     skills: (res?.skills ?? []).map((id) => String(id)),
     executionSettings: (fromUntypedNode(res?.executionSettings) as Record<string, unknown> | undefined) ?? {},
     openingStatement: res?.openingStatement ?? '',
@@ -234,6 +237,8 @@ export async function saveAppAgentConfig(
     plugins: string[]
     /** 绑定为工具的流程应用 id 列表；null / 缺省表示保持已保存的流程应用绑定不变 */
     workflowApps?: string[] | null
+    /** 绑定为工具的 Agent 应用 id 列表；null / 缺省表示保持已保存的 Agent 应用绑定不变 */
+    agentApps?: string[] | null
     skills?: string[] | null
     openingStatement?: string
     openingStatementEnabled?: boolean
@@ -252,6 +257,7 @@ export async function saveAppAgentConfig(
     graphIds: (payload.graphIds ?? []).map((id) => String(id)),
     plugins: payload.plugins as Guid[],
     workflowApps: (payload.workflowApps ?? null) as Guid[] | null,
+    agentApps: (payload.agentApps ?? null) as Guid[] | null,
     skills: (payload.skills ?? null) as Guid[] | null,
     openingStatement: payload.openingStatement ?? '',
     openingStatementEnabled: payload.openingStatementEnabled ?? false,
@@ -287,17 +293,28 @@ export async function getCompactionDefaults(): Promise<AgentCompactionDefaults> 
   }
 }
 
-/** 长期记忆默认提示词（应用未配置 memory.prompt 时生效的平台默认值） */
+/** 长期记忆默认提示词与平台记忆设置回显（应用未配置 memory.prompt 时生效的平台默认值） */
 export interface MemoryDefaults {
   prompt: string
+  /** 平台是否已开启长期记忆（总开关关闭时应用不可开启记忆） */
+  platformEnabled: boolean
+  /** 平台统一向量化模型名称（应用记忆与全局记忆共用；未配置为空） */
+  embeddingModelName: string
+  /** 平台统一向量维度 */
+  embeddingDimensions: number
 }
 
-/** 查询长期记忆默认提示词（登录用户可用，配置页占位展示） */
+/** 查询长期记忆默认提示词与平台记忆设置（登录用户可用，配置页占位与只读回显） */
 export async function getMemoryDefaults(): Promise<MemoryDefaults> {
   const client = getApiClient()
   const res = await client.api.app.agent.memoryDefaults.get()
   const raw = res as unknown as Partial<MemoryDefaults> | undefined
-  return { prompt: raw?.prompt ?? '' }
+  return {
+    prompt: raw?.prompt ?? '',
+    platformEnabled: raw?.platformEnabled === true,
+    embeddingModelName: raw?.embeddingModelName ?? '',
+    embeddingDimensions: raw?.embeddingDimensions ?? 1024,
+  }
 }
 
 // ==================== 应用发布 ====================
@@ -611,6 +628,10 @@ export interface AppUserConfig {
   memoryMode: number
   /** 应用是否开启长期记忆（未开启时前端隐藏记忆偏好区） */
   memoryEnabled: boolean
+  /** 用户全局记忆接入模式：0=默认（应用允许时接入）；1=不接入全局记忆 */
+  memoryGlobalMode: number
+  /** 应用是否允许用户接入全局记忆（false 时前端不展示全局接入开关） */
+  memoryGlobalAllowed: boolean
 }
 
 /** userconfig.get 响应的原始 JSON 形状（新契约字段经原始 JSON 投射读取，regen 后行为一致） */
@@ -625,6 +646,8 @@ interface RawAppUserConfigResponse {
   toolApprovalAutoApprovedPrefixes?: string[] | null
   memoryMode?: number | null
   memoryEnabled?: boolean | null
+  memoryGlobalMode?: number | null
+  memoryGlobalAllowed?: boolean | null
 }
 
 /**
@@ -644,13 +667,15 @@ export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
     toolApprovalAutoApprovedPrefixes: res?.toolApprovalAutoApprovedPrefixes ?? [],
     memoryMode: res?.memoryMode ?? 0,
     memoryEnabled: res?.memoryEnabled === true,
+    memoryGlobalMode: res?.memoryGlobalMode ?? 0,
+    memoryGlobalAllowed: res?.memoryGlobalAllowed === true,
   }
 }
 
 /** 保存当前用户在某应用下的个性化配置，跨会话复用；技能仅能在应用默认范围内勾选 */
 export async function saveAppUserConfig(
   appId: string,
-  payload: { promptId: number; skills: string[]; toolApprovalMode?: 'auto' | 'approval'; memoryMode?: number },
+  payload: { promptId: number; skills: string[]; toolApprovalMode?: 'auto' | 'approval'; memoryMode?: number; memoryGlobalMode?: number },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.app.byId(appId).userconfig.put({
@@ -658,6 +683,7 @@ export async function saveAppUserConfig(
     skills: payload.skills as Guid[],
     toolApprovalMode: payload.toolApprovalMode,
     memoryMode: payload.memoryMode,
+    memoryGlobalMode: payload.memoryGlobalMode,
   })
 }
 

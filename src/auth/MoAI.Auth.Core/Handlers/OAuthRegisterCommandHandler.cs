@@ -115,7 +115,8 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         {
             UserId = userId.Value,
             ProviderId = oauthConnectionEntity.Id,
-            Sub = oauthBindUserProfile.Profile.Sub
+            Sub = oauthBindUserProfile.Profile.Sub,
+            UnionId = oauthBindUserProfile.Profile.UnionId
         });
 
         await _databaseContext.SaveChangesAsync();

@@ -28,7 +28,7 @@ type RangeValue = [Dayjs | null, Dayjs | null] | null
 export type AppLogsTab = 'logs' | 'events' | 'usage'
 
 /** 可筛选的用户类型；后端 UserType 枚举按名不区分大小写绑定 */
-const USER_TYPE_OPTIONS = ['normal', 'external', 'externalApp'] as const
+const USER_TYPE_OPTIONS = ['normal', 'external', 'externalApp', 'timer'] as const
 
 /** 用户类型 → i18n key（未知类型回退 none） */
 function userTypeLabelKey(userType?: string | null): string {
@@ -39,6 +39,8 @@ function userTypeLabelKey(userType?: string | null): string {
       return 'appLogs.userTypeExternal'
     case 'externalApp':
       return 'appLogs.userTypeExternalApp'
+    case 'timer':
+      return 'appLogs.userTypeTimer'
     default:
       return 'appLogs.userTypeNone'
   }

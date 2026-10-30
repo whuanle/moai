@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface AuthorizationRequestBuilder extends BaseRequestBuilder<AuthorizationRequestBuilder> {
     /**
-     * 查询模型的团队授权与额度设置（仅管理员可访问）：公开模型返回全局额度，私有模型返回授权团队及各自额度.
+     * 查询模型的团队授权设置（仅管理员可访问）：公开模型所有团队可用，私有模型返回授权团队列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryAIModelAuthorizationCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,7 +22,7 @@ export interface AuthorizationRequestBuilder extends BaseRequestBuilder<Authoriz
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryAIModelAuthorizationCommandResponse | undefined>;
     /**
-     * 更新私有模型的团队授权，全量替换（仅管理员可访问）；取消授权的团队会同步移除其额度规则.
+     * 更新私有模型的团队授权，全量替换（仅管理员可访问）.
      * @param body 更新私有模型的团队授权（全量替换），仅私有模型可设置；公开模型应使用额度接口.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
@@ -34,13 +34,13 @@ export interface AuthorizationRequestBuilder extends BaseRequestBuilder<Authoriz
      */
      put(body: UpdateAIModelAuthorizationCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 查询模型的团队授权与额度设置（仅管理员可访问）：公开模型返回全局额度，私有模型返回授权团队及各自额度.
+     * 查询模型的团队授权设置（仅管理员可访问）：公开模型所有团队可用，私有模型返回授权团队列表.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 更新私有模型的团队授权，全量替换（仅管理员可访问）；取消授权的团队会同步移除其额度规则.
+     * 更新私有模型的团队授权，全量替换（仅管理员可访问）.
      * @param body 更新私有模型的团队授权（全量替换），仅私有模型可设置；公开模型应使用额度接口.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

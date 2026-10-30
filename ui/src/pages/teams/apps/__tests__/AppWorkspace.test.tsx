@@ -38,7 +38,7 @@ vi.mock('@/api/app', () => ({
   unpublishApp: vi.fn(),
   createDebugSession: vi.fn().mockResolvedValue('0198f2c1-1111-7000-8000-000000000001'),
 }))
-vi.mock('@/api/gateway', () => ({ getTeamGatewayModels: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/api/aichannel', () => ({ getTeamAvailableModels: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/team-plugin', () => ({ getTeamPlugins: vi.fn().mockResolvedValue({ items: [] }) }))
 vi.mock('@/api/skills', () => ({ getSkillOptions: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/wiki', () => ({
