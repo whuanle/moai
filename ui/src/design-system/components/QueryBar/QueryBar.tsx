@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Form, Space } from 'antd'
+import { Button, ConfigProvider, Divider, Form, Space } from 'antd'
 import type { FormInstance } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,7 +10,7 @@ export interface QueryBarProps {
   onReset?: () => void
   loading?: boolean
   children?: ReactNode
-  /** 追加在查询/重置按钮右侧的操作区（如新建、刷新） */
+  /** 操作按钮组（如新建、刷新），紧跟在重置按钮右侧，以竖分隔线（|）与筛选按钮区隔 */
   extra?: ReactNode
 }
 
@@ -32,28 +32,35 @@ export function QueryBar({ form, onSearch, onReset, loading, children, extra }: 
       >
         {children}
         <Form.Item>
-          <Space>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              onClick={(e) => {
-                e.preventDefault()
-                onSearch?.(activeForm.getFieldsValue())
-              }}
-            >
-              {t('ds.query.search')}
-            </Button>
-            <Button
-              onClick={() => {
-                activeForm.resetFields()
-                onReset?.()
-              }}
-            >
-              {t('ds.query.reset')}
-            </Button>
-            {extra}
-          </Space>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onSearch?.(activeForm.getFieldsValue())
+                }}
+              >
+                {t('ds.query.search')}
+              </Button>
+              <Button
+                onClick={() => {
+                  activeForm.resetFields()
+                  onReset?.()
+                }}
+              >
+                {t('ds.query.reset')}
+              </Button>
+            </Space>
+            {extra ? (
+              <>
+                <Divider type="vertical" style={{ marginInline: spacing.sm }} />
+                {extra}
+              </>
+            ) : null}
+          </div>
         </Form.Item>
       </Form>
     </ConfigProvider>

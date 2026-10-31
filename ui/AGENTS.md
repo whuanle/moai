@@ -36,6 +36,8 @@ src/
 - **Kiota 锁 `1.0.0-preview.93`**，勿用 `^` 升级
 - **提示用 `App.useApp()`** 的 message/notification，不用静态 `message`
 - **新页面必须配测试**，写在同目录 `__tests__/`
+- **实体列表表格必须有「创建/更新」两个审计列**，单元格用 `@/design-system` 的 `AuditCell`（操作人上/时间下两行），禁止拆四个扁平列；无审计语义的日志/统计表不加
+- **表格操作列按钮一律「图标 + 文字」**（`Button type="link" size="small"`），禁止纯图标；危险操作 `danger` + `Popconfirm`
 
 ## 页面编写四条
 

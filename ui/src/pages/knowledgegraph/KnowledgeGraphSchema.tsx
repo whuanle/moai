@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, Button, Col, ColorPicker, Form, Input, Modal, Popconfirm, Row, Select, Space, Spin, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
 import { PropertyListEditor } from './PropertyFields'
 import { spacing, useNeutralColors } from '@/design-system/theme'
@@ -284,10 +284,10 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
     {
       title: '',
       key: 'view',
-      width: 110,
+      width: 130,
       render: (_: unknown, record: KnowledgeGraphEntityTypeItem) =>
         record.entityTypeId != null ? (
-          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=entities&typeId=${record.entityTypeId}`)}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=entities&typeId=${record.entityTypeId}`)}>
             {t('knowledgegraph.schema.viewEntities')}
           </Button>
         ) : null,
@@ -297,15 +297,15 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
           {
             title: '',
             key: 'action',
-            width: 130,
+            width: 180,
             fixed: 'right' as const,
             render: (_: unknown, record: KnowledgeGraphEntityTypeItem) => (
               <Space size={4}>
-                <Button type="link" size="small" onClick={() => openEditEntityType(record)}>
+                <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditEntityType(record)}>
                   {t('knowledgegraph.edit')}
                 </Button>
                 <Popconfirm title={t('knowledgegraph.schema.deleteEntityConfirm')} onConfirm={() => void handleDeleteEntityType(record)}>
-                  <Button type="link" size="small" danger>
+                  <Button type="link" size="small" danger icon={<DeleteOutlined />}>
                     {t('knowledgegraph.delete')}
                   </Button>
                 </Popconfirm>
@@ -314,7 +314,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
           } as TableColumnsType<KnowledgeGraphEntityTypeItem>[number],
         ]
       : []),
-  ]
+]
 
   const relationColumns: TableColumnsType<KnowledgeGraphRelationTypeItem> = [
     { title: t('knowledgegraph.schema.name'), dataIndex: 'name', key: 'name', render: (v: string | null | undefined) => v || '-' },
@@ -333,10 +333,10 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
     {
       title: '',
       key: 'view',
-      width: 110,
+      width: 130,
       render: (_: unknown, record: KnowledgeGraphRelationTypeItem) =>
         record.relationTypeId != null ? (
-          <Button type="link" size="small" onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=relations&relationTypeId=${record.relationTypeId}`)}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/team/${teamId}/kg/${graphId}/maintenance?step=relations&relationTypeId=${record.relationTypeId}`)}>
             {t('knowledgegraph.schema.viewRelations')}
           </Button>
         ) : null,
@@ -346,15 +346,15 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
           {
             title: '',
             key: 'action',
-            width: 130,
+            width: 180,
             fixed: 'right' as const,
             render: (_: unknown, record: KnowledgeGraphRelationTypeItem) => (
               <Space size={4}>
-                <Button type="link" size="small" onClick={() => openEditRelationType(record)}>
+                <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditRelationType(record)}>
                   {t('knowledgegraph.edit')}
                 </Button>
                 <Popconfirm title={t('knowledgegraph.schema.deleteRelationConfirm')} onConfirm={() => void handleDeleteRelationType(record)}>
-                  <Button type="link" size="small" danger>
+                  <Button type="link" size="small" danger icon={<DeleteOutlined />}>
                     {t('knowledgegraph.delete')}
                   </Button>
                 </Popconfirm>
@@ -363,7 +363,7 @@ export function KnowledgeGraphSchema({ graphId, teamId, myRole, mode: modeProp }
           } as TableColumnsType<KnowledgeGraphRelationTypeItem>[number],
         ]
       : []),
-  ]
+]
 
   const connectedEntityColumns: TableColumnsType<KnowledgeGraphEntityTypeItem> = [
     { title: t('knowledgegraph.schema.name'), dataIndex: 'name', key: 'name', render: (v: string | null | undefined) => v || '-' },

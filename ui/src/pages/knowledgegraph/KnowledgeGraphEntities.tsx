@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { FormInstance, TableColumnsType } from 'antd'
-import { ApartmentOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { chartColors, DataTable, feedback  } from '@/design-system'
 import { PropertyInputs, deserializePropertyValues, serializePropertyValues, toPropertyDefs, type PropertyDef } from './PropertyFields'
 import { spacing } from '@/design-system/theme'
@@ -201,20 +201,20 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
     {
       title: '',
       key: 'action',
-      width: 190,
+      width: 250,
       fixed: 'right' as const,
       render: (_: unknown, record: KnowledgeGraphNodeItem) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => gotoRelationsOf(record)}>
+          <Button type="link" size="small" icon={<ApartmentOutlined />} onClick={() => gotoRelationsOf(record)}>
             {t('knowledgegraph.entity.viewRelations')}
           </Button>
           {canWrite && (
             <>
-              <Button type="link" size="small" onClick={() => openEdit(record)}>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
                 {t('knowledgegraph.edit')}
               </Button>
               <Popconfirm title={t('knowledgegraph.entity.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                <Button type="link" size="small" danger>
+                <Button type="link" size="small" danger icon={<DeleteOutlined />}>
                   {t('knowledgegraph.delete')}
                 </Button>
               </Popconfirm>

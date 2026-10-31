@@ -315,7 +315,7 @@
       "model": {
         "name": "向量化模型",
         "placeholder": "选择公开启用中的 embedding 模型",
-        "desc": "应用记忆与全局记忆统一使用该公开向量化模型，应用侧不可自选；写入任意记忆后锁定，更换需先清空全部记忆。"
+        "desc": "应用记忆与全局记忆统一使用该公开向量化模型，应用侧不可自选；写入任意记忆后锁定，可通过迁移重建更换。"
       },
       "dimensions": {
         "name": "向量维度",
@@ -323,6 +323,16 @@
       },
       "modelRequired": "请先选择向量化模型",
       "invalidDimensions": "向量维度必须是 1~2000 之间的整数",
+      "lockedHint": "平台已有 {{count}} 条记忆，模型/维度已锁定；改动后点击「开始迁移」用新模型重建全部记忆向量。",
+      "migrate": {
+        "name": "模型迁移",
+        "start": "开始迁移",
+        "confirm": "将使用新模型与维度重建平台全部记忆向量，期间记忆不可写入、检索不受影响，确定开始？",
+        "desc": "迁移异步执行：逐条用新模型重嵌原文写入临时表，全部完成后原子换表并切换设置；失败自动回滚，原记忆不受影响，可重新发起。",
+        "started": "迁移任务已启动，正在后台重建记忆向量",
+        "success": "记忆向量迁移完成，新模型/维度已生效",
+        "failed": "记忆向量迁移失败，原记忆未受影响，可修正后重新发起"
+      },
       "clear": "清空全部记忆",
       "clearConfirm": "确认清空平台全部记忆（所有应用记忆与全局记忆）？不可恢复，清空后可更换向量化模型。",
       "clearSuccess": "已清空全部记忆。"
@@ -340,6 +350,11 @@
     "deleteConfirm": "确认删除该连接？",
     "edit": "编辑",
     "delete": "删除",
+    "view": "查看",
+    "detailTitle": "连接详情",
+    "searchPlaceholder": "搜索名称或应用 Key",
+    "colCreate": "创建",
+    "colUpdate": "更新",
     "colName": "名称",
     "colProvider": "提供商",
     "colKey": "应用 Key",
@@ -373,6 +388,7 @@
   },
   "models": {
     "addChannel": "添加渠道",
+    "searchPlaceholder": "搜索渠道 / 模型",
     "editChannel": "编辑渠道",
     "addModel": "添加模型",
     "editModel": "编辑模型",
@@ -406,6 +422,10 @@
     "colProtocol": "协议",
     "protocolRequired": "请选择协议",
     "colModelCount": "模型数",
+    "colTokens": "Tokens 消耗",
+    "tokensDetail": "输入 {{prompt}} · 输出 {{completion}}",
+    "colCreate": "创建",
+    "colUpdate": "更新",
     "colCreateUser": "创建人",
     "colCreateTime": "创建时间",
     "colUpdateUser": "更新人",
@@ -643,7 +663,9 @@
     "disableSuccess": "账号已禁用",
     "enableSuccess": "账号已启用",
     "resetPasswordSuccess": "密码已重置，请将新密码线下告知用户",
-    "detailTitle": "用户信息"
+    "detailTitle": "用户信息",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "team": {
     "title": "团队",
@@ -794,7 +816,9 @@
     "status.running": "执行中",
     "status.success": "成功",
     "status.failed": "失败",
-    "status.retrying": "重试中"
+    "status.retrying": "重试中",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "wiki": {
     "title": "知识库",
@@ -980,7 +1004,9 @@
       "metadataTypeKeyword": "关键词",
       "metadataTypeSummary": "摘要",
       "metadataTypeAggregated": "聚合段",
-      "metadataTypeUnknown": "未知"
+      "metadataTypeUnknown": "未知",
+      "colCreate": "创建",
+      "colUpdate": "更新"
     },
     "embedding": {
       "model": "向量模型",
@@ -1189,7 +1215,9 @@
         "overwriteOn": "覆盖已变更页面",
         "overwriteOff": "仅抓取新页面",
         "overwriteHint": "开启后，已抓取但内容变化的页面会被重新覆盖并再次触发工作流；关闭则已存在的页面直接跳过。"
-      }
+      },
+      "colCreate": "创建",
+      "colUpdate": "更新"
     },
     "recall": {
       "title": "召回测试",
@@ -1546,7 +1574,9 @@
     "createSuccess": "创建成功",
     "saveSuccess": "保存成功",
     "deleteSuccess": "删除成功",
-    "memberReadOnly": "成员可查看普通变量并引用，私密变量的值仅管理员可见"
+    "memberReadOnly": "成员可查看普通变量并引用，私密变量的值仅管理员可见",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "plugins": {
     "tabCustom": "自定义插件",
@@ -1707,7 +1737,9 @@
     "avatarTip": "点击头像上传，支持图片格式，不超过 5MB",
     "avatarSuccess": "头像已更新",
     "avatarTypeError": "仅支持上传图片文件",
-    "avatarSizeError": "头像文件不能超过 5MB"
+    "avatarSizeError": "头像文件不能超过 5MB",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "classify": {
     "title": "分类管理",
@@ -1764,7 +1796,9 @@
     "enableSuccess": "团队已启用",
     "cancel": "取消",
     "tabTeams": "团队管理",
-    "tabRoles": "角色管理"
+    "tabRoles": "角色管理",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "adminOrgRoles": {
     "searchPlaceholder": "搜索组织名称",
@@ -1885,7 +1919,9 @@
     "formCallbackUrlPlaceholder": "https://report.example.com/sso/callback（可选）",
     "formCallbackUrlHint": "配置后子系统可通过 MoAI 委托登录；回跳仅允许该注册地址",
     "formCallbackUrlMax": "回调地址最长 255 字符",
-    "formCallbackUrlPattern": "回调地址须为 http(s) 完整地址"
+    "formCallbackUrlPattern": "回调地址须为 http(s) 完整地址",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "gateway": {
     "scope.wiki_read": "知识库读",
@@ -2030,7 +2066,8 @@
     "refresh": "刷新",
     "cancel": "取消",
     "typeSkill": "技能",
-    "colVersion": "版本"
+    "colVersion": "版本",
+    "colCreate": "创建"
   },
   "appManage": {
     "create": "新建应用",
@@ -2250,7 +2287,8 @@
     "externalPublishHint": "外部应用直接发布即生效，无需审批；外部用户通过访问点使用已发布的版本。",
     "externalUnpublishConfirm": "确定撤回发布？撤回后外部用户将无法访问该应用。",
     "groupMemory": "长期记忆",
-    "groupMemoryDesc": "长期记忆开关、向量化模型、记忆提示词与检索参数"
+    "groupMemoryDesc": "长期记忆开关、向量化模型、记忆提示词与检索参数",
+    "colCreate": "创建"
   },
   "skills": {
     "searchPlaceholder": "搜索技能标识/名称/描述",
@@ -2319,7 +2357,9 @@
     "avatarSuccess": "头像已更新",
     "extractSuccess": "压缩包解压完成，展开 {{count}} 个文件并已读取技能信息",
     "addFileOrZip": "添加文件 / 上传压缩包",
-    "zipHint": "支持 .zip 技能包：上传后自动解压，并读取 SKILL.md（name/description 与正文使用说明）回填表单"
+    "zipHint": "支持 .zip 技能包：上传后自动解压，并读取 SKILL.md（name/description 与正文使用说明）回填表单",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "accessApp": {
     "create": "新建接入",
@@ -2498,7 +2538,9 @@
     "edit": "编辑",
     "editTitle": "编辑飞书应用",
     "editOk": "保存",
-    "fieldAppSecretKeepPlaceholder": "留空表示保持不变"
+    "fieldAppSecretKeepPlaceholder": "留空表示保持不变",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "appLogs": {
     "tabLogs": "日志",
@@ -2967,7 +3009,9 @@
     "edit": "编辑",
     "editTitle": "编辑钉钉应用",
     "editOk": "保存",
-    "fieldAppSecretKeepPlaceholder": "留空表示保持不变"
+    "fieldAppSecretKeepPlaceholder": "留空表示保持不变",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "appWeixinWorkChannels": {
     "cardTitle": "企业微信渠道",
@@ -3013,7 +3057,9 @@
     "editOk": "保存",
     "fieldCorpSecretKeepPlaceholder": "留空表示保持不变",
     "fieldTokenKeepPlaceholder": "留空表示保持不变",
-    "fieldAesKeyKeepPlaceholder": "留空表示保持不变"
+    "fieldAesKeyKeepPlaceholder": "留空表示保持不变",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "sso": {
     "title": "子系统登录",
@@ -3085,7 +3131,9 @@
     "resetSecretConfirm": "确定重置该接入的密钥？旧密钥立即失效，已换取的 token 将在过期后失效。",
     "resetSecretSuccess": "密钥已重置，请立即保存新密钥",
     "appIdLabel": "appid（moai-sa- 前缀，直连或换取 token 时使用）",
-    "secretLabel": "密钥（仅本次显示，换取 token 时携带）"
+    "secretLabel": "密钥（仅本次显示，换取 token 时携带）",
+    "colCreate": "创建",
+    "colUpdate": "更新"
   },
   "memoryMgmt": {
     "tabApps": "应用记忆",

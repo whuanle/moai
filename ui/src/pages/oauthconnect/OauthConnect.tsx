@@ -1,10 +1,32 @@
-import { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography, Upload } from 'antd'
-import type { TableColumnsType } from 'antd'
-import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Avatar,
+  Button,
+  Descriptions,
+  Form,
+  Input,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  Upload,
+} from 'antd'
+import type { DescriptionsProps, TableColumnsType } from 'antd'
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  UploadOutlined,
+} from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
-import { Page, DataTable, feedback } from '@/design-system'
+import { AuditCell, Page, DataTable, QueryBar, feedback } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { ImageSquareCropModal } from '@/components/ImageSquareCropModal'
 import { useAppStore } from '@/store/app'
 import type { OAuthPrivider } from '@/api/client/models'
@@ -19,7 +41,6 @@ import {
 import { formatDateTime } from '@/utils/datetime'
 
 const { Text } = Typography
-
 
 interface FormValues {
   name: string
@@ -76,6 +97,23 @@ function providerLabel(provider: string | null | undefined): string {
 
 function providerNoDiscovery(provider: string | undefined): boolean {
   return provider === 'feishu' || provider === 'dingTalk' || provider === 'dingtalk' || provider === 'weixinWork'
+}
+
+/** 方形图标 + 回退首字母（与用户页头像同语言） */
+function ConnectionIcon({
+  name,
+  iconUrl,
+  size,
+}: {
+  name: string
+  iconUrl: string | null | undefined
+  size: number
+}) {
+  return (
+    <Avatar shape="square" size={size} src={iconUrl || undefined} alt={name}>
+      {name.slice(0, 1).toUpperCase()}
+    </Avatar>
+  )
 }
 
 interface IconPickerProps {
@@ -170,6 +208,9 @@ export function OauthConnect() {
   const [redirectUri, setRedirectUri] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<OAuthConnectionItem | null>(null)
+  const [detail, setDetail] = useState<OAuthConnectionItem | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [keyword, setKeyword] = useState<string | undefined>(undefined)
 
   const load = async () => {
     setLoading(true)
@@ -190,6 +231,27 @@ export function OauthConnect() {
     }
   }, [isAdmin])
 
+  // 列表接口一次返回全部（不分页），关键字按名称/应用 Key 客户端过滤
+  const filteredItems = useMemo(() => {
+    const k = keyword?.trim().toLowerCase()
+    if (!k) return items
+    return items.filter(
+      (it) => (it.name ?? '').toLowerCase().includes(k) || (it.key ?? '').toLowerCase().includes(k),
+    )
+  }, [items, keyword])
+
+  const handleSearch = (values: Record<string, unknown>) => {
+    const text = typeof values.searchText === 'string' ? values.searchText.trim() : ''
+    setKeyword(text || undefined)
+    // 查询即刷新：重拉列表并应用关键字过滤
+    void load()
+  }
+
+  const handleReset = () => {
+    setKeyword(undefined)
+    void load()
+  }
+
   const openCreate = () => {
     setEditing(null)
     form.resetFields()
@@ -208,6 +270,11 @@ export function OauthConnect() {
       secret: '',
     })
     setModalOpen(true)
+  }
+
+  const openDetail = (record: OAuthConnectionItem) => {
+    setDetail(record)
+    setDetailOpen(true)
   }
 
   const handleProviderChange = (value: string) => {
@@ -278,131 +345,219 @@ export function OauthConnect() {
     { value: 'weixinWork', label: 'WeCom（企业微信）' }
   ]
 
-  const columns: TableColumnsType<OAuthConnectionItem> = [
-    { title: t('oauthconnect.colName'), dataIndex: 'name', width: 160 },
-    {
-      title: t('oauthconnect.colProvider'),
-      dataIndex: 'provider',
-      width: 140,
-      render: (p: string | null) => (
-        <Tag color={providerTagColor[p ?? '']}>{providerLabel(p)}</Tag>
-      ),
-    },
-    { title: t('oauthconnect.colKey'), dataIndex: 'key', width: 220, ellipsis: true },
-    {
-      title: t('oauthconnect.colIcon'),
-      dataIndex: 'iconUrl',
-      width: 200,
-      render: (url: string | null) => {
-        const resolved = resolveStorageUrl(url)
-        return resolved ? (
-          <img
-            src={resolved}
-            alt="icon"
-            style={{ height: 32, width: 200, borderRadius: 6, objectFit: 'contain' }}
-          />
-        ) : (
-          '-'
-        )
-      },
-    },
-    {
-      title: t('oauthconnect.colCallback'),
-      key: 'redirectUri',
-      ellipsis: true,
-      render: () =>
-        redirectUri ? (
-          <Tooltip title={t('oauthconnect.callbackTip')}>
-            <Text style={{ fontSize: 12 }} copyable>
-              {redirectUri}
-            </Text>
-          </Tooltip>
-        ) : (
-          '-'
+  const renderProvider = (p: string | null | undefined) => (
+    <Tag color={providerTagColor[p ?? '']}>{providerLabel(p)}</Tag>
+  )
+
+  // 全部列按百分比分配（操作列除外），表格永远等于容器宽度，不设 scroll.x：
+  // 内容区窄（如 150% 缩放屏 ~980px）时按比例收缩，回调地址列吸收剩余宽度，不出现横向滚动
+  const columns: TableColumnsType<OAuthConnectionItem> = useMemo(
+    () => [
+      {
+        title: t('oauthconnect.colName'),
+        key: 'name',
+        width: '12%',
+        ellipsis: true,
+        render: (_, record) => (
+          <Space>
+            <ConnectionIcon
+              name={record.name || '-'}
+              iconUrl={resolveStorageUrl(record.iconUrl ?? null)}
+              size={36}
+            />
+            <span>{record.name || '-'}</span>
+          </Space>
         ),
-    },
-    {
-      title: t('oauthconnect.colCreateUser'),
-      dataIndex: 'createUserName',
-      width: 120,
-      render: (v: string | null) => v || '-',
-    },
-    {
-      title: t('oauthconnect.colCreateTime'),
-      dataIndex: 'createTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
-    },
-    {
-      title: t('oauthconnect.colUpdateUser'),
-      dataIndex: 'updateUserName',
-      width: 120,
-      render: (v: string | null) => v || '-',
-    },
-    {
-      title: t('oauthconnect.colUpdateTime'),
-      dataIndex: 'updateTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
-    },
-    {
-      title: t('oauthconnect.colActions'),
-      key: 'actions',
-      width: 110,
-      fixed: 'right',
-      render: (_, record) => (
-        <Space size={0}>
-          <Tooltip title={t('oauthconnect.edit')}>
+      },
+      {
+        title: t('oauthconnect.colProvider'),
+        dataIndex: 'provider',
+        width: '13.5%',
+        ellipsis: true,
+        render: (p: string | null) => renderProvider(p),
+      },
+      { title: t('oauthconnect.colKey'), dataIndex: 'key', width: '11.5%', ellipsis: true },
+      {
+        title: t('oauthconnect.colCallback'),
+        key: 'redirectUri',
+        ellipsis: true,
+        render: () =>
+          redirectUri ? (
+            <Tooltip title={t('oauthconnect.callbackTip')}>
+              <Text style={{ fontSize: 12 }} copyable>
+                {redirectUri}
+              </Text>
+            </Tooltip>
+          ) : (
+            '-'
+          ),
+      },
+      {
+        title: t('oauthconnect.colCreate'),
+        key: 'create',
+        width: '13.5%',
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('oauthconnect.colUpdate'),
+        key: 'update',
+        width: '13.5%',
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+      },
+      {
+        title: t('oauthconnect.colActions'),
+        key: 'actions',
+        width: '22%',
+        render: (_, record) => (
+          <Space size={0}>
             <Button
-              type="text"
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              aria-label={t('oauthconnect.view')}
+              onClick={() => openDetail(record)}
+            >
+              {t('oauthconnect.view')}
+            </Button>
+            <Button
+              type="link"
               size="small"
               icon={<EditOutlined />}
               aria-label={t('oauthconnect.edit')}
               onClick={() => openEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title={t('oauthconnect.deleteConfirm')}
-            okButtonProps={{ danger: true }}
-            onConfirm={() => record.id && handleDelete(record.id)}
-          >
-            <Tooltip title={t('oauthconnect.delete')}>
+            >
+              {t('oauthconnect.edit')}
+            </Button>
+            <Popconfirm
+              title={t('oauthconnect.deleteConfirm')}
+              okButtonProps={{ danger: true }}
+              onConfirm={() => record.id && handleDelete(record.id)}
+            >
               <Button
-                type="text"
+                type="link"
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
                 aria-label={t('oauthconnect.delete')}
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ]
+              >
+                {t('oauthconnect.delete')}
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, redirectUri],
+  )
+
+  const detailItems: DescriptionsProps['items'] = useMemo(() => {
+    if (!detail) return []
+    return [
+      {
+        key: 'provider',
+        label: t('oauthconnect.colProvider'),
+        children: renderProvider(detail.provider),
+      },
+      { key: 'key', label: t('oauthconnect.colKey'), children: detail.key || '-' },
+      {
+        key: 'callback',
+        label: t('oauthconnect.colCallback'),
+        children: redirectUri ? (
+          <Text style={{ fontSize: 12 }} copyable>
+            {redirectUri}
+          </Text>
+        ) : (
+          '-'
+        ),
+      },
+      {
+        key: 'wellKnown',
+        label: t('oauthconnect.wellKnown'),
+        children: detail.wellKnown ? (
+          <Text style={{ fontSize: 12 }} copyable>
+            {detail.wellKnown}
+          </Text>
+        ) : (
+          '-'
+        ),
+      },
+      { key: 'agentId', label: t('oauthconnect.agentId'), children: detail.agentId || '-' },
+      { key: 'createUser', label: t('oauthconnect.colCreateUser'), children: detail.createUserName || '-' },
+      {
+        key: 'createTime',
+        label: t('oauthconnect.colCreateTime'),
+        children: formatDateTime(detail.createTime),
+      },
+      { key: 'updateUser', label: t('oauthconnect.colUpdateUser'), children: detail.updateUserName || '-' },
+      {
+        key: 'updateTime',
+        label: t('oauthconnect.colUpdateTime'),
+        children: formatDateTime(detail.updateTime),
+      },
+    ]
+  }, [detail, redirectUri, t])
 
   if (!isAdmin) {
     return <Navigate to="/apps" replace />
   }
 
+  const detailName = detail?.name || '-'
+  const detailIcon = resolveStorageUrl(detail?.iconUrl ?? null)
+
   return (
     <Page>
-      <DataTable<OAuthConnectionItem>
-        rowKey="id"
-        columns={columns}
-        dataSource={items}
+      {/* 查询即刷新：查询/重置/新建同一行，不再单设工具行与刷新按钮。
+          连接器数量少，表格走自然文档流（不用 scroll.y 双表），tableLayout=fixed
+          + 百分比列宽保证表头表体对齐且任意视口无横向溢出 */}
+      <QueryBar
+        onSearch={handleSearch}
+        onReset={handleReset}
         loading={loading}
-        sticky
-        scroll={{ x: 1440 }}
-        toolbar={
+        extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('oauthconnect.create')}
           </Button>
         }
-        onRefresh={load}
-        refreshLoading={loading}
+      >
+        <Form.Item name="searchText">
+          <Input
+            placeholder={t('oauthconnect.searchPlaceholder')}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            allowClear
+            maxLength={50}
+            style={{ width: 280 }}
+          />
+        </Form.Item>
+      </QueryBar>
+      <DataTable<OAuthConnectionItem>
+        rowKey="id"
+        columns={columns}
+        dataSource={filteredItems}
+        loading={loading}
+        tableLayout="fixed"
         pagination={false}
       />
+      <Modal
+        open={detailOpen}
+        title={t('oauthconnect.detailTitle')}
+        footer={null}
+        maskClosable={false}
+        onCancel={() => setDetailOpen(false)}
+      >
+        {detail && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+              <ConnectionIcon name={detailName} iconUrl={detailIcon} size={56} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>{detailName}</div>
+                <Text type="secondary">{providerLabel(detail.provider)}</Text>
+              </div>
+            </div>
+            <Descriptions column={1} size="small" bordered items={detailItems} />
+          </>
+        )}
+      </Modal>
       <Modal
         open={modalOpen}
         title={editing ? t('oauthconnect.editTitle') : t('oauthconnect.createTitle')}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MoAI.Database;
 
 namespace MoAI.Memory.Services;
 
@@ -69,4 +70,36 @@ public interface IMemoryVectorStore
     /// 删除全局记忆集合（root 清空全部全局记忆时调用；集合不存在时静默跳过）.
     /// </summary>
     Task DeleteGlobalCollectionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 无用户过滤分页遍历集合全部记忆（迁移重建用；集合不存在或为空返回空列表）.
+    /// 应用集合传应用 id，全局集合传 <see cref="MemoryGlobalScope.GlobalAppId"/> 哨兵.
+    /// </summary>
+    Task<IReadOnlyList<AgentMemoryVectorRecord>> ListAllPageAsync(Guid appId, int skip, int max, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 统计集合记忆条数（迁移进度口径；集合不存在返回 0）.
+    /// 应用集合传应用 id，全局集合传 <see cref="MemoryGlobalScope.GlobalAppId"/> 哨兵.
+    /// </summary>
+    Task<int> CountCollectionAsync(Guid appId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 开始模型迁移：删除残留临时集合并按目标维度建临时集合（失败可安全重试）.
+    /// </summary>
+    Task BeginMigrationCollectionAsync(Guid appId, int dimensions, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 迁移写入：将已用新模型重嵌的记录批量写入临时集合.
+    /// </summary>
+    Task UpsertMigrationCollectionAsync(Guid appId, IReadOnlyList<AgentMemoryVectorRecord> records, int dimensions, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 完成模型迁移：事务内删除原集合并将临时集合换名为正式集合（换名后新维度生效）.
+    /// </summary>
+    Task CompleteMigrationCollectionAsync(Guid appId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 放弃模型迁移：删除临时集合，原集合保持不动（旧数据完好可重试）.
+    /// </summary>
+    Task AbortMigrationCollectionAsync(Guid appId, CancellationToken cancellationToken = default);
 }

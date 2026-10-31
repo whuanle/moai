@@ -11,7 +11,7 @@ import { Avatar, Badge, Button, Descriptions, Form, Input, Modal, Popconfirm, Sk
 import type { DescriptionsProps, TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
-import { Page, DataTable, QueryBar, feedback } from '@/design-system'
+import { AuditCell, Page, DataTable, QueryBar, feedback } from '@/design-system'
 import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { refreshUserProfile } from '@/api/auth'
@@ -215,12 +215,16 @@ export function Users() {
       { title: t('users.colRole'), key: 'role', width: 110, render: (_, record) => renderRole(record) },
       { title: t('users.colStatus'), key: 'status', width: 90, render: (_, record) => renderStatus(record) },
       {
-        title: t('users.colCreateTime'),
-        dataIndex: 'createTime',
-        width: 170,
-        render: (v: string | null) => (
-          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-        ),
+        title: t('users.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('users.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('users.colActions'),
@@ -352,7 +356,7 @@ export function Users() {
             dataSource={items}
             loading={loading}
             sticky
-            scroll={{ x: 1460, y: usersTableScrollY }}
+            scroll={{ x: 1600, y: usersTableScrollY }}
             pagination={{
               current: pageNo,
               pageSize,

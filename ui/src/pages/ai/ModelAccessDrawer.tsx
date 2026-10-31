@@ -115,20 +115,16 @@ export function ModelAccessDrawer({ model, open, onClose, onVisibilityChanged }:
     {
       title: t('models.colActions'),
       key: 'actions',
-      width: 90,
+      width: 110,
       render: (_, record) => (
         <Popconfirm
           title={t('models.authRemoveConfirm')}
           okButtonProps={{ danger: true }}
           onConfirm={() => void handleRemoveTeam(record.teamId)}
         >
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            aria-label={t('models.authRemove')}
-          />
+          <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label={t('models.authRemove')}>
+            {t('models.authRemove')}
+          </Button>
         </Popconfirm>
       ),
     },

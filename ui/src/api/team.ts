@@ -179,6 +179,8 @@ export interface AdminTeamItem {
   createUserId?: number | null
   createUserName?: string | null
   createTime?: string | null
+  updateUserName?: string | null
+  updateTime?: string | null
 }
 
 export interface AdminTeamListResult {

@@ -241,6 +241,90 @@ public class PgVectorAgentMemoryVectorStore : IMemoryVectorStore
         await _databaseContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {MemoryGlobalScope.CollectionName}", cancellationToken);
     }
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<AgentMemoryVectorRecord>> ListAllPageAsync(Guid appId, int skip, int max, CancellationToken cancellationToken = default)
+    {
+        var tableName = ResolveTableName(appId);
+        var dimensions = await ResolveTableDimensionsAsync(tableName, cancellationToken);
+        if (dimensions <= 0 || !await CollectionExistsAsync(tableName, dimensions, cancellationToken))
+        {
+            return [];
+        }
+
+        var collection = _vectorStore.GetCollection<Guid, AgentMemoryVectorRecord>(tableName, BuildDefinition(dimensions));
+
+        // 按 Key（唯一）排序 + skip 分页，保证翻页期间记录不重不漏（迁移期间原集合只读）；
+        // 提供者不接受 null 过滤，用恒真等值条件表达全表遍历
+        var records = new List<AgentMemoryVectorRecord>();
+        var options = new FilteredRecordRetrievalOptions<AgentMemoryVectorRecord>
+        {
+            Skip = skip,
+            OrderBy = definition => definition.Ascending(x => x.Key),
+        };
+        await foreach (var record in collection.GetAsync(x => x.UserId == x.UserId, max, options, cancellationToken))
+        {
+            records.Add(record);
+        }
+
+        return records;
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> CountCollectionAsync(Guid appId, CancellationToken cancellationToken = default)
+    {
+        var tableName = ResolveTableName(appId);
+        var dimensions = await ResolveTableDimensionsAsync(tableName, cancellationToken);
+        if (dimensions <= 0)
+        {
+            return 0;
+        }
+
+        // 表名由 appId 的 hex 或固定常量构成（无注入面），SqlQueryRaw 不做插值参数化，须以纯字符串内联
+        return await _databaseContext.Database
+            .SqlQueryRaw<int>("SELECT COUNT(*)::int AS \"Value\" FROM " + tableName)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task BeginMigrationCollectionAsync(Guid appId, int dimensions, CancellationToken cancellationToken = default)
+    {
+        // 兜底删除上次失败/崩溃残留的临时表，保证重建起点干净
+        await _databaseContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {GetTempCollectionName(appId)}", cancellationToken);
+        var collection = GetTempCollection(appId, dimensions);
+        await collection.EnsureCollectionExistsAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task UpsertMigrationCollectionAsync(Guid appId, IReadOnlyList<AgentMemoryVectorRecord> records, int dimensions, CancellationToken cancellationToken = default)
+    {
+        if (records.Count == 0)
+        {
+            return;
+        }
+
+        var collection = GetTempCollection(appId, dimensions);
+        await collection.UpsertAsync(records, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task CompleteMigrationCollectionAsync(Guid appId, CancellationToken cancellationToken = default)
+    {
+        var tableName = ResolveTableName(appId);
+        var tempName = GetTempCollectionName(appId);
+
+        // 换名窗口极短且迁移期间记忆写入已被阻断；旧表删除后临时表立即顶上
+        await using var transaction = await _databaseContext.Database.BeginTransactionAsync(cancellationToken);
+        await _databaseContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {tableName}", cancellationToken);
+        await _databaseContext.Database.ExecuteSqlRawAsync($"ALTER TABLE {tempName} RENAME TO {tableName}", cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task AbortMigrationCollectionAsync(Guid appId, CancellationToken cancellationToken = default)
+    {
+        await _databaseContext.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS {GetTempCollectionName(appId)}", cancellationToken);
+    }
+
     /// <summary>
     /// 集合维度兼容检查：表不存在时直接建表；已存在但维度与请求不一致时，空表重建（更换模型/维度后首写自愈）、
     /// 非空表抛错（向量维度锁定，须先清空应用全部记忆）.
@@ -380,5 +464,26 @@ public class PgVectorAgentMemoryVectorStore : IMemoryVectorStore
         }
 
         return settings.EmbeddingDimensions;
+    }
+
+    /// <summary>
+    /// 解析集合正式表名：全局哨兵 appId 映射到固定全局表，其余按应用 hex guid.
+    /// </summary>
+    private static string ResolveTableName(Guid appId)
+        => appId == MemoryGlobalScope.GlobalAppId ? MemoryGlobalScope.CollectionName : GetCollectionName(appId);
+
+    /// <summary>
+    /// 临时集合（表）名：迁移期间新向量先写入临时表，全部完成后换名顶替正式表.
+    /// </summary>
+    private static string GetTempCollectionName(Guid appId)
+        => appId == MemoryGlobalScope.GlobalAppId ? "__agent_mem_mig_global" : $"__agent_mem_mig_{appId:N}";
+
+    private VectorStoreCollection<Guid, AgentMemoryVectorRecord> GetTempCollection(Guid appId, int dimensions)
+        => _vectorStore.GetCollection<Guid, AgentMemoryVectorRecord>(GetTempCollectionName(appId), BuildDefinition(dimensions));
+
+    private async Task<bool> CollectionExistsAsync(string tableName, int dimensions, CancellationToken cancellationToken)
+    {
+        var collection = _vectorStore.GetCollection<Guid, AgentMemoryVectorRecord>(tableName, BuildDefinition(dimensions));
+        return await collection.CollectionExistsAsync(cancellationToken);
     }
 }

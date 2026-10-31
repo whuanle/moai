@@ -2601,6 +2601,15 @@ export function createMemoryItemFromDiscriminatorValue(parseNode: ParseNode | un
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {MemoryMigrationTaskState}
+ */
+// @ts-ignore
+export function createMemoryMigrationTaskStateFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoMemoryMigrationTaskState;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {MyMemoryAppItem}
  */
 // @ts-ignore
@@ -3513,6 +3522,15 @@ export function createQueryKnowledgeGraphSearchNeighborItemFromDiscriminatorValu
 // @ts-ignore
 export function createQueryKnowledgeGraphTemplatesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryKnowledgeGraphTemplatesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryMemoryModelMigrationStatusResponse}
+ */
+// @ts-ignore
+export function createQueryMemoryModelMigrationStatusResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryMemoryModelMigrationStatusResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4513,6 +4531,24 @@ export function createSkillListItemFromDiscriminatorValue(parseNode: ParseNode |
 // @ts-ignore
 export function createSkillOptionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSkillOptionItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {StartMemoryModelMigrationCommand}
+ */
+// @ts-ignore
+export function createStartMemoryModelMigrationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoStartMemoryModelMigrationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {StartMemoryModelMigrationCommandResponse}
+ */
+// @ts-ignore
+export function createStartMemoryModelMigrationCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoStartMemoryModelMigrationCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -7518,6 +7554,25 @@ export function deserializeIntoMemoryItem(memoryItem: Partial<MemoryItem> | unde
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoMemoryMigrationTaskState(memoryMigrationTaskState: Partial<MemoryMigrationTaskState> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { memoryMigrationTaskState.createTime = n.getStringValue(); },
+        "message": n => { memoryMigrationTaskState.message = n.getStringValue(); },
+        "migratedCount": n => { memoryMigrationTaskState.migratedCount = n.getNumberValue(); },
+        "state": n => { memoryMigrationTaskState.state = n.getNumberValue(); },
+        "targetDimensions": n => { memoryMigrationTaskState.targetDimensions = n.getNumberValue(); },
+        "targetModelId": n => { memoryMigrationTaskState.targetModelId = n.getGuidValue(); },
+        "targetModelName": n => { memoryMigrationTaskState.targetModelName = n.getStringValue(); },
+        "taskId": n => { memoryMigrationTaskState.taskId = n.getGuidValue(); },
+        "totalCount": n => { memoryMigrationTaskState.totalCount = n.getNumberValue(); },
+        "updateTime": n => { memoryMigrationTaskState.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoMyMemoryAppItem(myMemoryAppItem: Partial<MyMemoryAppItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "appId": n => { myMemoryAppItem.appId = n.getGuidValue(); },
@@ -8018,13 +8073,16 @@ export function deserializeIntoQueryAIChannelListCommandResponseItem(queryAIChan
     return {
         ...deserializeIntoAuditsInfo(queryAIChannelListCommandResponseItem),
         "baseUrl": n => { queryAIChannelListCommandResponseItem.baseUrl = n.getStringValue(); },
+        "completionTokens": n => { queryAIChannelListCommandResponseItem.completionTokens = n.getStringValue(); },
         "description": n => { queryAIChannelListCommandResponseItem.description = n.getStringValue(); },
         "enabled": n => { queryAIChannelListCommandResponseItem.enabled = n.getBooleanValue(); },
         "id": n => { queryAIChannelListCommandResponseItem.id = n.getGuidValue(); },
         "modelCount": n => { queryAIChannelListCommandResponseItem.modelCount = n.getNumberValue(); },
         "name": n => { queryAIChannelListCommandResponseItem.name = n.getStringValue(); },
+        "promptTokens": n => { queryAIChannelListCommandResponseItem.promptTokens = n.getStringValue(); },
         "protocolFamily": n => { queryAIChannelListCommandResponseItem.protocolFamily = n.getEnumValue<AIProtocolFamily>(AIProtocolFamilyObject); },
         "providerKey": n => { queryAIChannelListCommandResponseItem.providerKey = n.getStringValue(); },
+        "totalTokens": n => { queryAIChannelListCommandResponseItem.totalTokens = n.getStringValue(); },
     }
 }
 /**
@@ -8818,6 +8876,20 @@ export function deserializeIntoQueryKnowledgeGraphTemplatesCommandResponse(query
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryMemoryModelMigrationStatusResponse(queryMemoryModelMigrationStatusResponse: Partial<QueryMemoryModelMigrationStatusResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "activeMigration": n => { queryMemoryModelMigrationStatusResponse.activeMigration = n.getObjectValue<MemoryMigrationTaskState>(createMemoryMigrationTaskStateFromDiscriminatorValue); },
+        "currentDimensions": n => { queryMemoryModelMigrationStatusResponse.currentDimensions = n.getNumberValue(); },
+        "currentModelId": n => { queryMemoryModelMigrationStatusResponse.currentModelId = n.getGuidValue(); },
+        "currentModelName": n => { queryMemoryModelMigrationStatusResponse.currentModelName = n.getStringValue(); },
+        "totalMemoryCount": n => { queryMemoryModelMigrationStatusResponse.totalMemoryCount = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryMyGlobalMemoriesCommandResponse(queryMyGlobalMemoriesCommandResponse: Partial<QueryMyGlobalMemoriesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "globalEnabled": n => { queryMyGlobalMemoriesCommandResponse.globalEnabled = n.getBooleanValue(); },
@@ -9373,8 +9445,8 @@ export function deserializeIntoQueryUserListCommandResponse(queryUserListCommand
 // @ts-ignore
 export function deserializeIntoQueryUserListCommandResponseItem(queryUserListCommandResponseItem: Partial<QueryUserListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        ...deserializeIntoAuditsInfo(queryUserListCommandResponseItem),
         "avatar": n => { queryUserListCommandResponseItem.avatar = n.getStringValue(); },
-        "createTime": n => { queryUserListCommandResponseItem.createTime = n.getStringValue(); },
         "email": n => { queryUserListCommandResponseItem.email = n.getStringValue(); },
         "id": n => { queryUserListCommandResponseItem.id = n.getStringValue(); },
         "isAdmin": n => { queryUserListCommandResponseItem.isAdmin = n.getBooleanValue(); },
@@ -10241,6 +10313,27 @@ export function deserializeIntoSkillOptionItem(skillOptionItem: Partial<SkillOpt
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoStartMemoryModelMigrationCommand(startMemoryModelMigrationCommand: Partial<StartMemoryModelMigrationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "dimensions": n => { startMemoryModelMigrationCommand.dimensions = n.getNumberValue(); },
+        "modelId": n => { startMemoryModelMigrationCommand.modelId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoStartMemoryModelMigrationCommandResponse(startMemoryModelMigrationCommandResponse: Partial<StartMemoryModelMigrationCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "taskId": n => { startMemoryModelMigrationCommandResponse.taskId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSubstituteVariableCommand(substituteVariableCommand: Partial<SubstituteVariableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "content": n => { substituteVariableCommand.content = n.getStringValue(); },
@@ -10546,12 +10639,12 @@ export function deserializeIntoTeamUserItem(teamUserItem: Partial<TeamUserItem> 
 // @ts-ignore
 export function deserializeIntoTeamVariableItem(teamVariableItem: Partial<TeamVariableItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        ...deserializeIntoAuditsInfo(teamVariableItem),
         "description": n => { teamVariableItem.description = n.getStringValue(); },
         "isSecret": n => { teamVariableItem.isSecret = n.getBooleanValue(); },
         "key": n => { teamVariableItem.key = n.getStringValue(); },
         "name": n => { teamVariableItem.name = n.getStringValue(); },
         "teamId": n => { teamVariableItem.teamId = n.getStringValue(); },
-        "updateTime": n => { teamVariableItem.updateTime = n.getStringValue(); },
         "value": n => { teamVariableItem.value = n.getStringValue(); },
         "variableId": n => { teamVariableItem.variableId = n.getStringValue(); },
     }
@@ -12525,6 +12618,51 @@ export interface MemoryItem extends Parsable {
      */
     updateTime?: string | null;
 }
+/**
+ * 迁移任务状态.
+ */
+export interface MemoryMigrationTaskState extends Parsable {
+    /**
+     * 任务创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 状态消息.
+     */
+    message?: string | null;
+    /**
+     * 已重建的记忆条数.
+     */
+    migratedCount?: number | null;
+    /**
+     * 任务状态（2 处理中 / 4 成功 / 5 失败，见 WorkerState）.
+     */
+    state?: number | null;
+    /**
+     * 目标向量维度.
+     */
+    targetDimensions?: number | null;
+    /**
+     * 目标向量化模型 id.
+     */
+    targetModelId?: Guid | null;
+    /**
+     * 目标向量化模型名称.
+     */
+    targetModelName?: string | null;
+    /**
+     * 任务 id.
+     */
+    taskId?: Guid | null;
+    /**
+     * 计划重建的记忆总条数.
+     */
+    totalCount?: number | null;
+    /**
+     * 任务最后更新时间.
+     */
+    updateTime?: string | null;
+}
 export type MetadataGenerationStrategy = (typeof MetadataGenerationStrategyObject)[keyof typeof MetadataGenerationStrategyObject];
 /**
  * 本人已有记忆的应用条目.
@@ -13391,6 +13529,10 @@ export interface QueryAIChannelListCommandResponseItem extends AuditsInfo, Parsa
      */
     baseUrl?: string | null;
     /**
+     * 渠道下模型累计输出（补全）tokens.
+     */
+    completionTokens?: string | null;
+    /**
      * 描述.
      */
     description?: string | null;
@@ -13411,6 +13553,10 @@ export interface QueryAIChannelListCommandResponseItem extends AuditsInfo, Parsa
      */
     name?: string | null;
     /**
+     * 渠道下模型累计输入（提示）tokens.
+     */
+    promptTokens?: string | null;
+    /**
      * 协议（对应 AIProtocolFamily 枚举）.
      */
     protocolFamily?: AIProtocolFamily | null;
@@ -13418,6 +13564,10 @@ export interface QueryAIChannelListCommandResponseItem extends AuditsInfo, Parsa
      * 渠道标识.
      */
     providerKey?: string | null;
+    /**
+     * 渠道下模型累计消耗 tokens 总量（含输入与输出，取自 ai_model_token_audit 聚合，非实时）.
+     */
+    totalTokens?: string | null;
 }
 /**
  * 模型授权查询响应.
@@ -14847,6 +14997,31 @@ export interface QueryKnowledgeGraphTemplatesCommandResponse extends Parsable {
     items?: KnowledgeGraphTemplateItem[] | null;
 }
 /**
+ * 长期记忆向量化模型迁移状态响应.
+ */
+export interface QueryMemoryModelMigrationStatusResponse extends Parsable {
+    /**
+     * 最近一次迁移任务（活跃任务优先，从未迁移时为 null）.
+     */
+    activeMigration?: MemoryMigrationTaskState | null;
+    /**
+     * 当前生效向量维度.
+     */
+    currentDimensions?: number | null;
+    /**
+     * 当前生效向量化模型 id（Guid.Empty 表示尚未配置统一模型）.
+     */
+    currentModelId?: Guid | null;
+    /**
+     * 当前生效向量化模型名称.
+     */
+    currentModelName?: string | null;
+    /**
+     * 平台记忆总条数（应用记忆 + 全局记忆；大于 0 即模型/维度被锁定）.
+     */
+    totalMemoryCount?: number | null;
+}
+/**
  * 本人全局记忆列表响应.
  */
 export interface QueryMyGlobalMemoriesCommandResponse extends Parsable {
@@ -15673,15 +15848,11 @@ export interface QueryUserListCommandResponse extends Parsable {
 /**
  * 用户列表项.
  */
-export interface QueryUserListCommandResponseItem extends Parsable {
+export interface QueryUserListCommandResponseItem extends AuditsInfo, Parsable {
     /**
      * 头像地址.
      */
     avatar?: string | null;
-    /**
-     * 创建时间.
-     */
-    createTime?: string | null;
     /**
      * 邮箱.
      */
@@ -18633,6 +18804,25 @@ export function serializeMemoryItem(writer: SerializationWriter, memoryItem: Par
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeMemoryMigrationTaskState(writer: SerializationWriter, memoryMigrationTaskState: Partial<MemoryMigrationTaskState> | undefined | null = {}) : void {
+    if (memoryMigrationTaskState) {
+        writer.writeStringValue("createTime", memoryMigrationTaskState.createTime);
+        writer.writeStringValue("message", memoryMigrationTaskState.message);
+        writer.writeNumberValue("migratedCount", memoryMigrationTaskState.migratedCount);
+        writer.writeNumberValue("state", memoryMigrationTaskState.state);
+        writer.writeNumberValue("targetDimensions", memoryMigrationTaskState.targetDimensions);
+        writer.writeGuidValue("targetModelId", memoryMigrationTaskState.targetModelId);
+        writer.writeStringValue("targetModelName", memoryMigrationTaskState.targetModelName);
+        writer.writeGuidValue("taskId", memoryMigrationTaskState.taskId);
+        writer.writeNumberValue("totalCount", memoryMigrationTaskState.totalCount);
+        writer.writeStringValue("updateTime", memoryMigrationTaskState.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeMyMemoryAppItem(writer: SerializationWriter, myMemoryAppItem: Partial<MyMemoryAppItem> | undefined | null = {}) : void {
     if (myMemoryAppItem) {
         writer.writeGuidValue("appId", myMemoryAppItem.appId);
@@ -19133,13 +19323,16 @@ export function serializeQueryAIChannelListCommandResponseItem(writer: Serializa
     if (queryAIChannelListCommandResponseItem) {
         serializeAuditsInfo(writer, queryAIChannelListCommandResponseItem)
         writer.writeStringValue("baseUrl", queryAIChannelListCommandResponseItem.baseUrl);
+        writer.writeStringValue("completionTokens", queryAIChannelListCommandResponseItem.completionTokens);
         writer.writeStringValue("description", queryAIChannelListCommandResponseItem.description);
         writer.writeBooleanValue("enabled", queryAIChannelListCommandResponseItem.enabled);
         writer.writeGuidValue("id", queryAIChannelListCommandResponseItem.id);
         writer.writeNumberValue("modelCount", queryAIChannelListCommandResponseItem.modelCount);
         writer.writeStringValue("name", queryAIChannelListCommandResponseItem.name);
+        writer.writeStringValue("promptTokens", queryAIChannelListCommandResponseItem.promptTokens);
         writer.writeEnumValue<AIProtocolFamily>("protocolFamily", queryAIChannelListCommandResponseItem.protocolFamily);
         writer.writeStringValue("providerKey", queryAIChannelListCommandResponseItem.providerKey);
+        writer.writeStringValue("totalTokens", queryAIChannelListCommandResponseItem.totalTokens);
     }
 }
 /**
@@ -19933,6 +20126,20 @@ export function serializeQueryKnowledgeGraphTemplatesCommandResponse(writer: Ser
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryMemoryModelMigrationStatusResponse(writer: SerializationWriter, queryMemoryModelMigrationStatusResponse: Partial<QueryMemoryModelMigrationStatusResponse> | undefined | null = {}) : void {
+    if (queryMemoryModelMigrationStatusResponse) {
+        writer.writeObjectValue<MemoryMigrationTaskState>("activeMigration", queryMemoryModelMigrationStatusResponse.activeMigration, serializeMemoryMigrationTaskState);
+        writer.writeNumberValue("currentDimensions", queryMemoryModelMigrationStatusResponse.currentDimensions);
+        writer.writeGuidValue("currentModelId", queryMemoryModelMigrationStatusResponse.currentModelId);
+        writer.writeStringValue("currentModelName", queryMemoryModelMigrationStatusResponse.currentModelName);
+        writer.writeNumberValue("totalMemoryCount", queryMemoryModelMigrationStatusResponse.totalMemoryCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryMyGlobalMemoriesCommandResponse(writer: SerializationWriter, queryMyGlobalMemoriesCommandResponse: Partial<QueryMyGlobalMemoriesCommandResponse> | undefined | null = {}) : void {
     if (queryMyGlobalMemoriesCommandResponse) {
         writer.writeBooleanValue("globalEnabled", queryMyGlobalMemoriesCommandResponse.globalEnabled);
@@ -20488,8 +20695,8 @@ export function serializeQueryUserListCommandResponse(writer: SerializationWrite
 // @ts-ignore
 export function serializeQueryUserListCommandResponseItem(writer: SerializationWriter, queryUserListCommandResponseItem: Partial<QueryUserListCommandResponseItem> | undefined | null = {}) : void {
     if (queryUserListCommandResponseItem) {
+        serializeAuditsInfo(writer, queryUserListCommandResponseItem)
         writer.writeStringValue("avatar", queryUserListCommandResponseItem.avatar);
-        writer.writeStringValue("createTime", queryUserListCommandResponseItem.createTime);
         writer.writeStringValue("email", queryUserListCommandResponseItem.email);
         writer.writeStringValue("id", queryUserListCommandResponseItem.id);
         writer.writeBooleanValue("isAdmin", queryUserListCommandResponseItem.isAdmin);
@@ -21356,6 +21563,27 @@ export function serializeSkillOptionItem(writer: SerializationWriter, skillOptio
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeStartMemoryModelMigrationCommand(writer: SerializationWriter, startMemoryModelMigrationCommand: Partial<StartMemoryModelMigrationCommand> | undefined | null = {}) : void {
+    if (startMemoryModelMigrationCommand) {
+        writer.writeNumberValue("dimensions", startMemoryModelMigrationCommand.dimensions);
+        writer.writeGuidValue("modelId", startMemoryModelMigrationCommand.modelId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeStartMemoryModelMigrationCommandResponse(writer: SerializationWriter, startMemoryModelMigrationCommandResponse: Partial<StartMemoryModelMigrationCommandResponse> | undefined | null = {}) : void {
+    if (startMemoryModelMigrationCommandResponse) {
+        writer.writeGuidValue("taskId", startMemoryModelMigrationCommandResponse.taskId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSubstituteVariableCommand(writer: SerializationWriter, substituteVariableCommand: Partial<SubstituteVariableCommand> | undefined | null = {}) : void {
     if (substituteVariableCommand) {
         writer.writeStringValue("content", substituteVariableCommand.content);
@@ -21661,12 +21889,12 @@ export function serializeTeamUserItem(writer: SerializationWriter, teamUserItem:
 // @ts-ignore
 export function serializeTeamVariableItem(writer: SerializationWriter, teamVariableItem: Partial<TeamVariableItem> | undefined | null = {}) : void {
     if (teamVariableItem) {
+        serializeAuditsInfo(writer, teamVariableItem)
         writer.writeStringValue("description", teamVariableItem.description);
         writer.writeBooleanValue("isSecret", teamVariableItem.isSecret);
         writer.writeStringValue("key", teamVariableItem.key);
         writer.writeStringValue("name", teamVariableItem.name);
         writer.writeStringValue("teamId", teamVariableItem.teamId);
-        writer.writeStringValue("updateTime", teamVariableItem.updateTime);
         writer.writeStringValue("value", teamVariableItem.value);
         writer.writeStringValue("variableId", teamVariableItem.variableId);
     }
@@ -22960,6 +23188,28 @@ export interface SkillOptionItem extends Parsable {
     useCount?: number | null;
 }
 /**
+ * 发起长期记忆向量化模型迁移：用新的向量化模型与维度重建平台全部记忆向量（应用记忆 + 全局记忆），RabbitMQ 异步执行，期间记忆写入阻断、检索不受影响；仅超级管理员.
+ */
+export interface StartMemoryModelMigrationCommand extends Parsable {
+    /**
+     * 目标向量维度（1~2000）.
+     */
+    dimensions?: number | null;
+    /**
+     * 目标向量化模型 id（须为公开启用中的 embedding 模型）.
+     */
+    modelId?: Guid | null;
+}
+/**
+ * 发起长期记忆向量化模型迁移响应.
+ */
+export interface StartMemoryModelMigrationCommandResponse extends Parsable {
+    /**
+     * 迁移任务 id（轮询 GET /memory/model-migration 查询进度）.
+     */
+    taskId?: Guid | null;
+}
+/**
  * 对文本执行 ${key} 变量替换（含私密变量解密），仅团队 Admin 及以上可调用；插件运行时应使用服务端内部的 IVariableService，避免将私密值回传给成员.
  */
 export interface SubstituteVariableCommand extends Parsable {
@@ -23580,7 +23830,7 @@ export interface TeamUserItem extends Parsable {
 /**
  * 团队变量项；私密变量的 Value 对成员恒为 null.
  */
-export interface TeamVariableItem extends Parsable {
+export interface TeamVariableItem extends AuditsInfo, Parsable {
     /**
      * 变量描述.
      */
@@ -23601,10 +23851,6 @@ export interface TeamVariableItem extends Parsable {
      * 所属团队 id.
      */
     teamId?: string | null;
-    /**
-     * 更新时间.
-     */
-    updateTime?: string | null;
     /**
      * 变量值；私密变量恒为 null（仅管理员在详情接口可见）.
      */

@@ -28,6 +28,8 @@ export interface SubsystemItem {
   callbackUrl?: string | null
   createTime?: string | null
   createUserName?: string | null
+  updateTime?: string | null
+  updateUserName?: string | null
 }
 
 /** 创建/更新子系统载荷 */

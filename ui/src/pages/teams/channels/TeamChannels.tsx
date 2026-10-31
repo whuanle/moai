@@ -13,7 +13,8 @@ import {
   Space,
   Switch,
   Tag,
-  Tooltip,
+  theme,
+  Typography,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import {
@@ -34,9 +35,9 @@ import {
   type SyncModelCandidate,
 } from '@/api/aichannel'
 import { getCatalogProviders, type CatalogProvider } from '@/api/models-catalog'
-import { DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
+import { formatTokenCount } from '@/utils/format'
 
 const kindColor: Record<string, string> = {
   conversation: 'blue',
@@ -188,10 +189,12 @@ interface ChannelModelsPanelProps {
   models: AIModelItem[]
   loading: boolean
   syncing: boolean
+  togglingModelId: string | null
   onSync: (channel: AIChannelItem) => void
   onAddModel: (channelId: string) => void
   onEditModel: (model: AIModelItem) => void
   onDeleteModel: (model: AIModelItem) => void
+  onToggleModel: (model: AIModelItem, enabled: boolean) => void
   onRefresh: () => void
 }
 
@@ -201,10 +204,12 @@ function ChannelModelsPanel({
   models,
   loading,
   syncing,
+  togglingModelId,
   onSync,
   onAddModel,
   onEditModel,
   onDeleteModel,
+  onToggleModel,
   onRefresh,
 }: ChannelModelsPanelProps) {
   const { t } = useTranslation()
@@ -246,40 +251,47 @@ function ChannelModelsPanel({
       },
     },
     {
+      title: t('models.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+    },
+    {
+      title: t('models.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+    },
+    {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
       width: 80,
-      render: (v: boolean) => (v ? <Tag color="green">{t('models.enabled')}</Tag> : <Tag color="red">{t('models.disabled')}</Tag>),
+      render: (v: boolean | null | undefined, record) => (
+        <Switch
+          size="small"
+          checked={v === true}
+          loading={togglingModelId === record.id}
+          onChange={(checked) => onToggleModel(record, checked)}
+        />
+      ),
     },
     {
       title: t('models.colActions'),
       key: 'actions',
-      width: 110,
+      width: 180,
       render: (_, record) => (
         <Space size={0}>
-          <Tooltip title={t('models.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label={t('models.edit')}
-              onClick={() => onEditModel(record)}
-            />
-          </Tooltip>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEditModel(record)}>
+            {t('models.edit')}
+          </Button>
           <Popconfirm
             title={t('models.deleteConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => void onDeleteModel(record)}
           >
-            <Tooltip title={t('models.delete')}>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                aria-label={t('models.delete')}
-              />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              {t('models.delete')}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -314,7 +326,7 @@ function ChannelModelsPanel({
       columns={columns}
       dataSource={visibleModels}
       loading={loading}
-      scroll={{ x: 1100 }}
+      scroll={{ x: 1560 }}
       pagination={false}
       size="small"
       rowSelection={{
@@ -371,6 +383,7 @@ function ChannelModelsPanel({
  */
 export function TeamChannels({ teamId }: { teamId: number }) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [channelForm] = Form.useForm<ChannelFormValues>()
   const [modelForm] = Form.useForm<ModelFormValues>()
 
@@ -396,6 +409,8 @@ export function TeamChannels({ teamId }: { teamId: number }) {
   const [syncCandidates, setSyncCandidates] = useState<SyncModelCandidate[]>([])
   const [syncSelectedIds, setSyncSelectedIds] = useState<React.Key[]>([])
   const [importing, setImporting] = useState(false)
+  const [togglingChannelId, setTogglingChannelId] = useState<string | null>(null)
+  const [togglingModelId, setTogglingModelId] = useState<string | null>(null)
   const appliedKind = modelKind ?? editingModel?.modelKind ?? 'conversation'
   const kindCaps = kindCapabilitySettings(appliedKind)
 
@@ -522,6 +537,61 @@ export function TeamChannels({ teamId }: { teamId: number }) {
       void loadChannels()
     } catch {
       // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  // 状态列开关直接启停渠道：按现有字段原样回传，仅翻转 enabled
+  const handleToggleChannel = async (record: AIChannelItem, enabled: boolean) => {
+    if (!record.id) return
+    setTogglingChannelId(record.id)
+    try {
+      await aichannelApi.updateTeamChannel(teamId, record.id, {
+        providerKey: record.providerKey ?? '',
+        name: record.name ?? '',
+        protocolFamily: record.protocolFamily ?? 'openAIChatCompletions',
+        baseUrl: record.baseUrl ?? '',
+        apiKey: '',
+        description: record.description ?? undefined,
+        enabled,
+      })
+      feedback.success(t('models.saveSuccess'))
+      await loadChannels()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setTogglingChannelId(null)
+    }
+  }
+
+  // 状态列开关直接启停模型：meta 按现有字段原样回传，仅翻转 enabled
+  const handleToggleModel = async (record: AIModelItem, enabled: boolean) => {
+    if (!record.id || !record.channelId) return
+    setTogglingModelId(record.id)
+    try {
+      await aichannelApi.updateTeamModel(teamId, record.id, {
+        channelId: record.channelId,
+        meta: metaFromModelForm({
+          modelId: record.modelId ?? '',
+          name: record.name ?? '',
+          family: record.family ?? undefined,
+          modelKind: record.modelKind ?? undefined,
+          supportsVision: record.supportsVision ?? undefined,
+          supportsAttachments: record.supportsAttachments ?? undefined,
+          supportsToolCall: record.supportsToolCall ?? undefined,
+          supportsStructuredOutput: record.supportsStructuredOutput ?? undefined,
+          supportsReasoning: record.supportsReasoning ?? undefined,
+          supportsTemperature: record.supportsTemperature ?? undefined,
+          contextWindow: record.contextWindow ?? undefined,
+          maxOutput: record.maxOutput ?? undefined,
+        }),
+        enabled,
+      })
+      feedback.success(t('models.saveSuccess'))
+      await loadModelsForChannel(record.channelId)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setTogglingModelId(null)
     }
   }
 
@@ -672,63 +742,73 @@ export function TeamChannels({ teamId }: { teamId: number }) {
     },
     { title: t('models.colModelCount'), dataIndex: 'modelCount', width: 90, align: 'center' as const },
     {
-      title: t('models.colCreateUser'),
-      dataIndex: 'createUserName',
-      width: 120,
-      render: (v: string | null) => v || '-',
+      title: t('models.colTokens'),
+      key: 'tokens',
+      width: 150,
+      render: (_, record) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs, minWidth: 0 }}>
+          <Typography.Text>{formatTokenCount(Number(record.totalTokens ?? 0))}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }} ellipsis>
+            {t('models.tokensDetail', {
+              prompt: formatTokenCount(Number(record.promptTokens ?? 0)),
+              completion: formatTokenCount(Number(record.completionTokens ?? 0)),
+            })}
+          </Typography.Text>
+        </div>
+      ),
     },
     {
-      title: t('models.colCreateTime'),
-      dataIndex: 'createTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+      title: t('models.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+    },
+    {
+      title: t('models.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
     },
     {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
       width: 80,
-      render: (v: boolean) => (v ? <Tag color="green">{t('models.enabled')}</Tag> : <Tag color="red">{t('models.disabled')}</Tag>),
+      render: (v: boolean | null | undefined, record) => (
+        <Switch
+          size="small"
+          checked={v === true}
+          loading={togglingChannelId === record.id}
+          onChange={(checked) => void handleToggleChannel(record, checked)}
+        />
+      ),
     },
     {
       title: t('models.colActions'),
       key: 'actions',
-      width: 110,
+      width: 240,
       fixed: 'right' as const,
       render: (_, record) => (
         <Space size={0}>
-          <Tooltip title={t('models.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label={t('models.edit')}
-              onClick={() => openEditChannel(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('models.sync')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<SyncOutlined />}
-              aria-label={t('models.sync')}
-              loading={syncingChannelId === record.id}
-              onClick={() => record.id && handleSync(record)}
-            />
-          </Tooltip>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditChannel(record)}>
+            {t('models.edit')}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<SyncOutlined />}
+            loading={syncingChannelId === record.id}
+            onClick={() => record.id && handleSync(record)}
+          >
+            {t('models.sync')}
+          </Button>
           <Popconfirm
             title={t('models.deleteConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => record.id && handleDeleteChannel(record.id)}
           >
-            <Tooltip title={t('models.delete')}>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                aria-label={t('models.delete')}
-              />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              {t('models.delete')}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -780,7 +860,7 @@ export function TeamChannels({ teamId }: { teamId: number }) {
         columns={channelColumns}
         dataSource={channels}
         loading={channelLoading}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1400 }}
         pagination={false}
         expandable={{
           expandedRowKeys: expandedKeys,
@@ -799,10 +879,12 @@ export function TeamChannels({ teamId }: { teamId: number }) {
               models={modelsByChannel[record.id ?? ''] ?? []}
               loading={loadingByChannel[record.id ?? ''] ?? false}
               syncing={syncingChannelId === record.id}
+              togglingModelId={togglingModelId}
               onSync={handleSync}
               onAddModel={openCreateModel}
               onEditModel={openEditModel}
               onDeleteModel={handleDeleteModel}
+              onToggleModel={(model, enabled) => void handleToggleModel(model, enabled)}
               onRefresh={() => {
                 if (record.id) {
                   void loadModelsForChannel(record.id)
@@ -942,7 +1024,7 @@ export function TeamChannels({ teamId }: { teamId: number }) {
       <Modal
         open={syncModalOpen}
         title={t('models.syncSelectTitle')}
-        width={760}
+        width={860}
         okText={t('models.syncImport')}
         okButtonProps={{ disabled: syncSelectedIds.length === 0, loading: importing }}
         onOk={handleSyncImportOk}

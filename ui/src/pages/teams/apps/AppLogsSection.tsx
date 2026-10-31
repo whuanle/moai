@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { EyeOutlined } from '@ant-design/icons'
 import { Button, DatePicker, Drawer, Form, Input, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import type { Dayjs } from 'dayjs'
@@ -204,7 +205,7 @@ export function AppLogsSection({ appId, canManage, defaultTab }: AppLogsSectionP
         width: 90,
         fixed: 'right',
         render: (_, record) => (
-          <Button type="link" onClick={() => openDetail(record)}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(record)}>
             {t('appLogs.view')}
           </Button>
         ),

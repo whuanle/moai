@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Checkbox, Form, Input, Modal, Popconfirm, Radio, Space, Tag, Tooltip, Typography } from 'antd'
+import { Alert, Button, Checkbox, Form, Input, Modal, Popconfirm, Radio, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons'
+import { CopyOutlined, DeleteOutlined, EditOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -276,20 +276,20 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
       {
         title: t('accessApp.colActions'),
         key: 'actions',
-        width: 150,
+        width: 250,
         fixed: 'right' as const,
         render: (_, record) => (
           <Space size={0}>
-            <Button type="link" size="small" onClick={() => openEdit(record)}>
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
               {t('accessApp.edit')}
             </Button>
             <Popconfirm title={t('accessApp.resetSecretConfirm')} onConfirm={() => void handleResetSecret(record)}>
-              <Tooltip title={t('accessApp.resetSecret')}>
-                <Button type="text" size="small" icon={<KeyOutlined />} aria-label={t('accessApp.resetSecret')} />
-              </Tooltip>
+              <Button type="link" size="small" icon={<KeyOutlined />}>
+                {t('accessApp.resetSecret')}
+              </Button>
             </Popconfirm>
             <Popconfirm title={t('accessApp.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-              <Button type="link" size="small" danger>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
                 {t('accessApp.delete')}
               </Button>
             </Popconfirm>

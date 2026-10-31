@@ -219,7 +219,7 @@ protected static void SeedData(ModelBuilder modelBuilder)
 | `SMTP_RESET_CODE_SUBJECT` | 找回密码验证码邮件主题 | `"{siteName} 找回密码验证码"` | 同上；≤500 字符 |
 | `SMTP_RESET_CODE_BODY` | 找回密码验证码邮件正文 | `"你的找回密码验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件."` | 同上；≤2000 字符 |
 | `MEMORY_ENABLED` | 长期记忆 | `"false"` | 总开关：开启后应用才可开启记忆，用户可维护应用内记忆与个人跨应用记忆（全局记忆）；关闭时应用不可开启记忆。开启前须已选模型，保存校验布尔 |
-| `MEMORY_EMBEDDING_MODEL` | 记忆向量化模型 | `""` | 应用记忆与全局记忆**统一**使用的 embedding 模型 id（须公开启用中，Guid，保存校验格式）；统一模型已配置且平台已有任意记忆后锁定，更换需先清空全部记忆（memory 模块 D-M10） |
-| `MEMORY_EMBEDDING_DIMENSIONS` | 记忆向量维度 | `"1024"` | 1~2000，保存校验；与模型一起锁定（2026-10-30 起替代旧 `MEMORY_GLOBAL_*` 三键，asserts/setting.sql 幂等清理旧键） |
+| `MEMORY_EMBEDDING_MODEL` | 记忆向量化模型 | `""` | 应用记忆与全局记忆**统一**使用的 embedding 模型 id（须公开启用中，Guid，保存校验格式）；统一模型已配置且平台已有任意记忆后锁定，更换走 memory 模块模型迁移 `POST /api/memory/model-migration` 无损重建（D-M10/D-M11） |
+| `MEMORY_EMBEDDING_DIMENSIONS` | 记忆向量维度 | `"1024"` | 1~2000，保存校验；与模型一起锁定，更换同上走迁移（2026-10-30 起替代旧 `MEMORY_GLOBAL_*` 三键，asserts/setting.sql 幂等清理旧键） |
 
 > 成组配置供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的成组读取服务：知识图谱 `IKnowledgeGraphSettingsService`、知识库 `IWikiSettingsService`、沙箱上限 `ISandboxSettingsService`（含 K8s 数量解析器 `SandboxQuantity`）、SMTP 邮件 `IEmailSettingsService`（成组读取）与 `IEmailSenderService`（通知邮件发送，MailKit，账号留空免认证），避免各模块自行拼 key 查表。沙箱上限在应用保存时的强校验见 [app 模块 D41](./app/sdd.md)。邮箱验证码模板项由 auth 模块直查消费（见 [auth/sdd](./auth/sdd.md) 决策 7）。

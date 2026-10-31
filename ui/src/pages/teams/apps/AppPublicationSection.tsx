@@ -3,7 +3,7 @@ import { ArrowDownOutlined, RollbackOutlined } from '@ant-design/icons'
 import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { APP_DEFAULT_VERSION, APP_VERSION_PATTERN, formatAppVersion, nextAppVersion, parseAppVersion } from '@/utils/appVersion'
@@ -222,29 +222,18 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
         render: (v: string | null) => v || '-',
       },
       {
-        title: t('appManage.publicationColApplicant'),
-        dataIndex: 'createUserName',
-        width: 110,
-        render: (v: string | null) => v || '-',
-      },
-      {
-        title: t('appManage.publicationColApplyTime'),
-        dataIndex: 'createTime',
-        width: 160,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        title: t('appManage.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
       },
       {
         title: t('appManage.publicationColReviewInfo'),
         key: 'reviewInfo',
-        width: 200,
+        width: 150,
         render: (_, record) => {
-          if (record.state === 'pending' || !record.reviewTime) return <Text type="secondary">-</Text>
-          return (
-            <div style={{ lineHeight: 1.5 }}>
-              <div>{record.updateUserName || '-'}</div>
-              <Text type="secondary" style={{ fontSize: fontSize.xs }}>{formatDateTime(record.reviewTime)}</Text>
-            </div>
-          )
+          if (record.state === 'pending') return <Text type="secondary">-</Text>
+          return <AuditCell user={record.updateUserName} time={record.reviewTime} />
         },
       },
       ...(canManage
@@ -262,7 +251,9 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
                     cancelText={t('appManage.cancel')}
                     onConfirm={() => void handleWithdrawPublication()}
                   >
-                    <Button size="small">{t('appManage.withdrawApplication')}</Button>
+                    <Button type="link" size="small" icon={<RollbackOutlined />}>
+                      {t('appManage.withdrawApplication')}
+                    </Button>
                   </Popconfirm>
                 )
               },

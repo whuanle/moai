@@ -51,7 +51,7 @@ export function DataTable<RecordType extends object>({
             alignItems: 'center',
             gap: spacing.md,
             flexWrap: 'wrap',
-            margin: `${spacing.md}px ${spacing.md}px 0`,
+            margin: spacing.md,
           }}
         >
           {toolbar}

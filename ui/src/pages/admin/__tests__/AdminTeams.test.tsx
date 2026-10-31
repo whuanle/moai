@@ -89,7 +89,7 @@ describe('AdminTeams', () => {
 
     const actionLabels = (text: string) =>
       Array.from(findRow(text)?.querySelectorAll('button') ?? [])
-        .map((b) => b.getAttribute('aria-label'))
+        .map((b) => (b.textContent ?? '').trim() || b.getAttribute('aria-label') || '')
         .filter(Boolean)
 
     // 正常团队：可禁用 + 可转让负责人

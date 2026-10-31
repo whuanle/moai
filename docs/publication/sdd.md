@@ -49,7 +49,7 @@ ui/src/api/publication.ts         手写封装层（Kiota 生成物之外）
 - **resource_id 用字符串**：AppEntity.Id 是 Guid、PromptEntity.Id 是 int，Handler 内按资源类型解析并校验，避免两列或触发器。
 - **管理员门禁在 Controller**：`PublicationController.EnsureAdminAsync`（`IUserAccountService.GetUserStateAsync().IsAdmin`，403），Handler 只做团队角色与状态机校验，符合 CQRS 约定。
 - **审批终态校验**：非 pending 记录审批/撤回返回 409；通过时目标资源已被删除返回 404（引导管理员改走驳回）。
-- **前端**：管理页在 `adminNav` 一级菜单（仅 isAdmin 可见，页面内再校验）；应用侧入口 2026-10-26 起自应用「信息」分区拆至工作台独立「上架管理」分区（`AppPublicationSection.tsx`：申请/撤回/重新申请入口 + 状态标签 + 历次申请记录与拒绝原因，见 [@AP-S92](../app/bdd.md#ap-s92)）。
+- **前端**：管理页在 `adminNav` 一级菜单（仅 isAdmin 可见，页面内再校验）；应用侧入口 2026-10-26 起自应用「信息」分区拆至工作台独立「上架管理」分区（`AppPublicationSection.tsx`：申请/撤回/重新申请入口 + 状态标签 + 历次申请记录与拒绝原因，见 [@AP-S92](../app/bdd.md#ap-s92)）。2026-10-31 审批列表页按最新前端规范改造：刷新按钮归位工具行查询类插槽（`PageToolbar queries`）、审批人/时间列复用 `AuditCell`、列表改剩余高度布局（`DataTable scroll.y` 计入 `tableCardChromeHeight`）。
 
 ## 已知问题
 

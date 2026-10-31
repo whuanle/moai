@@ -41,7 +41,14 @@
 | @MEM-S35 | local-dev/memory-management-e2e.mjs#MM-29e/f/g/h ｜ ui/src/pages/teams/apps/__tests__/AppUserSettings.test.tsx（接入开关展示/提交/不提交） | PASS 54/54 + 8/8（2026-10-30） |
 | @MEM-S36 | local-dev/memory-management-e2e.mjs#MM-44/44b/45（scope=global 保存不落应用、forget 兜底删全局） | PASS 54/54（2026-10-30） |
 | @MEM-S37 | local-dev/memory-management-e2e.mjs#MM-09（存量分片库实跑首次配置不受锁定；配套 `SettingsService.ValidateMemorySettingAsync` 空模型直通分支） | PASS 54/54（2026-10-30） |
+| @MEM-S38 | local-dev/memory-migration-e2e.mjs#MG-02 | PASS 39/39（2026-10-31） |
+| @MEM-S39 | local-dev/memory-migration-e2e.mjs#MG-07a~e | PASS 39/39（2026-10-31） |
+| @MEM-S40 | local-dev/memory-migration-e2e.mjs#MG-08a/08d/09a~d（MQ 异步重嵌+换表+设置切换+进度闭环） ｜ ui/src/pages/settings/__tests__/Settings.test.tsx（锁定态迁移入口与确认调用） | PASS 39/39 + 25/25（2026-10-31） |
+| @MEM-S41 | local-dev/memory-migration-e2e.mjs#MG-08b/08c（写入 409/并发发起 409） ｜ ui/src/pages/settings/__tests__/Settings.test.tsx（锁定态保存仅提交开关） | PASS 39/39 + 25/25（2026-10-31） |
+| @MEM-S42 | local-dev/memory-migration-e2e.mjs#MG-09e~g/10/10b（数据保留/被阻断写入未落库/新维度检索命中/新写入） | PASS 39/39（2026-10-31） |
+| @MEM-S43 | local-dev/memory-migration-e2e.mjs#MG-11a~e（死渠道失败回滚：任务失败/设置不变/数据不变） | PASS 39/39（2026-10-31） |
+| @MEM-S44 | local-dev/memory-migration-e2e.mjs#MG-12a~d（失败后重发成功+回迁检索命中） | PASS 39/39（2026-10-31） |
 
-运行方式：`node local-dev/agent-memory-e2e.mjs [baseUrl]`（默认 5210，后端运行中；内置本地 OpenAI 兼容桩 embedding+chat，零 SKIP；脚本会临时开启平台 `MEMORY_*` 设置并在收尾还原）；`node local-dev/memory-management-e2e.mjs [baseUrl]`（默认 5000，记忆管理/全局记忆/统一设置门禁 54 场景，零 SKIP，收尾自清理可重复跑；中断残留时先执行 `node local-dev/memory-global-reset.mjs [baseUrl]` 复位平台记忆设置）。
+运行方式：`node local-dev/agent-memory-e2e.mjs [baseUrl]`（默认 5210，后端运行中；内置本地 OpenAI 兼容桩 embedding+chat，零 SKIP；脚本会临时开启平台 `MEMORY_*` 设置并在收尾还原）；`node local-dev/memory-management-e2e.mjs [baseUrl]`（默认 5000，记忆管理/全局记忆/统一设置门禁 54 场景，零 SKIP，收尾自清理可重复跑；中断残留时先执行 `node local-dev/memory-global-reset.mjs [baseUrl]` 复位平台记忆设置）；`node local-dev/memory-migration-e2e.mjs [baseUrl]`（默认 5000，向量化模型迁移 39 场景：成功迁移/进行中阻断/失败回滚/重试链路，桩 embedding 按请求 dimensions 出向量且目标模型故意放慢撑开进行中窗口，零 SKIP，收尾自清理）。
 
 子代理协作与压缩的应用级验证见 [../app/bdd.md](../app/bdd.md) @AP-Sxx 与 [local-dev/subagent-e2e.mjs](../../local-dev/subagent-e2e.mjs)。

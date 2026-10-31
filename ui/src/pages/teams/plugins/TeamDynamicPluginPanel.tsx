@@ -7,7 +7,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { Button, Popconfirm, Space, Tag, Tooltip, theme } from 'antd'
+import { Button, Popconfirm, Space, Tag, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -19,8 +19,7 @@ import {
   runTeamPlugin,
   type TeamDynamicPluginItem,
 } from '@/api/team-plugin'
-import { DataTable, feedback } from '@/design-system'
-import { formatDateTime } from '@/utils/datetime'
+import { AuditCell, DataTable, feedback } from '@/design-system'
 import { DynamicPluginInstanceModal } from '@/pages/plugins/components/DynamicPluginInstanceModal'
 import { PluginRunDrawer } from '@/pages/plugins/components/PluginRunDrawer'
 
@@ -145,51 +144,61 @@ export function TeamDynamicPluginPanel({
         return v ? <Tag>{v}</Tag> : <Tag color="orange">{t('plugins.classifyUncategorized')}</Tag>
       },
     },
-    { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-    ) },
-    { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-    ) },
+    {
+      title: t('plugins.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+    },
+    {
+      title: t('plugins.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+    },
     {
       title: t('plugins.colActions'),
       key: 'actions',
-      width: 150,
+      width: 250,
       fixed: 'right',
       render: (_, record) => (
         <Space size={0}>
-          <Tooltip title={isTemplateMissing(record) ? t('plugins.templateMissing') : t('plugins.run')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<PlayCircleOutlined />}
-              aria-label={t('plugins.run')}
-              disabled={isTemplateMissing(record)}
-              onClick={() => setDrawerTarget(record)}
-            />
-          </Tooltip>
+          <Button
+            type="link"
+            size="small"
+            icon={<PlayCircleOutlined />}
+            aria-label={t('plugins.run')}
+            disabled={isTemplateMissing(record)}
+            onClick={() => setDrawerTarget(record)}
+          >
+            {t('plugins.run')}
+          </Button>
           {canManage && record.isTeamOwned && (
             <>
-              <Tooltip title={t('plugins.editPlugin')}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  aria-label={t('plugins.editPlugin')}
-                  disabled={isTemplateMissing(record)}
-                  onClick={() => openEdit(record)}
-                />
-              </Tooltip>
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label={t('plugins.editPlugin')}
+                disabled={isTemplateMissing(record)}
+                onClick={() => openEdit(record)}
+              >
+                {t('plugins.editPlugin')}
+              </Button>
               <Popconfirm
                 title={t('plugins.deletePluginConfirm')}
                 okButtonProps={{ danger: true }}
                 onConfirm={() => void handleDelete(record)}
               >
-                <Tooltip title={t('plugins.deletePlugin')}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.deletePlugin')} />
-                </Tooltip>
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  aria-label={t('plugins.deletePlugin')}
+                >
+                  {t('plugins.deletePlugin')}
+                </Button>
               </Popconfirm>
             </>
           )}
@@ -207,7 +216,7 @@ export function TeamDynamicPluginPanel({
         dataSource={filtered}
         loading={loading}
         pagination={false}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1400 }}
         toolbar={
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             {canManage && (

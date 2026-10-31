@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Drawer, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Button, Drawer, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -125,9 +125,9 @@ export function PluginTeamAuthorizationDrawer({
           okButtonProps={{ danger: true }}
           onConfirm={() => void handleRemoveTeam(record.teamId)}
         >
-          <Tooltip title={t('plugins.authRemove')}>
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.authRemove')} />
-          </Tooltip>
+          <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.authRemove')}>
+            {t('plugins.authRemove')}
+          </Button>
         </Popconfirm>
       ),
     },

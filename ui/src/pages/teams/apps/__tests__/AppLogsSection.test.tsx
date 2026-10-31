@@ -96,7 +96,7 @@ describe('AppLogsSection（应用日志分区：日志/安全事件/使用分析
   it('点击「查看」拉取消息并展示抽屉内容', async () => {
     render(<AppLogsSection appId="a1" canManage />)
 
-    const viewButtons = await screen.findAllByRole('button', { name: '查看' })
+    const viewButtons = await screen.findAllByRole('button', { name: /查\s*看/ })
     fireEvent.click(viewButtons[0])
 
     await waitFor(() => expect(getAppLogMessages).toHaveBeenCalledWith('a1', 's1'))
@@ -107,7 +107,7 @@ describe('AppLogsSection（应用日志分区：日志/安全事件/使用分析
   it('消息详情抽屉按会话式排版渲染：用户消息靠右、助手消息靠左，非容器盒子堆叠', async () => {
     render(<AppLogsSection appId="a1" canManage />)
 
-    const viewButtons = await screen.findAllByRole('button', { name: '查看' })
+    const viewButtons = await screen.findAllByRole('button', { name: /查\s*看/ })
     fireEvent.click(viewButtons[0])
 
     const stream = await screen.findByText('你好').then(() => document.querySelector('.moai-chat__stream'))

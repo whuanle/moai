@@ -107,6 +107,7 @@ export interface WikiDocumentItem {
   createUserName?: string | null
   createTime?: string | null
   updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface WikiDocumentsResult {
@@ -653,6 +654,7 @@ export interface WikiSourceItem {
   createUserName?: string | null
   createTime?: string | null
   updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface WikiSourcesResult {

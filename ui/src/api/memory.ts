@@ -198,3 +198,40 @@ export async function clearAllMemory(): Promise<void> {
   const client = getApiClient()
   await client.api.memory.all.delete()
 }
+
+/** 迁移任务状态 */
+export interface MemoryMigrationTaskStateInfo {
+  taskId?: string | null
+  state?: number | null
+  message?: string | null
+  targetModelId?: string | null
+  targetModelName?: string | null
+  targetDimensions?: number | null
+  totalCount?: number | null
+  migratedCount?: number | null
+  createTime?: string | null
+  updateTime?: string | null
+}
+
+/** 长期记忆向量化模型迁移状态（root） */
+export interface MemoryMigrationStatus {
+  currentModelId?: string | null
+  currentModelName?: string | null
+  currentDimensions?: number | null
+  totalMemoryCount?: number | null
+  activeMigration?: MemoryMigrationTaskStateInfo | null
+}
+
+/** 查询长期记忆向量化模型迁移状态：当前生效模型/维度、平台记忆总数与最近一次迁移任务进度（root） */
+export async function getMemoryModelMigrationStatus(): Promise<MemoryMigrationStatus> {
+  const client = getApiClient()
+  const res = await client.api.memory.modelMigration.get()
+  return (res ?? {}) as MemoryMigrationStatus
+}
+
+/** 发起长期记忆向量化模型迁移（root）：用新模型/维度重建平台全部记忆向量，返回迁移任务 id */
+export async function startMemoryModelMigration(modelId: string, dimensions: number): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.memory.modelMigration.post({ modelId, dimensions })
+  return res?.taskId ?? ''
+}

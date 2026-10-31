@@ -1,12 +1,13 @@
 using System;
 using System.Text.Json.Serialization;
+using MoAI.Infra.Models;
 
 namespace MoAI.Account.Queries.Responses;
 
 /// <summary>
 /// 用户列表项.
 /// </summary>
-public class QueryUserListCommandResponseItem
+public class QueryUserListCommandResponseItem : AuditsInfo
 {
     /// <summary>
     /// 用户 id.
@@ -52,9 +53,4 @@ public class QueryUserListCommandResponseItem
     /// 是否禁用.
     /// </summary>
     public bool IsDisable { get; init; }
-
-    /// <summary>
-    /// 创建时间.
-    /// </summary>
-    public DateTimeOffset CreateTime { get; init; }
 }

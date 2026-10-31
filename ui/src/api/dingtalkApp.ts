@@ -18,6 +18,8 @@ export interface DingTalkAppItemView {
   bindTime?: string | null
   createUserName?: string | null
   createTime?: string | null
+  updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface DingTalkAppsResult {
@@ -75,6 +77,8 @@ export async function getDingTalkApps(teamId: number, keyword?: string): Promise
       bindTime: x?.bindTime ?? null,
       createUserName: x?.createUserName ?? null,
       createTime: x?.createTime ?? null,
+      updateTime: x?.updateTime ?? null,
+      updateUserName: x?.updateUserName ?? null,
     })),
   }
 }

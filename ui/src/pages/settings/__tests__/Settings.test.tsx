@@ -5,6 +5,7 @@ import '@/i18n'
 import { Settings } from '../Settings'
 import { useAppStore } from '@/store/app'
 import { getSettings, saveSetting, sendTestEmail } from '@/api/settings'
+import { getMemoryModelMigrationStatus, startMemoryModelMigration } from '@/api/memory'
 import { refreshServerInfo } from '@/api/auth'
 
 vi.mock('@/api/settings', async (importOriginal) => {
@@ -35,8 +36,17 @@ vi.mock('@/api/auth', () => ({
 vi.mock('@/api/memory', () => ({
   getGlobalMemoryModelOptions: vi.fn().mockResolvedValue([
     { id: 'emb-1', name: '桩全局向量模型' },
+    { id: 'emb-2', name: '桩向量模型B' },
   ]),
   clearAllMemory: vi.fn().mockResolvedValue(undefined),
+  getMemoryModelMigrationStatus: vi.fn().mockResolvedValue({
+    currentModelId: '',
+    currentModelName: '',
+    currentDimensions: 0,
+    totalMemoryCount: 0,
+    activeMigration: null,
+  }),
+  startMemoryModelMigration: vi.fn().mockResolvedValue('task-1'),
 }))
 
 function settingsResponse(overrides: Record<string, string> = {}) {
@@ -474,5 +484,65 @@ describe('Settings（系统设置）', () => {
     const { resetLoginBackground } = await import('@/api/settings')
     await waitFor(() => expect(resetLoginBackground).toHaveBeenCalled())
     await waitFor(() => expect(refreshServerInfo).toHaveBeenCalled())
+  })
+
+  it('长期记忆锁定态：显示锁定提示与迁移入口，保存仅提交开关不提交模型/维度', async () => {
+    vi.mocked(getMemoryModelMigrationStatus).mockResolvedValue({
+      currentModelId: 'emb-1',
+      currentModelName: '桩全局向量模型',
+      currentDimensions: 1024,
+      totalMemoryCount: 3,
+      activeMigration: null,
+    })
+    vi.mocked(getSettings).mockResolvedValue(settingsResponse({
+      MEMORY_ENABLED: 'true',
+      MEMORY_EMBEDDING_MODEL: 'emb-1',
+      MEMORY_EMBEDDING_DIMENSIONS: '1024',
+    }))
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getByRole('button', { name: /长期记忆/ }))
+    expect(await screen.findByText(/平台已有 3 条记忆/)).toBeInTheDocument()
+    // 未改动模型/维度时迁移入口禁用
+    expect(screen.getByRole('button', { name: /开始迁移/ })).toBeDisabled()
+
+    // 锁定态保存只提交开关，模型/维度改动须走迁移接口（antd 按钮两汉字间自动插空格，用正则匹配）
+    fireEvent.click(screen.getAllByRole('switch')[1])
+    const saveButtons = screen.getAllByRole('button', { name: /保\s*存/ })
+    fireEvent.click(saveButtons[saveButtons.length - 1])
+    await waitFor(() => expect(saveSetting).toHaveBeenCalledWith('MEMORY_ENABLED', 'false'))
+    expect(saveSetting).not.toHaveBeenCalledWith('MEMORY_EMBEDDING_MODEL', expect.anything())
+    expect(saveSetting).not.toHaveBeenCalledWith('MEMORY_EMBEDDING_DIMENSIONS', expect.anything())
+  })
+
+  it('长期记忆锁定态：改动模型后迁移入口启用，确认后调用迁移接口', async () => {
+    vi.mocked(getMemoryModelMigrationStatus).mockResolvedValue({
+      currentModelId: 'emb-1',
+      currentModelName: '桩全局向量模型',
+      currentDimensions: 1024,
+      totalMemoryCount: 3,
+      activeMigration: null,
+    })
+    vi.mocked(getSettings).mockResolvedValue(settingsResponse({
+      MEMORY_ENABLED: 'true',
+      MEMORY_EMBEDDING_MODEL: 'emb-1',
+      MEMORY_EMBEDDING_DIMENSIONS: '1024',
+    }))
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getByRole('button', { name: /长期记忆/ }))
+    await screen.findByText(/平台已有 3 条记忆/)
+
+    // 改动向量化模型（antd Select：mouseDown 展开 → 点击选项；aria-label 在嵌套输入上重复，取角色定位）
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    fireEvent.click(await screen.findByText('桩向量模型B'))
+
+    const migrateButton = screen.getByRole('button', { name: /开始迁移/ })
+    await waitFor(() => expect(migrateButton).not.toBeDisabled())
+    fireEvent.click(migrateButton)
+    fireEvent.click(await screen.findByRole('button', { name: /确\s*定/ }))
+    await waitFor(() => expect(startMemoryModelMigration).toHaveBeenCalledWith('emb-2', 1024))
   })
 })

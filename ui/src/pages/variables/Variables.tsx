@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { Page, DataTable, QueryBar, feedback } from '@/design-system'
+import { AuditCell, Page, DataTable, QueryBar, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
-import { formatDateTime } from '@/utils/datetime'
 import {
   createVariable,
   deleteVariable,
@@ -172,35 +171,33 @@ export function Variables({ teamId }: { teamId?: number }) {
       },
       { title: t('variable.colDesc'), dataIndex: 'description', width: 150, ellipsis: true, render: (v: string | null) => v || '-' },
       {
-        title: t('variable.colUpdateTime'),
-        dataIndex: 'updateTime',
+        title: t('variable.colCreate'),
+        key: 'create',
         width: 150,
-        render: (v: string | null) => (
-          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-        ),
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('variable.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       ...(isAdminPlus
         ? [
             {
               title: t('variable.colActions'),
               key: 'actions',
-              width: 96,
+              width: 180,
               fixed: 'right' as const,
               render: (_: unknown, record: TeamVariableItem) => (
                 <Space size={0}>
-                  <Tooltip title={t('variable.edit')}>
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditOutlined />}
-                      aria-label={t('variable.edit')}
-                      onClick={() => void openEdit(record)}
-                    />
-                  </Tooltip>
+                  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => void openEdit(record)}>
+                    {t('variable.edit')}
+                  </Button>
                   <Popconfirm title={t('variable.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                    <Tooltip title={t('variable.delete')}>
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('variable.delete')} />
-                    </Tooltip>
+                    <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                      {t('variable.delete')}
+                    </Button>
                   </Popconfirm>
                 </Space>
               ),
@@ -251,7 +248,7 @@ export function Variables({ teamId }: { teamId?: number }) {
         dataSource={items}
         loading={loading}
         sticky
-        scroll={{ x: 900 }}
+        scroll={{ x: 1100 }}
         toolbar={
           <Space size={12}>
             {isAdminPlus && (

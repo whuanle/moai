@@ -315,7 +315,7 @@
       "model": {
         "name": "Embedding model",
         "placeholder": "Select a public enabled embedding model",
-        "desc": "App memories and global memories share this public embedding model; apps cannot choose their own. It is locked once any memory is written; clear all memories before changing it."
+        "desc": "App memories and global memories share this public embedding model; apps cannot choose their own. It is locked once any memory is written; change it via migration rebuild."
       },
       "dimensions": {
         "name": "Embedding dimensions",
@@ -323,6 +323,16 @@
       },
       "modelRequired": "Select an embedding model first",
       "invalidDimensions": "Dimensions must be an integer between 1 and 2000",
+      "lockedHint": "The platform already has {{count}} memories; the model/dimensions are locked. After changing them, click \"Start migration\" to rebuild all memory vectors with the new model.",
+      "migrate": {
+        "name": "Model migration",
+        "start": "Start migration",
+        "confirm": "This rebuilds all memory vectors on the platform with the new model and dimensions. Memory writes are paused during migration while retrieval keeps working. Start now?",
+        "desc": "Migration runs asynchronously: each memory's original text is re-embedded into a temp table, then tables are swapped atomically and settings applied when all done. Failures roll back automatically — original memories stay intact and you can retry.",
+        "started": "Migration started, rebuilding memory vectors in the background",
+        "success": "Memory vector migration completed; the new model/dimensions are in effect",
+        "failed": "Memory vector migration failed. Original memories are intact; fix the issue and retry"
+      },
       "clear": "Clear all memories",
       "clearConfirm": "Clear all memories on the platform (all app memories and global memories)? This cannot be undone; afterwards the embedding model can be changed.",
       "clearSuccess": "All memories have been cleared."
@@ -340,6 +350,11 @@
     "deleteConfirm": "Delete this connection?",
     "edit": "Edit",
     "delete": "Delete",
+    "view": "View",
+    "detailTitle": "Connection details",
+    "searchPlaceholder": "Search name or app key",
+    "colCreate": "Created",
+    "colUpdate": "Updated",
     "colName": "Name",
     "colProvider": "Provider",
     "colKey": "App Key",
@@ -373,6 +388,7 @@
   },
   "models": {
     "addChannel": "Add Channel",
+    "searchPlaceholder": "Search channels / models",
     "editChannel": "Edit Channel",
     "addModel": "Add Model",
     "editModel": "Edit Model",
@@ -406,6 +422,10 @@
     "colProtocol": "Protocol",
     "protocolRequired": "Please select a protocol",
     "colModelCount": "Models",
+    "colTokens": "Tokens Used",
+    "tokensDetail": "In {{prompt}} · Out {{completion}}",
+    "colCreate": "Created",
+    "colUpdate": "Updated",
     "colCreateUser": "Created By",
     "colCreateTime": "Created At",
     "colUpdateUser": "Updated By",
@@ -643,7 +663,9 @@
     "disableSuccess": "Account disabled",
     "enableSuccess": "Account enabled",
     "resetPasswordSuccess": "Password reset. Share it with the user securely.",
-    "detailTitle": "User Info"
+    "detailTitle": "User Info",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "plugins": {
     "tabCustom": "Custom Plugins",
@@ -804,7 +826,9 @@
     "avatarTip": "Click the avatar to upload an image up to 5MB",
     "avatarSuccess": "Avatar updated",
     "avatarTypeError": "Only image files are allowed",
-    "avatarSizeError": "Avatar file must be no larger than 5MB"
+    "avatarSizeError": "Avatar file must be no larger than 5MB",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "classify": {
     "title": "Classify",
@@ -981,7 +1005,9 @@
     "status.running": "Running",
     "status.success": "Success",
     "status.failed": "Failed",
-    "status.retrying": "Retrying"
+    "status.retrying": "Retrying",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "wiki": {
     "title": "Knowledge Base",
@@ -1167,7 +1193,9 @@
       "metadataTypeKeyword": "Keyword",
       "metadataTypeSummary": "Summary",
       "metadataTypeAggregated": "Aggregated",
-      "metadataTypeUnknown": "Unknown"
+      "metadataTypeUnknown": "Unknown",
+      "colCreate": "Created",
+      "colUpdate": "Updated"
     },
     "embedding": {
       "model": "Embedding Model",
@@ -1376,7 +1404,9 @@
         "overwriteOn": "Overwrite changed pages",
         "overwriteOff": "New pages only",
         "overwriteHint": "When on, already-crawled pages whose content changed are re-imported and the workflow runs again. When off, existing pages are skipped."
-      }
+      },
+      "colCreate": "Created",
+      "colUpdate": "Updated"
     },
     "recall": {
       "title": "Recall Test",
@@ -1733,7 +1763,9 @@
     "createSuccess": "Created",
     "saveSuccess": "Saved",
     "deleteSuccess": "Deleted",
-    "memberReadOnly": "Members can view plain variables; secret values are admin-only"
+    "memberReadOnly": "Members can view plain variables; secret values are admin-only",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "adminTeams": {
     "searchPlaceholder": "Search team name or description",
@@ -1764,7 +1796,9 @@
     "enableSuccess": "Team enabled",
     "cancel": "Cancel",
     "tabTeams": "Teams",
-    "tabRoles": "Roles"
+    "tabRoles": "Roles",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "adminOrgRoles": {
     "searchPlaceholder": "Search organization name",
@@ -1885,7 +1919,9 @@
     "formCallbackUrlPlaceholder": "https://report.example.com/sso/callback (optional)",
     "formCallbackUrlHint": "Once set, the subsystem can sign users in via MoAI; redirect target is fixed to this registered URL",
     "formCallbackUrlMax": "Callback URL can be at most 255 characters",
-    "formCallbackUrlPattern": "Callback URL must be a full http(s) URL"
+    "formCallbackUrlPattern": "Callback URL must be a full http(s) URL",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "gateway": {
     "scope.wiki_read": "Knowledge read",
@@ -2030,7 +2066,8 @@
     "refresh": "Refresh",
     "cancel": "Cancel",
     "typeSkill": "Skill",
-    "colVersion": "Version"
+    "colVersion": "Version",
+    "colCreate": "Created"
   },
   "appManage": {
     "create": "New App",
@@ -2250,7 +2287,8 @@
     "externalPublishHint": "External apps go live immediately after publishing — no approval required. External users use the published version via access points.",
     "externalUnpublishConfirm": "Unpublish this app? External users will no longer be able to access it.",
     "groupMemory": "Long-term Memory",
-    "groupMemoryDesc": "Memory switch, embedding model, memory prompt and retrieval settings"
+    "groupMemoryDesc": "Memory switch, embedding model, memory prompt and retrieval settings",
+    "colCreate": "Created"
   },
   "accessApp": {
     "create": "New Access",
@@ -2429,7 +2467,9 @@
     "edit": "Edit",
     "editTitle": "Edit Feishu App",
     "editOk": "Save",
-    "fieldAppSecretKeepPlaceholder": "Leave blank to keep unchanged"
+    "fieldAppSecretKeepPlaceholder": "Leave blank to keep unchanged",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "appLogs": {
     "tabLogs": "Logs",
@@ -2591,7 +2631,9 @@
     "avatarSuccess": "Avatar updated",
     "extractSuccess": "Package extracted: {{count}} files added and skill info loaded",
     "addFileOrZip": "Add files / upload zip",
-    "zipHint": "Supports .zip skill packages: auto-extracted on upload, with SKILL.md (name/description and instructions) filling the form"
+    "zipHint": "Supports .zip skill packages: auto-extracted on upload, with SKILL.md (name/description and instructions) filling the form",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "prompt": {
     "create": "New Prompt",
@@ -2967,7 +3009,9 @@
     "edit": "Edit",
     "editTitle": "Edit DingTalk App",
     "editOk": "Save",
-    "fieldAppSecretKeepPlaceholder": "Leave blank to keep unchanged"
+    "fieldAppSecretKeepPlaceholder": "Leave blank to keep unchanged",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "appWeixinWorkChannels": {
     "cardTitle": "WeCom Channel",
@@ -3013,7 +3057,9 @@
     "editOk": "Save",
     "fieldCorpSecretKeepPlaceholder": "Leave empty to keep unchanged",
     "fieldTokenKeepPlaceholder": "Leave empty to keep unchanged",
-    "fieldAesKeyKeepPlaceholder": "Leave empty to keep unchanged"
+    "fieldAesKeyKeepPlaceholder": "Leave empty to keep unchanged",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "sso": {
     "title": "Subsystem Sign-in",
@@ -3085,7 +3131,9 @@
     "resetSecretConfirm": "Reset the secret for this access app? The old secret becomes invalid immediately, and tokens exchanged with it stop renewing.",
     "resetSecretSuccess": "Secret reset. Save the new secret now",
     "appIdLabel": "appid (moai-sa- prefix, for direct calls or token exchange)",
-    "secretLabel": "Secret (shown only once, required for token exchange)"
+    "secretLabel": "Secret (shown only once, required for token exchange)",
+    "colCreate": "Created",
+    "colUpdate": "Updated"
   },
   "memoryMgmt": {
     "tabApps": "App Memories",

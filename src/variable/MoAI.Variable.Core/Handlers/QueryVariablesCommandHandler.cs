@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using MoAI.Account.Services;
 using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
@@ -19,6 +20,7 @@ public class QueryVariablesCommandHandler : IRequestHandler<QueryVariablesComman
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
     private readonly IUserContextProvider _userContextProvider;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryVariablesCommandHandler"/> class.
@@ -26,11 +28,13 @@ public class QueryVariablesCommandHandler : IRequestHandler<QueryVariablesComman
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
-    public QueryVariablesCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider)
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryVariablesCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
         _userContextProvider = userContextProvider;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
@@ -71,9 +75,14 @@ public class QueryVariablesCommandHandler : IRequestHandler<QueryVariablesComman
                 // 私密变量值对成员恒为 null，仅管理员在详情接口可见
                 Value = x.IsSecret ? null : x.Value,
                 Description = x.Description,
-                UpdateTime = x.UpdateTime
+                CreateTime = x.CreateTime,
+                CreateUserId = (int)x.CreateUserId,
+                UpdateTime = x.UpdateTime,
+                UpdateUserId = (int)x.UpdateUserId
             })
             .ToListAsync(cancellationToken);
+
+        await _userInfoFillService.FillAsync(items, cancellationToken);
 
         return new QueryVariablesCommandResponse
         {

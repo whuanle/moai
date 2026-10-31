@@ -14,7 +14,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { CronExpressionInput, DataTable, feedback } from '@/design-system'
+import { AuditCell, CronExpressionInput, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { getApps, type AppItem } from '@/api/app'
@@ -370,6 +370,18 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
             render: (_, record) => renderRetry(record),
           },
           {
+            title: t('timer.colCreate'),
+            key: 'create',
+            width: 150,
+            render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+          },
+          {
+            title: t('timer.colUpdate'),
+            key: 'update',
+            width: 150,
+            render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+          },
+          {
             title: t('timer.colLastRun'),
             dataIndex: 'lastRunTime',
             width: 160,
@@ -395,7 +407,7 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
                 {
                   title: t('timer.colActions'),
                   key: 'actions',
-                  width: 180,
+                  width: 320,
                   fixed: 'right' as const,
                   render: (_: unknown, record: TeamTimerItem) => (
                     <Space size={0}>
@@ -419,19 +431,13 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
                       >
                         {t('timer.history')}
                       </Button>
-                      <Tooltip title={t('timer.edit')}>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          aria-label={t('timer.edit')}
-                          onClick={() => openEdit(record)}
-                        />
-                      </Tooltip>
+                      <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+                        {t('timer.edit')}
+                      </Button>
                       <Popconfirm title={t('timer.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                        <Tooltip title={t('timer.delete')}>
-                          <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('timer.delete')} />
-                        </Tooltip>
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                          {t('timer.delete')}
+                        </Button>
                       </Popconfirm>
                     </Space>
                   ),

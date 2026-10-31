@@ -12,9 +12,8 @@ import {
 import { Button, Form, Input, Modal, Popconfirm, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, QueryBar, feedback } from '@/design-system'
+import { AuditCell, DataTable, QueryBar, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
 import { applyPublication, withdrawPublication } from '@/api/publication'
 import {
   deleteSkill,
@@ -154,59 +153,74 @@ export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: b
       { title: t('skills.colStatus'), key: 'status', width: 100, render: (_, record) => renderStatus(record) },
       { title: t('skills.colFileCount'), dataIndex: 'fileCount', width: 80, render: (v: number | null) => v ?? 0 },
       {
-        title: t('skills.colUpdateTime'),
-        dataIndex: 'updateTime',
-        width: 160,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        title: t('skills.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('skills.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('skills.colActions'),
         key: 'actions',
-        width: 220,
+        width: 390,
         fixed: 'right' as const,
         render: (_, record) => (
           <Space size={0}>
-            <Button type="text" size="small" icon={<EyeOutlined />} aria-label={`${t('skills.detail')}-${record.key ?? ''}`} onClick={() => void openDetail(record)} />
+            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => void openDetail(record)}>
+              {t('skills.detail')}
+            </Button>
             {canManage && (
               <>
                 <Button
-                  type="text"
+                  type="link"
                   size="small"
                   icon={<EditOutlined />}
-                  aria-label={`${t('skills.edit')}-${record.key ?? ''}`}
                   onClick={() => {
                     setEditTarget(record.id ?? null)
                     setEditOpen(true)
                   }}
-                />
+                >
+                  {t('skills.edit')}
+                </Button>
                 {record.isPublic ? null : record.pendingPublicationId ? (
                   <Popconfirm title={t('skills.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
-                    <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('skills.withdraw')} />
+                    <Button type="link" size="small" icon={<UndoOutlined />}>
+                      {t('skills.withdraw')}
+                    </Button>
                   </Popconfirm>
                 ) : (
                   <Button
-                    type="text"
+                    type="link"
                     size="small"
                     icon={<SendOutlined />}
-                    aria-label={t('skills.apply')}
                     onClick={() => {
                       setApplyRecord(record)
                       applyForm.resetFields()
                     }}
-                  />
+                  >
+                    {t('skills.apply')}
+                  </Button>
                 )}
                 <Popconfirm title={t('skills.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={`${t('skills.delete')}-${record.key ?? ''}`} />
+                  <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                    {t('skills.delete')}
+                  </Button>
                 </Popconfirm>
               </>
             )}
             <Button
-              type="text"
+              type="link"
               size="small"
               icon={<DownloadOutlined />}
-              aria-label={`${t('skills.download')}-${record.key ?? ''}`}
               onClick={() => void handleDownload(record)}
-            />
+            >
+              {t('skills.download')}
+            </Button>
           </Space>
         ),
       },
@@ -234,7 +248,7 @@ export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: b
         dataSource={items}
         loading={loading}
         sticky
-        scroll={{ x: 980 }}
+        scroll={{ x: 1220 }}
         toolbar={
           <Space size={12}>
             {canManage && (

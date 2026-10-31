@@ -74,7 +74,7 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
     render(<TeamAccessApps teamId={1} canManage />)
     await screen.findByText('ERP 接入')
 
-    fireEvent.click(screen.getByRole('button', { name: '重置密钥' }))
+    fireEvent.click(screen.getByRole('button', { name: /重\s*置\s*密\s*钥/ }))
     fireEvent.click(await screen.findByRole('button', { name: /确 定|OK|确定/ }))
 
     expect(await screen.findByText('r'.repeat(48))).toBeTruthy()

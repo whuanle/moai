@@ -13,10 +13,9 @@ import type { TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatFileSize } from '@/utils/format'
-import { formatDateTime } from '@/utils/datetime'
 import { BatchWorkflowModal } from './BatchWorkflowModal'
 import { WIKI_DEFAULT_FILE_TYPES } from '@/api/settings'
 import {
@@ -317,18 +316,16 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
         render: (v: string | null | undefined) => <Tag>{v || '-'}</Tag>,
       },
       {
-        title: t('wiki.doc.colCreateTime'),
-        dataIndex: 'createTime',
-        key: 'createTime',
-        width: 160,
-        render: (v: string | null | undefined) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        title: t('wiki.doc.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
       },
       {
-        title: t('wiki.doc.colCreateUser'),
-        dataIndex: 'createUserName',
-        key: 'createUserName',
-        width: 120,
-        render: (v: string | null | undefined) => v || '-',
+        title: t('wiki.doc.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('wiki.doc.colChunkCount'),
@@ -354,32 +351,20 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
       {
         title: t('wiki.doc.colActions'),
         key: 'actions',
-        width: 170,
+        width: 250,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('wiki.doc.vectorize')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<ThunderboltOutlined />}
-                aria-label={t('wiki.doc.vectorize')}
-                onClick={() => handleVectorize(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('wiki.doc.download')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<DownloadOutlined />}
-                aria-label={t('wiki.doc.download')}
-                onClick={() => void handleDownload(record)}
-              />
-            </Tooltip>
+            <Button type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => handleVectorize(record)}>
+              {t('wiki.doc.vectorize')}
+            </Button>
+            <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => void handleDownload(record)}>
+              {t('wiki.doc.download')}
+            </Button>
             <Popconfirm title={t('wiki.doc.deleteConfirm')} okButtonProps={{ danger: true }} onConfirm={() => void handleDelete([Number(record.documentId)])}>
-              <Tooltip title={t('wiki.doc.delete')}>
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.doc.delete')} />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                {t('wiki.doc.delete')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -397,7 +382,7 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
         dataSource={items}
         loading={loading}
         sticky
-        scroll={{ x: 1050 }}
+        scroll={{ x: 1240 }}
         toolbar={
           <Space wrap>
             <Input

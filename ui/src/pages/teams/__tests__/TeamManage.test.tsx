@@ -190,18 +190,18 @@ describe('TeamManage', () => {
     expect(screen.queryByText('设为成员')).not.toBeInTheDocument()
   })
 
-  it('普通成员行在操作列显示设为管理员图标，点击后调用角色更新', async () => {
+  it('普通成员行在操作列显示设为管理员按钮（图标+文字），点击后调用角色更新', async () => {
     renderManage()
 
     fireEvent.click(await screen.findByText('成员管理'))
 
-    fireEvent.click(await screen.findByRole('button', { name: '设为管理员' }))
+    fireEvent.click(await screen.findByRole('button', { name: /设\s*为\s*管\s*理\s*员/ }))
     await waitFor(() => {
       expect(updateTeamUserRole).toHaveBeenCalledWith(7, 2, 1)
     })
   })
 
-  it('管理员行在操作列显示取消管理员图标，点击后降级为成员', async () => {
+  it('管理员行在操作列显示取消管理员按钮（图标+文字），点击后降级为成员', async () => {
     ;(getTeamUsers as ReturnType<typeof vi.fn>).mockResolvedValue([
       { userId: '1', userName: 'owner', nickName: 'O', role: 2, joinTime: '2026-09-02T00:00:00Z' },
       { userId: '3', userName: 'admin1', nickName: 'A', role: 1, joinTime: '2026-09-02T00:00:00Z' },
@@ -210,7 +210,7 @@ describe('TeamManage', () => {
 
     fireEvent.click(await screen.findByText('成员管理'))
 
-    fireEvent.click(await screen.findByRole('button', { name: '取消管理员' }))
+    fireEvent.click(await screen.findByRole('button', { name: /取\s*消\s*管\s*理\s*员/ }))
     await waitFor(() => {
       expect(updateTeamUserRole).toHaveBeenCalledWith(7, 3, 0)
     })

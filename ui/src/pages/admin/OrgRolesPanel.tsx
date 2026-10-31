@@ -492,14 +492,14 @@ export function OrgRolesPanel() {
       {
         title: t('adminOrgRoles.colActions'),
         key: 'actions',
-        width: 90,
+        width: 110,
         render: (_, record) => (
           <Popconfirm
             title={t('adminOrgRoles.removeMemberConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => void handleRemoveMember(Number(record.userId ?? 0))}
           >
-            <Button type="text" size="small" danger aria-label={t('adminOrgRoles.removeMember')}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label={t('adminOrgRoles.removeMember')}>
               {t('adminOrgRoles.removeMember')}
             </Button>
           </Popconfirm>

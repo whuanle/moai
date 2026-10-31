@@ -13,9 +13,8 @@ import {
 import { Alert, Button, Form, Input, Modal, Popconfirm, Radio, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, PageToolbar, feedback } from '@/design-system'
+import { AuditCell, DataTable, PageToolbar, feedback } from '@/design-system'
 import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
 import {
   createSystemAccessApp,
   deleteSystemAccessApp,
@@ -23,7 +22,6 @@ import {
   resetSystemAccessAppSecret,
   updateSystemAccessApp,
   type SystemAccessAppItem,
-  type SystemAccessAppStatus,
 } from '@/api/systemAccessApp'
 
 const { Text, Paragraph } = Typography
@@ -268,46 +266,50 @@ export function SystemAccessAppsPanel() {
           ),
       },
       {
-        title: t('systemAccessApp.colCreateTime'),
-        dataIndex: 'createTime',
-        key: 'createTime',
+        title: t('systemAccessApp.colCreate'),
+        key: 'create',
         width: 150,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('systemAccessApp.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('systemAccessApp.colActions'),
         key: 'actions',
-        width: 145,
+        width: 320,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('systemAccessApp.edit')}>
-              <Button type="text" size="small" icon={<EditOutlined />} aria-label={t('systemAccessApp.edit')} onClick={() => openEdit(record)} />
-            </Tooltip>
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+              {t('systemAccessApp.edit')}
+            </Button>
             <Popconfirm title={t('systemAccessApp.resetSecretConfirm')} onConfirm={() => void handleResetSecret(record)}>
-              <Tooltip title={t('systemAccessApp.resetSecret')}>
-                <Button type="text" size="small" icon={<KeyOutlined />} aria-label={t('systemAccessApp.resetSecret')} />
-              </Tooltip>
+              <Button type="link" size="small" icon={<KeyOutlined />}>
+                {t('systemAccessApp.resetSecret')}
+              </Button>
             </Popconfirm>
             <Popconfirm
               title={t(record.status === 'disabled' ? 'systemAccessApp.enableConfirm' : 'systemAccessApp.disableConfirm')}
               okButtonProps={{ danger: record.status !== 'disabled' }}
               onConfirm={() => void handleToggleStatus(record)}
             >
-              <Tooltip title={t(record.status === 'disabled' ? 'systemAccessApp.enable' : 'systemAccessApp.disable')}>
-                <Button
-                  type="text"
-                  size="small"
-                  danger={record.status !== 'disabled'}
-                  icon={record.status === 'disabled' ? <CheckCircleOutlined /> : <StopOutlined />}
-                  aria-label={t(record.status === 'disabled' ? 'systemAccessApp.enable' : 'systemAccessApp.disable')}
-                />
-              </Tooltip>
+              <Button
+                type="link"
+                size="small"
+                danger={record.status !== 'disabled'}
+                icon={record.status === 'disabled' ? <CheckCircleOutlined /> : <StopOutlined />}
+              >
+                {t(record.status === 'disabled' ? 'systemAccessApp.enable' : 'systemAccessApp.disable')}
+              </Button>
             </Popconfirm>
             <Popconfirm title={t('systemAccessApp.deleteConfirm')} okButtonProps={{ danger: true }} onConfirm={() => void handleDelete(record)}>
-              <Tooltip title={t('systemAccessApp.delete')}>
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('systemAccessApp.delete')} />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                {t('systemAccessApp.delete')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -355,7 +357,7 @@ export function SystemAccessAppsPanel() {
           dataSource={items}
           loading={loading}
           sticky
-          scroll={{ x: 900, y: tableScrollY }}
+          scroll={{ x: 1330, y: tableScrollY }}
           pagination={false}
         />
       </div>

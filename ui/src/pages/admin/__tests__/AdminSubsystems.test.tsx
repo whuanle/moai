@@ -155,9 +155,11 @@ describe('SubsystemsPanel', () => {
   })
 })
 
-/** 在表格行内按 aria-label 找 icon 按钮 */
+/** 在表格行内按可见文字（或 aria-label）找操作按钮 */
 function withinRowButton(row: Element, label: string): HTMLElement {
-  const btn = Array.from(row.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === label)
+  const btn = Array.from(row.querySelectorAll('button')).find(
+    (b) => (b.textContent ?? '').trim() === label || b.getAttribute('aria-label') === label,
+  )
   expect(btn, `row button ${label} should exist`).toBeTruthy()
   return btn as HTMLElement
 }

@@ -176,6 +176,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<MemoryItem> SaveAsync(MemorySaveRequest request, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var settings = request.Settings;
         var content = NormalizeContent(request.Content);
 
@@ -240,6 +241,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<bool> DeleteAsync(Guid appId, Guid memoryId, long userId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var records = await _vectorStore.ListUserAsync(appId, userId, ListMaxRecords, cancellationToken);
         var target = records.FirstOrDefault(x => x.Key == memoryId);
         if (target == null)
@@ -255,6 +257,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<int> ClearAppUserAsync(Guid appId, long userId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var records = await _vectorStore.ListUserAsync(appId, userId, ListMaxRecords, cancellationToken);
         if (records.Count == 0)
         {
@@ -269,6 +272,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<int> ClearAppAsync(Guid appId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var app = await _databaseContext.Apps.AsNoTracking()
             .Where(x => x.Id == appId)
             .Select(x => new { x.Id, x.TeamId, x.AppType, x.PublishStatus })
@@ -314,6 +318,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task DeleteAppCollectionAsync(Guid appId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         await _vectorStore.DeleteCollectionAsync(appId, cancellationToken);
         await _databaseContext.AppMemoryShards
             .Where(x => x.AppId == appId)
@@ -325,6 +330,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task ExtractAndConsolidateAsync(Guid sessionId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var session = await _databaseContext.AppAgentSessions.AsNoTracking()
             .Where(x => x.Id == sessionId)
             .Select(x => new { x.Id, x.AppId, x.TeamId, x.CreateUserId, x.UserType })
@@ -433,6 +439,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<bool> UpdateAppMemoryAsync(Guid appId, long userId, Guid memoryId, string content, int memoryType, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var resolution = await ResolveAsync(appId, userId, cancellationToken);
         if (resolution is not { IsEnabled: true })
         {
@@ -481,6 +488,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<MemoryItem> SaveGlobalAsync(long userId, string content, int memoryType, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var settings = await GetPlatformSettingsAsync(cancellationToken);
         if (!settings.IsUsable)
         {
@@ -549,6 +557,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<bool> UpdateGlobalAsync(long userId, Guid memoryId, string content, int memoryType, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var settings = await GetPlatformSettingsAsync(cancellationToken);
         if (!settings.IsUsable)
         {
@@ -584,6 +593,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<bool> DeleteGlobalAsync(long userId, Guid memoryId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var records = await _vectorStore.ListGlobalUserAsync(userId, ListMaxRecords, cancellationToken);
         var target = records.FirstOrDefault(x => x.Key == memoryId);
         if (target == null)
@@ -599,6 +609,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<int> ClearGlobalUserAsync(long userId, CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         var records = await _vectorStore.ListGlobalUserAsync(userId, ListMaxRecords, cancellationToken);
         if (records.Count == 0)
         {
@@ -623,6 +634,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task ClearGlobalAllAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         await _vectorStore.DeleteGlobalCollectionAsync(cancellationToken);
         await _databaseContext.AppMemoryShards
             .Where(x => x.AppId == MemoryGlobalScope.GlobalAppId)
@@ -634,6 +646,7 @@ public sealed class MemoryService : IMemoryService
     /// <inheritdoc/>
     public async Task<int> ClearAllAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureNotMigratingAsync(cancellationToken);
         // 应用记忆：删除各应用向量集合并将 shard 清零（仅处理有记忆的应用），返回清除总条数
         var shards = await _databaseContext.AppMemoryShards.AsNoTracking()
             .Where(x => x.MemoryCount > 0 && x.AppId != MemoryGlobalScope.GlobalAppId)
@@ -1073,6 +1086,21 @@ public sealed class MemoryService : IMemoryService
         var generator = await _embeddingGeneratorProvider.GetEmbeddingGeneratorAsync(pair.Value.Model, pair.Value.Channel, cancellationToken);
         var embeddings = await generator.GenerateAsync([text], new EmbeddingGenerationOptions { Dimensions = dimensions }, cancellationToken);
         return embeddings.FirstOrDefault()?.Vector;
+    }
+
+    /// <summary>
+    /// 模型迁移写入阻断：迁移进行中拒绝一切记忆写操作（保存/编辑/删除/清空/晋升/应用清理），
+    /// 保证迁移读到的旧表快照一致；检索不受影响（迁移期间继续走旧表旧设置）.
+    /// </summary>
+    private async Task EnsureNotMigratingAsync(CancellationToken cancellationToken)
+    {
+        var migrating = await _databaseContext.WorkerTasks.AsNoTracking()
+            .AnyAsync(x => x.BindType == MemoryMigrationTask.BindType && x.IsDeleted == 0
+                && (x.State == (int)MoAI.Infra.Models.WorkerState.Wait || x.State == (int)MoAI.Infra.Models.WorkerState.Processing), cancellationToken);
+        if (migrating)
+        {
+            throw new BusinessException("记忆向量化模型迁移进行中，请稍后再试.") { StatusCode = 409 };
+        }
     }
 
     private async Task<int> ResolveTeamIdAsync(Guid appId, CancellationToken cancellationToken)

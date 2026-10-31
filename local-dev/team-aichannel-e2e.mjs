@@ -263,6 +263,16 @@ check('TC-S7 额度移除端点已移除', quotaDel.status === 404 || quotaDel.s
 const teamModelAuth = await api(adminToken, `/api/ai/model/${manualModelId}/authorization`, 'PUT', { teamIds: [] })
 check('TC-S7 团队模型无授权概念 400', teamModelAuth.status === 400, `${teamModelAuth.status}`)
 
+// ---------- 渠道 tokens 统计与审计字段 ----------
+const chListTokens = await api(owner.token, chUrl)
+const chTokens = (chListTokens.body?.items ?? []).find((x) => x.id === channelId)
+// long 序列化为字符串，这里按数值断言
+const tokNum = (v) => Number(v)
+check('TC-S8 渠道列表回显 tokens 统计字段', chListTokens.status === 200 && Boolean(chTokens)
+  && Number.isFinite(tokNum(chTokens.totalTokens)) && Number.isFinite(tokNum(chTokens.promptTokens)) && Number.isFinite(tokNum(chTokens.completionTokens))
+  && tokNum(chTokens.totalTokens) >= 0 && tokNum(chTokens.promptTokens) >= 0 && tokNum(chTokens.completionTokens) >= 0, JSON.stringify(chTokens))
+check('TC-S8 渠道列表回显审计人名', Boolean(chTokens?.createUserName) && Boolean(chTokens?.updateUserName), `${chTokens?.createUserName}/${chTokens?.updateUserName}`)
+
 // ---------- 清理 ----------
 await api(owner.token, `${mUrl}/${manualModelId}`, 'DELETE')
 await api(owner.token, chUrl, 'POST', undefined) // 占位无效请求忽略

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Tooltip, Typography , theme } from 'antd'
+import { Button, Form, Input, Modal, Select, Space, Tag, Tabs, Typography , theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { EditOutlined, AppstoreOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -12,13 +12,12 @@ import {
   type PluginManageItem,
   type StaticPluginManageItem,
 } from '@/api/plugin'
-import { DataTable, feedback, Page } from '@/design-system'
+import { AuditCell, DataTable, feedback, Page } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import { CustomPluginPanel } from './CustomPluginPanel'
 import { DynamicPluginPanel } from './DynamicPluginPanel'
 import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
-import { formatDateTime } from '@/utils/datetime'
 
 const TAB_KINDS = ['custom', 'dynamic', 'static'] as const
 
@@ -167,39 +166,43 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
       render: (v: boolean) =>
         v ? <Tag color="green">{t('plugins.isPublic')}</Tag> : <Tag>{t('plugins.notPublic')}</Tag>,
     },
-    { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-    ) },
-    { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-    ) },
+    {
+      title: t('plugins.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+    },
+    {
+      title: t('plugins.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+    },
     {
       title: t('plugins.colActions'),
       key: 'actions',
-      width: 120,
+      width: 180,
       fixed: 'right',
       render: (_: unknown, record: StaticPluginManageItem) => (
         <Space size={0}>
-          <Tooltip title={t('plugins.run')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<PlayCircleOutlined />}
-              aria-label={t('plugins.run')}
-              onClick={() => setDrawerTarget(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('plugins.editPlugin')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label={t('plugins.editPlugin')}
-              onClick={() => openEdit(record)}
-            />
-          </Tooltip>
+          <Button
+            type="link"
+            size="small"
+            icon={<PlayCircleOutlined />}
+            aria-label={t('plugins.run')}
+            onClick={() => setDrawerTarget(record)}
+          >
+            {t('plugins.run')}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            aria-label={t('plugins.editPlugin')}
+            onClick={() => openEdit(record)}
+          >
+            {t('plugins.editPlugin')}
+          </Button>
         </Space>
       ),
     },

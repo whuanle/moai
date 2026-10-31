@@ -100,7 +100,7 @@ describe('WikiSources', () => {
   it('点击立即同步后调用同步接口并刷新列表', async () => {
     renderSources()
 
-    const syncButton = await screen.findByRole('button', { name: '立即同步' })
+    const syncButton = await screen.findByRole('button', { name: /立即同步$/ })
     fireEvent.click(syncButton)
 
     await waitFor(() => {
@@ -115,7 +115,7 @@ describe('WikiSources', () => {
   it('删除外部源需要确认，确认后调用删除接口', async () => {
     renderSources()
 
-    const deleteButton = await screen.findByRole('button', { name: '删除' })
+    const deleteButton = await screen.findByRole('button', { name: /删除$/ })
     fireEvent.click(deleteButton)
 
     // Popconfirm 的确认按钮文案由 antd 的 okText 默认值提供，用 title 定位弹层后取主按钮
@@ -211,7 +211,7 @@ describe('WikiSources', () => {
   it('编辑外部源时按现状回填爬虫配置', async () => {
     renderSources()
 
-    fireEvent.click(await screen.findByRole('button', { name: '编辑' }))
+    fireEvent.click(await screen.findByRole('button', { name: /编辑$/ }))
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('官网文档')).toBeTruthy()
@@ -223,7 +223,7 @@ describe('WikiSources', () => {
   it('关闭定时同步后提交空 cron 表示不再自动抓取', async () => {
     renderSources()
 
-    fireEvent.click(await screen.findByRole('button', { name: '编辑' }))
+    fireEvent.click(await screen.findByRole('button', { name: /编辑$/ }))
     await waitFor(() => {
       expect(screen.getByDisplayValue('官网文档')).toBeTruthy()
     })

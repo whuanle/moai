@@ -165,6 +165,34 @@ public class MemoryController : ControllerBase
     }
 
     /// <summary>
+    /// 发起长期记忆向量化模型迁移：用新模型与维度重建平台全部记忆向量（应用记忆 + 全局记忆），
+    /// RabbitMQ 异步执行，期间记忆写入阻断、检索不受影响（仅超级管理员）.
+    /// </summary>
+    /// <param name="req">迁移请求（目标模型与维度）.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="StartMemoryModelMigrationCommandResponse"/>.</returns>
+    [HttpPost("model-migration")]
+    public async Task<StartMemoryModelMigrationCommandResponse> StartMemoryModelMigration([FromBody] StartMemoryModelMigrationCommand req, CancellationToken ct)
+    {
+        await EnsureRootAsync(ct);
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询长期记忆向量化模型迁移状态：当前生效模型/维度、平台记忆总数与最近一次迁移任务进度（仅超级管理员）.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryMemoryModelMigrationStatusResponse"/>.</returns>
+    [HttpGet("model-migration")]
+    public async Task<QueryMemoryModelMigrationStatusResponse> QueryMemoryModelMigrationStatus(CancellationToken ct)
+    {
+        await EnsureRootAsync(ct);
+        var cmd = new QueryMemoryModelMigrationStatusCommand();
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// root 门禁：非超级管理员拒绝.
     /// </summary>
     private async Task EnsureRootAsync(CancellationToken ct)

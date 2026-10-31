@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Space, Tag, Typography } from 'antd'
 import type { MenuProps, TableColumnsType } from 'antd'
 import {
   AppstoreAddOutlined,
@@ -284,7 +284,7 @@ export function TeamManage() {
       {
         title: t('team.colActions'),
         key: 'actions',
-        width: 150,
+        width: 250,
         fixed: 'right' as const,
         render: (_, record) => {
           const role = record.role ?? ROLE_MEMBER
@@ -293,34 +293,34 @@ export function TeamManage() {
           if (isOwner && role !== ROLE_OWNER) {
             if (role === ROLE_ADMIN) {
               actions.push(
-                <Tooltip key="unset-admin" title={t('team.unsetAdmin')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<MinusCircleOutlined />}
-                    aria-label={t('team.unsetAdmin')}
-                    onClick={() => void handleChangeRole(record, ROLE_MEMBER)}
-                  />
-                </Tooltip>,
+                <Button
+                  key="unset-admin"
+                  type="link"
+                  size="small"
+                  icon={<MinusCircleOutlined />}
+                  onClick={() => void handleChangeRole(record, ROLE_MEMBER)}
+                >
+                  {t('team.unsetAdmin')}
+                </Button>,
               )
             } else {
               actions.push(
-                <Tooltip key="set-admin" title={t('team.setAdmin')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<SafetyCertificateOutlined />}
-                    aria-label={t('team.setAdmin')}
-                    onClick={() => void handleChangeRole(record, ROLE_ADMIN)}
-                  />
-                </Tooltip>,
+                <Button
+                  key="set-admin"
+                  type="link"
+                  size="small"
+                  icon={<SafetyCertificateOutlined />}
+                  onClick={() => void handleChangeRole(record, ROLE_ADMIN)}
+                >
+                  {t('team.setAdmin')}
+                </Button>,
               )
             }
             actions.push(
               <Popconfirm key="transfer" title={t('team.transferConfirm')} onConfirm={() => void handleTransfer(record)}>
-                <Tooltip title={t('team.transferOwner')}>
-                  <Button type="text" size="small" icon={<UserSwitchOutlined />} aria-label={t('team.transferOwner')} />
-                </Tooltip>
+                <Button type="link" size="small" icon={<UserSwitchOutlined />}>
+                  {t('team.transferOwner')}
+                </Button>
               </Popconfirm>,
             )
           }
@@ -332,9 +332,9 @@ export function TeamManage() {
                 title={t(isSelf ? 'team.leaveConfirm' : 'team.removeConfirm')}
                 onConfirm={() => void handleRemoveMember(record)}
               >
-                <Tooltip title={label}>
-                  <Button type="text" size="small" danger icon={<StopOutlined />} aria-label={label} />
-                </Tooltip>
+                <Button type="link" size="small" danger icon={<StopOutlined />}>
+                  {label}
+                </Button>
               </Popconfirm>,
             )
           }

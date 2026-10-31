@@ -1,4 +1,4 @@
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../app/sdd.md](../app/sdd.md)、[../ai/sdd.md](../ai/sdd.md) ｜ 证据：[local-dev/agent-memory-e2e.mjs](../../local-dev/agent-memory-e2e.mjs)、[local-dev/memory-management-e2e.mjs](../../local-dev/memory-management-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../app/sdd.md](../app/sdd.md)、[../ai/sdd.md](../ai/sdd.md) ｜ 证据：[local-dev/agent-memory-e2e.mjs](../../local-dev/agent-memory-e2e.mjs)、[local-dev/memory-management-e2e.mjs](../../local-dev/memory-management-e2e.mjs)、[local-dev/memory-migration-e2e.mjs](../../local-dev/memory-migration-e2e.mjs)
 
 # Agent 应用长期记忆（BDD）
 
@@ -216,3 +216,49 @@ Feature: 记忆设置统一到系统设置（2026-10-30，D-M10）
     Given 平台尚未配置统一向量化模型（历史存量应用分片可能仍有计数）
     When 超级管理员首次选择统一向量化模型与维度并开启总开关
     Then 保存成功（锁定仅在统一模型已配置后生效，存量分片按直切策略由管理员按需清空）
+
+Feature: 向量化模型迁移（2026-10-31，D-M11）
+  @MEM-S38 @auto:e2e
+  Scenario: 无记忆或未配置模型时迁移被拒
+    Given 平台尚未产生任何记忆（或尚未配置统一向量化模型）
+    When 超级管理员发起模型迁移
+    Then 返回 400 并提示直接保存设置即可（锁定未生效时无需迁移）
+  @MEM-S39 @auto:e2e
+  Scenario: 迁移发起校验
+    When 超级管理员以与当前一致的模型与维度发起迁移
+    Then 返回 400 提示与当前一致
+    When 以不存在或不可用的模型、越界维度发起迁移
+    Then 返回 400
+    When 非超级管理员发起迁移或查询迁移状态
+    Then 返回 403
+  @MEM-S40 @auto:e2e
+  Scenario: 迁移全链路成功
+    Given 平台已有应用记忆与全局记忆（模型A/维度X）
+    When 超级管理员发起到模型B/维度Y的迁移
+    Then 返回任务 id，MQ 异步逐集合用新模型重嵌记忆原文写入临时表（进度随任务行回写）
+    And 全部完成后原子换表（旧表删除、临时表顶替）并切换平台设置为模型B/维度Y
+    And 进度闭环：已重建条数等于计划总条数
+  @MEM-S41 @auto:e2e
+  Scenario: 迁移期间写入阻断与并发防护
+    Given 迁移任务处于等待或处理中
+    When 用户写入任何记忆
+    Then 返回 409 提示迁移进行中（检索不受影响），该次写入不落库
+    When 超级管理员再次发起迁移
+    Then 返回 409 提示已有进行中的迁移任务
+  @MEM-S42 @auto:e2e
+  Scenario: 迁移后数据完好与新维度生效
+    Given 迁移成功完成
+    Then 应用记忆与全局记忆条目原样保留
+    When 以新维度进行向量检索（对话注入）并新写入一条记忆
+    Then 相关记忆正常召回，新记忆按新模型/维度落库并可查询
+  @MEM-S43 @auto:e2e
+  Scenario: 失败迁移自动回滚
+    Given 目标模型渠道不可用（嵌入调用必败）
+    When 超级管理员发起迁移
+    Then 任务置为失败并提示迁移失败已回滚（临时表删除）
+    And 平台设置保持原模型/维度不变，记忆总数与内容不变
+  @MEM-S44 @auto:e2e
+  Scenario: 失败后可重新发起迁移
+    Given 上一次迁移已失败回滚（原数据完好）
+    When 超级管理员重新发起迁移
+    Then 迁移成功完成并切换设置，检索按新维度命中

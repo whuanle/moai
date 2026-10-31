@@ -12,7 +12,7 @@ import {
 import { Button, Col, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import {
@@ -456,41 +456,39 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
         ),
       },
       {
+        title: t('wiki.source.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('wiki.source.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+      },
+      {
         title: t('wiki.source.colActions'),
         key: 'actions',
-        width: 150,
+        width: 320,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('wiki.source.syncNow')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<SyncOutlined spin={syncingId === record.sourceId} />}
-                aria-label={t('wiki.source.syncNow')}
-                disabled={!isAdminPlus || syncingId === record.sourceId}
-                onClick={() => void handleSync(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('wiki.source.documents')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<FileTextOutlined />}
-                aria-label={t('wiki.source.documents')}
-                onClick={() => openDocs(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('wiki.edit')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                aria-label={t('wiki.edit')}
-                disabled={!isAdminPlus}
-                onClick={() => openEdit(record)}
-              />
-            </Tooltip>
+            <Button
+              type="link"
+              size="small"
+              icon={<SyncOutlined spin={syncingId === record.sourceId} />}
+              disabled={!isAdminPlus || syncingId === record.sourceId}
+              onClick={() => void handleSync(record)}
+            >
+              {t('wiki.source.syncNow')}
+            </Button>
+            <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => openDocs(record)}>
+              {t('wiki.source.documents')}
+            </Button>
+            <Button type="link" size="small" icon={<EditOutlined />} disabled={!isAdminPlus} onClick={() => openEdit(record)}>
+              {t('wiki.edit')}
+            </Button>
             <Popconfirm
               title={t('wiki.source.deleteConfirm')}
               description={t('wiki.source.deleteHint')}
@@ -498,9 +496,9 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
               onConfirm={() => void handleDelete(record)}
               disabled={!isAdminPlus}
             >
-              <Tooltip title={t('wiki.delete')}>
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.delete')} disabled={!isAdminPlus} />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled={!isAdminPlus}>
+                {t('wiki.delete')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -563,7 +561,7 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
         columns={columns}
         dataSource={items}
         loading={loading}
-        scroll={{ x: 1250 }}
+        scroll={{ x: 1800 }}
         toolbar={
           <Space wrap>
             <Button

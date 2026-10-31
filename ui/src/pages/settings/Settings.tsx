@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, InputNumber, Popconfirm, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
+import { Button, Input, InputNumber, Popconfirm, Progress, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
 import { CaretRightOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
@@ -7,7 +7,10 @@ import { refreshServerInfo } from '@/api/auth'
 import {
   clearAllMemory,
   getGlobalMemoryModelOptions,
+  getMemoryModelMigrationStatus,
+  startMemoryModelMigration,
   type GlobalMemoryModelOption,
+  type MemoryMigrationStatus,
 } from '@/api/memory'
 import {
   getSettings,
@@ -236,6 +239,23 @@ export function Settings() {
   const [memoryDimensions, setMemoryDimensions] = useState<number>(MEMORY_DEFAULT_DIMENSIONS)
   const [memoryModels, setMemoryModels] = useState<GlobalMemoryModelOption[]>([])
   const [memoryDirty, setMemoryDirty] = useState(false)
+  const [savedMemoryModelId, setSavedMemoryModelId] = useState('')
+  const [savedMemoryDimensions, setSavedMemoryDimensions] = useState<number>(MEMORY_DEFAULT_DIMENSIONS)
+  const [memoryMigration, setMemoryMigration] = useState<MemoryMigrationStatus | null>(null)
+  const [startingMigration, setStartingMigration] = useState(false)
+
+  // 已有记忆即锁定模型/维度（totalMemoryCount 来自迁移状态接口），更换须走迁移重建
+  const memoryLocked = (memoryMigration?.totalMemoryCount ?? 0) > 0
+  const migrationTask = memoryMigration?.activeMigration ?? null
+  // 进行中 = Wait/Processing；终态（成功/失败）保留展示但不轮询
+  const memoryMigrating = migrationTask?.state === 1 || migrationTask?.state === 2
+  const memoryModelChanged = memoryModelId !== savedMemoryModelId || memoryDimensions !== savedMemoryDimensions
+  const migrationPercent =
+    migrationTask?.state === 4
+      ? 100
+      : migrationTask && (migrationTask.totalCount ?? 0) > 0
+        ? Math.min(100, Math.round(((migrationTask.migratedCount ?? 0) / (migrationTask.totalCount ?? 1)) * 100))
+        : 0
 
   useEffect(() => {
     void load()
@@ -294,12 +314,15 @@ export function Settings() {
       setMemoryEnabled(valueOf(SettingKeys.memoryEnabled) === 'true')
       setMemoryModelId(valueOf(SettingKeys.memoryEmbeddingModel).trim())
       const parsedMemoryDimensions = Number.parseInt(valueOf(SettingKeys.memoryEmbeddingDimensions), 10)
-      setMemoryDimensions(
+      const effectiveMemoryDimensions =
         Number.isFinite(parsedMemoryDimensions) && parsedMemoryDimensions >= 1 && parsedMemoryDimensions <= 2000
           ? parsedMemoryDimensions
-          : MEMORY_DEFAULT_DIMENSIONS,
-      )
+          : MEMORY_DEFAULT_DIMENSIONS
+      setMemoryDimensions(effectiveMemoryDimensions)
+      setSavedMemoryModelId(valueOf(SettingKeys.memoryEmbeddingModel).trim())
+      setSavedMemoryDimensions(effectiveMemoryDimensions)
       setMemoryDirty(false)
+      void loadMemoryMigrationStatus()
       try {
         setMemoryModels(await getGlobalMemoryModelOptions())
       } catch {
@@ -432,6 +455,75 @@ export function Settings() {
     }
   }
 
+  async function loadMemoryMigrationStatus() {
+    try {
+      setMemoryMigration(await getMemoryModelMigrationStatus())
+    } catch {
+      // 状态加载失败不影响其余设置展示（按未锁定处理）
+      setMemoryMigration(null)
+    }
+  }
+
+  // 迁移进行中每 3s 轮询一次进度，终态提示；迁移只改模型/维度两项设置，
+  // 成功后直接以状态接口回传的当前口径刷新本地值（与 settings 读取同源），无需整页重载
+  useEffect(() => {
+    if (!memoryMigrating) {
+      return
+    }
+    const timer = window.setInterval(async () => {
+      try {
+        const status = await getMemoryModelMigrationStatus()
+        setMemoryMigration(status)
+        const state = status.activeMigration?.state
+        if (state === 4 || state === 5) {
+          if (state === 4) {
+            const modelId = status.currentModelId ?? ''
+            const dims =
+              typeof status.currentDimensions === 'number' && status.currentDimensions >= 1 && status.currentDimensions <= 2000
+                ? status.currentDimensions
+                : MEMORY_DEFAULT_DIMENSIONS
+            setMemoryModelId(modelId)
+            setMemoryDimensions(dims)
+            setSavedMemoryModelId(modelId)
+            setSavedMemoryDimensions(dims)
+            feedback.success(t('settings.memory.migrate.success'))
+          } else {
+            feedback.error(t('settings.memory.migrate.failed'))
+          }
+        }
+      } catch {
+        // 轮询失败忽略，下一轮重试
+      }
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [memoryMigrating, t])
+
+  async function handleStartMigration() {
+    if (!memoryModelId) {
+      feedback.error(t('settings.memory.modelRequired'))
+      return
+    }
+    if (!Number.isInteger(memoryDimensions) || memoryDimensions < 1 || memoryDimensions > 2000) {
+      feedback.error(t('settings.memory.invalidDimensions'))
+      return
+    }
+    setStartingMigration(true)
+    try {
+      const taskId = await startMemoryModelMigration(memoryModelId, memoryDimensions)
+      if (!taskId) {
+        feedback.error(t('settings.memory.migrate.failed'))
+        return
+      }
+      feedback.success(t('settings.memory.migrate.started'))
+      // 立即拉取一次状态进入轮询
+      await loadMemoryMigrationStatus()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setStartingMigration(false)
+    }
+  }
+
   async function handleSaveMemory() {
     if (memoryEnabled && !memoryModelId) {
       feedback.error(t('settings.memory.modelRequired'))
@@ -443,12 +535,18 @@ export function Settings() {
     }
     setSavingMemory(true)
     try {
-      // 先写模型与维度，再写开关：开启校验要求模型已保存
-      await saveSetting(SettingKeys.memoryEmbeddingModel, memoryModelId)
-      await saveSetting(SettingKeys.memoryEmbeddingDimensions, String(memoryDimensions))
-      await saveSetting(SettingKeys.memoryEnabled, memoryEnabled ? 'true' : 'false')
+      if (memoryLocked) {
+        // 已有记忆时模型/维度被锁定（更换须走迁移重建），保存仅提交开关
+        await saveSetting(SettingKeys.memoryEnabled, memoryEnabled ? 'true' : 'false')
+      } else {
+        // 先写模型与维度，再写开关：开启校验要求模型已保存
+        await saveSetting(SettingKeys.memoryEmbeddingModel, memoryModelId)
+        await saveSetting(SettingKeys.memoryEmbeddingDimensions, String(memoryDimensions))
+        await saveSetting(SettingKeys.memoryEnabled, memoryEnabled ? 'true' : 'false')
+      }
       feedback.success(t('settings.saveSuccess'))
       setMemoryDirty(false)
+      void loadMemoryMigrationStatus()
     } catch {
       // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
       void load()
@@ -1151,6 +1249,7 @@ export function Settings() {
                   value={memoryModelId || undefined}
                   aria-label={t('settings.memory.model.name')}
                   placeholder={t('settings.memory.model.placeholder')}
+                  disabled={memoryMigrating}
                   onChange={(value) => {
                     setMemoryModelId(value)
                     setMemoryDirty(true)
@@ -1161,6 +1260,11 @@ export function Settings() {
                   style={{ maxWidth: 420 }}
                 />
                 <Text type="secondary">{t('settings.memory.model.desc')}</Text>
+                {memoryLocked && (
+                  <Text type="warning">
+                    {t('settings.memory.lockedHint', { count: memoryMigration?.totalMemoryCount ?? 0 })}
+                  </Text>
+                )}
               </Field>
               <Field label={t('settings.memory.dimensions.name')}>
                 <InputNumber
@@ -1168,6 +1272,7 @@ export function Settings() {
                   min={1}
                   max={2000}
                   precision={0}
+                  disabled={memoryMigrating}
                   aria-label={t('settings.memory.dimensions.name')}
                   onChange={(value) => {
                     setMemoryDimensions(typeof value === 'number' ? value : MEMORY_DEFAULT_DIMENSIONS)
@@ -1177,15 +1282,43 @@ export function Settings() {
                 />
                 <Text type="secondary">{t('settings.memory.dimensions.desc')}</Text>
               </Field>
+              {memoryLocked && (
+                <Field label={t('settings.memory.migrate.name')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+                    <Popconfirm
+                      title={t('settings.memory.migrate.confirm')}
+                      okText={t('common.ok')}
+                      cancelText={t('common.cancel')}
+                      onConfirm={handleStartMigration}
+                      disabled={startingMigration || memoryMigrating || !memoryModelChanged}
+                    >
+                      <Button
+                        danger
+                        loading={startingMigration}
+                        disabled={memoryMigrating || !memoryModelChanged}
+                      >
+                        {t('settings.memory.migrate.start')}
+                      </Button>
+                    </Popconfirm>
+                    {migrationTask && (memoryMigrating || migrationTask.state === 4 || migrationTask.state === 5) && (
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Progress percent={migrationPercent} size="small" status={memoryMigrating ? 'active' : migrationTask.state === 5 ? 'exception' : 'success'} />
+                        <Text type="secondary">{migrationTask.message}</Text>
+                      </div>
+                    )}
+                  </div>
+                  <Text type="secondary">{t('settings.memory.migrate.desc')}</Text>
+                </Field>
+              )}
               <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <Popconfirm
                   title={t('settings.memory.clearConfirm')}
                   okText={t('common.ok')}
                   cancelText={t('common.cancel')}
                   onConfirm={handleClearAllMemory}
-                  disabled={clearingMemory}
+                  disabled={clearingMemory || memoryMigrating}
                 >
-                  <Button danger loading={clearingMemory}>
+                  <Button danger loading={clearingMemory} disabled={memoryMigrating}>
                     {t('settings.memory.clear')}
                   </Button>
                 </Popconfirm>

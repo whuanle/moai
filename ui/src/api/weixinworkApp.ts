@@ -22,6 +22,8 @@ export interface WeixinWorkAppItemView {
   bindTime?: string | null
   createUserName?: string | null
   createTime?: string | null
+  updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface WeixinWorkAppsResult {
@@ -90,6 +92,8 @@ export async function getWeixinWorkApps(teamId: number, keyword?: string): Promi
       bindTime: x?.bindTime ?? null,
       createUserName: x?.createUserName ?? null,
       createTime: x?.createTime ?? null,
+      updateTime: x?.updateTime ?? null,
+      updateUserName: x?.updateUserName ?? null,
     })),
   }
 }

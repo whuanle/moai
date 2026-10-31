@@ -6,6 +6,8 @@ import { AllRequestBuilderRequestsMetadata, type AllRequestBuilder } from './all
 // @ts-ignore
 import { GlobalRequestBuilderNavigationMetadata, type GlobalRequestBuilder } from './global/index.js';
 // @ts-ignore
+import { ModelMigrationRequestBuilderRequestsMetadata, type ModelMigrationRequestBuilder } from './modelMigration/index.js';
+// @ts-ignore
 import { OverviewRequestBuilderRequestsMetadata, type OverviewRequestBuilder } from './overview/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
@@ -22,6 +24,10 @@ export interface MemoryRequestBuilder extends BaseRequestBuilder<MemoryRequestBu
      * The global property
      */
     get global(): GlobalRequestBuilder;
+    /**
+     * The modelMigration property
+     */
+    get modelMigration(): ModelMigrationRequestBuilder;
     /**
      * The overview property
      */
@@ -40,6 +46,9 @@ export const MemoryRequestBuilderNavigationMetadata: Record<Exclude<keyof Memory
     },
     global: {
         navigationMetadata: GlobalRequestBuilderNavigationMetadata,
+    },
+    modelMigration: {
+        requestsMetadata: ModelMigrationRequestBuilderRequestsMetadata,
     },
     overview: {
         requestsMetadata: OverviewRequestBuilderRequestsMetadata,

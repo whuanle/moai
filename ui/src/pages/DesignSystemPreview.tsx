@@ -21,7 +21,9 @@ import {
   Typography,
 } from 'antd'
 import {
+  DeleteOutlined,
   DownloadOutlined,
+  EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
@@ -30,7 +32,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/app'
-import { Chat, DataTable, FormPage, QueryBar, StatCard } from '@/design-system'
+import { AuditCell, Chat, DataTable, FormPage, QueryBar, StatCard } from '@/design-system'
 import {
   brandColors,
   useNeutralColors,
@@ -302,14 +304,22 @@ function TableSection() {
         </Tag>
       ),
     },
-    { title: '创建时间', dataIndex: 'createdAt' },
+    // 审计两行单元格（frontend-conventions 第 8 条）：操作人在上、时间在下
+    {
+      title: '创建',
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.owner} time={record.createdAt} />,
+    },
     {
       title: '操作',
       key: 'actions',
       render: () => (
-        <Space>
-          <Button type="link" size="small">编辑</Button>
-          <Button type="link" size="small" danger>删除</Button>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EditOutlined />}>编辑</Button>
+          <Popconfirm title="确认删除？" description="删除后不可恢复。" okButtonProps={{ danger: true }}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          </Popconfirm>
         </Space>
       ),
     },

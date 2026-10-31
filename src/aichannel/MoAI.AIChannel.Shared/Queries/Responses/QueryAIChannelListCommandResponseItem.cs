@@ -48,4 +48,19 @@ public class QueryAIChannelListCommandResponseItem : AuditsInfo
     /// 模型数量.
     /// </summary>
     public int ModelCount { get; set; }
+
+    /// <summary>
+    /// 渠道下模型累计消耗 tokens 总量（含输入与输出，取自 ai_model_token_audit 聚合，非实时）.
+    /// </summary>
+    public long TotalTokens { get; set; }
+
+    /// <summary>
+    /// 渠道下模型累计输入（提示）tokens.
+    /// </summary>
+    public long PromptTokens { get; set; }
+
+    /// <summary>
+    /// 渠道下模型累计输出（补全）tokens.
+    /// </summary>
+    public long CompletionTokens { get; set; }
 }

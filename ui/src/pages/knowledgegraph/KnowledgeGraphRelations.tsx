@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, Button, Form, Modal, Popconfirm, Select, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { ApartmentOutlined, PlusOutlined, ProfileOutlined } from '@ant-design/icons'
+import { ApartmentOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import {
@@ -211,15 +211,15 @@ export function KnowledgeGraphRelations({ graphId, teamId, graphEnabled = true, 
           {
             title: '',
             key: 'action',
-            width: 130,
+            width: 180,
             fixed: 'right' as const,
             render: (_: unknown, record: KnowledgeGraphEdgeItem) => (
               <Space size={4}>
-                <Button type="link" size="small" onClick={() => openEdit(record)}>
+                <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
                   {t('knowledgegraph.edit')}
                 </Button>
                 <Popconfirm title={t('knowledgegraph.relation.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                  <Button type="link" size="small" danger>
+                  <Button type="link" size="small" danger icon={<DeleteOutlined />}>
                     {t('knowledgegraph.delete')}
                   </Button>
                 </Popconfirm>

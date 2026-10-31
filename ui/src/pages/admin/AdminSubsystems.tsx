@@ -13,9 +13,8 @@ import {
 import { Alert, Button, Form, Input, Modal, Popconfirm, Radio, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, PageToolbar, feedback } from '@/design-system'
+import { AuditCell, DataTable, PageToolbar, feedback } from '@/design-system'
 import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
 import { getAdminTeams } from '@/api/team'
 import {
   createSubsystem,
@@ -295,69 +294,57 @@ export function SubsystemsPanel() {
           online ? <Tag color="processing">{t('adminSubsystems.online')}</Tag> : <Tag>{t('adminSubsystems.offline')}</Tag>,
       },
       {
-        title: t('adminSubsystems.colCreateTime'),
-        dataIndex: 'createTime',
+        title: t('adminSubsystems.colCreate'),
+        key: 'create',
         width: 150,
-        render: (value: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(value)}</span>,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('adminSubsystems.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('adminSubsystems.colActions'),
         key: 'actions',
-        width: 160,
+        width: 320,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('adminSubsystems.edit')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                aria-label={t('adminSubsystems.edit')}
-                onClick={() => void openEdit(record)}
-              />
-            </Tooltip>
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => void openEdit(record)}>
+              {t('adminSubsystems.edit')}
+            </Button>
             <Popconfirm
               title={t(record.status === 'enabled' ? 'adminSubsystems.disableConfirm' : 'adminSubsystems.enableConfirm')}
               okButtonProps={{ danger: record.status === 'enabled' }}
               onConfirm={() => void handleToggleStatus(record)}
             >
-              <Tooltip title={t(record.status === 'enabled' ? 'adminSubsystems.disable' : 'adminSubsystems.enable')}>
-                <Button
-                  type="text"
-                  size="small"
-                  danger={record.status === 'enabled'}
-                  icon={record.status === 'enabled' ? <StopOutlined /> : <CheckCircleOutlined />}
-                  aria-label={t(record.status === 'enabled' ? 'adminSubsystems.disable' : 'adminSubsystems.enable')}
-                />
-              </Tooltip>
+              <Button
+                type="link"
+                size="small"
+                danger={record.status === 'enabled'}
+                icon={record.status === 'enabled' ? <StopOutlined /> : <CheckCircleOutlined />}
+              >
+                {t(record.status === 'enabled' ? 'adminSubsystems.disable' : 'adminSubsystems.enable')}
+              </Button>
             </Popconfirm>
             <Popconfirm
               title={t('adminSubsystems.resetSecretConfirm')}
               onConfirm={() => void handleResetSecret(record)}
             >
-              <Tooltip title={t('adminSubsystems.resetSecret')}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<KeyOutlined />}
-                  aria-label={t('adminSubsystems.resetSecret')}
-                />
-              </Tooltip>
+              <Button type="link" size="small" icon={<KeyOutlined />}>
+                {t('adminSubsystems.resetSecret')}
+              </Button>
             </Popconfirm>
             <Popconfirm
               title={t('adminSubsystems.deleteConfirm')}
               okButtonProps={{ danger: true }}
               onConfirm={() => void handleDelete(record)}
             >
-              <Tooltip title={t('adminSubsystems.delete')}>
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  aria-label={t('adminSubsystems.delete')}
-                />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                {t('adminSubsystems.delete')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -410,7 +397,7 @@ export function SubsystemsPanel() {
             dataSource={items}
             loading={loading}
             sticky
-            scroll={{ x: 1100, y: adminSubsystemsTableScrollY }}
+            scroll={{ x: 1380, y: adminSubsystemsTableScrollY }}
           />
         </div>
       </div>

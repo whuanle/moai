@@ -46,6 +46,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 - Kiota 锁 `1.0.0-preview.93`，勿用 `^` 升级
 - `Page` 不重复渲染大标题、不加 `maxWidth`；操作栏左对齐；Modal 一律 `maskClosable={false}`
 - 时间用 `formatDateTime()`；提示用 `App.useApp()` 的 message，不用静态 `message`
+- 实体列表表格必有「创建/更新」审计列（`AuditCell` 两行单元格），操作列按钮「图标+文字」（`type="link" size="small"`），禁止纯图标
 
 **前后端对接**（[真源](./docs/api_interface.md)）
 - 流程：写后端 Controller → `cd src/MoAI && dotnet run` → `cd ui && npm run syncapi`
@@ -115,7 +116,7 @@ node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载�
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
 node local-dev/team-apikey-scope-e2e.mjs  # TA 24（应用接入 key 功能范围：范围回显/非法代码 400/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连知识库/密钥兑换语义：缺密钥 401、错密钥 401、重置后旧密钥失效新密钥可换 @TA-40~42 + 模型网关下线断言；团队接入 key 已下线）
 node local-dev/ai-channel-auth-e2e.mjs    # AC 23（渠道级批量授权：授权视图统计+并集回显/全量替换所有私有模型/公开模型不受影响/模型列表 authorizedTeamNames 回显/团队可用性联动（/ai/model/available）/清空/admin 门禁/团队渠道 400）
-node local-dev/team-aichannel-e2e.mjs     # TC 35（团队自有模型渠道：门禁/渠道模型 CRUD/同步导入桩/聚合可用模型 isTeamChannel 标记（/ai/model/available）/模型网关下线断言/团队隔离/额度端点下线；内置 OpenAI 兼容桩，零真实依赖）
+node local-dev/team-aichannel-e2e.mjs     # TC 38（团队自有模型渠道：门禁/渠道模型 CRUD/同步导入桩/聚合可用模型 isTeamChannel 标记（/ai/model/available）/模型网关下线断言/团队隔离/额度端点下线 + 渠道 tokens 统计字段与审计人名回显 @TC-S8；内置 OpenAI 兼容桩，零真实依赖）
 node local-dev/subsystem-e2e.mjs          # SUB 53（子系统注册与接入+委托 SSO：root 门禁/appid+一次性密钥（PBKDF2 哈希落库）/token 换取+机器 token refresh 轮换 @SUB-S45/心跳在线 60s TTL/停用即拒/密钥重置/团队授权全员与指定/删除释放 appid + 委托码签发-兑换-刷新全链路与门禁；零外部依赖）
 node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000  # SAA 61（系统应用接入统一表：管理 CRUD+重置密钥/appid+密钥与 access_token 双轨鉴权 @SAA-S17~S29/refresh 轮换/停用双轨 403/scope 分档 @SAA-S30~S33/系统资源接口：用户 upsert 幂等推送+禁用+root 保护 @SAA-S34~S42、组织角色树与用户角色分配 @SAA-S43~S49、团队与成员治理 @SAA-S50~S56；零外部依赖，需后端运行中）
 node local-dev/org-e2e.mjs                # ORG 38（角色组织：管理员门禁/角色树创建与 path 物化路径计算/同父重名 409/子树整体迁移重写 path/防环/删除保护与级联解绑/用户角色分配·去重·整体覆盖 + 默认角色：设置·清空·注册自动获得·删除联动；零外部依赖）
@@ -129,6 +130,7 @@ node local-dev/subagent-e2e.mjs          # SA 10（子代理协作：spawn_subag
 node local-dev/agent-app-tool-e2e.mjs    # AP 21（Agent 应用绑定为工具：绑定校验/回显/null 不清空/互绑与传递环 400/含自身节点流程放行（流程侧守卫负责）/agent__ 无头单轮全链路按发布快照/history 透传/解绑下线；本地桩模型，零 SKIP）
 node local-dev/agent-memory-e2e.mjs      # MEM 36（长期记忆：平台未开启时应用开启 400 + 工具显式写入 + flush→MQ 两段式自动提取 + 每轮注入 + 用户隔离/模式 + 删除清空 + 压缩折叠视图 + 统一模型锁定（有任意记忆换平台模型/维度 400、应用关闭重开不受影响、root 清空全部后解锁换模型恢复写入）；模型/维度统一系统设置、应用配置剥离模型字段；本地桩 embedding+chat，零 SKIP，收尾还原 MEMORY_* 设置）
 node local-dev/memory-management-e2e.mjs # MEM 54（记忆管理：跨应用总览/应用记忆编辑 + 个人全局记忆 CRUD/用户隔离/应用记忆存为全局 + 三级开关：平台 MEMORY_ENABLED 总开关/管理员 allowGlobalMemory/用户接入开关 + 全局跨应用注入与注入不丢上下文 + memory_save scope=global/forget 全局兜底 + MEMORY_* 统一设置门禁校验与模型锁定（应用配置剥离模型字段）/root 清空全部记忆（应用+全局）解锁；本地桩 embedding+chat，零 SKIP，收尾自清理；中断残留先跑 memory-global-reset.mjs）
+node local-dev/memory-migration-e2e.mjs  # MG 39（长期记忆向量化模型迁移：MQ 异步用新模型/维度重建全部记忆向量（临时表+事务换名+设置末置切换+进度回写）/发起校验（无记忆·同参数·未知模型·维度越界 400、非 root 403）/迁移期间写入 409 与并发发起 409/迁移后数据保留与新维度检索命中/死渠道失败自动回滚（设置与数据不变）/失败后重发成功；本地桩 embedding 按请求 dimensions 出向量，零 SKIP，收尾自清理）
 node local-dev/dynamic-plugin-e2e.mjs    # DYN 169（实例管理 + 失败路径 + 内置模板注册 + 系统插件页团队隔离过滤 @DYN-S70 + 插件头像 S43~S45/创建携带 avatarPath S121~S123；真实 Key/真库用例环境门控 SKIP）
 node local-dev/bocha-search-e2e.mjs      # DYN 22（博查成功路径与响应解析，自建桩服务，无需真实 Key）
 node local-dev/jina-search-e2e.mjs       # DYN 18（Jina 搜索/网页阅读成功路径与解析，自建桩服务按请求体 q/url 区分端点，无需真实 Key）

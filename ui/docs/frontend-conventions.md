@@ -227,5 +227,54 @@ function getServerUrl(): string {
 
 ### 6. 时间统一 `YYYY-MM-DD HH:mm` 单行
 
-列表/详情中的时间一律使用 `utils/datetime.ts` 的 `formatDateTime()`（`YYYY-MM-DD HH:mm`，本地时区），禁止 `toLocaleString()`（各浏览器 locale 输出不一致）。空值/非法值显示 `-`。规范出处：docs/user-management/sdd.md 决策 6（2026-09-02）。
+列表/详情中的时间一律使用 `utils/datetime.ts` 的 `formatDateTime()`（`YYYY-MM-DD HH:mm`，本地时区），禁止 `toLocaleString()`（各浏览器 locale 输出不一致）。空值/非法值显示 `-`。表格「创建/更新」列的时间展示遵循第 8 条（两行单元格），其余场景保持单行。规范出处：docs/user-management/sdd.md 决策 6（2026-09-02）。
+
+### 7. 列表页工具栏排序与分隔
+
+列表页工具栏组件从左到右固定排序，整行靠左，操作按钮**不**靠右对齐：
+
+```
+搜索输入框 → 筛选/下拉组件 → 查询类按钮（查询/重置/刷新） → | → 操作类按钮（新建/同步等）
+```
+
+- 查询类按钮与操作类按钮之间必须用竖分隔线 `|`（antd `Divider type="vertical"`）区隔；页面没有查询类按钮时，分隔线兜底放在筛选控件与操作按钮之间。
+- 用设计系统组件实现，禁止手写 flex 工具行：
+  - `QueryBar`：`children` 传搜索输入框与筛选项，查询/重置按钮内置，`extra` 传操作按钮（渲染在分隔线右侧）。
+  - `PageToolbar`：`filters` 传搜索输入框与筛选项，`queries` 传查询类按钮（如刷新），`actions` 传操作按钮。
+
+### 8. 实体列表必须有「创建/更新」审计列，两行单元格
+
+实体 CRUD 类列表页（用户/团队/渠道/插件/知识库文档等可增删改的对象）表格必须包含**创建**、**更新**两个审计列，单元格用设计系统的 `AuditCell`（`@/design-system` 导出）：操作人名称在上、`formatDateTime()` 时间次要信息在下，两行堆叠压缩横向占位。
+
+```tsx
+import { AuditCell } from '@/design-system'
+
+{ title: t('xxx.colCreate'), key: 'create', width: 150, render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} /> },
+{ title: t('xxx.colUpdate'), key: 'update', width: 150, render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} /> },
+```
+
+- **禁止**拆成 创建人/创建时间/更新人/更新时间 四个扁平列（历史遗留页面在改造时合并）。
+- 后端列表 DTO 按 CQRS 规范继承 `AuditsInfo`（见 docs/cqrs-conventions.md「列表数据审计属性」），前端手写封装不要丢弃审计字段。
+- 后端未返回操作人名称的字段（如仅 `createTime` 的日志/密钥列表）：`AuditCell` 会自动降级为单行时间，此时**不强凑**审计列，保留原有语义列（如「加入时间」「绑定时间」）即可。
+- 纯日志/运行历史/统计/图数据等**无审计语义**的表格不加这两列。
+
+### 9. 操作列按钮「图标 + 文字」
+
+表格行内操作列的按钮一律 `Button type="link" size="small"` 且**同时带图标与文字**，禁止纯图标（图标含义需要悬浮 Tooltip 才能猜）；危险操作（删除等）保持 `danger` + `Popconfirm` 包裹：
+
+```tsx
+<Space size={0}>
+  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+    {t('xxx.edit')}
+  </Button>
+  <Popconfirm title={t('xxx.deleteConfirm')} okButtonProps={{ danger: true }} onConfirm={() => handleDelete(record.id)}>
+    <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+      {t('xxx.delete')}
+    </Button>
+  </Popconfirm>
+</Space>
+```
+
+- 文案走 `t()`，与 `aria-label` 同源；2~4 个操作时列宽约 `操作数 × 72 + 24`，多操作或空间紧张时用 `更多` 下拉收纳，同样保持图标+文字。
+- 操作列跟随滚动时 `fixed: 'right'`。
 

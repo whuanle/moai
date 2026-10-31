@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PlusOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
 import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
 import { AppChannelGuide } from './AppChannelGuide'
 import {
   createFeishuApp,
@@ -158,17 +157,16 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
       },
     },
     {
-      title: t('appChannels.columnBindTime'),
-      dataIndex: 'bindTime',
-      width: 170,
-      render: (value: string | null) => (value ? formatDateTime(value) : '-'),
+      title: t('appChannels.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.bindTime} />,
     },
     {
-      title: t('appChannels.columnCreator'),
-      dataIndex: 'createUserName',
-      width: 120,
-      ellipsis: true,
-      render: (value: string | null) => value || '-',
+      title: t('appChannels.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
     },
   ]
 
@@ -176,16 +174,17 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
     columns.push({
       title: t('appChannels.columnActions'),
       key: 'actions',
-      width: 190,
+      width: 250,
       render: (_, record) => (
         <Space size={spacing.sm}>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
             {t('appChannels.edit')}
           </Button>
           {record.isDisable ? (
             <Button
               type="link"
               size="small"
+              icon={<CheckCircleOutlined />}
               loading={actionKey === `enable:${record.feishuAppId}`}
               onClick={() => void runAction(`enable:${record.feishuAppId}`, () => updateFeishuApp(record.feishuAppId, { name: record.name, description: record.description ?? undefined, domain: record.domain ?? undefined, isDisable: false }))}
             >
@@ -198,7 +197,7 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
               cancelText={t('appManage.cancel')}
               onConfirm={() => void runAction(`disable:${record.feishuAppId}`, () => updateFeishuApp(record.feishuAppId, { name: record.name, description: record.description ?? undefined, domain: record.domain ?? undefined, isDisable: true }))}
             >
-              <Button type="link" size="small" loading={actionKey === `disable:${record.feishuAppId}`}>
+              <Button type="link" size="small" icon={<StopOutlined />} loading={actionKey === `disable:${record.feishuAppId}`}>
                 {t('appChannels.disable')}
               </Button>
             </Popconfirm>
@@ -209,7 +208,7 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
             cancelText={t('appManage.cancel')}
             onConfirm={() => void runAction(`delete:${record.feishuAppId}`, () => deleteFeishuApp(record.feishuAppId))}
           >
-            <Button type="link" size="small" danger loading={actionKey === `delete:${record.feishuAppId}`}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} loading={actionKey === `delete:${record.feishuAppId}`}>
               {t('appChannels.delete')}
             </Button>
           </Popconfirm>

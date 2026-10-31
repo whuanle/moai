@@ -9,10 +9,9 @@ import {
 import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, PageToolbar, feedback } from '@/design-system'
+import { AuditCell, DataTable, PageToolbar, feedback } from '@/design-system'
 import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
 import { resolveStorageUrl } from '@/utils/storage'
-import { formatDateTime } from '@/utils/datetime'
 import { getUsers, type UserListItem } from '@/api/usermanage'
 import {
   adminTransferTeamOwner,
@@ -210,41 +209,45 @@ export function TeamsPanel() {
           ),
       },
       {
-        title: t('adminTeams.colCreateTime'),
-        dataIndex: 'createTime',
+        title: t('adminTeams.colCreate'),
+        key: 'create',
         width: 150,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('adminTeams.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('adminTeams.colActions'),
         key: 'actions',
-        width: 110,
+        width: 180,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('adminTeams.transferOwner')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<SwapOutlined />}
-                aria-label={t('adminTeams.transferOwner')}
-                onClick={() => openTransfer(record)}
-              />
-            </Tooltip>
+            <Button
+              type="link"
+              size="small"
+              icon={<SwapOutlined />}
+              onClick={() => openTransfer(record)}
+            >
+              {t('adminTeams.transferOwner')}
+            </Button>
             <Popconfirm
               title={t(record.isDisable ? 'adminTeams.enableConfirm' : 'adminTeams.disableConfirm')}
               okButtonProps={{ danger: !record.isDisable }}
               onConfirm={() => void handleToggleDisable(record)}
             >
-              <Tooltip title={t(record.isDisable ? 'adminTeams.enable' : 'adminTeams.disable')}>
-                <Button
-                  type="text"
-                  size="small"
-                  danger={!record.isDisable}
-                  icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
-                  aria-label={t(record.isDisable ? 'adminTeams.enable' : 'adminTeams.disable')}
-                />
-              </Tooltip>
+              <Button
+                type="link"
+                size="small"
+                danger={!record.isDisable}
+                icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
+              >
+                {t(record.isDisable ? 'adminTeams.enable' : 'adminTeams.disable')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -313,7 +316,7 @@ export function TeamsPanel() {
           dataSource={items}
           loading={loading}
           sticky
-          scroll={{ x: 900, y: teamsPanelTableScrollY }}
+          scroll={{ x: 1100, y: teamsPanelTableScrollY }}
           pagination={{
             current: pageNo,
             pageSize,

@@ -100,8 +100,9 @@ check('alice 登录', Boolean(aliceToken))
 // 用户 id 查询
 const list0 = await api(adminToken, '/api/usermanage/users?pageNo=1&pageSize=500')
 const adminItem = list0.body?.items?.find((u) => u.userName === 'admin')
-const bobItem = list0.body?.items?.find((u) => u.userName === bobName)
-const aliceItem = list0.body?.items?.find((u) => u.userName === aliceName)
+// 用户表可能已积累超分页上限的存量用户，新注册用户用关键字搜索定位（服务端上限 1000，pageSize 无法覆盖）
+const bobItem = (await api(adminToken, `/api/usermanage/users?pageNo=1&pageSize=20&searchText=${bobName}`)).body?.items?.find((u) => u.userName === bobName)
+const aliceItem = (await api(adminToken, `/api/usermanage/users?pageNo=1&pageSize=20&searchText=${aliceName}`)).body?.items?.find((u) => u.userName === aliceName)
 
 // ---------- Feature: 用户列表 ----------
 check('列表 200', list0.status === 200)
@@ -127,7 +128,7 @@ check('普通用户授权管理员 403', grantByMember.status === 403)
 
 const grant = await api(adminToken, `/api/usermanage/user/${bobItem.id}/isadmin`, 'PUT', { isAdmin: true })
 check('root 授权 bob 管理员', grant.status === 200)
-const listAfterGrant = await api(adminToken, '/api/usermanage/users?pageNo=1&pageSize=500')
+const listAfterGrant = await api(adminToken, `/api/usermanage/users?pageNo=1&pageSize=20&searchText=${bobName}`)
 check('授权后列表 isAdmin=true', listAfterGrant.body?.items?.find((u) => u.userName === bobName)?.isAdmin === true)
 bobToken = await login(bobName, 'bob12345')
 const bobAsAdminList = await api(bobToken, '/api/usermanage/users')

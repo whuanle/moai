@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AutoComplete,
   Button,
@@ -13,6 +13,7 @@ import {
   Switch,
   Tag,
   Tooltip,
+  theme,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import {
@@ -20,6 +21,8 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
   SyncOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
@@ -35,13 +38,13 @@ import {
   type SyncModelCandidate,
 } from '@/api/aichannel'
 import { getCatalogProviders, type CatalogProvider } from '@/api/models-catalog'
-import { DataTable, feedback, Page } from '@/design-system'
+import { AuditCell, DataTable, feedback, Page, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { ModelAccessDrawer } from './ModelAccessDrawer'
 import { ChannelAccessModal } from './ChannelAccessModal'
 import { Typography } from 'antd'
-import { formatDateTime } from '@/utils/datetime'
+import { formatTokenCount } from '@/utils/format'
 
 const kindColor: Record<string, string> = {
   conversation: 'blue',
@@ -62,6 +65,14 @@ const protocolLabelMap: Record<string, string> = {
 function protocolLabel(value: string | null | undefined): string {
   if (!value) return '-'
   return protocolLabelMap[value] ?? value
+}
+
+/** 协议标签分色：不同协议家族一眼可辨，未识别协议回退中性色. */
+const protocolColorMap: Record<string, string> = {
+  openAIChatCompletions: 'geekblue',
+  openAIResponses: 'blue',
+  anthropicMessages: 'purple',
+  googleGemini: 'cyan',
 }
 
 /** 统一展示为 YYYY-MM-DD HH:mm，避免各浏览器 locale 差异. */
@@ -194,11 +205,13 @@ interface ChannelModelsPanelProps {
   models: AIModelItem[]
   loading: boolean
   syncing: boolean
+  togglingModelId: string | null
   onSync: (channel: AIChannelItem) => void
   onAddModel: (channelId: string) => void
   onEditModel: (model: AIModelItem) => void
   onDeleteModel: (model: AIModelItem) => void
   onAccessModel: (model: AIModelItem) => void
+  onToggleModel: (model: AIModelItem, enabled: boolean) => void
   onRefresh: () => void
 }
 
@@ -207,11 +220,13 @@ function ChannelModelsPanel({
   models,
   loading,
   syncing,
+  togglingModelId,
   onSync,
   onAddModel,
   onEditModel,
   onDeleteModel,
   onAccessModel,
+  onToggleModel,
   onRefresh,
 }: ChannelModelsPanelProps) {
   const { t } = useTranslation()
@@ -292,49 +307,50 @@ function ChannelModelsPanel({
       },
     },
     {
+      title: t('models.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+    },
+    {
+      title: t('models.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+    },
+    {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
       width: 80,
-      render: (v: boolean) => (v ? <Tag color="green">{t('models.enabled')}</Tag> : <Tag color="red">{t('models.disabled')}</Tag>),
+      render: (v: boolean | null | undefined, record) => (
+        <Switch
+          size="small"
+          checked={v === true}
+          loading={togglingModelId === record.id}
+          onChange={(checked) => onToggleModel(record, checked)}
+        />
+      ),
     },
     {
       title: t('models.colActions'),
       key: 'actions',
-      width: 150,
+      width: 230,
       render: (_, record) => (
         <Space size={0}>
-          <Tooltip title={t('models.access')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<TeamOutlined />}
-              aria-label={t('models.access')}
-              onClick={() => onAccessModel(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('models.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label={t('models.edit')}
-              onClick={() => onEditModel(record)}
-            />
-          </Tooltip>
+          <Button type="link" size="small" icon={<TeamOutlined />} onClick={() => onAccessModel(record)}>
+            {t('models.access')}
+          </Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEditModel(record)}>
+            {t('models.edit')}
+          </Button>
           <Popconfirm
             title={t('models.deleteConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => void onDeleteModel(record)}
           >
-            <Tooltip title={t('models.delete')}>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                aria-label={t('models.delete')}
-              />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              {t('models.delete')}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -369,7 +385,7 @@ function ChannelModelsPanel({
       columns={columns}
       dataSource={visibleModels}
       loading={loading}
-      scroll={{ x: 1440 }}
+      scroll={{ x: 1820 }}
       pagination={false}
       size="small"
       rowSelection={{
@@ -422,6 +438,7 @@ function ChannelModelsPanel({
 
 export function Models() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const [channelForm] = Form.useForm<ChannelFormValues>()
   const [modelForm] = Form.useForm<ModelFormValues>()
@@ -430,6 +447,9 @@ export function Models() {
   const [submitting, setSubmitting] = useState(false)
   const [channels, setChannels] = useState<AIChannelItem[]>([])
   const [catalog, setCatalog] = useState<CatalogProvider[]>([])
+  const [keyword, setKeyword] = useState('')
+  // 已按搜索补拉过模型列表的渠道 id，避免逐键重复请求
+  const searchedChannelIdsRef = useRef<Set<string>>(new Set())
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([])
   const [modelsByChannel, setModelsByChannel] = useState<Record<string, AIModelItem[]>>({})
@@ -446,6 +466,8 @@ export function Models() {
   const [accessOpen, setAccessOpen] = useState(false)
   const [channelAuthChannel, setChannelAuthChannel] = useState<AIChannelItem | null>(null)
   const [channelAuthOpen, setChannelAuthOpen] = useState(false)
+  const [togglingChannelId, setTogglingChannelId] = useState<string | null>(null)
+  const [togglingModelId, setTogglingModelId] = useState<string | null>(null)
 
   const [syncModalOpen, setSyncModalOpen] = useState(false)
   const [syncChannel, setSyncChannel] = useState<AIChannelItem | null>(null)
@@ -596,6 +618,61 @@ export function Models() {
     }
   }
 
+  // 状态列开关直接启停渠道：按现有字段原样回传，仅翻转 enabled
+  const handleToggleChannel = async (record: AIChannelItem, enabled: boolean) => {
+    if (!record.id) return
+    setTogglingChannelId(record.id)
+    try {
+      await aichannelApi.updateChannel(record.id, {
+        providerKey: record.providerKey ?? '',
+        name: record.name ?? '',
+        protocolFamily: record.protocolFamily ?? 'openAIChatCompletions',
+        baseUrl: record.baseUrl ?? '',
+        apiKey: '',
+        description: record.description ?? undefined,
+        enabled,
+      })
+      feedback.success(t('models.saveSuccess'))
+      await loadChannels()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setTogglingChannelId(null)
+    }
+  }
+
+  // 状态列开关直接启停模型：meta 按现有字段原样回传，仅翻转 enabled
+  const handleToggleModel = async (record: AIModelItem, enabled: boolean) => {
+    if (!record.id || !record.channelId) return
+    setTogglingModelId(record.id)
+    try {
+      await aichannelApi.updateModel(record.id, {
+        channelId: record.channelId,
+        meta: metaFromModelForm({
+          modelId: record.modelId ?? '',
+          name: record.name ?? '',
+          family: record.family ?? undefined,
+          modelKind: record.modelKind ?? undefined,
+          supportsVision: record.supportsVision ?? undefined,
+          supportsAttachments: record.supportsAttachments ?? undefined,
+          supportsToolCall: record.supportsToolCall ?? undefined,
+          supportsStructuredOutput: record.supportsStructuredOutput ?? undefined,
+          supportsReasoning: record.supportsReasoning ?? undefined,
+          supportsTemperature: record.supportsTemperature ?? undefined,
+          contextWindow: record.contextWindow ?? undefined,
+          maxOutput: record.maxOutput ?? undefined,
+        }),
+        enabled,
+      })
+      feedback.success(t('models.saveSuccess'))
+      await loadModelsForChannel(record.channelId)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setTogglingModelId(null)
+    }
+  }
+
   const handleSync = async (channel: AIChannelItem) => {
     if (!channel.id) return
     setSyncingChannelId(channel.id)
@@ -735,100 +812,111 @@ export function Models() {
     setAccessOpen(true)
   }
 
+  // 渠道累计 tokens 两行单元格：总量在上、输入/输出明细次要信息在下（long 序列化为字符串，需转数值）.
+  const renderTokensCell = (record: AIChannelItem) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs, minWidth: 0 }}>
+      <Typography.Text>{formatTokenCount(Number(record.totalTokens ?? 0))}</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }} ellipsis>
+        {t('models.tokensDetail', {
+          prompt: formatTokenCount(Number(record.promptTokens ?? 0)),
+          completion: formatTokenCount(Number(record.completionTokens ?? 0)),
+        })}
+      </Typography.Text>
+    </div>
+  )
+
   const channelColumns: TableColumnsType<AIChannelItem> = [
-    { title: t('models.colName'), dataIndex: 'name', width: 160 },
-    { title: t('models.colProviderKey'), dataIndex: 'providerKey', width: 160, ellipsis: true },
+    {
+      title: t('models.colName'),
+      dataIndex: 'name',
+      width: 260,
+      render: (_, record) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xxs, minWidth: 0 }}>
+          <Typography.Text ellipsis>{record.name || '-'}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }} ellipsis>
+            {record.providerKey || '-'}
+          </Typography.Text>
+        </div>
+      ),
+    },
     {
       title: t('models.colProtocol'),
       dataIndex: 'protocolFamily',
       width: 190,
       render: (v: string | null) => (
-        <Tag color="geekblue">{protocolLabel(v)}</Tag>
+        <Tag color={protocolColorMap[v ?? ''] ?? 'default'}>{protocolLabel(v)}</Tag>
       ),
     },
     { title: t('models.colModelCount'), dataIndex: 'modelCount', width: 90, align: 'center' as const },
     {
-      title: t('models.colCreateUser'),
-      dataIndex: 'createUserName',
-      width: 120,
-      render: (v: string | null) => v || '-',
+      title: t('models.colTokens'),
+      key: 'tokens',
+      width: 150,
+      render: (_, record) => renderTokensCell(record),
     },
     {
-      title: t('models.colCreateTime'),
-      dataIndex: 'createTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+      title: t('models.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
     },
     {
-      title: t('models.colUpdateUser'),
-      dataIndex: 'updateUserName',
-      width: 120,
-      render: (v: string | null) => v || '-',
-    },
-    {
-      title: t('models.colUpdateTime'),
-      dataIndex: 'updateTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+      title: t('models.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
     },
     {
       title: t('models.colEnabled'),
       dataIndex: 'enabled',
-      width: 80,
-      render: (v: boolean) => (v ? <Tag color="green">{t('models.enabled')}</Tag> : <Tag color="red">{t('models.disabled')}</Tag>),
+      width: 90,
+      render: (v: boolean | null | undefined, record) => (
+        <Switch
+          size="small"
+          checked={v === true}
+          loading={togglingChannelId === record.id}
+          onChange={(checked) => void handleToggleChannel(record, checked)}
+        />
+      ),
     },
     {
       title: t('models.colActions'),
       key: 'actions',
-      width: 110,
+      width: 290,
       fixed: 'right' as const,
       render: (_, record) => (
         <Space size={0}>
-          <Tooltip title={t('models.channelAuth')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<TeamOutlined />}
-              aria-label={t('models.channelAuth')}
-              onClick={() => {
-                setChannelAuthChannel(record)
-                setChannelAuthOpen(true)
-              }}
-            />
-          </Tooltip>
-          <Tooltip title={t('models.edit')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label={t('models.edit')}
-              onClick={() => openEditChannel(record)}
-            />
-          </Tooltip>
-          <Tooltip title={t('models.sync')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<SyncOutlined />}
-              aria-label={t('models.sync')}
-              loading={syncingChannelId === record.id}
-              onClick={() => record.id && handleSync(record)}
-            />
-          </Tooltip>
+          <Button
+            type="link"
+            size="small"
+            icon={<TeamOutlined />}
+            onClick={() => {
+              setChannelAuthChannel(record)
+              setChannelAuthOpen(true)
+            }}
+          >
+            {t('models.channelAuth')}
+          </Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditChannel(record)}>
+            {t('models.edit')}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<SyncOutlined />}
+            loading={syncingChannelId === record.id}
+            onClick={() => record.id && handleSync(record)}
+          >
+            {t('models.sync')}
+          </Button>
           <Popconfirm
             title={t('models.deleteConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => record.id && handleDeleteChannel(record.id)}
           >
-            <Tooltip title={t('models.delete')}>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                aria-label={t('models.delete')}
-              />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              {t('models.delete')}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -869,18 +957,82 @@ export function Models() {
 
   const providerOptions = catalog.map((p) => ({ value: p.id, label: `${p.name} (${p.id})` }))
 
+  // 关键字筛选：渠道按名称/标识匹配，模型按标识/名称/模型族匹配.
+  const kw = keyword.trim().toLowerCase()
+  const matchChannel = (record: AIChannelItem) =>
+    String(record.name ?? '').toLowerCase().includes(kw) ||
+    String(record.providerKey ?? '').toLowerCase().includes(kw)
+  const matchModel = (model: AIModelItem) =>
+    [model.modelId, model.name, model.family].some((v) => String(v ?? '').toLowerCase().includes(kw))
+  const channelHasModelMatch = (record: AIChannelItem) =>
+    (modelsByChannel[record.id ?? ''] ?? []).some(matchModel)
+
+  // 模型列表按渠道懒加载，搜索模型维度时补拉尚未加载过的渠道模型.
+  const handleKeywordChange = (value: string) => {
+    setKeyword(value)
+    if (!value.trim()) return
+    channels.forEach((channel) => {
+      if (!channel.id || modelsByChannel[channel.id] || searchedChannelIdsRef.current.has(channel.id)) return
+      searchedChannelIdsRef.current.add(channel.id)
+      void loadModelsForChannel(channel.id)
+    })
+  }
+
+  const visibleChannels = kw ? channels.filter((c) => matchChannel(c) || channelHasModelMatch(c)) : channels
+  // 搜索命中模型时自动展开对应渠道，让模型级匹配结果直接可见.
+  const effectiveExpandedKeys = kw
+    ? [
+        ...new Set([
+          ...expandedKeys,
+          ...channels.filter(channelHasModelMatch).map((c) => c.id as React.Key),
+        ]),
+      ]
+    : expandedKeys
+
   return (
     <Page>
+      <PageToolbar
+        filters={
+          <Input
+            value={keyword}
+            onChange={(e) => handleKeywordChange(e.target.value)}
+            allowClear
+            maxLength={100}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            placeholder={t('models.searchPlaceholder')}
+            style={{ width: 260 }}
+          />
+        }
+        queries={
+          <Button icon={<ReloadOutlined />} loading={channelLoading} onClick={() => void loadChannels()}>
+            {t('ds.table.refresh')}
+          </Button>
+        }
+        actions={
+          <Space size={spacing.sm} wrap>
+            <Button
+              icon={<CloudDownloadOutlined />}
+              loading={syncingCatalog}
+              onClick={() => void handleSyncCatalog()}
+            >
+              {t('models.syncCatalog')}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateChannel}>
+              {t('models.addChannel')}
+            </Button>
+          </Space>
+        }
+      />
       <DataTable<AIChannelItem>
         sticky
         rowKey="id"
         columns={channelColumns}
-        dataSource={channels}
+        dataSource={visibleChannels}
         loading={channelLoading}
-        scroll={{ x: 1620 }}
+        scroll={{ x: 1400 }}
         pagination={false}
         expandable={{
-          expandedRowKeys: expandedKeys,
+          expandedRowKeys: effectiveExpandedKeys,
           onExpand: (expanded, record) => {
             setExpandedKeys(expanded
               ? [...new Set([...expandedKeys, record.id as React.Key])]
@@ -892,14 +1044,16 @@ export function Models() {
           expandedRowRender: (record) => (
             <ChannelModelsPanel
               channel={record}
-              models={modelsByChannel[record.id ?? ''] ?? []}
+              models={(modelsByChannel[record.id ?? ''] ?? []).filter((m) => !kw || matchModel(m))}
               loading={loadingByChannel[record.id ?? ''] ?? false}
               syncing={syncingChannelId === record.id}
+              togglingModelId={togglingModelId}
               onSync={handleSync}
               onAddModel={openCreateModel}
               onEditModel={openEditModel}
               onDeleteModel={handleDeleteModel}
               onAccessModel={openAccessDrawer}
+              onToggleModel={(model, enabled) => void handleToggleModel(model, enabled)}
               onRefresh={() => {
                 if (record.id) {
                   void loadModelsForChannel(record.id)
@@ -909,18 +1063,6 @@ export function Models() {
             />
           ),
         }}
-        toolbar={
-          <Space size={12} wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateChannel}>
-              {t('models.addChannel')}
-            </Button>
-            <Button icon={<CloudDownloadOutlined />} loading={syncingCatalog} onClick={() => void handleSyncCatalog()}>
-              {t('models.syncCatalog')}
-            </Button>
-          </Space>
-        }
-        onRefresh={loadChannels}
-        refreshLoading={channelLoading}
       />
 
       <Modal
@@ -1044,7 +1186,7 @@ export function Models() {
       <Modal
         open={syncModalOpen}
         title={t('models.syncSelectTitle')}
-        width={760}
+        width={860}
         okText={t('models.syncImport')}
         okButtonProps={{ disabled: syncSelectedIds.length === 0, loading: importing }}
         onOk={handleSyncImportOk}

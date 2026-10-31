@@ -8,7 +8,7 @@ import {
   ReloadOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons'
-import { Button, Popconfirm, Space, Tag, Tooltip, theme } from 'antd'
+import { Button, Popconfirm, Space, Tag, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -19,12 +19,11 @@ import {
   type DynamicPluginManageItem,
   type DynamicPluginTemplate,
 } from '@/api/plugin'
-import { DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback } from '@/design-system'
 import { PluginAvatar } from './components/PluginAvatarUpload'
 import { DynamicPluginInstanceModal } from './components/DynamicPluginInstanceModal'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
-import { formatDateTime } from '@/utils/datetime'
 
 
 interface DynamicPluginPanelProps {
@@ -159,60 +158,64 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
         )
       },
     },
-    { title: t('plugins.colCreateUser'), dataIndex: 'createUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colCreateTime'), dataIndex: 'createTime', width: 160, render: (v: string | null) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-    ) },
-    { title: t('plugins.colUpdateUser'), dataIndex: 'updateUserName', width: 110, ellipsis: true, render: (v: string | null) => v || '-' },
-    { title: t('plugins.colUpdateTime'), dataIndex: 'updateTime', width: 160, render: (v: string | null) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>
-    ) },
+    {
+      title: t('plugins.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+    },
+    {
+      title: t('plugins.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+    },
     {
       title: t('plugins.colActions'),
       key: 'actions',
-      width: 150,
+      width: 320,
       fixed: 'right',
       render: (_: unknown, record: DynamicPluginManageItem) => (
         <Space size={0}>
-          <Tooltip title={isTemplateMissing(record) ? t('plugins.templateMissing') : t('plugins.run')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<PlayCircleOutlined />}
-              aria-label={t('plugins.run')}
-              disabled={isTemplateMissing(record)}
-              onClick={() => setDrawerTarget(record)}
-            />
-          </Tooltip>
+          <Button
+            type="link"
+            size="small"
+            icon={<PlayCircleOutlined />}
+            aria-label={t('plugins.run')}
+            disabled={isTemplateMissing(record)}
+            onClick={() => setDrawerTarget(record)}
+          >
+            {t('plugins.run')}
+          </Button>
           {record.isPublic === false && (
-            <Tooltip title={t('plugins.authorization')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<ShareAltOutlined />}
-                aria-label={t('plugins.authorization')}
-                onClick={() => setAuthPlugin(record)}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title={t('plugins.editPlugin')}>
             <Button
-              type="text"
+              type="link"
               size="small"
-              icon={<EditOutlined />}
-              aria-label={t('plugins.editPlugin')}
-              disabled={isTemplateMissing(record)}
-              onClick={() => openEdit(record)}
-            />
-          </Tooltip>
+              icon={<ShareAltOutlined />}
+              aria-label={t('plugins.authorization')}
+              onClick={() => setAuthPlugin(record)}
+            >
+              {t('plugins.authorization')}
+            </Button>
+          )}
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            aria-label={t('plugins.editPlugin')}
+            disabled={isTemplateMissing(record)}
+            onClick={() => openEdit(record)}
+          >
+            {t('plugins.editPlugin')}
+          </Button>
           <Popconfirm
             title={t('plugins.deletePluginConfirm')}
             okButtonProps={{ danger: true }}
             onConfirm={() => void handleDelete(record)}
           >
-            <Tooltip title={t('plugins.deletePlugin')}>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.deletePlugin')} />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.deletePlugin')}>
+              {t('plugins.deletePlugin')}
+            </Button>
           </Popconfirm>
         </Space>
       ),

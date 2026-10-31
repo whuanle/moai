@@ -23,6 +23,8 @@ export interface SystemAccessAppItem {
   status?: SystemAccessAppStatus | null
   createTime?: string | null
   createUserName?: string | null
+  updateTime?: string | null
+  updateUserName?: string | null
 }
 
 /** 创建/更新系统应用接入载荷 */

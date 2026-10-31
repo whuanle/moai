@@ -6,7 +6,7 @@ import {
   SearchOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Button, Form, Input, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { classifyLabel, type PluginClassify } from '@/api/classify'
@@ -21,8 +21,7 @@ import {
   saveTeamOpenApiPlugin,
   type TeamCustomPluginItem,
 } from '@/api/team-plugin'
-import { DataTable, feedback, QueryBar } from '@/design-system'
-import { formatDateTime } from '@/utils/datetime'
+import { AuditCell, DataTable, feedback, QueryBar } from '@/design-system'
 import { uploadOpenApiFileWith } from '@/utils/pluginFile'
 import { McpPluginModal, type McpFormValues } from '@/pages/plugins/components/McpPluginModal'
 import { OpenApiModal, type OpenApiFormValues } from '@/pages/plugins/components/OpenApiModal'
@@ -276,82 +275,70 @@ export function TeamCustomPluginPanel({
     },
     { title: t('plugins.colCounter'), dataIndex: 'counter', key: 'counter', width: 90, render: (v: string | null) => v ?? 0 },
     {
-      title: t('plugins.colCreateUser'),
-      dataIndex: 'createUserName',
-      key: 'createUserName',
-      width: 110,
-      ellipsis: true,
-      render: (v: string | null) => v || '-',
+      title: t('plugins.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
     },
     {
-      title: t('plugins.colAttachTime'),
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
-    },
-    {
-      title: t('plugins.colUpdateUser'),
-      dataIndex: 'updateUserName',
-      key: 'updateUserName',
-      width: 110,
-      ellipsis: true,
-      render: (v: string | null) => v || '-',
-    },
-    {
-      title: t('plugins.colUpdateTime'),
-      dataIndex: 'updateTime',
-      key: 'updateTime',
-      width: 160,
-      render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+      title: t('plugins.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
     },
     {
       title: t('plugins.colActions'),
       key: 'actions',
-      width: 150,
+      width: 320,
       fixed: 'right',
       render: (_, record) => (
         <Space size={0}>
-          <Tooltip title={t('plugins.viewFunctions')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              aria-label={t('plugins.viewFunctions')}
-              onClick={() => setFunctionPlugin(record)}
-            />
-          </Tooltip>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            aria-label={t('plugins.viewFunctions')}
+            onClick={() => setFunctionPlugin(record)}
+          >
+            {t('plugins.viewFunctions')}
+          </Button>
           {canManage && record.isTeamOwned && record.type === 'mcp' && (
-            <Tooltip title={t('plugins.refreshMcp')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<SyncOutlined />}
-                aria-label={t('plugins.refreshMcp')}
-                onClick={() => void handleRefreshMcp(record)}
-              />
-            </Tooltip>
+            <Button
+              type="link"
+              size="small"
+              icon={<SyncOutlined />}
+              aria-label={t('plugins.refreshMcp')}
+              onClick={() => void handleRefreshMcp(record)}
+            >
+              {t('plugins.refreshMcp')}
+            </Button>
           )}
           {canManage && record.isTeamOwned && (
             <>
-              <Tooltip title={t('plugins.editPlugin')}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  aria-label={t('plugins.editPlugin')}
-                  onClick={() => openEdit(record)}
-                />
-              </Tooltip>
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label={t('plugins.editPlugin')}
+                onClick={() => openEdit(record)}
+              >
+                {t('plugins.editPlugin')}
+              </Button>
               <Popconfirm
                 title={t('plugins.deletePlugin')}
                 description={t('plugins.deletePluginConfirm')}
                 okButtonProps={{ danger: true }}
                 onConfirm={() => void handleDelete(record)}
               >
-                <Tooltip title={t('plugins.deletePlugin')}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('plugins.deletePlugin')} />
-                </Tooltip>
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  aria-label={t('plugins.deletePlugin')}
+                >
+                  {t('plugins.deletePlugin')}
+                </Button>
               </Popconfirm>
             </>
           )}
@@ -421,7 +408,7 @@ export function TeamCustomPluginPanel({
         dataSource={filtered}
         loading={loading}
         sticky
-        scroll={{ x: 1400 }}
+        scroll={{ x: 1600 }}
         toolbar={
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
             {classifyTags.map((item, index) => (

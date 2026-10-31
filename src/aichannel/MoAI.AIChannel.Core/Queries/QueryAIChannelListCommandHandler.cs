@@ -49,6 +49,33 @@ public class QueryAIChannelListCommandHandler : IRequestHandler<QueryAIChannelLi
             })
             .ToListAsync(cancellationToken);
 
+        // 渠道累计 tokens：ai_model_token_audit 按 model_id 归到 ai_model.channel_id 聚合（该表由 Hangfire 批量落库，非实时）。
+        var tokensByChannel = await _databaseContext.AiModelTokenAudits
+            .Join(_databaseContext.AiModels,
+                audit => audit.ModelId,
+                model => model.Id,
+                (audit, model) => new { audit.PromptTokens, audit.CompletionTokens, audit.TotalTokens, model.ChannelId })
+            .GroupBy(x => x.ChannelId)
+            .Select(g => new
+            {
+                ChannelId = g.Key,
+                PromptTokens = g.Sum(x => (long)x.PromptTokens),
+                CompletionTokens = g.Sum(x => (long)x.CompletionTokens),
+                TotalTokens = g.Sum(x => (long)x.TotalTokens),
+            })
+            .ToListAsync(cancellationToken);
+        var tokensMap = tokensByChannel.ToDictionary(x => x.ChannelId);
+
+        foreach (var item in items)
+        {
+            if (tokensMap.TryGetValue(item.Id, out var tokens))
+            {
+                item.PromptTokens = tokens.PromptTokens;
+                item.CompletionTokens = tokens.CompletionTokens;
+                item.TotalTokens = tokens.TotalTokens;
+            }
+        }
+
         await _userInfoFillService.FillAsync(items, cancellationToken);
 
         return new QueryAIChannelListCommandResponse { Items = items };

@@ -1,9 +1,11 @@
+using MoAI.Infra.Models;
+
 namespace MoAI.Variable.Queries.Responses;
 
 /// <summary>
 /// 团队变量项；私密变量的 <see cref="Value"/> 对成员恒为 null.
 /// </summary>
-public class TeamVariableItem
+public class TeamVariableItem : AuditsInfo
 {
     /// <summary>
     /// 变量 id.
@@ -39,9 +41,4 @@ public class TeamVariableItem
     /// 变量描述.
     /// </summary>
     public string Description { get; set; } = default!;
-
-    /// <summary>
-    /// 更新时间.
-    /// </summary>
-    public DateTimeOffset UpdateTime { get; set; }
 }
