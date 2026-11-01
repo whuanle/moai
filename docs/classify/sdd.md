@@ -49,9 +49,9 @@ ui/src/                    api/classify.ts（封装 + ClassifyTypes 常量）、
 3. **同类型内名称唯一**：校验 `Type + Name + IsDeleted==0` 唯一，冲突 409「分类名称已存在，请更换后重试。」（插件/应用/知识库各自独立命名空间）。
 4. **删除策略**：软删除（`IsDeleted=1`）。先保留引用冲突提示占位——删除时校验同类型下是否仍有资源引用，若未来业务未实现则该类资源可删除；当前插件沿用校验 `Plugins.ClassifyId`（[@CLS-S6](./bdd.md#cls-s6)）。
 5. **门禁位置**：权限只在 Controller 层判断（admin），Handler 层不注入用户上下文；目标数据规则（同类型字段过滤）在 Handler 层。
-6. **前端 Tab**：`Page` + `Tabs`（plugin/app/kb/prompt/skill），每 Tab 一张分类列表；增删改走弹窗（名称 + 描述 + 表情），危险删除用 `Popconfirm`；文案走 i18n（zh-CN + en-US）。
+6. **前端 Tab**：`Page` + `Tabs`（plugin/app/kb/prompt/skill），每 Tab 一张分类列表；增删改走弹窗（名称一行前置表情按钮 + 描述多行 TextArea + 校验 ≤255），危险删除用 `Popconfirm`；文案走 i18n（zh-CN + en-US）。
 7. **迁移收敛**：删除 AiPlugin 里重复的插件分类 Command/Handler/Query/响应类及 `PluginManageController` 中 classify 相关方法；`ui/src/api/plugin.ts` 与 `Plugins.tsx` 中分类管理部分改走新 `classify.ts`，分类 Tab 筛选仍可用。
-8. **表情字段**：`ClassifyEntity.Emoji`（varchar(10)，空串=未设置），命令校验 ≤10 字符；更新传空串即清除（null 视为不修改，与 description 同策略）。前端弹窗提供「只读输入框 + 常用表情面板单选」（仅面板选取，不做自由输入），卡片名称前展示。
+8. **表情字段**：`ClassifyEntity.Emoji`（varchar(10)，空串=未设置），命令校验 ≤10 字符；更新传空串即清除（null 视为不修改，与 description 同策略）。前端弹窗在「分类名称」同一行前置表情选择按钮（按钮直接回显已选表情，未选时显示笑脸图标；点击弹出常用表情面板，面板顶部输入框支持粘贴/输入：按字素簇仅接受单个完整 emoji——粘贴多个只取第一个、普通文本忽略、单表情超 10 字符（如长 ZWJ 序列）报错提示，面板单选或输入均可，面板底部提供清除），卡片名称前展示。
 9. **Kiota 客户端统一**：分类 API 调用改走主 `MoAIClient`（`npm run syncapi` 全量再生成），删除遗留的一次性 `classify-client` 独立生成物，避免模型字段漂移。
 
 ## 种子数据

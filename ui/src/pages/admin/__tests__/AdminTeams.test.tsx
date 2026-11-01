@@ -1,9 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { AdminTeams } from '../AdminTeams'
 import { useAppStore } from '@/store/app'
 import { getAdminTeams } from '@/api/team'
+import { getUsers } from '@/api/usermanage'
 
 vi.mock('@/api/team', () => ({
   getAdminTeams: vi.fn().mockResolvedValue({
@@ -42,6 +43,15 @@ vi.mock('@/api/usermanage', () => ({
     totalCount: 1,
     items: [{ id: 21, userName: 'carol', nickName: 'Carol', email: 'carol@moai.com' }],
   }),
+  getUserDetail: vi.fn(),
+  setUserAdmin: vi.fn().mockResolvedValue(undefined),
+  setUserDisable: vi.fn().mockResolvedValue(undefined),
+  resetUserPassword: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/api/auth', () => ({
+  refreshUserProfile: vi.fn().mockResolvedValue(null),
+  getServerInfo: vi.fn().mockResolvedValue({ rsaPublic: 'test', serviceUrl: '', publicStoreUrl: '' }),
 }))
 
 function renderPage() {
@@ -101,6 +111,19 @@ describe('AdminTeams', () => {
     const disabledRow = actionLabels('测试团队')
     expect(disabledRow).toContain('启用')
     expect(disabledRow).toContain('转让负责人')
+  })
+
+  it('切到用户管理 Tab 渲染用户列表', async () => {
+    renderPage()
+
+    // antd Tabs 懒渲染：点击后才挂载 users 面板
+    fireEvent.click(screen.getByText('用户管理'))
+
+    await waitFor(() => {
+      expect(getUsers).toHaveBeenCalled()
+    })
+    expect(await screen.findByText('Carol')).toBeInTheDocument()
+    expect(screen.getByText('carol@moai.com')).toBeInTheDocument()
   })
 
   it('非管理员访问重定向到应用市场', () => {

@@ -21,6 +21,12 @@ public class SubsystemSsoAuthorizeCommand : IUserIdContext, IRequest<SubsystemSs
     /// </summary>
     public string? State { get; init; }
 
+    /// <summary>
+    /// 本次回跳使用的回调地址（子系统多入口：测试/生产等），可选；
+    /// 传入时须在子系统注册的回调地址列表内（精确匹配），缺省使用注册列表第一个.
+    /// </summary>
+    public string? RedirectUri { get; init; }
+
     /// <inheritdoc/>
     public long ContextUserId { get; init; }
 
@@ -33,5 +39,6 @@ public class SubsystemSsoAuthorizeCommand : IUserIdContext, IRequest<SubsystemSs
         validate.RuleFor(x => x.SubsystemKey).NotEmpty().WithMessage("子系统标识不能为空.").MaximumLength(40).WithMessage("子系统标识最长 40 字符.");
         validate.RuleFor(x => x.State).MaximumLength(200).WithMessage("透传参数最长 200 字符.")
             .Matches("^[A-Za-z0-9._~:-]*$").WithMessage("透传参数仅允许字母/数字与 _ . ~ : - 字符.");
+        validate.RuleFor(x => x.RedirectUri).MaximumLength(255).WithMessage("回调地址最长 255 字符.");
     }
 }

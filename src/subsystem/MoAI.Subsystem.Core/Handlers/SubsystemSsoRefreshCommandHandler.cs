@@ -45,7 +45,8 @@ public class SubsystemSsoRefreshCommandHandler : IRequestHandler<SubsystemSsoRef
             throw new BusinessException("用户不存在或已禁用.") { StatusCode = 403 };
         }
 
-        var subsystem = await _databaseContext.Subsystems
+        var subsystem = await _databaseContext.AccessApps
+            .Where(x => x.Level == MoAI.Database.Enums.AccessAppLevel.System)
             .FirstAsync(x => x.Id == request.SubsystemId, cancellationToken);
         return SubsystemSsoExchangeCommandHandler.BuildResponse(_tokenProvider.GenerateUserTokens(subsystem, user.Id), user);
     }

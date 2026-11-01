@@ -1,6 +1,7 @@
-// 角色组织管理 · E2E（场景 @ORG-S1..）
-// 覆盖：管理员门禁 / 角色树创建（path 物化路径计算）/ 同父重名 / 改名不动 path /
-//       子树整体迁移（path 重写）/ 防环 / 删除保护与级联解绑 / 用户角色分配与整体覆盖。
+// 组织管理 · E2E（场景 @ORG-S1..）
+// 覆盖：管理员门禁 / 组织树创建（path 物化路径计算）/ 同父重名 / 改名不动 path /
+//       子树整体迁移（path 重写）/ 防环 / 删除保护与级联解绑 / 用户组织分配与整体覆盖 /
+//       统一组织授权（org_grant：self/up/down 方向判定、并集、树迁移重判、删除组织级联清授权）。
 // 前置：后端运行中；种子账号 admin / abcd123456（root 即管理员）。全部用例零真实外部依赖。
 // 用法：node local-dev/org-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 ORG_BASE 覆盖）
 import crypto from 'node:crypto'
@@ -48,10 +49,10 @@ async function mkuser(p) {
   return { name, userId: Number(l.json.userId), token: l.json.accessToken }
 }
 
-/** 创建角色并断言返回 path（失败时抛异常终止） */
+/** 创建组织并断言返回 path（失败时抛异常终止） */
 async function mkrole(token, name, parentId) {
   const r = await api('POST', '/api/org/role/create', { token, body: { name, parentId: parentId ?? null } })
-  if (r.status !== 200) throw new Error(`创建角色 ${name} 失败: ${r.status} ${r.text.slice(0, 160)}`)
+  if (r.status !== 200) throw new Error(`创建组织 ${name} 失败: ${r.status} ${r.text.slice(0, 160)}`)
   return { id: r.json.orgRoleId, path: r.json.path }
 }
 
@@ -64,33 +65,33 @@ async function main() {
   const root = rootLogin.json.accessToken
 
   const user = await mkuser('ou') // 普通用户（非管理员）
-  const member1 = await mkuser('om') // 角色成员 1
-  const member2 = await mkuser('on') // 角色成员 2
+  const member1 = await mkuser('om') // 组织成员 1
+  const member2 = await mkuser('on') // 组织成员 2
 
   // ---- 管理员门禁 ----
-  check('ORG-01 非管理员查询角色列表 403', (await api('GET', '/api/org/role/list', { token: user.token })).status === 403)
-  check('ORG-02 非管理员创建角色 403', (await api('POST', '/api/org/role/create', { token: user.token, body: { name: 'x', parentId: null } })).status === 403)
-  check('ORG-03 非管理员分配用户角色 403', (await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: user.token, body: { roleIds: [1] } })).status === 403)
+  check('ORG-01 非管理员查询组织列表 403', (await api('GET', '/api/org/role/list', { token: user.token })).status === 403)
+  check('ORG-02 非管理员创建组织 403', (await api('POST', '/api/org/role/create', { token: user.token, body: { name: 'x', parentId: null } })).status === 403)
+  check('ORG-03 非管理员分配用户组织 403', (await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: user.token, body: { roleIds: [1] } })).status === 403)
 
   // ---- 创建与 path 计算 ----
   const invalid = await api('POST', '/api/org/role/create', { token: root, body: { name: '', parentId: null } })
   check('ORG-04 空名称 400', invalid.status === 400, `${invalid.status} ${invalid.text.slice(0, 120)}`)
 
   const ghostParent = await api('POST', '/api/org/role/create', { token: root, body: { name: '孤儿', parentId: 999999 } })
-  check('ORG-05 上级角色不存在 404', ghostParent.status === 404, `${ghostParent.status} ${ghostParent.text.slice(0, 120)}`)
+  check('ORG-05 上级组织不存在 404', ghostParent.status === 404, `${ghostParent.status} ${ghostParent.text.slice(0, 120)}`)
 
   // 树：A(root) ── B ── C；D(root)
   const A = await mkrole(root, `集团A${TS}`)
-  check('ORG-06 根角色 path=/id/', A.path === `/${A.id}/`, JSON.stringify(A))
+  check('ORG-06 根组织 path=/id/', A.path === `/${A.id}/`, JSON.stringify(A))
 
   const B = await mkrole(root, `销售部${TS}`, A.id)
-  check('ORG-07 子角色 path 追加父链', B.path === `/${A.id}/${B.id}/`, JSON.stringify(B))
+  check('ORG-07 子组织 path 追加父链', B.path === `/${A.id}/${B.id}/`, JSON.stringify(B))
 
   const C = await mkrole(root, `华东组${TS}`, B.id)
-  check('ORG-08 孙角色 path 三级链', C.path === `/${A.id}/${B.id}/${C.id}/`, JSON.stringify(C))
+  check('ORG-08 孙组织 path 三级链', C.path === `/${A.id}/${B.id}/${C.id}/`, JSON.stringify(C))
 
   const D = await mkrole(root, `集团D${TS}`)
-  check('ORG-09 第二个根角色独立 path', D.path === `/${D.id}/` && D.id !== A.id)
+  check('ORG-09 第二个根组织独立 path', D.path === `/${D.id}/` && D.id !== A.id)
 
   const dup = await api('POST', '/api/org/role/create', { token: root, body: { name: `销售部${TS}`, parentId: A.id } })
   check('ORG-10 同父重名 409', dup.status === 409)
@@ -127,7 +128,7 @@ async function main() {
   const bMoved = afterMove.find((x) => x.orgRoleId === B.id)
   const cMoved = afterMove.find((x) => x.orgRoleId === C.id)
   check(
-    'ORG-16 子树整体迁移重写 path（本角色与后代）',
+    'ORG-16 子树整体迁移重写 path（本组织与后代）',
     moved.status === 200 && bMoved?.path === `/${D.id}/${B.id}/` && bMoved?.parentId === D.id && cMoved?.path === `/${D.id}/${B.id}/${C.id}/` && cMoved?.parentId === B.id,
     `b=${bMoved?.path} c=${cMoved?.path}`,
   )
@@ -143,18 +144,18 @@ async function main() {
   // 防环
   check('ORG-18 移到自身之下 400', (await api('PUT', `/api/org/role/${B.id}`, { token: root, body: { name: `市场部${TS}`, parentId: C.id } })).status === 400)
   check('ORG-19 自身设为上级 400', (await api('PUT', `/api/org/role/${B.id}`, { token: root, body: { name: `市场部${TS}`, parentId: B.id } })).status === 400)
-  check('ORG-20 更新不存在的角色 404', (await api('PUT', '/api/org/role/999999', { token: root, body: { name: 'x', parentId: null } })).status === 404)
+  check('ORG-20 更新不存在的组织 404', (await api('PUT', '/api/org/role/999999', { token: root, body: { name: 'x', parentId: null } })).status === 404)
 
-  // ---- 用户角色分配 ----
+  // ---- 用户组织分配 ----
   check('ORG-21 用户不存在 404', (await api('PUT', '/api/org/user/999999/roles', { token: root, body: { roleIds: [A.id] } })).status === 404)
-  check('ORG-22 角色不存在 400', (await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: root, body: { roleIds: [A.id, 999999] } })).status === 400)
+  check('ORG-22 组织不存在 400', (await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: root, body: { roleIds: [A.id, 999999] } })).status === 400)
 
   const assign1 = await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: root, body: { roleIds: [A.id, B.id] } })
-  check('ORG-23 分配两角色 200', assign1.status === 200, `${assign1.status} ${assign1.text.slice(0, 120)}`)
+  check('ORG-23 分配两组织 200', assign1.status === 200, `${assign1.status} ${assign1.text.slice(0, 120)}`)
 
   const ur1 = await api('GET', `/api/org/user/${member1.userId}/roles`, { token: root })
   check(
-    'ORG-24 用户角色回显按 path 序',
+    'ORG-24 用户组织回显按 path 序',
     ur1.status === 200 && ur1.json?.items?.map((x) => x.orgRoleId).join(',') === [A.id, B.id].join(',') && ur1.json?.userName === member1.name,
     JSON.stringify(ur1.json ?? {}).slice(0, 160),
   )
@@ -166,7 +167,7 @@ async function main() {
   const roleUsers = await api('GET', `/api/org/role/${B.id}/users`, { token: root })
   const roleUserIds = (roleUsers.json?.items ?? []).map((x) => Number(x.userId))
   check(
-    'ORG-26 角色下成员清单含两个用户',
+    'ORG-26 组织下成员清单含两个用户',
     roleUsers.status === 200 && roleUserIds.includes(member1.userId) && roleUserIds.includes(member2.userId),
     JSON.stringify(roleUsers.json ?? {}).slice(0, 160),
   )
@@ -177,28 +178,28 @@ async function main() {
   // 整体覆盖：member1 只保留 B
   const reassign = await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: root, body: { roleIds: [B.id] } })
   const ur1b = await api('GET', `/api/org/user/${member1.userId}/roles`, { token: root })
-  check('ORG-28 整体覆盖后仅剩一角色', reassign.status === 200 && ur1b.json?.items?.length === 1 && ur1b.json.items[0].orgRoleId === B.id)
+  check('ORG-28 整体覆盖后仅剩一组织', reassign.status === 200 && ur1b.json?.items?.length === 1 && ur1b.json.items[0].orgRoleId === B.id)
 
   // ---- 删除保护与级联解绑 ----
-  check('ORG-29 删除有子角色 400', (await api('DELETE', `/api/org/role/${B.id}`, { token: root })).status === 400)
+  check('ORG-29 删除有子组织 400', (await api('DELETE', `/api/org/role/${B.id}`, { token: root })).status === 400)
 
   const leaf = await mkrole(root, `临时组${TS}`, C.id)
   await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: root, body: { roleIds: [leaf.id] } })
   const delLeaf = await api('DELETE', `/api/org/role/${leaf.id}`, { token: root })
   const urAfterDel = await api('GET', `/api/org/user/${member1.userId}/roles`, { token: root })
   check(
-    'ORG-30 删除叶子角色并级联解绑',
+    'ORG-30 删除叶子组织并级联解绑',
     delLeaf.status === 200 && urAfterDel.json?.items?.length === 0,
     `${delLeaf.status} ${JSON.stringify(urAfterDel.json?.items ?? [])}`,
   )
   check('ORG-31 删除后列表不再出现', ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []).every((x) => x.orgRoleId !== leaf.id))
   check('ORG-32 重复删除 404', (await api('DELETE', `/api/org/role/${leaf.id}`, { token: root })).status === 404)
 
-  // ---- 默认角色（注册自动赋予）----
-  const defRole = await mkrole(root, `默认角色${TS}`, null)
+  // ---- 默认组织（注册自动赋予）----
+  const defRole = await mkrole(root, `默认组织${TS}`, null)
 
-  check('ORG-33 非管理员设置默认角色 403', (await api('PUT', '/api/org/role/default', { token: user.token, body: { orgRoleId: defRole.id } })).status === 403)
-  check('ORG-34 设置不存在的默认角色 404', (await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: 999999 } })).status === 404)
+  check('ORG-33 非管理员设置默认组织 403', (await api('PUT', '/api/org/role/default', { token: user.token, body: { orgRoleId: defRole.id } })).status === 403)
+  check('ORG-34 设置不存在的默认组织 404', (await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: 999999 } })).status === 404)
 
   const setDefault = await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: defRole.id } })
   const listWithDefault = (await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []
@@ -209,19 +210,19 @@ async function main() {
     JSON.stringify(defItem ?? {}).slice(0, 120),
   )
 
-  const autoUser = await mkuser('od') // 注册于默认角色生效期间
+  const autoUser = await mkuser('od') // 注册于默认组织生效期间
   const autoUserRoles = await api('GET', `/api/org/user/${autoUser.userId}/roles`, { token: root })
   check(
-    'ORG-36 注册新用户自动获得默认角色',
+    'ORG-36 注册新用户自动获得默认组织',
     (autoUserRoles.json?.items ?? []).some((x) => x.orgRoleId === defRole.id),
     JSON.stringify(autoUserRoles.json?.items ?? []).slice(0, 120),
   )
 
   const clearDefault = await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: null } })
-  const noDefaultUser = await mkuser('oe') // 注册于默认角色清空后
+  const noDefaultUser = await mkuser('oe') // 注册于默认组织清空后
   const noDefaultRoles = await api('GET', `/api/org/user/${noDefaultUser.userId}/roles`, { token: root })
   check(
-    'ORG-37 清空默认后新注册用户无角色',
+    'ORG-37 清空默认后新注册用户无组织',
     clearDefault.status === 200 && (noDefaultRoles.json?.items ?? []).length === 0,
     JSON.stringify(noDefaultRoles.json?.items ?? []).slice(0, 120),
   )
@@ -229,19 +230,95 @@ async function main() {
   await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: defRole.id } })
   const delDefault = await api('DELETE', `/api/org/role/${defRole.id}`, { token: root })
   const listAfterDel = (await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []
-  const afterDelUser = await mkuser('of') // 注册于默认角色被删后
+  const afterDelUser = await mkuser('of') // 注册于默认组织被删后
   const afterDelRoles = await api('GET', `/api/org/user/${afterDelUser.userId}/roles`, { token: root })
   check(
-    'ORG-38 删除默认角色自动清空设置且新注册无角色',
+    'ORG-38 删除默认组织自动清空设置且新注册无组织',
     delDefault.status === 200 && listAfterDel.every((x) => x.isDefault !== true) && (afterDelRoles.json?.items ?? []).length === 0,
     `${delDefault.status} items=${(afterDelRoles.json?.items ?? []).length}`,
+  )
+
+  // ---- 统一组织授权（org_grant：资源按组织线定向放通）----
+  // 语义：self 仅该组织 / up 该组织及祖先（「R 及以上」）/ down 该组织及子树（「R 及以下」），多记录并集
+  // member1 在 ORG-30 随临时组删除已无组织，重新分配到 B 供祖先链判定
+  const rebind = await api('PUT', `/api/org/user/${member1.userId}/roles`, { token: root, body: { roleIds: [B.id] } })
+  if (rebind.status !== 200) throw new Error(`重绑 member1 失败: ${rebind.status}`)
+  const CNow = ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []).find((x) => x.orgRoleId === C.id)
+  const appGuid = crypto.randomUUID()
+  const grantBase = `/api/org/grant/app/${appGuid}`
+  const ck = (userId) => api('GET', `${grantBase}/check?userId=${userId}`, { token: root })
+  const setGrants = (grants) => api('PUT', grantBase, { token: root, body: { grants } })
+
+  check('ORG-39 非管理员配置授权 403', (await api('PUT', grantBase, { token: user.token, body: { grants: [] } })).status === 403)
+  check('ORG-40 非法资源类型 400', (await api('PUT', `/api/org/grant/notatype/${appGuid}`, { token: root, body: { grants: [] } })).status === 400)
+  check('ORG-41 授权组织不存在 400', (await setGrants([{ orgRoleId: 999999, scope: 'self' }])).status === 400)
+
+  const setSelf = await setGrants([{ orgRoleId: C.id, scope: 'self' }])
+  check('ORG-42 配置授权回传生效数', setSelf.status === 200 && setSelf.json?.count === 1, `${setSelf.status} ${setSelf.text.slice(0, 120)}`)
+
+  const cfg = await api('GET', grantBase, { token: root })
+  const cfgItem = (cfg.json?.items ?? [])[0]
+  check(
+    'ORG-43 授权回显含组织名/path/scope',
+    cfg.status === 200 && cfgItem?.orgRoleId === C.id && cfgItem?.scope === 'self' && cfgItem?.roleName === `华东组${TS}` && cfgItem?.rolePath === CNow?.path,
+    JSON.stringify(cfgItem ?? {}).slice(0, 160),
+  )
+
+  check(
+    'ORG-44 self 判定仅命中绑该组织的用户',
+    (await ck(member2.userId)).json?.allowed === true && (await ck(member1.userId)).json?.allowed === false && (await ck(user.userId)).json?.allowed === false,
+  )
+
+  await setGrants([{ orgRoleId: C.id, scope: 'up' }])
+  check(
+    'ORG-45 up 判定命中组织自身与全部祖先（经理及以上）',
+    (await ck(member2.userId)).json?.allowed === true && (await ck(member1.userId)).json?.allowed === true && (await ck(user.userId)).json?.allowed === false,
+  )
+
+  await setGrants([{ orgRoleId: B.id, scope: 'down' }])
+  check(
+    'ORG-46 down 判定命中组织自身与整棵子树（部门全员）',
+    (await ck(member1.userId)).json?.allowed === true && (await ck(member2.userId)).json?.allowed === true && (await ck(user.userId)).json?.allowed === false,
+  )
+
+  const rolesDown = await api('GET', `${grantBase}/roles`, { token: root })
+  check('ORG-47 down 展开有效组织', (rolesDown.json?.items ?? []).map((x) => x.orgRoleId).join(',') === [B.id, C.id].join(','), JSON.stringify(rolesDown.json ?? {}).slice(0, 160))
+
+  const usersDown = await api('GET', `${grantBase}/users`, { token: root })
+  check(
+    'ORG-48 down 有效用户并集',
+    (usersDown.json?.userIds ?? []).sort().join(',') === [String(member1.userId), String(member2.userId)].sort().join(','),
+    JSON.stringify(usersDown.json ?? {}).slice(0, 160),
+  )
+
+  await setGrants([{ orgRoleId: C.id, scope: 'self' }, { orgRoleId: D.id, scope: 'self' }])
+  check('ORG-49 多记录并集与改写', (await ck(member2.userId)).json?.allowed === true && (await ck(member1.userId)).json?.allowed === false)
+  check('ORG-50 无授权资源不放行', (await api('GET', `/api/org/grant/app/${crypto.randomUUID()}/check?userId=${member2.userId}`, { token: root })).json?.allowed === false)
+
+  // 树迁移重判：C 从 B 下迁到 D 下，B 不再是 C 的祖先
+  await setGrants([{ orgRoleId: C.id, scope: 'up' }])
+  await api('PUT', `/api/org/role/${C.id}`, { token: root, body: { name: `华东组${TS}`, parentId: D.id } })
+  check(
+    'ORG-51 树迁移后判定随新 path（旧祖先失去放行）',
+    (await ck(member1.userId)).json?.allowed === false && (await ck(member2.userId)).json?.allowed === true,
+  )
+  const rolesUpAfterMove = await api('GET', `${grantBase}/roles`, { token: root })
+  check('ORG-52 迁移后展开随新树（祖先变为 D）', (rolesUpAfterMove.json?.items ?? []).map((x) => x.orgRoleId).join(',') === [D.id, C.id].join(','), JSON.stringify(rolesUpAfterMove.json ?? {}).slice(0, 160))
+
+  await setGrants([{ orgRoleId: C.id, scope: 'self' }])
+  const delC = await api('DELETE', `/api/org/role/${C.id}`, { token: root })
+  const grantsAfterDel = await api('GET', grantBase, { token: root })
+  check(
+    'ORG-53 删除组织级联清理授权记录',
+    delC.status === 200 && (grantsAfterDel.json?.items ?? []).length === 0 && (await ck(member2.userId)).json?.allowed === false,
+    `del=${delC.status} items=${(grantsAfterDel.json?.items ?? []).length}`,
   )
 
   // ---- 清理（尽力而为）----
   for (const roleId of [C.id, B.id, sameNameOtherParent.id, A.id, D.id]) {
     await api('DELETE', `/api/org/role/${roleId}`, { token: root })
   }
-  // 成员用户的角色集合随角色删除自动清空，无需单独清理
+  // 成员用户的组织集合随组织删除自动清空，无需单独清理
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)

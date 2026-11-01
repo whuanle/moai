@@ -21,6 +21,8 @@ const feedback = useFeedback()
 | 消息提示、系统通知 | notification | `feedback.notify(msg)` |
 | 严重错误（服务器 500、网络异常） | notification | `feedback.notifyError(msg)` |
 
+notification 系列可选第二参：`{ description?, duration?, key?, placement?, onClick?, closable?, style?, className? }`（透传 antd notification；`style` 可用主题强调色做底色/描边提升辨识度，参考 `src/realtime/eventPush.ts` 的 `buildNotifyStyle()`）。
+
 ### API 错误自动路由
 
 API 层（`src/api/kiota.ts`）已接入 `feedback.handleError()`，无需每个页面重复处理：

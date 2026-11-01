@@ -225,4 +225,73 @@ Feature: 邮箱验证码（注册与找回密码）
   Scenario: 未开启注册验证码时直接注册
     When 注册验证码开关关闭
     Then 注册无需验证码（存量注册链路行为不变）
+
+  @AUTH-S36 @auto:e2e
+  Scenario: 登录安全策略基线
+    When 登录邮箱验证码策略为 off 且未开启强制两步验证
+    Then 用户名密码校验通过后直接颁发令牌（secondFactor=none、mfaPending=false）
+
+  @AUTH-S37 @auto:e2e
+  Scenario: 两步验证（TOTP）绑定全流程
+    When 登录用户查询两步验证状态
+    Then 返回 enabled/forced 与系统强制开关一致
+    When 调 setup 生成密钥
+    Then 返回 base32 密钥与 otpauth:// URI（issuer 为站点名），密钥 AES 加密落库但未启用
+    When 携带错误或非 6 位动态码调 enable
+    Then 返回请求错误（400）提示动态码错误
+    When 携带认证器当前动态码调 enable
+    Then 绑定激活（enabled=true），重复 setup 返回 400，改用户数据后用户态缓存失效
+
+  @AUTH-S38 @auto:e2e
+  Scenario: 登录 TOTP 挑战与一次性票据
+    When 已绑定两步验证的用户提交正确用户名密码
+    Then 不颁发令牌，返回 secondFactor=totp 与 5 分钟有效的一次性登录票据
+    When 携带错误动态码或已消费票据调 login/verify
+    Then 分别返回请求错误（400）与登录会话过期（401）
+    When 携带正确动态码调 login/verify
+    Then 颁发令牌；同一时间步长的动态码再次使用被拒（防重放），下一时间步动态码可用
+
+  @AUTH-S39 @auto:e2e
+  Scenario: 关闭两步验证
+    When 携带错误动态码调 disable
+    Then 返回请求错误（400）
+    When 携带当前动态码调 disable
+    Then 解绑成功（密钥与启用标记清空），后续登录直达不再挑战
+    When 未启用时调 disable
+    Then 返回请求错误（400）提示尚未开启
+
+  @AUTH-S40 @auto:e2e
+  Scenario: 强制两步验证
+    When 系统开启强制 2FA 后未绑定用户登录
+    Then 照常颁发令牌但 mfaPending=true（token 携带 mfa_pending 声明）
+    When 该令牌访问绑定流程外接口
+    Then 返回 403 提示请先绑定两步验证
+    When 访问白名单接口（/auth/two_factor/*、/account/userinfo）
+    Then 正常可用，userinfo 回显 mfaPending=true
+    When 完成绑定后用原令牌再访问业务接口
+    Then 立即恢复完整访问（用户态缓存已失效重查），无需重新登录
+    When 强制期间调 disable
+    Then 返回请求错误（400）提示系统已强制开启
+
+  @AUTH-S41 @auto:e2e
+  Scenario: 管理员重置用户两步验证
+    When 管理员对目标用户调 reset_2fa
+    Then 清空其 TOTP 绑定，用户下次登录回到强制绑定流程
+    When 对 root 自身或未绑定用户调 reset_2fa
+    Then 分别返回 400（root 受保护 / 尚未绑定）
+    When 非管理员调 reset_2fa
+    Then 返回 403
+
+  @AUTH-S42 @auto:e2e
+  Scenario: 登录邮箱验证码策略
+    When 策略为 always 且 SMTP 已启用
+    Then 每次密码校验通过后自动发送登录验证码并返回 secondFactor=emailCode 挑战；冷却期内重登不重发邮件但签发新票据；正确验证码换颁发令牌
+    When 策略为 after_fail
+    Then 无失败记录时直接登录；密码错误一次后的登录需要验证码；验证成功后失败计数清零恢复直达
+    When 匿名公共发码端点收到 purpose=login
+    Then 拒绝（400），登录验证码只能凭一次性票据经 login_code/send 重发（60 秒冷却 429）
+    When 用户已绑定两步验证
+    Then TOTP 挑战优先于邮箱验证码
+    When SMTP 未启用
+    Then 验证码策略失效，登录直达
 ```

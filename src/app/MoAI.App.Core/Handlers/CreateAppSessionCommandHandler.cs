@@ -7,6 +7,7 @@ using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.App.Services;
+using MoAI.Prompt.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -21,6 +22,7 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
     private readonly IAppUsageCounter _appUsageCounter;
+    private readonly IPromptUsageCounter _promptUsageCounter;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateAppSessionCommandHandler"/> class.
@@ -28,11 +30,13 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="appUsageCounter">应用使用次数计数器.</param>
-    public CreateAppSessionCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAppUsageCounter appUsageCounter)
+    /// <param name="promptUsageCounter">提示词使用次数计数器.</param>
+    public CreateAppSessionCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAppUsageCounter appUsageCounter, IPromptUsageCounter promptUsageCounter)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
         _appUsageCounter = appUsageCounter;
+        _promptUsageCounter = promptUsageCounter;
     }
 
     /// <inheritdoc/>
@@ -76,10 +80,8 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
         {
             await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, app.TeamId, request.ContextUserId, cancellationToken);
 
-            // 选用专家 +1 使用次数（top_used 推荐依据）；可用性已在上面校验
-            await _databaseContext.Prompts
-                .Where(x => x.Id == request.PromptId)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.UseCount, x => x.UseCount + 1), cancellationToken);
+            // 选用专家 +1 使用次数（Redis 计数，统计模块批量落库；top_used 推荐依据）；可用性已在上面校验
+            await _promptUsageCounter.IncrementAsync(request.PromptId, cancellationToken);
         }
 
         var session = new AppAgentSessionEntity

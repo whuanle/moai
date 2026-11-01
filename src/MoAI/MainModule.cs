@@ -18,14 +18,18 @@ using MoAI.Filters;
 using MoAI.Hangfire;
 using MoAI.Infra;
 using MoAI.KnowledgeGraph;
+using MoAI.LoginSafety;
 using MoAI.Memory;
+using MoAI.Message;
 using MoAI.Modules;
+using MoAI.Notification;
 using MoAI.OauthConnect;
 using MoAI.Org;
 using MoAI.Publication;
 using MoAI.Prompt;
 using MoAI.Settings;
 using MoAI.Skill;
+using MoAI.Statistics;
 using MoAI.Storage;
 using MoAI.Subsystem;
 using MoAI.Team;
@@ -52,6 +56,8 @@ namespace MoAI;
 [InjectModule<OauthConnectCoreModule>]
 [InjectModule<SubsystemCoreModule>]
 [InjectModule<OrgCoreModule>]
+[InjectModule<MessageCoreModule>]
+[InjectModule<NotificationCoreModule>]
 [InjectModule<AIChannelCoreModule>]
 [InjectModule<TeamCoreModule>]
 [InjectModule<WikiCoreModule>]
@@ -72,6 +78,8 @@ namespace MoAI;
 [InjectModule<StaticPluginsModule>]
 [InjectModule<DynamicPluginsModule>]
 [InjectModule<CustomPluginModule>]
+[InjectModule<StatisticsCoreModule>]
+[InjectModule<LoginSafetyCoreModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

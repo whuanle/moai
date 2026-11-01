@@ -5,11 +5,10 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AI.Models;
-using MoAI.Database;
 using MoAI.Skill.Services;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AI.Services;
 
@@ -30,7 +29,7 @@ public sealed class SkillAppToolProvider : IAppToolProvider
 
     private readonly ISkillService _skillService;
     private readonly IAppSandboxService _sandboxService;
-    private readonly DatabaseContext _databaseContext;
+    private readonly IResourceUsageCollector _usageCollector;
     private readonly ILogger<SkillAppToolProvider> _logger;
 
     /// <summary>
@@ -38,13 +37,13 @@ public sealed class SkillAppToolProvider : IAppToolProvider
     /// </summary>
     /// <param name="skillService">技能领域服务.</param>
     /// <param name="sandboxService">会话沙箱服务.</param>
-    /// <param name="databaseContext">数据库上下文（技能使用计数自增）.</param>
+    /// <param name="usageCollector">轮次使用量收集器（一轮对话聚合，作用域结束批量推送）.</param>
     /// <param name="logger">日志.</param>
-    public SkillAppToolProvider(ISkillService skillService, IAppSandboxService sandboxService, DatabaseContext databaseContext, ILogger<SkillAppToolProvider> logger)
+    public SkillAppToolProvider(ISkillService skillService, IAppSandboxService sandboxService, IResourceUsageCollector usageCollector, ILogger<SkillAppToolProvider> logger)
     {
         _skillService = skillService;
         _sandboxService = sandboxService;
-        _databaseContext = databaseContext;
+        _usageCollector = usageCollector;
         _logger = logger;
     }
 
@@ -95,18 +94,14 @@ public sealed class SkillAppToolProvider : IAppToolProvider
 
     private async Task<AppToolResult> LoadSkillAsync(SandboxSessionContext session, SkillRuntimeInfo skill, bool sandboxEnabled, CancellationToken cancellationToken)
     {
-        // 使用计数：模型真实调用装载工具即视为一次使用（原子自增，尽力而为不影响技能返回）
+        // 使用计数：模型真实调用装载工具即视为一次使用（轮次收集器聚合，作用域结束批量推送；尽力而为不影响技能返回）
         try
         {
-            await _databaseContext.Skills
-                .Where(x => x.Id == skill.Id)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.UseCount, x => x.UseCount + 1), cancellationToken)
-                .ConfigureAwait(false);
+            _usageCollector.Record(ResourceUsageNames.Skill, skill.Id.ToString("N"));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "技能 {SkillId} 使用计数自增失败.", skill.Id);
+            _logger.LogWarning(ex, "技能 {SkillId} 使用计数收集失败.", skill.Id);
         }
 
         var loadedFiles = new List<string>();

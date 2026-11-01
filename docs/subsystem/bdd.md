@@ -21,10 +21,10 @@ Feature: 子系统注册与一次性密钥
     Given root 已登录
 
   @SUB-S3 @auto:e2e
-  Scenario: 创建子系统并发放一次性密钥
+  Scenario: 创建子系统并生成密钥（掩码回显）
     When root 以合法 appid 创建子系统（全员可用）
-    Then 创建成功并返回子系统 id 与 48 位密钥原文（仅此一次）
-    And 库内只存密钥哈希
+    Then 创建成功并返回子系统 id 与密钥展示掩码（不回原文）
+    And 库内以 AES 可逆密文存储，原文可随时经信封解密查看
 
   @SUB-S4 @auto:e2e
   Scenario: 非法 appid 被拒
@@ -62,21 +62,33 @@ Feature: 心跳与在线状态
 
   @SUB-S10 @auto:e2e
   Scenario: 心跳保活在线状态
-    Given 子系统已换取接入 token
-    When 子系统携带 token 心跳
-    Then 心跳成功且 root 列表展示该子系统在线
+    Given 接入已换取接入 token
+    When 接入携带 token 与实例标识心跳
+    Then 心跳成功且 root 列表展示该接入在线（在线实例数 1）
+
+  @SUB-S61 @auto:e2e
+  Scenario: 心跳必须携带实例标识
+    Given 接入已换取接入 token
+    When 心跳请求缺少实例标识
+    Then 返回参数错误（400）
+
+  @SUB-S62 @auto:e2e
+  Scenario: 多实例分别心跳回显在线实例数
+    Given 同一接入的两个实例以各自实例标识先后心跳
+    When root 查询列表与接入自省
+    Then 均展示在线且在线实例数为 2（实例超窗未续期后自动掉出集合）
 
   @SUB-S11 @auto:e2e
   Scenario: 未心跳时为离线
-    Given 子系统从未心跳
-    When root 查询子系统列表
-    Then 该子系统展示为离线
+    Given 接入从未心跳
+    When root 查询接入列表
+    Then 该接入展示为离线（在线实例数 0）
 
   @SUB-S12 @auto:e2e
-  Scenario: 子系统自省
-    Given 子系统已换取接入 token
-    When 请求子系统自省接口
-    Then 返回自身 appid/名称/状态/团队授权范围/在线状态
+  Scenario: 接入自省
+    Given 接入已换取接入 token
+    When 请求接入自省接口
+    Then 返回自身 appid/名称/类型/状态/团队授权范围/在线状态与在线实例数
 
   @SUB-S13 @auto:e2e
   Scenario: 无 token 自省被拒
@@ -215,9 +227,25 @@ Feature: 委托 SSO 登录
     Then 返回禁止（403）
 
   @SUB-S34 @auto:e2e
-  Scenario: root 配置登录回调地址
-    When root 更新子系统并设置回调地址
+  Scenario: root 配置登录回调地址列表
+    When root 更新子系统并设置回调地址列表（可多个入口）
     Then 更新成功
+
+  @SUB-S64 @auto:e2e
+  Scenario: 多回调地址按 redirect_uri 指定入口
+    Given 子系统注册了生产与测试两个回调地址
+    When 用户签发委托码时携带 redirect_uri 指向测试入口
+    Then 返回的回跳地址为该测试入口
+
+  @SUB-S65 @auto:e2e
+  Scenario: 未注册的 redirect_uri 被拒
+    When 签发委托码携带不在注册列表内的 redirect_uri
+    Then 返回禁止（403）
+
+  @SUB-S66 @auto:e2e
+  Scenario: 缺省回跳注册列表第一个
+    When 签发委托码未携带 redirect_uri
+    Then 返回的回跳地址为注册列表第一个
 
   @SUB-S35 @auto:e2e
   Scenario: 未获授权的用户不能签发委托码
@@ -292,6 +320,106 @@ Feature: 委托 SSO 登录
     Then 返回全新 access/refresh token 且新 access 可用
     When 以伪造 refresh token 请求刷新
     Then 返回未认证（401）
+
+  @SUB-S46 @auto:e2e
+  Scenario: 组织授权写入与校验（统一组织授权表 org_grant，资源类型 subsystem）
+    Given 已创建父子两级组织角色并绑定成员
+    When root 对子系统整体覆盖组织授权
+    Then 保存成功；同一组织角色重复授权 400、不存在的组织角色 400
+    And 指定团队空清单（仅组织授权）为合法配置
+
+  @SUB-S47 @auto:e2e
+  Scenario: 组织授权回显
+    When root 查询子系统组织授权配置与子系统列表
+    Then 回显授权角色（id/名称/方向）与列表 authorizedOrgs
+
+  @SUB-S48 @auto:e2e
+  Scenario: down 方向按子树命中
+    When 父角色以 down 授权后，其子角色成员请求签发委托码
+    Then 放行
+    When 无团队且无组织角色的用户请求签发
+    Then 403
+
+  @SUB-S49 @auto:e2e
+  Scenario: self 方向仅该角色命中
+    When 授权方向改为 self
+    Then 子角色成员 403，父角色成员放行
+
+  @SUB-S50 @auto:e2e
+  Scenario: up 方向含授权角色及以上
+    When 授权子角色并选 up
+    Then 父角色成员放行
+
+  @SUB-S51 @auto:e2e
+  Scenario: 团队与组织授权取并集
+    When 指定团队 A 且组织授权存在
+    Then 团队 A 成员（无组织角色）与组织成员任一命中即放行
+    When 清空组织授权
+    Then 组织成员 403，团队授权成员仍放行
+
+  @SUB-S52 @auto:e2e
+  Scenario: 组织授权管理门禁
+    When 非 root 读写子系统组织授权
+    Then 返回 403
+```
+
+```gherkin
+Feature: 合并模型：子系统与应用接入同一接入（同表/同列表/同接口）
+  @SUB-S53 @auto:e2e
+  Scenario: 创建应用接入自动生成 appid
+    When root 以 appType=app 创建应用接入
+    Then 返回 moai-sa- 前缀 appid 与 48 位密钥原文（均仅此一次）
+    And 应用接入无回调与授权配置，新建即启用
+
+  @SUB-S54 @auto:e2e
+  Scenario: 子系统 appid 禁用保留前缀
+    When root 以 moai- 保留前缀自填 appid 创建子系统
+    Then 返回参数错误（400）
+
+  @SUB-S55 @auto:e2e
+  Scenario: 列表同表回显两类接入
+    When root 查询接入列表
+    Then 子系统与应用接入同列表回显（类型/标识前缀/在线实例数/审计列）
+    And 应用接入仅回显 key 前缀不回显原文，且无授权范围字段
+    And 支持按类型过滤
+
+  @SUB-S56 @auto:e2e
+  Scenario: 直连轨仅限应用接入
+    When 应用接入以 moai-sa- appid 直连协作面自省
+    Then 返回 200
+    When 子系统以自填 appid 直连
+    Then 返回 401（自填 appid 可读性高，必须以 appid+密钥换取 token）
+
+  @SUB-S57 @auto:e2e
+  Scenario: 统一 token 换取与旧端点下线
+    When 子系统或应用接入以 appid+密钥请求 /api/subsys/token
+    Then 均换取成功（同一套接口）
+    When 请求旧 /api/subsys/system/token 或 /api/subsys/system/info
+    Then 端点已下线（404/405）
+
+  @SUB-S58 @auto:e2e
+  Scenario: 任一接入全量访问系统资源面
+    When 任一系统级接入读写 /api/subsys/system/* 资源接口
+    Then 均返回 200（资源范围分档已下线，无只读限制）
+
+  @SUB-S59 @auto:e2e
+  Scenario: 应用接入行无子系统专属端点
+    When 对应用接入行查询授权团队、组织授权或写组织授权
+    Then 返回 404
+    When 以应用接入 appid 请求签发委托码
+    Then 返回 404（委托登录为子系统专属）
+
+  @SUB-S60 @auto:e2e
+  Scenario: 应用接入同样可心跳
+    When 应用接入携带实例标识心跳
+    Then 心跳成功且列表/自省展示在线（与应用接入共用同一心跳端点）
+
+  @SUB-S63 @auto:e2e
+  Scenario: 查看密钥（信封加密回显，随时可查）
+    When root 携带 RSA 加密的信封 key 请求回显密钥
+    Then 以该 key 的 AES-GCM 密文返回原文与掩码，本地解密即可查看/复制（列表与传输全程无明文）
+    When 对存量哈希行请求回显
+    Then 返回 400 提示重置
 ```
 
 Feature: 系统应用接入（系统级接入 key）
@@ -303,26 +431,21 @@ Feature: 系统应用接入（系统级接入 key）
 
   @SAA-S2 @auto:e2e
   Scenario: 创建与一次性 key
-    When root 创建系统应用接入并勾选资源范围
-    Then 返回 moai-sa- 前缀的 key 原文（仅此一次）
-    And 列表仅回显 key 前缀与范围代码
-
-  @SAA-S3 @auto:e2e
-  Scenario: 范围校验
-    When 以空范围或未知范围代码创建
-    Then 返回 400
+    When root 创建应用接入（appid 自动生成，无资源范围选择）
+    Then 返回 moai-sa- 前缀的 appid 与密钥原文（均仅此一次）
+    And 列表仅回显 key 前缀（appid 为直连凭证不回显原文）
 
   @SAA-S4 @auto:e2e
   Scenario: key 直连自省
-    When 携带正确 key 请求协作面自省
-    Then 返回接入身份、范围与状态
+    When 携带正确 key 请求协作面自省（统一入口 /api/subsys/info）
+    Then 返回接入身份（类型/状态），不含资源范围
     When 携带伪造 key 或其它前缀 key 请求
     Then 返回 401
 
   @SAA-S5 @auto:e2e
   Scenario: 更新即时生效
-    When root 修改资源范围
-    Then 自省即时回显新范围
+    When root 修改接入名称
+    Then 自省即时回显新名称
     When 更新不存在的接入
     Then 返回 404
 
@@ -345,10 +468,10 @@ Feature: 系统应用接入（系统级接入 key）
     Then 仅命中匹配的接入
 
   @SAA-S9 @auto:vitest
-  Scenario: 管理页 Tab 与列表
+  Scenario: 管理页单列表与类型列
     Given root 打开应用接入中心
-    Then 页面提供「子系统管理」与「应用接入」两个 Tab
-    And 应用接入 Tab 展示接入名称、key 前缀、资源范围与状态
+    Then 子系统与应用接入在同一列表展示（类型列区分，不再分 Tab）
+    And 列表展示接入名称、类型、appid（前缀）、在线、状态与审计列
     And 非 root 无法进入页面
 
   @SAA-S10 @auto:vitest
@@ -362,9 +485,9 @@ Feature: 系统应用接入（系统级接入 key）
     Then 返回 404
 
   @SAA-S12 @auto:e2e
-  Scenario: 创建返回一次性 appid 与密钥
+  Scenario: 创建返回 appid 原文与密钥掩码
     When root 创建系统应用接入
-    Then 返回 moai-sa- 前缀 appid 与 48 位密钥原文（均仅此一次）
+    Then 返回 moai-sa- 前缀 appid 原文与密钥展示掩码（不回原文，原文可随时信封查看）
     And appid 直连协作面自省返回 200
 
   @SAA-S13 @auto:e2e
@@ -399,13 +522,26 @@ Feature: 系统应用接入（系统级接入 key）
     Then 返回 48 位新密钥原文（仅此一次）
     And 旧密钥换取 token 返回 401，新密钥换取返回 200
 
-  @SAA-S18 @auto:e2e
-  Scenario: 范围分档——只读接入可读不可写
-    Given 接入仅勾选 org_read
-    When 查询组织角色列表
-    Then 返回 200
-    When 写用户、写组织或经 token 轨写团队
-    Then 均返回 403
+  @SAA-S18 @manual
+  Scenario: （已退役）范围分档——只读接入可读不可写
+    Given 资源范围分档已随合并模型下线（见 @SUB-S58）
+    Then 本场景退役，编号不复用
+
+  @SAA-S60 @auto:e2e
+  Scenario: 资源面全量访问
+    When 任一系统级接入直连写组织角色或写用户
+    Then 均返回 200（原 scope 分档 403 语义随合并模型移除）
+
+  @SAA-S61 @auto:e2e
+  Scenario: 子系统与应用接入同一套接口
+    Given 子系统与应用接入各自换取 token
+    When 分别访问 /api/subsys/system/* 资源面
+    Then 均返回 200（同一套接口调用 MoAI 平台资源）
+
+  @SAA-S62 @auto:e2e
+  Scenario: 应用接入心跳在线
+    When 应用接入携带实例标识心跳
+    Then 自省回显在线与在线实例数
 
   @SAA-S19 @auto:e2e
   Scenario: 用户 upsert 创建返回初始密码
@@ -479,12 +615,10 @@ Feature: 系统应用接入（系统级接入 key）
     When root 删除系统应用接入
     Then token 轨调用、密钥换取与 refresh 刷新均返回 401
 
-  @SAA-S58 @auto:vitest
-  Scenario: 管理面板资源分组与重置密钥
-    Given root 打开应用接入 Tab
-    Then 范围编辑器提供组织架构/用户治理/团队三组三档选择
-    When 点击重置密钥并确认
-    Then 弹窗一次性展示新密钥
+  @SAA-S58 @manual
+  Scenario: （已退役）管理面板资源分组
+    Given 资源范围编辑器已随范围分档下线移除（新建应用接入即开即用）
+    Then 本场景退役，编号不复用；重置密钥弹窗行为由 @SAA-S10 承接
 
   @SAA-S59 @auto:vitest
   Scenario: 团队接入面板密钥展示与重置

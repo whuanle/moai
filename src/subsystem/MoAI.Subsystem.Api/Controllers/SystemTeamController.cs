@@ -11,7 +11,7 @@ namespace MoAI.Subsystem.Controllers;
 
 /// <summary>
 /// 系统资源协作面——团队治理（/api/subsys/system/teams/*）：
-/// 鉴权由 SystemAccessKeyMiddleware 承担，team_read/team_write 分档；
+/// 鉴权由 SubsysAccessMiddleware 承担，资源范围分档已下线（任一系统级接入全量可用）；
 /// 系统级创建的团队不设 Owner（成员经成员接口推送），Owner 转让属人工操作.
 /// </summary>
 [ApiController]
@@ -38,7 +38,7 @@ public class SystemTeamController : ControllerBase
     [AllowAnonymous]
     public Task<QueryTeamAllCommandResponse> List(CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, SystemApiKeyScopes.TeamRead);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new QueryTeamAllCommand(), ct);
     }
 
@@ -52,7 +52,7 @@ public class SystemTeamController : ControllerBase
     [AllowAnonymous]
     public Task<SimpleLong> Create([FromBody] SystemCreateTeamCommand req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, SystemApiKeyScopes.TeamWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(req, ct);
     }
 
@@ -67,7 +67,7 @@ public class SystemTeamController : ControllerBase
     [AllowAnonymous]
     public async Task<EmptyCommandResponse> Update([FromRoute] long teamId, [FromBody] SystemUpdateTeamBody req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, SystemApiKeyScopes.TeamWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return await _mediator.Send(new UpdateTeamCommand { TeamId = teamId, Name = req.Name, Description = req.Description }, ct);
     }
 
@@ -82,7 +82,7 @@ public class SystemTeamController : ControllerBase
     [AllowAnonymous]
     public async Task<EmptyCommandResponse> AddUser([FromRoute] long teamId, [FromBody] SystemAddTeamUserBody req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, SystemApiKeyScopes.TeamWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return await _mediator.Send(new SystemAddTeamUserCommand { TeamId = teamId, UserId = req.UserId, Role = req.Role }, ct);
     }
 
@@ -97,7 +97,7 @@ public class SystemTeamController : ControllerBase
     [AllowAnonymous]
     public async Task<EmptyCommandResponse> RemoveUser([FromRoute] long teamId, [FromRoute] long userId, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, SystemApiKeyScopes.TeamWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return await _mediator.Send(new SystemRemoveTeamUserCommand { TeamId = teamId, UserId = userId }, ct);
     }
 }

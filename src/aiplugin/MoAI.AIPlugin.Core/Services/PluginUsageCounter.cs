@@ -1,23 +1,24 @@
-using MediatR;
-using MoAI.Hangfire.Services;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AIPlugin.Services;
 
 /// <summary>
-/// 插件使用次数计数器默认实现.
+/// 插件使用次数计数器默认实现：委托统计模块领域服务推送 Redis.
 /// </summary>
 public class PluginUsageCounter : IPluginUsageCounter
 {
-    private const string CounterName = "plugin-usage";
-    private readonly IMediator _mediator;
+    private readonly IResourceUsageService _resourceUsageService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PluginUsageCounter"/> class.
     /// </summary>
-    /// <param name="mediator">消息中介器.</param>
-    public PluginUsageCounter(IMediator mediator)
+    /// <param name="resourceUsageService">资源使用统计领域服务.</param>
+    public PluginUsageCounter(IResourceUsageService resourceUsageService)
     {
-        _mediator = mediator;
+        _resourceUsageService = resourceUsageService;
     }
 
     /// <inheritdoc/>
@@ -25,15 +26,6 @@ public class PluginUsageCounter : IPluginUsageCounter
     {
         ArgumentOutOfRangeException.ThrowIfEqual(pluginId, Guid.Empty);
 
-        return _mediator.Send(
-            new IncrementCounterActivatorCommand
-            {
-                Name = CounterName,
-                Counters = new Dictionary<string, long>
-                {
-                    [pluginId.ToString("N")] = 1,
-                },
-            },
-            cancellationToken);
+        return _resourceUsageService.RecordAsync(ResourceUsageNames.Plugin, pluginId.ToString("N"), 1, cancellationToken);
     }
 }

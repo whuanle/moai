@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Hangfire.Services;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AIChannel.Services;
 
 /// <summary>
 /// 将 Redis 中的 AI 模型用量增量刷新到 PostgreSQL.
 /// </summary>
-public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
+public class AiModelUsageCounterActivatorJob : IResourceUsageWriter
 {
-    private const string CounterName = "ai-model-usage";
+    private const string CounterName = ResourceUsageNames.AiModel;
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
@@ -22,7 +22,7 @@ public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
     }
 
     /// <inheritdoc/>
-    public async Task ActivateAsync(IReadOnlyDictionary<string, long> values)
+    public async Task WriteAsync(IReadOnlyDictionary<string, long> values)
     {
         var increments = Aggregate(values);
         if (increments.Count == 0)
@@ -50,7 +50,7 @@ public class AiModelUsageCounterActivatorJob : ICounterActivatorJob
         Dictionary<AiModelUsageCounterDimension, UsageIncrement> increments = new();
         foreach (var item in values)
         {
-            if (item.Value <= 0 || !AiModelUsageCounterKey.TryParse(item.Key, out var dimension, out var metric))
+            if (item.Value == 0 || !AiModelUsageCounterKey.TryParse(item.Key, out var dimension, out var metric))
             {
                 continue;
             }

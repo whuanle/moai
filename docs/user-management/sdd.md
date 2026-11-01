@@ -20,6 +20,7 @@
 | 设/撤管理员 | ✅ | 403 | 非 root、非自己 → 400 |
 | 禁用/启用 | ✅ | ✅ | 非 root、非自己 → 400；admin 不可操作其他 admin → 403 |
 | 重置密码 | ✅ | ✅ | 非 root → 400；admin 不可重置其他 admin → 403 |
+| 重置两步验证 | ✅ | ✅ | root → 400；admin 不可重置其他 admin → 403；未绑定 → 400 |
 
 角色门禁在 Controller（`EnsureAdminAsync`/`EnsureRootAsync`，沿用 [../settings.md](../settings.md) 模式）；目标保护在 Handler（依赖 DB 事实）。
 
@@ -28,11 +29,11 @@
 ```
 src/account/
 ├── Shared/  QueryUserListCommand(PagedParamter+SearchText) / QueryUserInfoCommand
-│            UpdateUserIsAdminCommand / UpdateUserIsDisableCommand / ResetUserPasswordCommand（均 IUserIdContext+IModelValidator）
-├── Core/    Handlers/{UpdateUserIsAdmin,UpdateUserIsDisable,ResetUserPassword}CommandHandler
+│            UpdateUserIsAdminCommand / UpdateUserIsDisableCommand / ResetUserPasswordCommand / ResetUserTwoFactorCommand（均 IUserIdContext+IModelValidator）
+├── Core/    Handlers/{UpdateUserIsAdmin,UpdateUserIsDisable,ResetUserPassword,ResetUserTwoFactor}CommandHandler
 │            Queries/{QueryUserList,QueryUserInfo}CommandHandler
 └── Api/     UserManageController（/usermanage）
-ui/src/      api/usermanage.ts、pages/users/Users.tsx、路由 /users
+ui/src/      api/usermanage.ts、pages/admin/UsersPanel.tsx（组织用户页 Tab）
 ```
 
 ## 关键决策
@@ -40,6 +41,7 @@ ui/src/      api/usermanage.ts、pages/users/Users.tsx、路由 /users
 1. `isRoot` 由 `setting.key="root"` 实时计算（不可只信 IsAdmin，root 不可被降级）。
 2. 列表 `OrderBy(Id)` 升序 + 服务端分页（PagedParamter 上限 1000）；SearchText 模糊匹配用户名/昵称/邮箱。
 3. 重置密码复用注册管线：RSA(PKCS1) 解密 → 强度正则 → PBKDF2 加盐（见 [@UM-S24](./bdd.md#um-s24)）。
+7. 重置两步验证（`PUT /usermanage/user/{id}/reset_2fa`，2026-11-01）：清空 `totp_secret` 与 `is_totp_enabled` 并失效用户态缓存，用于用户丢失认证器的兜底（2FA 机制见 [../auth/sdd.md](../auth/sdd.md) 决策 8）；前端入口为用户列表行操作「重置2FA」（Popconfirm 危险确认）。
 4. 写操作后必须 `RemoveUserStateAsync` 失效 Redis 用户态（`moai:userstate:{id}`，1h TTL）——禁用即时生效依赖此（见 [../account/sdd.md](../account/sdd.md) 缓存节）。
 5. 前端 UI 按权限渲染：仅 isRoot 显示授权按钮；root 自己行不渲染危险操作（后端是最终防线）。
 6. 列表页 UI 约定（2026-09-02 优化，2026-10-30 昵称独立列调整）：操作列为固定右侧（`fixed:'right'`）图标按钮，一律带 Tooltip 与 `aria-label`，危险操作保留 Popconfirm；表头 `sticky`（页面滚动时表头常驻）；首列为用户列（头像+用户名），邮箱列前为独立昵称列（空值显示 "-"）；详情弹窗头部以昵称为主显示名（@用户名次行灰字、与昵称同名时省略）；时间统一 `YYYY-MM-DD HH:mm` 单行；管理页不渲染解释性副标题（Page 仅传 title）。

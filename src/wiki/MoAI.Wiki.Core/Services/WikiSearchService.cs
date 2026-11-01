@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Globalization;
 using Maomi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -11,6 +7,7 @@ using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
+using MoAI.Statistics.Services;
 using MoAI.Wiki.Models;
 
 namespace MoAI.Wiki.Services;
@@ -27,6 +24,7 @@ public class WikiSearchService : IWikiSearchService
     private readonly IEmbeddingGeneratorProvider _embeddingGeneratorProvider;
     private readonly IRerankClient _rerankClient;
     private readonly IWikiEmbeddingVectorStore _vectorStore;
+    private readonly IResourceUsageCollector _usageCollector;
     private readonly ILogger<WikiSearchService> _logger;
 
     /// <summary>
@@ -36,18 +34,21 @@ public class WikiSearchService : IWikiSearchService
     /// <param name="embeddingGeneratorProvider">向量生成器提供者.</param>
     /// <param name="rerankClient">重排序客户端.</param>
     /// <param name="vectorStore">知识库向量存储.</param>
+    /// <param name="usageCollector">轮次使用量收集器（一轮对话内多次检索聚合，作用域结束批量推送）.</param>
     /// <param name="logger">日志.</param>
     public WikiSearchService(
         DatabaseContext databaseContext,
         IEmbeddingGeneratorProvider embeddingGeneratorProvider,
         IRerankClient rerankClient,
         IWikiEmbeddingVectorStore vectorStore,
+        IResourceUsageCollector usageCollector,
         ILogger<WikiSearchService> logger)
     {
         _databaseContext = databaseContext;
         _embeddingGeneratorProvider = embeddingGeneratorProvider;
         _rerankClient = rerankClient;
         _vectorStore = vectorStore;
+        _usageCollector = usageCollector;
         _logger = logger;
     }
 
@@ -63,6 +64,21 @@ public class WikiSearchService : IWikiSearchService
         if (ids.Count == 0)
         {
             return [];
+        }
+
+        // 知识库检索即使用：轮次收集器聚合（一次检索多个知识库各计一次），作用域结束批量推送
+        foreach (var id in ids)
+        {
+            try
+            {
+                _usageCollector.Record(ResourceUsageNames.Wiki, id.ToString(CultureInfo.InvariantCulture));
+            }
+#pragma warning disable CA1031 // 使用统计失败不应阻塞检索
+            catch (Exception)
+            {
+                // 使用统计失败不阻塞检索
+            }
+#pragma warning restore CA1031
         }
 
         var wikis = await _databaseContext.Wikis

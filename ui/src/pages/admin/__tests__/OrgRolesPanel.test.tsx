@@ -83,7 +83,7 @@ describe('OrgRolesPanel', () => {
     expect(await screen.findByText('默认根')).toBeTruthy()
     expect(await screen.findByText('集团总部')).toBeTruthy()
     expect(screen.getByText('销售部')).toBeTruthy()
-    expect(document.querySelector('[aria-label="默认角色"]')).toBeTruthy()
+    expect(document.querySelector('[aria-label="默认组织"]')).toBeTruthy()
   })
 
   it('点击组织后右栏按用户管理样式加载成员列表', async () => {
@@ -131,17 +131,17 @@ describe('OrgRolesPanel', () => {
     await waitFor(() => expect(updateOrgRole).toHaveBeenCalledWith(2, { name: '市场部', parentId: 1 }))
   })
 
-  it('非默认组织可一键设为默认角色', async () => {
+  it('非默认组织可一键设为默认组织', async () => {
     renderPanel()
     await selectRole('集团总部', '/1/')
-    fireEvent.click(screen.getByRole('button', { name: '设为默认角色' }))
+    fireEvent.click(screen.getByRole('button', { name: '设为默认组织' }))
     await waitFor(() => expect(updateOrgRoleDefault).toHaveBeenCalledWith(1))
   })
 
-  it('取消默认角色需二次确认后提交清空', async () => {
+  it('取消默认组织需二次确认后提交清空', async () => {
     renderPanel()
     await selectRole('销售部', '/1/2/')
-    fireEvent.click(screen.getByRole('button', { name: '取消默认角色' }))
+    fireEvent.click(screen.getByRole('button', { name: '取消默认组织' }))
     fireEvent.click(await screen.findByRole('button', { name: /确\s*定|OK|确\s*认/ }))
     await waitFor(() => expect(updateOrgRoleDefault).toHaveBeenCalledWith(null))
   })

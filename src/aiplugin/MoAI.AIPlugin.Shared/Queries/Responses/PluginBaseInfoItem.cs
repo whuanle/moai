@@ -68,4 +68,9 @@ public class PluginBaseInfoItem : AuditsInfo
     /// 使用量计数.
     /// </summary>
     public long Counter { get; set; }
+
+    /// <summary>
+    /// 函数数量.
+    /// </summary>
+    public int FunctionCount { get; set; }
 }

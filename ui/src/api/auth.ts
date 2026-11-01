@@ -10,6 +10,7 @@ function toUserInfo(res: {
   tokenType?: string | null
   userId?: string | null | undefined
   userName?: string | null
+  mfaPending?: boolean | null
 }): UserInfo {
   return {
     accessToken: res.accessToken,
@@ -18,6 +19,7 @@ function toUserInfo(res: {
     tokenType: res.tokenType,
     userId: res.userId,
     userName: res.userName,
+    mfaPending: res.mfaPending ?? false,
   }
 }
 
@@ -44,15 +46,48 @@ export async function getServerInfo(): Promise<ServerInfo> {
   return refreshServerInfo()
 }
 
-export async function login(userName: string, password: string): Promise<UserInfo | null> {
+/** 登录二次验证挑战：密码校验通过后服务端要求第二步（认证器动态码 / 邮箱验证码） */
+export interface LoginChallenge {
+  secondFactor: 'totp' | 'emailCode'
+  loginTicket: string
+}
+
+export function isLoginChallenge(res: unknown): res is LoginChallenge {
+  return typeof res === 'object' && res !== null && 'loginTicket' in res && 'secondFactor' in res
+}
+
+/**
+ * 用户名密码登录：返回 UserInfo 表示登录完成；返回 LoginChallenge 表示需二次验证
+ * （secondFactor=emailCode 时服务端已向用户邮箱发送验证码，secondFactor=totp 时输入认证器动态码）.
+ */
+export async function login(userName: string, password: string): Promise<UserInfo | LoginChallenge | null> {
   const info = await getServerInfo()
   const encryptedPassword = rsaEncrypt(info.rsaPublic, password)
   const client = getAnonymousClient()
   const res = await client.api.auth.login.post({ userName, password: encryptedPassword })
   if (!res) return null
+  if (res.secondFactor && res.secondFactor !== 'none') {
+    return { secondFactor: res.secondFactor as 'totp' | 'emailCode', loginTicket: res.loginTicket ?? '' }
+  }
   const userInfo = toUserInfo(res)
   useAppStore.getState().setUserInfo(userInfo)
   return userInfo
+}
+
+/** 登录二次验证：凭一次性登录票据提交 6 位动态码，通过后写入会话 */
+export async function verifyLogin(loginTicket: string, code: string): Promise<UserInfo | null> {
+  const client = getAnonymousClient()
+  const res = await client.api.auth.login.verify.post({ loginTicket, code })
+  if (!res) return null
+  const userInfo = toUserInfo(res)
+  useAppStore.getState().setUserInfo(userInfo)
+  return userInfo
+}
+
+/** 重发登录邮箱验证码（凭一次性登录票据，60 秒冷却） */
+export async function sendLoginCode(loginTicket: string): Promise<void> {
+  const client = getAnonymousClient()
+  await client.api.auth.login_code.send.post({ loginTicket })
 }
 
 export async function register(payload: {
@@ -168,4 +203,42 @@ export async function checkToken(): Promise<boolean> {
   if (!userInfo.refreshToken || isTokenExpired(userInfo.refreshToken)) return false
   const refreshed = await refreshAccessToken(userInfo.refreshToken)
   return refreshed !== null
+}
+
+/** 两步验证（2FA）状态 */
+export interface TwoFactorStatus {
+  enabled: boolean
+  forced: boolean
+}
+
+/** 查询当前用户两步验证状态 */
+export async function getTwoFactorStatus(): Promise<TwoFactorStatus> {
+  const client = getApiClient()
+  const res = await client.api.auth.two_factor.status.get()
+  return { enabled: res?.enabled ?? false, forced: res?.forced ?? false }
+}
+
+/** 两步验证绑定密钥：secret 手动输入备用，otpauthUri 由前端渲染二维码 */
+export interface TwoFactorSetup {
+  secret: string
+  otpauthUri: string
+}
+
+/** 生成两步验证绑定密钥（未激活，需随后用认证器动态码调 enableTwoFactor） */
+export async function setupTwoFactor(): Promise<TwoFactorSetup> {
+  const client = getApiClient()
+  const res = await client.api.auth.two_factor.setup.post()
+  return { secret: res?.secret ?? '', otpauthUri: res?.otpauthUri ?? '' }
+}
+
+/** 启用两步验证：校验认证器当前动态码后激活绑定 */
+export async function enableTwoFactor(code: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.auth.two_factor.enable.post({ code })
+}
+
+/** 关闭两步验证：校验当前动态码后解绑；系统强制开启时被拒 */
+export async function disableTwoFactor(code: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.auth.two_factor.disable.post({ code })
 }

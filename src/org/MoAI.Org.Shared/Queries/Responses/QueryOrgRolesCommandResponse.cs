@@ -3,7 +3,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Org.Queries.Responses;
 
 /// <summary>
-/// 组织角色平铺项.
+/// 组织平铺项.
 /// </summary>
 public class QueryOrgRolesCommandResponseItem : AuditsInfo
 {
@@ -44,7 +44,7 @@ public class QueryOrgRolesCommandResponseItem : AuditsInfo
 }
 
 /// <summary>
-/// 组织角色列表结果.
+/// 组织列表结果.
 /// </summary>
 public class QueryOrgRolesCommandResponse
 {

@@ -21,6 +21,30 @@ public enum AccessAppLevel
 }
 
 /// <summary>
+/// 系统级接入类型：仅 level=system 行使用，子系统与应用接入同表分型.
+/// </summary>
+public enum AccessAppType
+{
+    /// <summary>
+    /// 不适用（团队级行）.
+    /// </summary>
+    [JsonPropertyName("none")]
+    None = 0,
+
+    /// <summary>
+    /// 子系统：MoAI 生态独立部署的服务，可配置委托 SSO 回调与团队/组织授权，具备心跳在线.
+    /// </summary>
+    [JsonPropertyName("subsystem")]
+    Subsystem = 1,
+
+    /// <summary>
+    /// 应用接入：交给外部系统（ERP/OA 等）的凭证，无回调与授权配置，可全量访问 /api/subsys 系统资源.
+    /// </summary>
+    [JsonPropertyName("app")]
+    App = 2,
+}
+
+/// <summary>
 /// 应用接入状态.
 /// </summary>
 public enum AccessAppStatus

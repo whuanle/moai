@@ -10,8 +10,6 @@ import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './l
 // @ts-ignore
 import { SsoRequestBuilderNavigationMetadata, type SsoRequestBuilder } from './sso/index.js';
 // @ts-ignore
-import { SystemAppRequestBuilderNavigationMetadata, type SystemAppRequestBuilder } from './systemApp/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -31,12 +29,8 @@ export interface SubsystemRequestBuilder extends BaseRequestBuilder<SubsystemReq
      */
     get sso(): SsoRequestBuilder;
     /**
-     * The systemApp property
-     */
-    get systemApp(): SystemAppRequestBuilder;
-    /**
      * Gets an item from the ApiSdk.api.subsystem.item collection
-     * @param id 子系统 id.
+     * @param id 接入 id.
      * @returns {SubsystemItemRequestBuilder}
      */
      byId(id: Guid) : SubsystemItemRequestBuilder;
@@ -62,9 +56,6 @@ export const SubsystemRequestBuilderNavigationMetadata: Record<Exclude<keyof Sub
     },
     sso: {
         navigationMetadata: SsoRequestBuilderNavigationMetadata,
-    },
-    systemApp: {
-        navigationMetadata: SystemAppRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

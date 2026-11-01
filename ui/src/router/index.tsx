@@ -8,11 +8,12 @@ import { ForgotPassword } from '@/pages/auth/ForgotPassword'
 import { AppPlaza } from '@/pages/apps/AppPlaza'
 import { DesignSystemPreview } from '@/pages/DesignSystemPreview'
 import { Settings } from '@/pages/settings/Settings'
-import { AccountSettings } from '@/pages/account/AccountSettings'
+import { AccountPage } from '@/pages/account/AccountPage'
 import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
-import { Users } from '@/pages/users/Users'
 import { AdminTeams } from '@/pages/admin/AdminTeams'
 import { AdminIntegrations } from '@/pages/admin/AdminIntegrations'
+import { LoginSafety } from '@/pages/admin/LoginSafety'
+import { NotificationCenter } from '@/pages/admin/NotificationCenter'
 import { Publications } from '@/pages/publications/Publications'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
@@ -57,10 +58,13 @@ export const router = createBrowserRouter([
       { path: 'prompts/:promptId/edit', element: <PromptEditor /> },
       { path: 'prompt-market', element: <PromptCenter /> },
       { path: 'skill-market', element: <Skills /> },
-      { path: 'account', element: <AccountSettings /> },
-      { path: 'users', element: <Users /> },
+      { path: 'account/:section?', element: <AccountPage /> },
+      // 用户管理已并入「组织用户」页第三个 Tab，旧地址平滑落位
+      { path: 'users', element: <Navigate to="/admin/teams?tab=users" replace /> },
       { path: 'admin/teams', element: <AdminTeams /> },
       { path: 'admin/integrations', element: <AdminIntegrations /> },
+      { path: 'admin/loginsafety', element: <LoginSafety /> },
+      { path: 'admin/notifications', element: <NotificationCenter /> },
       { path: 'admin/subsystems', element: <Navigate to="/admin/integrations" replace /> },
       { path: 'publications', element: <Publications /> },
       { path: 'team', element: <Teams /> },

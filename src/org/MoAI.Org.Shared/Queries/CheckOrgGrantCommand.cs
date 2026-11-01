@@ -1,0 +1,34 @@
+using FluentValidation;
+using MediatR;
+using MoAI.Infra.Models;
+using MoAI.Org.Queries.Responses;
+
+namespace MoAI.Org.Queries;
+
+/// <summary>
+/// 判定用户是否被组织授权放通某资源.
+/// </summary>
+public class CheckOrgGrantCommand : IRequest<CheckOrgGrantCommandResponse>, IModelValidator<CheckOrgGrantCommand>
+{
+    /// <summary>
+    /// 资源类型字符串.
+    /// </summary>
+    public string ResourceType { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 资源主键字符串.
+    /// </summary>
+    public string ResourceId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 被判定的用户 id.
+    /// </summary>
+    public long UserId { get; init; }
+
+    /// <inheritdoc/>
+    public static void Validate(AbstractValidator<CheckOrgGrantCommand> validate)
+    {
+        validate.RuleFor(x => x.ResourceId).NotEmpty();
+        validate.RuleFor(x => x.UserId).GreaterThan(0).WithMessage("用户 id 不合法.");
+    }
+}

@@ -1,20 +1,16 @@
-import { useTranslation } from 'react-i18next'
-import { Navigate, useSearchParams } from 'react-router'
-import { Tabs } from 'antd'
+import { Navigate } from 'react-router'
+import './AdminIntegrations.css'
 import { Page } from '@/design-system'
 import { useAppStore } from '@/store/app'
-import { SubsystemsPanel } from '@/pages/admin/AdminSubsystems'
-import { SystemAccessAppsPanel } from '@/pages/admin/AdminSystemAccessApps'
+import { AccessAppsPanel } from '@/pages/admin/AdminAccessApps'
 
 /**
- * 应用接入中心（仅 root）：Tab 承载「子系统管理」（业务子系统，委托 SSO/团队授权/在线状态）
- * 与「应用接入」（系统级接入 key，ERP 等内部系统经 /api/subsys/system/* 维护系统资源）。
+ * 应用接入中心（仅 root）：子系统与应用接入同一列表、同一套接口。
+ * 子系统=MoAI 生态独立部署的服务（委托 SSO 回调/团队组织授权/心跳在线）；
+ * 应用接入=交给外部系统（ERP/OA 等）的凭证，经 /api/subsys 系统资源协作面读写组织/用户/团队。
  */
 export function AdminIntegrations() {
-  const { t } = useTranslation()
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
-  const [searchParams, setSearchParams] = useSearchParams()
-  const tab = searchParams.get('tab') === 'apps' ? 'apps' : 'subsystems'
 
   if (!isRoot) {
     return <Navigate to="/apps" replace />
@@ -22,22 +18,15 @@ export function AdminIntegrations() {
 
   return (
     <Page>
-      <Tabs
-        activeKey={tab}
-        onChange={(key) => setSearchParams(key === 'subsystems' ? {} : { tab: key }, { replace: true })}
-        items={[
-          {
-            key: 'subsystems',
-            label: t('adminIntegrations.tabSubsystems'),
-            children: <SubsystemsPanel />,
-          },
-          {
-            key: 'apps',
-            label: t('adminIntegrations.tabAccessApps'),
-            children: <SystemAccessAppsPanel />,
-          },
-        ]}
-      />
+      <div
+        style={{
+          height: 'calc(100vh - 48px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <AccessAppsPanel />
+      </div>
     </Page>
   )
 }

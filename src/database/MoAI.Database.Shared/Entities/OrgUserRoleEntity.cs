@@ -9,7 +9,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 组织角色成员绑定，用户与组织角色多对多关联.
+/// 组织成员绑定，用户与组织多对多关联.
 /// </summary>
 public partial class OrgUserRoleEntity : IFullAudited
 {
@@ -24,7 +24,7 @@ public partial class OrgUserRoleEntity : IFullAudited
     public long UserId { get; set; }
 
     /// <summary>
-    /// 组织角色 id，逻辑关联 org_role.id.
+    /// 组织 id，逻辑关联 org_role.id.
     /// </summary>
     public int RoleId { get; set; }
 

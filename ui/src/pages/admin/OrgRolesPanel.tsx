@@ -45,7 +45,7 @@ interface RoleFormValues {
   name: string
 }
 
-/** 组织角色管理面板（组织角色页第二个 Tab）：左侧组织树（虚拟默认根 + 拖拽挂层级）+ 右侧选中组织成员列表 */
+/** 组织管理面板（组织页第二个 Tab）：左侧组织树（虚拟默认根 + 拖拽挂层级）+ 右侧选中组织成员列表 */
 export function OrgRolesPanel() {
   const { t } = useTranslation()
   const { token } = antdTheme.useToken()

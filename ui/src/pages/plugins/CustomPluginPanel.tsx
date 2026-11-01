@@ -1,42 +1,48 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
+  MoreOutlined,
+  ReloadOutlined,
   SearchOutlined,
   ShareAltOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Input, Popconfirm, Select, Space, Tag, Typography , theme } from 'antd'
+import { Button, Dropdown, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { classifyLabel, type PluginClassify } from '@/api/classify'
+import { type PluginClassify } from '@/api/classify'
 import {
   customPluginApi,
   type CustomPlugin,
-  type CustomPluginSort,
   type CustomPluginType,
 } from '@/api/plugin'
-import { AuditCell, DataTable, feedback, QueryBar } from '@/design-system'
+import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
+import { spacing } from '@/design-system/theme'
 import { McpPluginModal, type McpFormValues } from './components/McpPluginModal'
 import { OpenApiModal, type OpenApiFormValues } from './components/OpenApiModal'
 import { FunctionListModal } from './components/FunctionListModal'
 import { PluginAvatar } from './components/PluginAvatarUpload'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
+import {
+  PluginCard,
+  PluginCardEmpty,
+  PluginCardGrid,
+  PluginClassifyTag,
+  PluginVisibilityTag,
+  PluginViewToggle,
+  pluginTypeColor,
+  type PluginView,
+} from './components/PluginCardView'
 
 const { Text } = Typography
 
-const TYPE_COLOR: Record<string, string> = {
-  mcp: 'green',
-  openApi: 'orange',
-}
-
-function typeLabel(t: (k: string) => string, type: string | null): string {
+function typeLabel(t: (k: string) => string, type: string | null | undefined): string {
   if (type === 'mcp') return t('plugins.typeMcp')
   if (type === 'openApi') return t('plugins.typeOpenapi')
   return String(type ?? '-')
 }
-
 
 interface KeyValueItem {
   key: string
@@ -58,14 +64,15 @@ interface CustomPluginPanelProps {
 
 export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
   const { t } = useTranslation()
-  const { token } = theme.useToken()
 
   const [items, setItems] = useState<CustomPlugin[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
   const [searchName, setSearchName] = useState<string | undefined>(undefined)
   const [filterType, setFilterType] = useState<CustomPluginType | undefined>(undefined)
-  const [sort, setSort] = useState<CustomPluginSort>({ field: null, order: null })
+  const [filterVis, setFilterVis] = useState<boolean | undefined>(undefined)
   const [classifyFilter, setClassifyFilter] = useState('all')
+  const [view, setView] = useState<PluginView>('card')
 
   const [mcpModalOpen, setMcpModalOpen] = useState(false)
   const [openApiModalOpen, setOpenApiModalOpen] = useState(false)
@@ -82,7 +89,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         name: searchName,
         type: filterType,
         classifyId,
-        sort,
+        isPublic: filterVis,
       })
       setItems(data)
     } catch {
@@ -90,23 +97,19 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
     } finally {
       setLoading(false)
     }
-  }, [searchName, filterType, classifyFilter, sort])
+  }, [searchName, filterType, filterVis, classifyFilter])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const handleSearch = (values: Record<string, unknown>) => {
-    setSearchName(typeof values.name === 'string' ? values.name.trim() || undefined : undefined)
-    setFilterType((values.type as CustomPluginType | undefined) ?? undefined)
-  }
-
-  const handleReset = () => {
-    setSearchName(undefined)
-    setFilterType(undefined)
-    setClassifyFilter('all')
-    setSort({ field: null, order: null })
-  }
+  // 搜索输入防抖后触发服务端查询
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchName(searchText.trim() || undefined)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchText])
 
   const openImportMcp = () => {
     setEditing(null)
@@ -216,37 +219,96 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
     void load()
   }
 
+  /** 行/卡片操作区：查看函数、编辑内联，刷新函数与授权团队收进更多菜单，删除走 Popconfirm；卡片底栏用图标+Tooltip 紧凑形态. */
+  const renderActions = (record: CustomPlugin, iconOnly = false) => {
+    const moreItems = [
+      ...(record.type === 'mcp'
+        ? [{ key: 'refresh', icon: <SyncOutlined />, label: t('plugins.refreshMcp') }]
+        : []),
+      ...(record.isPublic === false
+        ? [{ key: 'auth', icon: <ShareAltOutlined />, label: t('plugins.authorization') }]
+        : []),
+    ]
+    const btn = (key: string, icon: React.ReactNode, label: string, onClick: () => void, danger = false) =>
+      iconOnly ? (
+        <Tooltip key={key} title={label}>
+          <Button type="text" size="small" danger={danger} icon={icon} aria-label={label} onClick={onClick} />
+        </Tooltip>
+      ) : (
+        <Button
+          key={key}
+          type="link"
+          size="small"
+          danger={danger}
+          icon={icon}
+          aria-label={label}
+          onClick={onClick}
+        >
+          {label}
+        </Button>
+      )
+    return (
+      <Space size={0} wrap={false}>
+        {btn('view', <EyeOutlined />, t('plugins.viewFunctions'), () => setFunctionPlugin(record))}
+        {btn('edit', <EditOutlined />, t('plugins.editPlugin'), () => openEdit(record))}
+        {moreItems.length > 0 && (
+          <Dropdown
+            key="more"
+            trigger={['click']}
+            menu={{
+              items: moreItems,
+              onClick: ({ key }) => {
+                if (key === 'refresh') void handleRefreshMcp(record)
+                if (key === 'auth') setAuthPlugin(record)
+              },
+            }}
+          >
+            <Button type="text" size="small" icon={<MoreOutlined />} aria-label={t('plugins.moreActions')} />
+          </Dropdown>
+        )}
+        <Popconfirm
+          title={t('plugins.deletePlugin')}
+          description={t('plugins.deletePluginConfirm')}
+          okButtonProps={{ danger: true }}
+          onConfirm={() => void handleDelete(record)}
+        >
+          {btn('del', <DeleteOutlined />, t('plugins.deletePlugin'), () => undefined, true)}
+        </Popconfirm>
+      </Space>
+    )
+  }
+
   const columns: TableColumnsType<CustomPlugin> = [
     {
       title: t('plugins.colPluginName'),
       dataIndex: 'pluginName',
       key: 'pluginName',
       width: 160,
-      render: (v: string | null, record) => (
-        <Space size={8}>
-          <PluginAvatar objectKey={record.avatarPath} title={record.title ?? v} />
-          <Text strong>{v || '-'}</Text>
+      render: (_: string | null, record) => (
+        <Space size={8} style={{ display: 'flex', minWidth: 0 }}>
+          <PluginAvatar objectKey={record.avatarPath} title={record.title ?? record.pluginName} size={28} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Text strong ellipsis style={{ display: 'block' }}>{record.title || record.pluginName || '-'}</Text>
+            <Text type="secondary" ellipsis style={{ display: 'block', fontSize: 12, fontFamily: 'monospace' }}>
+              {record.pluginName}
+            </Text>
+          </div>
         </Space>
       ),
     },
-    { title: t('plugins.colTitle'), dataIndex: 'title', key: 'title', width: 140, ellipsis: true, render: (v: string | null) => v || '-' },
     {
       title: t('plugins.colType'),
       dataIndex: 'type',
       key: 'type',
       width: 100,
-      render: (v: string | null) => <Tag color={TYPE_COLOR[v ?? '']}>{typeLabel(t, v)}</Tag>,
+      render: (v: string | null) => <Tag color={pluginTypeColor(v)}>{typeLabel(t, v)}</Tag>,
     },
     {
       title: t('plugins.colClassify'),
       dataIndex: 'classifyId',
       key: 'classifyId',
       width: 110,
-      render: (v: number | null | undefined) => {
-        if (!v) return <Text type="secondary">-</Text>
-        const classify = classifies.find((item) => item.classifyId === v)
-        return classify ? <Tag color="blue">{classifyLabel(classify)}</Tag> : '-'
-      },
+      render: (v: number | null | undefined) => <PluginClassifyTag classifies={classifies} classifyId={v} />,
     },
     {
       title: t('plugins.colServer'),
@@ -255,15 +317,16 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       width: 180,
       ellipsis: true,
       render: (v: string | null) => (
-        <Text type="secondary" style={{ fontFamily: 'monospace', fontSize: 12 }}>
-          {v || '-'}
-        </Text>
+        <Tooltip title={v || undefined}>
+          <Text type="secondary" style={{ fontFamily: 'monospace', fontSize: 12 }}>{v || '-'}</Text>
+        </Tooltip>
       ),
     },
     {
       title: t('plugins.formDescription'),
       dataIndex: 'description',
       key: 'description',
+      width: 220,
       ellipsis: true,
       render: (v: string | null) => <Text type="secondary">{v || '-'}</Text>,
     },
@@ -272,16 +335,14 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       dataIndex: 'isPublic',
       key: 'isPublic',
       width: 80,
-      render: (v: boolean | null) => (
-        <Tag color={v ? 'success' : 'warning'}>{v ? t('plugins.isPublic') : t('plugins.notPublic')}</Tag>
-      ),
+      render: (v: boolean | null) => <PluginVisibilityTag isPublic={v} />,
     },
     {
       title: t('plugins.colCounter'),
       dataIndex: 'counter',
       key: 'counter',
-      width: 90,
-      render: (v: string | number | null) => v ?? 0,
+      width: 80,
+      render: (v: string | number | null) => Number(v ?? 0),
     },
     {
       title: t('plugins.colCreate'),
@@ -298,140 +359,121 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
     {
       title: t('plugins.colActions'),
       key: 'actions',
-      width: 390,
+      width: 350,
       fixed: 'right',
-      render: (_, record) => (
-        <Space size={0}>
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            aria-label={t('plugins.viewFunctions')}
-            onClick={() => setFunctionPlugin(record)}
-          >
-            {t('plugins.viewFunctions')}
-          </Button>
-          {record.type === 'mcp' && (
-            <Button
-              type="link"
-              size="small"
-              icon={<SyncOutlined />}
-              aria-label={t('plugins.refreshMcp')}
-              onClick={() => void handleRefreshMcp(record)}
-            >
-              {t('plugins.refreshMcp')}
-            </Button>
-          )}
-          {record.isPublic === false && (
-            <Button
-              type="link"
-              size="small"
-              icon={<ShareAltOutlined />}
-              aria-label={t('plugins.authorization')}
-              onClick={() => setAuthPlugin(record)}
-            >
-              {t('plugins.authorization')}
-            </Button>
-          )}
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            aria-label={t('plugins.editPlugin')}
-            onClick={() => openEdit(record)}
-          >
-            {t('plugins.editPlugin')}
-          </Button>
-          <Popconfirm
-            title={t('plugins.deletePlugin')}
-            description={t('plugins.deletePluginConfirm')}
-            okButtonProps={{ danger: true }}
-            onConfirm={() => void handleDelete(record)}
-          >
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              aria-label={t('plugins.deletePlugin')}
-            >
-              {t('plugins.deletePlugin')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => renderActions(record),
     },
   ]
 
-  const classifyTags = useMemo(
-    () => [
-      { value: 'all', label: t('plugins.classifyAll') },
-      { value: 'uncategorized', label: t('plugins.classifyUncategorized') },
-      ...classifies.map((c) => ({ value: String(c.classifyId), label: classifyLabel(c) })),
-    ],
-    [classifies, t],
-  )
+  const classifyTags = [
+    { value: 'all', label: t('plugins.classifyAll') },
+    { value: 'uncategorized', label: t('plugins.classifyUncategorized') },
+    ...classifies.map((c) => ({ value: String(c.classifyId), label: `${c.emoji ? `${c.emoji} ` : ''}${c.name}` })),
+  ]
 
   return (
     <>
-      <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
-        <Form.Item name="name">
-          <Input
-            placeholder={t('plugins.searchPlaceholder')}
-            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
-            allowClear
-            maxLength={50}
-            style={{ width: 240 }}
-          />
-        </Form.Item>
-        <Form.Item name="type">
-          <Select
-            placeholder={t('plugins.filterType')}
-            allowClear
-            style={{ width: 140 }}
-            options={[
-              { value: 'mcp', label: t('plugins.typeMcp') },
-              { value: 'openApi', label: t('plugins.typeOpenapi') },
-            ]}
-          />
-        </Form.Item>
-        <Form.Item>
-          <Space>
-            <Button type="primary" onClick={openImportMcp}>
-              {t('plugins.importMcp')}
-            </Button>
+      <PageToolbar
+        filters={
+          <>
+            <Input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder={t('plugins.searchPlaceholder')}
+              prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+              allowClear
+              maxLength={50}
+              style={{ width: 240 }}
+            />
+            <Select
+              value={filterType}
+              onChange={(v) => setFilterType(v ?? undefined)}
+              placeholder={t('plugins.filterType')}
+              allowClear
+              style={{ width: 130 }}
+              options={[
+                { value: 'mcp', label: t('plugins.typeMcp') },
+                { value: 'openApi', label: t('plugins.typeOpenapi') },
+              ]}
+            />
+            <Select
+              value={filterVis}
+              onChange={(v) => setFilterVis(v ?? undefined)}
+              placeholder={t('plugins.visibilityAll')}
+              allowClear
+              style={{ width: 120 }}
+              options={[
+                { value: true, label: t('plugins.isPublic') },
+                { value: false, label: t('plugins.notPublic') },
+              ]}
+            />
+          </>
+        }
+        queries={
+          <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+            {t('plugins.refresh')}
+          </Button>
+        }
+        actions={
+          <>
+            <PluginViewToggle value={view} onChange={setView} />
             <Button onClick={openImportOpenApi}>{t('plugins.importOpenApi')}</Button>
-          </Space>
-        </Form.Item>
-      </QueryBar>
-
-      <DataTable<CustomPlugin>
-        rowKey="pluginId"
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        sticky
-        scroll={{ x: 1700 }}
-        toolbar={
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-            {classifyTags.map((item, index) => (
-              <span key={item.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                {index > 0 && (
-                  <span className="classify-divider" style={{ color: token.colorTextQuaternary }}>
-                    |
-                  </span>
-                )}
-                <Tag.CheckableTag
-                  checked={classifyFilter === item.value}
-                  onChange={() => setClassifyFilter(item.value)}
-                >
-                  {item.label}
-                </Tag.CheckableTag>
-              </span>
-            ))}
-          </div>
+            <Button type="primary" onClick={openImportMcp}>{t('plugins.importMcp')}</Button>
+          </>
         }
       />
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: spacing.md }}>
+        {classifyTags.map((item) => (
+          <Tag.CheckableTag
+            key={item.value}
+            checked={classifyFilter === item.value}
+            onChange={() => setClassifyFilter(item.value)}
+          >
+            {item.label}
+          </Tag.CheckableTag>
+        ))}
+      </div>
+
+      {view === 'card' ? (
+        items.length ? (
+          <PluginCardGrid>
+            {items.map((record) => (
+              <PluginCard
+                key={record.pluginId}
+                avatarPath={record.avatarPath}
+                title={record.title}
+                name={record.pluginName ?? '-'}
+                server={record.server}
+                typeLabel={typeLabel(t, record.type)}
+                typeColor={pluginTypeColor(record.type)}
+                description={record.description}
+                tags={
+                  <>
+                    <PluginClassifyTag classifies={classifies} classifyId={record.classifyId} />
+                    <PluginVisibilityTag isPublic={record.isPublic} />
+                  </>
+                }
+                counter={record.counter}
+                updatedTime={record.updateTime}
+                actions={renderActions(record, true)}
+              />
+            ))}
+          </PluginCardGrid>
+        ) : (
+          <PluginCardEmpty />
+        )
+      ) : (
+        <DataTable<CustomPlugin>
+          rowKey="pluginId"
+          columns={columns}
+          dataSource={items}
+          loading={loading}
+          sticky
+          scroll={{ x: 1580 }}
+          pagination={false}
+        />
+      )}
 
       <McpPluginModal
         open={mcpModalOpen}

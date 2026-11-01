@@ -1,7 +1,7 @@
 namespace MoAI.Org.Queries.Responses;
 
 /// <summary>
-/// 用户持有的组织角色项.
+/// 用户持有的组织项.
 /// </summary>
 public class QueryUserOrgRolesCommandResponseItem
 {
@@ -22,7 +22,7 @@ public class QueryUserOrgRolesCommandResponseItem
 }
 
 /// <summary>
-/// 用户组织角色查询结果.
+/// 用户组织查询结果.
 /// </summary>
 public class QueryUserOrgRolesCommandResponse
 {

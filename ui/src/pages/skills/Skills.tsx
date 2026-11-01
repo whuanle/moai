@@ -289,6 +289,9 @@ export function Skills() {
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {t('skills.colFileCount')} {record.fileCount ?? 0}
                         </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t('skills.colUseCount')} {record.useCount ?? 0}
+                        </Text>
                         {tab === 'market' && (
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {record.createUserName || '-'}

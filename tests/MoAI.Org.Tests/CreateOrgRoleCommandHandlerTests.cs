@@ -17,7 +17,7 @@ public class CreateOrgRoleCommandHandlerTests
     public async Task CreateRootRole_PathIsSlashIdSlash()
     {
         using var db = TestSqliteContext.Create();
-        var handler = new CreateOrgRoleCommandHandler(db.Context);
+        var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var result = await handler.Handle(new CreateOrgRoleCommand { Name = "集团总部" }, CancellationToken.None);
 
@@ -33,7 +33,7 @@ public class CreateOrgRoleCommandHandlerTests
         using var db = TestSqliteContext.Create();
         db.Context.OrgRoles.Add(OrgTestSeed.Role(10, "集团总部", null, "/10/"));
         await db.Context.SaveChangesAsync();
-        var handler = new CreateOrgRoleCommandHandler(db.Context);
+        var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var result = await handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 10 }, CancellationToken.None);
 
@@ -46,7 +46,7 @@ public class CreateOrgRoleCommandHandlerTests
     public async Task CreateDeepChain_PathChainsEachLevel()
     {
         using var db = TestSqliteContext.Create();
-        var handler = new CreateOrgRoleCommandHandler(db.Context);
+        var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
         var root = await handler.Handle(new CreateOrgRoleCommand { Name = "L1" }, CancellationToken.None);
         var child = await handler.Handle(new CreateOrgRoleCommand { Name = "L2", ParentId = root.OrgRoleId }, CancellationToken.None);
         var grandchild = await handler.Handle(new CreateOrgRoleCommand { Name = "L3", ParentId = child.OrgRoleId }, CancellationToken.None);
@@ -60,7 +60,7 @@ public class CreateOrgRoleCommandHandlerTests
     public async Task Create_ParentNotFound_Throws404()
     {
         using var db = TestSqliteContext.Create();
-        var handler = new CreateOrgRoleCommandHandler(db.Context);
+        var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 999 }, CancellationToken.None));
@@ -75,7 +75,7 @@ public class CreateOrgRoleCommandHandlerTests
         db.Context.OrgRoles.Add(OrgTestSeed.Role(10, "集团总部", null, "/10/"));
         db.Context.OrgRoles.Add(OrgTestSeed.Role(11, "销售部", 10, "/10/11/"));
         await db.Context.SaveChangesAsync();
-        var handler = new CreateOrgRoleCommandHandler(db.Context);
+        var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 10 }, CancellationToken.None));
@@ -91,7 +91,7 @@ public class CreateOrgRoleCommandHandlerTests
         db.Context.OrgRoles.Add(OrgTestSeed.Role(20, "华北集团", null, "/20/"));
         db.Context.OrgRoles.Add(OrgTestSeed.Role(11, "销售部", 10, "/10/11/"));
         await db.Context.SaveChangesAsync();
-        var handler = new CreateOrgRoleCommandHandler(db.Context);
+        var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var result = await handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 20 }, CancellationToken.None);
 

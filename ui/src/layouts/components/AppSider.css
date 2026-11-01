@@ -1,5 +1,6 @@
 /* 侧边栏自定义导航：替代 antd Menu
-   风格：整栏统一底色（无内嵌卡片）+ 大号中性图标 + 深色胶囊激活态（深/浅主题自动反转） */
+   风格：整栏统一底色（无内嵌卡片）+ 大号中性图标 + 浅主色渐变底激活态 + 浅色 hover（深/浅主题自动反转）
+   注意：底色/字色的默认值在 CSS 用变量给出，选中项的内联样式才会生效且不阻断 :hover */
 .app-nav {
   flex: 1;
   min-height: 0;
@@ -30,6 +31,8 @@
   text-align: left;
   cursor: pointer;
   background: transparent;
+  color: var(--app-nav-color);
+  font-weight: 400;
   transition:
     background-color 0.12s,
     color 0.12s;

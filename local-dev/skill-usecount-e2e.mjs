@@ -1,6 +1,7 @@
 // 技能使用计数 E2E（后端 127.0.0.1:5210）
-// 场景：应用绑定技能并发布 → 桩模型对话中 call_tool(skill_<key>) 装载技能 → skill.use_count 自增
-//       → skill options 接口回显 useCount；默认技能目录（userconfig）同样回显。
+// 场景：应用绑定技能并发布 → 桩模型对话中 call_tool(skill_<key>) 装载技能 → skill-usage 计数写 Redis
+//       → 统计模块每分钟批量落库 skills.use_count → skill options 接口回显 useCount；默认技能目录（userconfig）同样回显。
+// 计数为异步批量落库，SU-07/08 含轮询等待（最长约 100s）。
 import crypto from 'node:crypto'
 import http from 'node:http'
 
@@ -10,6 +11,7 @@ const check = (name, cond, detail = '') => {
   if (cond) { PASS++; console.log(`PASS | ${name}`) }
   else { FAIL++; console.log(`FAIL | ${name} ${detail ? '— ' + detail : ''}`) }
 }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 let RSA_KEY = ''
 const rsa = (plain) => {
@@ -147,12 +149,18 @@ async function main() {
       .filter((e) => e.type === 'TEXT_MESSAGE_CONTENT').map((e) => e.delta).join('')
     check('SU-06 对话装载技能完成', res.status === 200 && reply.includes('技能已装载完成'), `reply=${reply.slice(0, 60)}`)
 
-    // useCount 自增 → options 与 userconfig 均为 1
-    const after = await api('GET', `/api/skill/options?teamId=${TID}`, { token: adminToken })
-    check('SU-07 装载后 options useCount=1', (after.json?.items ?? []).find((x) => x.key === SKILL_KEY)?.useCount === 1,
-      JSON.stringify((after.json?.items ?? []).find((x) => x.key === SKILL_KEY)))
+    // useCount 批量落库（每分钟） → 轮询等待 options 与 userconfig 均为 1
+    let optCount = 0
+    const deadline = Date.now() + 100_000
+    for (;;) {
+      const after = await api('GET', `/api/skill/options?teamId=${TID}`, { token: adminToken })
+      optCount = Number((after.json?.items ?? []).find((x) => x.key === SKILL_KEY)?.useCount ?? 0)
+      if (optCount >= 1 || Date.now() >= deadline) break
+      await sleep(5000)
+    }
+    check('SU-07 装载后 options useCount=1', optCount === 1, `useCount=${optCount}`)
     const uc2 = await api('GET', `/api/app/${APP}/userconfig`, { token: adminToken })
-    check('SU-08 默认技能目录 useCount=1', (uc2.json?.defaultSkills ?? []).find((x) => String(x.id) === SKILL_ID)?.useCount === 1)
+    check('SU-08 默认技能目录 useCount=1', Number((uc2.json?.defaultSkills ?? []).find((x) => String(x.id) === SKILL_ID)?.useCount ?? 0) === 1)
   } finally {
     await api('DELETE', `/api/ai/channel/${CH}`, { token: adminToken })
     stub.close()

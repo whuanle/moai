@@ -24,4 +24,12 @@ public interface ITeamService
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns></returns>
     Task RemoveRoleCacheAsync(long teamId, long userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询团队全部成员的用户 id，团队不存在或无成员时返回空集合.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>返回成员用户 id 集合.</returns>
+    Task<IReadOnlyCollection<long>> GetMemberUserIdsAsync(long teamId, CancellationToken cancellationToken = default);
 }

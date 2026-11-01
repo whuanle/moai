@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\infra\MoAI.Infra.Core\MoAI.Infra.Core.csproj" />
     <ProjectReference Include="..\..\src\subsystem\MoAI.Subsystem.Core\MoAI.Subsystem.Core.csproj" />
   </ItemGroup>
 

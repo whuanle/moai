@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Services;
 using MoAI.Database;
+using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Team.Services;
 using MoAI.TeamPlugin.Commands;
@@ -23,6 +24,7 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
     private readonly ICustomPluginCaller _customPluginCaller;
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IPluginUsageCounter _usageCounter;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RunTeamPluginCommandHandler"/> class.
@@ -33,13 +35,15 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
     /// <param name="customPluginCaller">自定义插件（MCP/OpenAPI）调用端口.</param>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
+    /// <param name="usageCounter">插件使用计数器.</param>
     public RunTeamPluginCommandHandler(
         IPluginRegistry registry,
         IPluginExecutor executor,
         IDynamicInstanceResolver dynamicResolver,
         ICustomPluginCaller customPluginCaller,
         DatabaseContext databaseContext,
-        ITeamService teamService)
+        ITeamService teamService,
+        IPluginUsageCounter usageCounter)
     {
         _registry = registry;
         _executor = executor;
@@ -47,6 +51,7 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         _customPluginCaller = customPluginCaller;
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _usageCounter = usageCounter;
     }
 
     /// <inheritdoc/>
@@ -54,10 +59,13 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
     {
         await EnsureMemberAsync(request.TeamId, request.ContextUserId, cancellationToken);
 
-        if (!await IsPluginAvailableAsync(request.TeamId, request.Key, cancellationToken))
+        var (available, pluginEntity) = await IsPluginAvailableAsync(request.TeamId, request.Key, cancellationToken);
+        if (!available)
         {
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
+
+        await RecordUsageAsync(pluginEntity?.Id, cancellationToken);
 
         var plugin = _registry.Get(request.Key);
         if (plugin != null)
@@ -92,7 +100,7 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         };
     }
 
-    private async Task<bool> IsPluginAvailableAsync(long teamId, string key, CancellationToken cancellationToken)
+    private async Task<(bool Available, PluginEntity? PluginEntity)> IsPluginAvailableAsync(long teamId, string key, CancellationToken cancellationToken)
     {
         var pluginEntity = await _databaseContext.Plugins
             .FirstOrDefaultAsync(x => x.PluginName == key && x.IsDeleted == 0, cancellationToken);
@@ -100,26 +108,46 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         if (pluginEntity == null)
         {
             // 内存注册的静态系统插件对全体团队可用
-            return _registry.Get(key) != null;
+            return (_registry.Get(key) != null, null);
         }
 
         if (pluginEntity.TeamId == teamId)
         {
-            return true;
+            return (true, pluginEntity);
         }
 
         if (!pluginEntity.IsSystem)
         {
-            return false;
+            return (false, null);
         }
 
         if (pluginEntity.IsPublic)
         {
-            return true;
+            return (true, pluginEntity);
         }
 
-        return await _databaseContext.PluginTeamAuthorizations
+        var authorized = await _databaseContext.PluginTeamAuthorizations
             .AnyAsync(x => x.PluginId == pluginEntity.Id && x.TeamId == teamId, cancellationToken);
+        return (authorized, authorized ? pluginEntity : null);
+    }
+
+    private async Task RecordUsageAsync(Guid? pluginId, CancellationToken cancellationToken)
+    {
+        if (pluginId == null || pluginId == Guid.Empty)
+        {
+            return;
+        }
+
+        try
+        {
+            await _usageCounter.IncrementAsync(pluginId.Value, cancellationToken);
+        }
+#pragma warning disable CA1031 // 使用统计失败不应影响插件执行
+        catch (Exception)
+        {
+            // 使用统计失败不阻塞插件调用
+        }
+#pragma warning restore CA1031
     }
 
     private async Task EnsureMemberAsync(long teamId, long userId, CancellationToken cancellationToken)

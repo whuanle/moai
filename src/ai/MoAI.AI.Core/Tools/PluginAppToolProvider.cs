@@ -9,6 +9,7 @@ using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AI.Services;
 
@@ -27,6 +28,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
     private readonly McpToolCallService _mcpToolCallService;
     private readonly OpenApiToolCallService _openApiToolCallService;
     private readonly CustomPluginVariableInterpolator _variableInterpolator;
+    private readonly IResourceUsageCollector _usageCollector;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PluginAppToolProvider"/> class.
@@ -38,6 +40,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
     /// <param name="mcpToolCallService">MCP 工具调用服务.</param>
     /// <param name="openApiToolCallService">OpenAPI 工具调用服务.</param>
     /// <param name="variableInterpolator">团队变量插值器.</param>
+    /// <param name="usageCollector">轮次使用量收集器（一轮对话聚合，作用域结束批量推送）.</param>
     public PluginAppToolProvider(
         DatabaseContext databaseContext,
         IPluginRegistry registry,
@@ -45,7 +48,8 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         IPluginExecutor executor,
         McpToolCallService mcpToolCallService,
         OpenApiToolCallService openApiToolCallService,
-        CustomPluginVariableInterpolator variableInterpolator)
+        CustomPluginVariableInterpolator variableInterpolator,
+        IResourceUsageCollector usageCollector)
     {
         _databaseContext = databaseContext;
         _registry = registry;
@@ -54,6 +58,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         _mcpToolCallService = mcpToolCallService;
         _openApiToolCallService = openApiToolCallService;
         _variableInterpolator = variableInterpolator;
+        _usageCollector = usageCollector;
     }
 
     /// <inheritdoc/>
@@ -142,7 +147,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                 Kind = "dynamic",
                 SourceId = plugin.Id,
                 ParametersExample = PluginTypeHelper.GetStaticExample(template.PluginType, PluginParamsExampleMethod),
-                InvokeAsync = (argsJson, ct) => ExecutePluginAsync(template, argsJson, resolved.ConfigJson, buildContext, ct),
+                InvokeAsync = (argsJson, ct) => ExecutePluginAsync(plugin.Id, template, argsJson, resolved.ConfigJson, buildContext, ct),
             };
         }
 
@@ -165,12 +170,13 @@ public sealed class PluginAppToolProvider : IAppToolProvider
             Kind = "static",
             SourceId = plugin.Id,
             ParametersExample = PluginTypeHelper.GetStaticExample(info.PluginType, PluginParamsExampleMethod),
-            InvokeAsync = (argsJson, ct) => ExecutePluginAsync(info, argsJson, null, buildContext, ct),
+            InvokeAsync = (argsJson, ct) => ExecutePluginAsync(plugin.Id, info, argsJson, null, buildContext, ct),
         };
     }
 
-    private async Task<AppToolResult> ExecutePluginAsync(PluginInfo info, string? argsJson, string? configJson, AppAgentBuildContext buildContext, CancellationToken cancellationToken)
+    private async Task<AppToolResult> ExecutePluginAsync(Guid pluginId, PluginInfo info, string? argsJson, string? configJson, AppAgentBuildContext buildContext, CancellationToken cancellationToken)
     {
+        IncrementUsageAsync(pluginId);
         var runContext = new PluginRunContext
         {
             UserId = buildContext.UserId,
@@ -181,6 +187,21 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         return result.Success
             ? AppToolResult.Ok(result.DataJson ?? "{}")
             : AppToolResult.Fail(result.Error ?? "插件执行失败.");
+    }
+
+    private void IncrementUsageAsync(Guid pluginId)
+    {
+        // 轮次收集器内存聚合，作用域结束按资源类型批量推送一次（统计失败不阻塞插件调用）
+        try
+        {
+            _usageCollector.Record(ResourceUsageNames.Plugin, pluginId.ToString("N"));
+        }
+#pragma warning disable CA1031 // 使用统计失败不应阻塞插件调用
+        catch (Exception)
+        {
+            // 使用统计失败不阻塞插件调用
+        }
+#pragma warning restore CA1031
     }
 
     private async Task<List<AppTool>> BuildCustomToolsAsync(PluginEntity plugin, bool isMcp, CancellationToken cancellationToken)
@@ -219,7 +240,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                     Kind = "mcp",
                     SourceId = plugin.Id,
                     ResolveParametersExampleAsync = ct => ResolveMcpSchemaAsync(custom, callName, function.Name, ct),
-                    InvokeAsync = (argsJson, ct) => CallMcpAsync(custom, callName, function.Name, argsJson, ct),
+                    InvokeAsync = (argsJson, ct) => CallMcpAsync(plugin.Id, custom, callName, function.Name, argsJson, ct),
                 });
             }
             else
@@ -232,7 +253,7 @@ public sealed class PluginAppToolProvider : IAppToolProvider
                     Kind = "openapi",
                     SourceId = plugin.Id,
                     ParametersExample = string.IsNullOrWhiteSpace(function.Path) ? null : $"{{\"path\":\"{function.Path}\"}}",
-                    InvokeAsync = (argsJson, ct) => CallOpenApiAsync(custom, function.Name, argsJson, ct),
+                    InvokeAsync = (argsJson, ct) => CallOpenApiAsync(plugin.Id, custom, function.Name, argsJson, ct),
                 });
             }
         }
@@ -255,8 +276,9 @@ public sealed class PluginAppToolProvider : IAppToolProvider
 #pragma warning restore CA1031
     }
 
-    private async Task<AppToolResult> CallMcpAsync(PluginCustomEntity custom, string callName, string toolName, string? argsJson, CancellationToken cancellationToken)
+    private async Task<AppToolResult> CallMcpAsync(Guid pluginId, PluginCustomEntity custom, string callName, string toolName, string? argsJson, CancellationToken cancellationToken)
     {
+        IncrementUsageAsync(pluginId);
         try
         {
             var data = await _mcpToolCallService.CallToolAsync(custom, callName, toolName, argsJson, cancellationToken).ConfigureAwait(false);
@@ -268,8 +290,9 @@ public sealed class PluginAppToolProvider : IAppToolProvider
         }
     }
 
-    private async Task<AppToolResult> CallOpenApiAsync(PluginCustomEntity custom, string operationName, string? argsJson, CancellationToken cancellationToken)
+    private async Task<AppToolResult> CallOpenApiAsync(Guid pluginId, PluginCustomEntity custom, string operationName, string? argsJson, CancellationToken cancellationToken)
     {
+        IncrementUsageAsync(pluginId);
         try
         {
             var data = await _openApiToolCallService.CallAsync(custom, operationName, argsJson, cancellationToken).ConfigureAwait(false);

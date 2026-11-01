@@ -12,7 +12,7 @@ using MoAI.Database.Entities;
 namespace MoAI.Database;
 
 /// <summary>
-/// 组织角色：全局层级角色树节点.
+/// 组织：全局层级角色树节点.
 /// </summary>
 internal partial class OrgRoleConfiguration : IEntityTypeConfiguration<OrgRoleEntity>
 {
@@ -22,7 +22,7 @@ internal partial class OrgRoleConfiguration : IEntityTypeConfiguration<OrgRoleEn
         var entity = builder;
         entity.HasKey(e => e.Id).HasName("idx_org_role_primary");
 
-        entity.ToTable("org_role", tb => tb.HasComment("组织角色：全局层级角色树（与团队无关），path 物化路径前缀匹配即得子树"));
+        entity.ToTable("org_role", tb => tb.HasComment("组织：全局层级角色树（与团队无关），path 物化路径前缀匹配即得子树"));
 
         // 物化路径在未删除记录中唯一（id 链天然唯一，索引兜底）
         entity.HasIndex(e => e.Path)

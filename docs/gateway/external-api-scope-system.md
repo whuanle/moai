@@ -13,7 +13,7 @@
 | 应用接入 appid | `access_app`（统一表，Level=team），`moai-ac-` + 随机 | 团队管理员（`/api/access-app`） | **存在即有效**（软删除自动过滤），appid 明文可回显；配套密钥 PBKDF2 落库（原文仅创建/重置返回一次） |
 | 外部 token（JWT） | 换取签发，不落库 | `POST /api/external/token` | access 2h（Debug 7d）+ refresh 7d；刷新按来源接入**当前**勾选重验；**接入已设密钥则兑换必须携带 secret 并校验**（存量无密钥接入 key-only 兼容） |
 | 匿名临时身份 | 无 key | `POST /api/external/token` 只传 appId（应用须 `is_auth=false`） | 刷新要求应用仍无需授权 |
-| 系统级接入 appid（参照） | 同一张 `access_app`（Level=system），`moai-sa-` + 随机 | root（`/api/subsystem/system-app`） | 与团队级同表分域：不能访问 /api/external、只能访问 /api/subsys/system/*（见 [../subsystem/sdd.md](../subsystem/sdd.md)）；scope 位空间隔离（§2b） |
+| 系统级接入 appid（参照） | 同一张 `access_app`（Level=system，AppType 分型 subsystem/app），`moai-sa-` + Base64Url(Guid+HMAC) 结构化自校验 35 字符（应用接入，新建）/存量 40 字符随机（兼容）或自填（子系统） | root（`/api/subsystem/*`，合并管理面） | 与团队级同表分域：不能访问 /api/external、只能访问 /api/subsys/**（见 [../subsystem/sdd.md](../subsystem/sdd.md)）；**资源范围分档已下线（§2b 退役）**，全量访问协作面资源 |
 
 两条认证路径（对 `/api/external/*` 等价）：
 1. **换 token**：接入 key → 外部 token → Bearer JWT。token 的 `scope` claim = 来源勾选 ∩ 外部资源维度。
@@ -36,20 +36,9 @@
 > 位 1（`model`，模型网关 `/api/aigateway/{teamId}/v1/*`）已随 2026-10-29 网关下线保留不用：枚举成员与代码表项已删，勾选一律 400，存量行该位为无效残留。
 > `external_token` (8) 随团队接入 key 下线一并移除（枚举与代码表已删）。
 
-### 2b. 系统资源 scope 位表（`SystemApiKeyScopes`，同列高位）
+### 2b. 系统资源 scope 位表（已退役，2026-11-01 合并模型）
 
-同一 `access_app.scopes` 列，系统级接入（Level=system）使用 1<<16 起的高位，与团队低位天然隔离（Level 过滤 + 位空间双保险）：
-
-| 代码 | 位 | 资源组 |
-|---|---|---|
-| `org_read` | 1<<16 (65536) | 组织角色树/成员关系读 |
-| `org_write` | 1<<17 (131072) | 组织角色写与用户角色分配 |
-| `user_read` | 1<<18 (262144) | 平台用户读 |
-| `user_write` | 1<<19 (524288) | 用户 upsert/禁用 |
-| `team_read` | 1<<20 (1048576) | 团队列表读 |
-| `team_write` | 1<<21 (2097152) | 团队创建/更新/成员管理 |
-
-系统级接口挂 `/api/subsys/system/*`（协作面 /openapi/subsys.json），鉴权双轨（appid 直连或 system_app_access JWT），细节见 [../subsystem/sdd.md](../subsystem/sdd.md)。存量迁移见 [asserts/access_app_unify.sql](../../asserts/access_app_unify.sql)。
+> **⚠️ 本节已退役**：子系统与应用接入合并为同一接入模型后，系统级资源范围分档整体下线——`SystemApiKeyScopes` 枚举与代码表已删除，`access_app.scopes` 系统级行归 0，任一系统级接入**全量访问** `/api/subsys/**` 资源面，不再按位分档。历史位表（1<<16 org_read … 1<<21 team_write）仅作存量数据考古；存量库迁移见 [asserts/access_app_merge_subsystem.sql](../../asserts/access_app_merge_subsystem.sql)（scopes 归 0 + subsystem 表并入）。现行设计见 [../subsystem/sdd.md](../subsystem/sdd.md)。
 
 关键掩码（都在 `TeamApiKeyScopeCodes`，改动位表必须同步）：
 - `ExternalDimensions`（外部资源维度 = 2|4|16|64|128|256|512|1024）：token/直连上下文能携带的范围；**换 token 与直连的掩码都由它裁剪**。

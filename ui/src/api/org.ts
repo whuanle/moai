@@ -1,6 +1,6 @@
 import { getApiClient } from '@/api/kiota'
 
-/** 组织角色列表项（与生成客户端 QueryOrgRolesCommandResponseItem 字段对齐） */
+/** 组织列表项（与生成客户端 QueryOrgRolesCommandResponseItem 字段对齐） */
 export interface OrgRoleItem {
   orgRoleId?: number | null
   name?: string | null
@@ -10,7 +10,7 @@ export interface OrgRoleItem {
   path?: string | null
   userCount?: number | null
   hasChildren?: boolean | null
-  /** 是否为组织默认角色（新注册用户自动获得） */
+  /** 是否为默认组织（新注册用户自动获得） */
   isDefault?: boolean | null
   createTime?: string | null
   createUserName?: string | null
@@ -34,7 +34,7 @@ export interface OrgRoleUserItem {
   createUserName?: string | null
 }
 
-/** 用户持有的组织角色项（与生成客户端 QueryUserOrgRolesCommandResponseItem 字段对齐） */
+/** 用户持有的组织项（与生成客户端 QueryUserOrgRolesCommandResponseItem 字段对齐） */
 export interface UserOrgRoleItem {
   orgRoleId?: number | null
   name?: string | null
@@ -49,7 +49,7 @@ export interface UserOrgRoles {
   items: UserOrgRoleItem[]
 }
 
-/** 查询组织角色全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树 */
+/** 查询组织全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树 */
 export async function getOrgRoles(search?: string): Promise<OrgRoleItem[]> {
   const client = getApiClient()
   const res = await client.api.org.role.list.get({
@@ -58,7 +58,7 @@ export async function getOrgRoles(search?: string): Promise<OrgRoleItem[]> {
   return res?.items ?? []
 }
 
-/** 创建组织角色（仅管理员），parentId 为空表示根角色 */
+/** 创建组织（仅管理员），parentId 为空表示根角色 */
 export async function createOrgRole(payload: { name: string; parentId?: number | null }): Promise<{ orgRoleId?: number | null; path?: string | null }> {
   const client = getApiClient()
   const res = await client.api.org.role.create.post({
@@ -68,7 +68,7 @@ export async function createOrgRole(payload: { name: string; parentId?: number |
   return { orgRoleId: res?.orgRoleId, path: res?.path }
 }
 
-/** 更新组织角色（仅管理员）：改名与调整上级（null=调整为根角色），调整上级时整体重写子树路径 */
+/** 更新组织（仅管理员）：改名与调整上级（null=调整为根角色），调整上级时整体重写子树路径 */
 export async function updateOrgRole(roleId: number, payload: { name: string; parentId?: number | null }): Promise<void> {
   const client = getApiClient()
   await client.api.org.role.byId(roleId).put({
@@ -77,19 +77,19 @@ export async function updateOrgRole(roleId: number, payload: { name: string; par
   })
 }
 
-/** 删除组织角色（仅管理员）：存在子角色时后端拒绝；同时解绑该角色下的全部用户；默认角色被删时设置自动清空 */
+/** 删除组织（仅管理员）：存在子组织时后端拒绝；同时解绑该组织下的全部用户；默认组织被删时设置自动清空 */
 export async function deleteOrgRole(roleId: number): Promise<void> {
   const client = getApiClient()
   await client.api.org.role.byId(roleId).delete()
 }
 
-/** 设置/清空组织默认角色（仅管理员）：roleId 为空表示清空；全局唯一后设覆盖，只影响新注册用户 */
+/** 设置/清空默认组织（仅管理员）：roleId 为空表示清空；全局唯一后设覆盖，只影响新注册用户 */
 export async function updateOrgRoleDefault(roleId: number | null): Promise<void> {
   const client = getApiClient()
   await client.api.org.role.defaultEscaped.put({ orgRoleId: roleId })
 }
 
-/** 查询某组织角色下的用户清单（仅管理员） */
+/** 查询某组织下的用户清单（仅管理员） */
 export async function getOrgRoleUsers(roleId: number, search?: string): Promise<OrgRoleUserItem[]> {
   const client = getApiClient()
   const res = await client.api.org.role.byId(roleId).users.get({
@@ -98,7 +98,7 @@ export async function getOrgRoleUsers(roleId: number, search?: string): Promise<
   return res?.items ?? []
 }
 
-/** 查询某用户持有的组织角色清单（仅管理员） */
+/** 查询某用户持有的组织清单（仅管理员） */
 export async function getUserOrgRoles(userId: number): Promise<UserOrgRoles> {
   const client = getApiClient()
   const res = await client.api.org.user.byUserId(String(userId)).roles.get()
@@ -110,7 +110,7 @@ export async function getUserOrgRoles(userId: number): Promise<UserOrgRoles> {
   }
 }
 
-/** 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空 */
+/** 整体覆盖某用户的组织集合（仅管理员），空列表=清空 */
 export async function updateUserOrgRoles(userId: number, roleIds: number[]): Promise<void> {
   const client = getApiClient()
   await client.api.org.user.byUserId(String(userId)).roles.put({ roleIds })

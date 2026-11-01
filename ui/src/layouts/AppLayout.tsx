@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { Layout } from 'antd'
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { AppSider } from './components/AppSider'
+import { useEventPush } from './useEventPush'
 import { useSystemName } from './useSystemLogo'
 import { useShellStore } from '@/store/shell'
 
@@ -17,10 +18,14 @@ const FULLSCREEN_PATH = /\/app\/[^/]+\/(design|chat)(\/[^/]+)?\/?$/
 
 export function AppLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
   const shellFullscreen = useShellStore((s) => s.fullscreen)
   const systemName = useSystemName()
   const hideSider = SECONDARY_NAV_PATH.test(location.pathname)
   const fullscreen = FULLSCREEN_PATH.test(location.pathname) || shellFullscreen
+
+  // 站内信/事件推送：登录期间维持 /hub/moai 连接，message.new 事件驱动角标与右上角通知
+  useEventPush(navigate)
 
   // 浏览器标签页标题跟随系统设置中的网站名称（侧边栏隐藏的二级页面也保持生效）
   useEffect(() => {

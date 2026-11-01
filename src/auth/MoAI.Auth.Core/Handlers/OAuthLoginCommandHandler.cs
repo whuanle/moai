@@ -8,6 +8,8 @@ using MoAI.Auth.Commands.Responses;
 using MoAI.Auth.Models;
 using MoAI.Auth.Services;
 using Microsoft.Extensions.Logging;
+using MoAI.LoginSafety.Models;
+using MoAI.LoginSafety.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace MoAI.Auth.Handlers;
@@ -30,6 +32,8 @@ state=STATE
     private readonly IOAuthUserProfileService _profileService;
     private readonly IRedisDatabase _redisDatabase;
     private readonly ITokenProvider _tokenProvider;
+    private readonly ILoginSecurityService _loginSecurityService;
+    private readonly ILoginRiskService _loginRiskService;
     private readonly ILogger<OAuthLoginCommandHandler> _logger;
 
     /// <summary>
@@ -39,19 +43,26 @@ state=STATE
     /// <param name="profileService"></param>
     /// <param name="redisDatabase"></param>
     /// <param name="tokenProvider"></param>
+    /// <param name="loginSecurityService">登录安全策略服务.</param>
+    /// <param name="loginRiskService">登录风控服务.</param>
     /// <param name="logger"></param>
-    public OAuthLoginCommandHandler(DatabaseContext databaseContext, IOAuthUserProfileService profileService, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthLoginCommandHandler> logger)
+    public OAuthLoginCommandHandler(DatabaseContext databaseContext, IOAuthUserProfileService profileService, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILoginSecurityService loginSecurityService, ILoginRiskService loginRiskService, ILogger<OAuthLoginCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _profileService = profileService;
         _redisDatabase = redisDatabase;
         _tokenProvider = tokenProvider;
+        _loginSecurityService = loginSecurityService;
+        _loginRiskService = loginRiskService;
         _logger = logger;
     }
 
     /// <inheritdoc/>
     public async Task<OAuthLoginCommandResponse> Handle(OAuthLoginCommand request, CancellationToken cancellationToken)
     {
+        // 登录风控：IP 封禁期内的请求直接拒绝
+        await _loginRiskService.CheckIpBanAsync(request.ContextClientIp ?? string.Empty, cancellationToken);
+
         var oauthConnectionEntity = await _databaseContext.OauthConnections
             .FirstOrDefaultAsync(c => c.Id == request.OAuthId, cancellationToken);
 
@@ -97,13 +108,33 @@ state=STATE
         }
 
         // 已有绑定记录则直接登录.
+        // OAuth 登录跳过 TOTP 挑战（外部认证已足够），但强制 2FA 且未绑定时仍签发受限 token
+        var mfaPending = await _loginSecurityService.IsForced2faAsync(cancellationToken) && !userEntity.IsTotpEnabled;
+
+        // 登录风控：OAuth 登录成功同样记录日志并评估风险（新 IP/异地/管理员新环境），评估异常不影响登录
+        var isRootUser = await _databaseContext.Settings.AnyAsync(x => x.Key == "root" && x.Value == userEntity.Id.ToString(), cancellationToken);
+        _ = await _loginRiskService.EvaluateAsync(new LoginEventContext
+        {
+            UserId = userEntity.Id,
+            UserName = userEntity.UserName,
+            Email = userEntity.Email,
+            IsAdmin = userEntity.IsAdmin || isRootUser,
+            LoginType = LoginType.OAuth,
+            IsSuccess = true,
+            Ip = request.ContextClientIp ?? string.Empty,
+            UserAgent = request.ContextUserAgent ?? string.Empty
+        }, cancellationToken);
+
         var userContext = new DefaultUserContext
         {
             UserId = userEntity.Id,
             UserName = userEntity.UserName,
             NickName = userEntity.NickName,
             Email = userEntity.Email,
-            UserType = Infra.Models.UserType.Normal
+            UserType = Infra.Models.UserType.Normal,
+            Properties = mfaPending
+                ? new Dictionary<string, string> { ["mfa_pending"] = "true" }
+                : new Dictionary<string, string>()
         };
 
         var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
@@ -114,7 +145,8 @@ state=STATE
             RefreshToken = refreshToken,
             UserId = userEntity.Id,
             UserName = userEntity.UserName,
-            ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds()
+            ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds(),
+            MfaPending = mfaPending
         };
 
         _logger.LogInformation("User login.{@Message}", new { userEntity.Id, userEntity.UserName, userEntity.NickName });

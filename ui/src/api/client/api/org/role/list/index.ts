@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilder> {
     /**
-     * 查询组织角色全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
+     * 查询组织全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryOrgRolesCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface ListRequestBuilder extends BaseRequestBuilder<ListRequestBuilde
      */
      get(requestConfiguration?: RequestConfiguration<ListRequestBuilderGetQueryParameters> | undefined) : Promise<QueryOrgRolesCommandResponse | undefined>;
     /**
-     * 查询组织角色全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
+     * 查询组织全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<ListRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 查询组织角色全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
+ * 查询组织全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
  */
 export interface ListRequestBuilderGetQueryParameters {
     /**

@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface RolesRequestBuilder extends BaseRequestBuilder<RolesRequestBuilder> {
     /**
-     * 查询某用户持有的组织角色清单（仅管理员）.
+     * 查询某用户持有的组织清单（仅管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryUserOrgRolesCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,8 +22,8 @@ export interface RolesRequestBuilder extends BaseRequestBuilder<RolesRequestBuil
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<QueryUserOrgRolesCommandResponse | undefined>;
     /**
-     * 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空.
-     * @param body 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空该用户全部角色.
+     * 整体覆盖某用户的组织集合（仅管理员），空列表=清空.
+     * @param body 整体覆盖某用户的组织集合（仅管理员），空列表=清空该用户全部角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -34,14 +34,14 @@ export interface RolesRequestBuilder extends BaseRequestBuilder<RolesRequestBuil
      */
      put(body: UpdateOrgUserRolesCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 查询某用户持有的组织角色清单（仅管理员）.
+     * 查询某用户持有的组织清单（仅管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空.
-     * @param body 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空该用户全部角色.
+     * 整体覆盖某用户的组织集合（仅管理员），空列表=清空.
+     * @param body 整体覆盖某用户的组织集合（仅管理员），空列表=清空该用户全部角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

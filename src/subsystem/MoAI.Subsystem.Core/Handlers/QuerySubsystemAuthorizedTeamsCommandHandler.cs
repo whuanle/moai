@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Enums;
+using MoAI.Infra.Exceptions;
 using MoAI.Subsystem.Queries;
 using MoAI.Subsystem.Queries.Responses;
 
@@ -25,8 +27,14 @@ public class QuerySubsystemAuthorizedTeamsCommandHandler : IRequestHandler<Query
     /// <inheritdoc/>
     public async Task<QuerySubsystemAuthorizedTeamsCommandResponse> Handle(QuerySubsystemAuthorizedTeamsCommand request, CancellationToken cancellationToken)
     {
+        // 团队授权是子系统专属配置：应用接入行不存在该维度，404
+        var subsystem = await _databaseContext.AccessApps
+            .Where(x => x.Level == AccessAppLevel.System && x.AppType == AccessAppType.Subsystem)
+            .FirstOrDefaultAsync(x => x.Id == request.SubsystemId, cancellationToken)
+            ?? throw new BusinessException("子系统不存在.") { StatusCode = 404 };
+
         var teamIds = await _databaseContext.SubsystemTeamAuths
-            .Where(x => x.SubsystemId == request.SubsystemId)
+            .Where(x => x.SubsystemId == subsystem.Id)
             .OrderBy(x => x.TeamId)
             .Select(x => x.TeamId)
             .ToListAsync(cancellationToken);

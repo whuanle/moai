@@ -449,4 +449,17 @@ Feature: 邮箱验证码设置（注册 / 找回密码）
     When 保存 SMTP_REGISTER_CODE_BODY 或 SMTP_RESET_CODE_BODY 超过 2000 字符
     Then 返回请求错误（400）
     And 模板渲染行为见 [@AUTH-S31](../auth/bdd.md#auth-s31)
+
+  @SET-S59 @auto:e2e
+  Scenario: 强制两步验证开关保存校验
+    When 保存 LOGIN_FORCED_2FA 为非布尔的非法值
+    Then 返回请求错误（400）提示必须为 true 或 false
+    When 保存合法值
+    Then 归一为小写并生效（登录行为见 [@AUTH-S40](../auth/bdd.md#auth-s40)）
+
+  @SET-S60 @auto:e2e
+  Scenario: 登录邮箱验证码策略保存校验
+    When 保存 LOGIN_EMAIL_CODE_MODE 为 off/always/after_fail 之外的值
+    Then 返回请求错误（400）提示必须为 off、always 或 after_fail
+    And 策略语义见 [@AUTH-S42](../auth/bdd.md#auth-s42)；SMTP_LOGIN_CODE_SUBJECT/BODY 模板超长 400，行为同 [@SET-S57](./bdd.md#set-s57)/[@SET-S58](./bdd.md#set-s58)
 ```

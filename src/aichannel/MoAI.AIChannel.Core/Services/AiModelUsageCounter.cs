@@ -1,23 +1,21 @@
-using MediatR;
-using MoAI.Hangfire.Services;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AIChannel.Services;
 
 /// <summary>
-/// AI 模型使用计数器默认实现.
+/// AI 模型使用计数器默认实现：委托统计模块领域服务批量推送 Redis.
 /// </summary>
 public class AiModelUsageCounter : IAiModelUsageCounter
 {
-    private const string CounterName = "ai-model-usage";
-    private readonly IMediator _mediator;
+    private readonly IResourceUsageService _resourceUsageService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiModelUsageCounter"/> class.
     /// </summary>
-    /// <param name="mediator">消息中介器.</param>
-    public AiModelUsageCounter(IMediator mediator)
+    /// <param name="resourceUsageService">资源使用统计领域服务.</param>
+    public AiModelUsageCounter(IResourceUsageService resourceUsageService)
     {
-        _mediator = mediator;
+        _resourceUsageService = resourceUsageService;
     }
 
     /// <inheritdoc/>
@@ -50,13 +48,7 @@ public class AiModelUsageCounter : IAiModelUsageCounter
         AddPositive(counters, dimension, AiModelUsageMetric.Total, (long)promptTokens + completionTokens);
         AddPositive(counters, dimension, AiModelUsageMetric.Cached, cachedTokens);
 
-        return _mediator.Send(
-            new IncrementCounterActivatorCommand
-            {
-                Name = CounterName,
-                Counters = counters,
-            },
-            cancellationToken);
+        return _resourceUsageService.RecordAsync(ResourceUsageNames.AiModel, counters, cancellationToken);
     }
 
     private static void AddPositive(

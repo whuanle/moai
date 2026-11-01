@@ -9,7 +9,7 @@ using MoAI.Database.Audits;
 namespace MoAI.Database.Entities;
 
 /// <summary>
-/// 组织角色：全局层级角色树节点（与团队无关），parentId 记录父子关系，path 为物化路径（/{id}/ 链，前缀匹配即得子树）.
+/// 组织：全局层级角色树节点（与团队无关），parentId 记录父子关系，path 为物化路径（/{id}/ 链，前缀匹配即得子树）.
 /// </summary>
 public partial class OrgRoleEntity : IFullAudited
 {

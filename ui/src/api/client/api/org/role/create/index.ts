@@ -11,8 +11,8 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface CreateRequestBuilder extends BaseRequestBuilder<CreateRequestBuilder> {
     /**
-     * 创建组织角色（仅管理员），parentId 为空表示根角色.
-     * @param body 创建组织角色（仅管理员），parentId 为空表示根角色.
+     * 创建组织（仅管理员），parentId 为空表示根角色.
+     * @param body 创建组织（仅管理员），parentId 为空表示根角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<CreateOrgRoleCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -23,8 +23,8 @@ export interface CreateRequestBuilder extends BaseRequestBuilder<CreateRequestBu
      */
      post(body: CreateOrgRoleCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<CreateOrgRoleCommandResponse | undefined>;
     /**
-     * 创建组织角色（仅管理员），parentId 为空表示根角色.
-     * @param body 创建组织角色（仅管理员），parentId 为空表示根角色.
+     * 创建组织（仅管理员），parentId 为空表示根角色.
+     * @param body 创建组织（仅管理员），parentId 为空表示根角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

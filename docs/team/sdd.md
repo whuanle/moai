@@ -8,7 +8,9 @@
 
 ## 1. 目标
 
-团队是知识库、插件等资源的管理单元。本期交付：团队 CRUD、成员管理（添加/移除/角色调整/自行退出）；团队不可解散，仅平台管理员可禁用/启用（见管理员治理）。后续资源表通过 `team_id` 挂载。对齐侧边栏既有的「团队」菜单（问题台账 P9 死菜单之一）。
+团队是**协作与资源隔离单元**：知识库、插件、应用等资源按 `team_id` 挂载，以团队为边界隔离，团队内成员协作维护——销售、研发等团队各管各的事。注意**团队 ≠ 组织全体成员**：存在「生产型团队」专门制作应用给组织内其他成员（含管理层）使用（如报表分析应用），使用者（CEO 等）不加入该团队、不参与维护；这类需求的放通出口是 publication 上架审批（`is_public` 全员公开）或**按组织放通**（统一组织授权已落地，见 [../org/sdd.md](../org/sdd.md)「统一组织授权」）。组织与团队的概念边界见 [../org/sdd.md](../org/sdd.md)。
+
+本期交付：团队 CRUD、成员管理（添加/移除/角色调整/自行退出）；团队不可解散，仅平台管理员可禁用/启用（见管理员治理）。后续资源表通过 `team_id` 挂载。对齐侧边栏既有的「团队」菜单（问题台账 P9 死菜单之一）。
 
 ## 2. 数据模型
 
@@ -53,8 +55,8 @@
 | GET | `/api/team/{id}/users` | 成员列表 | `QueryTeamUsersCommandResponse` |
 | POST | `/api/team/{id}/users` | 添加成员 `{userId, role}` | Empty |
 | POST | `/api/team/{id}/users/batch` | 批量添加成员 `{userIds[], role}`，跳过已入团/不存在并回传明细 | `AddTeamUsersCommandResponse` |
-| GET | `/api/team/{id}/org/role/list` | 组织角色平铺列表（团队侧只读视图，仅 Owner/Admin，复用组织查询） | `QueryOrgRolesCommandResponse` |
-| GET | `/api/team/{id}/org/role/{roleId}/users` | 某组织角色下用户清单（团队侧只读视图，仅 Owner/Admin） | `QueryOrgRoleUsersCommandResponse` |
+| GET | `/api/team/{id}/org/role/list` | 组织平铺列表（团队侧只读视图，仅 Owner/Admin，复用组织查询） | `QueryOrgRolesCommandResponse` |
+| GET | `/api/team/{id}/org/role/{roleId}/users` | 某组织下用户清单（团队侧只读视图，仅 Owner/Admin） | `QueryOrgRoleUsersCommandResponse` |
 | PUT | `/api/team/{id}/user/{userId}/role` | 改角色 `{role}` | Empty |
 | DELETE | `/api/team/{id}/user/{userId}` | 移除/退出 | Empty |
 | GET | `/api/admin/team/list` | 管理员分页查全部团队（含负责人/成员数/禁用态），支持名称/简介模糊 + 禁用状态筛选 | `QueryAdminTeamListCommandResponse` |

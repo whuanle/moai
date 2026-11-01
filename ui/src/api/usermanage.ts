@@ -64,3 +64,9 @@ export async function resetUserPassword(id: number, newPassword: string): Promis
     .byId(String(id))
     .password.put({ newPassword: rsaEncrypt(info.rsaPublic, newPassword) })
 }
+
+/** 重置用户两步验证（管理员）：清空 TOTP 绑定，用户下次登录后需重新绑定 */
+export async function resetUserTwoFactor(id: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.usermanage.user.byId(String(id)).reset_2fa.put()
+}

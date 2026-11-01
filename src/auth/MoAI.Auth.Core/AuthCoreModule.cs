@@ -16,5 +16,8 @@ public class AuthCoreModule : IModule
     {
         context.Services.AddScoped<IOAuthUserProfileService, OAuthUserProfileService>();
         context.Services.AddScoped<IEmailCodeService, EmailCodeService>();
+        context.Services.AddScoped<ILoginSecurityService, LoginSecurityService>();
+        context.Services.AddScoped<ITotpService, TotpService>();
+        context.Services.AddScoped<ILoginChallengeService, LoginChallengeService>();
     }
 }

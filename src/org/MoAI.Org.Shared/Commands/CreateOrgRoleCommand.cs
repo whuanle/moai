@@ -6,7 +6,7 @@ using MoAI.Org.Queries.Responses;
 namespace MoAI.Org.Commands;
 
 /// <summary>
-/// 创建组织角色（仅管理员），parentId 为空表示根角色.
+/// 创建组织（仅管理员），parentId 为空表示根角色.
 /// </summary>
 public class CreateOrgRoleCommand : IRequest<CreateOrgRoleCommandResponse>, IModelValidator<CreateOrgRoleCommand>
 {

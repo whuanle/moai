@@ -12,7 +12,6 @@ public class SubsystemApiModule : IModule
     public void ConfigureServices(ServiceContext context)
     {
         // 工厂激活中间件（IMiddleware），供 Program.cs 在外部接入中间件之后挂载
-        context.Services.AddScoped<SubsystemAuthenticationMiddleware>();
-        context.Services.AddScoped<SystemAccessKeyMiddleware>();
+        context.Services.AddScoped<SubsysAccessMiddleware>();
     }
 }

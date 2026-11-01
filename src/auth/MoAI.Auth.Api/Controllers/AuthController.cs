@@ -6,6 +6,7 @@ using MoAI.Auth.Commands.Responses;
 using MoAI.Auth.Queries;
 using MoAI.Auth.Queries.Responses;
 using MoAI.Infra.Models;
+using MoAI.Infra.Services;
 
 namespace MoAI.Auth.Controllers;
 
@@ -17,14 +18,17 @@ namespace MoAI.Auth.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUserContextProvider _userContextProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuthController"/> class.
     /// </summary>
     /// <param name="mediator"></param>
-    public AuthController(IMediator mediator)
+    /// <param name="userContextProvider"></param>
+    public AuthController(IMediator mediator, IUserContextProvider userContextProvider)
     {
         _mediator = mediator;
+        _userContextProvider = userContextProvider;
     }
 
     /// <summary>
@@ -32,11 +36,89 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="req">登录请求体.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="LoginCommandResponse"/>.</returns>
+    /// <returns>返回 <see cref="LoginCommandResponse"/>；secondFactor 非 none 时表示需二次验证（凭 loginTicket 调 login/verify）.</returns>
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<LoginCommandResponse> Login([FromBody] LoginCommand req, CancellationToken ct)
     {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 登录二次验证：凭一次性登录票据提交动态码（认证器 TOTP 或邮箱验证码），通过后颁发令牌.
+    /// </summary>
+    /// <param name="req">二次验证请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="LoginCommandResponse"/>.</returns>
+    [HttpPost("login/verify")]
+    [AllowAnonymous]
+    public async Task<LoginCommandResponse> LoginVerify([FromBody] LoginVerifyCommand req, CancellationToken ct)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 重发登录邮箱验证码（凭一次性登录票据；60 秒发送冷却）.
+    /// </summary>
+    /// <param name="req">重发请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("login_code/send")]
+    [AllowAnonymous]
+    public async Task<EmptyCommandResponse> SendLoginCode([FromBody] SendLoginCodeCommand req, CancellationToken ct)
+    {
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询当前用户两步验证（2FA）状态.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryTwoFactorStatusQueryResponse"/>.</returns>
+    [HttpGet("two_factor/status")]
+    public Task<QueryTwoFactorStatusQueryResponse> QueryTwoFactorStatus(CancellationToken ct)
+    {
+        var cmd = new QueryTwoFactorStatusQuery();
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 生成两步验证（2FA）绑定密钥：返回 base32 密钥与 otpauth URI（前端渲染二维码），需随后调 enable 验证动态码激活.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="SetupTwoFactorCommandResponse"/>.</returns>
+    [HttpPost("two_factor/setup")]
+    public async Task<SetupTwoFactorCommandResponse> SetupTwoFactor(CancellationToken ct)
+    {
+        var cmd = new SetupTwoFactorCommand();
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 启用两步验证（2FA）：校验认证器动态码后激活绑定.
+    /// </summary>
+    /// <param name="req">启用请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("two_factor/enable")]
+    public async Task<EmptyCommandResponse> EnableTwoFactor([FromBody] EnableTwoFactorCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 关闭两步验证（2FA）：校验当前动态码后解绑；系统强制开启时拒绝.
+    /// </summary>
+    /// <param name="req">关闭请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("two_factor/disable")]
+    public async Task<EmptyCommandResponse> DisableTwoFactor([FromBody] DisableTwoFactorCommand req, CancellationToken ct)
+    {
+        _userContextProvider.SetUserContext(req);
         return await _mediator.Send(req, ct);
     }
 

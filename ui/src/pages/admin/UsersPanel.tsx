@@ -1,0 +1,466 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CheckCircleOutlined,
+  EyeOutlined,
+  KeyOutlined,
+  SafetyOutlined,
+  SearchOutlined,
+  StopOutlined,
+  UserSwitchOutlined,
+} from '@ant-design/icons'
+import { Avatar, Badge, Button, Descriptions, Form, Input, Modal, Popconfirm, Skeleton, Space, Tag, Typography } from 'antd'
+import type { DescriptionsProps, TableColumnsType } from 'antd'
+import { useTranslation } from 'react-i18next'
+import { AuditCell, DataTable, QueryBar, feedback } from '@/design-system'
+import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
+import { useAppStore } from '@/store/app'
+import { refreshUserProfile } from '@/api/auth'
+import { resolveStorageUrl } from '@/utils/storage'
+import { formatDateTime } from '@/utils/datetime'
+import {
+  getUsers,
+  getUserDetail,
+  resetUserPassword,
+  resetUserTwoFactor,
+  setUserAdmin,
+  setUserDisable,
+  type UserListItem,
+} from '@/api/usermanage'
+
+const { Text } = Typography
+
+const pageVerticalPadding = spacing.lg * 2
+const tabsBarHeight = 46
+const queryBarHeight = controlHeight + spacing.md
+const tableHeaderHeight = 55
+const tablePaginationHeight = 57
+const usersPanelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight}px)`
+const usersPanelTableScrollY = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + queryBarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
+
+interface PasswordFormValues {
+  newPassword: string
+  confirmPassword: string
+}
+
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).{8,20}$/
+
+/** 用户管理面板（组织用户页第三个 Tab） */
+export function UsersPanel() {
+  const { t } = useTranslation()
+  const userInfo = useAppStore((state) => state.userInfo)
+  const isRoot = userInfo?.isRoot === true
+  const currentUserId = userInfo?.userId
+
+  const [form] = Form.useForm<PasswordFormValues>()
+  const [modalOpen, setModalOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detail, setDetail] = useState<Record<string, unknown> | null>(null)
+  const [target, setTarget] = useState<UserListItem | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState<UserListItem[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [pageNo, setPageNo] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [searchText, setSearchText] = useState<string | undefined>(undefined)
+
+  const load = useCallback(async (page = pageNo, size = pageSize, keyword?: string) => {
+    setLoading(true)
+    try {
+      const res = await getUsers({ pageNo: page, pageSize: size, searchText: keyword })
+      setItems(res.items ?? [])
+      setTotalCount(res.totalCount ?? 0)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setLoading(false)
+    }
+  }, [pageNo, pageSize])
+
+  useEffect(() => {
+    void load(1, pageSize, undefined)
+    void refreshUserProfile().catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** 目标行受保护：root 账号、自己、或（非 root 管理员看到的）其他管理员 */
+  const isProtected = (record: UserListItem): boolean => {
+    if (record.isRoot) return true
+    if (String(record.id) === String(currentUserId)) return true
+    if (record.isAdmin && !isRoot) return true
+    return false
+  }
+
+  const handleSearch = (values: Record<string, unknown>) => {
+    const keyword = typeof values.searchText === 'string' ? values.searchText.trim() : undefined
+    setSearchText(keyword || undefined)
+    setPageNo(1)
+    void load(1, pageSize, keyword || undefined)
+  }
+
+  const handleReset = () => {
+    setSearchText(undefined)
+    setPageNo(1)
+    void load(1, pageSize, undefined)
+  }
+
+  const openDetail = async (record: UserListItem) => {
+    setDetail(null)
+    setDetailLoading(true)
+    setDetailOpen(true)
+    try {
+      const res = await getUserDetail(Number(record.id))
+      // 详情接口无 createTime，沿用列表行数据补齐
+      setDetail({ ...res, createTime: record.createTime } as unknown as Record<string, unknown>)
+    } catch {
+      setDetailOpen(false)
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const handleToggleAdmin = async (record: UserListItem) => {
+    try {
+      await setUserAdmin(Number(record.id), !record.isAdmin)
+      feedback.success(t(record.isAdmin ? 'users.unsetAdminSuccess' : 'users.setAdminSuccess'))
+      void load(pageNo, pageSize, searchText)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const handleToggleDisable = async (record: UserListItem) => {
+    try {
+      await setUserDisable(Number(record.id), !record.isDisable)
+      feedback.success(t(record.isDisable ? 'users.enableSuccess' : 'users.disableSuccess'))
+      void load(pageNo, pageSize, searchText)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const handleResetPassword = async () => {
+    const values = await form.validateFields()
+    setSubmitting(true)
+    try {
+      await resetUserPassword(Number(target?.id), values.newPassword)
+      feedback.success(t('users.resetPasswordSuccess'))
+      setModalOpen(false)
+      form.resetFields()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleResetTwoFactor = async (record: UserListItem) => {
+    try {
+      await resetUserTwoFactor(Number(record.id))
+      feedback.success(t('users.resetTwoFactorSuccess'))
+      void load(pageNo, pageSize, searchText)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const renderRole = (record: UserListItem) => {
+    if (record.isRoot) return <Tag color="gold">{t('users.roleRoot')}</Tag>
+    if (record.isAdmin) return <Tag color="blue">{t('users.roleAdmin')}</Tag>
+    return <Tag>{t('users.roleMember')}</Tag>
+  }
+
+  const renderStatus = (record: UserListItem) =>
+    record.isDisable ? (
+      <Badge status="default" text={t('users.statusDisabled')} />
+    ) : (
+      <Badge status="success" text={t('users.statusNormal')} />
+    )
+
+  /** 头像 + 用户名 */
+  const renderUser = (record: UserListItem) => {
+    const userName = record.userName || '-'
+    const avatarUrl = resolveStorageUrl(record.avatar ?? null)
+    return (
+      <Space>
+        <Avatar size={36} src={avatarUrl || undefined} alt={userName}>
+          {userName.slice(0, 1).toUpperCase()}
+        </Avatar>
+        <span>{userName}</span>
+      </Space>
+    )
+  }
+
+  const renderNickName = (v: string | null | undefined) => {
+    const nickName = v?.trim()
+    return nickName ? nickName : '-'
+  }
+
+  const columns: TableColumnsType<UserListItem> = useMemo(
+    () => [
+      {
+        title: t('users.colUser'),
+        key: 'user',
+        width: 200,
+        render: (_, record) => renderUser(record),
+      },
+      {
+        title: t('users.colNickName'),
+        dataIndex: 'nickName',
+        width: 140,
+        ellipsis: true,
+        render: (v: string | null) => renderNickName(v),
+      },
+      {
+        title: t('users.colEmail'),
+        dataIndex: 'email',
+        width: 260,
+        ellipsis: true,
+        render: (v: string | null) => v || '-',
+      },
+      { title: t('users.colPhone'), dataIndex: 'phone', width: 150, render: (v: string | null) => v || '-' },
+      { title: t('users.colRole'), key: 'role', width: 110, render: (_, record) => renderRole(record) },
+      { title: t('users.colStatus'), key: 'status', width: 90, render: (_, record) => renderStatus(record) },
+      {
+        title: t('users.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('users.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+      },
+      {
+        title: t('users.colActions'),
+        key: 'actions',
+        width: 340,
+        fixed: 'right',
+        render: (_, record) => {
+          const protectedRow = isProtected(record)
+          return (
+            <Space size={0}>
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                aria-label={t('users.view')}
+                onClick={() => void openDetail(record)}
+              >
+                {t('users.view')}
+              </Button>
+              {isRoot && !protectedRow && (
+                <Popconfirm
+                  title={t(record.isAdmin ? 'users.unsetAdminConfirm' : 'users.setAdminConfirm')}
+                  onConfirm={() => void handleToggleAdmin(record)}
+                >
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<UserSwitchOutlined />}
+                    aria-label={t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
+                  >
+                    {t(record.isAdmin ? 'users.unsetAdmin' : 'users.setAdmin')}
+                  </Button>
+                </Popconfirm>
+              )}
+              {!protectedRow && (
+                <Popconfirm
+                  title={t(record.isDisable ? 'users.enableConfirm' : 'users.disableConfirm')}
+                  okButtonProps={{ danger: !record.isDisable }}
+                  onConfirm={() => void handleToggleDisable(record)}
+                >
+                  <Button
+                    type="link"
+                    size="small"
+                    danger={!record.isDisable}
+                    icon={record.isDisable ? <CheckCircleOutlined /> : <StopOutlined />}
+                    aria-label={t(record.isDisable ? 'users.enable' : 'users.disable')}
+                  >
+                    {t(record.isDisable ? 'users.enable' : 'users.disable')}
+                  </Button>
+                </Popconfirm>
+              )}
+              {!protectedRow && (
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<KeyOutlined />}
+                  aria-label={t('users.resetPassword')}
+                  onClick={() => {
+                    setTarget(record)
+                    form.resetFields()
+                    setModalOpen(true)
+                  }}
+                >
+                  {t('users.resetPassword')}
+                </Button>
+              )}
+              {!protectedRow && (
+                <Popconfirm
+                  title={t('users.resetTwoFactorConfirm', { name: record.userName ?? '' })}
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() => void handleResetTwoFactor(record)}
+                >
+                  <Button type="link" size="small" danger icon={<SafetyOutlined />} aria-label={t('users.resetTwoFactor')}>
+                    {t('users.resetTwoFactor')}
+                  </Button>
+                </Popconfirm>
+              )}
+            </Space>
+          )
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, isRoot, currentUserId, searchText, pageNo, pageSize],
+  )
+
+  const detailItems: DescriptionsProps['items'] = useMemo(() => {
+    if (!detail) return []
+    return [
+      { key: 'email', label: t('users.colEmail'), children: String(detail.email ?? '-') },
+      { key: 'phone', label: t('users.colPhone'), children: String(detail.phone ?? '-') },
+      {
+        key: 'role',
+        label: t('users.colRole'),
+        children: detail.isRoot
+          ? t('users.roleRoot')
+          : detail.isAdmin
+            ? t('users.roleAdmin')
+            : t('users.roleMember'),
+      },
+      {
+        key: 'status',
+        label: t('users.colStatus'),
+        children: detail.isDisable ? t('users.statusDisabled') : t('users.statusNormal'),
+      },
+      {
+        key: 'createTime',
+        label: t('users.colCreateTime'),
+        children: formatDateTime(detail.createTime as string | null),
+      },
+    ]
+  }, [detail, t])
+
+  const detailUserName = String(detail?.userName ?? '')
+  const detailNickName = String(detail?.nickName ?? '')
+  const detailAvatar = resolveStorageUrl((detail?.avatar as string | null | undefined) ?? null)
+
+  return (
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', height: usersPanelHeight, minHeight: 0 }}>
+        <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
+          <Form.Item name="searchText">
+            <Input
+              placeholder={t('users.searchPlaceholder')}
+              prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+              allowClear
+              maxLength={50}
+              style={{ width: 280 }}
+            />
+          </Form.Item>
+        </QueryBar>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <DataTable<UserListItem>
+            rowKey="id"
+            columns={columns}
+            dataSource={items}
+            loading={loading}
+            sticky
+            scroll={{ x: 1600, y: usersPanelTableScrollY }}
+            pagination={{
+              current: pageNo,
+              pageSize,
+              total: totalCount,
+              showSizeChanger: true,
+              onChange: (page, size) => {
+                setPageNo(page)
+                setPageSize(size)
+                void load(page, size, searchText)
+              },
+            }}
+          />
+        </div>
+      </div>
+      <Modal
+        open={detailOpen}
+        title={t('users.detailTitle')}
+        footer={null}
+        maskClosable={false}
+        onCancel={() => setDetailOpen(false)}
+      >
+        <Skeleton loading={detailLoading} active paragraph={{ rows: 5 }}>
+          {detail && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg }}>
+                <Avatar size={56} src={detailAvatar || undefined} alt={detailUserName}>
+                  {detailUserName.slice(0, 1).toUpperCase()}
+                </Avatar>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{detailNickName || detailUserName}</div>
+                  {detailNickName && detailNickName !== detailUserName && (
+                    <Text type="secondary">@{detailUserName}</Text>
+                  )}
+                </div>
+              </div>
+              <Descriptions column={1} size="small" bordered items={detailItems} />
+            </>
+          )}
+        </Skeleton>
+      </Modal>
+      <Modal
+        open={modalOpen}
+        title={t('users.resetPasswordTitle', {
+          name: target?.userName ?? '',
+        })}
+        onOk={() => void handleResetPassword()}
+        onCancel={() => setModalOpen(false)}
+        okText={t('users.confirm')}
+        cancelText={t('users.cancel')}
+        confirmLoading={submitting}
+        destroyOnHidden
+        maskClosable={false}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="newPassword"
+            label={t('users.newPassword')}
+            rules={[
+              { required: true, message: t('users.newPasswordRequired') },
+              {
+                pattern: passwordPattern,
+                message: t('users.passwordRule'),
+              },
+            ]}
+          >
+            <Input.Password autoComplete="new-password" maxLength={20} />
+          </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            label={t('users.confirmPassword')}
+            dependencies={['newPassword']}
+            rules={[
+              { required: true, message: t('users.confirmPasswordRequired') },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error(t('users.passwordMismatch')))
+                },
+              }),
+            ]}
+          >
+            <Input.Password autoComplete="new-password" maxLength={20} />
+          </Form.Item>
+          <Text type="secondary">{t('users.passwordRule')}</Text>
+        </Form>
+      </Modal>
+    </>
+  )
+}

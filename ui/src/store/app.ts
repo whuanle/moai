@@ -31,6 +31,10 @@ export interface UserInfo {
   nickName?: string | null
   phone?: string | null
   avatar?: string | null
+  /** 是否已绑定两步验证（/account/userinfo 回显） */
+  twoFactorEnabled?: boolean | null
+  /** 是否待绑定两步验证（系统强制 2FA 且未绑定）：为 true 时全站只放行个人设置绑定页 */
+  mfaPending?: boolean | null
   isDisable?: boolean | null
   isAdmin?: boolean | null
   isRoot?: boolean | null

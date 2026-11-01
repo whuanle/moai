@@ -19,7 +19,8 @@ public class AppCoreModule : IModule
         // 对话附件文本提取（Maomi.ToMarkdown 进程内库）
         context.Services.AddTextExtraction();
 
-        // 应用使用次数计数器：Redis 自增 + 每分钟批量累加到 app.use_count
+        // 应用使用次数计数器：Redis 自增 + 统计模块每分钟批量累加到 app.use_count
         context.Services.AddScoped<IAppUsageCounter, AppUsageCounter>();
-        context.Services.AddScoped<MoAI.Hangfire.Services.ICounterActivatorJob, AppUsageCounterActivatorJob>();    }
+        context.Services.AddScoped<MoAI.Statistics.Services.IResourceUsageWriter, AppUsageCounterActivatorJob>();
+    }
 }

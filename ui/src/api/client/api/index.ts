@@ -26,7 +26,13 @@ import { Feishu_appRequestBuilderNavigationMetadata, Feishu_appRequestBuilderReq
 // @ts-ignore
 import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBuilderRequestsMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
 // @ts-ignore
+import { LoginsafetyRequestBuilderNavigationMetadata, type LoginsafetyRequestBuilder } from './loginsafety/index.js';
+// @ts-ignore
 import { MemoryRequestBuilderNavigationMetadata, type MemoryRequestBuilder } from './memory/index.js';
+// @ts-ignore
+import { MessageRequestBuilderNavigationMetadata, type MessageRequestBuilder } from './message/index.js';
+// @ts-ignore
+import { NotificationRequestBuilderNavigationMetadata, type NotificationRequestBuilder } from './notification/index.js';
 // @ts-ignore
 import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
 // @ts-ignore
@@ -39,6 +45,8 @@ import { PublicationRequestBuilderNavigationMetadata, type PublicationRequestBui
 import { SettingsRequestBuilderNavigationMetadata, SettingsRequestBuilderRequestsMetadata, type SettingsRequestBuilder } from './settings/index.js';
 // @ts-ignore
 import { SkillRequestBuilderNavigationMetadata, SkillRequestBuilderRequestsMetadata, type SkillRequestBuilder } from './skill/index.js';
+// @ts-ignore
+import { StatisticsRequestBuilderNavigationMetadata, type StatisticsRequestBuilder } from './statistics/index.js';
 // @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
@@ -111,9 +119,21 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get knowledgeGraph(): KnowledgeGraphRequestBuilder;
     /**
+     * The loginsafety property
+     */
+    get loginsafety(): LoginsafetyRequestBuilder;
+    /**
      * The memory property
      */
     get memory(): MemoryRequestBuilder;
+    /**
+     * The message property
+     */
+    get message(): MessageRequestBuilder;
+    /**
+     * The notification property
+     */
+    get notification(): NotificationRequestBuilder;
     /**
      * The oauthconnect property
      */
@@ -138,6 +158,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      * The skill property
      */
     get skill(): SkillRequestBuilder;
+    /**
+     * The statistics property
+     */
+    get statistics(): StatisticsRequestBuilder;
     /**
      * The storage property
      */
@@ -221,8 +245,17 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
         requestsMetadata: KnowledgeGraphRequestBuilderRequestsMetadata,
         navigationMetadata: KnowledgeGraphRequestBuilderNavigationMetadata,
     },
+    loginsafety: {
+        navigationMetadata: LoginsafetyRequestBuilderNavigationMetadata,
+    },
     memory: {
         navigationMetadata: MemoryRequestBuilderNavigationMetadata,
+    },
+    message: {
+        navigationMetadata: MessageRequestBuilderNavigationMetadata,
+    },
+    notification: {
+        navigationMetadata: NotificationRequestBuilderNavigationMetadata,
     },
     oauthconnect: {
         navigationMetadata: OauthconnectRequestBuilderNavigationMetadata,
@@ -244,6 +277,9 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     skill: {
         requestsMetadata: SkillRequestBuilderRequestsMetadata,
         navigationMetadata: SkillRequestBuilderNavigationMetadata,
+    },
+    statistics: {
+        navigationMetadata: StatisticsRequestBuilderNavigationMetadata,
     },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,

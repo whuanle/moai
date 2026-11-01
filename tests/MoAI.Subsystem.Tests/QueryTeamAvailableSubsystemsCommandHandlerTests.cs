@@ -16,28 +16,10 @@ using Xunit;
 namespace MoAI.Subsystem.Tests;
 
 /// <summary>
-/// 团队可用子系统查询处理器测试.
+/// 团队可用子系统查询处理器测试（仅 appType=subsystem 行可见）.
 /// </summary>
 public class QueryTeamAvailableSubsystemsCommandHandlerTests
 {
-    private static async Task<SubsystemEntity> SeedSubsystemAsync(DatabaseContext context, string key, SubsystemTeamScope scope, SubsystemStatus status = SubsystemStatus.Enabled)
-    {
-        var entity = new SubsystemEntity
-        {
-            Id = Guid.CreateVersion7(),
-            Key = key,
-            Name = key,
-            Description = string.Empty,
-            Secret = "hash",
-            SecretSalt = "salt",
-            Status = status,
-            TeamScope = scope,
-        };
-        context.Subsystems.Add(entity);
-        await context.SaveChangesAsync();
-        return entity;
-    }
-
     private static QueryTeamAvailableSubsystemsCommandHandler CreateHandler(DatabaseContext context, TeamRole? role)
     {
         var teamService = new Mock<ITeamService>();
@@ -46,13 +28,15 @@ public class QueryTeamAvailableSubsystemsCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Member_SeesAllTeamsSubsystemsOnlyWhenEnabled()
+    public async Task Handle_Member_SeesEnabledAllTeamsSubsystemOnly()
     {
         using var db = TestSqliteContext.Create();
-        CreateSubsystemCommandHandlerTests.SeedTeam(db.Context, 1);
-        await SeedSubsystemAsync(db.Context, "all-ok", SubsystemTeamScope.AllTeams);
-        await SeedSubsystemAsync(db.Context, "all-disabled", SubsystemTeamScope.AllTeams, SubsystemStatus.Disabled);
-        await SeedSubsystemAsync(db.Context, "specified", SubsystemTeamScope.SpecifiedTeams);
+        TestSeeds.SeedTeam(db.Context, 1);
+        await TestSeeds.SeedSubsysAppAsync(db.Context, "all-ok", scope: SubsystemTeamScope.AllTeams);
+        await TestSeeds.SeedSubsysAppAsync(db.Context, "all-disabled", scope: SubsystemTeamScope.AllTeams, status: AccessAppStatus.Disabled);
+        await TestSeeds.SeedSubsysAppAsync(db.Context, "specified", scope: SubsystemTeamScope.SpecifiedTeams);
+        // 应用接入行不属于团队可用子系统
+        await TestSeeds.SeedSubsysAppAsync(db.Context, "moai-sa-AppRow", AccessAppType.App);
         var handler = CreateHandler(db.Context, TeamRole.Member);
 
         var response = await handler.Handle(new QueryTeamAvailableSubsystemsCommand { TeamId = 1, ContextUserId = 10 }, CancellationToken.None);
@@ -63,11 +47,9 @@ public class QueryTeamAvailableSubsystemsCommandHandlerTests
     public async Task Handle_AuthorizedSpecifiedTeam_Visible()
     {
         using var db = TestSqliteContext.Create();
-        CreateSubsystemCommandHandlerTests.SeedTeam(db.Context, 1);
-        CreateSubsystemCommandHandlerTests.SeedTeam(db.Context, 2);
-        var subsystem = await SeedSubsystemAsync(db.Context, "specified", SubsystemTeamScope.SpecifiedTeams);
-        db.Context.SubsystemTeamAuths.Add(new SubsystemTeamAuthEntity { Id = Guid.CreateVersion7(), SubsystemId = subsystem.Id, TeamId = 1 });
-        await db.Context.SaveChangesAsync();
+        TestSeeds.SeedTeam(db.Context, 1);
+        TestSeeds.SeedTeam(db.Context, 2);
+        var subsystem = await TestSeeds.SeedSubsysAppAsync(db.Context, "specified", scope: SubsystemTeamScope.SpecifiedTeams, teamIds: [1]);
         var handler = CreateHandler(db.Context, TeamRole.Member);
 
         var team1 = await handler.Handle(new QueryTeamAvailableSubsystemsCommand { TeamId = 1, ContextUserId = 10 }, CancellationToken.None);
@@ -91,23 +73,20 @@ public class QueryTeamAvailableSubsystemsCommandHandlerTests
     public async Task Handle_UpdateToAllTeams_ClearsAuths()
     {
         using var db = TestSqliteContext.Create();
-        CreateSubsystemCommandHandlerTests.SeedTeam(db.Context, 1);
-        var subsystem = await SeedSubsystemAsync(db.Context, "specified", SubsystemTeamScope.SpecifiedTeams);
-        db.Context.SubsystemTeamAuths.Add(new SubsystemTeamAuthEntity { Id = Guid.CreateVersion7(), SubsystemId = subsystem.Id, TeamId = 1 });
-        await db.Context.SaveChangesAsync();
+        TestSeeds.SeedTeam(db.Context, 1);
+        var subsystem = await TestSeeds.SeedSubsysAppAsync(db.Context, "specified", scope: SubsystemTeamScope.SpecifiedTeams, teamIds: [1]);
 
-        var onlineService = new SubsystemOnlineService(Mock.Of<StackExchange.Redis.Extensions.Core.Abstractions.IRedisDatabase>());
-        var handler = new UpdateSubsystemCommandHandler(db.Context, onlineService);
-        await handler.Handle(new UpdateSubsystemCommand
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+        await handler.Handle(new UpdateSubsysAppCommand
         {
-            SubsystemId = subsystem.Id,
+            Id = subsystem.Id,
             Name = "new-name",
-            Status = SubsystemStatus.Enabled,
+            Status = AccessAppStatus.Enabled,
             TeamScope = SubsystemTeamScope.AllTeams,
         }, CancellationToken.None);
 
         Assert.Empty(db.Context.SubsystemTeamAuths.Where(x => x.SubsystemId == subsystem.Id).ToList());
-        var updated = await db.Context.Subsystems.FindAsync(subsystem.Id);
+        var updated = await db.Context.AccessApps.FindAsync(subsystem.Id);
         Assert.Equal("new-name", updated!.Name);
         Assert.Equal(SubsystemTeamScope.AllTeams, updated.TeamScope);
     }

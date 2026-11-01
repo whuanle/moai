@@ -37,14 +37,20 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,
 
 | 方法 | 路由 | 说明 |
 |---|---|---|
-| POST | `/auth/login` | userName（用户名或邮箱）+ RSA 密文密码 → token 对 |
+| POST | `/auth/login` | userName（用户名或邮箱）+ RSA 密文密码 → token 对；需二次验证时返回 `secondFactor`（totp/emailCode）+ `loginTicket`（不颁发令牌）；强制 2FA 未绑定时令牌附 `mfa_pending` 且 `mfaPending=true` |
+| POST | `/auth/login/verify` | 匿名；loginTicket + 6 位动态码 → 验证 TOTP 或邮箱验证码后颁发 token 对（票据一次性） |
+| POST | `/auth/login_code/send` | 匿名；loginTicket → 重发登录邮箱验证码（60 秒冷却 429）；公共 email_code/send 拒绝 login 用途 |
+| GET | `/auth/two_factor/status` | 当前用户 2FA 状态 `{enabled, forced}` |
+| POST | `/auth/two_factor/setup` | 生成密钥（AES 加密落库未启用）→ `{secret, otpauthUri}` |
+| POST | `/auth/two_factor/enable` | 6 位动态码验证后激活绑定 |
+| POST | `/auth/two_factor/disable` | 6 位动态码验证后解绑；系统强制开启时 400 |
 | POST | `/auth/register` | 五字段（+可选 emailCode）→ 新用户 id；Handler 解密后校验强度（`(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$`）；注册验证码开启时先校验邮箱验证码 |
-| POST | `/auth/email_code/send` | purpose（register/resetPassword）+ email → 发送验证码；注册用途需 SMTP+开关双开启且邮箱未占用（409），找回用途需 SMTP 启用（未注册 404） |
+| POST | `/auth/email_code/send` | purpose（register/resetPassword；login 用途仅限内部票据端点）+ email → 发送验证码；注册用途需 SMTP+开关双开启且邮箱未占用（409），找回用途需 SMTP 启用（未注册 404） |
 | POST | `/auth/reset_password` | email + 6 位验证码 + RSA 新密码 → 重置密码；需 SMTP 邮件服务启用 |
-| POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId` |
+| POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId`；强制 2FA 未绑定时同样附 mfa_pending（OAuth 跳过 TOTP 挑战，外部认证已足够） |
 | POST | `/auth/oauth_register` | tempOAuthBindId → 一键注册并登录 |
 | GET | `/auth/oauth_prividers` | 匿名；可选 `redirectUrl`（登录页来源），回调地址跟随该来源，未携带回退 `WebUI`；返回各提供商拼好的授权地址 |
-| POST | `/auth/refresh_token` | 仅 refresh_token 类型可用 |
+| POST | `/auth/refresh_token` | 仅 refresh_token 类型可用；刷新时按当前用户态重估 mfa_pending（绑定后新令牌不再携带） |
 
 响应要点：`expiresIn` 为 **Access Token 过期时刻的 Unix 毫秒时间戳**（注释写"秒"，实现是毫秒，前端按毫秒解析）；`tokenType` 固定 `Bearer`。
 
@@ -57,6 +63,8 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,
 5. 前端：401 且非 login 接口 → 清用户态跳 `/login`（`kiota.ts` FilterRequestHandler）；Access Token 过期（60 秒宽限）且 Refresh 有效时静默续期；OAuthLogin 用 `useRef` 防 StrictMode 重复消费一次性 code。
 6. **所有内部签发 token 的处理器必须显式设 `UserType = Normal`**（Login/Refresh/OAuthLogin/OAuthRegister）：claim `typ` 缺失会解析为 None，下游 `app_agent_session.user_type` 落 0，对话日志把内部用户误标为外部用户（2026-09-20 修复 Refresh/OAuth 两类三处漏设，回归 [@AUTH-S24](./bdd.md#auth-s24)；存量数据见 `asserts/app_agent_session_user_type_fix.sql`）。
 7. **邮箱验证码**（[@AUTH-S28](./bdd.md#auth-s28) ~ [@AUTH-S32](./bdd.md#auth-s32)）：6 位数字（`RandomNumberGenerator` CSPRNG），Redis `emailcode:{purpose}:{email}`（10 分钟 TTL）+ `emailcode:cd:*`（60 秒发送冷却），错 5 次作废；邮件发送成功才落验证码，失败可立即重试。找回密码可用性**仅取决于 SMTP 邮件服务是否启用**（未启用由管理员在用户管理重置），注册验证码需 SMTP + `REGISTER_EMAIL_CODE_ENABLED` 双条件；两者经 `serverinfo` 匿名回显给前端渲染开关。邮件主题/正文模板存于系统设置，`EmailCodeTemplate` 以 SmartFormat 白名单插值（仅 `{code}/{siteName}/{expireMinutes}`，其余花括号字面保留，策略同 variable 模块 `TeamVariableTemplate`；auth 为底座层不反向依赖 variable，独立实现）；模板留空回退内置默认。auth 模块因此新增对 `MoAI.Settings.Shared` 的项目引用（只用接口，实现注册在 SettingsCoreModule）。
+8. **两步验证（TOTP）**（[@AUTH-S37](./bdd.md#auth-s37) ~ [@AUTH-S39](./bdd.md#auth-s39)）：RFC 6238 SHA1/6 位/30 秒步长（`TotpHelper`，`src/infra/MoAI.Infra.Shared/Helpers`，不引第三方包；单测对 RFC 附录 B 向量），密钥 20 字节 CSPRNG → base32 无填充，**AES 加密落库**（`user.totp_secret`，key 复用 `SystemOptions.AES` 的 `IAESProvider`）。绑定两段式：setup 落密钥不启用 → enable 验动态码激活（±1 步窗口容差）。登录挑战：密码通过后 `ILoginChallengeService` 签发一次性票据（Redis `login:ticket:{guid}`，5 分钟），`login/verify` 消费票据验证后颁发令牌；TOTP 防重放 Redis `totp:used:{userId}` 记最后命中步长（90 秒 TTL，同步长复用 400）。管理员兜底：`PUT /usermanage/user/{id}/reset_2fa`（见 [../user-management/sdd.md](../user-management/sdd.md)）。
+9. **登录二次验证策略**（[@AUTH-S36](./bdd.md#auth-s36)、[@AUTH-S40](./bdd.md#auth-s40)、[@AUTH-S42](./bdd.md#auth-s42)）：`ILoginSecurityService` 读 `LOGIN_FORCED_2FA` 与 `LOGIN_EMAIL_CODE_MODE`（off/always/after_fail，邮箱码生效需 SMTP 已启用双开关）。优先级：已绑 TOTP → TOTP 挑战；否则策略命中 → 自动发登录验证码（purpose=login；60 秒冷却内重登容忍 429 复用在途验证码）；一次登录只叠加一种二次验证。**强制 2FA**：未绑定用户照常登录但令牌携带 `mfa_pending=true` 声明，`CustomAuthorizaMiddleware` 仅放行 `/auth/two_factor/*` 与 `/account/userinfo`（403 提示绑定），绑定成功 `RemoveUserStateAsync` 后旧令牌立即恢复（中间件按用户态 `TwoFactorEnabled` 复判，不要求重新登录）；refresh/OAuth 签发时同规则重估。公共端点防滥用：`/auth/email_code/send` 显式拒绝 login 用途，登录验证码只能凭票据重发。
 
 ## 已知问题
 

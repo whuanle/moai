@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, InputNumber, Popconfirm, Progress, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
+import { Button, Input, InputNumber, Popconfirm, Progress, Radio, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
 import { CaretRightOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
@@ -14,6 +14,7 @@ import {
 } from '@/api/memory'
 import {
   getSettings,
+  LOGIN_EMAIL_CODE_MODE_OPTIONS,
   MEMORY_DEFAULT_DIMENSIONS,
   normalizeWikiFileTypes,
   parseWikiFileTypes,
@@ -29,6 +30,7 @@ import {
   resetSystemLogo,
   updateLoginBackground,
   updateSystemLogo,
+  type LoginEmailCodeMode,
   type SmtpSecurity,
 } from '@/api/settings'
 import { AvatarUpload, Card, feedback, useNeutralColors, Page, spacing } from '@/design-system'
@@ -202,6 +204,9 @@ export function Settings() {
   const [wikiFileTypes, setWikiFileTypes] = useState<string[]>(WIKI_DEFAULT_FILE_TYPES)
   const [wikiDirty, setWikiDirty] = useState(false)
   const [savingSandbox, setSavingSandbox] = useState(false)
+  const [statisticsGranularity, setStatisticsGranularity] = useState<'day' | 'hour'>('day')
+  const [statisticsDirty, setStatisticsDirty] = useState(false)
+  const [savingStatistics, setSavingStatistics] = useState(false)
   const [sandboxMaxTtl, setSandboxMaxTtl] = useState<number>(SandboxLimitDefaults.maxTtlSeconds)
   const [sandboxMaxCpu, setSandboxMaxCpu] = useState<string>(SandboxLimitDefaults.maxCpu)
   const [sandboxMaxMemory, setSandboxMaxMemory] = useState<string>(SandboxLimitDefaults.maxMemory)
@@ -230,6 +235,26 @@ export function Settings() {
   const [resetCodeSubject, setResetCodeSubject] = useState('')
   const [resetCodeBody, setResetCodeBody] = useState('')
   const [emailDirty, setEmailDirty] = useState(false)
+  const [savingTwofactor, setSavingTwofactor] = useState(false)
+  const [twofaForced, setTwofaForced] = useState(false)
+  const [loginCodeMode, setLoginCodeMode] = useState<LoginEmailCodeMode>('off')
+  const [twofaDirty, setTwofaDirty] = useState(false)
+  const [savingLoginSafety, setSavingLoginSafety] = useState(false)
+  const [lsEnabled, setLsEnabled] = useState(true)
+  const [lsNotifyUser, setLsNotifyUser] = useState(true)
+  const [lsNotifyAdmin, setLsNotifyAdmin] = useState(true)
+  const [lsRecipients, setLsRecipients] = useState('')
+  const [lsIpFailThreshold, setLsIpFailThreshold] = useState(20)
+  const [lsIpFailWindow, setLsIpFailWindow] = useState(10)
+  const [lsIpBanMinutes, setLsIpBanMinutes] = useState(30)
+  const [lsDistinctUsers, setLsDistinctUsers] = useState(5)
+  const [lsNewIpDays, setLsNewIpDays] = useState(90)
+  const [lsTravelWindow, setLsTravelWindow] = useState(120)
+  const [lsUserAlertSubject, setLsUserAlertSubject] = useState('')
+  const [lsUserAlertBody, setLsUserAlertBody] = useState('')
+  const [lsAdminAlertSubject, setLsAdminAlertSubject] = useState('')
+  const [lsAdminAlertBody, setLsAdminAlertBody] = useState('')
+  const [loginSafetyDirty, setLoginSafetyDirty] = useState(false)
   const [testTo, setTestTo] = useState('')
   const [sendingTest, setSendingTest] = useState(false)
   const [savingMemory, setSavingMemory] = useState(false)
@@ -288,6 +313,8 @@ export function Settings() {
       const sandboxMemory = valueOf(SettingKeys.sandboxMaxMemory).trim()
       setSandboxMaxMemory(sandboxMemory || SandboxLimitDefaults.maxMemory)
       setSandboxDirty(false)
+      setStatisticsGranularity(valueOf(SettingKeys.statisticsGranularity).trim() === 'hour' ? 'hour' : 'day')
+      setStatisticsDirty(false)
       setLogoPath(valueOf(SettingKeys.systemLogo).trim())
       setLoginBgPath(valueOf(SettingKeys.loginBackground).trim())
       setSiteName(valueOf(SettingKeys.systemName).trim())
@@ -310,7 +337,34 @@ export function Settings() {
       setResetCodeSubject(valueOf(SettingKeys.smtpResetCodeSubject))
       setResetCodeBody(valueOf(SettingKeys.smtpResetCodeBody))
       setEmailDirty(false)
+      setTwofaForced(valueOf(SettingKeys.loginForced2fa) === 'true')
+      const parsedLoginCodeMode = valueOf(SettingKeys.loginEmailCodeMode).trim().toLowerCase()
+      setLoginCodeMode(
+        (LOGIN_EMAIL_CODE_MODE_OPTIONS as readonly string[]).includes(parsedLoginCodeMode)
+          ? (parsedLoginCodeMode as LoginEmailCodeMode)
+          : 'off',
+      )
+      setTwofaDirty(false)
       setTestTo('')
+      setLsEnabled(valueOf(SettingKeys.lsEnabled) !== 'false')
+      setLsNotifyUser(valueOf(SettingKeys.lsNotifyUserEnabled) !== 'false')
+      setLsNotifyAdmin(valueOf(SettingKeys.lsNotifyAdminEnabled) !== 'false')
+      setLsRecipients(valueOf(SettingKeys.lsAdminRecipients).trim())
+      const lsInt = (key: string, fallback: number, min: number, max: number) => {
+        const parsed = Number.parseInt(valueOf(key), 10)
+        return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback
+      }
+      setLsIpFailThreshold(lsInt(SettingKeys.lsIpFailThreshold, 20, 1, 10000))
+      setLsIpFailWindow(lsInt(SettingKeys.lsIpFailWindowMinutes, 10, 1, 525600))
+      setLsIpBanMinutes(lsInt(SettingKeys.lsIpBanMinutes, 30, 1, 525600))
+      setLsDistinctUsers(lsInt(SettingKeys.lsDistinctUserThreshold, 5, 1, 10000))
+      setLsNewIpDays(lsInt(SettingKeys.lsNewIpDays, 90, 0, 3650))
+      setLsTravelWindow(lsInt(SettingKeys.lsTravelWindowMinutes, 120, 1, 525600))
+      setLsUserAlertSubject(valueOf(SettingKeys.lsUserAlertSubject))
+      setLsUserAlertBody(valueOf(SettingKeys.lsUserAlertBody))
+      setLsAdminAlertSubject(valueOf(SettingKeys.lsAdminAlertSubject))
+      setLsAdminAlertBody(valueOf(SettingKeys.lsAdminAlertBody))
+      setLoginSafetyDirty(false)
       setMemoryEnabled(valueOf(SettingKeys.memoryEnabled) === 'true')
       setMemoryModelId(valueOf(SettingKeys.memoryEmbeddingModel).trim())
       const parsedMemoryDimensions = Number.parseInt(valueOf(SettingKeys.memoryEmbeddingDimensions), 10)
@@ -404,6 +458,47 @@ export function Settings() {
     }
   }
 
+  async function handleSaveLoginSafety() {
+    setSavingLoginSafety(true)
+    try {
+      await saveSetting(SettingKeys.lsEnabled, lsEnabled ? 'true' : 'false')
+      await saveSetting(SettingKeys.lsNotifyUserEnabled, lsNotifyUser ? 'true' : 'false')
+      await saveSetting(SettingKeys.lsNotifyAdminEnabled, lsNotifyAdmin ? 'true' : 'false')
+      await saveSetting(SettingKeys.lsAdminRecipients, lsRecipients.trim())
+      await saveSetting(SettingKeys.lsIpFailThreshold, String(lsIpFailThreshold))
+      await saveSetting(SettingKeys.lsIpFailWindowMinutes, String(lsIpFailWindow))
+      await saveSetting(SettingKeys.lsIpBanMinutes, String(lsIpBanMinutes))
+      await saveSetting(SettingKeys.lsDistinctUserThreshold, String(lsDistinctUsers))
+      await saveSetting(SettingKeys.lsNewIpDays, String(lsNewIpDays))
+      await saveSetting(SettingKeys.lsTravelWindowMinutes, String(lsTravelWindow))
+      await saveSetting(SettingKeys.lsUserAlertSubject, lsUserAlertSubject.trim())
+      await saveSetting(SettingKeys.lsUserAlertBody, lsUserAlertBody)
+      await saveSetting(SettingKeys.lsAdminAlertSubject, lsAdminAlertSubject.trim())
+      await saveSetting(SettingKeys.lsAdminAlertBody, lsAdminAlertBody)
+      feedback.success(t('settings.saveSuccess'))
+      setLoginSafetyDirty(false)
+    } catch {
+      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
+      void load()
+    } finally {
+      setSavingLoginSafety(false)
+    }
+  }
+
+  async function handleSaveStatistics() {
+    setSavingStatistics(true)
+    try {
+      await saveSetting(SettingKeys.statisticsGranularity, statisticsGranularity)
+      feedback.success(t('settings.saveSuccess'))
+      setStatisticsDirty(false)
+    } catch {
+      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
+      void load()
+    } finally {
+      setSavingStatistics(false)
+    }
+  }
+
   async function handleSaveSiteName() {
     setSavingSiteName(true)
     try {
@@ -452,6 +547,22 @@ export function Settings() {
       void load()
     } finally {
       setSavingEmail(false)
+    }
+  }
+
+  async function handleSaveTwofactor() {
+    setSavingTwofactor(true)
+    try {
+      await saveSetting(SettingKeys.loginForced2fa, twofaForced ? 'true' : 'false')
+      await saveSetting(SettingKeys.loginEmailCodeMode, loginCodeMode)
+      feedback.success(t('settings.saveSuccess'))
+      setTwofaDirty(false)
+      // 强制 2FA 影响登录后行为，登录页/网关侧按实时设置读取，无需刷新缓存
+    } catch {
+      // 保存失败时重新加载，恢复为数据库中的真实值（错误已由全局请求中间件统一提示）
+      void load()
+    } finally {
+      setSavingTwofactor(false)
     }
   }
 
@@ -1151,6 +1262,51 @@ export function Settings() {
           </div>
         </CollapsibleCard>
 
+        <CollapsibleCard title={t('settings.twofactor.title')}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md }}>
+              <div>
+                <Text strong style={{ display: 'block' }}>{t('settings.twofactor.forced.name')}</Text>
+                <Text type="secondary">{t('settings.twofactor.forced.desc')}</Text>
+              </div>
+              <Switch
+                aria-label={t('settings.twofactor.forced.name')}
+                checked={twofaForced}
+                disabled={loading}
+                onChange={(checked) => {
+                  setTwofaForced(checked)
+                  setTwofaDirty(true)
+                }}
+              />
+            </div>
+
+            <Field label={t('settings.twofactor.loginCodeMode.name')}>
+              <Radio.Group
+                aria-label={t('settings.twofactor.loginCodeMode.name')}
+                value={loginCodeMode}
+                disabled={loading}
+                onChange={(e) => {
+                  setLoginCodeMode(e.target.value as LoginEmailCodeMode)
+                  setTwofaDirty(true)
+                }}
+              >
+                <Radio value="off">{t('settings.twofactor.loginCodeMode.off')}</Radio>
+                <Radio value="always">{t('settings.twofactor.loginCodeMode.always')}</Radio>
+                <Radio value="after_fail">{t('settings.twofactor.loginCodeMode.afterFail')}</Radio>
+              </Radio.Group>
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                {t('settings.twofactor.loginCodeMode.desc')}
+              </Text>
+            </Field>
+
+            <div style={{ textAlign: 'right' }}>
+              <Button type="primary" loading={savingTwofactor} disabled={!twofaDirty || loading} onClick={handleSaveTwofactor}>
+                {t('settings.save')}
+              </Button>
+            </div>
+          </div>
+        </CollapsibleCard>
+
         <CollapsibleCard title={t('settings.sandbox.title')}>
           <Field label={t('settings.sandbox.maxTtl.name')}>
             <InputNumber
@@ -1205,6 +1361,292 @@ export function Settings() {
               loading={savingSandbox}
               disabled={!sandboxDirty || loading}
               onClick={handleSaveSandbox}
+            >
+              {t('settings.save')}
+            </Button>
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title={t('settings.loginSafety.title')}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Text strong>{t('settings.loginSafety.enable.name')}</Text>
+              <br />
+              <Text type="secondary">{t('settings.loginSafety.enable.desc')}</Text>
+            </div>
+            <Switch
+              checked={lsEnabled}
+              onChange={(checked) => {
+                setLsEnabled(checked)
+                setLoginSafetyDirty(true)
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+              marginTop: spacing.sm,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Text strong>{t('settings.loginSafety.notifyUser.name')}</Text>
+              <br />
+              <Text type="secondary">{t('settings.loginSafety.notifyUser.desc')}</Text>
+            </div>
+            <Switch
+              checked={lsNotifyUser}
+              onChange={(checked) => {
+                setLsNotifyUser(checked)
+                setLoginSafetyDirty(true)
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+              marginTop: spacing.sm,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <Text strong>{t('settings.loginSafety.notifyAdmin.name')}</Text>
+              <br />
+              <Text type="secondary">{t('settings.loginSafety.notifyAdmin.desc')}</Text>
+            </div>
+            <Switch
+              checked={lsNotifyAdmin}
+              onChange={(checked) => {
+                setLsNotifyAdmin(checked)
+                setLoginSafetyDirty(true)
+              }}
+            />
+          </div>
+
+          <Field label={t('settings.loginSafety.recipients.name')}>
+            <Input
+              value={lsRecipients}
+              placeholder={t('settings.loginSafety.recipients.placeholder')}
+              aria-label={t('settings.loginSafety.recipients.name')}
+              maxLength={2000}
+              onChange={(e) => {
+                setLsRecipients(e.target.value)
+                setLoginSafetyDirty(true)
+              }}
+            />
+            <Text type="secondary">{t('settings.loginSafety.recipients.desc')}</Text>
+          </Field>
+
+          <div style={{ display: 'flex', gap: spacing.md }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.loginSafety.ipFailThreshold.name')}>
+                <InputNumber
+                  value={lsIpFailThreshold}
+                  min={1}
+                  max={10000}
+                  precision={0}
+                  aria-label={t('settings.loginSafety.ipFailThreshold.name')}
+                  onChange={(value) => {
+                    setLsIpFailThreshold(typeof value === 'number' ? value : 20)
+                    setLoginSafetyDirty(true)
+                  }}
+                  style={{ width: 160 }}
+                />
+                <Text type="secondary">{t('settings.loginSafety.ipFailThreshold.desc')}</Text>
+              </Field>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.loginSafety.ipFailWindow.name')}>
+                <InputNumber
+                  value={lsIpFailWindow}
+                  min={1}
+                  max={525600}
+                  precision={0}
+                  addonAfter={t('settings.loginSafety.minutesUnit')}
+                  aria-label={t('settings.loginSafety.ipFailWindow.name')}
+                  onChange={(value) => {
+                    setLsIpFailWindow(typeof value === 'number' ? value : 10)
+                    setLoginSafetyDirty(true)
+                  }}
+                  style={{ width: 160 }}
+                />
+              </Field>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.loginSafety.ipBanMinutes.name')}>
+                <InputNumber
+                  value={lsIpBanMinutes}
+                  min={1}
+                  max={525600}
+                  precision={0}
+                  addonAfter={t('settings.loginSafety.minutesUnit')}
+                  aria-label={t('settings.loginSafety.ipBanMinutes.name')}
+                  onChange={(value) => {
+                    setLsIpBanMinutes(typeof value === 'number' ? value : 30)
+                    setLoginSafetyDirty(true)
+                  }}
+                  style={{ width: 160 }}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: spacing.md }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.loginSafety.distinctUsers.name')}>
+                <InputNumber
+                  value={lsDistinctUsers}
+                  min={1}
+                  max={10000}
+                  precision={0}
+                  aria-label={t('settings.loginSafety.distinctUsers.name')}
+                  onChange={(value) => {
+                    setLsDistinctUsers(typeof value === 'number' ? value : 5)
+                    setLoginSafetyDirty(true)
+                  }}
+                  style={{ width: 160 }}
+                />
+                <Text type="secondary">{t('settings.loginSafety.distinctUsers.desc')}</Text>
+              </Field>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.loginSafety.newIpDays.name')}>
+                <InputNumber
+                  value={lsNewIpDays}
+                  min={0}
+                  max={3650}
+                  precision={0}
+                  addonAfter={t('settings.loginSafety.daysUnit')}
+                  aria-label={t('settings.loginSafety.newIpDays.name')}
+                  onChange={(value) => {
+                    setLsNewIpDays(typeof value === 'number' ? value : 90)
+                    setLoginSafetyDirty(true)
+                  }}
+                  style={{ width: 160 }}
+                />
+                <Text type="secondary">{t('settings.loginSafety.newIpDays.desc')}</Text>
+              </Field>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('settings.loginSafety.travelWindow.name')}>
+                <InputNumber
+                  value={lsTravelWindow}
+                  min={1}
+                  max={525600}
+                  precision={0}
+                  addonAfter={t('settings.loginSafety.minutesUnit')}
+                  aria-label={t('settings.loginSafety.travelWindow.name')}
+                  onChange={(value) => {
+                    setLsTravelWindow(typeof value === 'number' ? value : 120)
+                    setLoginSafetyDirty(true)
+                  }}
+                  style={{ width: 160 }}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <Field label={t('settings.loginSafety.userAlertSubject.name')}>
+            <Input
+              value={lsUserAlertSubject}
+              placeholder={t('settings.loginSafety.userAlertSubject.placeholder')}
+              aria-label={t('settings.loginSafety.userAlertSubject.name')}
+              maxLength={500}
+              onChange={(e) => {
+                setLsUserAlertSubject(e.target.value)
+                setLoginSafetyDirty(true)
+              }}
+            />
+          </Field>
+          <Field label={t('settings.loginSafety.userAlertBody.name')}>
+            <Input.TextArea
+              value={lsUserAlertBody}
+              placeholder={t('settings.loginSafety.userAlertBody.placeholder')}
+              aria-label={t('settings.loginSafety.userAlertBody.name')}
+              rows={3}
+              maxLength={2000}
+              onChange={(e) => {
+                setLsUserAlertBody(e.target.value)
+                setLoginSafetyDirty(true)
+              }}
+            />
+          </Field>
+          <Field label={t('settings.loginSafety.adminAlertSubject.name')}>
+            <Input
+              value={lsAdminAlertSubject}
+              placeholder={t('settings.loginSafety.adminAlertSubject.placeholder')}
+              aria-label={t('settings.loginSafety.adminAlertSubject.name')}
+              maxLength={500}
+              onChange={(e) => {
+                setLsAdminAlertSubject(e.target.value)
+                setLoginSafetyDirty(true)
+              }}
+            />
+          </Field>
+          <Field label={t('settings.loginSafety.adminAlertBody.name')}>
+            <Input.TextArea
+              value={lsAdminAlertBody}
+              placeholder={t('settings.loginSafety.adminAlertBody.placeholder')}
+              aria-label={t('settings.loginSafety.adminAlertBody.name')}
+              rows={3}
+              maxLength={2000}
+              onChange={(e) => {
+                setLsAdminAlertBody(e.target.value)
+                setLoginSafetyDirty(true)
+              }}
+            />
+            <Text type="secondary">{t('settings.loginSafety.templateTip')}</Text>
+          </Field>
+
+          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              loading={savingLoginSafety}
+              disabled={!loginSafetyDirty || loading}
+              onClick={handleSaveLoginSafety}
+            >
+              {t('settings.save')}
+            </Button>
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard title={t('settings.statistics.title')}>
+          <Field label={t('settings.statistics.granularity.name')}>
+            <Select
+              value={statisticsGranularity}
+              style={{ width: 220 }}
+              aria-label={t('settings.statistics.granularity.name')}
+              onChange={(value) => {
+                setStatisticsGranularity(value)
+                setStatisticsDirty(true)
+              }}
+              options={[
+                { value: 'day', label: t('settings.statistics.granularity.day') },
+                { value: 'hour', label: t('settings.statistics.granularity.hour') },
+              ]}
+            />
+            <Text type="secondary">{t('settings.statistics.granularity.desc')}</Text>
+          </Field>
+
+          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+            <Button
+              type="primary"
+              loading={savingStatistics}
+              disabled={!statisticsDirty || loading}
+              onClick={handleSaveStatistics}
             >
               {t('settings.save')}
             </Button>

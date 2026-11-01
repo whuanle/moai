@@ -70,7 +70,8 @@ public class UserAccountService : IUserAccountService
                 IsAdmin = user.IsAdmin || isRoot,
                 IsRoot = isRoot,
                 IsDeleted = user.IsDeleted > 0,
-                Avatar = avatar
+                Avatar = avatar,
+                TwoFactorEnabled = user.IsTotpEnabled
             };
         }
 

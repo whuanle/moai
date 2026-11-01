@@ -22,12 +22,15 @@
 | @AUTH-S20 ~ @AUTH-S23 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)；轮 11 独立验证 auth 前端链路） | PASS（2026-09-01/09-02） |
 | @AUTH-S26 ~ @AUTH-S35 | [local-dev/auth-email-code-e2e.mjs](../../local-dev/auth-email-code-e2e.mjs)（34 断言：serverinfo 双开关回显/未启用拒绝/未注册 404/发码与 60 秒冷却 429/缺码·错码 400/一次性与错 5 次作废/默认与自定义模板插值/重置后旧密码 401 新密码登录/关闭 SMTP 全链路拒绝；内置 SMTP 桩，快照恢复设置） | PASS 34/34（2026-10-29） |
 | @AUTH-S33 ~ @AUTH-S35（前端部分） | `ui/src/pages/auth/__tests__/Register.test.tsx`（验证码区按开关显隐 4/4）、`ui/src/pages/auth/__tests__/ForgotPassword.test.tsx`（未启用提示禁用/启用完整表单 3/3） | PASS 7/7（2026-10-29） |
+| @AUTH-S36 ~ @AUTH-S42 | [local-dev/auth-2fa-e2e.mjs](../../local-dev/auth-2fa-e2e.mjs)（54 断言：策略基线/TOTP 绑定全流程与错码/登录挑战一次性票据与防重放/关闭/强制 2FA 受限 token 与白名单与旧 token 立即恢复/强制期间禁关/root 重置与目标保护/邮箱验证码三模式·公共端点拒绝 login 用途·冷却重发 429·TOTP 优先·SMTP 未启用失效；脚本内置 SMTP 桩与纯 node RFC 6238 实现端对拍，快照恢复设置） | PASS 54/54（2026-11-01） |
+| @AUTH-S37（算法层） | `tests/MoAI.Infra.Tests/TotpHelperTests.cs`（RFC 6238 附录 B 向量 6 例 + 窗口容差/非法输入/base32 往返/otpauth URI 转义 10 例） | PASS 10/10（2026-11-01） |
 
 ## 回归命令（后端运行于 :5210）
 
 ```bash
 node local-dev/user-management-e2e.mjs        # 登录/注册/刷新正负向 37 断言（含 @AUTH-S24 刷新令牌携带 typ=normal）
 node local-dev/auth-email-code-e2e.mjs        # 注册/找回密码邮箱验证码 34 断言（@AUTH-S26~S35，内置 SMTP 桩）
+node local-dev/auth-2fa-e2e.mjs               # 两步验证与登录验证码 54 断言（@AUTH-S36~S42，内置 SMTP 桩 + 纯 node TOTP）
 node local-dev/auth-lockout-check.mjs         # 锁定与恢复（脚本内置 RSA 加密）
 dotnet build src/MoAI/MoAI.csproj             # 0 错误
 cd ui && npm run typecheck && npm run lint && npm run test

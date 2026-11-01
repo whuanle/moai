@@ -5,7 +5,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Org.Commands;
 
 /// <summary>
-/// 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空该用户全部角色.
+/// 整体覆盖某用户的组织集合（仅管理员），空列表=清空该用户全部角色.
 /// </summary>
 public class UpdateOrgUserRolesCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateOrgUserRolesCommand>
 {

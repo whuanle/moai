@@ -1,5 +1,6 @@
 ﻿using Maomi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using MoAI.Infra;
 using MoAI.Infra.Services;
@@ -55,6 +56,18 @@ public class ConfigureAuthorizaModule : IModule
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = context =>
+                    {
+                        // SignalR WebSocket 握手无法携带 Authorization 头，浏览器经 access_token 查询参数传递（仅限 /hub 前缀）
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!StringValues.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    },
                     OnChallenge = context =>
                     {
                         var logger = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigureAuthorizaModule>>();

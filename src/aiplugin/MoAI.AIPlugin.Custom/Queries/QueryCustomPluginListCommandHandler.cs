@@ -62,27 +62,38 @@ public class QueryCustomPluginListCommandHandler : IRequestHandler<QueryCustomPl
             query = query.Where(x => x.IsPublic == request.IsPublic.Value);
         }
 
-        var plugins = await query.DynamicOrder(request.OrderByFields)
-            .Join(_databaseContext.PluginCustoms, a => a.PluginId, b => b.Id, (x, y) => new PluginBaseInfoItem
-            {
-                PluginId = x.Id,
-                Server = y.Server,
-                PluginName = x.PluginName,
-                AvatarPath = x.AvatarPath ?? string.Empty,
-                Title = x.Title,
-                OpenapiFileId = y.OpenapiFileId,
-                OpenapiFileName = y.OpenapiFileName,
-                Type = (PluginType)x.Type,
-                Description = x.Description,
-                CreateTime = x.CreateTime,
-                CreateUserId = (int)x.CreateUserId,
-                UpdateTime = x.UpdateTime,
-                UpdateUserId = (int)x.UpdateUserId,
-                IsPublic = x.IsPublic,
-                Counter = x.Counter,
-                ClassifyId = x.ClassifyId,
-            })
+        var rows = await query.DynamicOrder(request.OrderByFields)
+            .Join(_databaseContext.PluginCustoms, a => a.PluginId, b => b.Id, (x, y) => new { x, y })
             .ToListAsync(cancellationToken);
+
+        var customIds = rows.Select(r => r.y.Id).ToList();
+        var functionCounts = await _databaseContext.PluginFunctions
+            .Where(f => customIds.Contains(f.PluginCustomId))
+            .GroupBy(f => f.PluginCustomId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, cancellationToken);
+
+        var plugins = rows.Select(r => new PluginBaseInfoItem
+        {
+            PluginId = r.x.Id,
+            Server = r.y.Server,
+            PluginName = r.x.PluginName,
+            AvatarPath = r.x.AvatarPath ?? string.Empty,
+            Title = r.x.Title,
+            OpenapiFileId = r.y.OpenapiFileId,
+            OpenapiFileName = r.y.OpenapiFileName,
+            Type = (PluginType)r.x.Type,
+            Description = r.x.Description,
+            CreateTime = r.x.CreateTime,
+            CreateUserId = (int)r.x.CreateUserId,
+            UpdateTime = r.x.UpdateTime,
+            UpdateUserId = (int)r.x.UpdateUserId,
+            IsPublic = r.x.IsPublic,
+            Counter = r.x.Counter,
+            ClassifyId = r.x.ClassifyId,
+            FunctionCount = functionCounts.GetValueOrDefault(r.y.Id),
+        })
+        .ToList();
 
         await _userInfoFillService.FillAsync(plugins, cancellationToken);
 

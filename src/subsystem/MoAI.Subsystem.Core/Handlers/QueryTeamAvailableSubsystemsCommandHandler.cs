@@ -37,8 +37,8 @@ public class QueryTeamAvailableSubsystemsCommandHandler : IRequestHandler<QueryT
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
         }
 
-        var subsystems = await _databaseContext.Subsystems
-            .Where(x => x.Status == SubsystemStatus.Enabled)
+        var subsystems = await _databaseContext.AccessApps
+            .Where(x => x.Level == AccessAppLevel.System && x.AppType == AccessAppType.Subsystem && x.Status == AccessAppStatus.Enabled)
             .ToListAsync(cancellationToken);
 
         var authorizedSubsystemIds = await _databaseContext.SubsystemTeamAuths

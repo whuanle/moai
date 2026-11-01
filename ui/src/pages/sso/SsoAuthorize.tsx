@@ -37,12 +37,14 @@ export function SsoAuthorize() {
 
   const client = searchParams.get('client')?.trim() ?? ''
   const passState = searchParams.get('state') ?? ''
+  // 多回调地址白名单：子系统引导跳转可指定本次回跳入口（须在注册列表内，缺省取第一个）
+  const redirectUri = searchParams.get('redirect_uri')?.trim() ?? ''
 
   const redirect = useCallback(
     async (subsystemKey: string, passthrough: string) => {
       setState({ phase: 'loading' })
       try {
-        const res = await subsystemSsoAuthorizeCode(subsystemKey, passthrough || undefined)
+        const res = await subsystemSsoAuthorizeCode(subsystemKey, passthrough || undefined, redirectUri || undefined)
         if (!res.code || !res.callbackUrl) {
           setState({ phase: 'error', message: t('sso.invalidResponse') })
           return

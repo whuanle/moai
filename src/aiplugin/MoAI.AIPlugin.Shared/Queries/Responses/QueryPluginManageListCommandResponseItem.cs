@@ -59,6 +59,16 @@ public class QueryPluginManageListCommandResponseItem : AuditsInfo
     public bool IsPublic { get; init; }
 
     /// <summary>
+    /// 使用量计数.
+    /// </summary>
+    public long Counter { get; init; }
+
+    /// <summary>
+    /// 函数数量：自定义插件为函数表计数，静态/动态插件注册可用时为 1.
+    /// </summary>
+    public int FunctionCount { get; init; }
+
+    /// <summary>
     /// 头像（存储 ObjectKey，前端拼装 /static 地址展示；内存发现的静态插件为空）.
     /// </summary>
     public string AvatarPath { get; init; } = string.Empty;

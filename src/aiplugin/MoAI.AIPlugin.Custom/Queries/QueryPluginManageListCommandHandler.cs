@@ -49,10 +49,17 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
             .Where(x => x.Type == ClassifyTypes.Plugin && x.IsDeleted == 0)
             .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
 
-        var customIds = (await _databaseContext.PluginCustoms
+        var customIdList = await _databaseContext.PluginCustoms
                 .Select(x => x.Id)
-                .ToListAsync(cancellationToken))
-            .ToHashSet();
+                .ToListAsync(cancellationToken);
+
+        var customIds = customIdList.ToHashSet();
+
+        var functionCounts = await _databaseContext.PluginFunctions
+            .Where(f => customIdList.Contains(f.PluginCustomId))
+            .GroupBy(f => f.PluginCustomId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, cancellationToken);
 
         var dynamicEntities = await _databaseContext.PluginDynamics
             .Where(x => x.IsDeleted == 0)
@@ -95,6 +102,8 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                         Kind = "static",
                         IsSystem = plugin.IsSystem,
                         IsPublic = plugin.IsPublic,
+                        Counter = plugin.Counter,
+                        FunctionCount = staticInfo != null ? 1 : 0,
                         AvatarPath = plugin.AvatarPath ?? string.Empty,
                         CreateTime = plugin.CreateTime,
                         CreateUserId = (int)plugin.CreateUserId,
@@ -120,6 +129,8 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                         Kind = "dynamic",
                         IsSystem = plugin.IsSystem,
                         IsPublic = plugin.IsPublic,
+                        Counter = plugin.Counter,
+                        FunctionCount = template != null ? 1 : 0,
                         AvatarPath = plugin.AvatarPath ?? string.Empty,
                         CreateTime = plugin.CreateTime,
                         CreateUserId = (int)plugin.CreateUserId,
@@ -144,6 +155,8 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                     Kind = x.Kind,
                     IsSystem = plugin.IsSystem,
                     IsPublic = plugin.IsPublic,
+                    Counter = plugin.Counter,
+                    FunctionCount = functionCounts.GetValueOrDefault(plugin.PluginId),
                     AvatarPath = plugin.AvatarPath ?? string.Empty,
                     CreateTime = plugin.CreateTime,
                     CreateUserId = (int)plugin.CreateUserId,
@@ -176,6 +189,7 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
                     Kind = "static",
                     IsSystem = true,
                     IsPublic = true,
+                    FunctionCount = 1,
                     CreateTime = DateTimeOffset.UtcNow,
                     CreateUserId = 0,
                     UpdateTime = DateTimeOffset.UtcNow,

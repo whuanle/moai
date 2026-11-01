@@ -34,4 +34,9 @@ public class RefreshTokenCommandResponse
     /// 过期时间（秒）.
     /// </summary>
     public long ExpiresIn { get; set; }
+
+    /// <summary>
+    /// 是否待绑定两步验证（系统强制 2FA 且用户未绑定）：前端应强制进入个人设置绑定页.
+    /// </summary>
+    public bool MfaPending { get; set; }
 }

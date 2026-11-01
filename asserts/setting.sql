@@ -133,3 +133,19 @@ where not exists (select 1 from setting where key = 'MEMORY_EMBEDDING_DIMENSIONS
 
 -- 旧版键清理（历史遗留：全局记忆独立设置，已并入 MEMORY_* 统一口径）
 delete from setting where key in ('MEMORY_GLOBAL_ENABLED', 'MEMORY_GLOBAL_EMBEDDING_MODEL', 'MEMORY_GLOBAL_EMBEDDING_DIMENSIONS');
+
+insert into setting (key, name, description, value, create_user_id, update_user_id)
+select 'LOGIN_FORCED_2FA', '强制两步验证', '开启后，未绑定 2FA 的用户登录时强制进入个人设置绑定两步验证，绑定完成后才能使用系统.', 'false', 0, 0
+where not exists (select 1 from setting where key = 'LOGIN_FORCED_2FA');
+
+insert into setting (key, name, description, value, create_user_id, update_user_id)
+select 'LOGIN_EMAIL_CODE_MODE', '登录邮箱验证码策略', 'off=关闭（默认）/ always=每次登录都需要邮箱验证码 / after_fail=密码错误一次后的登录需要邮箱验证码；需 SMTP 邮件服务已启用才生效.', 'off', 0, 0
+where not exists (select 1 from setting where key = 'LOGIN_EMAIL_CODE_MODE');
+
+insert into setting (key, name, description, value, create_user_id, update_user_id)
+select 'SMTP_LOGIN_CODE_SUBJECT', '登录验证码邮件主题', '登录验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '{siteName} 登录验证码', 0, 0
+where not exists (select 1 from setting where key = 'SMTP_LOGIN_CODE_SUBJECT');
+
+insert into setting (key, name, description, value, create_user_id, update_user_id)
+select 'SMTP_LOGIN_CODE_BODY', '登录验证码邮件正文', '登录验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '你的登录验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.', 0, 0
+where not exists (select 1 from setting where key = 'SMTP_LOGIN_CODE_BODY');

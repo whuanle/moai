@@ -4,7 +4,9 @@
 // @ts-ignore
 import { Email_codeRequestBuilderNavigationMetadata, type Email_codeRequestBuilder } from './email_code/index.js';
 // @ts-ignore
-import { LoginRequestBuilderRequestsMetadata, type LoginRequestBuilder } from './login/index.js';
+import { Login_codeRequestBuilderNavigationMetadata, type Login_codeRequestBuilder } from './login_code/index.js';
+// @ts-ignore
+import { LoginRequestBuilderNavigationMetadata, LoginRequestBuilderRequestsMetadata, type LoginRequestBuilder } from './login/index.js';
 // @ts-ignore
 import { Oauth_loginRequestBuilderRequestsMetadata, type Oauth_loginRequestBuilder } from './oauth_login/index.js';
 // @ts-ignore
@@ -17,6 +19,8 @@ import { Refresh_tokenRequestBuilderRequestsMetadata, type Refresh_tokenRequestB
 import { RegisterRequestBuilderRequestsMetadata, type RegisterRequestBuilder } from './register/index.js';
 // @ts-ignore
 import { Reset_passwordRequestBuilderRequestsMetadata, type Reset_passwordRequestBuilder } from './reset_password/index.js';
+// @ts-ignore
+import { Two_factorRequestBuilderNavigationMetadata, type Two_factorRequestBuilder } from './two_factor/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
@@ -32,6 +36,10 @@ export interface AuthRequestBuilder extends BaseRequestBuilder<AuthRequestBuilde
      * The login property
      */
     get login(): LoginRequestBuilder;
+    /**
+     * The login_code property
+     */
+    get login_code(): Login_codeRequestBuilder;
     /**
      * The oauth_login property
      */
@@ -56,6 +64,10 @@ export interface AuthRequestBuilder extends BaseRequestBuilder<AuthRequestBuilde
      * The reset_password property
      */
     get reset_password(): Reset_passwordRequestBuilder;
+    /**
+     * The two_factor property
+     */
+    get two_factor(): Two_factorRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -70,6 +82,10 @@ export const AuthRequestBuilderNavigationMetadata: Record<Exclude<keyof AuthRequ
     },
     login: {
         requestsMetadata: LoginRequestBuilderRequestsMetadata,
+        navigationMetadata: LoginRequestBuilderNavigationMetadata,
+    },
+    login_code: {
+        navigationMetadata: Login_codeRequestBuilderNavigationMetadata,
     },
     oauth_login: {
         requestsMetadata: Oauth_loginRequestBuilderRequestsMetadata,
@@ -88,6 +104,9 @@ export const AuthRequestBuilderNavigationMetadata: Record<Exclude<keyof AuthRequ
     },
     reset_password: {
         requestsMetadata: Reset_passwordRequestBuilderRequestsMetadata,
+    },
+    two_factor: {
+        navigationMetadata: Two_factorRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

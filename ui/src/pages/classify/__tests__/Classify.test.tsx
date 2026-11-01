@@ -80,10 +80,10 @@ describe('ClassifyPage', () => {
     await user.click(screen.getByRole('button', { name: /新增分类/ }))
     await user.type(screen.getByLabelText('分类名称'), '新分类')
 
-    // 打开表情面板，选中一个表情后输入框回填
+    // 打开表情面板，选中一个表情后按钮回显
     await user.click(screen.getByTitle('选择表情'))
     await user.click(await screen.findByRole('button', { name: '🚀' }))
-    expect(screen.getByPlaceholderText('选择表情（可选）')).toHaveValue('🚀')
+    expect(screen.getByTitle('选择表情')).toHaveTextContent('🚀')
 
     // antd 按钮对两个汉字自动插空格，可访问名实际为「保 存」
     await user.click(screen.getByRole('button', { name: /保\s*存/ }))
@@ -99,16 +99,58 @@ describe('ClassifyPage', () => {
     await screen.findByText('职业')
 
     await user.click(screen.getByRole('button', { name: /编辑/ }))
-    expect(screen.getByPlaceholderText('选择表情（可选）')).toHaveValue('🚀')
+    expect(screen.getByTitle('选择表情')).toHaveTextContent('🚀')
 
+    // 打开表情面板后点击清除，按钮恢复为图标
+    await user.click(screen.getByTitle('选择表情'))
     // antd 按钮对两个汉字自动插空格，可访问名实际为「清 除」
-    await user.click(screen.getByRole('button', { name: /清\s*除/ }))
-    expect(screen.getByPlaceholderText('选择表情（可选）')).toHaveValue('')
+    await user.click(await screen.findByRole('button', { name: /清\s*除/ }))
+    expect(screen.getByTitle('选择表情')).toHaveTextContent('')
 
     await user.click(screen.getByRole('button', { name: /保\s*存/ }))
     expect(classifyApi.updateClassify).toHaveBeenCalledWith(
       expect.objectContaining({ classifyId: 1, emoji: '' }),
     )
+  })
+
+  it('支持在表情面板粘贴自定义表情并随表单提交', async () => {
+    const user = userEvent.setup()
+    vi.mocked(classifyApi.createClassify).mockResolvedValue(3)
+    renderPage()
+    await screen.findByText('职业')
+
+    await user.click(screen.getByRole('button', { name: /新增分类/ }))
+    await user.type(screen.getByLabelText('分类名称'), '自定义')
+
+    // 打开表情面板，在输入框中粘贴自定义表情，按钮回显
+    await user.click(screen.getByTitle('选择表情'))
+    await user.click(await screen.findByPlaceholderText('粘贴或输入自定义表情'))
+    await user.paste('🤖')
+    expect(screen.getByTitle('选择表情')).toHaveTextContent('🤖')
+
+    await user.click(screen.getByRole('button', { name: /保\s*存/ }))
+    expect(classifyApi.createClassify).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'plugin', name: '自定义', emoji: '🤖' }),
+    )
+  })
+
+  it('粘贴多个表情仅保留第一个完整 emoji，普通文本被忽略', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('职业')
+
+    await user.click(screen.getByRole('button', { name: /新增分类/ }))
+    await user.click(screen.getByTitle('选择表情'))
+    const input = await screen.findByPlaceholderText('粘贴或输入自定义表情')
+
+    // 连续粘贴多个 emoji，只取第一个字素簇，不会堆叠
+    await user.click(input)
+    await user.paste('😇😇😇😇')
+    expect(screen.getByTitle('选择表情')).toHaveTextContent('😇')
+
+    // 普通文本不是 emoji，被忽略，值保持不变
+    await user.paste('abc')
+    expect(screen.getByTitle('选择表情')).toHaveTextContent('😇')
   })
 
   it('分类为空时显示空状态', async () => {

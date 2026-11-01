@@ -5,7 +5,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Org.Commands;
 
 /// <summary>
-/// 更新组织角色（仅管理员）：改名与调整上级；调整上级时整体重写子树物化路径.
+/// 更新组织（仅管理员）：改名与调整上级；调整上级时整体重写子树物化路径.
 /// </summary>
 public class UpdateOrgRoleCommand : IRequest<EmptyCommandResponse>, IModelValidator<UpdateOrgRoleCommand>
 {

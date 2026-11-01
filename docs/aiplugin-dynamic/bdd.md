@@ -1073,3 +1073,33 @@
     And 超大输入在解码前即按长度粗估拒绝（不先占内存）
     And 实例配置越界时 InitAsync 钳制（字节数与文本长度各归其界）
 ```
+
+## Feature: 插件管理页重构与使用量统计（rounds 273）
+
+```gherkin
+  @DYN-S121 @auto:vitest
+  Scenario: 管理页工具栏规范化
+    When 管理员进入插件管理页任意列表页签
+    Then 页签下方一行工具栏：搜索与类型/可见性筛选在前、刷新居中、视图切换与导入/新建操作在竖线右侧
+    And 不再有「查询/重置」按钮，搜索输入防抖后即时过滤（自定义页签走服务端、动态/静态页签前端过滤）
+    And 分类筛选以 CheckableTag 行独立展示在工具栏下方
+
+  @DYN-S122 @auto:vitest
+  Scenario: 卡片与列表双视图
+    Given 默认为卡片视图：每插件一卡（头像+标题+名称、类型徽标、两行描述、分类/可见性/模板标签、使用量与更新时间）
+    When 点击工具栏「列表」
+    Then 切换为 DataTable：插件、类型、分类、描述、可见性、使用量、创建/更新审计列（AuditCell）与操作列
+    And 高频操作内联（查看函数/编辑/运行），低频操作收进「更多」下拉（刷新函数/授权团队），删除保持 Popconfirm 内联
+
+  @DYN-S123 @auto:vitest
+  Scenario: 统计页签
+    Given 管理页新增「统计」页签
+    When 打开统计页签
+    Then 展示概览卡（插件总数/MCP/OpenAPI/累计调用）、类型构成、分类分布与调用量 TOP5，数据取自管理列表聚合（counter/functionCount）
+    And 调用趋势因按日统计未上线展示空态占位
+
+  @DYN-S124 @manual
+  Scenario: 插件运行累加使用量
+    When 插件经管理端运行、团队运行或 Agent 会话工具调用执行
+    Then 按插件记录 id 累加一次使用量（Redis 缓冲、Hangfire 定时落库 plugins.counter），列表与统计页可见
+```

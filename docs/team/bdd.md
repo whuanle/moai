@@ -245,16 +245,16 @@ Scenario: 批量添加成员
 
 @TM-S20 @auto:e2e
 Scenario: 团队侧组织架构只读视图
-  Given 系统内已有组织角色及绑定用户
+  Given 系统内已有组织及绑定用户
   When 未登录或非团队成员查询团队组织架构
   Then 返回未认证或不存在（不泄露存在性）
   When 团队 Member 查询团队组织架构
   Then 返回禁止
   When 团队 Owner/Admin 查询团队组织架构
-  Then 返回组织角色平铺列表，命中角色含直属人数
-  When 查询某组织角色下的用户清单
+  Then 返回组织平铺列表，命中角色含直属人数
+  When 查询某组织下的用户清单
   Then 返回该组织绑定的用户集合
-  When 查询不存在的组织角色用户
+  When 查询不存在的组织用户
   Then 返回不存在
 
 @TM-S21 @auto:vitest

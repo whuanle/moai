@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CheckOutlined, CloseOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { CheckOutlined, CloseOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
@@ -41,8 +41,21 @@ export function Publications() {
 
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<PublicationReviewItem[]>([])
+  const [keyword, setKeyword] = useState('')
   const [stateFilter, setStateFilter] = useState<StateFilter>('all')
   const [resourceTypeFilter, setResourceTypeFilter] = useState<ResourceTypeFilter>('all')
+
+  /** 关键字筛选（客户端过滤）：匹配资源名称 / 团队名称 / 申请人 */
+  const filteredItems = useMemo(() => {
+    const kw = keyword.trim().toLowerCase()
+    if (!kw) return items
+    return items.filter(
+      (item) =>
+        (item.resourceName ?? '').toLowerCase().includes(kw) ||
+        (item.teamName ?? '').toLowerCase().includes(kw) ||
+        (item.createUserName ?? '').toLowerCase().includes(kw),
+    )
+  }, [items, keyword])
 
   /** 驳回弹窗：需填写审批意见 */
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -177,13 +190,10 @@ export function Publications() {
         render: (v: string | null) => v || '-',
       },
       {
-        title: t('publications.colReviewInfo'),
-        key: 'reviewInfo',
-        width: 220,
-        render: (_, record) => {
-          if (record.state === 'pending' || !record.reviewTime) return <Text type="secondary">-</Text>
-          return <AuditCell user={record.updateUserName} time={record.reviewTime} />
-        },
+        title: t('publications.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('publications.colActions'),
@@ -219,6 +229,15 @@ export function Publications() {
         <PageToolbar
           filters={
             <Space size={spacing.xs} wrap>
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                allowClear
+                maxLength={100}
+                prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+                placeholder={t('publications.searchPlaceholder')}
+                style={{ width: 260 }}
+              />
               <Select<StateFilter>
                 value={stateFilter}
                 onChange={handleStateChange}
@@ -244,23 +263,19 @@ export function Publications() {
             </Space>
           }
           queries={
-            <Tooltip title={t('publications.refresh')}>
-              <Button
-                icon={<ReloadOutlined />}
-                aria-label={t('publications.refresh')}
-                onClick={() => void load()}
-              />
-            </Tooltip>
+            <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void load()}>
+              {t('ds.table.refresh')}
+            </Button>
           }
         />
         <div style={{ flex: 1, minHeight: 0 }}>
           <DataTable<PublicationReviewItem>
             rowKey="publicationId"
             columns={columns}
-            dataSource={items}
+            dataSource={filteredItems}
             loading={loading}
             sticky
-            scroll={{ x: 1540, y: publicationsTableScrollY }}
+            scroll={{ x: 1470, y: publicationsTableScrollY }}
             pagination={{
               showSizeChanger: true,
               pageSizeOptions: [10, 20, 50],

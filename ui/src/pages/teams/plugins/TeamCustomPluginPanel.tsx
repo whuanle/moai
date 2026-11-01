@@ -270,6 +270,7 @@ export function TeamCustomPluginPanel({
       title: t('plugins.formDescription'),
       dataIndex: 'description',
       key: 'description',
+      width: 220,
       ellipsis: true,
       render: (v: string | null) => <Text type="secondary">{v || '-'}</Text>,
     },
@@ -289,7 +290,7 @@ export function TeamCustomPluginPanel({
     {
       title: t('plugins.colActions'),
       key: 'actions',
-      width: 320,
+      width: 390,
       fixed: 'right',
       render: (_, record) => (
         <Space size={0}>
@@ -408,7 +409,7 @@ export function TeamCustomPluginPanel({
         dataSource={filtered}
         loading={loading}
         sticky
-        scroll={{ x: 1600 }}
+        scroll={{ x: 1790 }}
         toolbar={
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
             {classifyTags.map((item, index) => (

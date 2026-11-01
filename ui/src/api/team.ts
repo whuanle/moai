@@ -110,7 +110,7 @@ export async function addTeamUsers(teamId: number, userIds: number[], role = 0):
   }
 }
 
-/** 团队侧组织角色平铺列表（复用组织查询的只读视图，仅团队 Owner/Admin，按 path 排序，前端按 parentId 组树） */
+/** 团队侧组织平铺列表（复用组织查询的只读视图，仅团队 Owner/Admin，按 path 排序，前端按 parentId 组树） */
 export async function getTeamOrgRoles(teamId: number, search?: string): Promise<OrgRoleItem[]> {
   const client = getApiClient()
   const res = await client.api.team
@@ -119,7 +119,7 @@ export async function getTeamOrgRoles(teamId: number, search?: string): Promise<
   return res?.items ?? []
 }
 
-/** 团队侧某组织角色下的用户清单（复用组织查询的只读视图，仅团队 Owner/Admin） */
+/** 团队侧某组织下的用户清单（复用组织查询的只读视图，仅团队 Owner/Admin） */
 export async function getTeamOrgRoleUsers(teamId: number, roleId: number, search?: string): Promise<OrgRoleUserItem[]> {
   const client = getApiClient()
   const res = await client.api.team
@@ -149,6 +149,8 @@ export interface AllTeamItem {
   name?: string | null
   isDisable?: boolean | null
   memberCount?: number | null
+  /** 团队头像（存储 ObjectKey） */
+  avatar?: string | null
 }
 
 /** 查询系统内全部团队（仅管理员），供模型授权等管理场景选择团队使用 */

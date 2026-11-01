@@ -160,6 +160,101 @@ public static class SettingDefinitions
     public const string SmtpResetCodeBodyKey = "SMTP_RESET_CODE_BODY";
 
     /// <summary>
+    /// 资源使用统计落库粒度（day=按天 / hour=按小时），数据量由管理员权衡.
+    /// </summary>
+    public const string StatisticsGranularityKey = "STATISTICS_GRANULARITY";
+
+    /// <summary>
+    /// 是否强制全员开启两步验证：开启后未绑定 2FA 的用户登录只能进入个人设置绑定页，绑定后才能使用系统.
+    /// </summary>
+    public const string LoginForced2faKey = "LOGIN_FORCED_2FA";
+
+    /// <summary>
+    /// 登录邮箱验证码策略（off=关闭 / always=始终需要 / after_fail=密码错误一次后需要），需 SMTP 邮件服务已启用才生效.
+    /// </summary>
+    public const string LoginEmailCodeModeKey = "LOGIN_EMAIL_CODE_MODE";
+
+    /// <summary>
+    /// 登录验证码邮件主题模板（支持 {code} {siteName} {expireMinutes} 变量）.
+    /// </summary>
+    public const string SmtpLoginCodeSubjectKey = "SMTP_LOGIN_CODE_SUBJECT";
+
+    /// <summary>
+    /// 登录验证码邮件正文模板（支持 {code} {siteName} {expireMinutes} 变量）.
+    /// </summary>
+    public const string SmtpLoginCodeBodyKey = "SMTP_LOGIN_CODE_BODY";
+
+    /// <summary>
+    /// 登录安全风控总开关：关闭时仅记录登录日志，不执行风险判定与处置.
+    /// </summary>
+    public const string LoginSafetyEnabledKey = "LS_ENABLED";
+
+    /// <summary>
+    /// 风险登录给用户本人发提醒邮件开关（异地/新 IP 等中风险场景）.
+    /// </summary>
+    public const string LoginSafetyNotifyUserEnabledKey = "LS_NOTIFY_USER_ENABLED";
+
+    /// <summary>
+    /// 高风险事件给管理员发告警邮件开关.
+    /// </summary>
+    public const string LoginSafetyNotifyAdminEnabledKey = "LS_NOTIFY_ADMIN_ENABLED";
+
+    /// <summary>
+    /// 管理员告警额外收件人（逗号分隔邮箱，留空发送给全部 admin/root 用户邮箱）.
+    /// </summary>
+    public const string LoginSafetyAdminRecipientsKey = "LS_ADMIN_ALERT_RECIPIENTS";
+
+    /// <summary>
+    /// 同一 IP 登录失败次数封禁阈值（滑动窗口内，默认 20）.
+    /// </summary>
+    public const string LoginSafetyIpFailThresholdKey = "LS_IP_FAIL_THRESHOLD";
+
+    /// <summary>
+    /// IP 失败计数滑动窗口（分钟，默认 10）.
+    /// </summary>
+    public const string LoginSafetyIpFailWindowMinutesKey = "LS_IP_FAIL_WINDOW_MINUTES";
+
+    /// <summary>
+    /// IP 封禁时长（分钟，默认 30）.
+    /// </summary>
+    public const string LoginSafetyIpBanMinutesKey = "LS_IP_BAN_MINUTES";
+
+    /// <summary>
+    /// 同一 IP 撞库喷洒阈值：窗口内对多少个不同用户名登录失败后封禁（默认 5）.
+    /// </summary>
+    public const string LoginSafetyDistinctUserThresholdKey = "LS_DISTINCT_USER_THRESHOLD";
+
+    /// <summary>
+    /// 新 IP 判定回看天数：该用户近 N 天无此 IP 成功登录视为新 IP（默认 90）.
+    /// </summary>
+    public const string LoginSafetyNewIpDaysKey = "LS_NEW_IP_DAYS";
+
+    /// <summary>
+    /// 疾速旅行判定窗口（分钟）：与上次成功登录属地不同且间隔小于该值（默认 120）.
+    /// </summary>
+    public const string LoginSafetyTravelWindowMinutesKey = "LS_TRAVEL_WINDOW_MINUTES";
+
+    /// <summary>
+    /// 用户风险登录提醒邮件主题模板（支持 {userName} {ip} {location} {time} {siteName} 变量）.
+    /// </summary>
+    public const string LoginSafetyUserAlertSubjectKey = "LS_USER_ALERT_SUBJECT";
+
+    /// <summary>
+    /// 用户风险登录提醒邮件正文模板（支持 {userName} {ip} {location} {time} {siteName} 变量）.
+    /// </summary>
+    public const string LoginSafetyUserAlertBodyKey = "LS_USER_ALERT_BODY";
+
+    /// <summary>
+    /// 管理员风险告警邮件主题模板（支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量）.
+    /// </summary>
+    public const string LoginSafetyAdminAlertSubjectKey = "LS_ADMIN_ALERT_SUBJECT";
+
+    /// <summary>
+    /// 管理员风险告警邮件正文模板（支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量）.
+    /// </summary>
+    public const string LoginSafetyAdminAlertBodyKey = "LS_ADMIN_ALERT_BODY";
+
+    /// <summary>
     /// 注册验证码邮件主题默认模板.
     /// </summary>
     public const string DefaultRegisterCodeSubject = "{siteName} 注册验证码";
@@ -178,6 +273,36 @@ public static class SettingDefinitions
     /// 找回密码验证码邮件正文默认模板.
     /// </summary>
     public const string DefaultResetCodeBody = "你的找回密码验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.";
+
+    /// <summary>
+    /// 登录验证码邮件主题默认模板.
+    /// </summary>
+    public const string DefaultLoginCodeSubject = "{siteName} 登录验证码";
+
+    /// <summary>
+    /// 登录验证码邮件正文默认模板.
+    /// </summary>
+    public const string DefaultLoginCodeBody = "你的登录验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.";
+
+    /// <summary>
+    /// 用户风险登录提醒邮件主题默认模板.
+    /// </summary>
+    public const string DefaultUserAlertSubject = "{siteName} 登录安全提醒";
+
+    /// <summary>
+    /// 用户风险登录提醒邮件正文默认模板.
+    /// </summary>
+    public const string DefaultUserAlertBody = "{userName}，你好：\n\n你的账号于 {time} 在新环境登录成功。\n\n登录 IP：{ip}\n登录地点：{location}\n\n如非本人操作，请立即修改密码并联系管理员。";
+
+    /// <summary>
+    /// 管理员风险告警邮件主题默认模板.
+    /// </summary>
+    public const string DefaultAdminAlertSubject = "【{siteName}】登录风险告警：{userName}";
+
+    /// <summary>
+    /// 管理员风险告警邮件正文默认模板.
+    /// </summary>
+    public const string DefaultAdminAlertBody = "检测到高风险登录行为：\n\n用户：{userName}\n风险等级：{riskLevel}\n命中规则：{reasons}\n登录 IP：{ip}\n登录地点：{location}\n时间：{time}\n\n请在管理后台「日志事件」中查看详情并处置。";
 
     private static readonly List<SettingDefinition> BackingField = new()
     {
@@ -276,7 +401,7 @@ public static class SettingDefinitions
         {
             Key = OrgDefaultRoleKey,
             Name = "组织默认角色",
-            Description = "新注册用户自动获得的角色（org_role 主键），留空表示新用户无默认角色；在组织角色页维护.",
+            Description = "新注册用户自动获得的角色（org_role 主键），留空表示新用户无默认角色；在组织页维护.",
             DefaultValue = string.Empty
         },
         new SettingDefinition
@@ -390,6 +515,139 @@ public static class SettingDefinitions
             Name = "找回密码验证码邮件正文",
             Description = "找回密码验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
             DefaultValue = DefaultResetCodeBody
+        },
+        new SettingDefinition
+        {
+            Key = StatisticsGranularityKey,
+            Name = "统计粒度",
+            Description = "资源使用统计的落库粒度：day=按天（默认，数据量小）/ hour=按小时（更细，数据量约 24 倍）；只影响统一统计日表，资源自身 use_count 不受影响.",
+            DefaultValue = "day"
+        },
+        new SettingDefinition
+        {
+            Key = LoginForced2faKey,
+            Name = "强制两步验证",
+            Description = "开启后，未绑定 2FA 的用户登录时强制进入个人设置绑定两步验证，绑定完成后才能使用系统.",
+            DefaultValue = "false"
+        },
+        new SettingDefinition
+        {
+            Key = LoginEmailCodeModeKey,
+            Name = "登录邮箱验证码策略",
+            Description = "off=关闭（默认）/ always=每次登录都需要邮箱验证码 / after_fail=密码错误一次后的登录需要邮箱验证码；需 SMTP 邮件服务已启用才生效.",
+            DefaultValue = "off"
+        },
+        new SettingDefinition
+        {
+            Key = SmtpLoginCodeSubjectKey,
+            Name = "登录验证码邮件主题",
+            Description = "登录验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
+            DefaultValue = DefaultLoginCodeSubject
+        },
+        new SettingDefinition
+        {
+            Key = SmtpLoginCodeBodyKey,
+            Name = "登录验证码邮件正文",
+            Description = "登录验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
+            DefaultValue = DefaultLoginCodeBody
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyEnabledKey,
+            Name = "登录安全风控",
+            Description = "登录风控总开关：开启后记录登录日志并执行风险判定（新 IP/异地/疾速旅行/IP 爆破/撞库喷洒）；关闭时仅记录登录日志.",
+            DefaultValue = "true"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyNotifyUserEnabledKey,
+            Name = "用户登录提醒邮件",
+            Description = "中风险登录（新 IP/异地）成功后给用户本人发提醒邮件；需 SMTP 邮件服务已启用才生效.",
+            DefaultValue = "true"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyNotifyAdminEnabledKey,
+            Name = "管理员风险告警邮件",
+            Description = "高风险登录事件给管理员发告警邮件；需 SMTP 邮件服务已启用才生效.",
+            DefaultValue = "true"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyAdminRecipientsKey,
+            Name = "管理员告警收件人",
+            Description = "告警邮件额外收件人（逗号分隔邮箱）；留空时发送给全部 admin/root 用户的邮箱.",
+            DefaultValue = string.Empty
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyIpFailThresholdKey,
+            Name = "IP 失败封禁阈值",
+            Description = "滑动窗口内同一 IP 登录失败达到该次数后自动封禁该 IP；默认 20.",
+            DefaultValue = "20"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyIpFailWindowMinutesKey,
+            Name = "IP 失败计数窗口",
+            Description = "IP 登录失败计数的滑动窗口长度（分钟）；默认 10.",
+            DefaultValue = "10"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyIpBanMinutesKey,
+            Name = "IP 封禁时长",
+            Description = "触发自动封禁后的封禁时长（分钟）；默认 30，管理员可在日志事件页提前解封.",
+            DefaultValue = "30"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyDistinctUserThresholdKey,
+            Name = "撞库喷洒阈值",
+            Description = "滑动窗口内同一 IP 对多少个不同用户名登录失败后判定为撞库并封禁；默认 5.",
+            DefaultValue = "5"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyNewIpDaysKey,
+            Name = "新 IP 回看天数",
+            Description = "该用户近 N 天内无此 IP 成功登录记录则视为新 IP 登录（中风险）；默认 90，0 表示关闭新 IP 检测.",
+            DefaultValue = "90"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyTravelWindowMinutesKey,
+            Name = "疾速旅行窗口",
+            Description = "与上次成功登录属地不同且间隔小于该值（分钟）判定为疾速旅行（高风险）；默认 120.",
+            DefaultValue = "120"
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyUserAlertSubjectKey,
+            Name = "用户登录提醒邮件主题",
+            Description = "用户风险登录提醒邮件主题模板，支持 {userName} {ip} {location} {time} {siteName} 变量，留空使用默认模板.",
+            DefaultValue = DefaultUserAlertSubject
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyUserAlertBodyKey,
+            Name = "用户登录提醒邮件正文",
+            Description = "用户风险登录提醒邮件正文模板，支持 {userName} {ip} {location} {time} {siteName} 变量，留空使用默认模板.",
+            DefaultValue = DefaultUserAlertBody
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyAdminAlertSubjectKey,
+            Name = "管理员告警邮件主题",
+            Description = "管理员风险告警邮件主题模板，支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量，留空使用默认模板.",
+            DefaultValue = DefaultAdminAlertSubject
+        },
+        new SettingDefinition
+        {
+            Key = LoginSafetyAdminAlertBodyKey,
+            Name = "管理员告警邮件正文",
+            Description = "管理员风险告警邮件正文模板，支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量，留空使用默认模板.",
+            DefaultValue = DefaultAdminAlertBody
         }
     };
 

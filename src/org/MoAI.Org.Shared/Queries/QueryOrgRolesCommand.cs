@@ -6,7 +6,7 @@ using MoAI.Org.Queries.Responses;
 namespace MoAI.Org.Queries;
 
 /// <summary>
-/// 查询组织角色全量平铺列表（仅管理员），按 path 排序（天然层级序），前端按 parentId 组树.
+/// 查询组织全量平铺列表（仅管理员），按 path 排序（天然层级序），前端按 parentId 组树.
 /// </summary>
 public class QueryOrgRolesCommand : IRequest<QueryOrgRolesCommandResponse>, IModelValidator<QueryOrgRolesCommand>
 {

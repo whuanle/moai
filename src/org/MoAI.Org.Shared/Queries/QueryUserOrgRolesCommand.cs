@@ -6,7 +6,7 @@ using MoAI.Org.Queries.Responses;
 namespace MoAI.Org.Queries;
 
 /// <summary>
-/// 查询某用户持有的组织角色清单（仅管理员）.
+/// 查询某用户持有的组织清单（仅管理员）.
 /// </summary>
 public class QueryUserOrgRolesCommand : IRequest<QueryUserOrgRolesCommandResponse>, IModelValidator<QueryUserOrgRolesCommand>
 {

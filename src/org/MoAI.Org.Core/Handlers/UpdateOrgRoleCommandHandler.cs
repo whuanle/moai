@@ -4,6 +4,7 @@ using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Org.Commands;
+using MoAI.Org.Services;
 
 namespace MoAI.Org.Handlers;
 
@@ -13,14 +14,17 @@ namespace MoAI.Org.Handlers;
 public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IOrgGrantCache _orgGrantCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOrgRoleCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public UpdateOrgRoleCommandHandler(DatabaseContext databaseContext)
+    /// <param name="orgGrantCache">组织授权缓存（子树迁移重写 path 需失效）.</param>
+    public UpdateOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
     {
         _databaseContext = databaseContext;
+        _orgGrantCache = orgGrantCache;
     }
 
     /// <inheritdoc/>
@@ -30,12 +34,12 @@ public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand,
             .FirstOrDefaultAsync(x => x.Id == request.OrgRoleId, cancellationToken);
         if (role == null)
         {
-            throw new BusinessException("角色不存在.") { StatusCode = 404 };
+            throw new BusinessException("组织不存在.") { StatusCode = 404 };
         }
 
         if (request.ParentId == role.Id)
         {
-            throw new BusinessException("不能将角色设为自己的上级.") { StatusCode = 400 };
+            throw new BusinessException("不能将组织设为自己的上级.") { StatusCode = 400 };
         }
 
         var parentChanged = request.ParentId != role.ParentId;
@@ -49,7 +53,7 @@ public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand,
             // 防环：新父 path 不得以本角色 path 为前缀（自身或任意后代作父都会命中）
             if (parent != null && parent.Path.StartsWith(role.Path, StringComparison.Ordinal))
             {
-                throw new BusinessException("不能将角色移动到自身或其下级角色之下.") { StatusCode = 400 };
+                throw new BusinessException("不能将组织移动到自身或其下级组织之下.") { StatusCode = 400 };
             }
 
             var oldPath = role.Path;
@@ -72,6 +76,9 @@ public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand,
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 子树迁移重写 path 后失效全量 path 缓存（改名不动 path 也一并失效，操作低频）
+        await _orgGrantCache.RemoveRolePathsAsync(cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

@@ -17,7 +17,7 @@ export interface RoleItemRequestBuilder extends BaseRequestBuilder<RoleItemReque
      */
     get users(): UsersRequestBuilder;
     /**
-     * 删除组织角色（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
+     * 删除组织（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -28,8 +28,8 @@ export interface RoleItemRequestBuilder extends BaseRequestBuilder<RoleItemReque
      */
      delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 更新组织角色（仅管理员）：改名与调整上级，调整上级时整体重写子树物化路径.
-     * @param body 更新组织角色（仅管理员）：改名与调整上级；调整上级时整体重写子树物化路径.
+     * 更新组织（仅管理员）：改名与调整上级，调整上级时整体重写子树物化路径.
+     * @param body 更新组织（仅管理员）：改名与调整上级；调整上级时整体重写子树物化路径.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -40,14 +40,14 @@ export interface RoleItemRequestBuilder extends BaseRequestBuilder<RoleItemReque
      */
      put(body: UpdateOrgRoleCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 删除组织角色（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
+     * 删除组织（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 更新组织角色（仅管理员）：改名与调整上级，调整上级时整体重写子树物化路径.
-     * @param body 更新组织角色（仅管理员）：改名与调整上级；调整上级时整体重写子树物化路径.
+     * 更新组织（仅管理员）：改名与调整上级，调整上级时整体重写子树物化路径.
+     * @param body 更新组织（仅管理员）：改名与调整上级；调整上级时整体重写子树物化路径.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

@@ -1,6 +1,7 @@
 import {
   ApiOutlined,
   ApartmentOutlined,
+  BellOutlined,
   DatabaseOutlined,
   DeploymentUnitOutlined,
   AppstoreAddOutlined,
@@ -8,6 +9,7 @@ import {
   AuditOutlined,
   CloudServerOutlined,
   DownOutlined,
+  FileSearchOutlined,
   LogoutOutlined,
   SettingOutlined,
   ShopOutlined,
@@ -17,11 +19,12 @@ import {
   TranslationOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Dropdown, Layout, Select, Typography, theme as antdTheme } from 'antd'
+import { Avatar, Badge, Button, Dropdown, Layout, Select, Tooltip, Typography, theme as antdTheme } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import { AppLogo } from '@/layouts/components/AppLogo'
+import { useMenuBadges } from '@/layouts/useMenuBadges'
 import { useSystemName } from '@/layouts/useSystemLogo'
 import './AppSider.css'
 import { themePresetList, themePresets, type ThemeKey } from '@/design-system/theme'
@@ -29,6 +32,8 @@ import {
   useAppStore,
   type Locale,
 } from '@/store/app'
+import { useBadgeStore } from '@/store/badges'
+import { useNotificationStore } from '@/store/notification'
 
 const { Sider } = Layout
 
@@ -50,9 +55,10 @@ const mainNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { key: 'plugin', icon: <AppstoreAddOutlined />, labelKey: 'nav.plugin', path: '/plugin' },
   { key: 'classify', icon: <TagsOutlined />, labelKey: 'nav.classify', path: '/classify' },
-  { key: 'users', icon: <UserOutlined />, labelKey: 'nav.users', path: '/users' },
   { key: 'adminTeams', icon: <ApartmentOutlined />, labelKey: 'nav.adminTeams', path: '/admin/teams' },
   { key: 'adminIntegrations', icon: <DeploymentUnitOutlined />, labelKey: 'nav.adminIntegrations', path: '/admin/integrations' },
+  { key: 'logEvents', icon: <FileSearchOutlined />, labelKey: 'nav.logEvents', path: '/admin/loginsafety' },
+  { key: 'notificationCenter', icon: <BellOutlined />, labelKey: 'nav.notificationCenter', path: '/admin/notifications' },
   { key: 'publications', icon: <AuditOutlined />, labelKey: 'nav.publications', path: '/publications' },
   { key: 'models', icon: <CloudServerOutlined />, labelKey: 'nav.channel', path: '/models' },
   { key: 'oauthconnect', icon: <ApiOutlined />, labelKey: 'nav.oauthconnect', path: '/oauthconnect' },
@@ -69,10 +75,11 @@ const pathToKey: Record<string, string> = {
   '/team': 'team',
   '/plugin': 'plugin',
   '/classify': 'classify',
-  '/users': 'users',
   '/admin/teams': 'adminTeams',
   '/admin/integrations': 'adminIntegrations',
   '/admin/subsystems': 'adminIntegrations',
+  '/admin/loginsafety': 'logEvents',
+  '/admin/notifications': 'notificationCenter',
   '/publications': 'publications',
   '/models': 'models',
   '/oauthconnect': 'oauthconnect',
@@ -97,6 +104,7 @@ export function AppSider() {
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
+  const unreadCount = useNotificationStore((state) => state.unreadCount)
   // 一级菜单不再展示知识库/知识图谱，统一从团队详情分区进入
   // 提示词编辑器等 /prompts 子路径归入「提示词市场」高亮，技能中心（市场/我的）归入「技能市场」高亮
   const selectedKey =
@@ -109,6 +117,10 @@ export function AppSider() {
   const isDark = themePresets[themeKey].mode === 'dark'
   const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(16, 24, 40, 0.08)'
 
+  // 菜单角标（待处理数量）：管理员下轮询未读风险事件等数据源
+  useMenuBadges()
+  const badgeCounts = useBadgeStore((state) => state.counts)
+
   const displayName = userInfo?.nickName ?? userInfo?.userName
 
   const userMenuItems: MenuProps['items'] = [
@@ -116,7 +128,7 @@ export function AppSider() {
       key: 'settings',
       icon: <SettingOutlined />,
       label: t('common.settings'),
-      onClick: () => navigate('/account'),
+      onClick: () => navigate('/account/profile'),
     },
     { type: 'divider' },
     {
@@ -163,26 +175,40 @@ export function AppSider() {
   const visibleAdminNav = adminNav.filter((item) => (item.key !== 'settings' && item.key !== 'adminIntegrations') || isRoot)
 
   // 自定义导航：替代 antd Menu
-  // 风格：整栏统一底色 + 大号中性图标 + 主色浅底深字激活态（token 生成，8 套预设自适应）
+  // 风格：整栏统一底色 + 大号中性图标 + 浅主色渐变底激活态（明显但不深）、浅色 hover（token 生成，8 套预设自适应）
+  // 注意：非选中项不能写内联 background/color，否则内联样式优先级会盖掉 CSS :hover 规则
   const { token } = antdTheme.useToken()
 
   const renderNavItem = (item: NavItem) => {
     const active = item.key === selectedKey
+    const badgeCount = badgeCounts[item.key] ?? 0
     return (
       <button
         key={item.key}
         type="button"
         className={active ? 'app-nav-item app-nav-item-active' : 'app-nav-item'}
-        style={{
-          background: active ? token.colorPrimaryBg : 'transparent',
-          color: active ? token.colorPrimaryTextActive : token.colorTextSecondary,
-          fontWeight: active ? 500 : 400,
-        }}
+        style={
+          active
+            ? {
+                background: `linear-gradient(135deg, ${token.colorPrimaryBgHover} 0%, ${token.colorPrimaryBg} 100%)`,
+                color: token.colorPrimaryTextActive,
+                fontWeight: 600,
+              }
+            : undefined
+        }
         aria-current={active ? 'page' : undefined}
         onClick={() => navigate(item.path)}
       >
         {item.icon}
         <span>{t(item.labelKey)}</span>
+        {badgeCount > 0 && (
+          <Badge
+            count={badgeCount}
+            overflowCount={99}
+            size="small"
+            style={{ marginLeft: 'auto', boxShadow: 'none', flexShrink: 0 }}
+          />
+        )}
       </button>
     )
   }
@@ -233,7 +259,8 @@ export function AppSider() {
         className="app-nav"
         aria-label={systemName}
         style={{
-          '--app-nav-hover-bg': token.colorFillTertiary,
+          '--app-nav-color': token.colorTextSecondary,
+          '--app-nav-hover-bg': token.colorFillSecondary,
           '--app-nav-hover-color': token.colorText,
           '--app-nav-active-color': token.colorPrimary,
         } as React.CSSProperties}
@@ -284,6 +311,22 @@ export function AppSider() {
                 {userInfo?.email ?? userInfo?.userName}
               </Typography.Text>
             </div>
+            {/* 消息铃铛放在用户信息行内（用户名右侧），避免挤压下方主题/语言切换的宽度；阻止冒泡避免误开用户菜单 */}
+            <Tooltip title={t('nav.messages')}>
+              <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+                <Button
+                  type="text"
+                  size="small"
+                  aria-label={t('nav.messages')}
+                  icon={<BellOutlined style={{ fontSize: 14 }} />}
+                  style={{ flexShrink: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigate('/account/messages')
+                  }}
+                />
+              </Badge>
+            </Tooltip>
             <DownOutlined aria-hidden style={{ fontSize: 10, color: token.colorTextQuaternary }} />
           </div>
         </Dropdown>

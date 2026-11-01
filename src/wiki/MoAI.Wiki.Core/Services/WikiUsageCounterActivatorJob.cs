@@ -1,16 +1,16 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Hangfire.Services;
+using MoAI.Statistics.Services;
 
 namespace MoAI.Wiki.Services;
 
 /// <summary>
 /// 将 Redis 中的知识库使用次数刷新到 PostgreSQL.
 /// </summary>
-public class WikiUsageCounterActivatorJob : ICounterActivatorJob
+public class WikiUsageCounterActivatorJob : IResourceUsageWriter
 {
-    private const string CounterName = "wiki-usage";
+    private const string CounterName = ResourceUsageNames.Wiki;
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
@@ -23,7 +23,7 @@ public class WikiUsageCounterActivatorJob : ICounterActivatorJob
     }
 
     /// <inheritdoc/>
-    public async Task ActivateAsync(IReadOnlyDictionary<string, long> values)
+    public async Task WriteAsync(IReadOnlyDictionary<string, long> values)
     {
         var increments = Parse(values);
         if (increments.Count == 0)
@@ -58,7 +58,7 @@ public class WikiUsageCounterActivatorJob : ICounterActivatorJob
         Dictionary<int, long> increments = new();
         foreach (var item in values)
         {
-            if (item.Value <= 0
+            if (item.Value == 0
                 || !int.TryParse(item.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var wikiId)
                 || wikiId <= 0
                 || item.Key != wikiId.ToString(CultureInfo.InvariantCulture))

@@ -11,7 +11,7 @@ namespace MoAI.Subsystem.Controllers;
 
 /// <summary>
 /// 系统资源协作面——用户治理（/api/subsys/system/users/*）：
-/// 鉴权由 SystemAccessKeyMiddleware 承担，user_read/user_write 分档，
+/// 鉴权由 SubsysAccessMiddleware 承担，资源范围分档已下线（任一系统级接入全量可用），
 /// 供 ERP 等外部系统定时推送用户（[AllowAnonymous] 仅用于跳过内部 JWT 与用户状态拦截）.
 /// </summary>
 [ApiController]
@@ -40,7 +40,7 @@ public class SystemUserController : ControllerBase
     [AllowAnonymous]
     public Task<SystemUpsertUserCommandResponse> Upsert([FromBody] SystemUpsertUserCommand req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.UserWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(req, ct);
     }
 
@@ -56,7 +56,7 @@ public class SystemUserController : ControllerBase
     [AllowAnonymous]
     public Task<QueryUserListCommandResponse> List([FromQuery] int pageNo = 1, [FromQuery] int pageSize = 20, [FromQuery] string? searchText = null, CancellationToken ct = default)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.UserRead);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new QueryUserListCommand { PageNo = pageNo, PageSize = pageSize, SearchText = searchText }, ct);
     }
 
@@ -70,7 +70,7 @@ public class SystemUserController : ControllerBase
     [AllowAnonymous]
     public Task<UserStateInfo> Get([FromRoute] long userId, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.UserRead);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new QueryUserInfoCommand { UserId = userId }, ct);
     }
 
@@ -85,7 +85,7 @@ public class SystemUserController : ControllerBase
     [AllowAnonymous]
     public async Task<EmptyCommandResponse> SetDisable([FromRoute] long userId, [FromBody] SystemSetUserDisableBody req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.UserWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return await _mediator.Send(new SystemSetUserDisableCommand { UserId = userId, IsDisable = req.IsDisable }, ct);
     }
 }

@@ -1,11 +1,13 @@
-// 系统应用接入 · E2E（场景 @SAA-S1..）
-// 覆盖：root 门禁 / 创建与一次性 key / 范围校验 / 列表回显（仅前缀）/ key 直连自省 /
-//       范围与状态更新即时生效 / 停用 403 / 删除即失效 / 搜索。
+// 应用接入（系统级接入 key）· E2E（场景 @SAA-S1..，合并模型后）
+// 覆盖：管理面门禁 / 创建与一次性 appid+密钥 / 列表回显（仅前缀）/ appid 直连与 token 双轨自省 /
+//       更新与状态即时生效 / 停用 403 / 删除即失效 / 搜索 /
+//       资源协作面全量访问（scope 分档已下线，原 SAA-S4/S4a/S6a/S10a/S18/S30~S33 退役）/
+//       子系统 token 互通（两类接入同一套接口）/ 用户 upsert 推送主链路 / 组织角色 / 团队治理。
 // 前置：后端运行中；种子账号 admin / abcd123456（root）。全部用例零真实外部依赖。
-// 用法：node local-dev/system-access-app-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5210，可用 SAA_BASE 覆盖）
+// 用法：node local-dev/system-access-app-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 SAA_BASE 覆盖）
 import crypto from 'node:crypto'
 
-const BASE = process.env.SAA_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5210'
+const BASE = process.env.SAA_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5000'
 let PASS = 0
 let FAIL = 0
 const check = (name, cond, detail = '') => {
@@ -35,6 +37,21 @@ async function api(method, path, { token, body } = {}) {
   return { status: res.status, json, text }
 }
 
+// 密钥回显（RSA+AES 信封）：随机 AES-256 key 经 RSA 公钥加密上送，响应 GCM 密文本地解出原文
+async function revealSecret(rootToken, id) {
+  const { publicEncrypt, createPublicKey, createDecipheriv, randomBytes } = await import('node:crypto')
+  const pub = createPublicKey({ key: Buffer.from(RSA_KEY, 'base64'), format: 'der', type: 'spki' })
+  const envelopeKey = randomBytes(32)
+  const encryptedKey = publicEncrypt({ key: pub, padding: 1 /* RSA_PKCS1_PADDING */ }, Buffer.from(envelopeKey.toString('base64'), 'utf8')).toString('base64')
+  const r = await api('POST', `/api/subsystem/${id}/reveal-secret`, { token: rootToken, body: { encryptedKey } })
+  if (r.status !== 200) throw new Error(`reveal-secret 失败: ${r.status} ${r.text.slice(0, 160)}`)
+  const iv = Buffer.from(r.json.iv, 'base64')
+  const payload = Buffer.from(r.json.data, 'base64')
+  const decipher = createDecipheriv('aes-256-gcm', envelopeKey, iv)
+  decipher.setAuthTag(payload.subarray(-16))
+  return Buffer.concat([decipher.update(payload.subarray(0, -16)), decipher.final()]).toString('utf8')
+}
+
 const TS = Date.now().toString().slice(-8)
 let seq = 0
 const uname = (p) => `${p}${TS}${String(seq++).padStart(2, '0')}`
@@ -57,123 +74,126 @@ const user = userLogin.json.accessToken
 
 console.log(`目标：${BASE}\n`)
 
-// ---- 管理面门禁 ----
-check('SAA-S1 未登录查询列表 401', (await api('GET', '/api/subsystem/system-app/list')).status === 401)
-check('SAA-S2 非 root 查询列表 403', (await api('GET', '/api/subsystem/system-app/list', { token: user })).status === 403)
-check('SAA-S3 非 root 创建 403', (await api('POST', '/api/subsystem/system-app/create', { token: user, body: { name: 'x', scopes: ['org_read'] } })).status === 403)
+// ---- 管理面门禁（合并后管理入口 /api/subsystem/*）----
+check('SAA-S1 未登录查询列表 401', (await api('GET', '/api/subsystem/list')).status === 401)
+check('SAA-S2 非 root 查询列表 403', (await api('GET', '/api/subsystem/list', { token: user })).status === 403)
+check('SAA-S3 非 root 创建 403', (await api('POST', '/api/subsystem/create', { token: user, body: { appType: 'app', name: 'x' } })).status === 403)
 
-// ---- 创建与 key ----
-const badScopes = await api('POST', '/api/subsystem/system-app/create', { token: root, body: { name: 'x', scopes: ['not_a_scope'] } })
-check('SAA-S4 非法范围代码 400', badScopes.status === 400, `${badScopes.status}`)
-const emptyScopes = await api('POST', '/api/subsystem/system-app/create', { token: root, body: { name: 'x', scopes: [] } })
-check('SAA-S4a 空范围 400', emptyScopes.status === 400, `${emptyScopes.status}`)
-
-const created = await api('POST', '/api/subsystem/system-app/create', {
+// ---- 创建与一次性 appid（密钥 AES 可逆存储，仅回掩码；原文信封可回显）----
+const created = await api('POST', '/api/subsystem/create', {
   token: root,
-  body: { name: `ERP 同步 ${TS}`, description: '同步 ERP 组织角色', scopes: ['org_read', 'org_write'] },
+  body: { appType: 'app', name: `ERP 同步 ${TS}`, description: '同步 ERP 组织角色' },
 })
-check('SAA-S5 root 创建返回一次性 key', created.status === 200 && typeof created.json.key === 'string' && created.json.key.startsWith('moai-sa-') && created.json.key.length === 40,
-  created.text.slice(0, 160))
+check('SAA-S5 root 创建返回 appid 与密钥掩码（不回原文）', created.status === 200 && created.json?.appType === 'app' && typeof created.json.key === 'string' && created.json.key.startsWith('moai-sa-') && created.json.key.length === 35 && created.json.secretMask?.includes('****') && !('secret' in (created.json ?? {})),
+  created.text.slice(0, 200))
 const APP_KEY = created.json.key
 const APP_ID = created.json.id
+const APP_SECRET = await revealSecret(root, APP_ID)
 
-const list1 = await api('GET', '/api/subsystem/system-app/list', { token: root })
+const list1 = await api('GET', '/api/subsystem/list', { token: root })
 const item1 = (list1.json?.items ?? []).find((x) => x.id === APP_ID)
 check('SAA-S6 列表回显前缀而非原文', list1.status === 200 && item1 && item1.keyPrefix === APP_KEY.slice(0, 12) && !JSON.stringify(item1).includes(APP_KEY),
   JSON.stringify(item1 ?? null).slice(0, 160))
-check('SAA-S6a 列表回显范围代码', item1 && JSON.stringify(item1.scopes.sort()) === JSON.stringify(['org_read', 'org_write']), JSON.stringify(item1?.scopes))
 
-// ---- key 直连自省（协作面 /api/subsys/system/info）----
-check('SAA-S7 无 key 自省 401', (await api('GET', '/api/subsys/system/info')).status === 401)
-check('SAA-S8 伪造 key 自省 401', (await api('GET', '/api/subsys/system/info', { token: 'moai-sa-forged' })).status === 401)
-check('SAA-S8a 非法前缀（团队 key）自省 401', (await api('GET', '/api/subsys/system/info', { token: 'moai-ac-xxxx' })).status === 401)
+// ---- appid 直连自省（协作面统一入口 GET /api/subsys/info）----
+check('SAA-S7 无 key 自省 401', (await api('GET', '/api/subsys/info')).status === 401)
+check('SAA-S8 伪造 key 自省 401', (await api('GET', '/api/subsys/info', { token: 'moai-sa-forged' })).status === 401)
+check('SAA-S8a 非法前缀（团队 key）自省 401', (await api('GET', '/api/subsys/info', { token: 'moai-ac-xxxx' })).status === 401)
 
-const info1 = await api('GET', '/api/subsys/system/info', { token: APP_KEY })
-check('SAA-S9 正确 key 自省回显身份与范围', info1.status === 200 && info1.json.id === APP_ID
-  && JSON.stringify(info1.json.scopes.sort()) === JSON.stringify(['org_read', 'org_write']) && info1.json.status === 'enabled',
+const info1 = await api('GET', '/api/subsys/info', { token: APP_KEY })
+check('SAA-S9 正确 key 自省回显身份（类型/状态，无资源范围）', info1.status === 200 && info1.json.id === APP_ID
+  && info1.json.appType === 'app' && info1.json.status === 'enabled' && !('scopes' in (info1.json ?? {})),
   info1.text.slice(0, 160))
 
 // ---- 更新即时生效 ----
-const upd = await api('PUT', `/api/subsystem/system-app/${APP_ID}`, {
+const upd = await api('PUT', `/api/subsystem/${APP_ID}`, {
   token: root,
-  body: { name: `ERP 同步改 ${TS}`, description: 'x', scopes: ['user_read', 'user_write'], status: 'enabled' },
+  body: { name: `ERP 同步改 ${TS}`, description: 'x', status: 'enabled' },
 })
-check('SAA-S10 更新名称与范围 200', upd.status === 200, `${upd.status}`)
-const info2 = await api('GET', '/api/subsys/system/info', { token: APP_KEY })
-check('SAA-S10a 自省即时回显新范围', info2.status === 200 && JSON.stringify(info2.json.scopes.sort()) === JSON.stringify(['user_read', 'user_write']),
+check('SAA-S10 更新名称 200（应用接入行仅名称/描述/状态）', upd.status === 200, `${upd.status}`)
+const info2 = await api('GET', '/api/subsys/info', { token: APP_KEY })
+check('SAA-S10a 自省即时回显新名称', info2.status === 200 && info2.json.name === `ERP 同步改 ${TS}`,
   info2.text.slice(0, 160))
 
-const updMissing = await api('PUT', `/api/subsystem/system-app/00000000-0000-0000-0000-000000000000`, {
-  token: root, body: { name: 'x', scopes: ['org_read'], status: 'enabled' },
+const updMissing = await api('PUT', `/api/subsystem/00000000-0000-0000-0000-000000000000`, {
+  token: root, body: { name: 'x', status: 'enabled' },
 })
 check('SAA-S11 更新不存在 404', updMissing.status === 404, `${updMissing.status}`)
 
 // ---- 停用 / 启用 ----
-await api('PUT', `/api/subsystem/system-app/${APP_ID}`, { token: root, body: { name: `ERP 同步改 ${TS}`, scopes: ['user_read'], status: 'disabled' } })
-const info3 = await api('GET', '/api/subsys/system/info', { token: APP_KEY })
+await api('PUT', `/api/subsystem/${APP_ID}`, { token: root, body: { name: `ERP 同步改 ${TS}`, status: 'disabled' } })
+const info3 = await api('GET', '/api/subsys/info', { token: APP_KEY })
 check('SAA-S12 停用后自省 403', info3.status === 403, `${info3.status}`)
 
-await api('PUT', `/api/subsystem/system-app/${APP_ID}`, { token: root, body: { name: `ERP 同步改 ${TS}`, scopes: ['user_read'], status: 'enabled' } })
-const info4 = await api('GET', '/api/subsys/system/info', { token: APP_KEY })
+await api('PUT', `/api/subsystem/${APP_ID}`, { token: root, body: { name: `ERP 同步改 ${TS}`, status: 'enabled' } })
+const info4 = await api('GET', '/api/subsys/info', { token: APP_KEY })
 check('SAA-S13 重新启用自省恢复 200', info4.status === 200, `${info4.status}`)
 
-// ================= 以下为统一表 + 密钥/token + 系统资源接口场景（@SAA-S17..）=================
+// ================= 统一表 + 密钥/token 双轨 + 资源协作面全量访问（@SAA-S17..）=================
 
-// ---- 全范围接入：appid+密钥与 token 双轨 ----
-const created2 = await api('POST', '/api/subsystem/system-app/create', { token: root, body: { name: `全资源-${TS}`, scopes: ['org_read', 'org_write', 'user_read', 'user_write', 'team_read', 'team_write'] } })
+// ---- appid+密钥与 token 双轨（统一 /api/subsys/token）----
+const created2 = await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'app', name: `全资源-${TS}` } })
 const APP2_ID = created2.json?.id
 const APP2_KEY = created2.json?.key
-const APP2_SECRET = created2.json?.secret
-check('SAA-S17 创建返回一次性 appid+密钥', created2.status === 200 && APP2_KEY?.startsWith('moai-sa-') && typeof APP2_SECRET === 'string' && APP2_SECRET.length === 48, `secret len=${APP2_SECRET?.length}`)
-const infoD = await api('GET', '/api/subsys/system/info', { token: APP2_KEY })
+const APP2_SECRET = await revealSecret(root, APP2_ID)
+check('SAA-S17 创建返回 appid+掩码，信封回显 48 位原文', created2.status === 200 && APP2_KEY?.startsWith('moai-sa-') && typeof APP2_SECRET === 'string' && APP2_SECRET.length === 48, `secret len=${APP2_SECRET?.length}`)
+const infoD = await api('GET', '/api/subsys/info', { token: APP2_KEY })
 check('SAA-S18 appid 直连自省 200（双轨·直连）', infoD.status === 200 && infoD.json.id === APP2_ID, `${infoD.status}`)
 
-check('SAA-S19 错误密钥换取 token 401', (await api('POST', '/api/subsys/system/token', { body: { appId: APP2_KEY, secret: 'wrong-secret' } })).status === 401)
-const tok1 = await api('POST', '/api/subsys/system/token', { body: { appId: APP2_KEY, secret: APP2_SECRET } })
+check('SAA-S19 错误密钥换取 token 401', (await api('POST', '/api/subsys/token', { body: { appId: APP2_KEY, secret: 'wrong-secret' } })).status === 401)
+const tok1 = await api('POST', '/api/subsys/token', { body: { appId: APP2_KEY, secret: APP2_SECRET } })
 check(
   'SAA-S20 正确密钥换取 access+refresh',
   tok1.status === 200 && !!tok1.json?.accessToken && !!tok1.json?.refreshToken && tok1.json.expiresIn > 0,
   `${tok1.status} ${tok1.text.slice(0, 120)}`,
 )
-const infoT = await api('GET', '/api/subsys/system/info', { token: tok1.json?.accessToken })
+const infoT = await api('GET', '/api/subsys/info', { token: tok1.json?.accessToken })
 check('SAA-S21 token 轨自省 200（双轨·token）', infoT.status === 200 && infoT.json.id === APP2_ID, `${infoT.status}`)
 const usersByToken = await api('GET', '/api/subsys/system/users/list?pageNo=1&pageSize=5', { token: tok1.json?.accessToken })
 check('SAA-S22 token 轨访问系统资源接口 200', usersByToken.status === 200 && Array.isArray(usersByToken.json?.items), `${usersByToken.status} ${usersByToken.text.slice(0, 120)}`)
-const tokForge = await api('POST', '/api/subsys/system/token/refresh', { body: { refreshToken: 'not-a-jwt' } })
+const tokForge = await api('POST', '/api/subsys/token/refresh', { body: { refreshToken: 'not-a-jwt' } })
 check('SAA-S23 伪造 refresh token 401', tokForge.status === 401, `${tokForge.status}`)
-const tok2 = await api('POST', '/api/subsys/system/token/refresh', { body: { refreshToken: tok1.json?.refreshToken } })
+const tok2 = await api('POST', '/api/subsys/token/refresh', { body: { refreshToken: tok1.json?.refreshToken } })
 check(
   'SAA-S24 refresh 轮换新对且新 access 可用',
   tok2.status === 200 && !!tok2.json?.accessToken && tok2.json.accessToken !== tok1.json.accessToken
-    && (await api('GET', '/api/subsys/system/info', { token: tok2.json.accessToken })).status === 200,
+    && (await api('GET', '/api/subsys/info', { token: tok2.json.accessToken })).status === 200,
   `${tok2.status} ${tok2.text.slice(0, 120)}`,
 )
 
 // ---- 停用即时拒绝（双轨）----
-await api('PUT', `/api/subsystem/system-app/${APP2_ID}`, { token: root, body: { name: `全资源-${TS}`, scopes: ['org_read', 'org_write', 'user_read', 'user_write', 'team_read', 'team_write'], status: 'disabled' } })
-const infoDisK = await api('GET', '/api/subsys/system/info', { token: APP2_KEY })
-const infoDisT = await api('GET', '/api/subsys/system/info', { token: tok2.json?.accessToken })
+await api('PUT', `/api/subsystem/${APP2_ID}`, { token: root, body: { name: `全资源-${TS}`, status: 'disabled' } })
+const infoDisK = await api('GET', '/api/subsys/info', { token: APP2_KEY })
+const infoDisT = await api('GET', '/api/subsys/info', { token: tok2.json?.accessToken })
 check('SAA-S25 停用后直连与 token 双轨均 403', infoDisK.status === 403 && infoDisT.status === 403, `key=${infoDisK.status} token=${infoDisT.status}`)
-await api('PUT', `/api/subsystem/system-app/${APP2_ID}`, { token: root, body: { name: `全资源-${TS}`, scopes: ['org_read', 'org_write', 'user_read', 'user_write', 'team_read', 'team_write'], status: 'enabled' } })
-check('SAA-S26 重新启用后 token 轨恢复 200', (await api('GET', '/api/subsys/system/info', { token: tok2.json?.accessToken })).status === 200)
+await api('PUT', `/api/subsystem/${APP2_ID}`, { token: root, body: { name: `全资源-${TS}`, status: 'enabled' } })
+check('SAA-S26 重新启用后 token 轨恢复 200', (await api('GET', '/api/subsys/info', { token: tok2.json?.accessToken })).status === 200)
 
 // ---- 重置密钥：旧密钥换取立即 401 ----
-const reset2 = await api('POST', `/api/subsystem/system-app/${APP2_ID}/reset-secret`, { token: root })
-check('SAA-S27 重置密钥返回新密钥', reset2.status === 200 && !!reset2.json?.secret && reset2.json.secret !== APP2_SECRET && reset2.json.secret.length === 48, `${reset2.status}`)
-check('SAA-S28 旧密钥换取 token 401', (await api('POST', '/api/subsys/system/token', { body: { appId: APP2_KEY, secret: APP2_SECRET } })).status === 401)
-check('SAA-S29 新密钥换取 token 200', (await api('POST', '/api/subsys/system/token', { body: { appId: APP2_KEY, secret: reset2.json?.secret } })).status === 200)
+const reset2 = await api('POST', `/api/subsystem/${APP2_ID}/reset-secret`, { token: root })
+const NEW_SECRET2 = await revealSecret(root, APP2_ID)
+check('SAA-S27 重置密钥返回新掩码且信封回显新原文', reset2.status === 200 && reset2.json?.secretMask?.includes('****') && NEW_SECRET2.length === 48 && NEW_SECRET2 !== APP2_SECRET, `${reset2.status}`)
+check('SAA-S28 旧密钥换取 token 401', (await api('POST', '/api/subsys/token', { body: { appId: APP2_KEY, secret: APP2_SECRET } })).status === 401)
+check('SAA-S29 新密钥换取 token 200', (await api('POST', '/api/subsys/token', { body: { appId: APP2_KEY, secret: NEW_SECRET2 } })).status === 200)
 
-// ---- 只读范围接入：scope 分档门禁 ----
-const createdRo = await api('POST', '/api/subsystem/system-app/create', { token: root, body: { name: `只读-${TS}`, scopes: ['org_read'] } })
-const RO_KEY = createdRo.json?.key
-check('SAA-S30 只读接入读组织角色 200', (await api('GET', '/api/subsys/system/org/roles', { token: RO_KEY })).status === 200)
-const roWrite = await api('POST', '/api/subsys/system/users', { token: RO_KEY, body: { userName: uname('denied') } })
-check('SAA-S31 只读接入写用户 403', roWrite.status === 403, `${roWrite.status} ${roWrite.text.slice(0, 100)}`)
-const roToken = await api('POST', '/api/subsys/system/token', { body: { appId: RO_KEY, secret: createdRo.json?.secret } })
-const roTeamByToken = await api('POST', '/api/subsys/system/teams', { token: roToken.json?.accessToken, body: { name: uname('deniedteam') } })
-check('SAA-S32 只读接入 token 轨写团队 403', roTeamByToken.status === 403, `${roTeamByToken.status}`)
-const roNoScope = await api('POST', '/api/subsys/system/org/roles', { token: RO_KEY, body: { name: 'x' } })
-check('SAA-S33 只读接入写组织 403', roNoScope.status === 403, `${roNoScope.status}`)
+// ---- 资源协作面全量访问（scope 分档下线，原只读 403 用例退役）----
+const fullOrgCreate = await api('POST', '/api/subsys/system/org/roles', { token: APP2_KEY, body: { name: `全量组织-${TS}` } })
+check('SAA-S58 直连写组织角色 200（无范围限制）', fullOrgCreate.status === 200 && Number(fullOrgCreate.json?.orgRoleId) > 0, `${fullOrgCreate.status} ${fullOrgCreate.text.slice(0, 100)}`)
+const fullOrgDel = fullOrgCreate.status === 200 ? await api('DELETE', `/api/subsys/system/org/roles/${fullOrgCreate.json?.orgRoleId}`, { token: APP2_KEY }) : null
+check('SAA-S59 直连删组织角色 200', fullOrgDel?.status === 200, `del=${fullOrgDel?.status}`)
+
+// ---- 子系统 token 互通：两类接入同一套接口访问资源面 ----
+const SUB_KEY = `interop${TS}`
+const subCreated = await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'subsystem', key: SUB_KEY, name: `互通子系统-${TS}`, teamScope: 'allTeams' } })
+const SUB_SECRET = await revealSecret(root, subCreated.json?.id)
+const subToken = await api('POST', '/api/subsys/token', { body: { appId: SUB_KEY, secret: SUB_SECRET } })
+const subUsers = await api('GET', '/api/subsys/system/users/list?pageNo=1&pageSize=5', { token: subToken.json?.accessToken })
+check('SAA-S60 子系统 token 访问同一资源面 200（同一套接口）', subUsers.status === 200 && Array.isArray(subUsers.json?.items), `${subUsers.status} ${subUsers.text.slice(0, 120)}`)
+
+// ---- 应用接入心跳与自省在线（合并模型后同一心跳端点）----
+const appHb = await api('POST', '/api/subsys/heartbeat', { token: APP2_KEY, body: { instanceId: `saa-inst-${TS}` } })
+const appHbInfo = appHb.status === 200 ? await api('GET', '/api/subsys/info', { token: APP2_KEY }) : null
+check('SAA-S61 应用接入心跳 200 且自省在线', appHb.status === 200 && appHbInfo?.json?.online === true && Number(appHbInfo?.json?.onlineInstances) === 1, `hb=${appHb.status} info=${appHbInfo?.status}`)
 
 // ---- 用户 upsert（ERP 推送主链路）----
 const erpName = uname('erp')
@@ -254,25 +274,25 @@ const rm1 = await api('DELETE', `/api/subsys/system/teams/${TID}/users/${ERP_UID
 const rm2 = await api('DELETE', `/api/subsys/system/teams/${TID}/users/${ERP_UID}`, { token: APP2_KEY })
 check('SAA-S55 移除成员后再移除 404', rm1.status === 200 && rm2.status === 404, `rm1=${rm1.status} rm2=${rm2.status}`)
 const teamsList = await api('GET', '/api/subsys/system/teams/list', { token: APP2_KEY })
-check('SAA-S56 团队列表（team_read）回显新建团队', teamsList.status === 200 && (teamsList.json?.items ?? []).some((x) => Number(x.teamId ?? x.id) === TID), `${teamsList.status} ${teamsList.text.slice(0, 140)}`)
+check('SAA-S56 团队列表回显新建团队', teamsList.status === 200 && (teamsList.json?.items ?? []).some((x) => Number(x.teamId ?? x.id) === TID), `${teamsList.status} ${teamsList.text.slice(0, 140)}`)
 
-// ---- 清理：删除全资源与只读接入，双轨与 refresh 全失效 ----
-const del2 = await api('DELETE', `/api/subsystem/system-app/${APP2_ID}`, { token: root })
-const infoDelT = await api('GET', '/api/subsys/system/info', { token: tok2.json?.accessToken })
-const tokDel = await api('POST', '/api/subsys/system/token', { body: { appId: APP2_KEY, secret: reset2.json?.secret } })
-const refDel = await api('POST', '/api/subsys/system/token/refresh', { body: { refreshToken: tok2.json?.refreshToken } })
+// ---- 清理：删除接入，双轨与 refresh 全失效 ----
+const del2 = await api('DELETE', `/api/subsystem/${APP2_ID}`, { token: root })
+const infoDelT = await api('GET', '/api/subsys/info', { token: tok2.json?.accessToken })
+const tokDel = await api('POST', '/api/subsys/token', { body: { appId: APP2_KEY, secret: NEW_SECRET2 } })
+const refDel = await api('POST', '/api/subsys/token/refresh', { body: { refreshToken: tok2.json?.refreshToken } })
 check('SAA-S57 删除后 token 轨 401、换取 401、refresh 401', del2.status === 200 && infoDelT.status === 401 && tokDel.status === 401 && refDel.status === 401, `del=${del2.status} info=${infoDelT.status} tok=${tokDel.status} ref=${refDel.status}`)
-await api('DELETE', `/api/subsystem/system-app/${createdRo.json?.id}`, { token: root })
+await api('DELETE', `/api/subsystem/${subCreated.json?.id}`, { token: root })
 
 // ---- 搜索 ----
-const search = await api('GET', `/api/subsystem/system-app/list?search=${encodeURIComponent(APP_KEY.slice(0, 12))}`, { token: root })
+const search = await api('GET', `/api/subsystem/list?search=${encodeURIComponent(APP_KEY.slice(0, 12))}`, { token: root })
 check('SAA-S14 按前缀搜索命中', search.status === 200 && (search.json?.items ?? []).some((x) => x.id === APP_ID), search.text.slice(0, 160))
 
 // ---- 删除即失效 ----
-const del = await api('DELETE', `/api/subsystem/system-app/${APP_ID}`, { token: root })
-const info5 = await api('GET', '/api/subsys/system/info', { token: APP_KEY })
+const del = await api('DELETE', `/api/subsystem/${APP_ID}`, { token: root })
+const info5 = await api('GET', '/api/subsys/info', { token: APP_KEY })
 check('SAA-S15 删除后 key 立即失效 401', del.status === 200 && info5.status === 401, `del=${del.status} info=${info5.status}`)
-const list2 = await api('GET', '/api/subsystem/system-app/list', { token: root })
+const list2 = await api('GET', '/api/subsystem/list', { token: root })
 check('SAA-S16 删除后列表不可见', !(list2.json?.items ?? []).some((x) => x.id === APP_ID))
 
 console.log(`\n结果：${PASS} 通过 / ${FAIL} 失败`)

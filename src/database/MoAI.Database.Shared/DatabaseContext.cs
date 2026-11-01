@@ -23,9 +23,29 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AccessAppEntity> AccessApps { get; set; }
 
     /// <summary>
-    /// 子系统.
+    /// 登录日志：每次登录尝试（成功/失败）与来源环境、风险评估结果.
     /// </summary>
-    public virtual DbSet<SubsystemEntity> Subsystems { get; set; }
+    public virtual DbSet<LoginLogEntity> LoginLogs { get; set; }
+
+    /// <summary>
+    /// 登录风险事件：风控规则命中记录，管理员处理后标记已读.
+    /// </summary>
+    public virtual DbSet<LoginRiskEventEntity> LoginRiskEvents { get; set; }
+
+    /// <summary>
+    /// 登录 IP 封禁：风控自动封禁或管理员手动封禁.
+    /// </summary>
+    public virtual DbSet<LoginIpBanEntity> LoginIpBans { get; set; }
+
+    /// <summary>
+    /// 资源使用统计（每日）：统计模块定期批量落库，按 资源类型+资源id+日期 记录当日累计量.
+    /// </summary>
+    public virtual DbSet<ResourceUsageDailyEntity> ResourceUsageDailies { get; set; }
+
+    /// <summary>
+    /// 资源使用统计（总量）：统计模块定期批量落库，按 资源类型+资源id 累计总量，不按日隔离.
+    /// </summary>
+    public virtual DbSet<ResourceUsageTotalEntity> ResourceUsageTotals { get; set; }
 
     /// <summary>
     /// 子系统团队授权.
@@ -33,14 +53,19 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<SubsystemTeamAuthEntity> SubsystemTeamAuths { get; set; }
 
     /// <summary>
-    /// 组织角色.
+    /// 组织.
     /// </summary>
     public virtual DbSet<OrgRoleEntity> OrgRoles { get; set; }
 
     /// <summary>
-    /// 组织角色成员绑定.
+    /// 组织成员绑定.
     /// </summary>
     public virtual DbSet<OrgUserRoleEntity> OrgUserRoles { get; set; }
+
+    /// <summary>
+    /// 统一组织授权.
+    /// </summary>
+    public virtual DbSet<OrgGrantEntity> OrgGrants { get; set; }
 
     /// <summary>
     /// 模型渠道.
@@ -309,6 +334,21 @@ public partial class DatabaseContext : DbContext
     /// 工作任务.
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
+
+    /// <summary>
+    /// 站内信：每收件人一行，已读态/软删独立，列表按接收人隔离.
+    /// </summary>
+    public virtual DbSet<MessageEntity> Messages { get; set; }
+
+    /// <summary>
+    /// 通知中心渠道.
+    /// </summary>
+    public virtual DbSet<NotificationChannelEntity> NotificationChannels { get; set; }
+
+    /// <summary>
+    /// 通知发送记录.
+    /// </summary>
+    public virtual DbSet<NotificationLogEntity> NotificationLogs { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

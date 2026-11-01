@@ -6,7 +6,7 @@
 ## 项目简介
 
 开源 AI 应用平台：.NET 10 模块化单体（Maomi.Core 模块框架 + EF Core + PostgreSQL/pgvector + Redis + MinIO + RabbitMQ + MediatR）+ React 19 前端。
-已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉/企业微信机器人接入对话，Agent/流程应用，按第三方登录绑定自动归属站内用户会话）、子系统注册与接入（appid+一次性密钥/token 换取+refresh 轮换/心跳在线/团队授权全员或指定/委托 SSO 登录）+ 应用接入统一表（团队 moai-ac- 与系统级 moai-sa- 同表分域，appid+密钥，重置密钥，token 换取）+ 系统资源协作面 /api/subsys/system/*（组织/用户/团队治理按 scope 分档，供 ERP 等系统推送）、角色组织（全局层级角色树/path 物化路径/用户角色分配/默认角色注册自动赋予，仅管理员）。**团队模型网关已下线**：模型仅供建模应用（对话/工作流/知识库等）内部调用，不再对外提供直连模型网关（后续由独立子系统承接），见 [docs/gateway/sdd.md](./docs/gateway/sdd.md)。进度见 [rounds-log.md](./docs/rounds-log.md)。
+已落地：认证账号与用户治理、设置、OAuth 连接器、文件存储、后台任务、分类、团队（协作与资源隔离单元；成员/角色/转让）、团队插件授权、团队变量、知识库（含向量化）、AI 渠道与模型、AI 插件（静态/动态/自定义）、团队应用（Agent/流程应用的创建与基础信息）、提示词（个人/团队/市场上架审批）、技能（平台内置/团队/个人归属维护 + 市场上架审批 + 技能包下载 + 应用默认技能·用户对话内勾选，沙箱加载执行）、应用外部渠道（飞书/钉钉/企业微信机器人接入对话，Agent/流程应用，按第三方登录绑定自动归属站内用户会话）、**系统级接入合并模型**（子系统与应用接入同表 access_app 同列表同接口：统一 /api/subsys/token 换取 + /api/subsys/** 协作面；子系统=自填 appid+委托 SSO 多回调地址白名单（redirect_uri 指定入口）+团队/组织授权+多实例心跳在线（按实例 ZSET 回显在线实例数）；应用接入=moai-sa- 结构化自校验 appid（Guid+HMAC，公网扫描不打库）+全量资源，资源范围分档已下线）+ 团队级应用接入（moai-ac- 同表 Level 分域）+ 组织（通讯录层级·授权维度，不隔离资源；全局层级组织树/path 物化路径/用户组织分配/默认组织注册自动赋予，仅管理员；非 OA/ERP 轻量定位，不搞复杂组织管理与权限设计）+ 统一组织授权（org_grant 跨资源表 + IOrgGrantService 领域服务 + Redis 缓存，self/up/down 方向规则把资源定向放通给组织线，管理面 /org/grant/*） + 站内信与 SignalR 事件推送（/hub/moai 单 Hub **只推事件不推数据**：onEvent 负载仅事件名+标识字段，消费方收事件后调 REST 取详情；message 表每收件人一行独立已读态/软删；RabbitMQ message.push 异步推送 + Redis backplane 多实例共享连接；IMessageService 发个人/团队/全员、IEventPushService 通用事件推送，其它模块仅引用 Message.Shared；读侧 REST /api/message/*；前端已接入：`@microsoft/signalr` 客户端（token 实时工厂+自动重连+15s 首连重试，withCredentials=false 规避 CORS）+ 侧边栏左下角未读角标 + 右上角 Notification 带标题悬浮提醒（duration=0 刷新即消失）+ 个人中心二级菜单（消息中心/基本信息/修改密码/两步验证/第三方账号分区导航），见 [docs/message/sdd.md](./docs/message/sdd.md)） + **通知中心**（统一多渠道通知出口：飞书/钉钉/企微机器人 webhook、Telegram Bot、通用 webhook（自定义头+请求体模板）、SMTP 邮件（复用系统设置）、站内推送（复用站内信）；`INotificationService` 领域服务屏蔽外部接口格式——业务方只给 Title/Content/Level/Source；NotifyAsync=Hangfire 异步投递失败重试 3 次、SendNowAsync=同步；每渠道发送记录留痕（notification_log，pending/success/failed+耗时+失败原因）；管理页「通知中心」双 Tab（渠道管理：按类型动态表单+保存前试发；发送记录：过滤分页），仅管理员；见 [docs/notification/sdd.md](./docs/notification/sdd.md)） + **登录安全风控**（登录日志全量落库 + 六规则风险判定：R1 IP 爆破/R2 撞库喷洒自动封禁、R3 新 IP/R4 异地/R5 疾速旅行、R6 管理员新环境升级；处置=风险事件+用户提醒邮件+管理员告警邮件+IP 自动/手动封禁，Hangfire 异步发信不阻塞登录；IP2Region xdb v3 离线归属地（configs/ip2region.xdb，缺失自动降级）+ ForwardedHeaders 反代穿透（MoAI:ForwardedHeaders 配置）；管理页「日志事件」Tabs（登录日志/风险事件/IP 封禁）+ 侧边栏菜单未读角标（60s 轮询，badge store 通用可扩展）；见 [docs/loginsafety/sdd.md](./docs/loginsafety/sdd.md)）。**团队模型网关已下线**：模型仅供建模应用（对话/工作流/知识库等）内部调用，不再对外提供直连模型网关（后续由独立子系统承接），见 [docs/gateway/sdd.md](./docs/gateway/sdd.md)。进度见 [rounds-log.md](./docs/rounds-log.md)。
 
 ## 仓库结构
 
@@ -16,8 +16,11 @@ src/{auth,account,settings,oauthconnect,storage,common,infra,database,hangfire}/
 src/{classify,team,teamplugin,variable,wiki,app,publication}/                      团队协作
 src/{feishu,dingtalk,weixinwork}/                                                       外部渠道（飞书/钉钉/企业微信机器人接入）
 src/subsystem/                                                                      子系统接入 + 应用接入统一表 + 系统资源协作面
-src/org/                                                                           角色组织（全局层级角色树/path 物化路径/用户角色分配）
+src/org/                                                                           组织（通讯录层级·授权维度：组织树/path 物化路径/用户组织分配 + 统一组织授权表）
+src/message/                                                                        站内信 + SignalR 事件推送（/hub/moai 只推事件不推数据；message 表每收件人一行；RabbitMQ message.push 异步 + Redis backplane 多实例；IMessageService/IEventPushService 领域服务，见 docs/message/sdd.md）
+src/notification/                                                                   通知中心（统一多渠道通知出口：INotificationService 领域服务 + 七类渠道发送器策略 + Hangfire 异步投递与发送记录留痕，见 docs/notification/sdd.md）
 src/{aichannel,aimodel,aiplugin,skill}/                                       AI 业务层（团队模型网关已下线，见 docs/gateway/sdd.md）
+src/statistics/                                                                     资源使用统计（**全站使用量统计唯一入口**：领域服务/轮次收集器 → Redis 原子增减 → 每分钟批量落库 → 写入器写资源自身表 + 统一日表/总量表；粒度按天/按小时管理员可配；覆盖 plugin/app/skill/wiki/ai-model/prompt 六类，见 docs/statistics/sop.md）
 src/{ai,admin,plugin}/                                                             在建
 ui/               前端（React 19 + TS + Vite + antd 5 + zustand + Kiota）
 docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NET 单测
@@ -37,6 +40,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 - `BusinessException` 必须显式设 `StatusCode`（否则默认 500）
 - DI 用 Maomi 特性（`[InjectOnScoped]`），不手写 `AddScoped`
 - 列表 DTO 继承 `AuditsInfo`，用 `IUserInfoFillService.FillAsync` 填充人名
+- **使用量统计一律走统计模块**（[docs/statistics/sop.md](./docs/statistics/sop.md)）：无作用域场景用 `IResourceUsageService.RecordAsync/RemoveAsync`；agent 对话内工具类调用用 `IResourceUsageCollector.Record`（作用域结束自动批量推送）；**禁止直写资源 use_count 字段或自建 Redis 计数**
 
 **前端**（[真源](./ui/docs/frontend-conventions.md)）
 - 禁止直接 import antd `Table`/`Form` 等被封装组件，一律用 `@/design-system`
@@ -103,23 +107,29 @@ node local-dev/team-timer-smoke.mjs      # TIMER 28（团队自动化：CRUD/门
 node local-dev/team-plugin-e2e.mjs       # TP 47（团队插件：MCP/OpenAPI 导入刷新删除权限 + 团队变量插值 MCP 桩验证 + 落库保留占位符 + OpenAPI header/query 保存回显 + 系统插件 key 全局保留与授权团队可用）
 node local-dev/app-e2e.mjs               # AP 217（含 AP-60 审批策略 a~q：六类绑定资源白名单校验/自动放通/知识库检索多源全量判定 + AP-61 知识库工具链路：search_knowledge_base 片段序号/上下文 + get_knowledge_base_chunk 按序号补取片段 + AP-97 版本号只在发布/上架时设置且只能递增不能回退 + AP-98/99 会话上下文用量查询：门禁/零值回显/对话后热态累计与生效模型回显/缓存命中捕获与使用分析聚合，AP-99d 含约 120s 审计落库轮询）
 node local-dev/app-usecount-e2e.mjs      # AU 13（应用使用次数计数：会话创建推 Redis 计数每分钟批量落库 + 删除会话不回退 + 累计/存活双口径 + 调试会话不计入；含约 75s 计数周期等待）
+node local-dev/statistics-usage-e2e.mjs  # ST 32（统一资源使用统计：门禁 403/401 + 会话/提示词专家计数入 Redis 缓冲 + 每分钟批量落库统一日表/总量表（upsert 累加）+ names/daily/total 查询过滤分页 + startDate>endDate 400 + 写入器仍写资源自身表 + 统计粒度按天/按小时切换（hour 模式落当前 UTC 小时桶、非法值 400）+ 插件运行触发 plugin-usage + 趋势接口按日聚合/参数校验；含约 150s 批量落库轮询）
 node local-dev/chat-attachment-e2e.mjs   # CA 12（对话附件：pre_upload_chat_file 直传 + chat-attachment/extract 提取 + 白名单/越权防护）
 node local-dev/sandbox-limits-e2e.mjs    # SB 21（沙箱上限：系统设置三项 + 格式校验 + 应用配置强校验/未启用放行/回读）
 node local-dev/settings-logo-e2e.mjs    # SET 28（网站 Logo：root 上传/恢复默认 + 匿名 serverinfo 暴露 logoPath + 门禁与伪造 objectKey 防护；网站名称：root 保存/超长 400/清空回退默认；登录页背景图：上传/生效/恢复 + serverinfo 暴露 loginBackgroundPath + 门禁与伪造防护）
 node local-dev/settings-smtp-e2e.mjs     # SET 34（SMTP 邮件服务：八项保存回读/大小写归一/格式校验/门禁/未启用与未配置防护 + 测试邮件发送与 AUTH 认证全链路；内置本地 SMTP 桩，零真实依赖）
 node local-dev/auth-email-code-e2e.mjs   # AUTH 34（注册/找回密码邮箱验证码：serverinfo 双开关回显/未启用 SMTP 拒绝/发码 60s 冷却/验证码一次性与错 5 次作废/默认与自定义模板 SmartFormat 插值/重置密码旧号失效全链路 + 验证码模板设置保存校验；内置本地 SMTP 桩，零真实依赖）
+node local-dev/auth-2fa-e2e.mjs          # AUTH 54（两步验证 TOTP：设置校验/绑定 setup-enable-disable 全流程/登录挑战一次性票据与防重放/强制 2FA 受限 token 白名单与旧 token 立即恢复/root 重置与目标保护 + 登录邮箱验证码三模式 off·always·after_fail/公共端点拒绝 login 用途/冷却重发 429/TOTP 优先；内置 SMTP 桩与纯 node RFC 6238 实现，零真实依赖）
+node local-dev/loginsafety-e2e.mjs       # LS 37（登录安全风控：门禁 403/401 + 登录日志全量落库 @LS-S4 + ForwardedHeaders 真实 IP 与 IP2Region 归属地（北京/海外）@LS-S6~S7 + R1 爆破封禁 403/事件/auto:R1/解封恢复 @LS-S8~S12 + R2 撞库喷洒 @LS-S13~S15 + R3 新 IP 中风险/R5 疾速旅行高风险 @LS-S16~S19 + 用户提醒与管理员告警邮件（SMTP 桩捕获、自定义模板与收件人）@LS-S19b~S20b + 标记已读联动未读角标 @LS-S21 + 手动封禁/解封 @LS-S22~S23 + 总开关关闭仅记录 @LS-S24 + 设置校验 400 @LS-S25 + 本人登录记录 @LS-S26；需 ForwardedHeaders 开启的后端（脚本头部含启动命令），内置本地 SMTP 桩）
 node local-dev/workflow-e2e.mjs          # WF 130（流程应用：草稿/发布/调试执行/条件分支与脚本/多条件/知识库检索/问题分类/HTTP 请求节点/运行历史/系统设置·开场白/发布应用对话与 sys 系统变量/开始节点固定 question 契约与旧编排 query 镜像/Agent 应用节点与循环嵌套防护/核心节点不变量/对话实时过程：CUSTOM 节点事件 + AI 正文流式/图片理解节点：桩视觉模型多模态全链路·非视觉模型拒绝·来源防护；内置桩视觉模型零依赖，存量依赖真实模型的用例在环境无模型时失败属预期）
 node local-dev/publication-e2e.mjs       # PB 49（上架审核：申请/审批/撤回，is_public 审批制；上架自动取最新团队发布版本，携带版本需递增）
 node local-dev/prompt-e2e.mjs            # PT 46（提示词：个人/团队 CRUD + 上架审批 + 市场 + 编辑器/头像）
 node local-dev/skill-userconfig-e2e.mjs  # SKL 25（技能三级归属权限 + 应用默认技能：管理员配置默认技能、用户技能勾选仅限默认范围、专家按个人/团队可用范围校验）
-node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载工具调用自增 use_count + options/userconfig 双接口回显；本地桩模型）
+node local-dev/skill-usecount-e2e.mjs    # SKC 8（技能使用计数：装载工具调用写 skill-usage Redis 计数、统计模块批量落库 use_count + options/userconfig 双接口回显；本地桩模型，含约 100s 落库轮询）
 node local-dev/skill-market-e2e.mjs      # SM 28（技能市场：市场/详情/下载可见性 + 上架审批 + 删除联动）
 node local-dev/team-apikey-scope-e2e.mjs  # TA 24（应用接入 key 功能范围：范围回显/非法代码 400/知识库读写范围/应用对话门禁/兼容/刷新吊销/key 直连知识库/密钥兑换语义：缺密钥 401、错密钥 401、重置后旧密钥失效新密钥可换 @TA-40~42 + 模型网关下线断言；团队接入 key 已下线）
 node local-dev/ai-channel-auth-e2e.mjs    # AC 23（渠道级批量授权：授权视图统计+并集回显/全量替换所有私有模型/公开模型不受影响/模型列表 authorizedTeamNames 回显/团队可用性联动（/ai/model/available）/清空/admin 门禁/团队渠道 400）
 node local-dev/team-aichannel-e2e.mjs     # TC 38（团队自有模型渠道：门禁/渠道模型 CRUD/同步导入桩/聚合可用模型 isTeamChannel 标记（/ai/model/available）/模型网关下线断言/团队隔离/额度端点下线 + 渠道 tokens 统计字段与审计人名回显 @TC-S8；内置 OpenAI 兼容桩，零真实依赖）
-node local-dev/subsystem-e2e.mjs          # SUB 53（子系统注册与接入+委托 SSO：root 门禁/appid+一次性密钥（PBKDF2 哈希落库）/token 换取+机器 token refresh 轮换 @SUB-S45/心跳在线 60s TTL/停用即拒/密钥重置/团队授权全员与指定/删除释放 appid + 委托码签发-兑换-刷新全链路与门禁；零外部依赖）
-node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000  # SAA 61（系统应用接入统一表：管理 CRUD+重置密钥/appid+密钥与 access_token 双轨鉴权 @SAA-S17~S29/refresh 轮换/停用双轨 403/scope 分档 @SAA-S30~S33/系统资源接口：用户 upsert 幂等推送+禁用+root 保护 @SAA-S34~S42、组织角色树与用户角色分配 @SAA-S43~S49、团队与成员治理 @SAA-S50~S56；零外部依赖，需后端运行中）
-node local-dev/org-e2e.mjs                # ORG 38（角色组织：管理员门禁/角色树创建与 path 物化路径计算/同父重名 409/子树整体迁移重写 path/防环/删除保护与级联解绑/用户角色分配·去重·整体覆盖 + 默认角色：设置·清空·注册自动获得·删除联动；零外部依赖）
+node local-dev/subsystem-e2e.mjs          # SUB 101（系统级接入合并模型：root 门禁/子系统自填 appid+密钥（AES 可逆存储仅回掩码，reveal-secret RSA+AES 信封随时回显原文）/统一 /api/subsys/token 换取+refresh 轮换 @SUB-S45/心跳 v2 按实例 ZSET（缺实例标识 400/单双实例在线实例数 @SUB-S61~S62）/停用即拒/密钥重置/团队授权全员与指定/删除释放 appid + 委托 SSO 全链路与门禁 + 组织授权（org_grant：方向 self/up/down/团队∪组织并集 @SUB-S46~S52）+ 合并模型 @SUB-S53~S60：应用接入自动 moai-sa- appid/同表回显不漏原文/直连轨仅限应用接入/资源面全量（scope 分档下线）/旧端点下线/子系统专属端点 404/应用接入心跳；零外部依赖）
+node local-dev/subsys-demo-seed.mjs       # DEMO（清空并重建演示数据：子系统×2（双回调/指定团队）+应用接入×2+组织授权，末尾功能验证：token/直连/心跳在线/信封回显/redirect_uri/限流 429；可重复执行）
+node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000  # SAA 58（应用接入：管理门禁/创建一次性 appid+密钥/列表前缀回显/appid 直连与 access_token 双轨 @SAA-S17~S29/refresh 轮换/停用双轨 403/资源面全量访问+子系统 token 互通+心跳 @SAA-S60~S62/系统资源接口：用户 upsert 幂等推送+禁用+root 保护 @SAA-S34~S42、组织角色 @SAA-S43~S49、团队与成员治理 @SAA-S50~S56；scope 分档用例已退役 @SAA-S3/S18/S58；零外部依赖，需后端运行中）
+node local-dev/org-e2e.mjs                # ORG 53（组织：管理员门禁/组织树创建与 path 物化路径计算/同父重名 409/子树整体迁移重写 path/防环/删除保护与级联解绑/用户组织分配·去重·整体覆盖 + 默认组织：设置·清空·注册自动获得·删除联动 + 统一组织授权 ORG-39~53：self/up/down 方向判定/并集/整体覆盖/树迁移重判/删除组织级联清授权；零外部依赖）
+node local-dev/message-e2e.mjs           # MSG 9（站内信+事件推送：Hub 鉴权 401/access_token 连接/接口门禁/空态与参数校验/MQ 管理口发布→消费者→onEvent 送达/目标隔离/同用户多连接；MQ 场景管理口不可达时 SKIP；发送落库链路见 tests/MoAI.Message.Tests 13 用例）
+node local-dev/notification-e2e.mjs      # NT 42（通知中心：门禁 401/403 + 渠道 CRUD 与七类配置校验 + 渠道测试同步试发（飞书/钉钉桩内验签、企微 markdown、Telegram sendMessage、通用 webhook 默认结构与模板渲染、SMTP 复用系统设置桩捕获、站内推送 toAdmins）+ 广播异步投递 Hangfire 落发送记录（八渠道成功/失败终态带原因/快照/过滤分页）+ 停用不投递 + 站内信送达 + 删除留历史；内置 webhook/SMTP 桩，零真实外部依赖；可重复执行）
 node local-dev/aimodel-sync-e2e.mjs       # AM 14（模型同步挑选导入：sync 只探测不落库 + 候选项 recognized/exists/modelKind + import 默认停用 + 再 sync exists 标记；内置 /models 桩服务，零真实依赖）
 node local-dev/model-catalog-e2e.mjs      # MC 16（模型目录在线同步：catalog/sync 门禁 401/403 + configs/models.json 优先内置目录且按时间戳自动重载 + configs 损坏回退不崩 + 真实下载 opencode 目录覆盖 configs 立即生效；下载场景需外网或 HTTPS_PROXY 可达 models.opencode.ai，网络不通时该场景失败属预期）
 node local-dev/external-app-e2e.mjs       # EA 75（外部应用接入：三类外部 token/会话对话/访问点/沙箱技能限制/key 直连团队资源与直连会话/悬浮组件 tokenProvider·onRequest 拦截器与全局 mount + 模型网关下线断言）

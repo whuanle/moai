@@ -180,6 +180,14 @@ public class SettingsService : ISettingsService
                 }
 
                 return host;
+            case SettingDefinitions.StatisticsGranularityKey:
+                var granularity = value.Trim().ToLowerInvariant();
+                if (granularity != "day" && granularity != "hour")
+                {
+                    throw new BusinessException("统计粒度必须是 day（按天）或 hour（按小时）.") { StatusCode = 400 };
+                }
+
+                return granularity;
             case SettingDefinitions.SmtpPortKey:
                 if (!int.TryParse(value.Trim(), out var port) || port < 1 || port > 65535)
                 {
@@ -279,6 +287,104 @@ public class SettingsService : ISettingsService
                 }
 
                 return value.Trim();
+            case SettingDefinitions.LoginForced2faKey:
+                var forced2fa = value.Trim().ToLowerInvariant();
+                if (forced2fa != "true" && forced2fa != "false")
+                {
+                    throw new BusinessException("强制两步验证开关必须为 true 或 false.") { StatusCode = 400 };
+                }
+
+                return forced2fa;
+            case SettingDefinitions.LoginEmailCodeModeKey:
+                var loginCodeMode = value.Trim().ToLowerInvariant();
+                if (loginCodeMode != "off" && loginCodeMode != "always" && loginCodeMode != "after_fail")
+                {
+                    throw new BusinessException("登录邮箱验证码策略必须为 off、always 或 after_fail.") { StatusCode = 400 };
+                }
+
+                return loginCodeMode;
+            case SettingDefinitions.SmtpLoginCodeSubjectKey:
+                var loginSubjectTemplate = value.Trim();
+                if (loginSubjectTemplate.Length > MaxEmailSubjectLength)
+                {
+                    throw new BusinessException($"验证码邮件主题长度不能超过 {MaxEmailSubjectLength} 个字符.") { StatusCode = 400 };
+                }
+
+                return loginSubjectTemplate;
+            case SettingDefinitions.SmtpLoginCodeBodyKey:
+                if (value.Length > MaxSettingValueLength)
+                {
+                    throw new BusinessException($"验证码邮件正文长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
+                }
+
+                return value;
+            case SettingDefinitions.LoginSafetyEnabledKey:
+            case SettingDefinitions.LoginSafetyNotifyUserEnabledKey:
+            case SettingDefinitions.LoginSafetyNotifyAdminEnabledKey:
+                var lsSwitch = value.Trim().ToLowerInvariant();
+                if (lsSwitch != "true" && lsSwitch != "false")
+                {
+                    throw new BusinessException("登录安全开关必须为 true 或 false.") { StatusCode = 400 };
+                }
+
+                return lsSwitch;
+            case SettingDefinitions.LoginSafetyAdminRecipientsKey:
+                var recipients = value.Trim();
+                if (recipients.Length > MaxSettingValueLength)
+                {
+                    throw new BusinessException($"告警收件人长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
+                }
+
+                foreach (var recipient in recipients.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    if (!System.Net.Mail.MailAddress.TryCreate(recipient, out _))
+                    {
+                        throw new BusinessException($"告警收件人不是合法的邮箱地址：{recipient}.") { StatusCode = 400 };
+                    }
+                }
+
+                return recipients;
+            case SettingDefinitions.LoginSafetyIpFailThresholdKey:
+            case SettingDefinitions.LoginSafetyDistinctUserThresholdKey:
+                if (!int.TryParse(value.Trim(), out var lsThreshold) || lsThreshold < 1 || lsThreshold > 10000)
+                {
+                    throw new BusinessException("登录安全阈值必须是 1~10000 之间的整数.") { StatusCode = 400 };
+                }
+
+                return value.Trim();
+            case SettingDefinitions.LoginSafetyIpFailWindowMinutesKey:
+            case SettingDefinitions.LoginSafetyIpBanMinutesKey:
+            case SettingDefinitions.LoginSafetyTravelWindowMinutesKey:
+                if (!int.TryParse(value.Trim(), out var lsMinutes) || lsMinutes < 1 || lsMinutes > 525600)
+                {
+                    throw new BusinessException("登录安全窗口/时长必须是 1~525600 之间的整数（分钟）.") { StatusCode = 400 };
+                }
+
+                return value.Trim();
+            case SettingDefinitions.LoginSafetyNewIpDaysKey:
+                if (!int.TryParse(value.Trim(), out var lsDays) || lsDays < 0 || lsDays > 3650)
+                {
+                    throw new BusinessException("新 IP 回看天数必须是 0~3650 之间的整数（0 表示关闭检测）.") { StatusCode = 400 };
+                }
+
+                return value.Trim();
+            case SettingDefinitions.LoginSafetyUserAlertSubjectKey:
+            case SettingDefinitions.LoginSafetyAdminAlertSubjectKey:
+                var lsSubject = value.Trim();
+                if (lsSubject.Length > MaxEmailSubjectLength)
+                {
+                    throw new BusinessException($"告警邮件主题长度不能超过 {MaxEmailSubjectLength} 个字符.") { StatusCode = 400 };
+                }
+
+                return lsSubject;
+            case SettingDefinitions.LoginSafetyUserAlertBodyKey:
+            case SettingDefinitions.LoginSafetyAdminAlertBodyKey:
+                if (value.Length > MaxSettingValueLength)
+                {
+                    throw new BusinessException($"告警邮件正文长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
+                }
+
+                return value;
         }
 
         return value;

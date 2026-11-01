@@ -19,6 +19,8 @@ export interface SkillListItem {
   /** 技能头像的 ObjectKey（空串=未设置），前端用 resolveStorageUrl 转可访问地址 */
   avatarPath?: string | null
   fileCount?: number | null
+  /** 使用次数（统计模块每分钟批量落库，非实时） */
+  useCount?: number | null
   createUserId?: number | null
   createUserName?: string | null
   createTime?: string | null

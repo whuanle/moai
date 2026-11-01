@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface UsersRequestBuilder extends BaseRequestBuilder<UsersRequestBuilder> {
     /**
-     * 查询某组织角色下的用户清单（仅管理员）.
+     * 查询某组织下的用户清单（仅管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryOrgRoleUsersCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,14 +22,14 @@ export interface UsersRequestBuilder extends BaseRequestBuilder<UsersRequestBuil
      */
      get(requestConfiguration?: RequestConfiguration<UsersRequestBuilderGetQueryParameters> | undefined) : Promise<QueryOrgRoleUsersCommandResponse | undefined>;
     /**
-     * 查询某组织角色下的用户清单（仅管理员）.
+     * 查询某组织下的用户清单（仅管理员）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<UsersRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 查询某组织角色下的用户清单（仅管理员）.
+ * 查询某组织下的用户清单（仅管理员）.
  */
 export interface UsersRequestBuilderGetQueryParameters {
     /**

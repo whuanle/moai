@@ -87,6 +87,19 @@ public class EmailCodeService : IEmailCodeService
                 throw new BusinessException("邮箱 {0} 已被注册", email) { StatusCode = 409 };
             }
         }
+        else if (purpose == EmailCodePurpose.Login)
+        {
+            // 登录验证码：公共发送端点已拒绝该用途，只有持有一次性登录票据的内部端点才会走到这里
+            if (!smtp.Enabled)
+            {
+                throw new BusinessException("SMTP 邮件服务未启用，无法发送登录验证码.") { StatusCode = 400 };
+            }
+
+            if (!await _databaseContext.Users.AnyAsync(u => u.Email == email && u.IsDeleted == 0, cancellationToken))
+            {
+                throw new BusinessException("该邮箱未注册.") { StatusCode = 404 };
+            }
+        }
         else
         {
             if (!smtp.Enabled)
@@ -194,20 +207,28 @@ public class EmailCodeService : IEmailCodeService
     /// </summary>
     private async Task<(string Subject, string Body)> LoadTemplatesAsync(EmailCodePurpose purpose, CancellationToken cancellationToken)
     {
-        var keys = purpose == EmailCodePurpose.Register
-            ? new[] { SettingDefinitions.SmtpRegisterCodeSubjectKey, SettingDefinitions.SmtpRegisterCodeBodyKey }
-            : new[] { SettingDefinitions.SmtpResetCodeSubjectKey, SettingDefinitions.SmtpResetCodeBodyKey };
+        var (keys, defaultSubject, defaultBody) = purpose switch
+        {
+            EmailCodePurpose.Register => (
+                new[] { SettingDefinitions.SmtpRegisterCodeSubjectKey, SettingDefinitions.SmtpRegisterCodeBodyKey },
+                SettingDefinitions.DefaultRegisterCodeSubject,
+                SettingDefinitions.DefaultRegisterCodeBody),
+            EmailCodePurpose.Login => (
+                new[] { SettingDefinitions.SmtpLoginCodeSubjectKey, SettingDefinitions.SmtpLoginCodeBodyKey },
+                SettingDefinitions.DefaultLoginCodeSubject,
+                SettingDefinitions.DefaultLoginCodeBody),
+            _ => (
+                new[] { SettingDefinitions.SmtpResetCodeSubjectKey, SettingDefinitions.SmtpResetCodeBodyKey },
+                SettingDefinitions.DefaultResetCodeSubject,
+                SettingDefinitions.DefaultResetCodeBody)
+        };
 
         var values = await _databaseContext.Settings
             .Where(s => keys.Contains(s.Key))
             .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
 
-        var subject = purpose == EmailCodePurpose.Register
-            ? SettingDefinitions.DefaultRegisterCodeSubject
-            : SettingDefinitions.DefaultResetCodeSubject;
-        var body = purpose == EmailCodePurpose.Register
-            ? SettingDefinitions.DefaultRegisterCodeBody
-            : SettingDefinitions.DefaultResetCodeBody;
+        var subject = defaultSubject;
+        var body = defaultBody;
 
         if (values.TryGetValue(keys[0], out var subjectValue) && !string.IsNullOrWhiteSpace(subjectValue))
         {

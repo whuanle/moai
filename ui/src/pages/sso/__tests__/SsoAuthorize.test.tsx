@@ -60,7 +60,7 @@ describe('SsoAuthorize（子系统委托 SSO 跳转页）', () => {
     })
     renderAt('/sso/authorize?client=report&state=st1')
 
-    await waitFor(() => expect(subsystemSsoAuthorizeCode).toHaveBeenCalledWith('report', 'st1'))
+    await waitFor(() => expect(subsystemSsoAuthorizeCode).toHaveBeenCalledWith('report', 'st1', undefined))
     expect(await screen.findByText('授权成功，正在跳转到 智能报表…')).toBeTruthy()
   })
 

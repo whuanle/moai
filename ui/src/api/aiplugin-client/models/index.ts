@@ -638,6 +638,7 @@ export function deserializeIntoPluginBaseInfoItem(pluginBaseInfoItem: Partial<Pl
         "classifyId": n => { pluginBaseInfoItem.classifyId = n.getNumberValue(); },
         "counter": n => { pluginBaseInfoItem.counter = n.getStringValue(); },
         "description": n => { pluginBaseInfoItem.description = n.getStringValue(); },
+        "functionCount": n => { pluginBaseInfoItem.functionCount = n.getNumberValue(); },
         "isPublic": n => { pluginBaseInfoItem.isPublic = n.getBooleanValue(); },
         "openapiFileId": n => { pluginBaseInfoItem.openapiFileId = n.getStringValue(); },
         "openapiFileName": n => { pluginBaseInfoItem.openapiFileName = n.getStringValue(); },
@@ -830,7 +831,9 @@ export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPlu
         "classifyName": n => { queryPluginManageListCommandResponseItem.classifyName = n.getStringValue(); },
         "config": n => { queryPluginManageListCommandResponseItem.config = n.getStringValue(); },
         "configExample": n => { queryPluginManageListCommandResponseItem.configExample = n.getStringValue(); },
+        "counter": n => { queryPluginManageListCommandResponseItem.counter = n.getStringValue(); },
         "description": n => { queryPluginManageListCommandResponseItem.description = n.getStringValue(); },
+        "functionCount": n => { queryPluginManageListCommandResponseItem.functionCount = n.getNumberValue(); },
         "id": n => { queryPluginManageListCommandResponseItem.id = n.getGuidValue(); },
         "isPublic": n => { queryPluginManageListCommandResponseItem.isPublic = n.getBooleanValue(); },
         "isSystem": n => { queryPluginManageListCommandResponseItem.isSystem = n.getBooleanValue(); },
@@ -884,6 +887,9 @@ export function deserializeIntoRefreshMcpServerPluginCommand(refreshMcpServerPlu
 export function deserializeIntoRunPluginCommand(runPluginCommand: Partial<RunPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "configJson": n => { runPluginCommand.configJson = n.getStringValue(); },
+        "contextUserId": n => { runPluginCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { runPluginCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "function": n => { runPluginCommand.functionEscaped = n.getStringValue(); },
         "key": n => { runPluginCommand.key = n.getStringValue(); },
         "requestJson": n => { runPluginCommand.requestJson = n.getStringValue(); },
     }
@@ -895,6 +901,7 @@ export function deserializeIntoRunPluginCommand(runPluginCommand: Partial<RunPlu
 // @ts-ignore
 export function deserializeIntoSaveDynamicPluginCommand(saveDynamicPluginCommand: Partial<SaveDynamicPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { saveDynamicPluginCommand.avatarPath = n.getStringValue(); },
         "classifyId": n => { saveDynamicPluginCommand.classifyId = n.getNumberValue(); },
         "config": n => { saveDynamicPluginCommand.config = n.getStringValue(); },
         "description": n => { saveDynamicPluginCommand.description = n.getStringValue(); },
@@ -1127,6 +1134,10 @@ export interface PluginBaseInfoItem extends AuditsInfo, Parsable {
      * 描述.
      */
     description?: string | null;
+    /**
+     * 函数数量.
+     */
+    functionCount?: number | null;
     /**
      * 是否公开.
      */
@@ -1455,9 +1466,17 @@ export interface QueryPluginManageListCommandResponseItem extends AuditsInfo, Pa
      */
     configExample?: string | null;
     /**
+     * 使用量计数.
+     */
+    counter?: string | null;
+    /**
      * 描述.
      */
     description?: string | null;
+    /**
+     * 函数数量：自定义插件为函数表计数，静态/动态插件注册可用时为 1.
+     */
+    functionCount?: number | null;
     /**
      * 插件记录 id.
      */
@@ -1547,6 +1566,18 @@ export interface RunPluginCommand extends Parsable {
      */
     configJson?: string | null;
     /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
+     * 自定义插件（MCP/OpenAPI）的函数名称；为空时插件仅有一个函数才可执行.
+     */
+    functionEscaped?: string | null;
+    /**
      * 插件 key.
      */
     key?: string | null;
@@ -1559,6 +1590,10 @@ export interface RunPluginCommand extends Parsable {
  * 保存动态插件实例。创建时填实例 key + 模板 key + 配置；更新时实例 key 不可变.
  */
 export interface SaveDynamicPluginCommand extends Parsable {
+    /**
+     * 头像文件 ObjectKey，可空；仅在传入时生效（更新时不传表示不修改头像）.
+     */
+    avatarPath?: string | null;
     /**
      * 分类 id，0 表示未分类.
      */
@@ -1780,6 +1815,7 @@ export function serializePluginBaseInfoItem(writer: SerializationWriter, pluginB
         writer.writeNumberValue("classifyId", pluginBaseInfoItem.classifyId);
         writer.writeStringValue("counter", pluginBaseInfoItem.counter);
         writer.writeStringValue("description", pluginBaseInfoItem.description);
+        writer.writeNumberValue("functionCount", pluginBaseInfoItem.functionCount);
         writer.writeBooleanValue("isPublic", pluginBaseInfoItem.isPublic);
         writer.writeStringValue("openapiFileId", pluginBaseInfoItem.openapiFileId);
         writer.writeStringValue("openapiFileName", pluginBaseInfoItem.openapiFileName);
@@ -1972,7 +2008,9 @@ export function serializeQueryPluginManageListCommandResponseItem(writer: Serial
         writer.writeStringValue("classifyName", queryPluginManageListCommandResponseItem.classifyName);
         writer.writeStringValue("config", queryPluginManageListCommandResponseItem.config);
         writer.writeStringValue("configExample", queryPluginManageListCommandResponseItem.configExample);
+        writer.writeStringValue("counter", queryPluginManageListCommandResponseItem.counter);
         writer.writeStringValue("description", queryPluginManageListCommandResponseItem.description);
+        writer.writeNumberValue("functionCount", queryPluginManageListCommandResponseItem.functionCount);
         writer.writeGuidValue("id", queryPluginManageListCommandResponseItem.id);
         writer.writeBooleanValue("isPublic", queryPluginManageListCommandResponseItem.isPublic);
         writer.writeBooleanValue("isSystem", queryPluginManageListCommandResponseItem.isSystem);
@@ -2026,6 +2064,9 @@ export function serializeRefreshMcpServerPluginCommand(writer: SerializationWrit
 export function serializeRunPluginCommand(writer: SerializationWriter, runPluginCommand: Partial<RunPluginCommand> | undefined | null = {}) : void {
     if (runPluginCommand) {
         writer.writeStringValue("configJson", runPluginCommand.configJson);
+        writer.writeStringValue("contextUserId", runPluginCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", runPluginCommand.contextUserType);
+        writer.writeStringValue("function", runPluginCommand.functionEscaped);
         writer.writeStringValue("key", runPluginCommand.key);
         writer.writeStringValue("requestJson", runPluginCommand.requestJson);
     }
@@ -2037,6 +2078,7 @@ export function serializeRunPluginCommand(writer: SerializationWriter, runPlugin
 // @ts-ignore
 export function serializeSaveDynamicPluginCommand(writer: SerializationWriter, saveDynamicPluginCommand: Partial<SaveDynamicPluginCommand> | undefined | null = {}) : void {
     if (saveDynamicPluginCommand) {
+        writer.writeStringValue("avatarPath", saveDynamicPluginCommand.avatarPath);
         writer.writeNumberValue("classifyId", saveDynamicPluginCommand.classifyId);
         writer.writeStringValue("config", saveDynamicPluginCommand.config);
         writer.writeStringValue("description", saveDynamicPluginCommand.description);
@@ -2239,6 +2281,7 @@ export interface UpdatePluginTeamAuthorizationCommand extends Parsable {
      */
     teamIds?: number[] | null;
 }
+export type UserType = (typeof UserTypeObject)[keyof typeof UserTypeObject];
 /**
  * 插件类型.
  */
@@ -2248,6 +2291,16 @@ export const PluginTypeObject = {
     NativePlugin: "nativePlugin",
     ToolPlugin: "toolPlugin",
     WikiPlugin: "wikiPlugin",
+} as const;
+/**
+ * 用户类型.
+ */
+export const UserTypeObject = {
+    None: "none",
+    External: "external",
+    ExternalApp: "externalApp",
+    Normal: "normal",
+    Timer: "timer",
 } as const;
 /* tslint:enable */
 /* eslint-enable */

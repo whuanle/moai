@@ -39,7 +39,7 @@ function toIsDisable(filter: StatusFilter): boolean | undefined {
   return undefined
 }
 
-/** 团队管理面板（组织角色页第一个 Tab） */
+/** 团队管理面板（组织页第一个 Tab） */
 export function TeamsPanel() {
   const { t } = useTranslation()
 

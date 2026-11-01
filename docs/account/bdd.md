@@ -155,7 +155,7 @@ Feature: 绑定列表与解绑
     When 解绑从未绑定过的认证方式
     Then 返回未找到（404）提示未绑定该第三方账号
 
-Feature: 前端账号设置页（/account）
+Feature: 前端个人中心（/account/:section?，二级菜单：消息中心/基本信息/修改密码/两步验证/第三方账号）
   @ACC-S24 @manual
   Scenario: 修改基本资料
     When 修改昵称保存
@@ -184,4 +184,12 @@ Feature: 前端账号设置页（/account）
   Scenario: 解绑第三方
     When 点击已绑定项的解绑并确认
     Then 提示成功且该项恢复为绑定按钮
+
+  @ACC-S29 @manual
+  Scenario: 个人中心二级菜单分区导航
+    When 依次点击左侧菜单 消息中心/基本信息/修改密码/两步验证/第三方账号
+    Then URL 切换为 /account/{messages|profile|password|twofa|oauth} 且右侧仅渲染对应分区
+    When 访问旧聚合页链接 /account/settings 或侧边栏用户菜单「设置」
+    Then 分别重定向到 /account/profile 与 /account/profile
+    And 强制 2FA 流程落地 /account/twofa?bind2fa=1 时顶部展示强制绑定提示并定位 2FA 卡片
 ```

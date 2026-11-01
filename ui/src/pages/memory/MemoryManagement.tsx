@@ -325,29 +325,31 @@ export function MemoryManagement() {
     {
       title: t('memoryMgmt.colActions'),
       key: 'actions',
-      width: 140,
+      width: 240,
       fixed: 'right',
       render: (_: unknown, record: MyMemoryItem) => (
         <Space size={0}>
-          <Tooltip title={appMemoryEnabled ? t('memoryMgmt.edit') : t('memoryMgmt.editDisabledAppMemory')}>
+          <Tooltip title={appMemoryEnabled ? undefined : t('memoryMgmt.editDisabledAppMemory')}>
             <Button
-              type="text"
+              type="link"
               size="small"
               icon={<EditOutlined />}
-              aria-label={t('memoryMgmt.edit')}
               disabled={!appMemoryEnabled}
               onClick={() => openEdit(record, 'app')}
-            />
+            >
+              {t('memoryMgmt.edit')}
+            </Button>
           </Tooltip>
-          <Tooltip title={globalEnabled ? t('memoryMgmt.promote') : t('memoryMgmt.promoteDisabled')}>
+          <Tooltip title={globalEnabled ? undefined : t('memoryMgmt.promoteDisabled')}>
             <Button
-              type="text"
+              type="link"
               size="small"
               icon={<GlobalOutlined />}
-              aria-label={t('memoryMgmt.promote')}
               disabled={!globalEnabled}
               onClick={() => void handlePromote(record)}
-            />
+            >
+              {t('memoryMgmt.promote')}
+            </Button>
           </Tooltip>
           <Popconfirm
             title={t('myMemory.deleteConfirm')}
@@ -355,9 +357,9 @@ export function MemoryManagement() {
             cancelText={t('common.cancel')}
             onConfirm={() => void handleDeleteAppMemory(record)}
           >
-            <Tooltip title={t('memoryMgmt.delete')}>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('memoryMgmt.delete')} />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              {t('memoryMgmt.delete')}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -371,19 +373,20 @@ export function MemoryManagement() {
     {
       title: t('memoryMgmt.colActions'),
       key: 'actions',
-      width: 96,
+      width: 170,
       fixed: 'right',
       render: (_: unknown, record: MyMemoryItem) => (
         <Space size={0}>
-          <Tooltip title={t('memoryMgmt.edit')}>
+          <Tooltip title={globalEnabled ? undefined : t('memoryMgmt.globalDisabled')}>
             <Button
-              type="text"
+              type="link"
               size="small"
               icon={<EditOutlined />}
-              aria-label={t('memoryMgmt.edit')}
               disabled={!globalEnabled}
               onClick={() => openEdit(record, 'global')}
-            />
+            >
+              {t('memoryMgmt.edit')}
+            </Button>
           </Tooltip>
           <Popconfirm
             title={t('memoryMgmt.deleteConfirm')}
@@ -391,9 +394,9 @@ export function MemoryManagement() {
             cancelText={t('common.cancel')}
             onConfirm={() => void handleDeleteGlobal(record)}
           >
-            <Tooltip title={t('memoryMgmt.delete')}>
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('memoryMgmt.delete')} />
-            </Tooltip>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              {t('memoryMgmt.delete')}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -444,7 +447,7 @@ export function MemoryManagement() {
               dataSource={appMemories}
               loading={appMemoriesLoading}
               sticky
-              scroll={{ x: 760 }}
+              scroll={{ x: 860 }}
               pagination={{
                 current: appPage,
                 pageSize: PAGE_SIZE,
@@ -504,7 +507,7 @@ export function MemoryManagement() {
                         dataSource={globalMemories}
                         loading={globalLoading}
                         sticky
-                        scroll={{ x: 760 }}
+                        scroll={{ x: 830 }}
                         pagination={{
                           current: globalPage,
                           pageSize: PAGE_SIZE,

@@ -11,7 +11,7 @@ using MoAI.Org.Queries.Responses;
 namespace MoAI.Org.Controllers;
 
 /// <summary>
-/// 角色组织管理接口（仅管理员）：全局层级角色树维护与用户角色分配.
+/// 组织管理接口（仅管理员）：全局层级角色树维护与用户角色分配.
 /// </summary>
 [ApiController]
 [Route("/org")]
@@ -35,7 +35,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 查询组织角色全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
+    /// 查询组织全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树.
     /// </summary>
     /// <param name="search">按角色名称模糊搜索，可选.</param>
     /// <param name="ct">取消令牌.</param>
@@ -48,7 +48,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 创建组织角色（仅管理员），parentId 为空表示根角色.
+    /// 创建组织（仅管理员），parentId 为空表示根角色.
     /// </summary>
     /// <param name="req">创建请求体.</param>
     /// <param name="ct">取消令牌.</param>
@@ -61,7 +61,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 更新组织角色（仅管理员）：改名与调整上级，调整上级时整体重写子树物化路径.
+    /// 更新组织（仅管理员）：改名与调整上级，调整上级时整体重写子树物化路径.
     /// </summary>
     /// <param name="id">角色 id.</param>
     /// <param name="req">更新请求体.</param>
@@ -89,7 +89,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 删除组织角色（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
+    /// 删除组织（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
     /// </summary>
     /// <param name="id">角色 id.</param>
     /// <param name="ct">取消令牌.</param>
@@ -102,7 +102,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 查询某组织角色下的用户清单（仅管理员）.
+    /// 查询某组织下的用户清单（仅管理员）.
     /// </summary>
     /// <param name="id">角色 id.</param>
     /// <param name="search">按用户名/昵称模糊搜索，可选.</param>
@@ -116,7 +116,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 查询某用户持有的组织角色清单（仅管理员）.
+    /// 查询某用户持有的组织清单（仅管理员）.
     /// </summary>
     /// <param name="userId">用户 id.</param>
     /// <param name="ct">取消令牌.</param>
@@ -129,7 +129,7 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 整体覆盖某用户的组织角色集合（仅管理员），空列表=清空.
+    /// 整体覆盖某用户的组织集合（仅管理员），空列表=清空.
     /// </summary>
     /// <param name="userId">用户 id.</param>
     /// <param name="req">更新请求体.</param>
@@ -148,7 +148,7 @@ public class OrgController : ControllerBase
         var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
         if (!userState.IsAdmin)
         {
-            throw new BusinessException("只有管理员可以管理组织角色") { StatusCode = 403 };
+            throw new BusinessException("只有管理员可以管理组织") { StatusCode = 403 };
         }
     }
 }

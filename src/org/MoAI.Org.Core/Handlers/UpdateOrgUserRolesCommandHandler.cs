@@ -5,6 +5,7 @@ using MoAI.Database.Entities;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Org.Commands;
+using MoAI.Org.Services;
 
 namespace MoAI.Org.Handlers;
 
@@ -14,14 +15,17 @@ namespace MoAI.Org.Handlers;
 public class UpdateOrgUserRolesCommandHandler : IRequestHandler<UpdateOrgUserRolesCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IOrgGrantCache _orgGrantCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOrgUserRolesCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public UpdateOrgUserRolesCommandHandler(DatabaseContext databaseContext)
+    /// <param name="orgGrantCache">组织授权缓存（用户角色变更需失效）.</param>
+    public UpdateOrgUserRolesCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
     {
         _databaseContext = databaseContext;
+        _orgGrantCache = orgGrantCache;
     }
 
     /// <inheritdoc/>
@@ -43,7 +47,7 @@ public class UpdateOrgUserRolesCommandHandler : IRequestHandler<UpdateOrgUserRol
                 .ToListAsync(cancellationToken);
             if (existingRoleIds.Count != roleIds.Count)
             {
-                throw new BusinessException("部分角色不存在.") { StatusCode = 400 };
+                throw new BusinessException("部分组织不存在.") { StatusCode = 400 };
             }
         }
 
@@ -64,6 +68,9 @@ public class UpdateOrgUserRolesCommandHandler : IRequestHandler<UpdateOrgUserRol
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 用户组织变更后失效其角色缓存，授权判定即时生效
+        await _orgGrantCache.RemoveUserRoleIdsAsync(request.UserId, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

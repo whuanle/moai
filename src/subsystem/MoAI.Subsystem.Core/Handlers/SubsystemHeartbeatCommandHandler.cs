@@ -10,13 +10,13 @@ namespace MoAI.Subsystem.Handlers;
 /// </summary>
 public class SubsystemHeartbeatCommandHandler : IRequestHandler<SubsystemHeartbeatCommand, EmptyCommandResponse>
 {
-    private readonly SubsystemOnlineService _onlineService;
+    private readonly ISubsystemOnlineService _onlineService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SubsystemHeartbeatCommandHandler"/> class.
     /// </summary>
     /// <param name="onlineService">在线在场服务.</param>
-    public SubsystemHeartbeatCommandHandler(SubsystemOnlineService onlineService)
+    public SubsystemHeartbeatCommandHandler(ISubsystemOnlineService onlineService)
     {
         _onlineService = onlineService;
     }

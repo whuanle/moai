@@ -17,6 +17,7 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
     private readonly IPluginExecutor _executor;
     private readonly IDynamicInstanceResolver _dynamicResolver;
     private readonly ICustomPluginCaller _customPluginCaller;
+    private readonly IMediator _mediator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RunPluginCommandHandler"/> class.
@@ -25,16 +26,19 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
     /// <param name="executor">插件执行引擎.</param>
     /// <param name="dynamicResolver">动态插件实例解析器.</param>
     /// <param name="customPluginCaller">自定义插件（MCP/OpenAPI）调用端口.</param>
+    /// <param name="mediator">消息中介器，用于累加插件使用次数.</param>
     public RunPluginCommandHandler(
         IPluginRegistry registry,
         IPluginExecutor executor,
         IDynamicInstanceResolver dynamicResolver,
-        ICustomPluginCaller customPluginCaller)
+        ICustomPluginCaller customPluginCaller,
+        IMediator mediator)
     {
         _registry = registry;
         _executor = executor;
         _dynamicResolver = dynamicResolver;
         _customPluginCaller = customPluginCaller;
+        _mediator = mediator;
     }
 
     /// <inheritdoc/>
@@ -53,6 +57,7 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
             var dynamic = _dynamicResolver.Resolve(request.Key);
             if (dynamic != null)
             {
+                await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
                 return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, context, cancellationToken).ConfigureAwait(false);
             }
 
@@ -60,12 +65,19 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
             var customResult = await _customPluginCaller.RunAsync(request.Key, request.Function, request.RequestJson, cancellationToken).ConfigureAwait(false);
             if (customResult != null)
             {
+                await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
                 return customResult;
             }
 
             throw new BusinessException("插件不存在") { StatusCode = 404 };
         }
 
+        await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
         return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken).ConfigureAwait(false);
+    }
+
+    private Task RecordUsageAsync(string key, CancellationToken cancellationToken)
+    {
+        return _mediator.Send(new IncrementPluginUsageCommand { Key = key }, cancellationToken);
     }
 }

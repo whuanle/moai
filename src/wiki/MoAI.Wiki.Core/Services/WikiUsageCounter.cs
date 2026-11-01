@@ -1,24 +1,24 @@
 using System.Globalization;
-using MediatR;
-using MoAI.Hangfire.Services;
+using System.Threading;
+using System.Threading.Tasks;
+using MoAI.Statistics.Services;
 
 namespace MoAI.Wiki.Services;
 
 /// <summary>
-/// 知识库使用次数计数器默认实现.
+/// 知识库使用次数计数器默认实现：委托统计模块领域服务推送 Redis.
 /// </summary>
 public class WikiUsageCounter : IWikiUsageCounter
 {
-    private const string CounterName = "wiki-usage";
-    private readonly IMediator _mediator;
+    private readonly IResourceUsageService _resourceUsageService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WikiUsageCounter"/> class.
     /// </summary>
-    /// <param name="mediator">消息中介器.</param>
-    public WikiUsageCounter(IMediator mediator)
+    /// <param name="resourceUsageService">资源使用统计领域服务.</param>
+    public WikiUsageCounter(IResourceUsageService resourceUsageService)
     {
-        _mediator = mediator;
+        _resourceUsageService = resourceUsageService;
     }
 
     /// <inheritdoc/>
@@ -26,15 +26,6 @@ public class WikiUsageCounter : IWikiUsageCounter
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(wikiId);
 
-        return _mediator.Send(
-            new IncrementCounterActivatorCommand
-            {
-                Name = CounterName,
-                Counters = new Dictionary<string, long>
-                {
-                    [wikiId.ToString(CultureInfo.InvariantCulture)] = 1,
-                },
-            },
-            cancellationToken);
+        return _resourceUsageService.RecordAsync(ResourceUsageNames.Wiki, wikiId.ToString(CultureInfo.InvariantCulture), 1, cancellationToken);
     }
 }

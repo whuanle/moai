@@ -54,4 +54,14 @@ public class UserStateInfo
     /// 已被删除.
     /// </summary>
     public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// 是否已绑定并启用两步验证（TOTP）.
+    /// </summary>
+    public bool TwoFactorEnabled { get; set; }
+
+    /// <summary>
+    /// 是否待绑定两步验证（系统强制 2FA 且 token 携带 mfa_pending 且尚未绑定）：仅 /account/userinfo 响应中回填.
+    /// </summary>
+    public bool MfaPending { get; set; }
 }

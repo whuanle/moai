@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createLoginCommandResponseFromDiscriminatorValue, serializeLoginCommand, serializeLoginCommandResponse, type BusinessValidationResult, type LoginCommand, type LoginCommandResponse } from '../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { type VerifyRequestBuilder, VerifyRequestBuilderRequestsMetadata } from './verify/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/auth/login
  */
 export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuilder> {
+    /**
+     * The verify property
+     */
+    get verify(): VerifyRequestBuilder;
     /**
      * 用户登录.
      * @param body 登录.
@@ -34,6 +40,14 @@ export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuil
  * Uri template for the request builder.
  */
 export const LoginRequestBuilderUriTemplate = "{+baseurl}/api/auth/login";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const LoginRequestBuilderNavigationMetadata: Record<Exclude<keyof LoginRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    verify: {
+        requestsMetadata: VerifyRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

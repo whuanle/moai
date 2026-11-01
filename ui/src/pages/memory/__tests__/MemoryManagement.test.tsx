@@ -76,7 +76,7 @@ describe('MemoryManagement', () => {
     render(<MemoryManagement />)
     fireEvent.click(await screen.findByRole('button', { name: 'memoryMgmt.view' }))
 
-    fireEvent.click(await screen.findByRole('button', { name: 'memoryMgmt.edit' }))
+    fireEvent.click(await screen.findByRole('button', { name: /memoryMgmt\.edit/ }))
     const textarea = await screen.findByRole('textbox')
     fireEvent.change(textarea, { target: { value: '用户偏好极简回复' } })
     fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.save' }))
@@ -116,8 +116,8 @@ describe('MemoryManagement', () => {
       expect(saveMyGlobalMemory).toHaveBeenCalledWith('用户习惯使用暗色主题', 0)
     })
 
-    // 编辑全局记忆
-    fireEvent.click(screen.getAllByRole('button', { name: 'memoryMgmt.edit' })[0])
+    // 编辑全局记忆（操作列按钮图标+文字，按正则匹配可访问名）
+    fireEvent.click(screen.getAllByRole('button', { name: /memoryMgmt\.edit/ })[0])
     const editBox = await screen.findByRole('textbox')
     fireEvent.change(editBox, { target: { value: '全局事实：用户在杭州远程办公' } })
     fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.save' }))
@@ -126,7 +126,7 @@ describe('MemoryManagement', () => {
     })
 
     // 删除全局记忆（Popconfirm 确认）
-    fireEvent.click(screen.getAllByRole('button', { name: 'memoryMgmt.delete' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /memoryMgmt\.delete/ })[0])
     fireEvent.click(await screen.findByRole('button', { name: 'common.ok' }))
     await waitFor(() => {
       expect(deleteMyGlobalMemory).toHaveBeenCalledWith('g1')
@@ -142,7 +142,7 @@ describe('MemoryManagement', () => {
     render(<MemoryManagement />)
     fireEvent.click(await screen.findByRole('button', { name: 'memoryMgmt.view' }))
 
-    fireEvent.click(await screen.findByRole('button', { name: 'memoryMgmt.promote' }))
+    fireEvent.click(await screen.findByRole('button', { name: /memoryMgmt\.promote/ }))
     await waitFor(() => {
       expect(promoteMemoryToGlobal).toHaveBeenCalledWith('app-1', 'm1')
     })

@@ -10,8 +10,8 @@ namespace MoAI.Subsystem.Controllers;
 
 /// <summary>
 /// 系统资源协作面——组织角色（/api/subsys/system/org/*）：
-/// 鉴权由 SystemAccessKeyMiddleware 承担，org_read/org_write 分档，
-/// 组织角色树与用户角色分配直接复用 Org 领域命令（门禁原在内部管理员控制器，此处以 scope 替代）.
+/// 鉴权由 SubsysAccessMiddleware 承担，资源范围分档已下线（任一系统级接入全量可用），
+/// 组织角色树与用户角色分配直接复用 Org 领域命令（门禁原在内部管理员控制器，此处以接入身份替代）.
 /// </summary>
 [ApiController]
 [Route("/subsys/system/org")]
@@ -38,7 +38,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public Task<QueryOrgRolesCommandResponse> Roles([FromQuery] string? search, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgRead);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new QueryOrgRolesCommand { Search = search }, ct);
     }
 
@@ -52,7 +52,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public Task<CreateOrgRoleCommandResponse> CreateRole([FromBody] CreateOrgRoleCommand req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(req, ct);
     }
 
@@ -67,7 +67,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public async Task<EmptyCommandResponse> UpdateRole([FromRoute] int orgRoleId, [FromBody] UpdateOrgRoleBody req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return await _mediator.Send(new UpdateOrgRoleCommand { OrgRoleId = orgRoleId, Name = req.Name, ParentId = req.ParentId }, ct);
     }
 
@@ -81,7 +81,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public Task<EmptyCommandResponse> DeleteRole([FromRoute] int orgRoleId, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new DeleteOrgRoleCommand { OrgRoleId = orgRoleId }, ct);
     }
 
@@ -96,7 +96,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public Task<QueryOrgRoleUsersCommandResponse> RoleUsers([FromRoute] int roleId, [FromQuery] string? search, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgRead);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new QueryOrgRoleUsersCommand { RoleId = roleId, Search = search }, ct);
     }
 
@@ -110,7 +110,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public Task<QueryUserOrgRolesCommandResponse> UserRoles([FromRoute] long userId, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgRead);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return _mediator.Send(new QueryUserOrgRolesCommand { UserId = userId }, ct);
     }
 
@@ -125,7 +125,7 @@ public class SystemOrgController : ControllerBase
     [AllowAnonymous]
     public async Task<EmptyCommandResponse> UpdateUserRoles([FromRoute] long userId, [FromBody] UpdateOrgUserRolesBody req, CancellationToken ct)
     {
-        SystemFaceGuard.RequireCaller(HttpContext, Database.Enums.SystemApiKeyScopes.OrgWrite);
+        SystemFaceGuard.RequireCaller(HttpContext);
         return await _mediator.Send(new UpdateOrgUserRolesCommand { UserId = userId, RoleIds = req.RoleIds }, ct);
     }
 }

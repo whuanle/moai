@@ -44,6 +44,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         AgentRunOptions? options = null,
         CancellationToken cancellationToken = default)
     {
+        // 作用域同步释放会调用收集器 IDisposable 兜底：一轮对话聚合的使用量在结束时批量推送统计
         using var scope = _scopeFactory.CreateScope();
         try
         {
@@ -66,6 +67,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         AgentRunOptions? options = null,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        // 作用域同步释放会调用收集器 IDisposable 兜底：SSE 流结束后批量推送本轮统计
         using var scope = _scopeFactory.CreateScope();
 
         AIAgent? inner = null;

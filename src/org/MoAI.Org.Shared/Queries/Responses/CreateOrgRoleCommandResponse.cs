@@ -1,7 +1,7 @@
 namespace MoAI.Org.Queries.Responses;
 
 /// <summary>
-/// 创建组织角色结果.
+/// 创建组织结果.
 /// </summary>
 public class CreateOrgRoleCommandResponse
 {

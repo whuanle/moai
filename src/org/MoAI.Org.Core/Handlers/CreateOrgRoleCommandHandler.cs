@@ -4,6 +4,7 @@ using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Org.Commands;
 using MoAI.Org.Queries.Responses;
+using MoAI.Org.Services;
 
 namespace MoAI.Org.Handlers;
 
@@ -13,14 +14,17 @@ namespace MoAI.Org.Handlers;
 public class CreateOrgRoleCommandHandler : IRequestHandler<CreateOrgRoleCommand, CreateOrgRoleCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IOrgGrantCache _orgGrantCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateOrgRoleCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public CreateOrgRoleCommandHandler(DatabaseContext databaseContext)
+    /// <param name="orgGrantCache">组织授权缓存（角色树变更需失效）.</param>
+    public CreateOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
     {
         _databaseContext = databaseContext;
+        _orgGrantCache = orgGrantCache;
     }
 
     /// <inheritdoc/>
@@ -45,6 +49,9 @@ public class CreateOrgRoleCommandHandler : IRequestHandler<CreateOrgRoleCommand,
         entity.Path = OrgRoleTreeGuard.BuildPath(parentPath, entity.Id);
         await _databaseContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        // 角色树新增节点，失效全量 path 缓存
+        await _orgGrantCache.RemoveRolePathsAsync(cancellationToken);
 
         return new CreateOrgRoleCommandResponse { OrgRoleId = entity.Id, Path = entity.Path };
     }

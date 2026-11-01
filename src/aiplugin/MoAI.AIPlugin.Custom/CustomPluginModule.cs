@@ -19,6 +19,6 @@ public class CustomPluginModule : IModule
         context.Services.AddScoped<IDynamicInstanceResolver, DynamicInstanceResolver>();
         context.Services.AddScoped<McpToolCallService>();
         context.Services.AddScoped<OpenApiToolCallService>();
-        context.Services.AddScoped<MoAI.Hangfire.Services.ICounterActivatorJob, PluginUsageCounterActivatorJob>();
+        context.Services.AddScoped<MoAI.Statistics.Services.IResourceUsageWriter, PluginUsageCounterActivatorJob>();
     }
 }

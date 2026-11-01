@@ -1,23 +1,24 @@
-using MediatR;
-using MoAI.Hangfire.Services;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MoAI.Statistics.Services;
 
 namespace MoAI.App.Services;
 
 /// <summary>
-/// 应用使用次数计数器默认实现.
+/// 应用使用次数计数器默认实现：委托统计模块领域服务推送 Redis.
 /// </summary>
 public class AppUsageCounter : IAppUsageCounter
 {
-    private const string CounterName = "app-usage";
-    private readonly IMediator _mediator;
+    private readonly IResourceUsageService _resourceUsageService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AppUsageCounter"/> class.
     /// </summary>
-    /// <param name="mediator">消息中介器.</param>
-    public AppUsageCounter(IMediator mediator)
+    /// <param name="resourceUsageService">资源使用统计领域服务.</param>
+    public AppUsageCounter(IResourceUsageService resourceUsageService)
     {
-        _mediator = mediator;
+        _resourceUsageService = resourceUsageService;
     }
 
     /// <inheritdoc/>
@@ -25,15 +26,6 @@ public class AppUsageCounter : IAppUsageCounter
     {
         ArgumentOutOfRangeException.ThrowIfEqual(appId, Guid.Empty);
 
-        return _mediator.Send(
-            new IncrementCounterActivatorCommand
-            {
-                Name = CounterName,
-                Counters = new Dictionary<string, long>
-                {
-                    [appId.ToString("N")] = 1,
-                },
-            },
-            cancellationToken);
+        return _resourceUsageService.RecordAsync(ResourceUsageNames.App, appId.ToString("N"), 1, cancellationToken);
     }
 }

@@ -315,3 +315,10 @@ ui/src/
 - `imap_email_query` 列表模式为信封级摘要（无正文/无附件标志），snippet 与附件列表只在 detail 模式提供；若后续需要「列表即摘要」，可改走 BODYSTRUCTURE+部分取（协议面更宽，暂不做）。
 - `yahoo_finance` 按雅虎财经公开端点（v8 chart / v1 search）样例报文实现；本机直连雅虎被地域拦截、代理未启动时无法实测真实上游，**真实字段若有出入仍需一次人工走查**（同博查/墨迹口径）。国内部署直连官方地址大概率被拦，建议实例配置镜像地址。
 - `news_hot_board` 渠道解析已按官方报文桩全量覆盖（@DYN-S106~S116），且 E2E 调试期间曾以真实上游全 16 渠道拉通（310 条真实数据解析正确）；但热榜接口均为网页端非公开接口，**平台风控或结构变化会导致单渠道失败**——已有失败隔离兜底（进 `Errors` 不影响其它来源），渠道修复属常规维护。
+
+### 插件管理页重构与使用量统计（2026-11-01，@DYN-S121~S124）
+
+- 管理页三列表页签统一 `PageToolbar`（filters/queries/actions）+ CheckableTag 分类行 + 卡片/列表双视图（`PluginCardView` 共享卡片组件；卡片头部 标题/插件 key/接入地址 各占一行独立省略，超长不互相挤压）；操作收纳：内联高频（查看函数/编辑/运行/删除 Popconfirm）、「更多」下拉收纳低频（刷新函数/授权团队）；形态分目标——列表操作列 图标+文字（规则 9），卡片底栏 图标+Tooltip（rounds 268 明确卡片底栏不属操作列约束，同提示词/技能卡片）
+- 统计页签 `PluginStatsPanel`：数据口径 = `GET /ai/plugin/manage/list`（全 kind）客户端聚合（type/classifyId/counter/functionCount）；`QueryPluginManageListCommandResponseItem` 新增 `counter`/`functionCount`、`PluginBaseInfoItem` 新增 `functionCount`（自定义=函数表计数、静态/动态=注册可用计 1）
+- 使用量计数接线（修复 counter 恒 0）：`IPluginUsageCounter` 接入三执行点（Agent 工具调用闭包直持实体 id；管理端/团队端运行入口解析实体 id，团队端复用可用性查询结果）；新增 Shared 命令 `IncrementPluginUsageCommand` + `.Custom` 层 Handler（`.Core` 不引用 Database 的分层约束）
+- 已知限制：调用趋势/活跃插件需按日统计表（plugin_usage_daily）支撑，本轮以空态占位；团队侧镜像页（teams/plugins）未同步重构，下一轮跟进

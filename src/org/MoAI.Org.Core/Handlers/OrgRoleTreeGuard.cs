@@ -6,7 +6,7 @@ using MoAI.Infra.Exceptions;
 namespace MoAI.Org.Handlers;
 
 /// <summary>
-/// 组织角色树公共校验：上级角色存在性、同父重名、防环与路径长度.
+/// 组织树公共校验：上级组织存在性、同父重名、防环与路径长度.
 /// </summary>
 internal static class OrgRoleTreeGuard
 {
@@ -33,7 +33,7 @@ internal static class OrgRoleTreeGuard
             .FirstOrDefaultAsync(x => x.Id == parentId.Value, cancellationToken);
         if (parent == null)
         {
-            throw new BusinessException("上级角色不存在.") { StatusCode = 404 };
+            throw new BusinessException("上级组织不存在.") { StatusCode = 404 };
         }
 
         return parent;
@@ -54,7 +54,7 @@ internal static class OrgRoleTreeGuard
             .AnyAsync(x => x.ParentId == parentId && x.Name == name && (excludeRoleId == null || x.Id != excludeRoleId), cancellationToken);
         if (duplicated)
         {
-            throw new BusinessException("同一上级下已存在同名角色.") { StatusCode = 409 };
+            throw new BusinessException("同一上级下已存在同名组织.") { StatusCode = 409 };
         }
     }
 
@@ -69,7 +69,7 @@ internal static class OrgRoleTreeGuard
         var newPathLength = newParentPath.Length + roleId.ToString().Length + 1 + maxDescendantSuffixLength;
         if (newPathLength > MaxPathLength)
         {
-            throw new BusinessException("角色层级过深，超出路径长度限制.") { StatusCode = 400 };
+            throw new BusinessException("组织层级过深，超出路径长度限制.") { StatusCode = 400 };
         }
     }
 

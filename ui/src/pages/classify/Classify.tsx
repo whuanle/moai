@@ -36,24 +36,61 @@ const EMOJI_OPTIONS = [
   '👏', '🙏', '💪', '👀', '🧠', '❤️', '💙', '💚',
 ]
 
-/** 表情选择输入框：只读输入框 + 表情面板，选中的表情回填输入框. */
-function EmojiPickerInput({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+/** 按字素簇切分文本，保证 ZWJ 序列/变体选择器等多码位 emoji 不被拦腰截断. */
+function splitGraphemes(text: string): string[] {
+  const Segmenter = (Intl as unknown as {
+    Segmenter?: new (
+      locale: string | undefined,
+      options: { granularity: 'grapheme' },
+    ) => { segment(input: string): Iterable<{ segment: string }> }
+  }).Segmenter
+  if (Segmenter) {
+    return Array.from(new Segmenter(undefined, { granularity: 'grapheme' }).segment(text), (item) => item.segment)
+  }
+  return Array.from(text)
+}
+
+const EMOJI_LIKE = /\p{Extended_Pictographic}/u
+
+/** 表情选择按钮：按钮直接回显已选表情，点击弹出常用表情面板单选，面板内可粘贴/清除. */
+function EmojiPickerButton({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
+  // 仅接受一个完整 emoji 字素簇：粘贴多个只取第一个，普通文本忽略，超长单表情（>10 字符）提示错误
+  const handleInputChange = (raw: string) => {
+    if (!raw) {
+      onChange?.('')
+      return
+    }
+    const [first] = splitGraphemes(raw)
+    if (!first || !EMOJI_LIKE.test(first)) {
+      return
+    }
+    if (first.length > 10) {
+      feedback.error(t('classify.emojiTooLong'))
+      return
+    }
+    onChange?.(first)
+  }
+
   return (
-    <div style={{ display: 'flex', gap: spacing.xxs }}>
-      <Input value={value || ''} placeholder={t('classify.emojiPlaceholder')} readOnly style={{ flex: 1 }} />
-      {value ? (
-        <Button onClick={() => onChange?.('')}>{t('classify.emojiClear')}</Button>
-      ) : null}
-      <Popover
-        open={open}
-        onOpenChange={setOpen}
-        trigger="click"
-        placement="bottomRight"
-        arrow={false}
-        content={
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      trigger="click"
+      placement="bottomLeft"
+      arrow={false}
+      destroyTooltipOnHide
+      content={
+        <div>
+          <Input
+            value={value ?? ''}
+            autoFocus
+            placeholder={t('classify.emojiInputPlaceholder')}
+            onChange={(e) => handleInputChange(e.target.value)}
+            style={{ marginBottom: 4 }}
+          />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 32px)', gap: 2, maxHeight: 264, overflowY: 'auto' }}>
             {EMOJI_OPTIONS.map((emoji) => (
               <Button
@@ -69,11 +106,27 @@ function EmojiPickerInput({ value, onChange }: { value?: string; onChange?: (val
               </Button>
             ))}
           </div>
-        }
-      >
-        <Button icon={<SmileOutlined />} title={t('classify.emojiPick')} />
-      </Popover>
-    </div>
+          {value ? (
+            <Button
+              block
+              type="text"
+              danger
+              style={{ marginTop: 4 }}
+              onClick={() => {
+                onChange?.('')
+                setOpen(false)
+              }}
+            >
+              {t('classify.emojiClear')}
+            </Button>
+          ) : null}
+        </div>
+      }
+    >
+      <Button title={t('classify.emojiPick')} style={{ width: 40, padding: 0, fontSize: 18 }}>
+        {value || <SmileOutlined />}
+      </Button>
+    </Popover>
   )
 }
 
@@ -233,14 +286,18 @@ function ClassifyPanel({ type }: { type: ClassifyTypeKey }) {
         width={480}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label={t('classify.name')} rules={[{ required: true, message: t('classify.nameRequired') }]}>
-            <Input maxLength={20} />
+          <Form.Item label={t('classify.name')} htmlFor="name" required>
+            <div style={{ display: 'flex', gap: spacing.xxs }}>
+              <Form.Item name="emoji" noStyle>
+                <EmojiPickerButton />
+              </Form.Item>
+              <Form.Item name="name" noStyle rules={[{ required: true, message: t('classify.nameRequired') }]}>
+                <Input maxLength={20} style={{ flex: 1 }} />
+              </Form.Item>
+            </div>
           </Form.Item>
           <Form.Item name="description" label={t('classify.desc')}>
-            <Input maxLength={255} />
-          </Form.Item>
-          <Form.Item name="emoji" label={t('classify.emoji')}>
-            <EmojiPickerInput />
+            <Input.TextArea maxLength={255} autoSize={{ minRows: 3, maxRows: 6 }} />
           </Form.Item>
         </Form>
       </Modal>

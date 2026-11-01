@@ -5,7 +5,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Org.Commands;
 
 /// <summary>
-/// 删除组织角色（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
+/// 删除组织（仅管理员）：存在子角色时拒绝，同时解绑该角色下的全部用户.
 /// </summary>
 public class DeleteOrgRoleCommand : IRequest<EmptyCommandResponse>, IModelValidator<DeleteOrgRoleCommand>
 {
