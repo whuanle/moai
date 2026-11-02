@@ -8,6 +8,8 @@ import { ChannelRequestBuilderNavigationMetadata, type ChannelRequestBuilder } f
 // @ts-ignore
 import { LogRequestBuilderNavigationMetadata, type LogRequestBuilder } from './log/index.js';
 // @ts-ignore
+import { TemplateRequestBuilderNavigationMetadata, type TemplateRequestBuilder } from './template/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -26,6 +28,10 @@ export interface NotificationRequestBuilder extends BaseRequestBuilder<Notificat
      * The log property
      */
     get log(): LogRequestBuilder;
+    /**
+     * The template property
+     */
+    get template(): TemplateRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -43,6 +49,9 @@ export const NotificationRequestBuilderNavigationMetadata: Record<Exclude<keyof 
     },
     log: {
         navigationMetadata: LogRequestBuilderNavigationMetadata,
+    },
+    template: {
+        navigationMetadata: TemplateRequestBuilderNavigationMetadata,
     },
 };
 /* tslint:enable */

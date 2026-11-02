@@ -25,13 +25,6 @@ public class QueryOrgRolesCommandHandlerTests
         context.OrgUserRoles.Add(OrgTestSeed.Binding(100, 2));
         context.OrgUserRoles.Add(OrgTestSeed.Binding(100, 3));
         context.OrgUserRoles.Add(OrgTestSeed.Binding(101, 1));
-        context.Settings.Add(new MoAI.Database.Entities.SettingEntity
-        {
-            Key = MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey,
-            Name = "组织默认角色",
-            Description = string.Empty,
-            Value = "2",
-        });
         context.SaveChanges();
     }
 
@@ -49,15 +42,28 @@ public class QueryOrgRolesCommandHandlerTests
         var sales = result.Items.Single(x => x.OrgRoleId == 2);
         Assert.True(sales.HasChildren);
         Assert.Equal(1, sales.UserCount);
-        Assert.True(sales.IsDefault);
         var east = result.Items.Single(x => x.OrgRoleId == 3);
         Assert.False(east.HasChildren);
-        Assert.False(east.IsDefault);
     }
 
     [Fact]
-    public async Task List_SearchByName_Filters()
+    public async Task List_OrdersSiblingsBySortOrder()
     {
+        using var db = TestSqliteContext.Create();
+        Seed(db.Context);
+        // 同级按 sort_order 升序：12(sort1) 提到 2(sort2) 前（DFS：根 [1,10]，1 的子 [12,2]，2 的子 [3]）
+        db.Context.OrgRoles.Single(x => x.Id == 12).SortOrder = 1;
+        db.Context.OrgRoles.Single(x => x.Id == 2).SortOrder = 2;
+        db.Context.SaveChanges();
+        var handler = new QueryOrgRolesCommandHandler(db.Context, Mock.Of<IUserInfoFillService>());
+
+        var result = await handler.Handle(new QueryOrgRolesCommand(), CancellationToken.None);
+
+        Assert.Equal([1, 12, 2, 3, 10], result.Items.Select(x => x.OrgRoleId).ToArray());
+    }
+
+    [Fact]
+    public async Task List_SearchByName_Filters()    {
         using var db = TestSqliteContext.Create();
         Seed(db.Context);
         var handler = new QueryOrgRolesCommandHandler(db.Context, Mock.Of<IUserInfoFillService>());

@@ -121,16 +121,13 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
-/**
- * Represents a context entry providing additional information to the agent.
- */
 export interface AGUIContext extends Parsable {
     /**
-     * Gets or sets the description of the context entry.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets the value of the context entry.
+     * The value property
      */
     value?: string | null;
 }
@@ -158,24 +155,21 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
-/**
- * Represents a tool available for the agent to use.
- */
 export interface AGUITool extends Parsable {
     /**
-     * Gets or sets the description of the tool.
+     * The description property
      */
     description?: string | null;
     /**
-     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
+     * The metadata property
      */
     metadata?: UntypedNode | null;
     /**
-     * Gets or sets the name of the tool.
+     * The name property
      */
     name?: string | null;
     /**
-     * Gets or sets the JSON Schema describing the tool's parameters.
+     * The parameters property
      */
     parameters?: UntypedNode | null;
 }
@@ -1057,21 +1051,54 @@ export interface BoundAccountInfo extends Parsable {
     provider?: string | null;
 }
 /**
- * 广播通知：投递给全部启用渠道（管理员验证渠道连通性或下发平台公告）.
+ * 广播通知：管理员下发平台公告，投递目标为「渠道（指定集合或全部启用）」与「站内信」的组合，至少选择其一.
  */
 export interface BroadcastNotificationCommand extends Parsable {
     /**
-     * 正文.
+     * 是否投递全部启用渠道.
+     */
+    allChannels?: boolean | null;
+    /**
+     * 指定投递的启用渠道 id 集合（不存在的渠道自动忽略）.
+     */
+    channelIds?: string[] | null;
+    /**
+     * 正文（使用模板时可空，由模板渲染）.
      */
     content?: string | null;
+    /**
+     * 收件人邮箱列表（所选渠道含 SMTP 时必填，动态投递给这些邮箱）.
+     */
+    emailRecipients?: string[] | null;
     /**
      * 通知级别.
      */
     level?: NotificationLevel | null;
     /**
-     * 标题.
+     * 收件人手机号列表（所选渠道含短信时必填，动态投递给这些手机号）.
+     */
+    phoneNumbers?: string[] | null;
+    /**
+     * 是否同时发送站内信给全部启用用户.
+     */
+    sendInSite?: boolean | null;
+    /**
+     * 使用的通知模板 id，可选；使用模板时标题/正文由模板插值生成.
+     */
+    templateId?: string | null;
+    /**
+     * 模板变量值表（使用模板时需覆盖模板全部变量定义）.
+     */
+    templateVariables?: BroadcastNotificationCommand_templateVariables | null;
+    /**
+     * 标题（使用模板时可空，由模板渲染）.
      */
     title?: string | null;
+}
+/**
+ * 模板变量值表（使用模板时需覆盖模板全部变量定义）.
+ */
+export interface BroadcastNotificationCommand_templateVariables extends Parsable {
 }
 /**
  * 广播通知响应.
@@ -1708,6 +1735,15 @@ export function createBoundAccountInfoFromDiscriminatorValue(parseNode: ParseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {BroadcastNotificationCommand_templateVariables}
+ */
+// @ts-ignore
+export function createBroadcastNotificationCommand_templateVariablesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoBroadcastNotificationCommand_templateVariables;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {BroadcastNotificationCommand}
  */
 // @ts-ignore
@@ -1977,6 +2013,24 @@ export function createCreateNotificationChannelCommandFromDiscriminatorValue(par
 // @ts-ignore
 export function createCreateNotificationChannelCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCreateNotificationChannelCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateNotificationTemplateCommand}
+ */
+// @ts-ignore
+export function createCreateNotificationTemplateCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateNotificationTemplateCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {CreateNotificationTemplateCommandResponse}
+ */
+// @ts-ignore
+export function createCreateNotificationTemplateCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoCreateNotificationTemplateCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -2870,6 +2924,52 @@ export interface CreateNotificationChannelCommand extends Parsable {
 export interface CreateNotificationChannelCommandResponse extends Parsable {
     /**
      * 渠道 id.
+     */
+    id?: string | null;
+}
+/**
+ * 创建通知模板：文本 + 变量定义，发送时插值生成通知内容；可携带阿里云/腾讯云短信平台已审核模板映射.
+ */
+export interface CreateNotificationTemplateCommand extends Parsable {
+    /**
+     * 阿里云短信模板 Code（平台审核通过后回填，空表示不用于阿里云短信）.
+     */
+    aliyunTemplateCode?: string | null;
+    /**
+     * 通知正文模板（纯文本或 HTML，含 {{变量}} 双花括号占位符，与云邮件平台提审形态一致）.
+     */
+    content?: string | null;
+    /**
+     * 内容类型.
+     */
+    contentType?: NotificationContentType | null;
+    /**
+     * 模板描述.
+     */
+    description?: string | null;
+    /**
+     * 模板名称（唯一）.
+     */
+    name?: string | null;
+    /**
+     * 腾讯云短信模板 Id（平台审核通过后回填，空表示不用于腾讯云短信）.
+     */
+    tencentTemplateId?: string | null;
+    /**
+     * 通知主题模板（邮件主题用，短信无主题；可含 {{变量}} 双花括号占位符）.
+     */
+    title?: string | null;
+    /**
+     * 变量定义 JSON（[{"name","description","example"}]，空表示无变量）.
+     */
+    variables?: string | null;
+}
+/**
+ * 创建通知模板响应.
+ */
+export interface CreateNotificationTemplateCommandResponse extends Parsable {
+    /**
+     * 模板 id.
      */
     id?: string | null;
 }
@@ -3909,6 +4009,24 @@ export function createQueryNotificationLogsCommandResponseItemFromDiscriminatorV
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNotificationTemplatesCommandResponse}
+ */
+// @ts-ignore
+export function createQueryNotificationTemplatesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNotificationTemplatesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryNotificationTemplatesCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryNotificationTemplatesCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryNotificationTemplatesCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryOrgGrantRolesCommandResponse}
  */
 // @ts-ignore
@@ -4004,6 +4122,51 @@ export function createQueryPluginManageListCommandResponseFromDiscriminatorValue
 // @ts-ignore
 export function createQueryPluginManageListCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryPluginManageListCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginStatsClassifyItem}
+ */
+// @ts-ignore
+export function createQueryPluginStatsClassifyItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginStatsClassifyItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginStatsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginStatsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginStatsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginStatsTopItem}
+ */
+// @ts-ignore
+export function createQueryPluginStatsTopItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginStatsTopItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginStatsTrendItem}
+ */
+// @ts-ignore
+export function createQueryPluginStatsTrendItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginStatsTrendItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginStatsTrendResponse}
+ */
+// @ts-ignore
+export function createQueryPluginStatsTrendResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginStatsTrendResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4292,6 +4455,51 @@ export function createQueryTeamCommandResponseFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createQueryTeamPluginsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryTeamPluginsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamPluginStatsClassifyItem}
+ */
+// @ts-ignore
+export function createQueryTeamPluginStatsClassifyItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamPluginStatsClassifyItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamPluginStatsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryTeamPluginStatsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamPluginStatsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamPluginStatsTopItem}
+ */
+// @ts-ignore
+export function createQueryTeamPluginStatsTopItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamPluginStatsTopItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamPluginStatsTrendItem}
+ */
+// @ts-ignore
+export function createQueryTeamPluginStatsTrendItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamPluginStatsTrendItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryTeamPluginStatsTrendResponse}
+ */
+// @ts-ignore
+export function createQueryTeamPluginStatsTrendResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryTeamPluginStatsTrendResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4841,15 +5049,6 @@ export function createSendEmailCodeCommandFromDiscriminatorValue(parseNode: Pars
 // @ts-ignore
 export function createSendLoginCodeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSendLoginCodeCommand;
-}
-/**
- * Creates a new instance of the appropriate class based on discriminator value
- * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {SendTestEmailCommand}
- */
-// @ts-ignore
-export function createSendTestEmailCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoSendTestEmailCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -5419,6 +5618,33 @@ export function createTestNotificationChannelCommandResponseFromDiscriminatorVal
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TestNotificationTemplateCommand_variables}
+ */
+// @ts-ignore
+export function createTestNotificationTemplateCommand_variablesFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTestNotificationTemplateCommand_variables;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TestNotificationTemplateCommand}
+ */
+// @ts-ignore
+export function createTestNotificationTemplateCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTestNotificationTemplateCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TestNotificationTemplateCommandResponse}
+ */
+// @ts-ignore
+export function createTestNotificationTemplateCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTestNotificationTemplateCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UnbindUserOAuthCommand}
  */
 // @ts-ignore
@@ -5662,6 +5888,15 @@ export function createUpdateNotificationChannelCommandFromDiscriminatorValue(par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateNotificationTemplateCommand}
+ */
+// @ts-ignore
+export function createUpdateNotificationTemplateCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateNotificationTemplateCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateOAuthConnectionCommand}
  */
 // @ts-ignore
@@ -5689,11 +5924,11 @@ export function createUpdateOrgRoleCommandFromDiscriminatorValue(parseNode: Pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
- * @returns {UpdateOrgRoleDefaultCommand}
+ * @returns {UpdateOrgRoleOrderCommand}
  */
 // @ts-ignore
-export function createUpdateOrgRoleDefaultCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
-    return deserializeIntoUpdateOrgRoleDefaultCommand;
+export function createUpdateOrgRoleOrderCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateOrgRoleOrderCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -6969,9 +7204,25 @@ export function deserializeIntoBoundAccountInfo(boundAccountInfo: Partial<BoundA
 // @ts-ignore
 export function deserializeIntoBroadcastNotificationCommand(broadcastNotificationCommand: Partial<BroadcastNotificationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "allChannels": n => { broadcastNotificationCommand.allChannels = n.getBooleanValue(); },
+        "channelIds": n => { broadcastNotificationCommand.channelIds = n.getCollectionOfPrimitiveValues<string>(); },
         "content": n => { broadcastNotificationCommand.content = n.getStringValue(); },
+        "emailRecipients": n => { broadcastNotificationCommand.emailRecipients = n.getCollectionOfPrimitiveValues<string>(); },
         "level": n => { broadcastNotificationCommand.level = n.getEnumValue<NotificationLevel>(NotificationLevelObject); },
+        "phoneNumbers": n => { broadcastNotificationCommand.phoneNumbers = n.getCollectionOfPrimitiveValues<string>(); },
+        "sendInSite": n => { broadcastNotificationCommand.sendInSite = n.getBooleanValue(); },
+        "templateId": n => { broadcastNotificationCommand.templateId = n.getStringValue(); },
+        "templateVariables": n => { broadcastNotificationCommand.templateVariables = n.getObjectValue<BroadcastNotificationCommand_templateVariables>(createBroadcastNotificationCommand_templateVariablesFromDiscriminatorValue); },
         "title": n => { broadcastNotificationCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoBroadcastNotificationCommand_templateVariables(broadcastNotificationCommand_templateVariables: Partial<BroadcastNotificationCommand_templateVariables> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -7324,6 +7575,33 @@ export function deserializeIntoCreateNotificationChannelCommand(createNotificati
 export function deserializeIntoCreateNotificationChannelCommandResponse(createNotificationChannelCommandResponse: Partial<CreateNotificationChannelCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "id": n => { createNotificationChannelCommandResponse.id = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateNotificationTemplateCommand(createNotificationTemplateCommand: Partial<CreateNotificationTemplateCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aliyunTemplateCode": n => { createNotificationTemplateCommand.aliyunTemplateCode = n.getStringValue(); },
+        "content": n => { createNotificationTemplateCommand.content = n.getStringValue(); },
+        "contentType": n => { createNotificationTemplateCommand.contentType = n.getEnumValue<NotificationContentType>(NotificationContentTypeObject); },
+        "description": n => { createNotificationTemplateCommand.description = n.getStringValue(); },
+        "name": n => { createNotificationTemplateCommand.name = n.getStringValue(); },
+        "tencentTemplateId": n => { createNotificationTemplateCommand.tencentTemplateId = n.getStringValue(); },
+        "title": n => { createNotificationTemplateCommand.title = n.getStringValue(); },
+        "variables": n => { createNotificationTemplateCommand.variables = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoCreateNotificationTemplateCommandResponse(createNotificationTemplateCommandResponse: Partial<CreateNotificationTemplateCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "id": n => { createNotificationTemplateCommandResponse.id = n.getStringValue(); },
     }
 }
 /**
@@ -9829,8 +10107,41 @@ export function deserializeIntoQueryNotificationLogsCommandResponseItem(queryNot
         "error": n => { queryNotificationLogsCommandResponseItem.errorEscaped = n.getStringValue(); },
         "id": n => { queryNotificationLogsCommandResponseItem.id = n.getStringValue(); },
         "level": n => { queryNotificationLogsCommandResponseItem.level = n.getEnumValue<NotificationLevel>(NotificationLevelObject); },
+        "recipients": n => { queryNotificationLogsCommandResponseItem.recipients = n.getStringValue(); },
         "status": n => { queryNotificationLogsCommandResponseItem.status = n.getEnumValue<NotificationSendStatus>(NotificationSendStatusObject); },
+        "targetUserIds": n => { queryNotificationLogsCommandResponseItem.targetUserIds = n.getStringValue(); },
+        "targetUserNames": n => { queryNotificationLogsCommandResponseItem.targetUserNames = n.getStringValue(); },
         "title": n => { queryNotificationLogsCommandResponseItem.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNotificationTemplatesCommandResponse(queryNotificationTemplatesCommandResponse: Partial<QueryNotificationTemplatesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryNotificationTemplatesCommandResponse.items = n.getCollectionOfObjectValues<QueryNotificationTemplatesCommandResponseItem>(createQueryNotificationTemplatesCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryNotificationTemplatesCommandResponseItem(queryNotificationTemplatesCommandResponseItem: Partial<QueryNotificationTemplatesCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(queryNotificationTemplatesCommandResponseItem),
+        "aliyunTemplateCode": n => { queryNotificationTemplatesCommandResponseItem.aliyunTemplateCode = n.getStringValue(); },
+        "content": n => { queryNotificationTemplatesCommandResponseItem.content = n.getStringValue(); },
+        "contentType": n => { queryNotificationTemplatesCommandResponseItem.contentType = n.getEnumValue<NotificationContentType>(NotificationContentTypeObject); },
+        "description": n => { queryNotificationTemplatesCommandResponseItem.description = n.getStringValue(); },
+        "id": n => { queryNotificationTemplatesCommandResponseItem.id = n.getStringValue(); },
+        "isBuiltIn": n => { queryNotificationTemplatesCommandResponseItem.isBuiltIn = n.getBooleanValue(); },
+        "name": n => { queryNotificationTemplatesCommandResponseItem.name = n.getStringValue(); },
+        "tencentTemplateId": n => { queryNotificationTemplatesCommandResponseItem.tencentTemplateId = n.getStringValue(); },
+        "title": n => { queryNotificationTemplatesCommandResponseItem.title = n.getStringValue(); },
+        "variables": n => { queryNotificationTemplatesCommandResponseItem.variables = n.getStringValue(); },
     }
 }
 /**
@@ -9882,11 +10193,11 @@ export function deserializeIntoQueryOrgRolesCommandResponseItem(queryOrgRolesCom
     return {
         ...deserializeIntoAuditsInfo(queryOrgRolesCommandResponseItem),
         "hasChildren": n => { queryOrgRolesCommandResponseItem.hasChildren = n.getBooleanValue(); },
-        "isDefault": n => { queryOrgRolesCommandResponseItem.isDefault = n.getBooleanValue(); },
         "name": n => { queryOrgRolesCommandResponseItem.name = n.getStringValue(); },
         "orgRoleId": n => { queryOrgRolesCommandResponseItem.orgRoleId = n.getNumberValue(); },
         "parentId": n => { queryOrgRolesCommandResponseItem.parentId = n.getNumberValue(); },
         "path": n => { queryOrgRolesCommandResponseItem.path = n.getStringValue(); },
+        "sortOrder": n => { queryOrgRolesCommandResponseItem.sortOrder = n.getNumberValue(); },
         "userCount": n => { queryOrgRolesCommandResponseItem.userCount = n.getNumberValue(); },
     }
 }
@@ -9983,6 +10294,74 @@ export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPlu
         "templeteKey": n => { queryPluginManageListCommandResponseItem.templeteKey = n.getStringValue(); },
         "title": n => { queryPluginManageListCommandResponseItem.title = n.getStringValue(); },
         "type": n => { queryPluginManageListCommandResponseItem.type = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginStatsClassifyItem(queryPluginStatsClassifyItem: Partial<QueryPluginStatsClassifyItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyId": n => { queryPluginStatsClassifyItem.classifyId = n.getNumberValue(); },
+        "classifyName": n => { queryPluginStatsClassifyItem.classifyName = n.getStringValue(); },
+        "count": n => { queryPluginStatsClassifyItem.count = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginStatsCommandResponse(queryPluginStatsCommandResponse: Partial<QueryPluginStatsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifies": n => { queryPluginStatsCommandResponse.classifies = n.getCollectionOfObjectValues<QueryPluginStatsClassifyItem>(createQueryPluginStatsClassifyItemFromDiscriminatorValue); },
+        "mcpCount": n => { queryPluginStatsCommandResponse.mcpCount = n.getNumberValue(); },
+        "openApiCount": n => { queryPluginStatsCommandResponse.openApiCount = n.getNumberValue(); },
+        "top": n => { queryPluginStatsCommandResponse.top = n.getCollectionOfObjectValues<QueryPluginStatsTopItem>(createQueryPluginStatsTopItemFromDiscriminatorValue); },
+        "totalCalls": n => { queryPluginStatsCommandResponse.totalCalls = n.getStringValue(); },
+        "totalFunctions": n => { queryPluginStatsCommandResponse.totalFunctions = n.getStringValue(); },
+        "totalPlugins": n => { queryPluginStatsCommandResponse.totalPlugins = n.getNumberValue(); },
+        "trend": n => { queryPluginStatsCommandResponse.trend = n.getObjectValue<QueryPluginStatsTrendResponse>(createQueryPluginStatsTrendResponseFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginStatsTopItem(queryPluginStatsTopItem: Partial<QueryPluginStatsTopItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { queryPluginStatsTopItem.avatarPath = n.getStringValue(); },
+        "counter": n => { queryPluginStatsTopItem.counter = n.getStringValue(); },
+        "id": n => { queryPluginStatsTopItem.id = n.getGuidValue(); },
+        "name": n => { queryPluginStatsTopItem.name = n.getStringValue(); },
+        "teamId": n => { queryPluginStatsTopItem.teamId = n.getNumberValue(); },
+        "teamName": n => { queryPluginStatsTopItem.teamName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginStatsTrendItem(queryPluginStatsTrendItem: Partial<QueryPluginStatsTrendItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "count": n => { queryPluginStatsTrendItem.count = n.getStringValue(); },
+        "date": n => { queryPluginStatsTrendItem.date = n.getDateOnlyValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginStatsTrendResponse(queryPluginStatsTrendResponse: Partial<QueryPluginStatsTrendResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "endDate": n => { queryPluginStatsTrendResponse.endDate = n.getDateOnlyValue(); },
+        "items": n => { queryPluginStatsTrendResponse.items = n.getCollectionOfObjectValues<QueryPluginStatsTrendItem>(createQueryPluginStatsTrendItemFromDiscriminatorValue); },
+        "startDate": n => { queryPluginStatsTrendResponse.startDate = n.getDateOnlyValue(); },
+        "total": n => { queryPluginStatsTrendResponse.total = n.getStringValue(); },
     }
 }
 /**
@@ -10379,6 +10758,73 @@ export function deserializeIntoQueryTeamPluginsCommandResponse(queryTeamPluginsC
         "items": n => { queryTeamPluginsCommandResponse.items = n.getCollectionOfObjectValues<TeamPluginItem>(createTeamPluginItemFromDiscriminatorValue); },
         "myRole": n => { queryTeamPluginsCommandResponse.myRole = n.getNumberValue(); },
         "teamId": n => { queryTeamPluginsCommandResponse.teamId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamPluginStatsClassifyItem(queryTeamPluginStatsClassifyItem: Partial<QueryTeamPluginStatsClassifyItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifyId": n => { queryTeamPluginStatsClassifyItem.classifyId = n.getNumberValue(); },
+        "classifyName": n => { queryTeamPluginStatsClassifyItem.classifyName = n.getStringValue(); },
+        "count": n => { queryTeamPluginStatsClassifyItem.count = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamPluginStatsCommandResponse(queryTeamPluginStatsCommandResponse: Partial<QueryTeamPluginStatsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "classifies": n => { queryTeamPluginStatsCommandResponse.classifies = n.getCollectionOfObjectValues<QueryTeamPluginStatsClassifyItem>(createQueryTeamPluginStatsClassifyItemFromDiscriminatorValue); },
+        "mcpCount": n => { queryTeamPluginStatsCommandResponse.mcpCount = n.getNumberValue(); },
+        "openApiCount": n => { queryTeamPluginStatsCommandResponse.openApiCount = n.getNumberValue(); },
+        "teamId": n => { queryTeamPluginStatsCommandResponse.teamId = n.getStringValue(); },
+        "top": n => { queryTeamPluginStatsCommandResponse.top = n.getCollectionOfObjectValues<QueryTeamPluginStatsTopItem>(createQueryTeamPluginStatsTopItemFromDiscriminatorValue); },
+        "totalCalls": n => { queryTeamPluginStatsCommandResponse.totalCalls = n.getStringValue(); },
+        "totalFunctions": n => { queryTeamPluginStatsCommandResponse.totalFunctions = n.getStringValue(); },
+        "totalPlugins": n => { queryTeamPluginStatsCommandResponse.totalPlugins = n.getNumberValue(); },
+        "trend": n => { queryTeamPluginStatsCommandResponse.trend = n.getObjectValue<QueryTeamPluginStatsTrendResponse>(createQueryTeamPluginStatsTrendResponseFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamPluginStatsTopItem(queryTeamPluginStatsTopItem: Partial<QueryTeamPluginStatsTopItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { queryTeamPluginStatsTopItem.avatarPath = n.getStringValue(); },
+        "counter": n => { queryTeamPluginStatsTopItem.counter = n.getStringValue(); },
+        "id": n => { queryTeamPluginStatsTopItem.id = n.getGuidValue(); },
+        "name": n => { queryTeamPluginStatsTopItem.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamPluginStatsTrendItem(queryTeamPluginStatsTrendItem: Partial<QueryTeamPluginStatsTrendItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "count": n => { queryTeamPluginStatsTrendItem.count = n.getStringValue(); },
+        "date": n => { queryTeamPluginStatsTrendItem.date = n.getDateOnlyValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryTeamPluginStatsTrendResponse(queryTeamPluginStatsTrendResponse: Partial<QueryTeamPluginStatsTrendResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "endDate": n => { queryTeamPluginStatsTrendResponse.endDate = n.getDateOnlyValue(); },
+        "items": n => { queryTeamPluginStatsTrendResponse.items = n.getCollectionOfObjectValues<QueryTeamPluginStatsTrendItem>(createQueryTeamPluginStatsTrendItemFromDiscriminatorValue); },
+        "startDate": n => { queryTeamPluginStatsTrendResponse.startDate = n.getDateOnlyValue(); },
+        "total": n => { queryTeamPluginStatsTrendResponse.total = n.getStringValue(); },
     }
 }
 /**
@@ -11229,16 +11675,6 @@ export function deserializeIntoSendLoginCodeCommand(sendLoginCodeCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoSendTestEmailCommand(sendTestEmailCommand: Partial<SendTestEmailCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
-    return {
-        "to": n => { sendTestEmailCommand.to = n.getStringValue(); },
-    }
-}
-/**
- * The deserialization information for the current model
- * @returns {Record<string, (node: ParseNode) => void>}
- */
-// @ts-ignore
 export function deserializeIntoSetOrgGrantsCommand(setOrgGrantsCommand: Partial<SetOrgGrantsCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "grants": n => { setOrgGrantsCommand.grants = n.getCollectionOfObjectValues<OrgGrantItem>(createOrgGrantItemFromDiscriminatorValue); },
@@ -11819,7 +12255,10 @@ export function deserializeIntoTeamVariableItem(teamVariableItem: Partial<TeamVa
 export function deserializeIntoTestNotificationChannelCommand(testNotificationChannelCommand: Partial<TestNotificationChannelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "config": n => { testNotificationChannelCommand.config = n.getStringValue(); },
+        "contextUserId": n => { testNotificationChannelCommand.contextUserId = n.getStringValue(); },
+        "contextUserType": n => { testNotificationChannelCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
         "id": n => { testNotificationChannelCommand.id = n.getStringValue(); },
+        "recipients": n => { testNotificationChannelCommand.recipients = n.getCollectionOfPrimitiveValues<string>(); },
         "type": n => { testNotificationChannelCommand.type = n.getEnumValue<NotificationChannelType>(NotificationChannelTypeObject); },
     }
 }
@@ -11833,6 +12272,42 @@ export function deserializeIntoTestNotificationChannelCommandResponse(testNotifi
         "durationMs": n => { testNotificationChannelCommandResponse.durationMs = n.getStringValue(); },
         "error": n => { testNotificationChannelCommandResponse.errorEscaped = n.getStringValue(); },
         "success": n => { testNotificationChannelCommandResponse.success = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTestNotificationTemplateCommand(testNotificationTemplateCommand: Partial<TestNotificationTemplateCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "channelId": n => { testNotificationTemplateCommand.channelId = n.getStringValue(); },
+        "recipients": n => { testNotificationTemplateCommand.recipients = n.getCollectionOfPrimitiveValues<string>(); },
+        "templateId": n => { testNotificationTemplateCommand.templateId = n.getStringValue(); },
+        "variables": n => { testNotificationTemplateCommand.variables = n.getObjectValue<TestNotificationTemplateCommand_variables>(createTestNotificationTemplateCommand_variablesFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTestNotificationTemplateCommand_variables(testNotificationTemplateCommand_variables: Partial<TestNotificationTemplateCommand_variables> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTestNotificationTemplateCommandResponse(testNotificationTemplateCommandResponse: Partial<TestNotificationTemplateCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "durationMs": n => { testNotificationTemplateCommandResponse.durationMs = n.getStringValue(); },
+        "error": n => { testNotificationTemplateCommandResponse.errorEscaped = n.getStringValue(); },
+        "renderedContent": n => { testNotificationTemplateCommandResponse.renderedContent = n.getStringValue(); },
+        "renderedTitle": n => { testNotificationTemplateCommandResponse.renderedTitle = n.getStringValue(); },
+        "success": n => { testNotificationTemplateCommandResponse.success = n.getBooleanValue(); },
     }
 }
 /**
@@ -12188,6 +12663,24 @@ export function deserializeIntoUpdateNotificationChannelCommand(updateNotificati
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateNotificationTemplateCommand(updateNotificationTemplateCommand: Partial<UpdateNotificationTemplateCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aliyunTemplateCode": n => { updateNotificationTemplateCommand.aliyunTemplateCode = n.getStringValue(); },
+        "content": n => { updateNotificationTemplateCommand.content = n.getStringValue(); },
+        "contentType": n => { updateNotificationTemplateCommand.contentType = n.getEnumValue<NotificationContentType>(NotificationContentTypeObject); },
+        "description": n => { updateNotificationTemplateCommand.description = n.getStringValue(); },
+        "id": n => { updateNotificationTemplateCommand.id = n.getStringValue(); },
+        "name": n => { updateNotificationTemplateCommand.name = n.getStringValue(); },
+        "tencentTemplateId": n => { updateNotificationTemplateCommand.tencentTemplateId = n.getStringValue(); },
+        "title": n => { updateNotificationTemplateCommand.title = n.getStringValue(); },
+        "variables": n => { updateNotificationTemplateCommand.variables = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "agentId": n => { updateOAuthConnectionCommand.agentId = n.getStringValue(); },
@@ -12237,9 +12730,11 @@ export function deserializeIntoUpdateOrgRoleCommand(updateOrgRoleCommand: Partia
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
-export function deserializeIntoUpdateOrgRoleDefaultCommand(updateOrgRoleDefaultCommand: Partial<UpdateOrgRoleDefaultCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+export function deserializeIntoUpdateOrgRoleOrderCommand(updateOrgRoleOrderCommand: Partial<UpdateOrgRoleOrderCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
-        "orgRoleId": n => { updateOrgRoleDefaultCommand.orgRoleId = n.getNumberValue(); },
+        "orgRoleId": n => { updateOrgRoleOrderCommand.orgRoleId = n.getNumberValue(); },
+        "parentId": n => { updateOrgRoleOrderCommand.parentId = n.getNumberValue(); },
+        "prevOrgRoleId": n => { updateOrgRoleOrderCommand.prevOrgRoleId = n.getNumberValue(); },
     }
 }
 /**
@@ -14203,6 +14698,7 @@ export interface MyMemoryGlobalSummary extends Parsable {
     myCount?: number | null;
 }
 export type NotificationChannelType = (typeof NotificationChannelTypeObject)[keyof typeof NotificationChannelTypeObject];
+export type NotificationContentType = (typeof NotificationContentTypeObject)[keyof typeof NotificationContentTypeObject];
 export type NotificationLevel = (typeof NotificationLevelObject)[keyof typeof NotificationLevelObject];
 export type NotificationSendStatus = (typeof NotificationSendStatusObject)[keyof typeof NotificationSendStatusObject];
 /**
@@ -16803,13 +17299,79 @@ export interface QueryNotificationLogsCommandResponseItem extends AuditsInfo, Pa
      */
     level?: NotificationLevel | null;
     /**
+     * 实际收件人快照（逗号分隔；SMTP 渠道记邮箱、短信渠道记手机号；固定地址渠道留空）.
+     */
+    recipients?: string | null;
+    /**
      * 发送状态.
      */
     status?: NotificationSendStatus | null;
     /**
+     * 关联用户 id 快照（逗号分隔，定向个人推送时记录收件人；空为广播/全员）.
+     */
+    targetUserIds?: string | null;
+    /**
+     * 关联用户名（逗号分隔，按快照 id 回填；用户已删除的跳过）.
+     */
+    targetUserNames?: string | null;
+    /**
      * 通知标题.
      */
     title?: string | null;
+}
+/**
+ * 通知模板列表响应.
+ */
+export interface QueryNotificationTemplatesCommandResponse extends Parsable {
+    /**
+     * 模板列表.
+     */
+    items?: QueryNotificationTemplatesCommandResponseItem[] | null;
+}
+/**
+ * 通知模板项.
+ */
+export interface QueryNotificationTemplatesCommandResponseItem extends AuditsInfo, Parsable {
+    /**
+     * 阿里云短信模板 Code.
+     */
+    aliyunTemplateCode?: string | null;
+    /**
+     * 通知正文模板.
+     */
+    content?: string | null;
+    /**
+     * 内容类型.
+     */
+    contentType?: NotificationContentType | null;
+    /**
+     * 模板描述.
+     */
+    description?: string | null;
+    /**
+     * 模板 id.
+     */
+    id?: string | null;
+    /**
+     * 是否平台内置模板（内置模板不可删除、可编辑）.
+     */
+    isBuiltIn?: boolean | null;
+    /**
+     * 模板名称.
+     */
+    name?: string | null;
+    /**
+     * 腾讯云短信模板 Id.
+     */
+    tencentTemplateId?: string | null;
+    /**
+     * 通知主题模板.
+     */
+    title?: string | null;
+    /**
+     * 变量定义 JSON.
+     */
+    variables?: string | null;
 }
 /**
  * 资源有效授权角色（已按方向规则展开）.
@@ -16856,10 +17418,6 @@ export interface QueryOrgRolesCommandResponseItem extends AuditsInfo, Parsable {
      */
     hasChildren?: boolean | null;
     /**
-     * 是否为组织默认角色（新注册用户自动获得）.
-     */
-    isDefault?: boolean | null;
-    /**
      * 角色名称.
      */
     name?: string | null;
@@ -16875,6 +17433,10 @@ export interface QueryOrgRolesCommandResponseItem extends AuditsInfo, Parsable {
      * 物化路径（/{id}/ 链）.
      */
     path?: string | null;
+    /**
+     * 同级展示顺序，从小到大.
+     */
+    sortOrder?: number | null;
     /**
      * 直属用户数.
      */
@@ -17065,6 +17627,123 @@ export interface QueryPluginManageListCommandResponseItem extends AuditsInfo, Pa
      * 类型：mcp|openapi|native|tool（对应 PluginEntity.Type）.
      */
     type?: number | null;
+}
+/**
+ * 插件分类分布项.
+ */
+export interface QueryPluginStatsClassifyItem extends Parsable {
+    /**
+     * 分类 id，0 表示未分类.
+     */
+    classifyId?: number | null;
+    /**
+     * 分类名称.
+     */
+    classifyName?: string | null;
+    /**
+     * 插件数量.
+     */
+    count?: number | null;
+}
+/**
+ * 插件使用统计响应（全团队汇总）：概览计数 + 调用量 TOP + 分类分布 + 近 30 天趋势.
+ */
+export interface QueryPluginStatsCommandResponse extends Parsable {
+    /**
+     * 分类分布（含未分类，key=0 时 classifyName 为空由前端兜底文案）.
+     */
+    classifies?: QueryPluginStatsClassifyItem[] | null;
+    /**
+     * MCP 插件数量.
+     */
+    mcpCount?: number | null;
+    /**
+     * OpenAPI 插件数量.
+     */
+    openApiCount?: number | null;
+    /**
+     * 调用量 TOP（按累计使用量降序，最多 5 条；团队自有插件带团队名称）.
+     */
+    top?: QueryPluginStatsTopItem[] | null;
+    /**
+     * 累计调用次数（插件表 counter 合计，含全部团队）.
+     */
+    totalCalls?: string | null;
+    /**
+     * 函数总数（自定义=函数表计数，静态/动态=注册可用计 1）.
+     */
+    totalFunctions?: string | null;
+    /**
+     * 插件总数（系统侧 + 全部团队自有插件，含内存发现的静态插件）.
+     */
+    totalPlugins?: number | null;
+    /**
+     * 近 30 天调用趋势（区间内无数据日期补 0）.
+     */
+    trend?: QueryPluginStatsTrendResponse | null;
+}
+/**
+ * 插件调用量 TOP 项.
+ */
+export interface QueryPluginStatsTopItem extends Parsable {
+    /**
+     * 头像（存储 ObjectKey）.
+     */
+    avatarPath?: string | null;
+    /**
+     * 累计使用量.
+     */
+    counter?: string | null;
+    /**
+     * 插件记录 id（内存发现的静态插件为 Guid.Empty）.
+     */
+    id?: Guid | null;
+    /**
+     * 展示名称（title 优先，空则取 pluginName）.
+     */
+    name?: string | null;
+    /**
+     * 归属团队 id，0 表示系统侧.
+     */
+    teamId?: number | null;
+    /**
+     * 归属团队名称，系统侧为 null.
+     */
+    teamName?: string | null;
+}
+/**
+ * 趋势单日数据点.
+ */
+export interface QueryPluginStatsTrendItem extends Parsable {
+    /**
+     * 当日合计.
+     */
+    count?: string | null;
+    /**
+     * 统计日期.
+     */
+    date?: DateOnly | null;
+}
+/**
+ * 插件调用趋势（近 30 天，无数据日期补 0）.
+ */
+export interface QueryPluginStatsTrendResponse extends Parsable {
+    /**
+     * 结束日期.
+     */
+    endDate?: DateOnly | null;
+    /**
+     * 按日数据点.
+     */
+    items?: QueryPluginStatsTrendItem[] | null;
+    /**
+     * 起始日期.
+     */
+    startDate?: DateOnly | null;
+    /**
+     * 区间合计.
+     */
+    total?: string | null;
 }
 /**
  * 私有系统插件团队授权查询响应.
@@ -17649,6 +18328,119 @@ export interface QueryTeamPluginsCommandResponse extends Parsable {
      * 团队 id.
      */
     teamId?: string | null;
+}
+/**
+ * 团队插件分类分布项.
+ */
+export interface QueryTeamPluginStatsClassifyItem extends Parsable {
+    /**
+     * 分类 id，0 表示未分类.
+     */
+    classifyId?: number | null;
+    /**
+     * 分类名称.
+     */
+    classifyName?: string | null;
+    /**
+     * 插件数量.
+     */
+    count?: number | null;
+}
+/**
+ * 团队插件使用统计响应（仅本团队自有插件）：概览计数 + 调用量 TOP + 分类分布 + 近 30 天趋势.
+ */
+export interface QueryTeamPluginStatsCommandResponse extends Parsable {
+    /**
+     * 分类分布（含未分类，key=0 时 classifyName 为空由前端兜底文案）.
+     */
+    classifies?: QueryTeamPluginStatsClassifyItem[] | null;
+    /**
+     * MCP 插件数量.
+     */
+    mcpCount?: number | null;
+    /**
+     * OpenAPI 插件数量.
+     */
+    openApiCount?: number | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 调用量 TOP（按累计使用量降序，最多 5 条）.
+     */
+    top?: QueryTeamPluginStatsTopItem[] | null;
+    /**
+     * 累计调用次数（本团队插件 counter 合计）.
+     */
+    totalCalls?: string | null;
+    /**
+     * 函数总数（自定义=函数表计数，动态=注册可用计 1）.
+     */
+    totalFunctions?: string | null;
+    /**
+     * 团队自有插件总数.
+     */
+    totalPlugins?: number | null;
+    /**
+     * 近 30 天调用趋势（区间内无数据日期补 0）.
+     */
+    trend?: QueryTeamPluginStatsTrendResponse | null;
+}
+/**
+ * 团队插件调用量 TOP 项.
+ */
+export interface QueryTeamPluginStatsTopItem extends Parsable {
+    /**
+     * 头像（存储 ObjectKey）.
+     */
+    avatarPath?: string | null;
+    /**
+     * 累计使用量.
+     */
+    counter?: string | null;
+    /**
+     * 插件记录 id.
+     */
+    id?: Guid | null;
+    /**
+     * 展示名称（title 优先，空则取 pluginName）.
+     */
+    name?: string | null;
+}
+/**
+ * 趋势单日数据点.
+ */
+export interface QueryTeamPluginStatsTrendItem extends Parsable {
+    /**
+     * 当日合计.
+     */
+    count?: string | null;
+    /**
+     * 统计日期.
+     */
+    date?: DateOnly | null;
+}
+/**
+ * 团队插件调用趋势（近 30 天，无数据日期补 0）.
+ */
+export interface QueryTeamPluginStatsTrendResponse extends Parsable {
+    /**
+     * 结束日期.
+     */
+    endDate?: DateOnly | null;
+    /**
+     * 按日数据点.
+     */
+    items?: QueryTeamPluginStatsTrendItem[] | null;
+    /**
+     * 起始日期.
+     */
+    startDate?: DateOnly | null;
+    /**
+     * 区间合计.
+     */
+    total?: string | null;
 }
 /**
  * 团队列表响应.
@@ -18602,44 +19394,41 @@ export interface ReviewPublicationCommand extends Parsable {
      */
     reviewComment?: string | null;
 }
-/**
- * Input payload for running an AG-UI agent.
- */
 export interface RunAgentInput extends Parsable {
     /**
-     * Gets or sets contextual information for the agent.
+     * The context property
      */
     context?: AGUIContext[] | null;
     /**
-     * Gets or sets additional forwarded properties from the client.
+     * The forwardedProps property
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * Gets or sets the conversation messages.
+     * The messages property
      */
     messages?: AGUIMessage[] | null;
     /**
-     * Gets or sets the parent run identifier for branching/time travel.
+     * The parentRunId property
      */
     parentRunId?: string | null;
     /**
-     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
+     * The resume property
      */
     resume?: AGUIResume[] | null;
     /**
-     * Gets or sets the run identifier.
+     * The runId property
      */
     runId?: string | null;
     /**
-     * Gets or sets the state to pass to the agent.
+     * The state property
      */
     state?: UntypedNode | null;
     /**
-     * Gets or sets the thread identifier.
+     * The threadId property
      */
     threadId?: string | null;
     /**
-     * Gets or sets the tools available to the agent.
+     * The tools property
      */
     tools?: AGUITool[] | null;
 }
@@ -19114,15 +19903,6 @@ export interface SendLoginCodeCommand extends Parsable {
      * 一次性登录票据.
      */
     loginTicket?: string | null;
-}
-/**
- * 发送测试邮件，验证 SMTP 邮件服务配置是否可用.
- */
-export interface SendTestEmailCommand extends Parsable {
-    /**
-     * 测试收件邮箱地址.
-     */
-    to?: string | null;
 }
 /**
  * Serializes information the current object
@@ -19676,9 +20456,25 @@ export function serializeBoundAccountInfo(writer: SerializationWriter, boundAcco
 // @ts-ignore
 export function serializeBroadcastNotificationCommand(writer: SerializationWriter, broadcastNotificationCommand: Partial<BroadcastNotificationCommand> | undefined | null = {}) : void {
     if (broadcastNotificationCommand) {
+        writer.writeBooleanValue("allChannels", broadcastNotificationCommand.allChannels);
+        writer.writeCollectionOfPrimitiveValues<string>("channelIds", broadcastNotificationCommand.channelIds);
         writer.writeStringValue("content", broadcastNotificationCommand.content);
+        writer.writeCollectionOfPrimitiveValues<string>("emailRecipients", broadcastNotificationCommand.emailRecipients);
         writer.writeEnumValue<NotificationLevel>("level", broadcastNotificationCommand.level);
+        writer.writeCollectionOfPrimitiveValues<string>("phoneNumbers", broadcastNotificationCommand.phoneNumbers);
+        writer.writeBooleanValue("sendInSite", broadcastNotificationCommand.sendInSite);
+        writer.writeStringValue("templateId", broadcastNotificationCommand.templateId);
+        writer.writeObjectValue<BroadcastNotificationCommand_templateVariables>("templateVariables", broadcastNotificationCommand.templateVariables, serializeBroadcastNotificationCommand_templateVariables);
         writer.writeStringValue("title", broadcastNotificationCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeBroadcastNotificationCommand_templateVariables(writer: SerializationWriter, broadcastNotificationCommand_templateVariables: Partial<BroadcastNotificationCommand_templateVariables> | undefined | null = {}) : void {
+    if (broadcastNotificationCommand_templateVariables) {
     }
 }
 /**
@@ -20031,6 +20827,33 @@ export function serializeCreateNotificationChannelCommand(writer: SerializationW
 export function serializeCreateNotificationChannelCommandResponse(writer: SerializationWriter, createNotificationChannelCommandResponse: Partial<CreateNotificationChannelCommandResponse> | undefined | null = {}) : void {
     if (createNotificationChannelCommandResponse) {
         writer.writeStringValue("id", createNotificationChannelCommandResponse.id);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateNotificationTemplateCommand(writer: SerializationWriter, createNotificationTemplateCommand: Partial<CreateNotificationTemplateCommand> | undefined | null = {}) : void {
+    if (createNotificationTemplateCommand) {
+        writer.writeStringValue("aliyunTemplateCode", createNotificationTemplateCommand.aliyunTemplateCode);
+        writer.writeStringValue("content", createNotificationTemplateCommand.content);
+        writer.writeEnumValue<NotificationContentType>("contentType", createNotificationTemplateCommand.contentType);
+        writer.writeStringValue("description", createNotificationTemplateCommand.description);
+        writer.writeStringValue("name", createNotificationTemplateCommand.name);
+        writer.writeStringValue("tencentTemplateId", createNotificationTemplateCommand.tencentTemplateId);
+        writer.writeStringValue("title", createNotificationTemplateCommand.title);
+        writer.writeStringValue("variables", createNotificationTemplateCommand.variables);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeCreateNotificationTemplateCommandResponse(writer: SerializationWriter, createNotificationTemplateCommandResponse: Partial<CreateNotificationTemplateCommandResponse> | undefined | null = {}) : void {
+    if (createNotificationTemplateCommandResponse) {
+        writer.writeStringValue("id", createNotificationTemplateCommandResponse.id);
     }
 }
 /**
@@ -22536,8 +23359,41 @@ export function serializeQueryNotificationLogsCommandResponseItem(writer: Serial
         writer.writeStringValue("error", queryNotificationLogsCommandResponseItem.errorEscaped);
         writer.writeStringValue("id", queryNotificationLogsCommandResponseItem.id);
         writer.writeEnumValue<NotificationLevel>("level", queryNotificationLogsCommandResponseItem.level);
+        writer.writeStringValue("recipients", queryNotificationLogsCommandResponseItem.recipients);
         writer.writeEnumValue<NotificationSendStatus>("status", queryNotificationLogsCommandResponseItem.status);
+        writer.writeStringValue("targetUserIds", queryNotificationLogsCommandResponseItem.targetUserIds);
+        writer.writeStringValue("targetUserNames", queryNotificationLogsCommandResponseItem.targetUserNames);
         writer.writeStringValue("title", queryNotificationLogsCommandResponseItem.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNotificationTemplatesCommandResponse(writer: SerializationWriter, queryNotificationTemplatesCommandResponse: Partial<QueryNotificationTemplatesCommandResponse> | undefined | null = {}) : void {
+    if (queryNotificationTemplatesCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryNotificationTemplatesCommandResponseItem>("items", queryNotificationTemplatesCommandResponse.items, serializeQueryNotificationTemplatesCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryNotificationTemplatesCommandResponseItem(writer: SerializationWriter, queryNotificationTemplatesCommandResponseItem: Partial<QueryNotificationTemplatesCommandResponseItem> | undefined | null = {}) : void {
+    if (queryNotificationTemplatesCommandResponseItem) {
+        serializeAuditsInfo(writer, queryNotificationTemplatesCommandResponseItem)
+        writer.writeStringValue("aliyunTemplateCode", queryNotificationTemplatesCommandResponseItem.aliyunTemplateCode);
+        writer.writeStringValue("content", queryNotificationTemplatesCommandResponseItem.content);
+        writer.writeEnumValue<NotificationContentType>("contentType", queryNotificationTemplatesCommandResponseItem.contentType);
+        writer.writeStringValue("description", queryNotificationTemplatesCommandResponseItem.description);
+        writer.writeStringValue("id", queryNotificationTemplatesCommandResponseItem.id);
+        writer.writeBooleanValue("isBuiltIn", queryNotificationTemplatesCommandResponseItem.isBuiltIn);
+        writer.writeStringValue("name", queryNotificationTemplatesCommandResponseItem.name);
+        writer.writeStringValue("tencentTemplateId", queryNotificationTemplatesCommandResponseItem.tencentTemplateId);
+        writer.writeStringValue("title", queryNotificationTemplatesCommandResponseItem.title);
+        writer.writeStringValue("variables", queryNotificationTemplatesCommandResponseItem.variables);
     }
 }
 /**
@@ -22589,11 +23445,11 @@ export function serializeQueryOrgRolesCommandResponseItem(writer: SerializationW
     if (queryOrgRolesCommandResponseItem) {
         serializeAuditsInfo(writer, queryOrgRolesCommandResponseItem)
         writer.writeBooleanValue("hasChildren", queryOrgRolesCommandResponseItem.hasChildren);
-        writer.writeBooleanValue("isDefault", queryOrgRolesCommandResponseItem.isDefault);
         writer.writeStringValue("name", queryOrgRolesCommandResponseItem.name);
         writer.writeNumberValue("orgRoleId", queryOrgRolesCommandResponseItem.orgRoleId);
         writer.writeNumberValue("parentId", queryOrgRolesCommandResponseItem.parentId);
         writer.writeStringValue("path", queryOrgRolesCommandResponseItem.path);
+        writer.writeNumberValue("sortOrder", queryOrgRolesCommandResponseItem.sortOrder);
         writer.writeNumberValue("userCount", queryOrgRolesCommandResponseItem.userCount);
     }
 }
@@ -22690,6 +23546,74 @@ export function serializeQueryPluginManageListCommandResponseItem(writer: Serial
         writer.writeStringValue("templeteKey", queryPluginManageListCommandResponseItem.templeteKey);
         writer.writeStringValue("title", queryPluginManageListCommandResponseItem.title);
         writer.writeNumberValue("type", queryPluginManageListCommandResponseItem.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginStatsClassifyItem(writer: SerializationWriter, queryPluginStatsClassifyItem: Partial<QueryPluginStatsClassifyItem> | undefined | null = {}) : void {
+    if (queryPluginStatsClassifyItem) {
+        writer.writeNumberValue("classifyId", queryPluginStatsClassifyItem.classifyId);
+        writer.writeStringValue("classifyName", queryPluginStatsClassifyItem.classifyName);
+        writer.writeNumberValue("count", queryPluginStatsClassifyItem.count);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginStatsCommandResponse(writer: SerializationWriter, queryPluginStatsCommandResponse: Partial<QueryPluginStatsCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginStatsCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryPluginStatsClassifyItem>("classifies", queryPluginStatsCommandResponse.classifies, serializeQueryPluginStatsClassifyItem);
+        writer.writeNumberValue("mcpCount", queryPluginStatsCommandResponse.mcpCount);
+        writer.writeNumberValue("openApiCount", queryPluginStatsCommandResponse.openApiCount);
+        writer.writeCollectionOfObjectValues<QueryPluginStatsTopItem>("top", queryPluginStatsCommandResponse.top, serializeQueryPluginStatsTopItem);
+        writer.writeStringValue("totalCalls", queryPluginStatsCommandResponse.totalCalls);
+        writer.writeStringValue("totalFunctions", queryPluginStatsCommandResponse.totalFunctions);
+        writer.writeNumberValue("totalPlugins", queryPluginStatsCommandResponse.totalPlugins);
+        writer.writeObjectValue<QueryPluginStatsTrendResponse>("trend", queryPluginStatsCommandResponse.trend, serializeQueryPluginStatsTrendResponse);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginStatsTopItem(writer: SerializationWriter, queryPluginStatsTopItem: Partial<QueryPluginStatsTopItem> | undefined | null = {}) : void {
+    if (queryPluginStatsTopItem) {
+        writer.writeStringValue("avatarPath", queryPluginStatsTopItem.avatarPath);
+        writer.writeStringValue("counter", queryPluginStatsTopItem.counter);
+        writer.writeGuidValue("id", queryPluginStatsTopItem.id);
+        writer.writeStringValue("name", queryPluginStatsTopItem.name);
+        writer.writeNumberValue("teamId", queryPluginStatsTopItem.teamId);
+        writer.writeStringValue("teamName", queryPluginStatsTopItem.teamName);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginStatsTrendItem(writer: SerializationWriter, queryPluginStatsTrendItem: Partial<QueryPluginStatsTrendItem> | undefined | null = {}) : void {
+    if (queryPluginStatsTrendItem) {
+        writer.writeStringValue("count", queryPluginStatsTrendItem.count);
+        writer.writeDateOnlyValue("date", queryPluginStatsTrendItem.date);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginStatsTrendResponse(writer: SerializationWriter, queryPluginStatsTrendResponse: Partial<QueryPluginStatsTrendResponse> | undefined | null = {}) : void {
+    if (queryPluginStatsTrendResponse) {
+        writer.writeDateOnlyValue("endDate", queryPluginStatsTrendResponse.endDate);
+        writer.writeCollectionOfObjectValues<QueryPluginStatsTrendItem>("items", queryPluginStatsTrendResponse.items, serializeQueryPluginStatsTrendItem);
+        writer.writeDateOnlyValue("startDate", queryPluginStatsTrendResponse.startDate);
+        writer.writeStringValue("total", queryPluginStatsTrendResponse.total);
     }
 }
 /**
@@ -23086,6 +24010,73 @@ export function serializeQueryTeamPluginsCommandResponse(writer: SerializationWr
         writer.writeCollectionOfObjectValues<TeamPluginItem>("items", queryTeamPluginsCommandResponse.items, serializeTeamPluginItem);
         writer.writeNumberValue("myRole", queryTeamPluginsCommandResponse.myRole);
         writer.writeStringValue("teamId", queryTeamPluginsCommandResponse.teamId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamPluginStatsClassifyItem(writer: SerializationWriter, queryTeamPluginStatsClassifyItem: Partial<QueryTeamPluginStatsClassifyItem> | undefined | null = {}) : void {
+    if (queryTeamPluginStatsClassifyItem) {
+        writer.writeNumberValue("classifyId", queryTeamPluginStatsClassifyItem.classifyId);
+        writer.writeStringValue("classifyName", queryTeamPluginStatsClassifyItem.classifyName);
+        writer.writeNumberValue("count", queryTeamPluginStatsClassifyItem.count);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamPluginStatsCommandResponse(writer: SerializationWriter, queryTeamPluginStatsCommandResponse: Partial<QueryTeamPluginStatsCommandResponse> | undefined | null = {}) : void {
+    if (queryTeamPluginStatsCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryTeamPluginStatsClassifyItem>("classifies", queryTeamPluginStatsCommandResponse.classifies, serializeQueryTeamPluginStatsClassifyItem);
+        writer.writeNumberValue("mcpCount", queryTeamPluginStatsCommandResponse.mcpCount);
+        writer.writeNumberValue("openApiCount", queryTeamPluginStatsCommandResponse.openApiCount);
+        writer.writeStringValue("teamId", queryTeamPluginStatsCommandResponse.teamId);
+        writer.writeCollectionOfObjectValues<QueryTeamPluginStatsTopItem>("top", queryTeamPluginStatsCommandResponse.top, serializeQueryTeamPluginStatsTopItem);
+        writer.writeStringValue("totalCalls", queryTeamPluginStatsCommandResponse.totalCalls);
+        writer.writeStringValue("totalFunctions", queryTeamPluginStatsCommandResponse.totalFunctions);
+        writer.writeNumberValue("totalPlugins", queryTeamPluginStatsCommandResponse.totalPlugins);
+        writer.writeObjectValue<QueryTeamPluginStatsTrendResponse>("trend", queryTeamPluginStatsCommandResponse.trend, serializeQueryTeamPluginStatsTrendResponse);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamPluginStatsTopItem(writer: SerializationWriter, queryTeamPluginStatsTopItem: Partial<QueryTeamPluginStatsTopItem> | undefined | null = {}) : void {
+    if (queryTeamPluginStatsTopItem) {
+        writer.writeStringValue("avatarPath", queryTeamPluginStatsTopItem.avatarPath);
+        writer.writeStringValue("counter", queryTeamPluginStatsTopItem.counter);
+        writer.writeGuidValue("id", queryTeamPluginStatsTopItem.id);
+        writer.writeStringValue("name", queryTeamPluginStatsTopItem.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamPluginStatsTrendItem(writer: SerializationWriter, queryTeamPluginStatsTrendItem: Partial<QueryTeamPluginStatsTrendItem> | undefined | null = {}) : void {
+    if (queryTeamPluginStatsTrendItem) {
+        writer.writeStringValue("count", queryTeamPluginStatsTrendItem.count);
+        writer.writeDateOnlyValue("date", queryTeamPluginStatsTrendItem.date);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryTeamPluginStatsTrendResponse(writer: SerializationWriter, queryTeamPluginStatsTrendResponse: Partial<QueryTeamPluginStatsTrendResponse> | undefined | null = {}) : void {
+    if (queryTeamPluginStatsTrendResponse) {
+        writer.writeDateOnlyValue("endDate", queryTeamPluginStatsTrendResponse.endDate);
+        writer.writeCollectionOfObjectValues<QueryTeamPluginStatsTrendItem>("items", queryTeamPluginStatsTrendResponse.items, serializeQueryTeamPluginStatsTrendItem);
+        writer.writeDateOnlyValue("startDate", queryTeamPluginStatsTrendResponse.startDate);
+        writer.writeStringValue("total", queryTeamPluginStatsTrendResponse.total);
     }
 }
 /**
@@ -23936,16 +24927,6 @@ export function serializeSendLoginCodeCommand(writer: SerializationWriter, sendL
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeSendTestEmailCommand(writer: SerializationWriter, sendTestEmailCommand: Partial<SendTestEmailCommand> | undefined | null = {}) : void {
-    if (sendTestEmailCommand) {
-        writer.writeStringValue("to", sendTestEmailCommand.to);
-    }
-}
-/**
- * Serializes information the current object
- * @param writer Serialization writer to use to serialize this model
- */
-// @ts-ignore
 export function serializeSetOrgGrantsCommand(writer: SerializationWriter, setOrgGrantsCommand: Partial<SetOrgGrantsCommand> | undefined | null = {}) : void {
     if (setOrgGrantsCommand) {
         writer.writeCollectionOfObjectValues<OrgGrantItem>("grants", setOrgGrantsCommand.grants, serializeOrgGrantItem);
@@ -24526,7 +25507,10 @@ export function serializeTeamVariableItem(writer: SerializationWriter, teamVaria
 export function serializeTestNotificationChannelCommand(writer: SerializationWriter, testNotificationChannelCommand: Partial<TestNotificationChannelCommand> | undefined | null = {}) : void {
     if (testNotificationChannelCommand) {
         writer.writeStringValue("config", testNotificationChannelCommand.config);
+        writer.writeStringValue("contextUserId", testNotificationChannelCommand.contextUserId);
+        writer.writeEnumValue<UserType>("contextUserType", testNotificationChannelCommand.contextUserType);
         writer.writeStringValue("id", testNotificationChannelCommand.id);
+        writer.writeCollectionOfPrimitiveValues<string>("recipients", testNotificationChannelCommand.recipients);
         writer.writeEnumValue<NotificationChannelType>("type", testNotificationChannelCommand.type);
     }
 }
@@ -24540,6 +25524,42 @@ export function serializeTestNotificationChannelCommandResponse(writer: Serializ
         writer.writeStringValue("durationMs", testNotificationChannelCommandResponse.durationMs);
         writer.writeStringValue("error", testNotificationChannelCommandResponse.errorEscaped);
         writer.writeBooleanValue("success", testNotificationChannelCommandResponse.success);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTestNotificationTemplateCommand(writer: SerializationWriter, testNotificationTemplateCommand: Partial<TestNotificationTemplateCommand> | undefined | null = {}) : void {
+    if (testNotificationTemplateCommand) {
+        writer.writeStringValue("channelId", testNotificationTemplateCommand.channelId);
+        writer.writeCollectionOfPrimitiveValues<string>("recipients", testNotificationTemplateCommand.recipients);
+        writer.writeStringValue("templateId", testNotificationTemplateCommand.templateId);
+        writer.writeObjectValue<TestNotificationTemplateCommand_variables>("variables", testNotificationTemplateCommand.variables, serializeTestNotificationTemplateCommand_variables);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTestNotificationTemplateCommand_variables(writer: SerializationWriter, testNotificationTemplateCommand_variables: Partial<TestNotificationTemplateCommand_variables> | undefined | null = {}) : void {
+    if (testNotificationTemplateCommand_variables) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTestNotificationTemplateCommandResponse(writer: SerializationWriter, testNotificationTemplateCommandResponse: Partial<TestNotificationTemplateCommandResponse> | undefined | null = {}) : void {
+    if (testNotificationTemplateCommandResponse) {
+        writer.writeStringValue("durationMs", testNotificationTemplateCommandResponse.durationMs);
+        writer.writeStringValue("error", testNotificationTemplateCommandResponse.errorEscaped);
+        writer.writeStringValue("renderedContent", testNotificationTemplateCommandResponse.renderedContent);
+        writer.writeStringValue("renderedTitle", testNotificationTemplateCommandResponse.renderedTitle);
+        writer.writeBooleanValue("success", testNotificationTemplateCommandResponse.success);
     }
 }
 /**
@@ -24895,6 +25915,24 @@ export function serializeUpdateNotificationChannelCommand(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateNotificationTemplateCommand(writer: SerializationWriter, updateNotificationTemplateCommand: Partial<UpdateNotificationTemplateCommand> | undefined | null = {}) : void {
+    if (updateNotificationTemplateCommand) {
+        writer.writeStringValue("aliyunTemplateCode", updateNotificationTemplateCommand.aliyunTemplateCode);
+        writer.writeStringValue("content", updateNotificationTemplateCommand.content);
+        writer.writeEnumValue<NotificationContentType>("contentType", updateNotificationTemplateCommand.contentType);
+        writer.writeStringValue("description", updateNotificationTemplateCommand.description);
+        writer.writeStringValue("id", updateNotificationTemplateCommand.id);
+        writer.writeStringValue("name", updateNotificationTemplateCommand.name);
+        writer.writeStringValue("tencentTemplateId", updateNotificationTemplateCommand.tencentTemplateId);
+        writer.writeStringValue("title", updateNotificationTemplateCommand.title);
+        writer.writeStringValue("variables", updateNotificationTemplateCommand.variables);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateOAuthConnectionCommand(writer: SerializationWriter, updateOAuthConnectionCommand: Partial<UpdateOAuthConnectionCommand> | undefined | null = {}) : void {
     if (updateOAuthConnectionCommand) {
         writer.writeStringValue("agentId", updateOAuthConnectionCommand.agentId);
@@ -24944,9 +25982,11 @@ export function serializeUpdateOrgRoleCommand(writer: SerializationWriter, updat
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
-export function serializeUpdateOrgRoleDefaultCommand(writer: SerializationWriter, updateOrgRoleDefaultCommand: Partial<UpdateOrgRoleDefaultCommand> | undefined | null = {}) : void {
-    if (updateOrgRoleDefaultCommand) {
-        writer.writeNumberValue("orgRoleId", updateOrgRoleDefaultCommand.orgRoleId);
+export function serializeUpdateOrgRoleOrderCommand(writer: SerializationWriter, updateOrgRoleOrderCommand: Partial<UpdateOrgRoleOrderCommand> | undefined | null = {}) : void {
+    if (updateOrgRoleOrderCommand) {
+        writer.writeNumberValue("orgRoleId", updateOrgRoleOrderCommand.orgRoleId);
+        writer.writeNumberValue("parentId", updateOrgRoleOrderCommand.parentId);
+        writer.writeNumberValue("prevOrgRoleId", updateOrgRoleOrderCommand.prevOrgRoleId);
     }
 }
 /**
@@ -26600,7 +27640,7 @@ export interface TeamVariableItem extends AuditsInfo, Parsable {
     variableId?: string | null;
 }
 /**
- * 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.
+ * 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.SMTP 渠道须传入收件人邮箱、短信渠道须传入收件人手机号（发送时动态指定）；应用机器人渠道（feishuAppBot/dingtalkAppBot/wecomAppBot）测试仅定向当前管理员本人（按其平台账号绑定投递）.
  */
 export interface TestNotificationChannelCommand extends Parsable {
     /**
@@ -26608,9 +27648,21 @@ export interface TestNotificationChannelCommand extends Parsable {
      */
     config?: string | null;
     /**
+     * 通过上下文自动配置id，前端不需要传递.
+     */
+    contextUserId?: string | null;
+    /**
+     * 通过上下文自动配置用户了偶像，前端不需要传递.
+     */
+    contextUserType?: UserType | null;
+    /**
      * 已保存渠道 id，空表示使用传入配置试发.
      */
     id?: string | null;
+    /**
+     * 动态收件人列表：SMTP 渠道为收件人邮箱（必填），短信渠道为收件人手机号（必填），其它渠道忽略.
+     */
+    recipients?: string[] | null;
     /**
      * 渠道类型（id 为空时必填）.
      */
@@ -26630,6 +27682,57 @@ export interface TestNotificationChannelCommandResponse extends Parsable {
     errorEscaped?: string | null;
     /**
      * 是否发送成功.
+     */
+    success?: boolean | null;
+}
+/**
+ * 测试通知模板：按传入变量值渲染模板，返回渲染结果；指定 channelId 时同步向该渠道真实试发（短信渠道要求模板已映射对应平台模板 Code/Id）.
+ */
+export interface TestNotificationTemplateCommand extends Parsable {
+    /**
+     * 试发渠道 id，可选；为空时仅返回渲染预览不发送.
+     */
+    channelId?: string | null;
+    /**
+     * 动态收件人列表：试发渠道为 SMTP 时为收件人邮箱（必填），短信渠道时为收件人手机号（必填），其它渠道忽略.
+     */
+    recipients?: string[] | null;
+    /**
+     * 模板 id.
+     */
+    templateId?: string | null;
+    /**
+     * 模板变量值表（需覆盖模板全部变量定义）.
+     */
+    variables?: TestNotificationTemplateCommand_variables | null;
+}
+/**
+ * 模板变量值表（需覆盖模板全部变量定义）.
+ */
+export interface TestNotificationTemplateCommand_variables extends Parsable {
+}
+/**
+ * 测试通知模板响应.
+ */
+export interface TestNotificationTemplateCommandResponse extends Parsable {
+    /**
+     * 发送耗时（毫秒），未发送为 0.
+     */
+    durationMs?: string | null;
+    /**
+     * 失败原因（发送失败时）.
+     */
+    errorEscaped?: string | null;
+    /**
+     * 渲染后的正文（HTML 模板为 HTML 文本）.
+     */
+    renderedContent?: string | null;
+    /**
+     * 渲染后的主题.
+     */
+    renderedTitle?: string | null;
+    /**
+     * 是否发送成功（未指定渠道时为 false 且 error 为空）.
      */
     success?: boolean | null;
 }
@@ -27187,6 +28290,47 @@ export interface UpdateNotificationChannelCommand extends Parsable {
     type?: NotificationChannelType | null;
 }
 /**
+ * 更新通知模板（整体覆盖）.
+ */
+export interface UpdateNotificationTemplateCommand extends Parsable {
+    /**
+     * 阿里云短信模板 Code（平台审核通过后回填，空表示不用于阿里云短信）.
+     */
+    aliyunTemplateCode?: string | null;
+    /**
+     * 通知正文模板（纯文本或 HTML，含 {{变量}} 双花括号占位符，与云邮件平台提审形态一致）.
+     */
+    content?: string | null;
+    /**
+     * 内容类型.
+     */
+    contentType?: NotificationContentType | null;
+    /**
+     * 模板描述.
+     */
+    description?: string | null;
+    /**
+     * 模板 id（路由传入）.
+     */
+    id?: string | null;
+    /**
+     * 模板名称（唯一）.
+     */
+    name?: string | null;
+    /**
+     * 腾讯云短信模板 Id（平台审核通过后回填，空表示不用于腾讯云短信）.
+     */
+    tencentTemplateId?: string | null;
+    /**
+     * 通知主题模板（邮件主题用，短信无主题；可含 {{变量}} 双花括号占位符）.
+     */
+    title?: string | null;
+    /**
+     * 变量定义 JSON（[{"name","description","example"}]，空表示无变量）.
+     */
+    variables?: string | null;
+}
+/**
  * 更新第三方登录连接配置.
  */
 export interface UpdateOAuthConnectionCommand extends Parsable {
@@ -27290,13 +28434,21 @@ export interface UpdateOrgRoleCommand extends Parsable {
     parentId?: number | null;
 }
 /**
- * 设置/清空组织默认角色（仅管理员）：orgRoleId 为空表示清空（新注册用户无默认角色）；全局唯一，后设覆盖.
+ * 调整组织顺序（仅管理员）：挂在 parentId 之下、插到 prevOrgRoleId 之后（null=置于首位）；跨级移动时整体重写子树物化路径.
  */
-export interface UpdateOrgRoleDefaultCommand extends Parsable {
+export interface UpdateOrgRoleOrderCommand extends Parsable {
     /**
-     * 默认角色 id，null=清空.
+     * 角色 id（由路由回填）.
      */
     orgRoleId?: number | null;
+    /**
+     * 目标上级角色 id，null=根角色（显式指定挂载层级）.
+     */
+    parentId?: number | null;
+    /**
+     * 插入到该同级组织之后，null=置于首位.
+     */
+    prevOrgRoleId?: number | null;
 }
 /**
  * 整体覆盖某用户的组织集合（仅管理员），空列表=清空该用户全部角色.
@@ -28672,6 +29824,26 @@ export const NotificationChannelTypeObject = {
     Webhook: "webhook",
     Smtp: "smtp",
     InSite: "inSite",
+    Slack: "slack",
+    Discord: "discord",
+    MicrosoftTeams: "microsoftTeams",
+    Gotify: "gotify",
+    Ntfy: "ntfy",
+    Bark: "bark",
+    ServerChan: "serverChan",
+    PushPlus: "pushPlus",
+    FeishuAppBot: "feishuAppBot",
+    DingtalkAppBot: "dingtalkAppBot",
+    WecomAppBot: "wecomAppBot",
+    AliyunSms: "aliyunSms",
+    TencentSms: "tencentSms",
+} as const;
+/**
+ * 通知内容类型：模板正文的形态，SMTP 渠道按此发送 HTML 邮件，其它渠道降级纯文本.
+ */
+export const NotificationContentTypeObject = {
+    Text: "text",
+    Html: "html",
 } as const;
 /**
  * 通知级别.

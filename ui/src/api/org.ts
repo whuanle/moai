@@ -10,8 +10,8 @@ export interface OrgRoleItem {
   path?: string | null
   userCount?: number | null
   hasChildren?: boolean | null
-  /** 是否为默认组织（新注册用户自动获得） */
-  isDefault?: boolean | null
+  /** 同级展示顺序，从小到大 */
+  sortOrder?: number | null
   createTime?: string | null
   createUserName?: string | null
   updateTime?: string | null
@@ -49,7 +49,7 @@ export interface UserOrgRoles {
   items: UserOrgRoleItem[]
 }
 
-/** 查询组织全量平铺列表（仅管理员），按 path 排序，前端按 parentId 组树 */
+/** 查询组织全量平铺列表（仅管理员），树序输出（父先于子、同级按 sortOrder），前端按 parentId 组树 */
 export async function getOrgRoles(search?: string): Promise<OrgRoleItem[]> {
   const client = getApiClient()
   const res = await client.api.org.role.list.get({
@@ -68,7 +68,7 @@ export async function createOrgRole(payload: { name: string; parentId?: number |
   return { orgRoleId: res?.orgRoleId, path: res?.path }
 }
 
-/** 更新组织（仅管理员）：改名与调整上级（null=调整为根角色），调整上级时整体重写子树路径 */
+/** 更新组织（仅管理员）：改名与调整上级（null=调整为根角色），调整上级时整体重写子树路径，落位为新同级末尾 */
 export async function updateOrgRole(roleId: number, payload: { name: string; parentId?: number | null }): Promise<void> {
   const client = getApiClient()
   await client.api.org.role.byId(roleId).put({
@@ -77,16 +77,19 @@ export async function updateOrgRole(roleId: number, payload: { name: string; par
   })
 }
 
-/** 删除组织（仅管理员）：存在子组织时后端拒绝；同时解绑该组织下的全部用户；默认组织被删时设置自动清空 */
+/** 调整组织顺序（仅管理员）：挂在 parentId 之下、插到 prevOrgRoleId 之后（null=置于首位）；跨级移动时整体重写子树路径 */
+export async function updateOrgRoleOrder(roleId: number, payload: { parentId: number | null; prevOrgRoleId: number | null }): Promise<void> {
+  const client = getApiClient()
+  await client.api.org.role.byId(roleId).order.put({
+    parentId: payload.parentId,
+    prevOrgRoleId: payload.prevOrgRoleId,
+  })
+}
+
+/** 删除组织（仅管理员）：存在子组织时后端拒绝；同时解绑该组织下的全部用户 */
 export async function deleteOrgRole(roleId: number): Promise<void> {
   const client = getApiClient()
   await client.api.org.role.byId(roleId).delete()
-}
-
-/** 设置/清空默认组织（仅管理员）：roleId 为空表示清空；全局唯一后设覆盖，只影响新注册用户 */
-export async function updateOrgRoleDefault(roleId: number | null): Promise<void> {
-  const client = getApiClient()
-  await client.api.org.role.defaultEscaped.put({ orgRoleId: roleId })
 }
 
 /** 查询某组织下的用户清单（仅管理员） */

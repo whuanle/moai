@@ -58,6 +58,8 @@ public class QueryNotificationLogsCommandHandler : IRequestHandler<QueryNotifica
                 Title = x.Title,
                 Content = x.Content,
                 Status = (NotificationSendStatus)x.Status,
+                TargetUserIds = x.TargetUserIds,
+                Recipients = x.Recipients,
                 Error = x.Error,
                 DurationMs = x.DurationMs,
                 CreateUserId = (int)x.CreateUserId,
@@ -68,6 +70,45 @@ public class QueryNotificationLogsCommandHandler : IRequestHandler<QueryNotifica
             .ToListAsync(cancellationToken);
 
         await _userInfoFillService.FillAsync(items, cancellationToken);
+        await FillTargetUserNamesAsync(items, cancellationToken);
         return new QueryNotificationLogsCommandResponse { TotalCount = totalCount, Items = items };
+    }
+
+    private async Task FillTargetUserNamesAsync(List<QueryNotificationLogsCommandResponseItem> items, CancellationToken cancellationToken)
+    {
+        var targetIds = items
+            .Where(x => !string.IsNullOrEmpty(x.TargetUserIds))
+            .SelectMany(x => ParseUserIds(x.TargetUserIds))
+            .Distinct()
+            .ToArray();
+        if (targetIds.Length == 0)
+        {
+            return;
+        }
+
+        var userNames = await _databaseContext.Users
+            .AsNoTracking()
+            .Where(x => targetIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.NickName, cancellationToken);
+
+        foreach (var item in items)
+        {
+            if (string.IsNullOrEmpty(item.TargetUserIds))
+            {
+                continue;
+            }
+
+            item.TargetUserNames = string.Join(',', ParseUserIds(item.TargetUserIds)
+                .Where(userNames.ContainsKey)
+                .Select(x => userNames[x]));
+        }
+    }
+
+    private static IEnumerable<long> ParseUserIds(string targetUserIds)
+    {
+        return targetUserIds
+            .Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries)
+            .Select(x => long.TryParse(x, out var id) ? id : 0)
+            .Where(x => x > 0);
     }
 }

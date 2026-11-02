@@ -50,29 +50,15 @@ public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand,
 
         if (parentChanged)
         {
-            // 防环：新父 path 不得以本角色 path 为前缀（自身或任意后代作父都会命中）
-            if (parent != null && parent.Path.StartsWith(role.Path, StringComparison.Ordinal))
-            {
-                throw new BusinessException("不能将组织移动到自身或其下级组织之下.") { StatusCode = 400 };
-            }
-
-            var oldPath = role.Path;
-            var descendants = await _databaseContext.OrgRoles
-                .Where(x => x.Id != role.Id && EF.Functions.Like(x.Path, oldPath + "%"))
-                .ToListAsync(cancellationToken);
-            var newParentPath = parent?.Path ?? "/";
-            var maxDescendantSuffixLength = descendants.Count == 0 ? 0 : descendants.Max(x => x.Path.Length - oldPath.Length);
-            OrgRoleTreeGuard.EnsurePathLength(newParentPath, role.Id, maxDescendantSuffixLength);
-
-            // 子树整体迁移：本角色新 path = 新父 path + 本角色段；后代 = 新 path + 原相对后缀
-            var newPath = OrgRoleTreeGuard.BuildPath(newParentPath, role.Id);
-            foreach (var descendant in descendants)
-            {
-                descendant.Path = newPath + descendant.Path.Substring(oldPath.Length);
-            }
-
-            role.Path = newPath;
+            // 防环 + 子树整体迁移重写 path
+            await OrgRoleTreeGuard.RewriteSubtreePathsAsync(_databaseContext, role, parent, cancellationToken);
             role.ParentId = request.ParentId;
+
+            // 落位：新同级末尾追加（拖拽排序走独立的 order 命令）
+            var maxSort = await _databaseContext.OrgRoles
+                .Where(x => x.ParentId == request.ParentId && x.Id != role.Id)
+                .MaxAsync(x => (int?)x.SortOrder, cancellationToken) ?? 0;
+            role.SortOrder = maxSort + 1;
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);

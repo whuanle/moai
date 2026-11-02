@@ -31,7 +31,9 @@ import {
 const { Text } = Typography
 
 const pageVerticalPadding = spacing.lg * 2
-const tabsBarHeight = 46
+// Tab 栏自身 46px（padding 12+12 + 22px 文字行高）+ antd 顶部 Tabs 导航默认 margin-bottom 16px（horizontalMargin），
+// 少算这 16px 会让整页恒定高出 16px 出现页面滚动条
+const tabsBarHeight = 46 + 16
 const queryBarHeight = controlHeight + spacing.md
 const tableHeaderHeight = 55
 const tablePaginationHeight = 57
@@ -197,6 +199,7 @@ function LoginLogPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: panelHeight, minHeight: 0 }}>
       <QueryBar
+        form={form}
         onSearch={() => {
           setPageNo(1)
           void load(1, pageSize)
@@ -380,6 +383,7 @@ function RiskEventPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: panelHeight, minHeight: 0 }}>
       <QueryBar
+        form={form}
         onSearch={() => {
           setPageNo(1)
           void load(1, pageSize)
@@ -589,6 +593,7 @@ function IpBanPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: panelHeight, minHeight: 0 }}>
       <QueryBar
+        form={form}
         onSearch={() => {
           setPageNo(1)
           void load(1, pageSize)

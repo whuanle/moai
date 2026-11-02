@@ -38,9 +38,9 @@ public class QueryOrgRolesCommandResponseItem : AuditsInfo
     public bool HasChildren { get; init; }
 
     /// <summary>
-    /// 是否为组织默认角色（新注册用户自动获得）.
+    /// 同级展示顺序，从小到大.
     /// </summary>
-    public bool IsDefault { get; init; }
+    public int SortOrder { get; init; }
 }
 
 /// <summary>

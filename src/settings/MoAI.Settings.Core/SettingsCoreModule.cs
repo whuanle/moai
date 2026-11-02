@@ -19,7 +19,6 @@ public class SettingsCoreModule : IModule
         context.Services.AddScoped<IWikiSettingsService, WikiSettingsService>();
         context.Services.AddScoped<ISandboxSettingsService, SandboxSettingsService>();
         context.Services.AddScoped<IEmailSettingsService, EmailSettingsService>();
-        context.Services.AddScoped<IEmailSenderService, EmailSenderService>();
         context.Services.AddScoped<IStatisticsSettingsService, StatisticsSettingsService>();
     }
 }

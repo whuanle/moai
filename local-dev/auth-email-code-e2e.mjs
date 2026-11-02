@@ -1,8 +1,9 @@
 // 注册/找回密码邮箱验证码 E2E（场景 @AUTH-S26+）
 // 覆盖：serverinfo 暴露 registerEmailCodeRequired/passwordResetEnabled 开关；未启用 SMTP 时发送验证码被拒；
 //       找回密码发码对未注册邮箱 404；注册验证码开关开启后注册必须携带验证码（缺码 400、错码 400、冷却 429）；
-//       本地 SMTP 桩捕获验证码邮件（默认模板插值 {code}/{siteName}/{expireMinutes}）；验证码一次性消费与 5 次错误作废；
-//       自定义主题/正文模板经 SmartFormat 插值回显；找回密码：发码→重置→新密码登录→旧密码失效；关闭 SMTP 后全链路拒绝。
+//       本地 SMTP 桩捕获验证码邮件（未绑定模板时回退内置模板，HTML 正文插值 {{code}}/{{siteName}}/{{expireMinutes}}）；
+//       验证码一次性消费与 5 次错误作废；
+//       绑定通知中心自定义模板插值回显 + 解绑回退内置模板；找回密码：发码→重置→新密码登录→旧密码失效；关闭 SMTP 后全链路拒绝。
 // 用法：node local-dev/auth-email-code-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000）
 // 前置：后端运行中；种子账号 admin / abcd123456（root）。开头快照 SMTP 相关设置原值，结束时恢复（不破坏共享实例配置）。
 import net from 'node:net'
@@ -127,16 +128,26 @@ function decodeTextBody(data) {
   const headers = data.slice(0, idx)
   const body = data.slice(idx + 4)
   const cte = headers.match(/Content-Transfer-Encoding: (\S+)/i)
-  if (cte && cte[1].toLowerCase() === 'base64') {
+  const encoding = cte?.[1]?.toLowerCase()
+  if (encoding === 'base64') {
     return Buffer.from(body.replace(/\s+/g, ''), 'base64').toString('utf-8')
+  }
+  if (encoding === 'quoted-printable') {
+    return body
+      .replace(/=\r?\n/g, '')
+      .replace(/=([A-Fa-f0-9]{2})/g, (_, hex) => Buffer.from(hex, 'hex').toString('latin1'))
   }
   return body
 }
 
+const isHtmlMail = (data) => /Content-Type: text\/html/i.test(data)
+
 const extractCode = (text) => text.match(/(\d{6})/)?.[1] ?? ''
 
-const SMTP_KEYS = ['SMTP_ENABLED', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURITY', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_ADDRESS', 'SMTP_FROM_NAME']
-const CODE_KEYS = ['REGISTER_EMAIL_CODE_ENABLED', 'SMTP_REGISTER_CODE_SUBJECT', 'SMTP_REGISTER_CODE_BODY', 'SMTP_RESET_CODE_SUBJECT', 'SMTP_RESET_CODE_BODY']
+const SMTP_KEYS = ['SMTP_ENABLED', 'SMTP_CHANNEL_ID']
+const CODE_KEYS = ['REGISTER_EMAIL_CODE_ENABLED', 'SMTP_REGISTER_CODE_TEMPLATE_ID', 'SMTP_RESET_CODE_TEMPLATE_ID', 'SMTP_LOGIN_CODE_TEMPLATE_ID']
+// 渠道名唯一（部分唯一索引），按运行时间戳命名避免异常残留导致重跑 409
+const SMTP_CHANNEL_NAME = `auth-email-code-e2e-${Date.now().toString().slice(-8)}`
 
 async function main() {
   // ---------- 准备：RSA 公钥 + root 登录 + 快照设置 ----------
@@ -158,13 +169,33 @@ async function main() {
   const serverinfo = async () => (await api('GET', '/api/common/serverinfo')).json
 
   const stub = await startSmtpStub()
+  // SMTP 连接配置统一在通知中心渠道维护：upsert 指向本地桩的 SMTP 渠道并绑定到系统设置
+  let smtpChannelId = null
+  let customTemplateId = ''
+  const upsertSmtpChannel = async () => {
+    const config = JSON.stringify({
+      host: '127.0.0.1',
+      port: stub.port,
+      security: 'none',
+      username: '',
+      password: '',
+      fromAddress: 'moai-test@test.local',
+      fromName: 'MoAI E2E',
+    })
+    if (smtpChannelId == null) {
+      const r = await api('POST', '/api/notification/channel/create', { token: rootToken, body: { name: SMTP_CHANNEL_NAME, type: 'smtp', config, enabled: true, description: 'auth-email-code-e2e' } })
+      if (r.status !== 200) throw new Error(`创建 SMTP 渠道失败: ${r.status} ${r.text.slice(0, 140)}`)
+      smtpChannelId = r.json?.id
+      if (smtpChannelId == null) throw new Error('创建 SMTP 渠道未返回 id')
+    } else {
+      const r = await api('PUT', `/api/notification/channel/${smtpChannelId}`, { token: rootToken, body: { id: smtpChannelId, name: SMTP_CHANNEL_NAME, type: 'smtp', config, enabled: true, description: 'auth-email-code-e2e' } })
+      if (r.status !== 200) throw new Error(`更新 SMTP 渠道失败: ${r.status} ${r.text.slice(0, 140)}`)
+    }
+    await saveSetting('SMTP_CHANNEL_ID', String(smtpChannelId))
+  }
   const smtpUp = async () => {
+    await upsertSmtpChannel()
     await saveSetting('SMTP_ENABLED', 'true')
-    await saveSetting('SMTP_HOST', '127.0.0.1')
-    await saveSetting('SMTP_PORT', String(stub.port))
-    await saveSetting('SMTP_SECURITY', 'none')
-    await saveSetting('SMTP_FROM_ADDRESS', 'moai-test@test.local')
-    await saveSetting('SMTP_FROM_NAME', 'MoAI E2E')
   }
   const smtpDown = async () => {
     await saveSetting('SMTP_ENABLED', 'false')
@@ -199,18 +230,18 @@ async function main() {
     check('AUTH-26h 未开启注册验证码时直接注册成功', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
     const resetUserName = plainName
 
-    // ---------- 设置保存校验（SET-S56~S58） ----------
+    // ---------- 设置保存校验（SET-S56 开关 + SET-S69 绑定模板 id） ----------
     r = await api('PUT', '/api/settings', { token: rootToken, body: { key: 'REGISTER_EMAIL_CODE_ENABLED', value: 'yes' } })
     check('SET-56a 注册验证码开关非法值 400', r.status === 400 && r.text.includes('true 或 false'), `${r.status} ${r.text.slice(0, 140)}`)
-    r = await api('PUT', '/api/settings', { token: rootToken, body: { key: 'SMTP_REGISTER_CODE_SUBJECT', value: 'x'.repeat(501) } })
-    check('SET-57a 主题模板超长 400', r.status === 400 && r.text.includes('500'), `${r.status} ${r.text.slice(0, 140)}`)
-    r = await api('PUT', '/api/settings', { token: rootToken, body: { key: 'SMTP_RESET_CODE_BODY', value: 'x'.repeat(2001) } })
-    check('SET-58a 正文模板超长 400', r.status === 400 && r.text.includes('2000'), `${r.status} ${r.text.slice(0, 140)}`)
-    await saveSetting('SMTP_REGISTER_CODE_SUBJECT', '  trim-me  ')
+    r = await api('PUT', '/api/settings', { token: rootToken, body: { key: 'SMTP_REGISTER_CODE_TEMPLATE_ID', value: 'abc' } })
+    check('SET-69a 注册验证码绑定模板 id 非法 400', r.status === 400 && r.text.includes('模板 id 无效'), `${r.status} ${r.text.slice(0, 140)}`)
+    r = await api('PUT', '/api/settings', { token: rootToken, body: { key: 'SMTP_LOGIN_CODE_TEMPLATE_ID', value: '-1' } })
+    check('SET-69b 登录验证码绑定模板 id 负数 400', r.status === 400, `${r.status} ${r.text.slice(0, 140)}`)
+    await saveSetting('SMTP_RESET_CODE_TEMPLATE_ID', '  15  ')
     const trimmed = await api('GET', '/api/settings', { token: rootToken })
-    const subjectSaved = trimmed.json?.items?.find((s) => s.key === 'SMTP_REGISTER_CODE_SUBJECT')?.value
-    check('SET-57b 主题模板保存去首尾空白', subjectSaved === 'trim-me', String(subjectSaved))
-    await saveSetting('SMTP_REGISTER_CODE_SUBJECT', '')
+    const templateIdSaved = trimmed.json?.items?.find((s) => s.key === 'SMTP_RESET_CODE_TEMPLATE_ID')?.value
+    check('SET-69c 绑定模板 id 保存去首尾空白', templateIdSaved === '15', String(templateIdSaved))
+    await saveSetting('SMTP_RESET_CODE_TEMPLATE_ID', '')
 
     // ---------- 开启注册验证码 ----------
     await saveSetting('REGISTER_EMAIL_CODE_ENABLED', 'true')
@@ -229,7 +260,9 @@ async function main() {
     const regMail = stub.state.messages[0]
     const regBody = decodeTextBody(regMail.data)
     const regCode = extractCode(regBody)
-    check('AUTH-26m 默认模板插值 {code}/{expireMinutes}', regCode.length === 6 && regBody.includes('10 分钟内有效'), regBody.slice(0, 160))
+    // 未绑定模板回退内置模板：HTML 正文（验证码独立样式块导致 {expireMinutes} 与「分钟内有效」间有标签，按词分别断言）
+    check('AUTH-26m 内置模板 HTML 插值 {code}/{expireMinutes}', regCode.length === 6 && regBody.includes('分钟内有效') && regBody.includes('>10<'), regBody.slice(0, 160))
+    check('AUTH-26m2 未绑定模板回退内置 HTML 邮件', isHtmlMail(regMail.data), regMail.data.slice(0, 200))
 
     r = await api('POST', '/api/auth/email_code/send', { body: { purpose: 'register', email: regEmail } })
     check('AUTH-26n 60 秒冷却内重发 429', r.status === 429, `${r.status} ${r.text.slice(0, 140)}`)
@@ -260,26 +293,58 @@ async function main() {
     }
     check('AUTH-26s 连续错 5 次后验证码作废', lastStatus === 400 && sawExhausted, `last=${lastStatus} exhausted=${sawExhausted}`)
 
-    // ---------- 自定义模板（SmartFormat 插值） ----------
-    await saveSetting('SMTP_RESET_CODE_SUBJECT', '{siteName} 找回 TEST-{code}')
-    await saveSetting('SMTP_RESET_CODE_BODY', 'CODE={code};SITE={siteName};EXP={expireMinutes}；未知{unknownVar}保留')
-    r = await api('POST', '/api/auth/email_code/send', { body: { purpose: 'resetPassword', email: `${resetUserName}@test.local` } })
-    check('AUTH-26t 自定义模板发码成功', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
+    // ---------- 绑定通知中心自定义模板（注册+找回密码用途） ----------
+    const customTemplateName = `auth-email-code-e2e-tpl-${Date.now().toString().slice(-8)}`
+    r = await api('POST', '/api/notification/template/create', {
+      token: rootToken,
+      body: {
+        name: customTemplateName,
+        title: '{{siteName}} 找回 TEST-{{code}}',
+        content: 'CODE={{code}};SITE={{siteName}};EXP={{expireMinutes}}；未知{{unknownVar}}保留',
+        contentType: 'text',
+        variables: JSON.stringify([
+          { name: 'code', description: '验证码', example: '123456' },
+          { name: 'siteName', description: '网站名称', example: 'MoAI' },
+          { name: 'expireMinutes', description: '有效分钟数', example: '10' },
+        ]),
+        description: 'auth-email-code-e2e 自定义验证码模板',
+      },
+    })
+    check('AUTH-26t1 创建自定义验证码模板成功', r.status === 200 && Number(r.json?.id) > 0, `${r.status} ${r.text.slice(0, 140)}`)
+    customTemplateId = String(r.json?.id ?? '')
+    await saveSetting('SMTP_REGISTER_CODE_TEMPLATE_ID', customTemplateId)
+    await saveSetting('SMTP_RESET_CODE_TEMPLATE_ID', customTemplateId)
+
+    // 注册用途（新邮箱，独立冷却）：自定义模板插值
+    const bindName = uname('bd')
+    r = await api('POST', '/api/auth/email_code/send', { body: { purpose: 'register', email: `${bindName}@test.local` } })
+    check('AUTH-26t 绑定自定义模板发码成功', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
     const customMail = stub.state.messages.at(-1)
     const customSubject = decodeSubject(customMail.data)
     const customBody = decodeTextBody(customMail.data)
     const customCode = extractCode(customBody)
     const siteName = (await serverinfo()).name
-    check('AUTH-26u 主题模板插值 {code}', customSubject.includes(customCode) && customSubject.includes('找回') && customSubject.includes(siteName), customSubject)
-    check('AUTH-26v 正文模板插值且未知变量字面保留', customBody.includes(`CODE=${customCode}`) && customBody.includes(`SITE=${siteName}`) && customBody.includes('EXP=10') && customBody.includes('{unknownVar}'), customBody.slice(0, 200))
+    check('AUTH-26u 主题模板插值 {code}', customSubject.includes(customCode) && customSubject.includes('TEST') && customSubject.includes(siteName), customSubject)
+    check('AUTH-26v 正文模板插值且未知变量字面保留', customBody.includes(`CODE=${customCode}`) && customBody.includes(`SITE=${siteName}`) && customBody.includes('EXP=10') && customBody.includes('{{unknownVar}}'), customBody.slice(0, 200))
+    check('AUTH-26v2 自定义纯文本模板按纯文本发送', !isHtmlMail(customMail.data), customMail.data.slice(0, 200))
 
-    // ---------- 找回密码全链路 ----------
+    // 解绑注册用途（找回密码用途保持绑定）：回退内置模板（HTML），全新邮箱避开冷却
+    await saveSetting('SMTP_REGISTER_CODE_TEMPLATE_ID', '')
+    const fbName = uname('fb')
+    r = await api('POST', '/api/auth/email_code/send', { body: { purpose: 'register', email: `${fbName}@test.local` } })
+    check('AUTH-26w1 解绑后回退内置模板（HTML）', r.status === 200 && isHtmlMail(stub.state.messages.at(-1).data), `${r.status} ${stub.state.messages.at(-1).data.slice(0, 160)}`)
+
+    // ---------- 找回密码全链路（找回密码用途保持绑定自定义模板） ----------
     const oldPassword = 'Test1234'
     const newPassword = 'NewPass123'
+    r = await api('POST', '/api/auth/email_code/send', { body: { purpose: 'resetPassword', email: `${resetUserName}@test.local` } })
+    check('AUTH-26t2 找回密码按绑定模板发码成功', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
+    const resetBindCode = extractCode(decodeTextBody(stub.state.messages.at(-1).data))
+
     r = await api('POST', '/api/auth/reset_password', { body: { email: `${resetUserName}@test.local`, code: '999999', newPassword: rsa(newPassword) } })
     check('AUTH-26w 错误验证码重置 400', r.status === 400, `${r.status} ${r.text.slice(0, 140)}`)
 
-    r = await api('POST', '/api/auth/reset_password', { body: { email: `${resetUserName}@test.local`, code: customCode, newPassword: rsa(newPassword) } })
+    r = await api('POST', '/api/auth/reset_password', { body: { email: `${resetUserName}@test.local`, code: resetBindCode, newPassword: rsa(newPassword) } })
     check('AUTH-26x 正确验证码重置成功', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
 
     const oldLogin = await login(resetUserName, oldPassword)
@@ -296,12 +361,20 @@ async function main() {
     r = await api('POST', '/api/auth/reset_password', { body: { email: `${resetUserName}@test.local`, code: '123456', newPassword: rsa('Whatever123') } })
     check('AUTH-26ac 关闭 SMTP 后重置密码 400', r.status === 400, `${r.status} ${r.text.slice(0, 140)}`)
   } finally {
-    // ---------- 恢复快照设置 ----------
+    // ---------- 恢复快照设置 + 清理所建渠道 ----------
     for (const key of [...SMTP_KEYS, ...CODE_KEYS]) {
       if (snapshot[key] !== undefined) {
         const rr = await api('PUT', '/api/settings', { token: rootToken, body: { key, value: snapshot[key] } })
         if (rr.status !== 200) console.log(`WARN | 恢复设置 ${key} 失败: ${rr.status}`)
       }
+    }
+    if (smtpChannelId != null) {
+      const rr = await api('DELETE', `/api/notification/channel/${smtpChannelId}`, { token: rootToken })
+      if (rr.status !== 200) console.log(`WARN | 删除 SMTP 渠道失败: ${rr.status}`)
+    }
+    if (customTemplateId) {
+      const rr = await api('DELETE', `/api/notification/template/${customTemplateId}`, { token: rootToken })
+      if (rr.status !== 200) console.log(`WARN | 删除自定义模板失败: ${rr.status}`)
     }
     stub.close()
   }

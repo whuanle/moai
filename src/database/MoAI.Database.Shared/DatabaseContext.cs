@@ -350,6 +350,11 @@ public partial class DatabaseContext : DbContext
     /// </summary>
     public virtual DbSet<NotificationLogEntity> NotificationLogs { get; set; }
 
+    /// <summary>
+    /// 通知中心模板.
+    /// </summary>
+    public virtual DbSet<NotificationTemplateEntity> NotificationTemplates { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

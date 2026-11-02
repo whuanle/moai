@@ -60,64 +60,37 @@ insert into setting (key, name, description, value, create_user_id, update_user_
 select 'LOGIN_BACKGROUND', '登录页背景图', '上传后替换登录页整页背景，留空使用前端默认背景.', '', 0, 0
 where not exists (select 1 from setting where key = 'LOGIN_BACKGROUND');
 
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'ORG_DEFAULT_ROLE', '组织默认角色', '新注册用户自动获得的角色（org_role 主键），留空表示新用户无默认角色；在组织角色页维护.', '', 0, 0
-where not exists (select 1 from setting where key = 'ORG_DEFAULT_ROLE');
+-- 2026-11-02 下线 ORG_DEFAULT_ROLE（默认组织功能下线，注册不再自动赋予组织），存量行清理
+delete from setting where key = 'ORG_DEFAULT_ROLE';
 
 -- 2026-10-28 下线 AGENT_COMPACTION_DEFAULTS 设置项：压缩默认参数改为内置常量（应用级配置保留），存量行清理
 delete from setting where key = 'AGENT_COMPACTION_DEFAULTS';
 
+-- 2026-11-02 SMTP 连接配置收敛到通知中心渠道：系统设置仅保留邮箱验证总开关 + 绑定渠道 id，存量 7 个连接键作废清理
+delete from setting where key in ('SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURITY', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_ADDRESS', 'SMTP_FROM_NAME');
+
+-- 2026-11-02 验证码邮件模板收敛到通知中心模板（内置种子 + 系统设置绑定模板 id）：存量 6 个主题/正文键作废清理
+delete from setting where key in ('SMTP_REGISTER_CODE_SUBJECT', 'SMTP_REGISTER_CODE_BODY', 'SMTP_RESET_CODE_SUBJECT', 'SMTP_RESET_CODE_BODY', 'SMTP_LOGIN_CODE_SUBJECT', 'SMTP_LOGIN_CODE_BODY');
+
 insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_ENABLED', 'SMTP 邮件服务', '启用后，平台通知将通过 SMTP 服务发送邮件；不启用时无需填写服务器信息.', 'false', 0, 0
+select 'SMTP_ENABLED', '邮箱验证', '启用后，平台邮件（注册/找回密码/登录验证码、安全告警等）通过绑定的 SMTP 服务发送；SMTP 连接配置统一在通知中心维护，此处仅绑定使用.', 'false', 0, 0
 where not exists (select 1 from setting where key = 'SMTP_ENABLED');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_HOST', 'SMTP 服务器地址', 'SMTP 服务器域名或 IP，例如 smtp.exmail.qq.com.', '', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_HOST');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_PORT', 'SMTP 端口', 'SMTP 服务器端口，1~65535；隐式 TLS 通常 465，STARTTLS 通常 587.', '465', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_PORT');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_SECURITY', 'SMTP 加密方式', 'ssl（隐式 TLS，通常 465）/ starttls（通常 587）/ none（不加密，通常 25）.', 'ssl', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_SECURITY');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_USERNAME', 'SMTP 登录账号', 'SMTP 登录账号，内网中继服务器免认证时可留空.', '', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_USERNAME');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_PASSWORD', 'SMTP 登录密码', 'SMTP 登录密码或邮箱授权码.', '', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_PASSWORD');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_FROM_ADDRESS', '发件人地址', '通知邮件的发件人邮箱地址，留空时使用 SMTP 登录账号.', '', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_FROM_ADDRESS');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_FROM_NAME', '发件人显示名', '通知邮件的发件人显示名，例如 MoAI 通知.', '', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_FROM_NAME');
+select 'SMTP_CHANNEL_ID', '绑定 SMTP 服务', '绑定的通知中心 SMTP 渠道 id（notification_channel.id），留空表示未绑定；渠道连接配置在通知中心维护.', '', 0, 0
+where not exists (select 1 from setting where key = 'SMTP_CHANNEL_ID');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
 select 'REGISTER_EMAIL_CODE_ENABLED', '注册需要邮箱验证码', '开启后，新用户注册必须先获取邮箱验证码并校验通过才能完成注册；需 SMTP 邮件服务已启用才生效.', 'false', 0, 0
 where not exists (select 1 from setting where key = 'REGISTER_EMAIL_CODE_ENABLED');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_REGISTER_CODE_SUBJECT', '注册验证码邮件主题', '注册验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '{siteName} 注册验证码', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_REGISTER_CODE_SUBJECT');
+select 'SMTP_REGISTER_CODE_TEMPLATE_ID', '注册验证码通知模板', '绑定的通知中心模板 id（notification_template.id），留空使用平台内置的注册验证码模板；模板内容与渲染测试在通知中心维护.', '', 0, 0
+where not exists (select 1 from setting where key = 'SMTP_REGISTER_CODE_TEMPLATE_ID');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_REGISTER_CODE_BODY', '注册验证码邮件正文', '注册验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '你的注册验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_REGISTER_CODE_BODY');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_RESET_CODE_SUBJECT', '找回密码验证码邮件主题', '找回密码验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '{siteName} 找回密码验证码', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_RESET_CODE_SUBJECT');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_RESET_CODE_BODY', '找回密码验证码邮件正文', '找回密码验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '你的找回密码验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_RESET_CODE_BODY');
+select 'SMTP_RESET_CODE_TEMPLATE_ID', '找回密码验证码通知模板', '绑定的通知中心模板 id（notification_template.id），留空使用平台内置的找回密码验证码模板；模板内容与渲染测试在通知中心维护.', '', 0, 0
+where not exists (select 1 from setting where key = 'SMTP_RESET_CODE_TEMPLATE_ID');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
 select 'MEMORY_ENABLED', '长期记忆', '长期记忆总开关：开启后应用可开启记忆，用户可在对话中维护应用内记忆与个人跨应用记忆（全局记忆）；关闭时应用不可开启记忆.', 'false', 0, 0
@@ -143,9 +116,5 @@ select 'LOGIN_EMAIL_CODE_MODE', '登录邮箱验证码策略', 'off=关闭（默
 where not exists (select 1 from setting where key = 'LOGIN_EMAIL_CODE_MODE');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_LOGIN_CODE_SUBJECT', '登录验证码邮件主题', '登录验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '{siteName} 登录验证码', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_LOGIN_CODE_SUBJECT');
-
-insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'SMTP_LOGIN_CODE_BODY', '登录验证码邮件正文', '登录验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.', '你的登录验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.', 0, 0
-where not exists (select 1 from setting where key = 'SMTP_LOGIN_CODE_BODY');
+select 'SMTP_LOGIN_CODE_TEMPLATE_ID', '登录验证码通知模板', '绑定的通知中心模板 id（notification_template.id），留空使用平台内置的登录验证码模板；模板内容与渲染测试在通知中心维护.', '', 0, 0
+where not exists (select 1 from setting where key = 'SMTP_LOGIN_CODE_TEMPLATE_ID');

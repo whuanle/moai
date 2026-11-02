@@ -31,11 +31,12 @@ const { Text } = Typography
 
 const pageVerticalPadding = spacing.lg * 2
 const tabsBarHeight = 46
+const tabsNavMargin = 16
 const queryBarHeight = controlHeight + spacing.md
 const tableHeaderHeight = 55
 const tablePaginationHeight = 57
-const usersPanelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight}px)`
-const usersPanelTableScrollY = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + queryBarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
+const usersPanelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + tabsNavMargin}px)`
+const usersPanelTableScrollY = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + tabsNavMargin + queryBarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
 
 interface PasswordFormValues {
   newPassword: string

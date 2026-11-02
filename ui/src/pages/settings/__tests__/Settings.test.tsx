@@ -4,7 +4,8 @@ import { MemoryRouter } from 'react-router'
 import '@/i18n'
 import { Settings } from '../Settings'
 import { useAppStore } from '@/store/app'
-import { getSettings, saveSetting, sendTestEmail } from '@/api/settings'
+import { getSettings, saveSetting } from '@/api/settings'
+import { getNotificationChannels } from '@/api/notification'
 import { getMemoryModelMigrationStatus, startMemoryModelMigration } from '@/api/memory'
 import { refreshServerInfo } from '@/api/auth'
 
@@ -14,13 +15,25 @@ vi.mock('@/api/settings', async (importOriginal) => {
     ...actual,
     getSettings: vi.fn(),
     saveSetting: vi.fn().mockResolvedValue(undefined),
-    sendTestEmail: vi.fn().mockResolvedValue(undefined),
     updateSystemLogo: vi.fn().mockResolvedValue('public/images/logo.png'),
     resetSystemLogo: vi.fn().mockResolvedValue(undefined),
     updateLoginBackground: vi.fn().mockResolvedValue('public/images/bg.png'),
     resetLoginBackground: vi.fn().mockResolvedValue(undefined),
   }
 })
+
+vi.mock('@/api/notification', () => ({
+  getNotificationChannels: vi.fn().mockResolvedValue([
+    { id: 11, name: '桩邮件服务', type: 'smtp', enabled: true, config: '' },
+    { id: 12, name: '停用邮件服务', type: 'smtp', enabled: false, config: '' },
+    { id: 13, name: '飞书渠道', type: 'feishuWebhook', enabled: true, config: '' },
+  ]),
+  getNotificationTemplates: vi.fn().mockResolvedValue([
+    { id: '1', name: '注册验证码邮件', isBuiltIn: true, contentType: 'html', variables: '[]' },
+    { id: '2', name: '登录验证码邮件', isBuiltIn: true, contentType: 'html', variables: '[]' },
+    { id: '3', name: '找回密码验证码邮件', isBuiltIn: true, contentType: 'html', variables: '[]' },
+  ]),
+}))
 
 vi.mock('@/api/auth', () => ({
   refreshServerInfo: vi.fn().mockResolvedValue({
@@ -65,13 +78,10 @@ function settingsResponse(overrides: Record<string, string> = {}) {
     SYSTEM_NAME: '',
     LOGIN_BACKGROUND: '',
     SMTP_ENABLED: 'false',
-    SMTP_HOST: '',
-    SMTP_PORT: '465',
-    SMTP_SECURITY: 'ssl',
-    SMTP_USERNAME: '',
-    SMTP_PASSWORD: '',
-    SMTP_FROM_ADDRESS: '',
-    SMTP_FROM_NAME: '',
+    SMTP_CHANNEL_ID: '',
+    SMTP_REGISTER_CODE_TEMPLATE_ID: '',
+    SMTP_RESET_CODE_TEMPLATE_ID: '',
+    SMTP_LOGIN_CODE_TEMPLATE_ID: '',
     ...overrides,
   }
   return {
@@ -163,65 +173,108 @@ describe('Settings（系统设置）', () => {
     expect(await screen.findByLabelText('连接地址')).toBeInTheDocument()
   })
 
-  it('邮件服务卡片默认折叠，展开后未启用时不显示服务器字段与测试邮件入口', async () => {
+  it('邮箱验证卡片默认折叠，展开后未启用时不显示绑定下拉与模板字段', async () => {
     renderSettings()
     await screen.findByText('知识图谱（图数据库）')
 
-    const emailHeader = screen.getByRole('button', { name: /邮件服务（SMTP）/ })
+    const emailHeader = screen.getByRole('button', { name: /邮箱验证/ })
     expect(emailHeader).toHaveAttribute('aria-expanded', 'false')
 
     fireEvent.click(emailHeader)
-    expect(await screen.findByText('启用 SMTP 邮件服务')).toBeInTheDocument()
+    expect(await screen.findByText('启用邮箱验证')).toBeInTheDocument()
+    // 未启用不提供绑定下拉与验证码模板
+    expect(screen.queryByLabelText('绑定 SMTP 服务')).toBeNull()
+    expect(screen.queryByLabelText('注册验证码邮件主题')).toBeNull()
+    // 连接配置已收敛到通知中心，不再有服务器/账号字段
     expect(screen.queryByLabelText('SMTP 服务器')).toBeNull()
     expect(screen.queryByLabelText('登录账号')).toBeNull()
-    // 未启用不提供测试邮件入口
-    expect(screen.queryByLabelText('测试收件地址')).toBeNull()
-    expect(screen.queryByRole('button', { name: /发送测试邮件/ })).toBeNull()
   })
 
-  it('启用后填写连接信息保存，先提交开关再提交七项连接设置', async () => {
+  it('绑定下拉来自通知中心 SMTP 渠道，停用渠道带标记且不出现其它类型', async () => {
+    vi.mocked(getNotificationChannels).mockResolvedValue([
+      { id: 11, name: '桩邮件服务', type: 'smtp', enabled: true, config: '' },
+      { id: 12, name: '停用邮件服务', type: 'smtp', enabled: false, config: '' },
+      { id: 13, name: '飞书渠道', type: 'feishuWebhook', enabled: true, config: '' },
+    ] as never)
     renderSettings()
     await screen.findByText('知识图谱（图数据库）')
 
-    fireEvent.click(screen.getByRole('button', { name: /邮件服务（SMTP）/ }))
+    fireEvent.click(screen.getByRole('button', { name: /邮箱验证/ }))
     fireEvent.click(screen.getAllByRole('switch')[1])
 
-    fireEvent.change(await screen.findByLabelText('SMTP 服务器'), { target: { value: 'smtp.example.com' } })
-    fireEvent.change(screen.getByLabelText('端口'), { target: { value: '587' } })
-    fireEvent.change(screen.getByLabelText('登录账号'), { target: { value: 'notify@example.com' } })
-    fireEvent.change(screen.getByLabelText('登录密码 / 授权码'), { target: { value: 'secret' } })
-    fireEvent.change(screen.getByLabelText('发件人地址'), { target: { value: 'from@example.com' } })
-    fireEvent.change(screen.getByLabelText('发件人显示名'), { target: { value: 'MoAI 通知' } })
+    // antd Select 的 aria-label 同时落在容器与内层 input，直接按容器类名定位触发展开
+    const bindingSelector = document.querySelector('div[aria-label="绑定 SMTP 服务"] .ant-select-selector') as HTMLElement
+    expect(bindingSelector).toBeTruthy()
+    fireEvent.mouseDown(bindingSelector)
+    expect(await screen.findByText('桩邮件服务')).toBeInTheDocument()
+    expect(screen.getByText('停用邮件服务（已停用）')).toBeInTheDocument()
+    expect(screen.queryByText('飞书渠道')).toBeNull()
+  })
 
-    // 保存按钮顺序：[0] 网站信息卡片，[1] 知识图谱卡片，[2] 邮件服务卡片
+  it('启用并绑定 SMTP 服务后保存，先提交开关再提交绑定渠道与验证码开关，不提交连接字段', async () => {
+    vi.mocked(getSettings).mockResolvedValue(settingsResponse({ SMTP_ENABLED: 'true', SMTP_CHANNEL_ID: '11' }))
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getByRole('button', { name: /邮箱验证/ }))
+    // 启用开关已开启，直接打开注册验证码开关后保存
+    fireEvent.click(await screen.findByLabelText('注册需要邮箱验证码'))
+
+    // 保存按钮顺序：[0] 网站信息卡片，[1] 知识图谱卡片，[2] 邮箱验证卡片
     fireEvent.click(screen.getAllByRole('button', { name: /保\s*存/ })[2])
 
     await waitFor(() => expect(saveSetting).toHaveBeenCalledWith('SMTP_ENABLED', 'true'))
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_HOST', 'smtp.example.com')
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_PORT', '587')
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_SECURITY', 'ssl')
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_USERNAME', 'notify@example.com')
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_PASSWORD', 'secret')
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_FROM_ADDRESS', 'from@example.com')
-    expect(saveSetting).toHaveBeenCalledWith('SMTP_FROM_NAME', 'MoAI 通知')
+    expect(saveSetting).toHaveBeenCalledWith('SMTP_CHANNEL_ID', '11')
+    expect(saveSetting).toHaveBeenCalledWith('REGISTER_EMAIL_CODE_ENABLED', 'true')
+    expect(saveSetting).not.toHaveBeenCalledWith('SMTP_HOST', expect.anything())
+    expect(saveSetting).not.toHaveBeenCalledWith('SMTP_USERNAME', expect.anything())
   })
 
-  it('发送测试邮件：空地址被拦截，填写地址后携带收件人调用发送接口', async () => {
-    // 测试邮件入口仅在已启用（后端已保存 true）时渲染
-    vi.mocked(getSettings).mockResolvedValue(settingsResponse({ SMTP_ENABLED: 'true', SMTP_HOST: 'smtp.example.com' }))
+  it('解绑（清空）SMTP 服务后保存提交空绑定', async () => {
+    vi.mocked(getSettings).mockResolvedValue(settingsResponse({ SMTP_ENABLED: 'true', SMTP_CHANNEL_ID: '11' }))
     renderSettings()
     await screen.findByText('知识图谱（图数据库）')
 
-    fireEvent.click(screen.getByRole('button', { name: /邮件服务（SMTP）/ }))
-    const sendButton = await screen.findByRole('button', { name: /发送测试邮件/ })
+    fireEvent.click(screen.getByRole('button', { name: /邮箱验证/ }))
+    const clearIcon = document.querySelector('div[aria-label="绑定 SMTP 服务"] .ant-select-clear') as HTMLElement
+    expect(clearIcon).toBeTruthy()
+    // antd 的 clear 图标在 onMouseDown 中清空选中值
+    fireEvent.mouseDown(clearIcon)
 
-    // 空地址点击被前端拦截
-    fireEvent.click(sendButton)
-    expect(sendTestEmail).not.toHaveBeenCalled()
+    fireEvent.click(screen.getAllByRole('button', { name: /保\s*存/ })[2])
 
-    fireEvent.change(screen.getByLabelText('测试收件地址'), { target: { value: 'me@example.com' } })
-    fireEvent.click(sendButton)
-    await waitFor(() => expect(sendTestEmail).toHaveBeenCalledWith('me@example.com'))
+    await waitFor(() => expect(saveSetting).toHaveBeenCalledWith('SMTP_CHANNEL_ID', ''))
+  })
+
+  it('验证码通知模板绑定：下拉回显内置模板标识，清空后保存提交空模板绑定', async () => {
+    vi.mocked(getSettings).mockResolvedValue(settingsResponse({
+      SMTP_ENABLED: 'true',
+      SMTP_REGISTER_CODE_TEMPLATE_ID: '1',
+      SMTP_RESET_CODE_TEMPLATE_ID: '3',
+      SMTP_LOGIN_CODE_TEMPLATE_ID: '2',
+    }))
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getByRole('button', { name: /邮箱验证/ }))
+    // 三个绑定下拉回显已绑定模板，内置模板带「内置」标识
+    await screen.findByText('注册验证码邮件（内置）')
+    const registerSelect = document.querySelector('div[aria-label="注册验证码通知模板"]') as HTMLElement
+    expect(registerSelect).toBeTruthy()
+    expect(registerSelect).toHaveTextContent('注册验证码邮件（内置）')
+    expect(document.querySelector('div[aria-label="找回密码验证码通知模板"]')).toHaveTextContent('找回密码验证码邮件（内置）')
+    expect(document.querySelector('div[aria-label="登录验证码通知模板"]')).toHaveTextContent('登录验证码邮件（内置）')
+
+    // 清空注册模板绑定后保存：清空的键提交空串，其余两个保持原绑定
+    const clearIcon = registerSelect.querySelector('.ant-select-clear') as HTMLElement
+    expect(clearIcon).toBeTruthy()
+    fireEvent.mouseDown(clearIcon)
+
+    fireEvent.click(screen.getAllByRole('button', { name: /保\s*存/ })[2])
+
+    await waitFor(() => expect(saveSetting).toHaveBeenCalledWith('SMTP_REGISTER_CODE_TEMPLATE_ID', ''))
+    expect(saveSetting).toHaveBeenCalledWith('SMTP_RESET_CODE_TEMPLATE_ID', '3')
+    expect(saveSetting).toHaveBeenCalledWith('SMTP_LOGIN_CODE_TEMPLATE_ID', '2')
   })
 
   it('知识库卡片默认折叠，默认回显 50，保存时提交 WIKI_MAX_FILE_SIZE_MB', async () => {

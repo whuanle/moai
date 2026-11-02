@@ -1,24 +1,31 @@
-using System.Text.Json;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
-using MoAI.Database.Seed;
+using MoAI.Database.Enums;
 using MoAI.LoginSafety.Models;
-using MoAI.Settings.Services;
+using MoAI.Message.Models;
+using MoAI.Message.Services;
+using MoAI.Notification.Models;
+using MoAI.Notification.Services;
 
 namespace MoAI.LoginSafety.Services;
 
 /// <summary>
-/// 风险登录通知任务（Hangfire 一次性任务）：读取风险事件详情，按设置模板给用户/管理员发提醒邮件.
-/// 从登录主流程异步剥离，SMTP 15s 超时不阻塞登录响应；失败由 Hangfire 自动重试.
+/// 风险登录通知任务（Hangfire 一次性任务）：读取风险事件详情，
+/// 中/高风险登录成功给受影响用户发站内信（固定逻辑），高风险事件推送到设置的通知渠道（未配置渠道时跳过）.
+/// 从登录主流程异步剥离，不阻塞登录响应；失败由 Hangfire 自动重试.
+/// 通知标题/正文由内置双语模板（<see cref="LoginAlertTemplates"/>）生成，默认中文；
+/// 渠道选 SMTP 时邮件主题=标题（渠道前缀）、正文=正文，模板内置不可定制.
 /// </summary>
 public class LoginRiskNotifyJob
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    /// <summary>通知来源标识（站内信 Source 与通知渠道 Source 共用）.</summary>
+    public const string Source = "loginsafety";
 
     private readonly DatabaseContext _databaseContext;
-    private readonly IEmailSenderService _emailSenderService;
+    private readonly IMessageService _messageService;
+    private readonly INotificationService _notificationService;
     private readonly ILoginSafetySettingsService _settingsService;
     private readonly ILogger<LoginRiskNotifyJob> _logger;
 
@@ -26,13 +33,15 @@ public class LoginRiskNotifyJob
     /// Initializes a new instance of the <see cref="LoginRiskNotifyJob"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="emailSenderService">邮件发送服务.</param>
+    /// <param name="messageService">站内信领域服务.</param>
+    /// <param name="notificationService">通知中心领域服务.</param>
     /// <param name="settingsService">登录安全设置.</param>
     /// <param name="logger">日志.</param>
-    public LoginRiskNotifyJob(DatabaseContext databaseContext, IEmailSenderService emailSenderService, ILoginSafetySettingsService settingsService, ILogger<LoginRiskNotifyJob> logger)
+    public LoginRiskNotifyJob(DatabaseContext databaseContext, IMessageService messageService, INotificationService notificationService, ILoginSafetySettingsService settingsService, ILogger<LoginRiskNotifyJob> logger)
     {
         _databaseContext = databaseContext;
-        _emailSenderService = emailSenderService;
+        _messageService = messageService;
+        _notificationService = notificationService;
         _settingsService = settingsService;
         _logger = logger;
     }
@@ -43,28 +52,26 @@ public class LoginRiskNotifyJob
     public static class Targets
     {
         /// <summary>
-        /// 给登录用户本人发提醒.
+        /// 给受影响用户本人发站内信提醒.
         /// </summary>
         public const string User = "user";
 
         /// <summary>
-        /// 给管理员发告警.
+        /// 推送高风险告警到已配置的通知渠道.
         /// </summary>
-        public const string Admin = "admin";
+        public const string Channels = "channels";
     }
 
     /// <summary>
-    /// 发送风险事件通知邮件（Hangfire 入口）.
+    /// 发送风险事件通知（Hangfire 入口）.
     /// </summary>
     /// <param name="riskEventId">风险事件 id.</param>
-    /// <param name="target">通知目标（user / admin）.</param>
+    /// <param name="target">通知目标（user / channels）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>异步任务.</returns>
     [AutomaticRetry(Attempts = 3)]
     public async Task SendAsync(Guid riskEventId, string target, CancellationToken cancellationToken)
     {
-        var settings = await _settingsService.GetAsync(cancellationToken);
-
         var riskEvent = await _databaseContext.LoginRiskEvents.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == riskEventId, cancellationToken);
         if (riskEvent == null)
@@ -73,137 +80,85 @@ public class LoginRiskNotifyJob
             return;
         }
 
-        var detail = ParseDetail(riskEvent.Detail);
-        var location = JoinLocation(riskEvent.Province, riskEvent.City);
-        var now = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
         if (target == Targets.User)
         {
-            await SendUserAlertAsync(settings, riskEvent, detail, location, now, cancellationToken);
+            await SendUserInSiteAsync(riskEvent, cancellationToken);
             return;
         }
 
-        await SendAdminAlertAsync(settings, riskEvent, detail, location, now, cancellationToken);
-    }
-
-    private async Task SendUserAlertAsync(LoginSafetySettings settings, Database.Entities.LoginRiskEventEntity riskEvent, Dictionary<string, string> detail, string location, string now, CancellationToken cancellationToken)
-    {
-        var email = detail.TryGetValue("email", out var value) && value.Length > 0 ? value : string.Empty;
-        if (email.Length == 0)
-        {
-            _logger.LogInformation("用户无邮箱，跳过登录提醒：{UserName}.", riskEvent.UserName);
-            return;
-        }
-
-        var values = new Dictionary<string, string>
-        {
-            ["userName"] = riskEvent.UserName,
-            ["ip"] = riskEvent.Ip,
-            ["location"] = location.Length == 0 ? "未知" : location,
-            ["time"] = now,
-            ["siteName"] = "MoAI"
-        };
-
-        var subject = LoginAlertTemplate.Render(Fallback(settings.UserAlertSubject, SettingDefinitions.DefaultUserAlertSubject), values);
-        var body = LoginAlertTemplate.Render(Fallback(settings.UserAlertBody, SettingDefinitions.DefaultUserAlertBody), values);
-
-        await _emailSenderService.SendAsync(new MoAI.Settings.Models.EmailMessage
-        {
-            To = new[] { email },
-            Subject = subject,
-            Body = body,
-            IsHtml = false
-        }, cancellationToken);
-    }
-
-    private async Task SendAdminAlertAsync(LoginSafetySettings settings, Database.Entities.LoginRiskEventEntity riskEvent, Dictionary<string, string> detail, string location, string now, CancellationToken cancellationToken)
-    {
-        var recipients = settings.AdminRecipients.Count > 0
-            ? settings.AdminRecipients
-            : await ResolveAdminEmailsAsync(cancellationToken);
-
-        if (recipients.Count == 0)
-        {
-            _logger.LogWarning("无可用管理员收件人（admin/root 用户均无邮箱且未配置收件人），跳过告警：{EventId}.", riskEvent.Id);
-            return;
-        }
-
-        var values = new Dictionary<string, string>
-        {
-            ["userName"] = riskEvent.UserName,
-            ["ip"] = riskEvent.Ip,
-            ["location"] = location.Length == 0 ? "未知" : location,
-            ["riskLevel"] = ((LoginRiskLevel)riskEvent.RiskLevel).ToString(),
-            ["reasons"] = LoginRiskRule.GetTitle(riskEvent.RuleCode),
-            ["time"] = now,
-            ["siteName"] = "MoAI"
-        };
-
-        var subject = LoginAlertTemplate.Render(Fallback(settings.AdminAlertSubject, SettingDefinitions.DefaultAdminAlertSubject), values);
-        var body = LoginAlertTemplate.Render(Fallback(settings.AdminAlertBody, SettingDefinitions.DefaultAdminAlertBody), values);
-
-        await _emailSenderService.SendAsync(new MoAI.Settings.Models.EmailMessage
-        {
-            To = recipients,
-            Subject = subject,
-            Body = body,
-            IsHtml = false
-        }, cancellationToken);
+        var settings = await _settingsService.GetAsync(cancellationToken);
+        await SendChannelAlertAsync(settings, riskEvent, cancellationToken);
     }
 
     /// <summary>
-    /// 解析全部管理员（admin + root）的非空邮箱.
+    /// 给受影响用户本人发站内信提醒（固定逻辑，无开关）.
     /// </summary>
-    private async Task<List<string>> ResolveAdminEmailsAsync(CancellationToken cancellationToken)
+    private async Task SendUserInSiteAsync(Database.Entities.LoginRiskEventEntity riskEvent, CancellationToken cancellationToken)
     {
-        var adminEmails = await _databaseContext.Users.AsNoTracking()
-            .Where(u => u.IsAdmin && u.Email != string.Empty)
-            .Select(u => u.Email)
-            .ToListAsync(cancellationToken);
-
-        // root 账号通过 setting 表 root 键识别，可能未标记 IsAdmin
-        var rootValue = await _databaseContext.Settings.AsNoTracking()
-            .Where(s => s.Key == "root")
-            .Select(s => s.Value)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (rootValue != null && long.TryParse(rootValue, out var rootUserId))
+        if (riskEvent.UserId <= 0)
         {
-            var rootEmail = await _databaseContext.Users.AsNoTracking()
-                .Where(u => u.Id == rootUserId && u.Email != string.Empty)
-                .Select(u => u.Email)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (rootEmail != null && !adminEmails.Contains(rootEmail))
-            {
-                adminEmails.Add(rootEmail);
-            }
+            _logger.LogInformation("风险事件无归属用户，跳过站内信：{EventId}.", riskEvent.Id);
+            return;
         }
 
-        return adminEmails;
+        var language = LoginAlertTemplates.ResolveLanguage(null);
+        var location = JoinLocation(riskEvent.Province, riskEvent.City);
+        var values = new Dictionary<string, string>
+        {
+            ["userName"] = riskEvent.UserName,
+            ["ip"] = riskEvent.Ip,
+            ["location"] = location.Length == 0 ? "未知" : location,
+            ["time"] = riskEvent.CreateTime.ToString("yyyy-MM-dd HH:mm:ss"),
+            ["siteName"] = "MoAI"
+        };
+
+        var (title, content) = LoginAlertTemplates.UserAlert(language, values);
+        await _messageService.SendToUsersAsync(new MessageSendItem
+        {
+            Title = title,
+            Content = content,
+            MessageType = MessageType.System,
+            Source = Source
+        }, new[] { riskEvent.UserId }, cancellationToken);
     }
 
-    private static Dictionary<string, string> ParseDetail(string detail)
+    /// <summary>
+    /// 推送高风险告警到已配置的通知渠道（未配置时跳过；停用/已删渠道由通知中心自动过滤）.
+    /// </summary>
+    private async Task SendChannelAlertAsync(LoginSafetySettings settings, Database.Entities.LoginRiskEventEntity riskEvent, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(detail))
+        if (settings.NotifyChannelIds.Count == 0)
         {
-            return new Dictionary<string, string>();
+            _logger.LogInformation("未配置通知渠道，跳过高风险渠道告警：{EventId}.", riskEvent.Id);
+            return;
         }
 
-        try
+        var language = LoginAlertTemplates.ResolveLanguage(null);
+        var location = JoinLocation(riskEvent.Province, riskEvent.City);
+        var values = new Dictionary<string, string>
         {
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(detail, JsonOptions) ?? new Dictionary<string, string>();
-        }
-        catch (JsonException)
+            ["userName"] = riskEvent.UserName,
+            ["ip"] = riskEvent.Ip,
+            ["location"] = location.Length == 0 ? "未知" : location,
+            ["riskLevel"] = LoginAlertTemplates.RiskLevelText((LoginRiskLevel)riskEvent.RiskLevel, language),
+            ["reasons"] = LoginRiskRule.GetTitle(riskEvent.RuleCode),
+            ["time"] = riskEvent.CreateTime.ToString("yyyy-MM-dd HH:mm:ss"),
+            ["siteName"] = "MoAI"
+        };
+
+        var (title, content) = LoginAlertTemplates.HighRiskAlert(language, values);
+        await _notificationService.NotifyAsync(new NotificationMessage
         {
-            return new Dictionary<string, string>();
-        }
+            Title = title,
+            Content = content,
+            Level = NotificationLevel.Error,
+            Source = Source,
+            EmailRecipients = settings.NotifyEmails
+        }, new NotificationSendOptions { ChannelIds = settings.NotifyChannelIds }, cancellationToken);
     }
 
     private static string JoinLocation(string province, string city)
     {
         return province.Length == 0 ? city : city.Length == 0 || province == city ? province : $"{province} {city}";
     }
-
-    private static string Fallback(string value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value;
 }

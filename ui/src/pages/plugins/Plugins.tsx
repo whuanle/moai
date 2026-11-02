@@ -417,7 +417,7 @@ export function Plugins() {
     },
     { key: 'dynamic', label: t('plugins.tabDynamic'), children: <DynamicPluginPanel classifies={classifies} /> },
     { key: 'static', label: t('plugins.tabStatic'), children: <PluginPanel kind="static" classifies={classifies} /> },
-    { key: 'stats', label: t('plugins.tabStats'), children: <PluginStatsPanel classifies={classifies} /> },
+    { key: 'stats', label: t('plugins.tabStats'), children: <PluginStatsPanel /> },
   ]
 
   return (

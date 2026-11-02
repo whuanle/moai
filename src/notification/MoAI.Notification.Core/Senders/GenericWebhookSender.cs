@@ -46,7 +46,7 @@ public class GenericWebhookSender : INotificationChannelSender
         {
             body = config.BodyTemplate
                 .Replace("{title}", message.Title)
-                .Replace("{content}", message.Content)
+                .Replace("{content}", NotificationText.ContentText(message))
                 .Replace("{level}", NotificationText.LevelName(message.Level))
                 .Replace("{source}", message.Source)
                 .Replace("{time}", NotificationText.Time());
@@ -61,7 +61,7 @@ public class GenericWebhookSender : INotificationChannelSender
             body = JsonSerializer.Serialize(new Dictionary<string, string>
             {
                 ["title"] = message.Title,
-                ["content"] = message.Content,
+                ["content"] = NotificationText.ContentText(message),
                 ["level"] = NotificationText.LevelName(message.Level),
                 ["source"] = message.Source,
                 ["time"] = NotificationText.Time()

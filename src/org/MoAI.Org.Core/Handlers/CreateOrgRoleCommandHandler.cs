@@ -33,12 +33,18 @@ public class CreateOrgRoleCommandHandler : IRequestHandler<CreateOrgRoleCommand,
         var parent = await OrgRoleTreeGuard.FindParentAsync(_databaseContext, request.ParentId, cancellationToken);
         await OrgRoleTreeGuard.EnsureNoDuplicateNameAsync(_databaseContext, request.ParentId, request.Name, null, cancellationToken);
 
+        // 同级排序：新组织追加在同级末尾（拖拽排序走独立的 order 命令）
+        var maxSort = await _databaseContext.OrgRoles
+            .Where(x => x.ParentId == request.ParentId)
+            .MaxAsync(x => (int?)x.SortOrder, cancellationToken) ?? 0;
+
         var parentPath = parent?.Path ?? "/";
         var entity = new OrgRoleEntity
         {
             Name = request.Name,
             ParentId = request.ParentId,
             Path = string.Empty,
+            SortOrder = maxSort + 1,
         };
         _databaseContext.OrgRoles.Add(entity);
 

@@ -146,8 +146,14 @@ function decodeTextBody(data) {
   const headers = data.slice(0, idx)
   const body = data.slice(idx + 4)
   const cte = headers.match(/Content-Transfer-Encoding: (\S+)/i)
-  if (cte && cte[1].toLowerCase() === 'base64') {
+  const encoding = cte?.[1]?.toLowerCase()
+  if (encoding === 'base64') {
     return Buffer.from(body.replace(/\s+/g, ''), 'base64').toString('utf-8')
+  }
+  if (encoding === 'quoted-printable') {
+    return body
+      .replace(/=\r?\n/g, '')
+      .replace(/=([A-Fa-f0-9]{2})/g, (_, hex) => Buffer.from(hex, 'hex').toString('latin1'))
   }
   return body
 }
@@ -155,9 +161,11 @@ function decodeTextBody(data) {
 const extractCode = (text) => text.match(/(\d{6})/)?.[1] ?? ''
 
 const SNAPSHOT_KEYS = [
-  'SMTP_ENABLED', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURITY', 'SMTP_FROM_ADDRESS', 'SMTP_FROM_NAME',
+  'SMTP_ENABLED', 'SMTP_CHANNEL_ID',
   'LOGIN_FORCED_2FA', 'LOGIN_EMAIL_CODE_MODE', 'REGISTER_EMAIL_CODE_ENABLED',
 ]
+// 渠道名唯一（部分唯一索引），按运行时间戳命名避免异常残留导致重跑 409
+const SMTP_CHANNEL_NAME = `auth-2fa-e2e-${Date.now().toString().slice(-8)}`
 
 async function main() {
   // ---------- 准备：RSA 公钥 + root 登录 + 快照设置 ----------
@@ -179,13 +187,32 @@ async function main() {
   }
 
   const stub = await startSmtpStub()
+  // SMTP 连接配置统一在通知中心渠道维护：upsert 指向本地桩的 SMTP 渠道并绑定到系统设置
+  let smtpChannelId = null
+  const upsertSmtpChannel = async () => {
+    const config = JSON.stringify({
+      host: '127.0.0.1',
+      port: stub.port,
+      security: 'none',
+      username: '',
+      password: '',
+      fromAddress: 'moai-test@test.local',
+      fromName: 'MoAI E2E',
+    })
+    if (smtpChannelId == null) {
+      const r = await api('POST', '/api/notification/channel/create', { token: rootToken, body: { name: SMTP_CHANNEL_NAME, type: 'smtp', config, enabled: true, description: 'auth-2fa-e2e' } })
+      if (r.status !== 200) throw new Error(`创建 SMTP 渠道失败: ${r.status} ${r.text.slice(0, 140)}`)
+      smtpChannelId = r.json?.id
+      if (smtpChannelId == null) throw new Error('创建 SMTP 渠道未返回 id')
+    } else {
+      const r = await api('PUT', `/api/notification/channel/${smtpChannelId}`, { token: rootToken, body: { id: smtpChannelId, name: SMTP_CHANNEL_NAME, type: 'smtp', config, enabled: true, description: 'auth-2fa-e2e' } })
+      if (r.status !== 200) throw new Error(`更新 SMTP 渠道失败: ${r.status} ${r.text.slice(0, 140)}`)
+    }
+    await saveSetting('SMTP_CHANNEL_ID', String(smtpChannelId))
+  }
   const smtpUp = async () => {
+    await upsertSmtpChannel()
     await saveSetting('SMTP_ENABLED', 'true')
-    await saveSetting('SMTP_HOST', '127.0.0.1')
-    await saveSetting('SMTP_PORT', String(stub.port))
-    await saveSetting('SMTP_SECURITY', 'none')
-    await saveSetting('SMTP_FROM_ADDRESS', 'moai-test@test.local')
-    await saveSetting('SMTP_FROM_NAME', 'MoAI E2E')
   }
   const smtpDown = async () => {
     await saveSetting('SMTP_ENABLED', 'false')
@@ -425,15 +452,19 @@ async function main() {
     r = await login(userC.name, userC.password)
     check('AUTH-42q SMTP 未启用时验证码策略失效直接登录', r.status === 200 && r.json.secondFactor === 'none' && r.json.accessToken && stub.state.messages.length === mailCountDown, JSON.stringify({ sf: r.json?.secondFactor }))
   } finally {
-    // ---------- 恢复快照设置 ----------
+    // ---------- 恢复快照设置 + 清理所建渠道 ----------
     for (const key of SNAPSHOT_KEYS) {
       if (snapshot[key] !== undefined && snapshot[key] !== '') {
         const rr = await api('PUT', '/api/settings', { token: rootToken, body: { key, value: snapshot[key] } })
         if (rr.status !== 200) console.log(`WARN | 恢复设置 ${key} 失败: ${rr.status}`)
       } else if (snapshot[key] === '') {
-        // 快照为空串的键（如未配置过的 SMTP 项）保持空值写回，避免残留测试值
+        // 快照为空串的键（如未绑定过的 SMTP 渠道）保持空值写回，避免残留测试值
         await api('PUT', '/api/settings', { token: rootToken, body: { key, value: '' } })
       }
+    }
+    if (smtpChannelId != null) {
+      const rr = await api('DELETE', `/api/notification/channel/${smtpChannelId}`, { token: rootToken })
+      if (rr.status !== 200) console.log(`WARN | 删除 SMTP 渠道失败: ${rr.status}`)
     }
     stub.close()
   }

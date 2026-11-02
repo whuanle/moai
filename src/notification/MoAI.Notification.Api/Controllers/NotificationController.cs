@@ -10,7 +10,7 @@ using MoAI.Notification.Queries;
 namespace MoAI.Notification.Controllers;
 
 /// <summary>
-/// 通知中心接口（仅管理员）：渠道管理与发送记录查询.
+/// 通知中心接口（仅管理员）：渠道管理、通知模板与发送记录查询.
 /// </summary>
 [ApiController]
 [Route("/notification")]
@@ -101,13 +101,80 @@ public class NotificationController : ControllerBase
     }
 
     /// <summary>
-    /// 广播通知（仅管理员）：异步投递给全部启用渠道，结果在发送记录中查看.
+    /// 广播通知（仅管理员）：异步投递给全部启用渠道，结果在发送记录中查看；使用模板时按变量值渲染.
     /// </summary>
     /// <param name="req">广播请求体.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="BroadcastNotificationCommandResponse"/>.</returns>
     [HttpPost("broadcast")]
     public async Task<BroadcastNotificationCommandResponse> Broadcast([FromBody] BroadcastNotificationCommand req, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 查询通知模板列表（仅管理员）.
+    /// </summary>
+    /// <param name="search">按模板名称模糊搜索，可选.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryNotificationTemplatesCommandResponse"/>.</returns>
+    [HttpGet("template/list")]
+    public async Task<QueryNotificationTemplatesCommandResponse> TemplateList([FromQuery] string? search, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryNotificationTemplatesCommand { Search = search }, ct);
+    }
+
+    /// <summary>
+    /// 创建通知模板（仅管理员）.
+    /// </summary>
+    /// <param name="req">创建请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="CreateNotificationTemplateCommandResponse"/>.</returns>
+    [HttpPost("template/create")]
+    public async Task<CreateNotificationTemplateCommandResponse> CreateTemplate([FromBody] CreateNotificationTemplateCommand req, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 更新通知模板（仅管理员），整体覆盖.
+    /// </summary>
+    /// <param name="id">模板 id.</param>
+    /// <param name="req">更新请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("template/{id}")]
+    public async Task<EmptyCommandResponse> UpdateTemplate(long id, [FromBody] UpdateNotificationTemplateCommand req, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        req.Id = id;
+        return await _mediator.Send(req, ct);
+    }
+
+    /// <summary>
+    /// 删除通知模板（仅管理员），软删除，历史发送记录保留.
+    /// </summary>
+    /// <param name="id">模板 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpDelete("template/{id}")]
+    public async Task<EmptyCommandResponse> DeleteTemplate(long id, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new DeleteNotificationTemplateCommand { Id = id }, ct);
+    }
+
+    /// <summary>
+    /// 测试通知模板（仅管理员）：按变量值渲染模板；指定 channelId 时同步真实试发，否则仅返回渲染预览.
+    /// </summary>
+    /// <param name="req">测试请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="TestNotificationTemplateCommandResponse"/>.</returns>
+    [HttpPost("template/test")]
+    public async Task<TestNotificationTemplateCommandResponse> TestTemplate([FromBody] TestNotificationTemplateCommand req, CancellationToken ct)
     {
         await EnsureAdminAsync(ct);
         return await _mediator.Send(req, ct);

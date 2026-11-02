@@ -32,12 +32,12 @@
 | @SET-S44、@SET-S45 | [local-dev/wiki-e2e.mjs](../../local-dev/wiki-e2e.mjs)（WK-12a…c 网页端门禁与恢复）+ [local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)（WX-11a/c/f 外部接口同门禁、WX-11b 无点号/重复/空串 400） | PASS WK 35/35 + WX 52/52（2026-10-29，5000 实例） |
 | @SET-S46 | [local-dev/wiki-external-e2e.mjs](../../local-dev/wiki-external-e2e.mjs)（WX-11d/e：放开 .sh 上传 → complete 自动提取 → content 为原文本）；二进制拒绝为 @manual 代码走查（`WikiTextFileReader` NUL 嗅探） | PASS（2026-10-29） |
 | @SET-S47 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（文件类型标签回显、逗号归一提交、非法扩展名拦截不发请求；卡片移至知识图谱上方） | PASS 20/20（2026-10-29） |
-| @SET-S48 ~ @SET-S50 | [local-dev/settings-smtp-e2e.mjs](../../local-dev/settings-smtp-e2e.mjs)（root 保存八项并回读、TRUE/SSL 归一落库、端口/加密/开关/发件人非法 400、member 403 与未登录 401，含测试邮件端点门禁） | PASS 34/34（2026-10-29） |
-| @SET-S51、@SET-S52 | [local-dev/settings-smtp-e2e.mjs](../../local-dev/settings-smtp-e2e.mjs)（未启用/未配置服务器 400；本地 SMTP 桩全链路：发送 200、桩捕获信封 MAIL FROM/RCPT TO 与 DATA Subject/Message-Id 头） | 同上（SET-51/52 共 7 检查） |
-| @SET-S53 | [local-dev/settings-smtp-e2e.mjs](../../local-dev/settings-smtp-e2e.mjs)（桩要求认证：AUTH 凭据与配置一致、认证后收到邮件） | 同上（SET-53a~d） |
-| @SET-S54 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（邮件服务卡片折叠回显、未启用无服务器字段与测试入口、启用保存先开关后连接项、空地址/未保存拦截、发送携带收件人；文件合计 23/23） | PASS（2026-10-29） |
-| @SET-S56 ~ @SET-S58 | [local-dev/auth-email-code-e2e.mjs](../../local-dev/auth-email-code-e2e.mjs)（注册验证码开关非法值 400、主题 >500 与正文 >2000 400、主题保存去空白回读；模板渲染语义链接到 [@AUTH-S31](../auth/bdd.md#auth-s31)） | PASS（2026-10-29，脚本合计 34/34） |
-| @SET-S55 | @manual 代码走查（`EmailSettingsService.GetAsync` 未启用短路/回退默认、`EmailSenderService.SendAsync` MailKit 发送与未配置拒绝） | PASS（2026-10-29） |
+| @SET-S61 ~ @SET-S63 | [local-dev/settings-smtp-e2e.mjs](../../local-dev/settings-smtp-e2e.mjs)（SET-61/62/63/64：渠道连接配置在通知中心校验 400、绑定保存回读与非法绑定值 400（含 SET-63g~j 验证码通知模板绑定 id 校验）、member 403 与未登录 401） | PASS 36/36（2026-11-02） |
+| @SET-S64 | [local-dev/settings-smtp-e2e.mjs](../../local-dev/settings-smtp-e2e.mjs)（SET-65a~g：serverinfo passwordResetEnabled 随开关/绑定/渠道可用性联动） | 同上 |
+| @SET-S65、@SET-S66 | [local-dev/settings-smtp-e2e.mjs](../../local-dev/settings-smtp-e2e.mjs)（SET-66/67：渠道自带配置对本地 SMTP 桩全链路发信，信封与 DATA 头；AUTH PLAIN 凭据核对） | 同上 |
+| @SET-S67 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（邮箱验证卡片折叠回显、未启用无绑定下拉、绑定下拉来源与停用标记、验证码模板绑定下拉回显内置标识/清空提交空绑定、保存仅提交开关+绑定+模板 id；文件合计 27/27） | PASS（2026-11-02） |
+| @SET-S56、@SET-S69 | [local-dev/auth-email-code-e2e.mjs](../../local-dev/auth-email-code-e2e.mjs)（SET-56a 开关非法值 400、SET-69a/b 模板 id 非法 400、SET-69c 保存去空白回读；模板渲染语义链接到 [@AUTH-S31](../auth/bdd.md#auth-s31)） | PASS（2026-11-02，脚本合计 39/39） |
+| @SET-S68 | @manual 代码走查（`EmailSettingsService.GetAsync` 开关+渠道可用性联动、`SystemEmailSenderService` 按绑定渠道经 `SmtpMailTransport` 发送） | PASS（2026-11-02） |
 
 ## 回归命令（后端运行于 :5210）
 
@@ -45,18 +45,18 @@
 node local-dev/audit-345.mjs                 # 含 settings 门禁/保存/回读分支
 node local-dev/sandbox-limits-e2e.mjs        # 沙箱上限设置读写与格式校验
 node local-dev/settings-logo-e2e.mjs         # 网站 Logo 上传/恢复与门禁 + 网站名称保存/回退/校验 + 登录页背景图上传/恢复/门禁
-node local-dev/settings-smtp-e2e.mjs          # SMTP 邮件服务：八项保存回读/格式校验/门禁/未启用防护/测试邮件发送与认证全链路（本地 SMTP 桩，零真实依赖）
-node local-dev/auth-email-code-e2e.mjs       # 注册/找回密码邮箱验证码全链路 + 验证码模板设置保存校验（@SET-S56~S58，内置 SMTP 桩）
+node local-dev/settings-smtp-e2e.mjs          # 邮箱验证与 SMTP 服务绑定：渠道连接校验/绑定回读/门禁/serverinfo 联动/渠道测试发信与认证（本地 SMTP 桩，零真实依赖）
+node local-dev/auth-email-code-e2e.mjs       # 注册/找回密码邮箱验证码全链路 + 验证码通知模板绑定校验（@SET-S56/S69，内置 SMTP 桩）
 node local-dev/wiki-e2e.mjs                  # 知识库上传上限/允许文件类型（WK-11/WK-12）
 node local-dev/wiki-external-e2e.mjs         # 外部接口 + 允许文件类型/纯文本兜底（WX-11）
 cd ui && npm run typecheck && npm run lint && npm run test
-npx vitest run src/pages/settings/__tests__/Settings.test.tsx   # 知识图谱开关/连接项保存 + 沙箱上限卡片 + 网站信息卡片（网站名称/Logo/登录页背景三分区） + 知识库文件类型卡片 + 邮件服务卡片
+npx vitest run src/pages/settings/__tests__/Settings.test.tsx   # 知识图谱开关/连接项保存 + 沙箱上限卡片 + 网站信息卡片（网站名称/Logo/登录页背景三分区） + 知识库文件类型卡片 + 邮箱验证绑定卡片
 ```
 
 ## 覆盖率说明
 
-- 共 57 个场景：自动化 46 个（@SET-S1~S4、S6~S7、S16~S18、S20~S41、S43~S54、S56~S58），走查/手动 11 个（@SET-S5、S8~S9、S11~S15、S19、S42、S55）；对称分支（关闭开关、admin 保存 403、首写建行、知识图谱读取未开启短路）以代码走查覆盖，补自动化成本低。
-- `settings-smtp-e2e.mjs` 会真实写入 SMTP_ENABLED 等八项：脚本开头快照原值、结尾 SET-90 恢复，共享开发实例上执行不破坏已配置的 SMTP。
+- 共 60 个场景（@SET-S48~S55 随 SMTP 直连配置下线作废不复用）：自动化 46 个（@SET-S1~S4、S6~S7、S16~S18、S20~S47、S56~S58、S61~S67），走查/手动 14 个（@SET-S5、S8~S9、S11~S15、S19、S42、S68）；对称分支（关闭开关、admin 保存 403、首写建行、知识图谱读取未开启短路）以代码走查覆盖，补自动化成本低。
+- `settings-smtp-e2e.mjs` 会真实写入 SMTP_ENABLED/SMTP_CHANNEL_ID 并创建临时 SMTP 渠道：脚本开头快照原值、结尾 SET-90/SET-91 恢复与删渠道，共享开发实例上执行不破坏现场。
 - `settings-logo-e2e.mjs` 会真实写入 SYSTEM_NAME/SYSTEM_LOGO/LOGIN_BACKGROUND：2026-10-29 起脚本开头快照三项原值、清空类场景（SET-29/33/40）断言完成后即恢复，结尾 SET-90 校验恢复结果——在共享开发实例上执行不再清掉已配置的站点品牌（此前一次回归把用户已设置的名称/Logo/背景清空，靠探活快照手工恢复）。
 - 门禁为 Controller 层实现，若重构须复跑 @SET-S2/@SET-S6/@SET-S9。
 - 知识图谱前端场景 @SET-S16~S18 由 `Settings.test.tsx` 覆盖；@SET-S19 为读取服务代码走查，接入知识库后应补集成测试。

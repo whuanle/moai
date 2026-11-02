@@ -1,17 +1,18 @@
 // 登录安全风控 E2E（场景 @LS-S1~S26）
 // 覆盖：门禁（member 403 / 未登录 401）+ 登录日志全量落库（成功/失败）+ ForwardedHeaders 真实 IP 与 IP2Region 归属地解析
 //       + R1 IP 爆破自动封禁（阈值内失败→封禁 403→事件+解封恢复）+ R2 撞库喷洒自动封禁（多用户名失败）
-//       + R3 新 IP 中风险（登录日志 riskLevel=2 + 风险事件 + 用户提醒邮件）+ R5 疾速旅行高风险（间隔过短的异地登录）
-//       + R6 管理员新环境升级（高风险 + 管理员告警邮件）+ 风险事件标记已读与未读计数联动
-//       + IP 手动封禁/解封 + 总开关关闭直通（仅日志不判定）+ 设置校验（阈值/开关非法 400）
+//       + R3 新 IP 中风险（登录日志 riskLevel=2 + 风险事件 + 用户站内信提醒）+ R5 疾速旅行高风险（间隔过短的异地登录）
+//       + 高风险事件推送通知渠道（通用 webhook 渠道 + SMTP 渠道，告警收件人取 LS_NOTIFY_EMAILS，内置中文模板）+ 风险事件标记已读与未读计数联动
+//       + IP 手动封禁/解封 + 总开关关闭直通（仅日志不判定）+ 设置校验（阈值/开关/渠道 ID/告警收件人邮箱非法 400）
 // 用法：node local-dev/loginsafety-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5213）
 // 前置：后端以 ForwardedHeaders 开启运行（模拟多来源 IP 必需），例如：
 //   MAI_FILE=local-dev/system.local.json ASPNETCORE_ENVIRONMENT=Development \
 //   MoAI__Port=5213 MoAI__Server=http://127.0.0.1:5213 MoAI__ForwardedHeaders__Enabled=true \
 //   dotnet run --project src/MoAI/MoAI.csproj
 //   且 configs/ip2region.xdb 存在（geo 用例依赖归属地；文件缺失时 geo 用例会 FAIL 提示安装）。
-// 种子账号 admin / abcd123456（root）。开头快照 SMTP 与 LS_* 设置原值，结束时恢复（共享开发实例不破坏配置）。
+// 种子账号 admin / abcd123456（root）。开头快照 LS_* 设置原值，结束时恢复并删除临时通知渠道（共享开发实例不破坏配置）。
 import net from 'node:net'
+import http from 'node:http'
 import crypto from 'node:crypto'
 
 const BASE = process.env.APP_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5213'
@@ -109,6 +110,24 @@ function startSmtpStub() {
   })
 }
 
+/** 极简 HTTP webhook 桩：记录 POST 路径与请求体原文 */
+function startWebhookStub() {
+  const state = { hits: [] }
+  const server = http.createServer((req, res) => {
+    let body = ''
+    req.on('data', (chunk) => { body += chunk.toString('utf-8') })
+    req.on('end', () => {
+      state.hits.push({ path: req.url, body })
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end('{"ok":true}')
+    })
+  })
+  server.on('error', () => {})
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => resolve({ server, port: server.address().port, state }))
+  })
+}
+
 const putSetting = (token, key, value) => api('PUT', '/api/settings', { token, body: { key, value } })
 const getSettingValue = async (token, key) => {
   const q = await api('GET', '/api/settings', { token })
@@ -129,11 +148,15 @@ async function waitFor(fn, timeoutMs = 25000, stepMs = 500) {
 /** 每次运行随机的内网测试 IP（避免 Redis 失败计数/封禁记录跨运行残留） */
 const rndOctet = () => Math.floor(Math.random() * 200) + 11
 
+/** 解码 JSON 文本中的 \uXXXX 转义（渠道默认 JSON 体为 ASCII 转义中文） */
+const unescapeUnicode = (s) => s.replace(/\\u([0-9a-fA-F]{4})/g, (_, c) => String.fromCharCode(parseInt(c, 16)))
+
 // ---------- 启动 ----------
 const info = await fetch(`${BASE}/api/common/serverinfo`).then((r) => r.json())
 RSA_KEY = info.rsaPublic
 
 const smtpStub = await startSmtpStub()
+const webhookStub = await startWebhookStub()
 
 // admin（root）登录；本机 IP 若有残留封禁（如上次异常中断的运行），走 XFF 引导登录后解封恢复
 let adminLogin = await login('admin', 'abcd123456')
@@ -142,6 +165,7 @@ if (adminLogin.status === 403 && /封禁/.test(adminLogin.json?.detail ?? '')) {
   if (boot.status !== 200 || !boot.json.accessToken) {
     console.error('FATAL: 引导登录失败', boot.status, boot.text.slice(0, 200))
     smtpStub.server.close()
+    webhookStub.server.close()
     process.exit(1)
   }
   const bans = await api('GET', '/api/loginsafety/ipban?pageNo=1&pageSize=100', { token: boot.json.accessToken })
@@ -153,32 +177,35 @@ if (adminLogin.status === 403 && /封禁/.test(adminLogin.json?.detail ?? '')) {
 if (adminLogin.status !== 200 || !adminLogin.json.accessToken) {
   console.error('FATAL: admin 登录失败', adminLogin.status, adminLogin.text.slice(0, 200))
   smtpStub.server.close()
+  webhookStub.server.close()
   process.exit(1)
 }
 const admin = adminLogin.json.accessToken
 
-// 快照 SMTP 与 LS 设置原值
-const SMTP_KEYS = ['SMTP_ENABLED', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURITY', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_ADDRESS', 'SMTP_FROM_NAME']
-const LS_KEYS = ['LS_ENABLED', 'LS_NOTIFY_USER_ENABLED', 'LS_NOTIFY_ADMIN_ENABLED', 'LS_ADMIN_ALERT_RECIPIENTS', 'LS_IP_FAIL_THRESHOLD', 'LS_IP_FAIL_WINDOW_MINUTES', 'LS_IP_BAN_MINUTES', 'LS_DISTINCT_USER_THRESHOLD', 'LS_NEW_IP_DAYS', 'LS_TRAVEL_WINDOW_MINUTES']
+// 快照 LS 设置原值
+const LS_KEYS = ['LS_ENABLED', 'LS_NOTIFY_CHANNEL_IDS', 'LS_NOTIFY_EMAILS', 'LS_IP_FAIL_THRESHOLD', 'LS_IP_FAIL_WINDOW_MINUTES', 'LS_IP_BAN_MINUTES', 'LS_DISTINCT_USER_THRESHOLD', 'LS_NEW_IP_DAYS', 'LS_TRAVEL_WINDOW_MINUTES']
 const snapshot = {}
-for (const key of [...SMTP_KEYS, ...LS_KEYS]) snapshot[key] = await getSettingValue(admin, key)
+for (const key of LS_KEYS) snapshot[key] = await getSettingValue(admin, key)
 
-// 指向本地 SMTP 桩 + 收紧阈值（测毕恢复）
+// 收紧阈值（测毕恢复）；建临时通知渠道（通用 webhook + SMTP）并勾选为高风险推送目标，告警收件人走 LS_NOTIFY_EMAILS
 const ALERT_TO = 'alert-e2e@test.local'
-await putSetting(admin, 'SMTP_ENABLED', 'true')
-await putSetting(admin, 'SMTP_HOST', '127.0.0.1')
-await putSetting(admin, 'SMTP_PORT', String(smtpStub.port))
-await putSetting(admin, 'SMTP_SECURITY', 'none')
-await putSetting(admin, 'SMTP_FROM_ADDRESS', 'stub@moai.local')
+const createChannel = (name, type, config) => api('POST', '/api/notification/channel/create', { token: admin, body: { name, type, config: JSON.stringify(config), enabled: true, description: 'loginsafety e2e 临时渠道' } })
+const webhookCh = await createChannel(uname('ls-e2e-webhook'), 'webhook', { url: `http://127.0.0.1:${webhookStub.port}/hook` })
+const smtpCh = await createChannel(uname('ls-e2e-smtp'), 'smtp', { host: '127.0.0.1', port: smtpStub.port, security: 'none', fromAddress: 'stub@moai.local' })
+if (webhookCh.status !== 200 || smtpCh.status !== 200) {
+  console.error('FATAL: 创建临时通知渠道失败', webhookCh.status, smtpCh.status, webhookCh.text.slice(0, 200))
+  smtpStub.server.close()
+  webhookStub.server.close()
+  process.exit(1)
+}
+const webhookId = webhookCh.json.id
+const smtpId = smtpCh.json.id
+
 await putSetting(admin, 'LS_ENABLED', 'true')
-await putSetting(admin, 'LS_NOTIFY_USER_ENABLED', 'true')
-await putSetting(admin, 'LS_NOTIFY_ADMIN_ENABLED', 'true')
-await putSetting(admin, 'LS_ADMIN_ALERT_RECIPIENTS', ALERT_TO)
-// ASCII 自定义模板（断言告警内容可读，同时覆盖模板自定义生效）
-await putSetting(admin, 'LS_ADMIN_ALERT_SUBJECT', 'LS-ALERT {userName}')
-await putSetting(admin, 'LS_ADMIN_ALERT_BODY', 'RISK ALERT user={userName} ip={ip} location={location} reasons={reasons}')
-await putSetting(admin, 'LS_USER_ALERT_SUBJECT', 'LS-USER {userName}')
-await putSetting(admin, 'LS_USER_ALERT_BODY', 'LOGIN NOTICE user={userName} ip={ip} location={location} time={time}')
+await putSetting(admin, 'LS_NOTIFY_CHANNEL_IDS', `${webhookId},${smtpId}`)
+await putSetting(admin, 'LS_NOTIFY_EMAILS', ALERT_TO)
+
+const createdChannelIds = [webhookId, smtpId]
 
 try {
   // ---------- LS-S1~S3 门禁 ----------
@@ -247,6 +274,10 @@ try {
     })
     check('LS-S10 R1 高风险事件生成', evt != null && evt.riskLevel === 3, JSON.stringify(evt ?? {}))
 
+    // 高风险事件推送通知渠道：webhook 收到内置模板告警（含本次爆破用户名；中文在 JSON 体中为 \uXXXX 转义）
+    const hookHit = await waitFor(() => webhookStub.state.hits.find((h) => unescapeUnicode(h.body).includes('登录风险告警') && unescapeUnicode(h.body).includes(bruteName)))
+    check('LS-S10b 高风险事件推送 webhook 渠道（内置模板）', hookHit != null, `hits=${webhookStub.state.hits.length}`)
+
     const banList = await api('GET', '/api/loginsafety/ipban?pageNo=1&pageSize=50', { token: admin })
     const ban = (banList.json?.items ?? []).find((x) => x.ip === ipR1 && !x.isLifted)
     check('LS-S11 封禁列表出现 auto:R1 记录', ban != null && ban.sourceRule === 'auto:R1', JSON.stringify(ban ?? banList.json?.items?.slice(0, 3) ?? banList.text.slice(0, 120)))
@@ -280,12 +311,12 @@ try {
     })
     check('LS-S14 R2 高风险事件生成', evt != null && evt.riskLevel === 3, JSON.stringify(evt ?? {}))
 
-    const banList = await api('GET', '/api/loginsafety/ipban?pageNo=1&pageSize=50', { token: admin })
+    const banList = await api('GET', '/api/loginsafety/ipban?pageNo=1&pageSize=50&ip=' + ipR2, { token: admin })
     check('LS-S15 封禁列表出现 auto:R2 记录', (banList.json?.items ?? []).some((x) => x.ip === ipR2 && x.sourceRule === 'auto:R2'),
       JSON.stringify((banList.json?.items ?? []).slice(0, 2)))
   }
 
-  // ---------- LS-S16~S19 R3 新 IP 中风险 + R5 疾速旅行高风险 + 用户提醒邮件 ----------
+  // ---------- LS-S16~S19 R3 新 IP 中风险 + R5 疾速旅行高风险 + 用户站内信提醒 ----------
   const u1 = await mkuser('lsu')
   {
     // 首次从 1.2.4.8（北京市）登录 → 新 IP 中风险
@@ -308,17 +339,29 @@ try {
     })
     check('LS-S19 R5 疾速旅行高风险事件', r5 != null && r5.riskLevel === 3, JSON.stringify(r5 ?? {}))
 
-    // 用户提醒邮件（中/高风险都发）；正文经 MIME 编码不可读，断言明文 Subject（自定义模板已渲染）
-    const userMail = await waitFor(() => smtpStub.state.messages.find((m) => m.rcpts.some((r) => r.includes(u1.email))))
-    check('LS-S19b 用户收到风险登录提醒邮件', userMail != null, `mails=${smtpStub.state.messages.length}`)
-    check('LS-S19c 提醒邮件自定义模板生效', userMail != null && /Subject: LS-USER \S+/.test(userMail.data), userMail?.data.split('\r\n').find((l) => l.startsWith('Subject')) ?? '')
+    // 中/高风险登录固定给受影响用户发站内信（内置模板，界面不可定制）
+    const u1Login = await login(u1.name, u1.password)
+    const u1Token = u1Login.json.accessToken
+    const userMsg = await waitFor(async () => {
+      const q = await api('GET', '/api/message/list?pageNo=1&pageSize=50', { token: u1Token })
+      return (q.json?.items ?? []).find((x) => x.source === 'loginsafety' && x.title === 'MoAI 登录安全提醒')
+    })
+    check('LS-S19b 用户收到风险登录站内信', userMsg != null, '未找到 MoAI 登录安全提醒站内信')
+    check('LS-S19c 站内信内置模板内容', userMsg != null && userMsg.content.includes('登录 IP：') && userMsg.content.includes(u1.name),
+      userMsg?.content?.slice(0, 60) ?? '')
   }
 
-  // ---------- LS-S20 管理员告警邮件（高风险事件 → 收件人） ----------
+  // ---------- LS-S20 高风险事件推送渠道（SMTP 渠道 → 告警邮件，收件人=告警收件人 LS_NOTIFY_EMAILS，内置模板） ----------
   {
+    // 邮件 DATA 正文为 base64/quoted-printable 编码，按收件人匹配投递；
+    // Subject 为 MIME encoded-word（可能折行），拼接后逐段 base64 解码断言内置模板标题
     const adminMail = await waitFor(() => smtpStub.state.messages.find((m) => m.rcpts.some((r) => r.includes(ALERT_TO))))
-    check('LS-S20 管理员收到风险告警邮件', adminMail != null, `mails=${smtpStub.state.messages.length}`)
-    check('LS-S20b 告警邮件自定义模板生效', adminMail != null && /Subject: LS-ALERT \S+/.test(adminMail.data), adminMail?.data.split('\r\n').find((l) => l.startsWith('Subject')) ?? '')
+    check('LS-S20 高风险事件经 SMTP 渠道发出告警邮件', adminMail != null, `mails=${smtpStub.state.messages.length}`)
+    const folded = adminMail?.data.match(/Subject:[^\r\n]*(\r\n[ \t][^\r\n]*)*/)?.[0] ?? ''
+    const joined = folded.replace(/\r\n[ \t]/g, '')
+    // MailKit 写 encoded-word 用小写 utf-8/b，正则忽略大小写
+    const subject = [...joined.matchAll(/=\?utf-8\?b\?([A-Za-z0-9+/=]+)\?=/gi)].map((x) => Buffer.from(x[1], 'base64').toString('utf-8')).join('')
+    check('LS-S20b 告警邮件内置模板标题', subject.includes('登录风险告警'), (subject || folded).slice(0, 100))
   }
 
   // ---------- LS-S21 风险事件标记已读与未读计数联动 ----------
@@ -379,8 +422,10 @@ try {
     check('LS-S25b 开关非法值 400', v2.status === 400, `got ${v2.status}`)
     const v3 = await putSetting(admin, 'LS_NEW_IP_DAYS', '99999')
     check('LS-S25c 回看天数越界 400', v3.status === 400, `got ${v3.status}`)
-    const v4 = await putSetting(admin, 'LS_ADMIN_ALERT_RECIPIENTS', 'not-an-email')
-    check('LS-S25d 收件人非法邮箱 400', v4.status === 400, `got ${v4.status}`)
+    const v4 = await putSetting(admin, 'LS_NOTIFY_CHANNEL_IDS', 'abc')
+    check('LS-S25d 渠道 ID 非法值 400', v4.status === 400, `got ${v4.status}`)
+    const v5 = await putSetting(admin, 'LS_NOTIFY_EMAILS', 'not-an-email')
+    check('LS-S25e 告警收件人邮箱非法值 400', v5.status === 400 && v5.text.includes('告警收件人邮箱不是合法的邮箱地址'), `got ${v5.status} ${v5.text.slice(0, 140)}`)
   }
 
   // ---------- LS-S26 本人登录记录 ----------
@@ -391,21 +436,24 @@ try {
     check('LS-S26 本人登录记录可查且不含他人', my.status === 200 && items.length > 0 && items.every((x) => x.ip !== undefined && x.userName === undefined), `total=${my.json?.total}`)
   }
 } finally {
-  // ---------- 恢复设置 ----------
+  // ---------- 恢复设置 + 清理临时渠道 ----------
   for (const [key, value] of Object.entries(snapshot)) {
     if (value !== undefined) {
       await putSetting(admin, key, value)
     } else {
       // 原本不存在的键恢复为默认值（语义等价：写回 SettingDefinitions 默认）
       const defaults = {
-        LS_ENABLED: 'true', LS_NOTIFY_USER_ENABLED: 'true', LS_NOTIFY_ADMIN_ENABLED: 'true',
-        LS_ADMIN_ALERT_RECIPIENTS: '', LS_IP_FAIL_THRESHOLD: '20', LS_IP_FAIL_WINDOW_MINUTES: '10',
+        LS_ENABLED: 'true', LS_NOTIFY_CHANNEL_IDS: '', LS_NOTIFY_EMAILS: '', LS_IP_FAIL_THRESHOLD: '20', LS_IP_FAIL_WINDOW_MINUTES: '10',
         LS_IP_BAN_MINUTES: '30', LS_DISTINCT_USER_THRESHOLD: '5', LS_NEW_IP_DAYS: '90', LS_TRAVEL_WINDOW_MINUTES: '120'
       }
       if (key in defaults) await putSetting(admin, key, defaults[key])
     }
   }
+  for (const id of createdChannelIds) {
+    await api('DELETE', `/api/notification/channel/${id}`, { token: admin })
+  }
   smtpStub.server.close()
+  webhookStub.server.close()
   console.log(`\nPASS ${PASS} / FAIL ${FAIL}`)
   if (FAIL > 0) process.exit(1)
 }

@@ -337,6 +337,46 @@ async function main() {
     }
   }
 
+  // ===== 插件使用统计（系统管理端全团队汇总 + 团队端本团队口径，TP-37 系）=====
+  {
+    const statsKey = `tpstat_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`
+    const statsCreate = await api('POST', `/api/team/${TID}/plugin/dynamic`, { token: owner.token, body: { teamId: TID, instanceKey: statsKey, templeteKey: 'dynamic_greet', title: '统计样本插件', description: 'E2E 插件统计样本', config: '{}' } })
+    check('TP-37p 前置：创建统计样本团队插件 200', statsCreate.status === 200, statsCreate.text.slice(0, 160))
+
+    // TP-37 门禁：系统统计仅管理员，团队统计仅成员
+    check('TP-37a 无 token 查系统插件统计 401', (await api('GET', '/api/ai/plugin/manage/stats')).status === 401)
+    check('TP-37b 普通用户查系统插件统计 403', (await api('GET', '/api/ai/plugin/manage/stats', { token: owner.token })).status === 403)
+    check('TP-37c 无 token 查团队统计 401', (await api('GET', `/api/team/${TID}/plugin/stats`)).status === 401)
+    check('TP-37d 非成员查团队统计 404', (await api('GET', `/api/team/${TID}/plugin/stats`, { token: outsider.token })).status === 404)
+    check('TP-37e 非法 teamId 查团队统计 404（与 list 端点口径一致：团队不存在）', (await api('GET', '/api/team/0/plugin/stats', { token: owner.token })).status === 404)
+
+    const statsAdminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const statsAdminToken = statsAdminLogin.json?.accessToken
+
+    if (statsAdminToken) {
+      // TP-38 系统统计：全团队汇总（系统侧 + 全部团队自有插件）
+      const sysStats = await api('GET', '/api/ai/plugin/manage/stats', { token: statsAdminToken })
+      const ss = sysStats.json
+      check('TP-38a admin 查全团队统计 200 且概览结构齐全', sysStats.status === 200 && ss?.totalPlugins !== undefined && ss?.totalCalls !== undefined && ss?.totalFunctions !== undefined && ss?.mcpCount !== undefined && ss?.openApiCount !== undefined && Array.isArray(ss?.top) && Array.isArray(ss?.classifies), sysStats.text.slice(0, 160))
+      check('TP-38b TOP 项均带团队维度字段（teamId 必带，teamName 团队插件为字符串、系统侧 null 省略）', (ss?.top ?? []).every((x) => typeof x.teamId === 'number' && (x.teamName === undefined || typeof x.teamName === 'string')), JSON.stringify(ss?.top)?.slice(0, 200))
+      check('TP-38c 分类分布项均带 id 与计数（未分类 classifyName 省略）', (ss?.classifies ?? []).every((x) => typeof x.classifyId === 'number' && x.count !== undefined && (x.classifyName === undefined || typeof x.classifyName === 'string')))
+      check('TP-38d 趋势近 30 天逐日补 0', Array.isArray(ss?.trend?.items) && ss.trend.items.length === 30 && ss.trend.items.every((x) => x.date !== undefined && x.count !== undefined))
+
+      // TP-39 团队统计：仅本团队自有插件
+      const teamStats = await api('GET', `/api/team/${TID}/plugin/stats`, { token: member.token })
+      const ts = teamStats.json
+      check('TP-39a 成员查团队统计 200 且回显 teamId', teamStats.status === 200 && Number(ts?.teamId) === TID, teamStats.text.slice(0, 160))
+      check('TP-39b 团队统计含样本插件且 TOP 项不带团队维度字段（本团队口径）', Number(ts?.totalPlugins) >= 1 && (ts?.top ?? []).some((x) => x.name === '统计样本插件') && (ts?.top ?? []).every((x) => !('teamName' in x) && !('teamId' in x)), JSON.stringify(ts?.top)?.slice(0, 200))
+      check('TP-39c 团队统计趋势近 30 天', Array.isArray(ts?.trend?.items) && ts.trend.items.length === 30)
+      check('TP-39d 团队统计总数不超过全团队汇总', Number(ts?.totalPlugins) <= Number(ss?.totalPlugins))
+
+      // 清理统计样本
+      const listStats = await api('GET', `/api/team/${TID}/plugin/list`, { token: owner.token })
+      const statsItem = (listStats.json?.items ?? []).find((x) => x.pluginName === statsKey)
+      if (statsItem) await api('DELETE', `/api/team/${TID}/plugin/${statsItem.pluginId}`, { token: owner.token })
+    }
+  }
+
   // TP-19 Owner 删除团队动态插件
   if (dynItem) {
     check('TP-19a Owner 删除团队插件 200', (await api('DELETE', `/api/team/${TID}/plugin/${dynItem.pluginId}`, { token: owner.token })).status === 200)

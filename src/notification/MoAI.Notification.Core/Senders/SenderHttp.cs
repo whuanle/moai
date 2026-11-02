@@ -21,6 +21,21 @@ public static class SenderHttp
     public const string HttpClientName = "moai-notification";
 
     /// <summary>
+    /// GET 请求并读取响应文本.
+    /// </summary>
+    /// <param name="httpClientFactory">HTTP 客户端工厂.</param>
+    /// <param name="url">请求地址（含查询串）.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>返回状态码与响应体.</returns>
+    public static async Task<(int StatusCode, string Body)> GetAsync(IHttpClientFactory httpClientFactory, string url, CancellationToken cancellationToken)
+    {
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        using var response = await client.GetAsync(url, cancellationToken);
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        return ((int)response.StatusCode, responseBody);
+    }
+
+    /// <summary>
     /// POST JSON 并读取响应文本.
     /// </summary>
     /// <param name="httpClientFactory">HTTP 客户端工厂.</param>

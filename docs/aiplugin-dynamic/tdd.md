@@ -94,6 +94,8 @@ node local-dev/hot-board-e2e.mjs
 | @DYN-S121 | local-dev/dynamic-plugin-e2e.mjs（save 携带已登记 objectKey → 200 且列表回读 avatarPath 一致）；[DynamicPluginPanel.test.tsx](../../ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx)（新建弹窗渲染头像上传入口） | e2e PASS 165/0/SKIP 4、vitest PASS 7/7（2026-10-26） |
 | @DYN-S122 | local-dev/dynamic-plugin-e2e.mjs（编辑不传 avatarPath → 200 且头像保持不变） | PASS 165/0/SKIP 4（2026-10-26） |
 | @DYN-S123 | local-dev/dynamic-plugin-e2e.mjs（伪 objectKey → 404 且实例不创建） | PASS 165/0/SKIP 4（2026-10-26） |
+| @DYN-S125 | local-dev/team-plugin-e2e.mjs（TP-37a 无 token 401 / TP-37b 普通用户 403 / TP-38a admin 200 结构齐全） | PASS 61/61（2026-11-02） |
+| @DYN-S126 | local-dev/team-plugin-e2e.mjs（TP-38b TOP 团队维度字段 + TP-38c 分类分布 + TP-38d 趋势 30 天补 0 + TP-39d 全团队⊇单团队） | PASS 61/61（2026-11-02） |
 | @DYN-S50 | local-dev/ops-p1-plugins-e2e.mjs（`S50a~i` http 拨测 200/500、tcp 通/拒、dns 解析、内网防护默认拒+放行、非法方法与协议 400） | PASS 39/39（2026-09-29） |
 | @DYN-S51 | local-dev/ops-p1-plugins-e2e.mjs（`S51a~k` version 免鉴权、problems 解析+主机富化+SeverityMin、body auth 命中子路径、header auth 命中根路径、hosts/triggers、登录失败归一） | PASS 39/39（2026-09-29） |
 | @DYN-S52 | local-dev/ops-p1-plugins-e2e.mjs（`S52a~l` info 分节/指定节段、dbsize、slowlog、client_list、config_get、key_info 含不存在键、缺参 400、错误密码归一） | PASS 39/39（2026-09-29） |
@@ -357,3 +359,10 @@ node local-dev/clickstack-e2e.mjs                             # ClickStack 查�
 - `npx vitest run src/pages/plugins` → **36/36**（7 文件）：新增 PluginStatsPanel 3 例（概览聚合/TOP5+分类分布/趋势空态）；CustomPluginPanel 断言重构（双视图切换、「更多」菜单收纳刷新函数、卡片内联 Popconfirm 删除、列表视图操作齐全）；全量 vitest **694/694**、typecheck 0 error、lint 0 error（plugins 目录仅余 2 条 fast-refresh warning，与存量页面同类）
 - @DYN-S124 计数链路：`dotnet build src/MoAI/MoAI.csproj` **0 error**；执行点 `PluginAppToolProvider`（Agent 全类型工具调用，闭包捕获 plugin.Id）/ `RunPluginCommandHandler`（管理端运行 + 工作流 plugin 节点，经 `IncrementPluginUsageCommand` 按 plugin_name+team 解析实体 id）/ `RunTeamPluginCommandHandler`（团队运行，可用性查询顺带取实体 id 直增）；计数失败静默不阻塞执行；**@manual 待 e2e 断言**（计数为分钟级批量落库，后续参照 app-usecount 模式补）
 - 客户端重建：`npm run syncapi`（主 client）+ `MSYS_NO_PATHCONV=1 kiota generate --include-path /api/ai/plugin`（aiplugin-client，counter/functionCount 进 `PluginBaseInfoItem` 与 `QueryPluginManageListCommandResponseItem`）
+
+### 2026-11-02 插件使用统计（@DYN-S125~S126）
+
+- 后端：`QueryPluginStatsCommand` + `.Custom` 层 Handler + `GET /ai/plugin/manage/stats`（admin 门禁）——dotnet build 0 error；后端重启后 `/openapi/v1.json` 含新路径，`npm run syncapi` 重建主客户端 + `MSYS_NO_PATHCONV=1` 手工 kiota 重建 aiplugin-client。
+- 前端：`PluginStatsPanel` 改新端点 + 共享 `PluginStatsView`；`npx vitest run src/pages/plugins/__tests__/PluginStatsPanel.test.tsx` → 5/5（概览/团队名后缀/分类兜底/趋势有数/趋势空态）；插件套件 15/15。
+- E2E：`team-plugin-e2e.mjs` TP_BASE 指向 5000 → **61/61**（新增 TP-37p/37a~e/38a~d/39a~d 共 14 断言）；`statistics-usage-e2e.mjs` 回归全绿（统计模块只读接入，写链路无改动）。
+- team-plugin-e2e 从 47 断言增至 61（AGENTS TP 计数同步）。

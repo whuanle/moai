@@ -1103,3 +1103,26 @@
     When 插件经管理端运行、团队运行或 Agent 会话工具调用执行
     Then 按插件记录 id 累加一次使用量（Redis 缓冲、Hangfire 定时落库 plugins.counter），列表与统计页可见
 ```
+
+## Feature: 插件使用统计（全团队汇总，2026-11-02）
+
+```gherkin
+  @DYN-S125 @auto:e2e
+  Scenario: 系统插件统计端点门禁
+    Given 已登录用户与普通用户
+    When 无 token 访问 GET /api/ai/plugin/manage/stats
+    Then 返回 401
+    When 普通用户访问
+    Then 返回 403（只有管理员可以管理插件）
+    When 管理员访问
+    Then 返回 200 且概览结构齐全（totalPlugins/mcpCount/openApiCount/totalCalls/totalFunctions/top/classifies）
+
+  @DYN-S126 @auto:e2e
+  Scenario: 系统统计为全团队汇总口径，TOP 名称携带团队维度
+    Given 系统侧插件与团队自有插件并存，且已创建团队插件「统计样本插件」
+    When 管理员查询插件统计
+    Then TOP 项均带团队维度字段（teamId 必带；团队自有插件 teamName 为团队名称，系统侧为空省略）
+    And 分类分布项带 classifyId/count（未分类 classifyName 省略）
+    And 近 30 天趋势逐日补 0（items 长度 30）
+    And 团队统计口径的插件总数不超过本端点（全团队汇总 ⊇ 单团队）
+```

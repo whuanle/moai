@@ -64,6 +64,7 @@ tests/MoAI.Message.Tests/    领域服务与读侧 Handler 单测（sqlite 内�
 6. **UseHttpLogging 与 Hub 冲突**：请求体缓冲会让 SignalR 握手读到空输入（HandshakeFailed），Hub 标注 `[HttpLogging(HttpLoggingFields.None)]` 规避，见 SOP 排障表。
 7. **列表排序用 id 倒序**：identity 自增即发送序，规避各库对 timestamptz ORDER BY 的方言差异，单测 sqlite 可跑。
 8. 领域服务空收件人/超长内容抛 `BusinessException`（400）；`SendToTeamAsync` 团队不存在抛 404；成员为空静默返回（无收件人无消息）。
+9. **批量操作复用 id 集合契约**：`POST /message/read`、`POST /message/delete` 本就收 `messageIds` 数组（单次 ≤200，Handler 按收件人过滤），前端消息中心批量已读/批量删除不新增端点。操作按钮收口在**页头右上角**（过滤 Segmented + 批量已读 + 批量删除，随勾选启用），卡片工具栏只留全选与已选计数；原「全部已读」按钮移除（read-all 接口保留）。**批量删除只作用于已读项**：前端按选中集合里 `isRead` 过滤后再调删除接口，未读自动忽略（气泡与成功提示带忽略条数，仅勾未读时按钮禁用）——行内单条删除不受此限制（显式单条动作）；如需服务端强约束可在 delete Handler 加 `isRead` 过滤，当前按前端交互规则实现。列表为固定视口布局（`calc(100vh - 头部)` 弹性列，卡片内滚动、分页固定底部、默认每页 20 条），头部不渲染大标题。
 
 ## 已知问题
 

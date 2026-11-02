@@ -22,6 +22,7 @@ public class NotificationService : INotificationService
     private readonly DatabaseContext _databaseContext;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly NotificationChannelDispatcher _dispatcher;
+    private readonly NotificationTemplateApplier _templateApplier;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationService"/> class.
@@ -29,16 +30,19 @@ public class NotificationService : INotificationService
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="backgroundJobClient">Hangfire 后台任务客户端.</param>
     /// <param name="dispatcher">渠道发送调度器.</param>
-    public NotificationService(DatabaseContext databaseContext, IBackgroundJobClient backgroundJobClient, NotificationChannelDispatcher dispatcher)
+    /// <param name="templateApplier">通知模板应用器（入队前渲染，队列中的消息不依赖模板存续）.</param>
+    public NotificationService(DatabaseContext databaseContext, IBackgroundJobClient backgroundJobClient, NotificationChannelDispatcher dispatcher, NotificationTemplateApplier templateApplier)
     {
         _databaseContext = databaseContext;
         _backgroundJobClient = backgroundJobClient;
         _dispatcher = dispatcher;
+        _templateApplier = templateApplier;
     }
 
     /// <inheritdoc/>
     public async Task<int> NotifyAsync(NotificationMessage message, NotificationSendOptions? options = null, CancellationToken cancellationToken = default)
     {
+        message = await _templateApplier.ApplyAsync(message, cancellationToken);
         var channels = await ResolveChannelsAsync(options, cancellationToken);
         foreach (var channel in channels)
         {
@@ -56,6 +60,7 @@ public class NotificationService : INotificationService
     /// <inheritdoc/>
     public async Task<IReadOnlyList<NotificationChannelSendResult>> SendNowAsync(NotificationMessage message, NotificationSendOptions? options = null, CancellationToken cancellationToken = default)
     {
+        message = await _templateApplier.ApplyAsync(message, cancellationToken);
         var channels = await ResolveChannelsAsync(options, cancellationToken);
         var results = new List<NotificationChannelSendResult>();
         foreach (var channel in channels)
@@ -91,8 +96,23 @@ public class NotificationService : INotificationService
             Level = (int)message.Level,
             Title = NotificationText.Truncate(message.Title, 256),
             Content = NotificationText.Truncate(message.Content, 4000),
+            TargetUserIds = NotificationText.Truncate(string.Join(',', message.TargetUserIds ?? []), 1000),
+            Recipients = ResolveRecipientsSnapshot(channel, message),
             Status = (int)NotificationSendStatus.Pending,
             Error = string.Empty
+        };
+    }
+
+    /// <summary>
+    /// 按渠道类型快照本次实际投递的收件人（SMTP 记邮箱、短信记手机号；固定地址渠道留空）.
+    /// </summary>
+    private static string ResolveRecipientsSnapshot(NotificationChannelEntity channel, NotificationMessage message)
+    {
+        return (NotificationChannelType)channel.Type switch
+        {
+            NotificationChannelType.Smtp => NotificationText.Truncate(string.Join(',', message.EmailRecipients ?? []), 1000),
+            NotificationChannelType.AliyunSms or NotificationChannelType.TencentSms => NotificationText.Truncate(string.Join(',', message.PhoneNumbers ?? []), 1000),
+            _ => string.Empty
         };
     }
 

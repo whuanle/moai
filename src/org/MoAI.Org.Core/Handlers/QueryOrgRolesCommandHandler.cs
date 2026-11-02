@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
+using MoAI.Database.Entities;
 using MoAI.Org.Queries;
 using MoAI.Org.Queries.Responses;
 
@@ -36,9 +37,9 @@ public class QueryOrgRolesCommandHandler : IRequestHandler<QueryOrgRolesCommand,
             query = query.Where(x => x.Name.Contains(search));
         }
 
-        // 排序在内存侧进行，保持与 sqlite 单测兼容；path 数值层级序（父先于子、同级按 id 数值序）
+        // 排序在内存侧进行，保持与 sqlite 单测兼容：同级按 sort_order,id 升序（拖拽排序结果），DFS 输出保证父先于子（前端组树依赖此序）
         var roles = await query.ToListAsync(cancellationToken);
-        roles.Sort(static (a, b) => OrgRoleTreeGuard.ComparePath(a.Path, b.Path));
+        var orderedRoles = OrderByTree(roles);
 
         var userCounts = await _databaseContext.OrgUserRoles
             .GroupBy(x => x.RoleId)
@@ -46,13 +47,7 @@ public class QueryOrgRolesCommandHandler : IRequestHandler<QueryOrgRolesCommand,
             .ToDictionaryAsync(x => x.Key, x => x.Count, cancellationToken);
         var parentIds = roles.Where(x => x.ParentId != null).Select(x => x.ParentId!.Value).ToHashSet();
 
-        var defaultRoleValue = await _databaseContext.Settings
-            .Where(x => x.Key == MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey)
-            .Select(x => x.Value)
-            .FirstOrDefaultAsync(cancellationToken);
-        _ = int.TryParse(defaultRoleValue, out var defaultRoleId);
-
-        var items = roles.Select(x => new QueryOrgRolesCommandResponseItem
+        var items = orderedRoles.Select(x => new QueryOrgRolesCommandResponseItem
         {
             OrgRoleId = x.Id,
             Name = x.Name,
@@ -60,7 +55,7 @@ public class QueryOrgRolesCommandHandler : IRequestHandler<QueryOrgRolesCommand,
             Path = x.Path,
             UserCount = userCounts.GetValueOrDefault(x.Id),
             HasChildren = parentIds.Contains(x.Id),
-            IsDefault = x.Id == defaultRoleId,
+            SortOrder = x.SortOrder,
             CreateTime = x.CreateTime,
             CreateUserId = (int)x.CreateUserId,
             UpdateTime = x.UpdateTime,
@@ -69,5 +64,52 @@ public class QueryOrgRolesCommandHandler : IRequestHandler<QueryOrgRolesCommand,
 
         await _userInfoFillService.FillAsync(items, cancellationToken);
         return new QueryOrgRolesCommandResponse { Items = items };
+    }
+
+    /// <summary>
+    /// 树序输出：同级按 (SortOrder, Id) 升序分桶后 DFS（父先于子，前端按列表序组树）.
+    /// 孤儿数据（父被软删等异常）按 id 序兜底追加，避免丢行.
+    /// </summary>
+    /// <param name="roles">全量角色平铺列表.</param>
+    /// <returns>父先于子的有序列表.</returns>
+    private static List<OrgRoleEntity> OrderByTree(List<OrgRoleEntity> roles)
+    {
+        var byParent = roles
+            .GroupBy(x => x.ParentId ?? 0)
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    var bucket = g.ToList();
+                    bucket.Sort(static (a, b) => a.SortOrder != b.SortOrder ? a.SortOrder.CompareTo(b.SortOrder) : a.Id.CompareTo(b.Id));
+                    return bucket;
+                });
+
+        var ordered = new List<OrgRoleEntity>(roles.Count);
+
+        // 先序 DFS：桶内同级正序输出；树深受 path 255 列长上限约束（≤20 层），递归安全
+        void Walk(int parentKey)
+        {
+            if (!byParent.TryGetValue(parentKey, out var bucket))
+            {
+                return;
+            }
+
+            foreach (var node in bucket)
+            {
+                ordered.Add(node);
+                Walk(node.Id);
+            }
+        }
+
+        Walk(0);
+
+        if (ordered.Count < roles.Count)
+        {
+            var seen = ordered.Select(x => x.Id).ToHashSet();
+            ordered.AddRange(roles.Where(x => !seen.Contains(x.Id)).OrderBy(x => x.Id));
+        }
+
+        return ordered;
     }
 }

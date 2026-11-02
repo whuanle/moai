@@ -104,22 +104,4 @@ public class SettingsController : ControllerBase
 
         return await _mediator.Send(req, ct);
     }
-
-    /// <summary>
-    /// 发送测试邮件，验证 SMTP 邮件服务配置（仅超级管理员可操作；使用已保存的 SMTP 配置发送）.
-    /// </summary>
-    /// <param name="req">发送测试邮件请求体.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPost("email/test")]
-    public async Task<EmptyCommandResponse> SendTestEmail([FromBody] SendTestEmailCommand req, CancellationToken ct)
-    {
-        var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
-        if (!userState.IsRoot)
-        {
-            throw new BusinessException("只有超级管理员可以发送测试邮件") { StatusCode = 403 };
-        }
-
-        return await _mediator.Send(req, ct);
-    }
 }

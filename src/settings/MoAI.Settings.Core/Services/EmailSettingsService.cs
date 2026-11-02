@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Database.Seed;
 using MoAI.Settings.Models;
 using MoAI.Settings.Services;
@@ -7,20 +8,14 @@ using MoAI.Settings.Services;
 namespace MoAI.Settings.Services;
 
 /// <summary>
-/// SMTP 邮件服务配置读取服务.
+/// 邮箱验证配置读取服务：SMTP 连接配置统一在通知中心渠道维护，这里只解析总开关与绑定渠道是否可用.
 /// </summary>
 public class EmailSettingsService : IEmailSettingsService
 {
     private static readonly string[] Keys =
     {
         SettingDefinitions.SmtpEnabledKey,
-        SettingDefinitions.SmtpHostKey,
-        SettingDefinitions.SmtpPortKey,
-        SettingDefinitions.SmtpSecurityKey,
-        SettingDefinitions.SmtpUsernameKey,
-        SettingDefinitions.SmtpPasswordKey,
-        SettingDefinitions.SmtpFromAddressKey,
-        SettingDefinitions.SmtpFromNameKey
+        SettingDefinitions.SmtpChannelIdKey
     };
 
     private readonly DatabaseContext _databaseContext;
@@ -52,41 +47,22 @@ public class EmailSettingsService : IEmailSettingsService
         }
 
         var enabled = string.Equals(Resolve(SettingDefinitions.SmtpEnabledKey), "true", StringComparison.OrdinalIgnoreCase);
-        var host = Resolve(SettingDefinitions.SmtpHostKey);
-        if (!enabled || host.Length == 0)
+        if (!enabled || !long.TryParse(Resolve(SettingDefinitions.SmtpChannelIdKey), out var channelId) || channelId <= 0)
         {
             return new EmailSmtpSettings { Enabled = false };
         }
 
-        if (!int.TryParse(Resolve(SettingDefinitions.SmtpPortKey), out var port) || port < 1 || port > 65535)
+        // 绑定的渠道必须存在且启用（软删除由全局过滤器剔除）
+        var channelEnabled = await _databaseContext.NotificationChannels
+            .Where(c => c.Id == channelId && c.Type == (int)NotificationChannelType.Smtp)
+            .Select(c => (bool?)c.Enabled)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (channelEnabled != true)
         {
-            port = EmailSmtpSettings.DefaultPort;
+            return new EmailSmtpSettings { Enabled = false };
         }
 
-        var security = Resolve(SettingDefinitions.SmtpSecurityKey).Trim().ToLowerInvariant() switch
-        {
-            "starttls" => EmailSmtpSecurity.StartTls,
-            "none" => EmailSmtpSecurity.None,
-            _ => EmailSmtpSecurity.Ssl
-        };
-
-        var username = Resolve(SettingDefinitions.SmtpUsernameKey);
-        var fromAddress = Resolve(SettingDefinitions.SmtpFromAddressKey);
-        if (fromAddress.Length == 0)
-        {
-            fromAddress = username;
-        }
-
-        return new EmailSmtpSettings
-        {
-            Enabled = true,
-            Host = host,
-            Port = port,
-            Security = security,
-            Username = username,
-            Password = Resolve(SettingDefinitions.SmtpPasswordKey),
-            FromAddress = fromAddress,
-            FromName = Resolve(SettingDefinitions.SmtpFromNameKey)
-        };
+        return new EmailSmtpSettings { Enabled = true, ChannelId = channelId };
     }
 }

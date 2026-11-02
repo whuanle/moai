@@ -7,6 +7,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="Hangfire.Core" />
+		<PackageReference Include="MailKit" />
+		<!-- 钉住 MailKit→MimeKit 的传递依赖，规避 CVE-2026-84008（NU1903） -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" />
 		<PackageReference Include="Microsoft.Extensions.Http" />
 	</ItemGroup>
 

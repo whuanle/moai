@@ -2,11 +2,14 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Auth.Models;
 using MoAI.Database;
 using MoAI.Database.Seed;
 using MoAI.Infra;
 using MoAI.Infra.Exceptions;
+using MoAI.Notification.Models;
+using MoAI.Notification.Services;
 using MoAI.Settings.Models;
 using MoAI.Settings.Services;
 using StackExchange.Redis.Extensions.Core.Abstractions;
@@ -15,7 +18,8 @@ namespace MoAI.Auth.Services;
 
 /// <summary>
 /// 邮箱验证码服务实现：验证码 6 位数字，Redis 存储 10 分钟有效，同邮箱同用途 60 秒发送冷却，连续错 5 次作废；
-/// 邮件主题/正文使用系统设置中的模板（SmartFormat 插值，支持 {code} {siteName} {expireMinutes}），留空回退内置默认模板.
+/// 邮件模板优先取系统设置绑定的通知中心模板，未绑定时按用途回退内置模板（注册/登录/找回密码，HTML），再回退代码内置纯文本模板，
+/// 变量支持 {code} {siteName} {expireMinutes}.
 /// </summary>
 public class EmailCodeService : IEmailCodeService
 {
@@ -29,6 +33,8 @@ public class EmailCodeService : IEmailCodeService
     private readonly IRedisDatabase _redisDatabase;
     private readonly IEmailSettingsService _emailSettingsService;
     private readonly IEmailSenderService _emailSenderService;
+    private readonly INotificationTemplateRenderService _templateRenderService;
+    private readonly ILogger<EmailCodeService> _logger;
     private readonly SystemOptions _systemOptions;
 
     private sealed record EmailCodeState(string Code, int Attempts);
@@ -41,12 +47,16 @@ public class EmailCodeService : IEmailCodeService
         IRedisDatabase redisDatabase,
         IEmailSettingsService emailSettingsService,
         IEmailSenderService emailSenderService,
+        INotificationTemplateRenderService templateRenderService,
+        ILogger<EmailCodeService> logger,
         SystemOptions systemOptions)
     {
         _databaseContext = databaseContext;
         _redisDatabase = redisDatabase;
         _emailSettingsService = emailSettingsService;
         _emailSenderService = emailSenderService;
+        _templateRenderService = templateRenderService;
+        _logger = logger;
         _systemOptions = systemOptions;
     }
 
@@ -128,12 +138,13 @@ public class EmailCodeService : IEmailCodeService
             ["expireMinutes"] = CodeTtlMinutes.ToString(CultureInfo.InvariantCulture)
         };
 
-        var (subjectTemplate, bodyTemplate) = await LoadTemplatesAsync(purpose, cancellationToken);
+        var (subject, body, isHtml) = await RenderTemplateAsync(purpose, values, cancellationToken);
         await _emailSenderService.SendAsync(new EmailMessage
         {
             To = new[] { email },
-            Subject = EmailCodeTemplate.Render(subjectTemplate, values),
-            Body = EmailCodeTemplate.Render(bodyTemplate, values)
+            Subject = subject,
+            Body = body,
+            IsHtml = isHtml
         }, cancellationToken);
 
         // 发送成功后才落验证码与冷却标记：发送失败可立即重试，不占用冷却
@@ -203,44 +214,88 @@ public class EmailCodeService : IEmailCodeService
     }
 
     /// <summary>
-    /// 读取验证码邮件主题/正文模板，配置为空时回退内置默认模板.
+    /// 读取验证码邮件绑定的通知中心模板 id 与兜底模板，绑定 id 为空时回退内置模板.
     /// </summary>
-    private async Task<(string Subject, string Body)> LoadTemplatesAsync(EmailCodePurpose purpose, CancellationToken cancellationToken)
+    /// <returns>返回（绑定的模板 id、兜底主题模板、兜底正文模板、内置模板 code）.</returns>
+    private async Task<(long? BoundTemplateId, string DefaultSubject, string DefaultBody, string? BuiltinCode)> LoadTemplatesAsync(EmailCodePurpose purpose, CancellationToken cancellationToken)
     {
-        var (keys, defaultSubject, defaultBody) = purpose switch
+        var (key, defaultSubject, defaultBody, builtinCode) = purpose switch
         {
             EmailCodePurpose.Register => (
-                new[] { SettingDefinitions.SmtpRegisterCodeSubjectKey, SettingDefinitions.SmtpRegisterCodeBodyKey },
+                SettingDefinitions.SmtpRegisterCodeTemplateIdKey,
                 SettingDefinitions.DefaultRegisterCodeSubject,
-                SettingDefinitions.DefaultRegisterCodeBody),
+                SettingDefinitions.DefaultRegisterCodeBody,
+                (string?)NotificationTemplateSeed.RegisterEmailCode),
             EmailCodePurpose.Login => (
-                new[] { SettingDefinitions.SmtpLoginCodeSubjectKey, SettingDefinitions.SmtpLoginCodeBodyKey },
+                SettingDefinitions.SmtpLoginCodeTemplateIdKey,
                 SettingDefinitions.DefaultLoginCodeSubject,
-                SettingDefinitions.DefaultLoginCodeBody),
+                SettingDefinitions.DefaultLoginCodeBody,
+                (string?)NotificationTemplateSeed.LoginEmailCode),
             _ => (
-                new[] { SettingDefinitions.SmtpResetCodeSubjectKey, SettingDefinitions.SmtpResetCodeBodyKey },
+                SettingDefinitions.SmtpResetCodeTemplateIdKey,
                 SettingDefinitions.DefaultResetCodeSubject,
-                SettingDefinitions.DefaultResetCodeBody)
+                SettingDefinitions.DefaultResetCodeBody,
+                (string?)NotificationTemplateSeed.ResetEmailCode)
         };
 
-        var values = await _databaseContext.Settings
-            .Where(s => keys.Contains(s.Key))
-            .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
+        var boundValue = await _databaseContext.Settings
+            .Where(s => s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        var subject = defaultSubject;
-        var body = defaultBody;
-
-        if (values.TryGetValue(keys[0], out var subjectValue) && !string.IsNullOrWhiteSpace(subjectValue))
+        long? boundTemplateId = null;
+        if (long.TryParse(boundValue, out var parsedId) && parsedId > 0)
         {
-            subject = subjectValue;
+            boundTemplateId = parsedId;
         }
 
-        if (values.TryGetValue(keys[1], out var bodyValue) && !string.IsNullOrWhiteSpace(bodyValue))
+        return (boundTemplateId, defaultSubject, defaultBody, builtinCode);
+    }
+
+    /// <summary>
+    /// 渲染验证码邮件模板：优先绑定的通知中心模板，未绑定（或绑定模板缺失/渲染失败，如管理员误删、变量不匹配）时
+    /// 回退内置模板，再回退代码内置纯文本模板，保证验证码链路永不因模板配置中断.
+    /// </summary>
+    /// <returns>返回（主题、正文、正文是否 HTML）.</returns>
+    private async Task<(string Subject, string Body, bool IsHtml)> RenderTemplateAsync(
+        EmailCodePurpose purpose,
+        IReadOnlyDictionary<string, string> values,
+        CancellationToken cancellationToken)
+    {
+        var (boundTemplateId, defaultSubject, defaultBody, builtinCode) = await LoadTemplatesAsync(purpose, cancellationToken);
+
+        if (boundTemplateId != null)
         {
-            body = bodyValue;
+            try
+            {
+                var rendered = await _templateRenderService.RenderByIdAsync(boundTemplateId.Value, values, cancellationToken);
+                return (rendered.Title, rendered.Content, rendered.ContentType == Database.Enums.NotificationContentType.Html);
+            }
+            catch (BusinessException ex)
+            {
+                _logger.LogWarning(ex, "绑定的验证码邮件模板渲染失败（模板 id：{TemplateId}），回退默认模板", boundTemplateId.Value);
+            }
+        }
+        else if (builtinCode != null)
+        {
+            try
+            {
+                var rendered = await _templateRenderService.RenderByBuiltinCodeAsync(builtinCode, values, cancellationToken);
+                if (rendered != null)
+                {
+                    return (rendered.Title, rendered.Content, rendered.ContentType == Database.Enums.NotificationContentType.Html);
+                }
+            }
+            catch (BusinessException ex)
+            {
+                _logger.LogWarning(ex, "内置验证码邮件模板（{BuiltinCode}）渲染失败，回退默认模板", builtinCode);
+            }
         }
 
-        return (subject, body);
+        return (
+            EmailCodeTemplate.Render(defaultSubject, values),
+            EmailCodeTemplate.Render(defaultBody, values),
+            false);
     }
 
     /// <summary>

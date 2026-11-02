@@ -1,5 +1,6 @@
 using MoAI.Database.Enums;
 using MoAI.Notification.Models;
+using MoAI.Notification.Services;
 
 namespace MoAI.Notification.Senders;
 
@@ -39,27 +40,37 @@ public static class NotificationText
     public static string Time() => DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
     /// <summary>
-    /// 纯文本形态（飞书/钉钉/Telegram/邮件正文/通用模板缺省）.
+    /// 纯文本形态（飞书/钉钉/Telegram/邮件正文/通用模板缺省）；HTML 模板自动降级为去标签纯文本.
     /// </summary>
     /// <param name="message">通知消息.</param>
     /// <returns>返回纯文本.</returns>
     public static string Plain(NotificationMessage message)
     {
-        var text = $"【MoAI】{Icon(message.Level)} {message.Title}\n{message.Content}";
+        var text = $"【MoAI】{Icon(message.Level)} {message.Title}\n{ContentText(message)}";
         return message.Source.Length == 0 ? text : $"{text}\n\n来源：{message.Source}";
     }
 
     /// <summary>
-    /// Markdown 形态（企业微信/通用 webhook）.
+    /// Markdown 形态（企业微信/通用 webhook）；HTML 模板自动降级为去标签纯文本.
     /// </summary>
     /// <param name="message">通知消息.</param>
     /// <returns>返回 Markdown 文本.</returns>
     public static string Markdown(NotificationMessage message)
     {
-        var text = $"**【MoAI】{Icon(message.Level)} {message.Title}**\n{message.Content}";
+        var text = $"**【MoAI】{Icon(message.Level)} {message.Title}**\n{ContentText(message)}";
         var footer = $"\n> {NotificationText.Time()}";
         return message.Source.Length == 0 ? $"{text}{footer}" : $"{text}\n> 来源：{message.Source}{footer}";
     }
+
+    /// <summary>
+    /// 按消息内容类型取正文（HTML 模板自动降级为去标签纯文本；SMTP 渠道除外，其直接使用 message.Content）.
+    /// </summary>
+    /// <param name="message">通知消息.</param>
+    /// <returns>返回纯文本正文.</returns>
+    public static string ContentText(NotificationMessage message)
+        => message.ContentType == NotificationContentType.Html
+            ? NotificationTemplateRenderer.HtmlToPlain(message.Content)
+            : message.Content;
 
     /// <summary>
     /// 截断文本（渠道字数上限与日志存档用）.

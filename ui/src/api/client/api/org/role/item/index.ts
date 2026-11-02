@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateOrgRoleCommand, type BusinessValidationResult, type EmptyCommandResponse, type UpdateOrgRoleCommand } from '../../../../models/index.js';
 // @ts-ignore
+import { OrderRequestBuilderRequestsMetadata, type OrderRequestBuilder } from './order/index.js';
+// @ts-ignore
 import { type UsersRequestBuilder, UsersRequestBuilderRequestsMetadata } from './users/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
@@ -12,6 +14,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/org/role/{id}
  */
 export interface RoleItemRequestBuilder extends BaseRequestBuilder<RoleItemRequestBuilder> {
+    /**
+     * The order property
+     */
+    get order(): OrderRequestBuilder;
     /**
      * The users property
      */
@@ -61,6 +67,9 @@ export const RoleItemRequestBuilderUriTemplate = "{+baseurl}/api/org/role/{id}";
  * Metadata for all the navigation properties in the request builder.
  */
 export const RoleItemRequestBuilderNavigationMetadata: Record<Exclude<keyof RoleItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    order: {
+        requestsMetadata: OrderRequestBuilderRequestsMetadata,
+    },
     users: {
         requestsMetadata: UsersRequestBuilderRequestsMetadata,
     },

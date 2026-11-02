@@ -24,11 +24,12 @@ const { Text } = Typography
 
 const pageVerticalPadding = spacing.lg * 2
 const tabsBarHeight = 46
+const tabsNavMargin = 16
 const toolbarHeight = controlHeight + spacing.md
 const tableHeaderHeight = 55
 const tablePaginationHeight = 57
-const teamsPanelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight}px)`
-const teamsPanelTableScrollY = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + toolbarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
+const teamsPanelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + tabsNavMargin}px)`
+const teamsPanelTableScrollY = `calc(100vh - ${pageVerticalPadding + tabsBarHeight + tabsNavMargin + toolbarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
 
 /** 禁用状态筛选项 */
 type StatusFilter = 'all' | 'normal' | 'disabled'
@@ -265,9 +266,34 @@ export function TeamsPanel() {
         .map((u) => ({
           label: u.nickName ? `${u.nickName} (${u.userName ?? ''})` : String(u.userName ?? ''),
           value: String(u.id),
+          user: u,
         })),
     [userOptions, transferTarget],
   )
+
+  const transferUserMap = useMemo(
+    () => new Map(transferOptions.map((o) => [o.value, o.user])),
+    [transferOptions],
+  )
+
+  /** 候选用户渲染：头像 + 昵称 + 用户名，便于管理员核对 */
+  const renderTransferUser = (user?: UserListItem) => {
+    if (!user) return String('')
+    const displayName = user.nickName || user.userName || '-'
+    return (
+      <Space size={spacing.xs}>
+        <Avatar size={22} src={resolveStorageUrl(user.avatar ?? null) || undefined} alt={displayName}>
+          {displayName.slice(0, 1).toUpperCase()}
+        </Avatar>
+        <span>{displayName}</span>
+        {displayName !== user.userName && (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            @{user.userName}
+          </Text>
+        )}
+      </Space>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: teamsPanelHeight, minHeight: 0 }}>
@@ -364,6 +390,8 @@ export function TeamsPanel() {
           placeholder={t('adminTeams.transferUserPlaceholder')}
           style={{ width: '100%' }}
           notFoundContent={userLoading ? null : t('adminTeams.transferUserEmpty')}
+          optionRender={(option) => renderTransferUser(transferUserMap.get(String(option.value)))}
+          labelRender={({ value }) => renderTransferUser(transferUserMap.get(String(value)))}
         />
         <Text type="secondary" style={{ display: 'block', marginTop: spacing.xs, fontSize: 12 }}>
           {t('adminTeams.transferHint')}

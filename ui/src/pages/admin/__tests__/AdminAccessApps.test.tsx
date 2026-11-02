@@ -29,7 +29,7 @@ vi.mock('@/api/subsystem', () => ({
 }))
 
 vi.mock('@/api/org', () => ({
-  getOrgRoles: vi.fn().mockResolvedValue([{ orgRoleId: 5, name: '经理', parentId: null, path: '/5/', userCount: 2, hasChildren: false, isDefault: false }]),
+  getOrgRoles: vi.fn().mockResolvedValue([{ orgRoleId: 5, name: '经理', parentId: null, path: '/5/', userCount: 2, hasChildren: false }]),
 }))
 
 vi.mock('@/api/team', () => ({

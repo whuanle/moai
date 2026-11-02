@@ -18,7 +18,7 @@ export function AccountTwoFactor() {
 
   return (
     <Page>
-      <div ref={panelRef} style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div ref={panelRef} style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 24 }}>
         {forceBind2fa && (
           <Alert
             type="warning"

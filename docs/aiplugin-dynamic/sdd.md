@@ -320,5 +320,16 @@ ui/src/
 
 - 管理页三列表页签统一 `PageToolbar`（filters/queries/actions）+ CheckableTag 分类行 + 卡片/列表双视图（`PluginCardView` 共享卡片组件；卡片头部 标题/插件 key/接入地址 各占一行独立省略，超长不互相挤压）；操作收纳：内联高频（查看函数/编辑/运行/删除 Popconfirm）、「更多」下拉收纳低频（刷新函数/授权团队）；形态分目标——列表操作列 图标+文字（规则 9），卡片底栏 图标+Tooltip（rounds 268 明确卡片底栏不属操作列约束，同提示词/技能卡片）
 - 统计页签 `PluginStatsPanel`：数据口径 = `GET /ai/plugin/manage/list`（全 kind）客户端聚合（type/classifyId/counter/functionCount）；`QueryPluginManageListCommandResponseItem` 新增 `counter`/`functionCount`、`PluginBaseInfoItem` 新增 `functionCount`（自定义=函数表计数、静态/动态=注册可用计 1）
+- ~~统计页签数据口径=manage/list 客户端聚合~~ → **2026-11-02 起改为后端聚合端点**（见下节「插件使用统计」），前端只做展示不再拼装
 - 使用量计数接线（修复 counter 恒 0）：`IPluginUsageCounter` 接入三执行点（Agent 工具调用闭包直持实体 id；管理端/团队端运行入口解析实体 id，团队端复用可用性查询结果）；新增 Shared 命令 `IncrementPluginUsageCommand` + `.Custom` 层 Handler（`.Core` 不引用 Database 的分层约束）
 - 已知限制：调用趋势/活跃插件需按日统计表（plugin_usage_daily）支撑，本轮以空态占位；团队侧镜像页（teams/plugins）未同步重构，下一轮跟进
+
+### 插件使用统计（2026-11-02，@DYN-S125~S126）
+
+用户需求：「系统插件-统计……系统插件查看的是所有团队汇总的数据，显示被调用插件名称时，可以附加一个团队的名称 `{插件名称}-({团队名称})`；团队插件页面也要增加一个统计 tab，直接显示插件名称和自己团队的插件调用统计」。
+
+- **新增端点** `GET /api/ai/plugin/manage/stats`（仅管理员，`EnsureAdminAsync` 门禁）：`QueryPluginStatsCommand`（Shared）→ `QueryPluginStatsCommandHandler`（`.Custom/Queries`，DB 聚合）。**全团队汇总口径** = `plugin` 全表（系统侧 team_id=0 + 全部团队自有）+ 内存注册表静态插件合并（与 manage/list 同款合并逻辑）。
+- **出参** `QueryPluginStatsCommandResponse`：概览（totalPlugins/mcpCount/openApiCount/totalCalls=Σcounter/totalFunctions）+ TOP5（id/name=Title||PluginName/**teamId+teamName**（join Teams，系统侧 teamName 空）/counter/avatarPath）+ 分类分布（classifyId/classifyName/count）+ 近 30 天趋势（逐日补 0）。趋势查统一统计日表 `resource_usage_daily`（name=plugin-usage，resource_id ∈ 范围内插件 id），只读不写。
+- **统计口径不在列表端点做**：`GET /ai/plugin/manage/list` 保持 `TeamId == 0` 系统侧过滤不变（@DYN-S70 团队隔离修复），汇总口径走独立 stats 端点，两个 Tab 列表不受影响。
+- **前端**：`PluginStatsPanel` 改为薄封装（取数 `pluginApi.getPluginStats()`，`ui/src/api/plugin.ts` 归一 `normalizePluginStats`——long 生成物可能为 string、DateOnly 统一 unknown 归一）；渲染逻辑抽出共享组件 **`PluginStatsView`**（`ui/src/pages/plugins/components/`，团队插件页统计 Tab 同构复用，见 [../teamplugin/sdd.md](../teamplugin/sdd.md) 4d）。TOP 名称渲染规则：`showTeamName && teamName` 时显示 `{name}-({teamName})`，系统侧与团队端只显示名称。分类分布标签改用后端 classifyName（未分类 key=0 兜底文案），统计页签不再依赖 `classifyApi`。
+- 证据：`local-dev/team-plugin-e2e.mjs` TP-37a/b（门禁）+ TP-38a~d（全团队口径/结构），场景 [@DYN-S125](./bdd.md#dyn-s125)、[@DYN-S126](./bdd.md#dyn-s126)。

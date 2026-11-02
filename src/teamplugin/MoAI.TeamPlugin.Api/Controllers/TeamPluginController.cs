@@ -50,6 +50,20 @@ public class TeamPluginController : ControllerBase
     }
 
     /// <summary>
+    /// 查询团队插件使用统计（仅本团队自有插件），仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryTeamPluginStatsCommandResponse"/>.</returns>
+    [HttpGet("stats")]
+    public async Task<QueryTeamPluginStatsCommandResponse> QueryStats(long teamId, CancellationToken ct)
+    {
+        var cmd = new QueryTeamPluginStatsCommand { TeamId = teamId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 创建团队动态插件实例，需团队 Owner/Admin.
     /// </summary>
     /// <param name="teamId">团队 id.</param>

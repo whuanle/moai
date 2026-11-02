@@ -133,26 +133,25 @@ Feature: 风险登录识别与通知
     Then 生成规则为 R5 的高风险事件
 
   @LS-S19b @auto:e2e
-  Scenario: 用户收到风险登录提醒邮件
-    When 中/高风险登录发生且用户提醒开启
-    Then 用户邮箱收到提醒邮件
+  Scenario: 用户收到风险登录站内信
+    When 中/高风险登录成功发生
+    Then 受影响用户本人收到 Source=loginsafety 的站内信（固定逻辑，无开关）
 
   @LS-S19c @auto:e2e
-  Scenario: 提醒邮件使用自定义模板
-    Given 管理员配置了自定义提醒模板
-    When 提醒邮件发出
-    Then 邮件主题为模板插值结果
+  Scenario: 站内信使用内置模板
+    When 站内信发出
+    Then 标题为内置模板「{siteName} 登录安全提醒」，正文含登录 IP 与地点（界面不可定制）
 
   @LS-S20 @auto:e2e
-  Scenario: 管理员收到高风险告警邮件
-    When 高风险事件发生且管理员告警开启
-    Then 告警收件人邮箱收到告警邮件
+  Scenario: 高风险事件推送到通知渠道
+    Given 管理员已勾选通知渠道（LS_NOTIFY_CHANNEL_IDS）
+    When 高风险事件发生
+    Then 各渠道收到告警（webhook 渠道收 JSON 体、SMTP 渠道向其收件人发告警邮件）
 
   @LS-S20b @auto:e2e
-  Scenario: 告警邮件使用自定义模板
-    Given 管理员配置了自定义告警模板与收件人
-    When 告警邮件发出
-    Then 邮件主题为模板插值结果并发送给配置的收件人
+  Scenario: 渠道告警使用内置模板
+    When 渠道告警发出
+    Then 标题为内置模板「登录风险告警：{userName}」插值结果（SMTP 渠道邮件主题为标题加渠道前缀）
 
   @LS-S21 @auto:e2e
   Scenario: 标记已读联动未读计数
@@ -169,11 +168,11 @@ Feature: 风险登录识别与通知
 
 ```gherkin
 Feature: 风控设置
-  阈值、开关与模板通过系统设置管理
+  阈值、开关与通知渠道通过系统设置管理
 
   @LS-S25 @auto:e2e
   Scenario: 非法设置值被拒绝
     When 管理员保存低于下限的失败阈值
     Then 返回 400
-    And 开关非布尔值、回看天数越界、收件人邮箱非法同样返回 400
+    And 开关非布尔值、回看天数越界、通知渠道 ID 非法（非正整数）同样返回 400
 ```

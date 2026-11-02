@@ -74,7 +74,7 @@ public class InSiteChannelSender : INotificationChannelSender
         await _messageService.SendToUsersAsync(new MessageSendItem
         {
             Title = message.Title,
-            Content = message.Content,
+            Content = NotificationText.ContentText(message),
             MessageType = MessageType.System,
             Source = message.Source.Length == 0 ? "notification" : NotificationText.Truncate(message.Source, 50)
         }, recipients, cancellationToken);

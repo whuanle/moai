@@ -4,8 +4,6 @@
 // @ts-ignore
 import { CreateRequestBuilderRequestsMetadata, type CreateRequestBuilder } from './create/index.js';
 // @ts-ignore
-import { DefaultRequestBuilderRequestsMetadata, type DefaultRequestBuilder } from './defaultEscaped/index.js';
-// @ts-ignore
 import { RoleItemRequestBuilderNavigationMetadata, RoleItemRequestBuilderRequestsMetadata, type RoleItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
@@ -20,10 +18,6 @@ export interface RoleRequestBuilder extends BaseRequestBuilder<RoleRequestBuilde
      * The create property
      */
     get create(): CreateRequestBuilder;
-    /**
-     * The default property
-     */
-    get defaultEscaped(): DefaultRequestBuilder;
     /**
      * The list property
      */
@@ -50,9 +44,6 @@ export const RoleRequestBuilderNavigationMetadata: Record<Exclude<keyof RoleRequ
     },
     create: {
         requestsMetadata: CreateRequestBuilderRequestsMetadata,
-    },
-    defaultEscaped: {
-        requestsMetadata: DefaultRequestBuilderRequestsMetadata,
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,

@@ -18,6 +18,8 @@ import { Pre_upload_openapiRequestBuilderRequestsMetadata, type Pre_upload_opena
 // @ts-ignore
 import { RunRequestBuilderRequestsMetadata, type RunRequestBuilder } from './run/index.js';
 // @ts-ignore
+import { StatsRequestBuilderRequestsMetadata, type StatsRequestBuilder } from './stats/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -52,6 +54,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The run property
      */
     get run(): RunRequestBuilder;
+    /**
+     * The stats property
+     */
+    get stats(): StatsRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.team.item.plugin.item collection
      * @param pluginId 插件记录 id.
@@ -92,6 +98,9 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     run: {
         requestsMetadata: RunRequestBuilderRequestsMetadata,
+    },
+    stats: {
+        requestsMetadata: StatsRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

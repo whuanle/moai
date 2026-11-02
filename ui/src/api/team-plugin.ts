@@ -1,4 +1,5 @@
 import { getApiClient } from '@/api/kiota'
+import { normalizePluginStats, type PluginStatsData } from '@/api/plugin'
 import type {
   EmptyCommandResponse,
   KeyValueString,
@@ -61,6 +62,13 @@ export async function getTeamPlugins(teamId: number): Promise<TeamPluginsRespons
     canManage: res?.canManage ?? null,
     items: res?.items ?? [],
   }
+}
+
+/** 查询团队插件使用统计（仅本团队自有插件），仅团队成员可访问. */
+export async function getTeamPluginStats(teamId: number): Promise<PluginStatsData> {
+  const client = getApiClient()
+  const res = await client.api.team.byId(String(teamId)).plugin.stats.get()
+  return normalizePluginStats(res)
 }
 
 /** 保存/创建团队动态插件实例. */

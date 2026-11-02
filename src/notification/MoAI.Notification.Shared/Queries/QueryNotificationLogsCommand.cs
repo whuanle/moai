@@ -91,6 +91,21 @@ public class QueryNotificationLogsCommandResponseItem : AuditsInfo
     public NotificationSendStatus Status { get; init; }
 
     /// <summary>
+    /// 关联用户 id 快照（逗号分隔，定向个人推送时记录收件人；空为广播/全员）.
+    /// </summary>
+    public string TargetUserIds { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 实际收件人快照（逗号分隔；SMTP 渠道记邮箱、短信渠道记手机号；固定地址渠道留空）.
+    /// </summary>
+    public string Recipients { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 关联用户名（逗号分隔，按快照 id 回填；用户已删除的跳过）.
+    /// </summary>
+    public string TargetUserNames { get; set; } = string.Empty;
+
+    /// <summary>
     /// 失败原因.
     /// </summary>
     public string Error { get; init; } = string.Empty;

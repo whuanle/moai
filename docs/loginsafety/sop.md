@@ -6,7 +6,7 @@
 
 1. **IP 归属地库**：`configs/ip2region.xdb`（随仓库分发，构建自动拷贝到输出目录 `configs/`）。缺失时服务正常启动，日志出现「ip2region.xdb 数据文件不存在」警告，R4/R5（异地/疾速旅行）自动停用，其余规则不受影响。更新数据：从 ip2region 官方仓库下载 structure 3.0 的 IPv4 xdb 覆盖后重启。
 2. **反向代理穿透**：部署在 nginx 等反代之后时，配置 `MoAI:ForwardedHeaders:Enabled=true`（否则所有登录 IP 都是代理地址，风控失效）。可信代理 IP 固定时填 `MoAI:ForwardedHeaders:KnownProxies`；公网直连暴露端口时**切勿开启**（IP 可被伪造）。compose 一体部署默认未开启，见 [deployment/docker.md](../deployment/docker.md)。
-3. **通知邮件**：依赖「系统设置 → 邮件服务」SMTP 已启用；LS_NOTIFY_USER_ENABLED / LS_NOTIFY_ADMIN_ENABLED 独立控制两类邮件。告警收件人 LS_ADMIN_ALERT_RECIPIENTS 留空 = 全部 admin/root 用户邮箱。邮件模板支持变量：`{userName} {ip} {location} {riskLevel} {reasons} {time} {siteName}`，留空用内置默认。
+3. **风险通知**：受影响用户固定收**站内信**提醒；高风险事件额外推「系统设置 → 登录安全」卡片勾选的通知中心渠道（`LS_NOTIFY_CHANNEL_IDS`，勾选 SMTP 渠道即告警邮件——SMTP 连接配置在通知中心渠道自带，与「邮箱验证」绑定无关）。通知内容内置多语言默认中文模板。
 4. **阈值**：默认 IP 失败 20 次/10 分钟、撞库 5 用户名、封禁 30 分钟、新 IP 回看 90 天、旅行窗口 120 分钟；在「系统设置 → 登录安全」卡片调整。
 
 ## 2. 日常操作
@@ -22,7 +22,7 @@
 |---|---|
 | 所有登录 IP 都是同一个（代理）地址 | ForwardedHeaders 未开启（见上），或请求未经过配置的可信代理 |
 | 异地/疾速旅行从不命中 | xdb 缺失或损坏（启动日志有 warning）；或用户历史登录均无省份（内网 IP） |
-| 告警邮件未发出 | 依次查：SMTP_ENABLED 与服务器配置 → LS_NOTIFY_ADMIN_ENABLED → 收件人（admin 用户邮箱为空且未配置收件人时跳过并记 warning）→ Hangfire 是否有积压 |
+| 高风险告警未推渠道/邮件未发出 | 依次查：LS_NOTIFY_CHANNEL_IDS 是否勾选渠道 → 渠道是否启用（SMTP 渠道核对自身连接配置，见 notification/sop）→ Hangfire 是否有积压 |
 | 封禁未生效（仍能登录） | 多实例间 Redis 键 `moai:ls:ipban:{ip}` 被清（DB 兜底 5 分钟内回填）；确认各实例连同一 Redis |
 | 登录 403「当前 IP…临时封禁」误伤 | 管理员在 IP 封禁 Tab 解封；若为共享出口 IP（公司 NAT）集体失败所致，调高 LS_IP_FAIL_THRESHOLD |
 | 登录日志无数据 | login_log 表缺失（旧库升级需 DatabasPostgresModule 补建自动执行，检查启动日志） |

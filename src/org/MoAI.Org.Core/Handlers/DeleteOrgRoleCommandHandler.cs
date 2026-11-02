@@ -59,14 +59,6 @@ public class DeleteOrgRoleCommandHandler : IRequestHandler<DeleteOrgRoleCommand,
             .ToListAsync(cancellationToken);
         _databaseContext.OrgGrants.RemoveRange(affectedGrants);
 
-        // 被删角色是默认角色时同步清空设置，避免悬挂 id（新注册用户视为无默认角色）
-        var defaultSetting = await _databaseContext.Settings
-            .FirstOrDefaultAsync(x => x.Key == MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey, cancellationToken);
-        if (defaultSetting != null && defaultSetting.Value == role.Id.ToString())
-        {
-            defaultSetting.Value = string.Empty;
-        }
-
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         // 失效角色树缓存与受影响资源/用户的授权缓存（TTL 兜底，显式删除保证判定即时生效）

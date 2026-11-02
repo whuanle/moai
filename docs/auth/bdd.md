@@ -199,8 +199,9 @@ Feature: 邮箱验证码（注册与找回密码）
   @AUTH-S31 @auto:e2e
   Scenario: 验证码邮件模板渲染
     When 发送验证码邮件
-    Then 主题与正文按系统设置模板渲染，{code}/{siteName}/{expireMinutes} 替换为实际值
-    And 未配置模板时使用内置默认模板，模板中未知变量按字面保留
+    Then 主题与正文按系统设置绑定的通知中心模板渲染（{{code}}/{{siteName}}/{{expireMinutes}} 双花括号占位符替换为实际值，HTML 模板按 HTML 邮件发送）
+    And 绑定为空时按用途回退内置模板（注册/登录/找回密码验证码邮件，HTML），绑定模板缺失或渲染失败时同样回退
+    And 无内置模板可用时使用代码内置纯文本模板兜底，模板中未知变量按字面保留
 
   @AUTH-S32 @auto:e2e
   Scenario: 验证码重置密码

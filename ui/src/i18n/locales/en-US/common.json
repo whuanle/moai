@@ -251,70 +251,41 @@
       "dialectNeo4j": "Neo4j"
     },
     "email": {
-      "title": "Email Service (SMTP)",
+      "title": "Email Verification",
       "enable": {
-        "name": "Enable SMTP email service",
-        "desc": "Once enabled, platform notifications will be delivered via this SMTP service; no server info needed otherwise."
+        "name": "Enable email verification",
+        "desc": "Once enabled, platform emails (register/password-reset/login codes, security alerts, etc.) are delivered via the bound SMTP service. SMTP connection settings live in the Notification Center; here you only bind one."
       },
-      "host": {
-        "name": "SMTP server",
-        "placeholder": "e.g. smtp.exmail.qq.com"
-      },
-      "port": {
-        "name": "Port"
-      },
-      "security": {
-        "name": "Encryption"
-      },
-      "securitySsl": "SSL (implicit TLS, usually 465)",
-      "securityStarttls": "STARTTLS (usually 587)",
-      "securityNone": "None (usually 25)",
-      "username": {
-        "name": "Username",
-        "placeholder": "e.g. notify@example.com; leave empty for auth-free intranet relay"
-      },
-      "password": {
-        "name": "Password / auth code",
-        "placeholder": "Enter password or auth code"
-      },
-      "fromAddress": {
-        "name": "From address",
-        "placeholder": "Leave empty to use the username"
-      },
-      "fromName": {
-        "name": "From display name",
-        "placeholder": "e.g. MoAI Notification"
+      "channel": {
+        "name": "Bound SMTP service",
+        "placeholder": "Select an SMTP service configured in the Notification Center",
+        "desc": "SMTP server, credentials and sender settings are maintained in Notification Center > Channel management; just bind one here. Emails are not sent when unbound or the bound service is disabled.",
+        "empty": "No SMTP service yet, create one in the Notification Center first"
       },
       "registerCode": {
         "name": "Require email code to register",
-        "desc": "When enabled, new users must enter an email verification code to register. Requires the SMTP email service to be enabled; takes effect after saving."
+        "desc": "When enabled, new users must enter an email verification code to register. Requires email verification enabled with an SMTP service bound; takes effect after saving."
       },
-      "registerCodeSubject": {
-        "name": "Register code email subject",
-        "placeholder": "Empty for default: {siteName} registration code"
+      "registerTemplate": {
+        "name": "Register code notification template",
+        "placeholder": "Select a Notification Center template, empty for built-in",
+        "desc": "The bound Notification Center template id; leave empty to use the built-in register code template (HTML). Template content and render tests are maintained in Notification Center > Templates."
       },
-      "registerCodeBody": {
-        "name": "Register code email body",
-        "placeholder": "Empty for the default template"
+      "resetTemplate": {
+        "name": "Password reset code notification template",
+        "placeholder": "Select a Notification Center template, empty for built-in",
+        "desc": "The bound Notification Center template id; leave empty to use the built-in password reset code template (HTML). Template content and render tests are maintained in Notification Center > Templates."
       },
-      "resetCodeSubject": {
-        "name": "Password reset code email subject",
-        "placeholder": "Empty for default: {siteName} password reset code"
+      "loginTemplate": {
+        "name": "Login code notification template",
+        "placeholder": "Select a Notification Center template, empty for built-in",
+        "desc": "The bound Notification Center template id; leave empty to use the built-in login code template (HTML). The login code policy is configured under \"Two-step verification & login code\"."
       },
-      "resetCodeBody": {
-        "name": "Password reset code email body",
-        "placeholder": "Empty for the default template"
+      "template": {
+        "builtinTag": "Built-in",
+        "empty": "No templates yet, create one in the Notification Center first"
       },
-      "templateTip": "Template variables: {code} (verification code), {siteName} (site name), {expireMinutes} (validity minutes). Leave empty to use the built-in defaults.",
-      "testTo": {
-        "name": "Test recipient",
-        "placeholder": "An inbox that can receive the test email"
-      },
-      "testSend": "Send test email",
-      "testSuccess": "Test email sent, please check the inbox",
-      "testSaveFirst": "There are unsaved changes, please save before sending a test email",
-      "testToRequired": "Please enter the test recipient address first",
-      "invalidPort": "Port must be an integer between 1 and 65535"
+      "templateTip": "Template variables use double braces: {{code}} (verification code), {{siteName}} (site name), {{expireMinutes}} (validity minutes) — copy as-is to your cloud email platform for review. Built-in templates can be edited (not deleted) in the Notification Center, or create new templates and bind them here."
     },
     "wikiUpload": {
       "title": "Knowledge Base",
@@ -387,7 +358,6 @@
       "clearSuccess": "All memories have been cleared."
     },
     "twofactor": {
-      "title": "Two-Factor & Login Verification Code",
       "forced.name": "Enforce two-factor authentication",
       "forced.desc": "When enabled, users without 2FA are forced into personal settings to bind it after signing in, and cannot use the system until bound",
       "loginCodeMode.name": "Email verification code at login",
@@ -402,18 +372,15 @@
         "name": "Login risk control",
         "desc": "Record login logs and evaluate risks (new IP / new location / impossible travel / brute force / credential spray) when enabled; logs only when disabled"
       },
-      "notifyUser": {
-        "name": "User login alert email",
-        "desc": "Email the user after medium/high risk logins (new IP, new location); requires email service enabled"
+      "notifyChannels": {
+        "name": "Risk event notification channels",
+        "desc": "High-risk events (brute force / spray / impossible travel / admin new environment) are pushed to selected channels with built-in localized templates (Chinese default); medium/high-risk logins always send in-site messages to the affected user; select an SMTP channel for email",
+        "placeholder": "Select channels to receive high-risk alerts"
       },
-      "notifyAdmin": {
-        "name": "Admin risk alert email",
-        "desc": "Email admins on high-risk events; requires email service enabled"
-      },
-      "recipients": {
-        "name": "Alert recipients",
-        "desc": "Comma-separated extra recipient emails; empty sends to all admin/root user emails",
-        "placeholder": "ops@example.com,sec@example.com"
+      "notifyEmails": {
+        "name": "Alert recipient emails",
+        "desc": "Required when the selected channels include an SMTP email channel; high-risk alert emails are delivered to these addresses",
+        "placeholder": "Enter an email and press Enter; multiple allowed"
       },
       "ipFailThreshold": {
         "name": "IP failure ban threshold",
@@ -437,24 +404,7 @@
         "name": "Impossible-travel window"
       },
       "minutesUnit": "min",
-      "daysUnit": "days",
-      "userAlertSubject": {
-        "name": "User alert subject",
-        "placeholder": "Empty uses the default template"
-      },
-      "userAlertBody": {
-        "name": "User alert body",
-        "placeholder": "Empty uses the default template"
-      },
-      "adminAlertSubject": {
-        "name": "Admin alert subject",
-        "placeholder": "Empty uses the default template"
-      },
-      "adminAlertBody": {
-        "name": "Admin alert body",
-        "placeholder": "Empty uses the default template"
-      },
-      "templateTip": "Supports {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} variables"
+      "daysUnit": "days"
     }
   },
   "oauthconnect": {
@@ -1944,17 +1894,11 @@
   "adminOrgRoles": {
     "searchPlaceholder": "Search organization name",
     "refresh": "Refresh",
-    "assign": "Assign by User",
+    "resizeHandleHint": "Drag to resize the left panel; double-click for auto-fit",
     "rootNode": "Default Root",
     "createTop": "New Top-level Organization",
     "addChild": "Add Sub-organization",
     "emptySelection": "Select an organization on the left to view its members",
-    "defaultRoleBadge": "Default",
-    "setDefault": "Set as default org",
-    "clearDefault": "Clear default org",
-    "setDefaultSuccess": "Set as default; new users will get it automatically",
-    "clearDefaultSuccess": "Default org cleared",
-    "clearDefaultConfirm": "New users will no longer get this org automatically (existing bindings unchanged). Continue?",
     "dropBlocked": "Cannot drop into itself or its own descendants",
     "moveSuccess": "Organization hierarchy updated",
     "colActions": "Actions",
@@ -1985,20 +1929,14 @@
     "updateSuccess": "Organization updated",
     "deleteSuccess": "Organization deleted",
     "membersSearchPlaceholder": "Search username or nickname",
+    "membersQuery": "Query",
     "addMember": "Add Member",
     "addMemberPlaceholder": "Search users (name / nickname / email)",
     "addMemberEmpty": "No users found",
     "addMemberSuccess": "Member added",
     "removeMember": "Remove",
     "removeMemberConfirm": "Remove this user from this organization?",
-    "removeMemberSuccess": "Member removed",
-    "assignTitle": "Assign Organizations by User",
-    "assignUserPlaceholder": "Search users (name / nickname / email)",
-    "assignUserEmpty": "No users found",
-    "assignRolesPlaceholder": "Select organizations for this user (multiple allowed)",
-    "assignSave": "Save",
-    "assignSuccess": "User organizations saved",
-    "assignHint": "Saving replaces the user's whole organization set; clearing the selection removes all of them."
+    "removeMemberSuccess": "Member removed"
   },
   "grantScope": {
     "title": "Authorization Scope",
@@ -3275,6 +3213,7 @@
   },
   "notification": {
     "tabChannels": "Channels",
+    "tabTemplates": "Templates",
     "tabLogs": "Send Logs",
     "colName": "Name",
     "colType": "Type",
@@ -3291,6 +3230,8 @@
     "colContent": "Content",
     "colError": "Error",
     "colDuration": "Duration",
+    "colTargetUsers": "Related Users",
+    "colRecipients": "Recipients",
     "enabledOn": "Enabled",
     "enabledOff": "Disabled",
     "create": "New Channel",
@@ -3300,6 +3241,7 @@
     "test": "Test",
     "testForm": "Test Before Save",
     "testFormTip": "Send a test notification synchronously with the current form config (no save needed)",
+    "rowTestTitle": "Test channel \"{{name}}\"",
     "refresh": "Refresh",
     "searchName": "Search by channel name",
     "searchChannel": "Filter by channel",
@@ -3316,14 +3258,17 @@
     "broadcastTitle": "Broadcast Notification",
     "broadcastSend": "Send",
     "broadcastQueued": "Broadcast queued for {{count}} enabled channels, see send logs for results",
-    "broadcastTip": "Broadcast is delivered asynchronously to all enabled channels; results are visible in Send Logs",
+    "broadcastTip": "Delivery results are visible in Send Logs",
+    "broadcastInSiteSent": "In-site message delivered to all enabled users",
     "formName": "Channel name",
     "formType": "Type (immutable after save)",
     "form": {
       "webhookUrl": "Webhook URL",
-      "webhookUrlExtra": "Bot incoming webhook address (https)",
+      "webhookUrlExtraFeishu": "Obtained by creating a Custom Bot in a Feishu group chat (Settings → Bots → Add Bot → Custom Bot); to push to individual users, choose \"Feishu App Bot\" (App ID / App Secret) instead",
+      "webhookUrlExtraDingTalk": "Obtained by creating a Custom Robot in a DingTalk group chat (Group Settings → Robot → Robot Management → Custom Robot); to push to individual users, choose \"DingTalk App Bot\" (AppKey / AppSecret / AgentId) instead",
       "secret": "Signing secret",
-      "secretExtra": "Required when signature check is enabled on the bot, otherwise leave empty",
+      "secretExtraFeishu": "Required when \"Signature verification\" is enabled in the custom bot security settings, otherwise leave empty",
+      "secretExtraDingTalk": "Secret starting with SEC, required when the security setting is \"Signature\", otherwise leave empty",
       "baseUrl": "Bot API base URL",
       "baseUrlExtra": "Defaults to the official address, can point to a mirror",
       "botToken": "Bot Token",
@@ -3334,11 +3279,17 @@
       "headers": "Custom headers (JSON)",
       "headersExtra": "Optional, object form; key-values are appended to request headers as-is",
       "bodyTemplate": "Body template",
-      "bodyTemplateExtra": "Optional, placeholders {title} {content} {level} {source} {time}; default JSON when empty",
-      "recipients": "Recipient emails",
-      "recipientsExtra": "Separate with enter or comma; SMTP server reuses system settings",
-      "subjectPrefix": "Subject prefix",
-      "subjectPrefixExtra": "Defaults to [MoAI] when empty",
+      "bodyTemplateExtra": "Optional, placeholders {title} {content} {level} {source} {time}; default JSON when empty; set a Content-Type: application/json custom header for JSON templates, otherwise sent as text/plain",
+      "testRecipients": "Test recipient emails",
+      "testRecipientsExtra": "Delivered to these emails when testing before save",
+      "testRecipientsRowExtra": "Recipients are provided dynamically at send time; this test delivers to these emails",
+      "testPhoneNumbers": "Test recipient phone numbers",
+      "testPhoneNumbersExtra": "Delivered to these numbers when testing before save",
+      "testPhoneNumbersRowExtra": "Recipients are provided dynamically at send time; this test delivers to these numbers",
+      "broadcastEmailRecipients": "Recipient emails",
+      "broadcastEmailRecipientsExtra": "Required when selected channels include email channels; the broadcast is delivered to these emails",
+      "broadcastPhoneNumbers": "Recipient phone numbers",
+      "broadcastPhoneNumbersExtra": "Required when selected channels include SMS channels; the broadcast is delivered to these numbers (template required)",
       "insiteUserIds": "Recipient user IDs",
       "insiteUserIdsExtra": "User ids separated by comma",
       "insiteToAdmins": "Push to all admins",
@@ -3347,16 +3298,82 @@
       "description": "Description",
       "title": "Title",
       "content": "Content",
-      "level": "Level"
+      "level": "Level",
+      "broadcastChannels": "Delivery channels",
+      "broadcastChannelsPlaceholder": "Select enabled channels to deliver, multi-select",
+      "broadcastChannelsExtra": "Only selected enabled channels receive the broadcast; choose channels and/or in-site message",
+      "sendInSite": "Send in-site message",
+      "sendInSiteExtra": "When checked, the in-site message is delivered to all enabled users",
+      "gotifyUrl": "Gotify server URL",
+      "gotifyToken": "Gotify app token",
+      "ntfyUrl": "ntfy server URL",
+      "ntfyTopic": "ntfy topic",
+      "barkUrl": "bark-server URL",
+      "barkDeviceKey": "Bark device key",
+      "serverChanUrl": "ServerChan API URL",
+      "serverChanKey": "ServerChan SendKey",
+      "pushPlusUrl": "PushPlus API URL",
+      "pushPlusToken": "PushPlus token",
+      "selfHostExtra": "Defaults to the official address; fill in your own for self-hosted servers",
+      "appId": "App ID",
+      "appSecret": "App Secret",
+      "appKey": "AppKey",
+      "corpId": "Corp ID",
+      "corpSecret": "App Secret",
+      "agentId": "AgentId",
+      "appBotTargetExtra": "Delivers to in-site users who have bound an account on that platform (Profile → Third-party accounts), enabling per-user push; the app credentials here can differ from the OAuth login app, and test sends go to the current admin only",
+      "accessKeyId": "AccessKey Id",
+      "accessKeySecret": "AccessKey Secret",
+      "secretId": "SecretId",
+      "secretKey": "SecretKey",
+      "smsSdkAppId": "SMS App SdkAppId",
+      "smsSignName": "SMS signature name",
+      "smsSignNameExtra": "Must be a signature approved on the platform",
+      "smsEndpoint": "SMS endpoint",
+      "smtpHost": "SMTP server",
+      "smtpHostPlaceholder": "e.g. smtp.exmail.qq.com",
+      "smtpPort": "Port",
+      "smtpSecurity": "Encryption",
+      "smtpSecuritySsl": "SSL (implicit TLS, usually 465)",
+      "smtpSecurityStarttls": "STARTTLS (usually 587)",
+      "smtpSecurityNone": "None (usually 25)",
+      "smtpUsername": "Username",
+      "smtpUsernamePlaceholder": "e.g. notify@example.com; leave empty for auth-free relay",
+      "smtpPassword": "Password / auth code",
+      "smtpPasswordPlaceholder": "Enter password or auth code",
+      "smtpFromAddress": "From address",
+      "smtpFromAddressPlaceholder": "Leave empty to use the username",
+      "smtpFromName": "From display name",
+      "smtpFromNamePlaceholder": "e.g. MoAI Notification",
+      "smtpConnectionExtra": "Connection settings are saved with the channel and can be bound by Settings > Email verification. Use Test to verify connectivity after editing.",
+      "useTemplate": "Use a notification template",
+      "useTemplateExtra": "Renders title/content from the template; SMS channels can only send via templates",
+      "template": "Notification template",
+      "templatePlaceholder": "Select a notification template",
+      "titleTemplateExtra": "When a template is used the title comes from it (falls back to this value only if the template has no subject)",
+      "contentTemplateExtra": "When a template is used the content is rendered from it"
     },
     "type": {
-      "feishuWebhook": "Feishu Bot",
-      "dingtalkWebhook": "DingTalk Bot",
-      "wecomWebhook": "WeCom Bot",
+      "feishuWebhook": "Feishu Custom Bot",
+      "dingtalkWebhook": "DingTalk Custom Bot",
+      "wecomWebhook": "WeCom Group Bot",
+      "feishuAppBot": "Feishu App Bot",
+      "dingtalkAppBot": "DingTalk App Bot",
+      "wecomAppBot": "WeCom App Bot",
       "telegramBot": "Telegram Bot",
       "webhook": "Generic Webhook",
       "smtp": "SMTP Email",
-      "inSite": "In-site Push"
+      "inSite": "In-site Push",
+      "slack": "Slack",
+      "discord": "Discord",
+      "microsoftTeams": "Microsoft Teams",
+      "gotify": "Gotify",
+      "ntfy": "ntfy",
+      "bark": "Bark",
+      "serverChan": "ServerChan",
+      "pushPlus": "PushPlus",
+      "aliyunSms": "Aliyun SMS",
+      "tencentSms": "Tencent Cloud SMS"
     },
     "level": {
       "info": "Info",
@@ -3366,7 +3383,8 @@
     "status": {
       "pending": "Pending",
       "success": "Success",
-      "failed": "Failed"
+      "failed": "Failed",
+      "disabled": "Disabled"
     },
     "error": {
       "nameRequired": "Please enter the channel name",
@@ -3381,8 +3399,86 @@
       "chatIdRequired": "Please enter the target chat ID",
       "urlRequired": "Please enter the request URL",
       "headersInvalid": "Custom headers must be a JSON object",
-      "recipientsRequired": "Please add at least one recipient email",
-      "inSiteTargetRequired": "Please fill in recipient users or enable push-to-admins"
+      "testRecipientsRequired": "Please add at least one test recipient email",
+      "testRecipientsRequiredSms": "Please add at least one test recipient phone number",
+      "broadcastEmailRecipientsRequired": "Selected channels include email channels; please fill in recipient emails",
+      "broadcastPhoneRecipientsRequired": "Selected channels include SMS channels; please fill in recipient phone numbers",
+      "inSiteTargetRequired": "Please fill in recipient users or enable push-to-admins",
+      "broadcastTargetRequired": "Select delivery channels or enable in-site message",
+      "baseUrlRequired": "Please enter the server URL",
+      "tokenRequired": "Please enter the token",
+      "topicRequired": "Please enter the ntfy topic",
+      "deviceKeyRequired": "Please enter the Bark device key",
+      "sendKeyRequired": "Please enter the ServerChan SendKey",
+      "appIdRequired": "Please enter the App ID",
+      "appSecretRequired": "Please enter the App Secret",
+      "appKeyRequired": "Please enter the AppKey",
+      "corpIdRequired": "Please enter the Corp ID",
+      "corpSecretRequired": "Please enter the app Secret",
+      "agentIdRequired": "Please enter the AgentId",
+      "smtpHostRequired": "Please enter the SMTP server address",
+      "smtpPortInvalid": "Port must be an integer between 1 and 65535",
+      "smtpFromAddressInvalid": "From address is not a valid email",
+      "accessKeyIdRequired": "Please enter AccessKey Id",
+      "accessKeySecretRequired": "Please enter AccessKey Secret",
+      "secretIdRequired": "Please enter SecretId",
+      "secretKeyRequired": "Please enter SecretKey",
+      "smsSdkAppIdRequired": "Please enter the SMS App SdkAppId",
+      "signNameRequired": "Please enter the SMS signature name",
+      "templateRequired": "Please select a notification template",
+      "templateVarRequired": "Please enter the variable value"
+    },
+    "template": {
+      "create": "New Template",
+      "createTitle": "New Notification Template",
+      "editTitle": "Edit Template: {{name}}",
+      "builtinTag": "Built-in",
+      "builtinTip": "Platform built-in template (verification emails, etc.): editable but not deletable; used automatically by purpose when no custom template is bound in system settings",
+      "deleteSuccess": "Template deleted",
+      "deleteConfirm": "Delete template \"{{name}}\"? Send history will be kept",
+      "saveSuccess": "Template saved",
+      "colVariables": "Variables",
+      "colContentType": "Content Type",
+      "colPlatformMapping": "Platform Mapping",
+      "noVariables": "No variables",
+      "contentTypeText": "Plain text",
+      "test": "Test",
+      "testTitle": "Test Template: {{name}}",
+      "testRun": "Render & Send",
+      "testChannel": "Send-to channel",
+      "testChannelPlaceholder": "Select an enabled channel to send to",
+      "testChannelExtra": "Optional; leave empty to render a preview only",
+      "testSendSuccess": "Test send succeeded ({{ms}}ms); see Send Logs for details",
+      "testSendFailed": "Test send failed",
+      "renderedTitle": "Rendered subject",
+      "renderedContent": "Rendered content",
+      "formName": "Template name",
+      "formContentType": "Content type",
+      "formContentTypeExtra": "HTML templates are sent as styled email via SMTP channels; other channels fall back to plain text automatically",
+      "formTitle": "Notification subject template",
+      "formTitlePlaceholder": "e.g. [{{siteName}}] Alert",
+      "formTitleExtra": "Used as the email subject; SMS has no subject; may contain {{variable}} double-brace placeholders",
+      "formContent": "Notification body template",
+      "formContentPlaceholder": "Body content; use double-brace {{variableName}} placeholders, e.g. Your code is {{code}}, valid for {{expireMinutes}} minutes",
+      "formContentHtmlPlaceholder": "A full HTML template starting with <!DOCTYPE html> or <html>; you can paste one from an online email platform and adjust variable placeholders",
+      "formContentExtra": "Use double-brace {{variableName}} placeholders (aligned with cloud email platform review format); values are provided per the variable definitions below when sending; the content can be copied to Aliyun/Tencent Cloud consoles for template approval",
+      "formVariables": "Variable definitions",
+      "formVariablesExtra": "Names start with a letter, letters/digits/underscore only; examples help when submitting templates for review on external platforms",
+      "varName": "Name",
+      "varDescription": "Description",
+      "varExample": "Example",
+      "addVariable": "Add variable",
+      "formAliyunCode": "Aliyun SMS template Code",
+      "formAliyunCodeExtra": "Optional; fill in after approval on the Aliyun console, used by Aliyun SMS channels",
+      "formTencentId": "Tencent Cloud SMS template Id",
+      "formTencentIdExtra": "Optional; fill in after approval on the Tencent Cloud console, used by Tencent SMS channels",
+      "error": {
+        "titleMax": "Subject cannot exceed 256 characters",
+        "contentRequired": "Please enter the template body",
+        "codeMax": "Cannot exceed 128 characters",
+        "varNameRequired": "Please enter a variable name",
+        "varNameInvalid": "Names must start with a letter and contain only letters/digits/underscores"
+      }
     }
   },
   "loginsafety": {
@@ -3460,14 +3556,20 @@
     "tabAll": "All",
     "tabUnread": "Unread",
     "markRead": "Mark read",
-    "markAllRead": "Mark all read",
-    "markAllReadConfirm": "Mark all messages as read?",
-    "markAllReadSuccess": "All messages marked as read",
     "readSuccess": "Marked as read",
     "delete": "Delete",
     "deleteConfirm": "Delete this message?",
     "deleteSuccess": "Deleted",
     "empty": "No messages",
-    "senderSystem": "System"
+    "senderSystem": "System",
+    "selectAll": "Select all",
+    "selectMessage": "Select message: {{title}}",
+    "selectedCount": "{{count}} selected",
+    "batchRead": "Mark selected read",
+    "batchReadSuccess": "Selected messages marked as read",
+    "batchDelete": "Delete selected",
+    "batchDeleteConfirm": "Delete the {{count}} selected messages?",
+    "batchDeleteConfirmSkip": "Delete the {{count}} selected read messages? {{unread}} unread will be ignored",
+    "batchDeleteSkippedSuccess": "Deleted {{deleted}}; {{unread}} unread ignored"
   }
 }

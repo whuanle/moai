@@ -16,54 +16,30 @@ export const SettingKeys = {
   systemName: 'SYSTEM_NAME',
   loginBackground: 'LOGIN_BACKGROUND',
   smtpEnabled: 'SMTP_ENABLED',
-  smtpHost: 'SMTP_HOST',
-  smtpPort: 'SMTP_PORT',
-  smtpSecurity: 'SMTP_SECURITY',
-  smtpUsername: 'SMTP_USERNAME',
-  smtpPassword: 'SMTP_PASSWORD',
-  smtpFromAddress: 'SMTP_FROM_ADDRESS',
-  smtpFromName: 'SMTP_FROM_NAME',
+  smtpChannelId: 'SMTP_CHANNEL_ID',
   registerEmailCodeEnabled: 'REGISTER_EMAIL_CODE_ENABLED',
-  smtpRegisterCodeSubject: 'SMTP_REGISTER_CODE_SUBJECT',
-  smtpRegisterCodeBody: 'SMTP_REGISTER_CODE_BODY',
-  smtpResetCodeSubject: 'SMTP_RESET_CODE_SUBJECT',
-  smtpResetCodeBody: 'SMTP_RESET_CODE_BODY',
+  smtpRegisterCodeTemplateId: 'SMTP_REGISTER_CODE_TEMPLATE_ID',
+  smtpResetCodeTemplateId: 'SMTP_RESET_CODE_TEMPLATE_ID',
   loginForced2fa: 'LOGIN_FORCED_2FA',
   loginEmailCodeMode: 'LOGIN_EMAIL_CODE_MODE',
-  smtpLoginCodeSubject: 'SMTP_LOGIN_CODE_SUBJECT',
-  smtpLoginCodeBody: 'SMTP_LOGIN_CODE_BODY',
+  smtpLoginCodeTemplateId: 'SMTP_LOGIN_CODE_TEMPLATE_ID',
   memoryEnabled: 'MEMORY_ENABLED',
   memoryEmbeddingModel: 'MEMORY_EMBEDDING_MODEL',
   memoryEmbeddingDimensions: 'MEMORY_EMBEDDING_DIMENSIONS',
   statisticsGranularity: 'STATISTICS_GRANULARITY',
   lsEnabled: 'LS_ENABLED',
-  lsNotifyUserEnabled: 'LS_NOTIFY_USER_ENABLED',
-  lsNotifyAdminEnabled: 'LS_NOTIFY_ADMIN_ENABLED',
-  lsAdminRecipients: 'LS_ADMIN_ALERT_RECIPIENTS',
+  lsNotifyChannelIds: 'LS_NOTIFY_CHANNEL_IDS',
+  lsNotifyEmails: 'LS_NOTIFY_EMAILS',
   lsIpFailThreshold: 'LS_IP_FAIL_THRESHOLD',
   lsIpFailWindowMinutes: 'LS_IP_FAIL_WINDOW_MINUTES',
   lsIpBanMinutes: 'LS_IP_BAN_MINUTES',
   lsDistinctUserThreshold: 'LS_DISTINCT_USER_THRESHOLD',
   lsNewIpDays: 'LS_NEW_IP_DAYS',
   lsTravelWindowMinutes: 'LS_TRAVEL_WINDOW_MINUTES',
-  lsUserAlertSubject: 'LS_USER_ALERT_SUBJECT',
-  lsUserAlertBody: 'LS_USER_ALERT_BODY',
-  lsAdminAlertSubject: 'LS_ADMIN_ALERT_SUBJECT',
-  lsAdminAlertBody: 'LS_ADMIN_ALERT_BODY',
 } as const
 
 /** 记忆向量维度内置默认值（与后端 SettingDefinitions 一致），设置项缺失时回退 */
 export const MEMORY_DEFAULT_DIMENSIONS = 1024
-
-/** SMTP 邮件服务内置默认值（与后端 SettingDefinitions 一致），设置项缺失时回退 */
-export const SMTP_DEFAULTS = {
-  port: 465,
-  security: 'ssl',
-} as const
-
-/** SMTP 加密方式可选项（与后端校验一致） */
-export const SMTP_SECURITY_OPTIONS = ['ssl', 'starttls', 'none'] as const
-export type SmtpSecurity = (typeof SMTP_SECURITY_OPTIONS)[number]
 
 /** 登录邮箱验证码策略可选项（与后端校验一致）：off=关闭 / always=始终需要 / after_fail=密码错误一次后需要 */
 export const LOGIN_EMAIL_CODE_MODE_OPTIONS = ['off', 'always', 'after_fail'] as const
@@ -155,10 +131,4 @@ export async function updateLoginBackground(file: File): Promise<string> {
 export async function resetLoginBackground(): Promise<void> {
   const client = getApiClient()
   await client.api.settings.loginBackground.post({ objectKey: '' })
-}
-
-/** 发送测试邮件（使用已保存的 SMTP 配置），验证邮件服务配置是否可用 */
-export async function sendTestEmail(to: string): Promise<void> {
-  const client = getApiClient()
-  await client.api.settings.email.test.post({ to })
 }

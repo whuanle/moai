@@ -205,21 +205,14 @@ protected static void SeedData(ModelBuilder modelBuilder)
 | `SYSTEM_LOGO` | 网站 Logo | `""` | 全局网站 Logo 的图片 ObjectKey，经专用 `POST /api/settings/logo` 写入（非空须为已登记上传的文件，空恢复默认）；匿名经 `serverinfo.logoPath` 读取 |
 | `SYSTEM_NAME` | 网站名称 | `""` | 仅前端展示（侧边栏标题、登录/注册页主标题与浏览器标签页），经通用 `PUT /api/settings` 写入（去空白后 ≤50 字符，空回退配置文件默认名称）；匿名经 `serverinfo.name` 读取 |
 | `LOGIN_BACKGROUND` | 登录页背景图 | `""` | 登录页整页背景图的 ObjectKey，经专用 `POST /api/settings/login-background` 写入（非空须为已登记上传的文件，空恢复默认渐变）；匿名经 `serverinfo.loginBackgroundPath` 读取 |
-| `SMTP_ENABLED` | SMTP 邮件服务 | `"false"` | 启用后平台通知经 SMTP 服务发送邮件；保存校验布尔 |
-| `SMTP_HOST` | SMTP 服务器地址 | `""` | 域名或 IP，≤255 字符；启用后为必填语义（空则发送被拒） |
-| `SMTP_PORT` | SMTP 端口 | `"465"` | 1~65535，保存校验；隐式 TLS 通常 465，STARTTLS 通常 587 |
-| `SMTP_SECURITY` | SMTP 加密方式 | `"ssl"` | ssl / starttls / none，保存校验并归一小写 |
-| `SMTP_USERNAME` | SMTP 登录账号 | `""` | ≤320 字符；内网免认证中继可留空（留空不认证） |
-| `SMTP_PASSWORD` | SMTP 登录密码 | `""` | 密码或授权码，≤200 字符，明文存储 |
-| `SMTP_FROM_ADDRESS` | 发件人地址 | `""` | 保存校验邮箱格式，留空回退登录账号 |
-| `SMTP_FROM_NAME` | 发件人显示名 | `""` | ≤100 字符 |
+| `SMTP_ENABLED` | 邮箱验证 | `"false"` | 平台邮件总开关（注册/找回密码/登录验证码、安全告警等）；保存校验布尔 |
+| `SMTP_CHANNEL_ID` | 绑定 SMTP 服务 | `""` | 绑定的通知中心 SMTP 渠道 id（notification_channel.id，空串未绑定；保存校验空串或正整数）；SMTP 连接配置统一在通知中心渠道维护，此处仅绑定使用。可用性 = 开关开启且绑定渠道存在并启用（`IEmailSettingsService`；系统邮件发送走 `IEmailSenderService` → 绑定渠道）。原 `SMTP_HOST/PORT/SECURITY/USERNAME/PASSWORD/FROM_ADDRESS/FROM_NAME` 七键已随连接配置收敛作废（asserts/setting.sql 清理存量行） |
 | `REGISTER_EMAIL_CODE_ENABLED` | 注册需要邮箱验证码 | `"false"` | 开启后新用户注册必须先校验邮箱验证码；需 `SMTP_ENABLED="true"` 才生效，匿名经 `serverinfo.registerEmailCodeRequired` 读取两者合成结果 |
-| `SMTP_REGISTER_CODE_SUBJECT` | 注册验证码邮件主题 | `"{siteName} 注册验证码"` | 模板支持 `{code}` `{siteName}` `{expireMinutes}` 变量（SmartFormat 白名单插值），留空发送时回退内置默认；≤500 字符 |
-| `SMTP_REGISTER_CODE_BODY` | 注册验证码邮件正文 | `"你的注册验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件."` | 同上；≤2000 字符 |
-| `SMTP_RESET_CODE_SUBJECT` | 找回密码验证码邮件主题 | `"{siteName} 找回密码验证码"` | 同上；≤500 字符 |
-| `SMTP_RESET_CODE_BODY` | 找回密码验证码邮件正文 | `"你的找回密码验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件."` | 同上；≤2000 字符 |
+| `SMTP_REGISTER_CODE_TEMPLATE_ID` | 注册验证码通知模板 | `""` | 绑定的通知中心模板 id（notification_template.id，空串未绑定；保存校验空串或正整数）。发送时优先按绑定模板渲染（`{{code}}` `{{siteName}}` `{{expireMinutes}}` 双花括号占位符，HTML 按 HTML 邮件发送），空/模板缺失/渲染失败回退内置模板（种子 register_email_code，HTML）；模板本体在「通知中心 → 通知模板」维护。原 `SMTP_REGISTER_CODE_SUBJECT/BODY` 等 6 个主题/正文键已随模板收敛通知中心作废（asserts/setting.sql 清理存量行） |
+| `SMTP_RESET_CODE_TEMPLATE_ID` | 找回密码验证码通知模板 | `""` | 同上；空/失败回退内置模板（reset_email_code） |
+| `SMTP_LOGIN_CODE_TEMPLATE_ID` | 登录验证码通知模板 | `""` | 同上；空/失败回退内置模板（login_email_code），登录策略由 `LOGIN_EMAIL_CODE_MODE` 控制 |
 | `MEMORY_ENABLED` | 长期记忆 | `"false"` | 总开关：开启后应用才可开启记忆，用户可维护应用内记忆与个人跨应用记忆（全局记忆）；关闭时应用不可开启记忆。开启前须已选模型，保存校验布尔 |
 | `MEMORY_EMBEDDING_MODEL` | 记忆向量化模型 | `""` | 应用记忆与全局记忆**统一**使用的 embedding 模型 id（须公开启用中，Guid，保存校验格式）；统一模型已配置且平台已有任意记忆后锁定，更换走 memory 模块模型迁移 `POST /api/memory/model-migration` 无损重建（D-M10/D-M11） |
 | `MEMORY_EMBEDDING_DIMENSIONS` | 记忆向量维度 | `"1024"` | 1~2000，保存校验；与模型一起锁定，更换同上走迁移（2026-10-30 起替代旧 `MEMORY_GLOBAL_*` 三键，asserts/setting.sql 幂等清理旧键） |
 
-> 成组配置供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的成组读取服务：知识图谱 `IKnowledgeGraphSettingsService`、知识库 `IWikiSettingsService`、沙箱上限 `ISandboxSettingsService`（含 K8s 数量解析器 `SandboxQuantity`）、SMTP 邮件 `IEmailSettingsService`（成组读取）与 `IEmailSenderService`（通知邮件发送，MailKit，账号留空免认证），避免各模块自行拼 key 查表。沙箱上限在应用保存时的强校验见 [app 模块 D41](./app/sdd.md)。邮箱验证码模板项由 auth 模块直查消费（见 [auth/sdd](./auth/sdd.md) 决策 7）。
+> 成组配置供业务模块消费时，统一注入 `MoAI.Settings.Shared` 的成组读取服务：知识图谱 `IKnowledgeGraphSettingsService`、知识库 `IWikiSettingsService`、沙箱上限 `ISandboxSettingsService`（含 K8s 数量解析器 `SandboxQuantity`）、邮箱验证 `IEmailSettingsService`（开关+绑定渠道可用性）与 `IEmailSenderService`（系统邮件发送，实现由通知中心模块提供、按绑定渠道发送），避免各模块自行拼 key 查表。沙箱上限在应用保存时的强校验见 [app 模块 D41](./app/sdd.md)。验证码邮件模板绑定为 auth 模块消费：绑定 id → 通知中心内置模板（按 code）→ 代码内置纯文本三级回退（见 [auth/sdd](./auth/sdd.md) 决策 7）。

@@ -47,6 +47,9 @@ internal partial class OrgRoleConfiguration : IEntityTypeConfiguration<OrgRoleEn
             .HasDefaultValueSql("''::text")
             .HasComment("物化路径：根为 /{id}/，子级逐段追加（如 /1/3/8/）")
             .HasColumnName("path");
+        entity.Property(e => e.SortOrder)
+            .HasComment("同级展示顺序，从小到大（新建追加同级末尾，拖拽重排）")
+            .HasColumnName("sort_order");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间，审计钩子自动填充")

@@ -37,11 +37,14 @@
 | @TP-S30 | team-plugin-e2e.mjs（TP-30a/b、TP-31：detail 回显占位符 + 刷新插值） | PASS（2026-09-20） |
 | @TP-S31 | team-plugin-e2e.mjs（TP-32：缺失变量 409） | PASS（2026-09-20） |
 | @TP-S32 | team-plugin-e2e.mjs（TP-33a/b/c、TP-34a/b：OpenAPI 保存回显）+ 单测 CustomPluginVariableInterpolatorTests | PASS（2026-09-20） |
-| @TP-S28 | ui/src/pages/teams/plugins/__tests__/TeamPlugins.test.tsx | PASS（2026-09-10，两 Tab/管理入口） |
+| @TP-S28 | ui/src/pages/teams/plugins/__tests__/TeamPlugins.test.tsx | PASS 9/9（2026-11-02，两 Tab/PageToolbar/卡片列表双视图/权限只读/模板缺失标记） |
 | @TP-S33 | team-plugin-e2e.mjs（TP-35e/f/g：动态/MCP/OpenAPI 预上传三类 409） | PASS 47/47（2026-09-26） |
 | @TP-S34 | team-plugin-e2e.mjs（TP-35k：admin 动态实例 key 与团队插件 409） | PASS 47/47（2026-09-26） |
 | @TP-S35 | team-plugin-e2e.mjs（TP-35c/d 未授权不可见/404 → 35h/i 授权可见 → 35l/m 撤销失效） | PASS 47/47（2026-09-26） |
 | @TP-S36 | team-plugin-e2e.mjs（TP-35j：成员指定函数运行系统 MCP 插件成功） | PASS 47/47（2026-09-26） |
+| @TP-S37 | team-plugin-e2e.mjs（TP-37c/d/e 门禁 + TP-39a 成员 200 回显 teamId） | PASS 61/61（2026-11-02） |
+| @TP-S38 | team-plugin-e2e.mjs（TP-37p 样本插件 + TP-39b/c/d：本团队口径 TOP 无团队维度字段、趋势 30 天补 0、≤全团队汇总） | PASS 61/61（2026-11-02） |
+| 前端：团队插件统计 Tab | ui/src/pages/teams/plugins/__tests__/TeamPlugins.test.tsx（统计 Tab 存在 + 本团队口径渲染，getTeamPluginStats 断言） | PASS 10/10（2026-11-02，全套件） |
 | 前端：团队插件页 | ui/src/pages/teams/__tests__/TeamManage.test.tsx | PASS（2026-09-10，插件区块嵌入） |
 | 前端：系统插件授权抽屉 | ui/src/pages/plugins/__tests__/CustomPluginPanel.test.tsx（回归） | PASS（2026-09-10） |
 | 浏览器走查 | @manual（见 sop.md 第 4 节） | 待执行 |

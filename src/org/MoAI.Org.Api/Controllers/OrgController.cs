@@ -76,15 +76,17 @@ public class OrgController : ControllerBase
     }
 
     /// <summary>
-    /// 设置/清空组织默认角色（仅管理员）：orgRoleId 为空表示清空；全局唯一后设覆盖，只影响新注册用户.
+    /// 调整组织顺序（仅管理员）：挂在 parentId 之下、插到 prevOrgRoleId 之后（null=置于首位）；同级按 sortOrder 升序展示，跨级移动时整体重写子树物化路径.
     /// </summary>
-    /// <param name="req">更新请求体.</param>
+    /// <param name="id">角色 id.</param>
+    /// <param name="req">排序请求体.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPut("role/default")]
-    public async Task<EmptyCommandResponse> UpdateRoleDefault([FromBody] UpdateOrgRoleDefaultCommand req, CancellationToken ct)
+    [HttpPut("role/{id}/order")]
+    public async Task<EmptyCommandResponse> UpdateRoleOrder(int id, [FromBody] UpdateOrgRoleOrderCommand req, CancellationToken ct)
     {
         await EnsureAdminAsync(ct);
+        req.OrgRoleId = id;
         return await _mediator.Send(req, ct);
     }
 

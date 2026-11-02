@@ -2,6 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（管理页操作与排障）
 > 编号规则与标签语义见 [../DOC-STANDARD.md](../DOC-STANDARD.md) 第 3 节。
+> **默认组织（`ORG_DEFAULT_ROLE` 设置 + `PUT /org/role/default` + 注册自动赋予）已于 2026-11-02 整体下线删除**：注册不再自动赋予组织，组织归属一律由管理员显式维护；@ORG-S36 ~ @ORG-S41 场景编号永久退役，@ORG-S35 断言改为下线行为。
 
 ```gherkin
 Feature: 管理员门禁
@@ -166,9 +167,9 @@ Feature: 组织管理页（左侧组织树 + 右侧成员列表）
 
   @ORG-S29 @auto:vitest
   Scenario: 左侧组织树固定默认根并按层级展示
-    Given 已存在多级组织树且某组织为默认组织
+    Given 已存在多级组织树
     When 打开组织管理 Tab
-    Then 树顶固定展示「默认根」（不可选中，空树时也在），组织挂其下展示名称与直属成员数，默认组织带徽标
+    Then 树顶固定展示「默认根」（不可选中，空树时也在），组织挂其下展示名称与直属成员数
 
   @ORG-S30 @auto:vitest
   Scenario: 新建顶级组织与下级组织（仅输入名称）
@@ -177,12 +178,12 @@ Feature: 组织管理页（左侧组织树 + 右侧成员列表）
 
   @ORG-S31 @auto:vitest
   Scenario: 编辑组织仅改名
-    When 编辑选中组织并保存
+    When 点击某组织节点右侧的编辑图标并保存
     Then 只提交名称与原上级（层级调整走拖拽）
 
   @ORG-S32 @auto:vitest
   Scenario: 删除组织需二次确认
-    When 在选中组织上点击删除并确认
+    When 点击某组织节点右侧的删除图标并确认
     Then 才会提交删除请求
 
   @ORG-S33 @auto:vitest
@@ -197,55 +198,21 @@ Feature: 组织管理页（左侧组织树 + 右侧成员列表）
     When 打开菜单「组织」（原团队管理入口）
     Then 默认展示团队管理 Tab，可切换到组织管理 Tab（左侧树 + 右侧成员列表）
 
-Feature: 默认组织（注册自动赋予）
-  Background:
-    Given 管理员已登录
-
+Feature: 默认组织（已下线）
   @ORG-S35 @auto:e2e
-  Scenario: 非管理员设置默认组织被拒
-    Given 普通用户已登录
-    When 请求设置默认组织
-    Then 返回没有权限（403）
-
-  @ORG-S36 @auto:e2e
-  Scenario: 设置不存在的默认组织
-    When 以不存在的组织 id 设置默认组织
-    Then 返回不存在（404）
-
-  @ORG-S37 @auto:e2e
-  Scenario: 设置默认组织并在列表标识
-    When 管理员把某组织设为默认组织
-    Then 保存成功且组织列表中仅该组织带默认标记
-
-  @ORG-S38 @auto:e2e
-  Scenario: 注册新用户自动获得默认组织
-    Given 已设置默认组织
-    When 新用户完成注册（含 OAuth 自动建号）
-    Then 该用户自动持有默认组织
-
-  @ORG-S39 @auto:e2e
-  Scenario: 清空默认后新注册用户无组织
-    Given 已设置默认组织
-    When 管理员清空默认组织后新用户完成注册
-    Then 该用户不持有任何组织
-
-  @ORG-S40 @auto:e2e
-  Scenario: 删除默认组织自动清空设置
-    Given 默认组织已无子组织
-    When 管理员删除该默认组织
-    Then 默认组织设置自动清空，其后新注册用户无组织
-
-  @ORG-S41 @auto:vitest
-  Scenario: 设为默认与取消默认
-    When 对选中非默认组织一键设为默认，或对默认组织二次确认取消默认
-    Then 分别提交设置该组织为默认与清空默认
+  Scenario: 默认组织端点已下线
+    When 以管理员凭证调用 PUT /org/role/default
+    Then 端点已移除，请求落到组织更新路由且 id 非法返回参数错误（400）
+    And 组织列表不再回传默认标记，注册不再自动赋予组织
 
   @ORG-S42 @manual
   Scenario: 拖拽组织重新挂层级
     Given 已存在多级组织树
-    When 将某组织拖入另一组织节点内、拖到节点之间或拖到默认根上
-    Then 分别成为该组织下级、同级换挂（挂到目标组织的上级）、升为顶级组织
+    When 将某组织拖入另一组织节点内、拖到节点间隙或拖到默认根行上
+    Then 拖入节点内=成为其下级（排在子级末尾），节点间隙=排到该组织的前/后（同级排序），拖到默认根行上=升为顶级并置顶（任何位置）
     And 拖到自身或其下级组织时被拦截提示
+    And 指针贴近树容器上下边缘时自动滚动，长树可从底部拖到顶部
+    And 落位与现状一致时不提交请求（无感 no-op）
 
 Feature: 统一组织授权（资源按组织线定向放通）
   Background:
@@ -310,4 +277,39 @@ Feature: 统一组织授权（资源按组织线定向放通）
     Given 某资源授权给组织 R 且 R 上存在用户绑定
     When 管理员删除叶子组织 R
     Then 引用 R 的授权记录一并清理，该资源授权回显为空且判定不再放通
+
+Feature: 成员筛选（前端过滤）
+  @ORG-S53 @auto:vitest
+  Scenario: 查询按钮前端筛选当前组织成员
+    Given 左树已选中组织且右栏已加载其成员
+    When 在筛选输入框输入用户名/昵称关键字并点击「查询」（或回车）
+    Then 仅展示匹配成员，不触发成员接口请求
+    And 清空输入后恢复展示全量成员
+```
+
+```gherkin
+Feature: 同级排序（sort_order）
+  Background:
+    Given 管理员已登录
+    And 已存在多级组织树
+
+  @ORG-S54 @auto:e2e
+  Scenario: 新组织追加同级末尾
+    When 在某层级下新建组织
+    Then 其同级顺序排在既有组织之后（创建顺序即初始顺序）
+
+  @ORG-S55 @auto:e2e
+  Scenario: 同级拖拽排序
+    When 拖拽组织到同级某组织之前或之后的间隙、或请求置顶（prev 为空）
+    Then 同级按新顺序重编号展示，物化路径不变
+
+  @ORG-S56 @auto:e2e
+  Scenario: 跨级拖拽带排序落位
+    When 拖拽子组织到另一层级并指定插入位置
+    Then 挂到目标层级的目标位置，子树物化路径整体重写，授权判定随新树
+
+  @ORG-S57 @auto:e2e
+  Scenario: 排序参数校验
+    When 以不在目标同级中的组织作为插入参照、或以自身为参照
+    Then 返回参数错误（400）
 ```

@@ -4,44 +4,43 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using MoAI.Infra.Exceptions;
+using MoAI.Notification.Models;
 using MoAI.Settings.Models;
-using MoAI.Settings.Services;
 
-namespace MoAI.Settings.Services;
+namespace MoAI.Notification.Senders;
 
 /// <summary>
-/// 平台通知邮件发送服务：读取系统设置中的 SMTP 配置，经 MailKit 发送；连接、认证、发送统一 15 秒超时护栏.
+/// SMTP 邮件传输服务：按渠道自包含的连接配置经 MailKit 发送；连接、认证、发送统一 15 秒超时护栏.
 /// </summary>
-public class EmailSenderService : IEmailSenderService
+public class SmtpMailTransport
 {
     private const int TimeoutSeconds = 15;
 
     private const int MaxSubjectLength = 500;
 
-    private readonly IEmailSettingsService _emailSettingsService;
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="EmailSenderService"/> class.
+    /// 按渠道连接配置发送邮件（发件人地址留空时取 SMTP 登录账号）.
     /// </summary>
-    /// <param name="emailSettingsService">SMTP 配置读取服务.</param>
-    public EmailSenderService(IEmailSettingsService emailSettingsService)
+    /// <param name="smtp">SMTP 渠道连接配置.</param>
+    /// <param name="message">邮件内容.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>返回 <see cref="EmailSendResult"/>.</returns>
+    public async Task<EmailSendResult> SendAsync(SmtpChannelConfig smtp, EmailMessage message, CancellationToken cancellationToken)
     {
-        _emailSettingsService = emailSettingsService;
-    }
-
-    /// <inheritdoc/>
-    public async Task<EmailSendResult> SendAsync(EmailMessage message, CancellationToken cancellationToken)
-    {
-        var settings = await _emailSettingsService.GetAsync(cancellationToken);
-        if (!settings.Enabled || settings.Host.Length == 0)
+        if (smtp.Host.Trim().Length == 0)
         {
-            throw new BusinessException("SMTP 邮件服务未启用或未配置服务器地址") { StatusCode = 400 };
+            throw new BusinessException("SMTP 渠道未配置服务器地址") { StatusCode = 400 };
         }
 
-        var fromAddress = settings.FromAddress;
+        var fromAddress = smtp.FromAddress.Trim();
+        if (fromAddress.Length == 0)
+        {
+            fromAddress = smtp.Username.Trim();
+        }
+
         if (fromAddress.Length == 0 || !MailAddress.TryCreate(fromAddress, out _))
         {
-            throw new BusinessException("SMTP 邮件服务未配置合法的发件人地址") { StatusCode = 400 };
+            throw new BusinessException("SMTP 渠道未配置合法的发件人地址") { StatusCode = 400 };
         }
 
         if (message.To.Count == 0)
@@ -65,8 +64,8 @@ public class EmailSenderService : IEmailSenderService
             throw new BusinessException("邮件正文不能为空") { StatusCode = 400 };
         }
 
-        var mimeMessage = BuildMessage(settings, subject, message);
-        await SendAsync(settings, mimeMessage, cancellationToken).ConfigureAwait(false);
+        var mimeMessage = BuildMessage(smtp, fromAddress, subject, message);
+        await SendAsync(smtp, mimeMessage, cancellationToken).ConfigureAwait(false);
 
         return new EmailSendResult
         {
@@ -78,24 +77,25 @@ public class EmailSenderService : IEmailSenderService
     /// <summary>
     /// 组装 MIME 消息：预生成 Message-ID 便于与收件侧核对.
     /// </summary>
-    private static MimeMessage BuildMessage(EmailSmtpSettings settings, string subject, EmailMessage message)
+    private static MimeMessage BuildMessage(SmtpChannelConfig smtp, string fromAddress, string subject, EmailMessage message)
     {
         var domain = "localhost";
-        var atIndex = settings.FromAddress.LastIndexOf('@');
-        if (atIndex >= 0 && atIndex < settings.FromAddress.Length - 1)
+        var atIndex = fromAddress.LastIndexOf('@');
+        if (atIndex >= 0 && atIndex < fromAddress.Length - 1)
         {
-            domain = settings.FromAddress[(atIndex + 1)..];
+            domain = fromAddress[(atIndex + 1)..];
         }
 
+        var fromName = smtp.FromName.Trim();
         var mimeMessage = new MimeMessage
         {
             MessageId = $"<{Guid.CreateVersion7():N}@{domain}>"
         };
 
         mimeMessage.From.Add(
-            settings.FromName.Length == 0
-                ? new MailboxAddress(string.Empty, settings.FromAddress)
-                : new MailboxAddress(settings.FromName, settings.FromAddress));
+            fromName.Length == 0
+                ? new MailboxAddress(string.Empty, fromAddress)
+                : new MailboxAddress(fromName, fromAddress));
 
         foreach (var to in message.To)
         {
@@ -125,12 +125,12 @@ public class EmailSenderService : IEmailSenderService
     /// <summary>
     /// 建立连接、按需认证并发送；统一把 MailKit 异常翻译成可读业务异常.
     /// </summary>
-    private static async Task SendAsync(EmailSmtpSettings settings, MimeMessage message, CancellationToken cancellationToken)
+    private static async Task SendAsync(SmtpChannelConfig smtp, MimeMessage message, CancellationToken cancellationToken)
     {
-        var security = settings.Security switch
+        var security = smtp.Security.Trim().ToLowerInvariant() switch
         {
-            EmailSmtpSecurity.StartTls => SecureSocketOptions.StartTls,
-            EmailSmtpSecurity.None => SecureSocketOptions.None,
+            "starttls" => SecureSocketOptions.StartTls,
+            "none" => SecureSocketOptions.None,
             _ => SecureSocketOptions.SslOnConnect
         };
 
@@ -144,10 +144,10 @@ public class EmailSenderService : IEmailSenderService
 
         try
         {
-            await client.ConnectAsync(settings.Host, settings.Port, security, timeoutCts.Token).ConfigureAwait(false);
-            if (settings.Username.Length > 0)
+            await client.ConnectAsync(smtp.Host.Trim(), smtp.Port, security, timeoutCts.Token).ConfigureAwait(false);
+            if (smtp.Username.Trim().Length > 0)
             {
-                await client.AuthenticateAsync(settings.Username, settings.Password, timeoutCts.Token).ConfigureAwait(false);
+                await client.AuthenticateAsync(smtp.Username, smtp.Password, timeoutCts.Token).ConfigureAwait(false);
             }
 
             await client.SendAsync(message, timeoutCts.Token).ConfigureAwait(false);

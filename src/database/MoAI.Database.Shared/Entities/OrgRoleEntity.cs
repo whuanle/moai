@@ -34,6 +34,11 @@ public partial class OrgRoleEntity : IFullAudited
     public string Path { get; set; } = string.Empty;
 
     /// <summary>
+    /// 同级展示顺序，从小到大（新建追加同级末尾，拖拽重排）.
+    /// </summary>
+    public int SortOrder { get; set; }
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public long CreateUserId { get; set; }

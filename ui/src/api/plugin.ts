@@ -56,6 +56,118 @@ export type DynamicPluginTemplate = QueryPluginListCommandResponseItem
 /** 插件种类：custom|dynamic|static. */
 export type PluginKind = 'custom' | 'dynamic' | 'static'
 
+/** 插件统计 TOP 项（管理端团队自有插件带 teamName；团队端无团队字段）. */
+export interface PluginStatsTopItem {
+  id: string
+  name: string
+  teamId?: number | null
+  teamName?: string | null
+  counter: number
+  avatarPath?: string | null
+}
+
+/** 插件统计分类分布项（classifyId=0 表示未分类，classifyName 为空）. */
+export interface PluginStatsClassifyItem {
+  classifyId: number
+  classifyName?: string | null
+  count: number
+}
+
+/** 插件统计趋势点. */
+export interface PluginStatsTrendPoint {
+  date: string
+  count: number
+}
+
+/** 插件统计趋势（近 30 天，无数据日期补 0）. */
+export interface PluginStatsTrend {
+  items: PluginStatsTrendPoint[]
+  total: number
+  startDate: string
+  endDate: string
+}
+
+/** 插件使用统计（管理端=全团队汇总；团队端=仅本团队自有插件）. */
+export interface PluginStatsData {
+  totalPlugins: number
+  mcpCount: number
+  openApiCount: number
+  totalCalls: number
+  totalFunctions: number
+  top: PluginStatsTopItem[]
+  classifies: PluginStatsClassifyItem[]
+  trend: PluginStatsTrend
+}
+
+/** Kiota 统计响应原始形态（long 生成物可能为 string、date 为 Kiota DateOnly，统一 unknown 归一）. */
+export interface PluginStatsRaw {
+  totalPlugins?: unknown
+  mcpCount?: unknown
+  openApiCount?: unknown
+  totalCalls?: unknown
+  totalFunctions?: unknown
+  top?:
+    | {
+        id?: unknown
+        name?: unknown
+        teamId?: unknown
+        teamName?: unknown
+        counter?: unknown
+        avatarPath?: unknown
+      }[]
+    | null
+  classifies?:
+    | {
+        classifyId?: unknown
+        classifyName?: unknown
+        count?: unknown
+      }[]
+    | null
+  trend?: {
+    items?: { date?: unknown; count?: unknown }[] | null
+    total?: unknown
+    startDate?: unknown
+    endDate?: unknown
+  } | null
+}
+
+/** 归一 Kiota 统计响应为数值形态. */
+export function normalizePluginStats(res: PluginStatsRaw | undefined | null): PluginStatsData {
+  const num = (v: unknown): number => {
+    const n = Number(v ?? 0)
+    return Number.isFinite(n) ? n : 0
+  }
+  return {
+    totalPlugins: num(res?.totalPlugins),
+    mcpCount: num(res?.mcpCount),
+    openApiCount: num(res?.openApiCount),
+    totalCalls: num(res?.totalCalls),
+    totalFunctions: num(res?.totalFunctions),
+    top: (res?.top ?? []).map((item) => ({
+      id: String(item.id ?? ''),
+      name: String(item.name ?? ''),
+      teamId: item.teamId == null ? null : num(item.teamId),
+      teamName: item.teamName == null ? null : String(item.teamName),
+      counter: num(item.counter),
+      avatarPath: item.avatarPath == null ? null : String(item.avatarPath),
+    })),
+    classifies: (res?.classifies ?? []).map((item) => ({
+      classifyId: num(item.classifyId),
+      classifyName: item.classifyName == null ? null : String(item.classifyName),
+      count: num(item.count),
+    })),
+    trend: {
+      items: (res?.trend?.items ?? []).map((item) => ({
+        date: String(item.date ?? ''),
+        count: num(item.count),
+      })),
+      total: num(res?.trend?.total),
+      startDate: String(res?.trend?.startDate ?? ''),
+      endDate: String(res?.trend?.endDate ?? ''),
+    },
+  }
+}
+
 /** 分类筛选值：全部（''）、未分类（'0'）、具体分类 id 字符串. */
 export type ClassifyFilter = 'all' | 'uncategorized' | string
 
@@ -233,6 +345,13 @@ async function getManagePlugins(kind?: PluginKind): Promise<StaticPluginManageIt
   return (res?.items ?? []) as StaticPluginManageItem[]
 }
 
+/** 查询插件使用统计（全团队汇总：概览 + TOP（团队自有插件带团队名）+ 分类分布 + 近 30 天趋势），仅管理员. */
+async function getPluginStats(): Promise<PluginStatsData> {
+  const client = getAiPluginClient()
+  const res = await client.api.ai.plugin.manage.stats.get()
+  return normalizePluginStats(res)
+}
+
 /** 设置插件头像（管理员）：objectKey 为直传完成并登记的图片 key. */
 async function updatePluginAvatar(pluginId: string, objectKey: string): Promise<void> {
   const client = getAiPluginClient()
@@ -302,6 +421,7 @@ async function deleteDynamicPlugin(pluginKey: string): Promise<EmptyCommandRespo
 
 export const pluginApi = {
   getManagePlugins,
+  getPluginStats,
   runPlugin,
   saveStaticPlugin,
   getDynamicTemplates,

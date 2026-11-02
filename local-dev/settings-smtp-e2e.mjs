@@ -1,9 +1,10 @@
-// SMTP 邮件服务设置 E2E（场景 @SET-S48+）
-// 覆盖：root 保存 SMTP_ENABLED/HOST/PORT/SECURITY/USERNAME/PASSWORD/FROM_ADDRESS/FROM_NAME 八项并回读生效（含大小写归一）；
-//       保存格式校验（端口范围、加密方式、开关布尔、发件人邮箱格式非法 400）；门禁（member 403、未登录 401）；
-//       未启用/未配置时发送测试邮件 400；发送测试邮件全链路（本地 SMTP 桩捕获信封 MAIL FROM/RCPT TO 与 DATA 头）；SMTP 认证（AUTH PLAIN）链路。
+// 邮箱验证（SMTP 服务绑定）E2E（场景 @SET-S61+；旧 SET-S48~S53 随 SMTP 配置收敛到通知中心作废）
+// 覆盖：SMTP 连接配置统一在通知中心渠道维护（渠道自带 host/port/security/账号/发件人，创建时校验 400）；
+//       系统设置仅保留 SMTP_ENABLED 总开关 + SMTP_CHANNEL_ID 绑定（保存回读、非法绑定 id 400、门禁）；
+//       serverinfo 公开门禁联动（启用+绑定可用渠道 → passwordResetEnabled=true；停用/解绑/渠道停用/渠道不存在 → false）；
+//       渠道自包含配置真实发信（channel/test 对本地 SMTP 桩：免认证链路信封与 DATA 头、AUTH PLAIN 认证链路）。
 // 用法：node local-dev/settings-smtp-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000）
-// 前置：后端运行中；种子账号 admin / abcd123456（root）。开头快照八项原值，结束时恢复（共享开发实例不破坏已配置的 SMTP）。
+// 前置：后端运行中；种子账号 admin / abcd123456（root）。开头快照两个设置键原值，结束时恢复并清理所建渠道（共享开发实例不破坏现场）。
 import net from 'node:net'
 
 const BASE = process.env.APP_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5000'
@@ -43,7 +44,7 @@ async function mkuser(p) {
 }
 
 /** 极简 SMTP 桩：HELO/EHLO → AUTH(PLAIN/LOGIN) → MAIL/RCPT/DATA → QUIT，记录收到的信封与 DATA 原文 */
-function startSmtpStub({ requireAuth = false, expectUser = '', expectPass = '' } = {}) {
+function startSmtpStub({ requireAuth = false } = {}) {
   const state = { messages: [], authLines: [], authOk: false }
   const server = net.createServer((socket) => {
     let buffer = ''
@@ -141,12 +142,29 @@ function startSmtpStub({ requireAuth = false, expectUser = '', expectPass = '' }
 }
 
 const putSetting = (token, key, value) => api('PUT', '/api/settings', { token, body: { key, value } })
-const sendTest = (token, to) => api('POST', '/api/settings/email/test', { token, body: { to } })
-const SMTP_KEYS = ['SMTP_ENABLED', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURITY', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_ADDRESS', 'SMTP_FROM_NAME']
+const BIND_KEYS = ['SMTP_ENABLED', 'SMTP_CHANNEL_ID']
 const getSettingValue = async (token, key) => {
   const q = await api('GET', '/api/settings', { token })
   return (q.json?.items ?? []).find((s) => s.key === key)?.value
 }
+const getServerInfo = async () => (await api('GET', '/api/common/serverinfo')).json
+
+// 渠道配置不再含收件人（后端收敛到请求体）：试发收件人在 channel/test 请求体显式传入
+const TEST_RCPT = 'inbox@test.local'
+const smtpConfig = (port, extra = {}) => JSON.stringify({
+  host: '127.0.0.1',
+  port,
+  security: 'none',
+  username: '',
+  password: '',
+  fromAddress: 'moai@test.local',
+  fromName: 'MoAI E2E',
+  ...extra,
+})
+const createChannel = (token, config, name) => api('POST', '/api/notification/channel/create', { token, body: { name, type: 'smtp', config, enabled: true, description: 'settings-smtp-e2e' } })
+const updateChannel = (token, id, config, enabled = true) => api('PUT', `/api/notification/channel/${id}`, { token, body: { id, name: `smtp-e2e-${id}`, type: 'smtp', config, enabled, description: 'settings-smtp-e2e' } })
+const deleteChannel = (token, id) => api('DELETE', `/api/notification/channel/${id}`, { token })
+const testChannel = (token, id) => api('POST', '/api/notification/channel/test', { token, body: { id: String(id), recipients: [TEST_RCPT] } })
 
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
@@ -154,115 +172,107 @@ async function main() {
 
   const l = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
   const root = l.json?.accessToken ?? null
-  check('SET-00 root 登录', Boolean(root))
+  check('SET-61a root 登录', Boolean(root))
 
   // ============ 快照原值（结束时恢复） ============
   const ORIG = {}
-  for (const key of SMTP_KEYS) ORIG[key] = await getSettingValue(root, key)
+  for (const key of BIND_KEYS) ORIG[key] = await getSettingValue(root, key)
 
   const member = await mkuser('ss')
+  const stamp = Date.now().toString().slice(-8)
 
-  // ============ 保存与回读 ============
-  // SET-48 root 保存 SMTP 全量配置并回读生效
+  // ============ 渠道连接配置校验（连接配置统一在通知中心） ============
+  // SET-62 渠道创建时校验连接配置：host 必填、端口范围、加密方式枚举
+  check('SET-62a host 为空 400', (await createChannel(root, smtpConfig(1000, { host: '' }), `smtp-e2e-${stamp}-a`)).status === 400)
+  check('SET-62b port 70000 400', (await createChannel(root, smtpConfig(1000, { port: 70000 }), `smtp-e2e-${stamp}-b`)).status === 400)
+  check('SET-62c security tls 400', (await createChannel(root, smtpConfig(1000, { security: 'tls' }), `smtp-e2e-${stamp}-c`)).status === 400)
+  check('SET-62d fromAddress 非法 400', (await createChannel(root, smtpConfig(1000, { fromAddress: 'not-an-email' }), `smtp-e2e-${stamp}-d`)).status === 400)
   const stub1 = await startSmtpStub()
-  const cfg = {
-    SMTP_ENABLED: 'true',
-    SMTP_HOST: '127.0.0.1',
-    SMTP_PORT: String(stub1.port),
-    SMTP_SECURITY: 'none',
-    SMTP_USERNAME: '',
-    SMTP_PASSWORD: '',
-    SMTP_FROM_ADDRESS: 'moai@test.local',
-    SMTP_FROM_NAME: 'MoAI E2E',
-  }
-  for (const [key, value] of Object.entries(cfg)) {
-    const r = await putSetting(root, key, value)
-    check(`SET-48a root 保存 ${key} 200`, r.status === 200, `${r.status} ${r.text.slice(0, 120)}`)
-  }
-  {
-    const readback = {}
-    for (const key of SMTP_KEYS) readback[key] = await getSettingValue(root, key)
-    const ok = SMTP_KEYS.every((k) => readback[k] === cfg[k])
-    check('SET-48b 八项回读与提交值一致', ok, JSON.stringify(readback))
-  }
+  const created = await createChannel(root, smtpConfig(stub1.port), `smtp-e2e-${stamp}`)
+  check('SET-62e 合法配置创建渠道 200', created.status === 200 && Boolean(created.json?.id), `${created.status} ${created.text.slice(0, 120)}`)
+  const channelId = created.json?.id
 
-  // SET-48c 大小写归一：开关/加密方式落库小写
-  await putSetting(root, 'SMTP_ENABLED', 'TRUE')
-  await putSetting(root, 'SMTP_SECURITY', 'SSL')
-  check('SET-48c ENABLED=TRUE 归一为 true', (await getSettingValue(root, 'SMTP_ENABLED')) === 'true')
-  check('SET-48d SECURITY=SSL 归一为 ssl', (await getSettingValue(root, 'SMTP_SECURITY')) === 'ssl')
+  // ============ 绑定保存与校验 ============
+  // SET-63 系统设置仅绑定渠道 id：保存回读、非法绑定值 400
+  check('SET-63a 绑定渠道 id 保存 200', (await putSetting(root, 'SMTP_CHANNEL_ID', String(channelId))).status === 200)
+  check('SET-63b 开关保存 200', (await putSetting(root, 'SMTP_ENABLED', 'true')).status === 200)
+  check('SET-63c 绑定回读一致', (await getSettingValue(root, 'SMTP_CHANNEL_ID')) === String(channelId))
+  check('SET-63d 绑定 id 非数字 400', (await putSetting(root, 'SMTP_CHANNEL_ID', 'abc')).status === 400)
+  check('SET-63e 绑定 id 负数 400', (await putSetting(root, 'SMTP_CHANNEL_ID', '-1')).status === 400)
+  check('SET-63f 开关 yes 400', (await putSetting(root, 'SMTP_ENABLED', 'yes')).status === 400)
 
-  // ============ 保存格式校验 ============
-  // SET-49 端口/加密/开关/发件人非法 400
-  check('SET-49a 端口 0 400', (await putSetting(root, 'SMTP_PORT', '0')).status === 400)
-  check('SET-49b 端口 70000 400', (await putSetting(root, 'SMTP_PORT', '70000')).status === 400)
-  check('SET-49c 端口 abc 400', (await putSetting(root, 'SMTP_PORT', 'abc')).status === 400)
-  check('SET-49d 加密 tls 400', (await putSetting(root, 'SMTP_SECURITY', 'tls')).status === 400)
-  check('SET-49e 开关 yes 400', (await putSetting(root, 'SMTP_ENABLED', 'yes')).status === 400)
-  check('SET-49f 发件人 not-an-email 400', (await putSetting(root, 'SMTP_FROM_ADDRESS', 'not-an-email')).status === 400)
+  // SET-63g~j 验证码通知模板绑定 id：空合法（回退内置模板）、格式非法 400
+  check('SET-63g 注册验证码模板 id 空值合法', (await putSetting(root, 'SMTP_REGISTER_CODE_TEMPLATE_ID', '')).status === 200)
+  check('SET-63h 注册验证码模板 id 非数字 400', (await putSetting(root, 'SMTP_REGISTER_CODE_TEMPLATE_ID', 'abc')).status === 400)
+  check('SET-63i 登录验证码模板 id 负数 400', (await putSetting(root, 'SMTP_LOGIN_CODE_TEMPLATE_ID', '-1')).status === 400)
+  check('SET-63j 找回密码验证码模板 id 空值合法', (await putSetting(root, 'SMTP_RESET_CODE_TEMPLATE_ID', '')).status === 200)
 
   // ============ 门禁 ============
-  // SET-50 非 root 修改/发送 403、未登录 401
-  check('SET-50a member 保存 SMTP 403', (await putSetting(member.token, 'SMTP_ENABLED', 'true')).status === 403)
-  check('SET-50b 未登录保存 SMTP 401', (await putSetting(undefined, 'SMTP_ENABLED', 'true')).status === 401)
-  check('SET-50c member 发送测试邮件 403', (await sendTest(member.token, 'x@test.local')).status === 403)
-  check('SET-50d 未登录发送测试邮件 401', (await sendTest(undefined, 'x@test.local')).status === 401)
+  // SET-64 非 root 修改绑定 403、未登录 401
+  check('SET-64a member 保存开关 403', (await putSetting(member.token, 'SMTP_ENABLED', 'true')).status === 403)
+  check('SET-64b 未登录保存绑定 401', (await putSetting(undefined, 'SMTP_CHANNEL_ID', '1')).status === 401)
 
-  // ============ 未启用/未配置防护 ============
-  // SET-51 未启用发送测试邮件 400；启用但未配置服务器 400
+  // ============ serverinfo 公开门禁联动 ============
+  // SET-65 passwordResetEnabled = 开关开启 且 绑定的 SMTP 渠道存在并启用
   await putSetting(root, 'SMTP_ENABLED', 'false')
-  {
-    const r = await sendTest(root, 'x@test.local')
-    check('SET-51a 未启用时发送测试邮件 400', r.status === 400 && (r.text.includes('未启用') || r.json?.detail?.includes('未启用')), `${r.status} ${r.text.slice(0, 140)}`)
-  }
+  check('SET-65a 关闭开关时 passwordResetEnabled=false', (await getServerInfo()).passwordResetEnabled === false)
+
   await putSetting(root, 'SMTP_ENABLED', 'true')
-  await putSetting(root, 'SMTP_HOST', '')
-  {
-    const r = await sendTest(root, 'x@test.local')
-    check('SET-51b 未配置服务器时发送测试邮件 400', r.status === 400, `${r.status} ${r.text.slice(0, 140)}`)
-  }
+  check('SET-65b 启用+绑定可用渠道时 passwordResetEnabled=true', (await getServerInfo()).passwordResetEnabled === true)
+  check('SET-65c 注册验证码开关关闭时 registerEmailCodeRequired=false', (await getServerInfo()).registerEmailCodeRequired === false)
 
-  // ============ 发送测试邮件全链路（免认证中继） ============
-  // SET-52 配置指向本地 SMTP 桩（none 免认证），发送测试邮件后桩捕获信封与 DATA
-  await putSetting(root, 'SMTP_HOST', '127.0.0.1')
-  await putSetting(root, 'SMTP_PORT', String(stub1.port))
-  await putSetting(root, 'SMTP_SECURITY', 'none')
+  await putSetting(root, 'SMTP_CHANNEL_ID', '')
+  check('SET-65d 解绑后 passwordResetEnabled=false', (await getServerInfo()).passwordResetEnabled === false)
+  await putSetting(root, 'SMTP_CHANNEL_ID', String(channelId))
+
+  check('SET-65e 绑定不存在的渠道时 passwordResetEnabled=false', await (async () => {
+    await putSetting(root, 'SMTP_CHANNEL_ID', '999999999')
+    return (await getServerInfo()).passwordResetEnabled === false
+  })())
+  await putSetting(root, 'SMTP_CHANNEL_ID', String(channelId))
+
+  await updateChannel(root, channelId, smtpConfig(stub1.port), false)
+  check('SET-65f 绑定渠道停用后 passwordResetEnabled=false', (await getServerInfo()).passwordResetEnabled === false)
+  await updateChannel(root, channelId, smtpConfig(stub1.port), true)
+  check('SET-65g 渠道恢复启用后 passwordResetEnabled=true', (await getServerInfo()).passwordResetEnabled === true)
+
+  // ============ 渠道自包含配置真实发信（免认证中继） ============
+  // SET-66 渠道连接配置自带主机/端口/发件人，channel/test 直连本地 SMTP 桩投递
   {
-    const r = await sendTest(root, 'inbox@test.local')
-    check('SET-52a 发送测试邮件 200', r.status === 200, `${r.status} ${r.text.slice(0, 160)}`)
-    await new Promise((r) => setTimeout(r, 300))
+    const r = await testChannel(root, channelId)
+    check('SET-66a 渠道测试发送 success=true', r.status === 200 && r.json?.success === true, `${r.status} ${r.text.slice(0, 160)}`)
+    await new Promise((resolve) => setTimeout(resolve, 300))
     const msg = stub1.state.messages[0]
-    check('SET-52b 桩收到 1 封邮件', stub1.state.messages.length === 1, `实际 ${stub1.state.messages.length}`)
-    check('SET-52c 信封 MAIL FROM=配置发件人', Boolean(msg?.from.includes('moai@test.local')), msg?.from)
-    check('SET-52d 信封 RCPT TO=目标收件人', Boolean(msg?.rcpts.some((x) => x.includes('inbox@test.local'))), JSON.stringify(msg?.rcpts))
-    check('SET-52e DATA 含 Subject 与 Message-Id 头', Boolean(msg?.data.includes('Subject:') && /Message-Id:/i.test(msg.data)), (msg?.data ?? '').slice(0, 200))
+    check('SET-66b 桩收到 1 封邮件', stub1.state.messages.length === 1, `实际 ${stub1.state.messages.length}`)
+    check('SET-66c 信封 MAIL FROM=渠道发件人', Boolean(msg?.from.includes('moai@test.local')), msg?.from)
+    check('SET-66d 信封 RCPT TO=试发指定收件人', Boolean(msg?.rcpts.some((x) => x.includes(TEST_RCPT))), JSON.stringify(msg?.rcpts))
+    check('SET-66e DATA 含 Subject 与 Message-Id 头', Boolean(msg?.data.includes('Subject:') && /Message-Id:/i.test(msg.data)), (msg?.data ?? '').slice(0, 200))
   }
 
-  // ============ SMTP 认证链路 ============
-  // SET-53 配置账号密码后发送，桩要求认证并核对 AUTH PLAIN 凭据
-  const stub2 = await startSmtpStub({ requireAuth: true, expectUser: 'notify@test.local', expectPass: 'authcode-123' })
-  await putSetting(root, 'SMTP_PORT', String(stub2.port))
-  await putSetting(root, 'SMTP_USERNAME', 'notify@test.local')
-  await putSetting(root, 'SMTP_PASSWORD', 'authcode-123')
+  // ============ SMTP 认证链路（渠道自带账号密码） ============
+  // SET-67 渠道配置账号密码后测试发送，桩要求认证并核对 AUTH PLAIN 凭据
+  const stub2 = await startSmtpStub({ requireAuth: true })
+  await updateChannel(root, channelId, smtpConfig(stub2.port, { username: 'notify@test.local', password: 'authcode-123', security: 'none' }), true)
   {
-    const r = await sendTest(root, 'auth@test.local')
-    check('SET-53a 带认证发送测试邮件 200', r.status === 200, `${r.status} ${r.text.slice(0, 160)}`)
-    await new Promise((r) => setTimeout(r, 300))
+    const r = await testChannel(root, channelId)
+    check('SET-67a 带认证渠道测试发送 success=true', r.status === 200 && r.json?.success === true, `${r.status} ${r.text.slice(0, 160)}`)
+    await new Promise((resolve) => setTimeout(resolve, 300))
     const auth = stub2.state.authLines.join(' | ')
-    check('SET-53b 桩记录 AUTH 认证', stub2.state.authOk, auth)
-    check('SET-53c AUTH 凭据与配置一致', auth.includes('notify@test.local') && auth.includes('authcode-123'), auth.slice(0, 160))
-    check('SET-53d 认证后桩收到邮件', stub2.state.messages.length === 1, `实际 ${stub2.state.messages.length}`)
+    check('SET-67b 桩记录 AUTH 认证', stub2.state.authOk, auth)
+    check('SET-67c AUTH 凭据与渠道配置一致', auth.includes('notify@test.local') && auth.includes('authcode-123'), auth.slice(0, 160))
+    check('SET-67d 认证后桩收到邮件', stub2.state.messages.length === 1, `实际 ${stub2.state.messages.length}`)
   }
 
-  // ============ 恢复执行前原值 ============
-  for (const key of SMTP_KEYS) {
+  // ============ 清理与恢复执行前原值 ============
+  check('SET-91 删除所建渠道 200', (await deleteChannel(root, channelId)).status === 200)
+  for (const key of BIND_KEYS) {
     if (ORIG[key] !== undefined) await putSetting(root, key, ORIG[key])
   }
   {
     const readback = {}
-    for (const key of SMTP_KEYS) readback[key] = await getSettingValue(root, key)
-    const ok = SMTP_KEYS.every((k) => (ORIG[k] ?? '') === (readback[k] ?? ''))
-    check('SET-90 结束恢复执行前原值（八项）', ok, JSON.stringify({ ORIG, readback }))
+    for (const key of BIND_KEYS) readback[key] = await getSettingValue(root, key)
+    const ok = BIND_KEYS.every((k) => (ORIG[k] ?? '') === (readback[k] ?? ''))
+    check('SET-90 结束恢复执行前原值（开关与绑定）', ok, JSON.stringify({ ORIG, readback }))
   }
 
   stub1.server.close()

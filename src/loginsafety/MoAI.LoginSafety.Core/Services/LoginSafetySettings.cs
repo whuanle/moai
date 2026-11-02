@@ -11,19 +11,14 @@ public class LoginSafetySettings
     public bool Enabled { get; init; } = true;
 
     /// <summary>
-    /// 中/高风险登录给用户本人发提醒邮件.
+    /// 高风险事件推送的通知渠道 ID 列表（来自通知中心 notification_channel，空列表 = 不推送渠道；站内信固定推送不受此影响）.
     /// </summary>
-    public bool NotifyUserEnabled { get; init; }
+    public IReadOnlyList<long> NotifyChannelIds { get; init; } = Array.Empty<long>();
 
     /// <summary>
-    /// 高风险事件给管理员发告警邮件.
+    /// 高风险事件渠道告警的收件人邮箱列表（渠道含 SMTP 邮件渠道时必填，投递给这些邮箱；短信渠道需手机号，暂不支持短信告警）.
     /// </summary>
-    public bool NotifyAdminEnabled { get; init; } = true;
-
-    /// <summary>
-    /// 管理员告警额外收件人（空列表 = 全部 admin/root 用户邮箱）.
-    /// </summary>
-    public IReadOnlyList<string> AdminRecipients { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> NotifyEmails { get; init; } = Array.Empty<string>();
 
     /// <summary>
     /// IP 失败封禁阈值（滑动窗口内失败次数）.
@@ -54,26 +49,6 @@ public class LoginSafetySettings
     /// 疾速旅行判定窗口（分钟）.
     /// </summary>
     public int TravelWindowMinutes { get; init; } = 120;
-
-    /// <summary>
-    /// 用户提醒邮件主题模板.
-    /// </summary>
-    public string UserAlertSubject { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 用户提醒邮件正文模板.
-    /// </summary>
-    public string UserAlertBody { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 管理员告警邮件主题模板.
-    /// </summary>
-    public string AdminAlertSubject { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 管理员告警邮件正文模板.
-    /// </summary>
-    public string AdminAlertBody { get; init; } = string.Empty;
 }
 
 /// <summary>

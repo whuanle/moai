@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, InputNumber, Popconfirm, Progress, Radio, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
-import { CaretRightOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons'
+import { Button, Divider, Input, InputNumber, Popconfirm, Progress, Radio, Select, Spin, Switch, Typography, Upload, theme as antdTheme } from 'antd'
+import { CaretRightOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { refreshServerInfo } from '@/api/auth'
+import { getNotificationChannels, getNotificationTemplates } from '@/api/notification'
 import {
   clearAllMemory,
   getGlobalMemoryModelOptions,
@@ -20,18 +21,14 @@ import {
   parseWikiFileTypes,
   SANDBOX_TTL_LIMITS,
   saveSetting,
-  sendTestEmail,
   SandboxLimitDefaults,
   SettingKeys,
-  SMTP_DEFAULTS,
-  SMTP_SECURITY_OPTIONS,
   WIKI_DEFAULT_FILE_TYPES,
   resetLoginBackground,
   resetSystemLogo,
   updateLoginBackground,
   updateSystemLogo,
   type LoginEmailCodeMode,
-  type SmtpSecurity,
 } from '@/api/settings'
 import { AvatarUpload, Card, feedback, useNeutralColors, Page, spacing } from '@/design-system'
 import { radius } from '@/design-system/theme'
@@ -222,41 +219,30 @@ export function Settings() {
   const [savingSiteName, setSavingSiteName] = useState(false)
   const [savingEmail, setSavingEmail] = useState(false)
   const [emailEnabled, setEmailEnabled] = useState(false)
-  const [emailHost, setEmailHost] = useState('')
-  const [emailPort, setEmailPort] = useState<number>(SMTP_DEFAULTS.port)
-  const [emailSecurity, setEmailSecurity] = useState<SmtpSecurity>(SMTP_DEFAULTS.security)
-  const [emailUsername, setEmailUsername] = useState('')
-  const [emailPassword, setEmailPassword] = useState('')
-  const [emailFromAddress, setEmailFromAddress] = useState('')
-  const [emailFromName, setEmailFromName] = useState('')
+  const [emailChannelId, setEmailChannelId] = useState('')
   const [registerCodeEnabled, setRegisterCodeEnabled] = useState(false)
-  const [registerCodeSubject, setRegisterCodeSubject] = useState('')
-  const [registerCodeBody, setRegisterCodeBody] = useState('')
-  const [resetCodeSubject, setResetCodeSubject] = useState('')
-  const [resetCodeBody, setResetCodeBody] = useState('')
+  const [registerCodeTemplateId, setRegisterCodeTemplateId] = useState('')
+  const [resetCodeTemplateId, setResetCodeTemplateId] = useState('')
+  const [loginCodeTemplateId, setLoginCodeTemplateId] = useState('')
   const [emailDirty, setEmailDirty] = useState(false)
+  const [smtpChannels, setSmtpChannels] = useState<{ id: string, name: string, enabled: boolean }[]>([])
+  const [emailTemplates, setEmailTemplates] = useState<{ id: string, name: string, isBuiltIn: boolean }[]>([])
   const [savingTwofactor, setSavingTwofactor] = useState(false)
   const [twofaForced, setTwofaForced] = useState(false)
   const [loginCodeMode, setLoginCodeMode] = useState<LoginEmailCodeMode>('off')
   const [twofaDirty, setTwofaDirty] = useState(false)
   const [savingLoginSafety, setSavingLoginSafety] = useState(false)
   const [lsEnabled, setLsEnabled] = useState(true)
-  const [lsNotifyUser, setLsNotifyUser] = useState(true)
-  const [lsNotifyAdmin, setLsNotifyAdmin] = useState(true)
-  const [lsRecipients, setLsRecipients] = useState('')
+  const [lsNotifyChannelIds, setLsNotifyChannelIds] = useState<string[]>([])
+  const [lsNotifyEmails, setLsNotifyEmails] = useState<string[]>([])
+  const [lsChannelOptions, setLsChannelOptions] = useState<{ value: string, label: string }[]>([])
   const [lsIpFailThreshold, setLsIpFailThreshold] = useState(20)
   const [lsIpFailWindow, setLsIpFailWindow] = useState(10)
   const [lsIpBanMinutes, setLsIpBanMinutes] = useState(30)
   const [lsDistinctUsers, setLsDistinctUsers] = useState(5)
   const [lsNewIpDays, setLsNewIpDays] = useState(90)
   const [lsTravelWindow, setLsTravelWindow] = useState(120)
-  const [lsUserAlertSubject, setLsUserAlertSubject] = useState('')
-  const [lsUserAlertBody, setLsUserAlertBody] = useState('')
-  const [lsAdminAlertSubject, setLsAdminAlertSubject] = useState('')
-  const [lsAdminAlertBody, setLsAdminAlertBody] = useState('')
   const [loginSafetyDirty, setLoginSafetyDirty] = useState(false)
-  const [testTo, setTestTo] = useState('')
-  const [sendingTest, setSendingTest] = useState(false)
   const [savingMemory, setSavingMemory] = useState(false)
   const [clearingMemory, setClearingMemory] = useState(false)
   const [memoryEnabled, setMemoryEnabled] = useState(false)
@@ -284,6 +270,40 @@ export function Settings() {
 
   useEffect(() => {
     void load()
+    // 通知渠道下拉：高风险事件推送目标取启用中的全部渠道；邮箱验证绑定下拉取全部 SMTP 渠道（含停用，标记展示）
+    getNotificationChannels()
+      .then((channels) => {
+        setLsChannelOptions(
+          channels
+            .filter(c => c.enabled !== false)
+            .map(c => ({ value: String(c.id ?? ''), label: c.name ?? '' }))
+            .filter(o => o.value.length > 0),
+        )
+        setSmtpChannels(
+          channels
+            .filter(c => c.type === 'smtp')
+            .map(c => ({ id: String(c.id ?? ''), name: c.name ?? '', enabled: c.enabled !== false }))
+            .filter(c => c.id.length > 0),
+        )
+      })
+      .catch(() => {
+        // 渠道列表加载失败不阻塞设置页，下拉为空即可
+        setLsChannelOptions([])
+        setSmtpChannels([])
+      })
+    // 验证码通知模板下拉：绑定用，含内置模板（注册/登录/找回密码验证码）
+    getNotificationTemplates()
+      .then((templates) => {
+        setEmailTemplates(
+          templates
+            .map(t => ({ id: String(t.id ?? ''), name: t.name ?? '', isBuiltIn: t.isBuiltIn === true }))
+            .filter(t => t.id.length > 0),
+        )
+      })
+      .catch(() => {
+        // 模板列表加载失败不阻塞设置页，下拉为空即可
+        setEmailTemplates([])
+      })
   }, [])
 
   async function load() {
@@ -320,22 +340,11 @@ export function Settings() {
       setSiteName(valueOf(SettingKeys.systemName).trim())
       setSiteNameDirty(false)
       setEmailEnabled(valueOf(SettingKeys.smtpEnabled) === 'true')
-      setEmailHost(valueOf(SettingKeys.smtpHost).trim())
-      const parsedPort = Number.parseInt(valueOf(SettingKeys.smtpPort), 10)
-      setEmailPort(
-        Number.isFinite(parsedPort) && parsedPort >= 1 && parsedPort <= 65535 ? parsedPort : SMTP_DEFAULTS.port,
-      )
-      const security = valueOf(SettingKeys.smtpSecurity).trim().toLowerCase()
-      setEmailSecurity((SMTP_SECURITY_OPTIONS as readonly string[]).includes(security) ? (security as SmtpSecurity) : SMTP_DEFAULTS.security)
-      setEmailUsername(valueOf(SettingKeys.smtpUsername).trim())
-      setEmailPassword(valueOf(SettingKeys.smtpPassword))
-      setEmailFromAddress(valueOf(SettingKeys.smtpFromAddress).trim())
-      setEmailFromName(valueOf(SettingKeys.smtpFromName).trim())
+      setEmailChannelId(valueOf(SettingKeys.smtpChannelId).trim())
       setRegisterCodeEnabled(valueOf(SettingKeys.registerEmailCodeEnabled) === 'true')
-      setRegisterCodeSubject(valueOf(SettingKeys.smtpRegisterCodeSubject))
-      setRegisterCodeBody(valueOf(SettingKeys.smtpRegisterCodeBody))
-      setResetCodeSubject(valueOf(SettingKeys.smtpResetCodeSubject))
-      setResetCodeBody(valueOf(SettingKeys.smtpResetCodeBody))
+      setRegisterCodeTemplateId(valueOf(SettingKeys.smtpRegisterCodeTemplateId).trim())
+      setResetCodeTemplateId(valueOf(SettingKeys.smtpResetCodeTemplateId).trim())
+      setLoginCodeTemplateId(valueOf(SettingKeys.smtpLoginCodeTemplateId).trim())
       setEmailDirty(false)
       setTwofaForced(valueOf(SettingKeys.loginForced2fa) === 'true')
       const parsedLoginCodeMode = valueOf(SettingKeys.loginEmailCodeMode).trim().toLowerCase()
@@ -345,11 +354,21 @@ export function Settings() {
           : 'off',
       )
       setTwofaDirty(false)
-      setTestTo('')
       setLsEnabled(valueOf(SettingKeys.lsEnabled) !== 'false')
-      setLsNotifyUser(valueOf(SettingKeys.lsNotifyUserEnabled) !== 'false')
-      setLsNotifyAdmin(valueOf(SettingKeys.lsNotifyAdminEnabled) !== 'false')
-      setLsRecipients(valueOf(SettingKeys.lsAdminRecipients).trim())
+      setLsNotifyChannelIds(
+        valueOf(SettingKeys.lsNotifyChannelIds)
+          .trim()
+          .split(',')
+          .map(id => id.trim())
+          .filter(id => /^\d+$/.test(id)),
+      )
+      setLsNotifyEmails(
+        valueOf(SettingKeys.lsNotifyEmails)
+          .trim()
+          .split(',')
+          .map(email => email.trim())
+          .filter(email => email.length > 0),
+      )
       const lsInt = (key: string, fallback: number, min: number, max: number) => {
         const parsed = Number.parseInt(valueOf(key), 10)
         return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback
@@ -360,10 +379,6 @@ export function Settings() {
       setLsDistinctUsers(lsInt(SettingKeys.lsDistinctUserThreshold, 5, 1, 10000))
       setLsNewIpDays(lsInt(SettingKeys.lsNewIpDays, 90, 0, 3650))
       setLsTravelWindow(lsInt(SettingKeys.lsTravelWindowMinutes, 120, 1, 525600))
-      setLsUserAlertSubject(valueOf(SettingKeys.lsUserAlertSubject))
-      setLsUserAlertBody(valueOf(SettingKeys.lsUserAlertBody))
-      setLsAdminAlertSubject(valueOf(SettingKeys.lsAdminAlertSubject))
-      setLsAdminAlertBody(valueOf(SettingKeys.lsAdminAlertBody))
       setLoginSafetyDirty(false)
       setMemoryEnabled(valueOf(SettingKeys.memoryEnabled) === 'true')
       setMemoryModelId(valueOf(SettingKeys.memoryEmbeddingModel).trim())
@@ -462,19 +477,14 @@ export function Settings() {
     setSavingLoginSafety(true)
     try {
       await saveSetting(SettingKeys.lsEnabled, lsEnabled ? 'true' : 'false')
-      await saveSetting(SettingKeys.lsNotifyUserEnabled, lsNotifyUser ? 'true' : 'false')
-      await saveSetting(SettingKeys.lsNotifyAdminEnabled, lsNotifyAdmin ? 'true' : 'false')
-      await saveSetting(SettingKeys.lsAdminRecipients, lsRecipients.trim())
+      await saveSetting(SettingKeys.lsNotifyChannelIds, lsNotifyChannelIds.join(','))
+      await saveSetting(SettingKeys.lsNotifyEmails, lsNotifyEmails.join(','))
       await saveSetting(SettingKeys.lsIpFailThreshold, String(lsIpFailThreshold))
       await saveSetting(SettingKeys.lsIpFailWindowMinutes, String(lsIpFailWindow))
       await saveSetting(SettingKeys.lsIpBanMinutes, String(lsIpBanMinutes))
       await saveSetting(SettingKeys.lsDistinctUserThreshold, String(lsDistinctUsers))
       await saveSetting(SettingKeys.lsNewIpDays, String(lsNewIpDays))
       await saveSetting(SettingKeys.lsTravelWindowMinutes, String(lsTravelWindow))
-      await saveSetting(SettingKeys.lsUserAlertSubject, lsUserAlertSubject.trim())
-      await saveSetting(SettingKeys.lsUserAlertBody, lsUserAlertBody)
-      await saveSetting(SettingKeys.lsAdminAlertSubject, lsAdminAlertSubject.trim())
-      await saveSetting(SettingKeys.lsAdminAlertBody, lsAdminAlertBody)
       feedback.success(t('settings.saveSuccess'))
       setLoginSafetyDirty(false)
     } catch {
@@ -516,30 +526,15 @@ export function Settings() {
   }
 
   async function handleSaveEmail() {
-    if (
-      !Number.isInteger(emailPort) ||
-      emailPort < 1 ||
-      emailPort > 65535
-    ) {
-      feedback.error(t('settings.email.invalidPort'))
-      return
-    }
     setSavingEmail(true)
     try {
-      // 先写开关再写连接项，开启状态下连接项随后覆盖生效
+      // 先写开关再写绑定项；SMTP 连接配置与验证码邮件模板统一在通知中心维护，此处仅绑定 id
       await saveSetting(SettingKeys.smtpEnabled, emailEnabled ? 'true' : 'false')
-      await saveSetting(SettingKeys.smtpHost, emailHost.trim())
-      await saveSetting(SettingKeys.smtpPort, String(emailPort))
-      await saveSetting(SettingKeys.smtpSecurity, emailSecurity)
-      await saveSetting(SettingKeys.smtpUsername, emailUsername.trim())
-      await saveSetting(SettingKeys.smtpPassword, emailPassword)
-      await saveSetting(SettingKeys.smtpFromAddress, emailFromAddress.trim())
-      await saveSetting(SettingKeys.smtpFromName, emailFromName.trim())
+      await saveSetting(SettingKeys.smtpChannelId, emailChannelId.trim())
       await saveSetting(SettingKeys.registerEmailCodeEnabled, registerCodeEnabled ? 'true' : 'false')
-      await saveSetting(SettingKeys.smtpRegisterCodeSubject, registerCodeSubject.trim())
-      await saveSetting(SettingKeys.smtpRegisterCodeBody, registerCodeBody)
-      await saveSetting(SettingKeys.smtpResetCodeSubject, resetCodeSubject.trim())
-      await saveSetting(SettingKeys.smtpResetCodeBody, resetCodeBody)
+      await saveSetting(SettingKeys.smtpRegisterCodeTemplateId, registerCodeTemplateId.trim())
+      await saveSetting(SettingKeys.smtpResetCodeTemplateId, resetCodeTemplateId.trim())
+      await saveSetting(SettingKeys.smtpLoginCodeTemplateId, loginCodeTemplateId.trim())
       feedback.success(t('settings.saveSuccess'))
       setEmailDirty(false)
     } catch {
@@ -548,6 +543,33 @@ export function Settings() {
     } finally {
       setSavingEmail(false)
     }
+  }
+
+  /** 渲染验证码通知模板绑定下拉（选项来自通知中心模板列表，内置模板带标识；清空即回退内置模板） */
+  function renderCodeTemplateField(prefix: string, value: string, onChange: (v: string) => void) {
+    return (
+      <Field label={t(`${prefix}.name`)}>
+        <Select
+          value={value || undefined}
+          placeholder={t(`${prefix}.placeholder`)}
+          aria-label={t(`${prefix}.name`)}
+          showSearch
+          optionFilterProp="label"
+          allowClear
+          options={emailTemplates.map(tpl => ({
+            value: tpl.id,
+            label: tpl.isBuiltIn ? `${tpl.name}（${t('settings.email.template.builtinTag')}）` : tpl.name,
+          }))}
+          onChange={(v) => {
+            onChange(typeof v === 'string' ? v : '')
+            setEmailDirty(true)
+          }}
+          notFoundContent={t('settings.email.template.empty')}
+          style={{ maxWidth: 480 }}
+        />
+        <Text type="secondary">{t(`${prefix}.desc`)}</Text>
+      </Field>
+    )
   }
 
   async function handleSaveTwofactor() {
@@ -675,28 +697,6 @@ export function Settings() {
       // 错误已由全局请求中间件统一提示
     } finally {
       setClearingMemory(false)
-    }
-  }
-
-  async function handleSendTestEmail() {
-    // 测试邮件使用已保存的服务端配置，本地未保存的修改不参与发送
-    if (emailDirty) {
-      feedback.error(t('settings.email.testSaveFirst'))
-      return
-    }
-    const to = testTo.trim()
-    if (!to) {
-      feedback.error(t('settings.email.testToRequired'))
-      return
-    }
-    setSendingTest(true)
-    try {
-      await sendTestEmail(to)
-      feedback.success(t('settings.email.testSuccess'))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSendingTest(false)
     }
   }
 
@@ -1046,111 +1046,24 @@ export function Settings() {
                 marginTop: spacing.lg,
               }}
             >
-              <div style={{ display: 'flex', gap: spacing.md }}>
-                <div style={{ flex: 2, minWidth: 0 }}>
-                  <Field label={t('settings.email.host.name')}>
-                    <Input
-                      value={emailHost}
-                      placeholder={t('settings.email.host.placeholder')}
-                      aria-label={t('settings.email.host.name')}
-                      onChange={(e) => {
-                        setEmailHost(e.target.value)
-                        setEmailDirty(true)
-                      }}
-                    />
-                  </Field>
-                </div>
-                <div style={{ width: 160, flexShrink: 0 }}>
-                  <Field label={t('settings.email.port.name')}>
-                    <InputNumber
-                      value={emailPort}
-                      min={1}
-                      max={65535}
-                      precision={0}
-                      aria-label={t('settings.email.port.name')}
-                      onChange={(value) => {
-                        setEmailPort(typeof value === 'number' ? value : SMTP_DEFAULTS.port)
-                        setEmailDirty(true)
-                      }}
-                      style={{ width: '100%' }}
-                    />
-                  </Field>
-                </div>
-                <div style={{ width: 260, flexShrink: 0 }}>
-                  <Field label={t('settings.email.security.name')}>
-                    <Select
-                      value={emailSecurity}
-                      aria-label={t('settings.email.security.name')}
-                      onChange={(value) => {
-                        setEmailSecurity(value)
-                        setEmailDirty(true)
-                      }}
-                      options={[
-                        { value: 'ssl', label: t('settings.email.securitySsl') },
-                        { value: 'starttls', label: t('settings.email.securityStarttls') },
-                        { value: 'none', label: t('settings.email.securityNone') },
-                      ]}
-                      style={{ width: '100%' }}
-                    />
-                  </Field>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: spacing.md }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Field label={t('settings.email.username.name')}>
-                    <Input
-                      value={emailUsername}
-                      placeholder={t('settings.email.username.placeholder')}
-                      aria-label={t('settings.email.username.name')}
-                      onChange={(e) => {
-                        setEmailUsername(e.target.value)
-                        setEmailDirty(true)
-                      }}
-                    />
-                  </Field>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Field label={t('settings.email.password.name')}>
-                    <Input.Password
-                      value={emailPassword}
-                      placeholder={t('settings.email.password.placeholder')}
-                      aria-label={t('settings.email.password.name')}
-                      onChange={(e) => {
-                        setEmailPassword(e.target.value)
-                        setEmailDirty(true)
-                      }}
-                    />
-                  </Field>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: spacing.md }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Field label={t('settings.email.fromAddress.name')}>
-                    <Input
-                      value={emailFromAddress}
-                      placeholder={t('settings.email.fromAddress.placeholder')}
-                      aria-label={t('settings.email.fromAddress.name')}
-                      onChange={(e) => {
-                        setEmailFromAddress(e.target.value)
-                        setEmailDirty(true)
-                      }}
-                    />
-                  </Field>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Field label={t('settings.email.fromName.name')}>
-                    <Input
-                      value={emailFromName}
-                      placeholder={t('settings.email.fromName.placeholder')}
-                      aria-label={t('settings.email.fromName.name')}
-                      onChange={(e) => {
-                        setEmailFromName(e.target.value)
-                        setEmailDirty(true)
-                      }}
-                    />
-                  </Field>
-                </div>
-              </div>
+              <Field label={t('settings.email.channel.name')}>
+                <Select
+                  value={emailChannelId || undefined}
+                  placeholder={t('settings.email.channel.placeholder')}
+                  aria-label={t('settings.email.channel.name')}
+                  showSearch
+                  optionFilterProp="label"
+                  allowClear
+                  options={smtpChannels.map(c => ({ value: c.id, label: c.enabled ? c.name : `${c.name}（${t('notification.status.disabled')}）` }))}
+                  onChange={(value) => {
+                    setEmailChannelId(typeof value === 'string' ? value : '')
+                    setEmailDirty(true)
+                  }}
+                  notFoundContent={t('settings.email.channel.empty')}
+                  style={{ maxWidth: 480 }}
+                />
+                <Text type="secondary">{t('settings.email.channel.desc')}</Text>
+              </Field>
               <div
                 style={{
                   display: 'flex',
@@ -1167,87 +1080,18 @@ export function Settings() {
                 </div>
                 <Switch
                   checked={registerCodeEnabled}
+                  aria-label={t('settings.email.registerCode.name')}
                   onChange={(checked) => {
                     setRegisterCodeEnabled(checked)
                     setEmailDirty(true)
                   }}
                 />
               </div>
-              <Field label={t('settings.email.registerCodeSubject.name')}>
-                <Input
-                  value={registerCodeSubject}
-                  placeholder={t('settings.email.registerCodeSubject.placeholder')}
-                  aria-label={t('settings.email.registerCodeSubject.name')}
-                  maxLength={500}
-                  onChange={(e) => {
-                    setRegisterCodeSubject(e.target.value)
-                    setEmailDirty(true)
-                  }}
-                />
-              </Field>
-              <Field label={t('settings.email.registerCodeBody.name')}>
-                <Input.TextArea
-                  value={registerCodeBody}
-                  placeholder={t('settings.email.registerCodeBody.placeholder')}
-                  aria-label={t('settings.email.registerCodeBody.name')}
-                  rows={3}
-                  maxLength={2000}
-                  onChange={(e) => {
-                    setRegisterCodeBody(e.target.value)
-                    setEmailDirty(true)
-                  }}
-                />
-              </Field>
-              <Field label={t('settings.email.resetCodeSubject.name')}>
-                <Input
-                  value={resetCodeSubject}
-                  placeholder={t('settings.email.resetCodeSubject.placeholder')}
-                  aria-label={t('settings.email.resetCodeSubject.name')}
-                  maxLength={500}
-                  onChange={(e) => {
-                    setResetCodeSubject(e.target.value)
-                    setEmailDirty(true)
-                  }}
-                />
-              </Field>
-              <Field label={t('settings.email.resetCodeBody.name')}>
-                <Input.TextArea
-                  value={resetCodeBody}
-                  placeholder={t('settings.email.resetCodeBody.placeholder')}
-                  aria-label={t('settings.email.resetCodeBody.name')}
-                  rows={3}
-                  maxLength={2000}
-                  onChange={(e) => {
-                    setResetCodeBody(e.target.value)
-                    setEmailDirty(true)
-                  }}
-                />
-                <Text type="secondary">{t('settings.email.templateTip')}</Text>
-              </Field>
+              {renderCodeTemplateField('settings.email.registerTemplate', registerCodeTemplateId, setRegisterCodeTemplateId)}
+              {renderCodeTemplateField('settings.email.resetTemplate', resetCodeTemplateId, setResetCodeTemplateId)}
+              {renderCodeTemplateField('settings.email.loginTemplate', loginCodeTemplateId, setLoginCodeTemplateId)}
+              <Text type="secondary" style={{ marginTop: `-${spacing.sm}` }}>{t('settings.email.templateTip')}</Text>
             </div>
-          )}
-
-          {emailEnabled && (
-            <Field label={t('settings.email.testTo.name')}>
-              <div style={{ display: 'flex', gap: spacing.md, alignItems: 'center' }}>
-                <Input
-                  value={testTo}
-                  placeholder={t('settings.email.testTo.placeholder')}
-                  aria-label={t('settings.email.testTo.name')}
-                  onChange={(e) => setTestTo(e.target.value)}
-                  style={{ maxWidth: 360 }}
-                />
-                <Button
-                  icon={<MailOutlined />}
-                  loading={sendingTest}
-                  disabled={loading}
-                  onClick={handleSendTestEmail}
-                >
-                  {t('settings.email.testSend')}
-                </Button>
-              </div>
-              {emailDirty && <Text type="secondary">{t('settings.email.testSaveFirst')}</Text>}
-            </Field>
           )}
 
           <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
@@ -1259,51 +1103,6 @@ export function Settings() {
             >
               {t('settings.save')}
             </Button>
-          </div>
-        </CollapsibleCard>
-
-        <CollapsibleCard title={t('settings.twofactor.title')}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md }}>
-              <div>
-                <Text strong style={{ display: 'block' }}>{t('settings.twofactor.forced.name')}</Text>
-                <Text type="secondary">{t('settings.twofactor.forced.desc')}</Text>
-              </div>
-              <Switch
-                aria-label={t('settings.twofactor.forced.name')}
-                checked={twofaForced}
-                disabled={loading}
-                onChange={(checked) => {
-                  setTwofaForced(checked)
-                  setTwofaDirty(true)
-                }}
-              />
-            </div>
-
-            <Field label={t('settings.twofactor.loginCodeMode.name')}>
-              <Radio.Group
-                aria-label={t('settings.twofactor.loginCodeMode.name')}
-                value={loginCodeMode}
-                disabled={loading}
-                onChange={(e) => {
-                  setLoginCodeMode(e.target.value as LoginEmailCodeMode)
-                  setTwofaDirty(true)
-                }}
-              >
-                <Radio value="off">{t('settings.twofactor.loginCodeMode.off')}</Radio>
-                <Radio value="always">{t('settings.twofactor.loginCodeMode.always')}</Radio>
-                <Radio value="after_fail">{t('settings.twofactor.loginCodeMode.afterFail')}</Radio>
-              </Radio.Group>
-              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-                {t('settings.twofactor.loginCodeMode.desc')}
-              </Text>
-            </Field>
-
-            <div style={{ textAlign: 'right' }}>
-              <Button type="primary" loading={savingTwofactor} disabled={!twofaDirty || loading} onClick={handleSaveTwofactor}>
-                {t('settings.save')}
-              </Button>
-            </div>
           </div>
         </CollapsibleCard>
 
@@ -1368,6 +1167,51 @@ export function Settings() {
         </CollapsibleCard>
 
         <CollapsibleCard title={t('settings.loginSafety.title')}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md }}>
+              <div>
+                <Text strong style={{ display: 'block' }}>{t('settings.twofactor.forced.name')}</Text>
+                <Text type="secondary">{t('settings.twofactor.forced.desc')}</Text>
+              </div>
+              <Switch
+                aria-label={t('settings.twofactor.forced.name')}
+                checked={twofaForced}
+                disabled={loading}
+                onChange={(checked) => {
+                  setTwofaForced(checked)
+                  setTwofaDirty(true)
+                }}
+              />
+            </div>
+
+            <Field label={t('settings.twofactor.loginCodeMode.name')}>
+              <Radio.Group
+                aria-label={t('settings.twofactor.loginCodeMode.name')}
+                value={loginCodeMode}
+                disabled={loading}
+                onChange={(e) => {
+                  setLoginCodeMode(e.target.value as LoginEmailCodeMode)
+                  setTwofaDirty(true)
+                }}
+              >
+                <Radio value="off">{t('settings.twofactor.loginCodeMode.off')}</Radio>
+                <Radio value="always">{t('settings.twofactor.loginCodeMode.always')}</Radio>
+                <Radio value="after_fail">{t('settings.twofactor.loginCodeMode.afterFail')}</Radio>
+              </Radio.Group>
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                {t('settings.twofactor.loginCodeMode.desc')}
+              </Text>
+            </Field>
+
+            <div style={{ textAlign: 'right' }}>
+              <Button type="primary" loading={savingTwofactor} disabled={!twofaDirty || loading} onClick={handleSaveTwofactor}>
+                {t('settings.save')}
+              </Button>
+            </div>
+          </div>
+
+          <Divider style={{ margin: `${spacing.lg}px 0` }} />
+
           <div
             style={{
               display: 'flex',
@@ -1390,64 +1234,38 @@ export function Settings() {
             />
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.md,
-              marginTop: spacing.sm,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <Text strong>{t('settings.loginSafety.notifyUser.name')}</Text>
-              <br />
-              <Text type="secondary">{t('settings.loginSafety.notifyUser.desc')}</Text>
-            </div>
-            <Switch
-              checked={lsNotifyUser}
-              onChange={(checked) => {
-                setLsNotifyUser(checked)
+          <Field label={t('settings.loginSafety.notifyChannels.name')}>
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              value={lsNotifyChannelIds}
+              options={lsChannelOptions}
+              placeholder={t('settings.loginSafety.notifyChannels.placeholder')}
+              aria-label={t('settings.loginSafety.notifyChannels.name')}
+              onChange={(value) => {
+                setLsNotifyChannelIds(value)
                 setLoginSafetyDirty(true)
               }}
             />
-          </div>
+            <Text type="secondary">{t('settings.loginSafety.notifyChannels.desc')}</Text>
+          </Field>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.md,
-              marginTop: spacing.sm,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <Text strong>{t('settings.loginSafety.notifyAdmin.name')}</Text>
-              <br />
-              <Text type="secondary">{t('settings.loginSafety.notifyAdmin.desc')}</Text>
-            </div>
-            <Switch
-              checked={lsNotifyAdmin}
-              onChange={(checked) => {
-                setLsNotifyAdmin(checked)
+          <Field label={t('settings.loginSafety.notifyEmails.name')}>
+            <Select
+              mode="tags"
+              open={false}
+              tokenSeparators={[',', '，', ' ']}
+              value={lsNotifyEmails}
+              placeholder={t('settings.loginSafety.notifyEmails.placeholder')}
+              aria-label={t('settings.loginSafety.notifyEmails.name')}
+              onChange={(value) => {
+                setLsNotifyEmails(value)
                 setLoginSafetyDirty(true)
               }}
             />
-          </div>
-
-          <Field label={t('settings.loginSafety.recipients.name')}>
-            <Input
-              value={lsRecipients}
-              placeholder={t('settings.loginSafety.recipients.placeholder')}
-              aria-label={t('settings.loginSafety.recipients.name')}
-              maxLength={2000}
-              onChange={(e) => {
-                setLsRecipients(e.target.value)
-                setLoginSafetyDirty(true)
-              }}
-            />
-            <Text type="secondary">{t('settings.loginSafety.recipients.desc')}</Text>
+            <Text type="secondary">{t('settings.loginSafety.notifyEmails.desc')}</Text>
           </Field>
 
           <div style={{ display: 'flex', gap: spacing.md }}>
@@ -1558,58 +1376,6 @@ export function Settings() {
               </Field>
             </div>
           </div>
-
-          <Field label={t('settings.loginSafety.userAlertSubject.name')}>
-            <Input
-              value={lsUserAlertSubject}
-              placeholder={t('settings.loginSafety.userAlertSubject.placeholder')}
-              aria-label={t('settings.loginSafety.userAlertSubject.name')}
-              maxLength={500}
-              onChange={(e) => {
-                setLsUserAlertSubject(e.target.value)
-                setLoginSafetyDirty(true)
-              }}
-            />
-          </Field>
-          <Field label={t('settings.loginSafety.userAlertBody.name')}>
-            <Input.TextArea
-              value={lsUserAlertBody}
-              placeholder={t('settings.loginSafety.userAlertBody.placeholder')}
-              aria-label={t('settings.loginSafety.userAlertBody.name')}
-              rows={3}
-              maxLength={2000}
-              onChange={(e) => {
-                setLsUserAlertBody(e.target.value)
-                setLoginSafetyDirty(true)
-              }}
-            />
-          </Field>
-          <Field label={t('settings.loginSafety.adminAlertSubject.name')}>
-            <Input
-              value={lsAdminAlertSubject}
-              placeholder={t('settings.loginSafety.adminAlertSubject.placeholder')}
-              aria-label={t('settings.loginSafety.adminAlertSubject.name')}
-              maxLength={500}
-              onChange={(e) => {
-                setLsAdminAlertSubject(e.target.value)
-                setLoginSafetyDirty(true)
-              }}
-            />
-          </Field>
-          <Field label={t('settings.loginSafety.adminAlertBody.name')}>
-            <Input.TextArea
-              value={lsAdminAlertBody}
-              placeholder={t('settings.loginSafety.adminAlertBody.placeholder')}
-              aria-label={t('settings.loginSafety.adminAlertBody.name')}
-              rows={3}
-              maxLength={2000}
-              onChange={(e) => {
-                setLsAdminAlertBody(e.target.value)
-                setLoginSafetyDirty(true)
-              }}
-            />
-            <Text type="secondary">{t('settings.loginSafety.templateTip')}</Text>
-          </Field>
 
           <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
             <Button

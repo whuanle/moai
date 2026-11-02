@@ -25,6 +25,7 @@
 |---|---|---|---|---|
 | 团队插件 创建/编辑/删除 | ✅ | 403 | 404 | - |
 | 团队可用插件列表 | ✅ | ✅ | 404 | - |
+| 团队插件使用统计 | ✅ | ✅ | 404 | - |
 | 系统插件私有授权 查询/更新 | - | - | - | ✅（`/ai/plugin/*` 门禁在 Controller） |
 
 团队可用插件列表 = 本团队自有插件（custom/dynamic）+ 可用系统插件（`is_public=true` 或 已在 `plugin_team_authorization` 授权本团队）。
@@ -43,6 +44,7 @@
 | 方法 | 路由 | 说明 | 出参 |
 |---|---|---|---|
 | GET | `/api/team/{teamId}/plugin/list` | 团队可用插件列表（含 myRole/canManage） | `QueryTeamPluginsCommandResponse` |
+| GET | `/api/team/{teamId}/plugin/stats` | 团队插件使用统计（仅本团队自有插件，成员可访问） | `QueryTeamPluginStatsCommandResponse` |
 | GET | `/api/team/{teamId}/plugin/dynamic_templates` | 可用动态模板（注册表发现，成员可访问） | `QueryPluginListCommandResponse` |
 | GET | `/api/team/{teamId}/plugin/{pluginId}/detail` | 自定义插件详情（团队自有/可用系统插件） | `QueryCustomPluginDetailCommandResponse` |
 | POST | `/api/team/{teamId}/plugin/{pluginId}/functions` | 插件函数列表 | `QueryCustomPluginFunctionsListCommandResponse` |
@@ -56,7 +58,7 @@
 
 命令均实现 `IUserIdContext`，Controller 复用 `IUserContextProvider.SetUserContext` 注入当前用户；Handler 内用 `ITeamService.GetMyRoleAsync` 判角色。列表/详情/函数/运行仅需成员；创建/编辑/删除/刷新/预上传需 Owner/Admin。
 
-前端不再自绘简化表格：自定义/动态两个 Tab 复用管理员面板同款弹窗组件（`McpPluginModal`/`OpenApiModal`/`FunctionListModal`/`PluginRunDrawer`），通过可选注入的 `loadDetail`/`loadFunctions`/`uploadFile`/`runPlugin` 适配团队接口；`TeamPlugins` 仅负责拉取一次列表并按 `kind` 分发。
+前端不再自绘简化表格：自定义/动态两个 Tab 复用管理员面板同款弹窗组件（`McpPluginModal`/`OpenApiModal`/`FunctionListModal`/`PluginRunDrawer`）与卡片/工具栏组件（`PageToolbar`/`PluginCardView`/`PluginAvatarUpload`），通过可选注入的 `loadDetail`/`loadFunctions`/`uploadFile`/`runPlugin` 适配团队接口；`TeamPlugins` 仅负责拉取一次列表并按 `kind` 分发。团队面板与系统插件页（`pages/plugins/`）UI 同构：搜索/类型筛选 + 卡片/列表双视图 + 分类标签行；差异仅两处——归属标签（团队自有/系统）替代可见性标签，编辑/删除/刷新受 `canManage && isTeamOwned` 门禁（系统授权插件只读）。
 
 ## 4b. 团队变量插值（2026-09-20）
 
@@ -77,6 +79,15 @@
 - **自定义插件（MCP/OpenAPI）统一执行收口**：新增 `ICustomPluginCaller`（接口在 `MoAI.AIPlugin.Core/Services`，实现在 Custom `CustomPluginCaller`）：按插件名加载 plugin/plugin_custom/plugin_functions，团队变量插值后调用 `McpToolCallService`/`OpenApiToolCallService`；`RunPluginCommand` / `RunTeamPluginCommand` 增可选 `Function`（为空且插件多函数时报错，单函数自动执行）。`/api/team/{teamId}/plugin/run` 因此修复了自定义插件此前 404 的缺口（可用性仍由 `IsPluginAvailableAsync` 把关），流程 plugin 节点经 `RunPluginCommand` 同样可执行（节点 `config.function` 指定函数）。见 [@TP-S35](./bdd.md#tp-s35)、[@TP-S36](./bdd.md#tp-s36)。
 - **Agent 运行时团队可用性校验**：`PluginAppToolProvider.GetToolsAsync` 构建工具前按应用团队过滤插件（本团队自有 / 系统公开 / 已授权），配置残留的未授权插件不再进入工具列表（`AppAgentBuildContext.TeamId` 两处构建点均已传入）。
 - **流程设计器**：插件节点选择自定义插件时需二次选择函数（`getTeamPluginFunctions` 拉取，落 `settings.function`）；节点库工具 Tab 文案改为「可用插件（团队 / 系统）」。
+
+## 4d. 团队插件统计（2026-11-02）
+
+团队插件管理页新增「统计」Tab，展示**仅本团队自有插件**的调用统计（口径与列表「团队自有」一致：custom/dynamic，不含系统插件、不含内存静态插件）：
+
+- **端点**：`GET /api/team/{teamId}/plugin/stats`（成员可访问，权限判定同列表：`ITeamService.GetMyRoleAsync`，非成员 404；teamId=0 与列表端点口径一致返回 404）。命令 `QueryTeamPluginStatsCommand`（`IUserIdContext` + `IModelValidator`）在 Shared，Handler 在 Core。
+- **出参** `QueryTeamPluginStatsCommandResponse`：概览（totalPlugins/mcpCount/openApiCount/totalCalls/totalFunctions）+ TOP5（id/name/counter/avatarPath，**不带团队维度字段**——本团队口径名称只显示插件名）+ 分类分布（classifyId/classifyName/count）+ 近 30 天趋势（逐日补 0）。
+- **趋势口径**：查统一统计日表 `resource_usage_daily`（`name=plugin-usage`，`resource_id` ∈ 本团队插件 id 的 "N" 格式），按日聚合、区间补 0；只读统计表，不写（统计写入仍走统计模块 flush，见 [../statistics/sop.md](../statistics/sop.md)）。
+- **前端**：`TeamPlugins` 新增 `stats` Tab（label 复用 `plugins.tabStats`）→ `TeamPluginStatsPanel`（取数 `getTeamPluginStats`，`ui/src/api/team-plugin.ts`）→ 复用系统插件页共享视图 `PluginStatsView`（`ui/src/pages/plugins/components/PluginStatsView.tsx`，与系统插件统计页签同构：4 概览卡 + 调用趋势 + 类型构成 + 调用量 TOP5 + 分类分布）。系统端 TOP 名称附团队名 `{名称}-({团队名})`，团队端不附（见 [../aiplugin-dynamic/sdd.md](../aiplugin-dynamic/sdd.md) 插件统计一节）。分类分布标签直接用后端 `classifyName`（未分类 key=0 前端兜底文案），团队页不再依赖 `classifyApi`。场景见 [@TP-S37](./bdd.md#tp-s37)、[@TP-S38](./bdd.md#tp-s38)。
 
 ## 5. 关键决策
 

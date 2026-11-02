@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Common.Queries.Response;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Database.Seed;
 using MoAI.Infra;
 using MoAI.Infra.Services;
@@ -54,10 +55,13 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
             .Select(s => s.Value)
             .FirstOrDefaultAsync(cancellationToken) ?? string.Empty).Trim();
 
-        // 注册验证码开关与 SMTP 启用状态是登录/注册页在认证前渲染的公开开关信息：
-        // 注册验证码要求两者同时为 true，找回密码仅要求 SMTP 已启用（未启用时由管理员重置）
+        // 注册验证码开关与邮箱验证启用状态是登录/注册页在认证前渲染的公开开关信息：
+        // 注册验证码要求两者同时可用，找回密码仅要求邮箱验证可用（未启用时由管理员重置）；
+        // SMTP 连接配置统一在通知中心渠道维护，可用 = 总开关开启且绑定的 SMTP 渠道存在并启用
         var settingValues = await _databaseContext.Settings
-            .Where(s => s.Key == SettingDefinitions.SmtpEnabledKey || s.Key == SettingDefinitions.RegisterEmailCodeEnabledKey)
+            .Where(s => s.Key == SettingDefinitions.SmtpEnabledKey
+                || s.Key == SettingDefinitions.SmtpChannelIdKey
+                || s.Key == SettingDefinitions.RegisterEmailCodeEnabledKey)
             .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
 
         bool ResolveFlag(string key)
@@ -71,6 +75,18 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
         }
 
         var smtpEnabled = ResolveFlag(SettingDefinitions.SmtpEnabledKey);
+        var passwordResetEnabled = false;
+        if (smtpEnabled
+            && settingValues.TryGetValue(SettingDefinitions.SmtpChannelIdKey, out var channelIdValue)
+            && long.TryParse(channelIdValue.Trim(), out var channelId)
+            && channelId > 0)
+        {
+            // 绑定的渠道必须存在且启用（软删除由全局过滤器剔除）
+            passwordResetEnabled = await _databaseContext.NotificationChannels
+                .Where(c => c.Id == channelId && c.Type == (int)NotificationChannelType.Smtp)
+                .Select(c => (bool?)c.Enabled)
+                .FirstOrDefaultAsync(cancellationToken) == true;
+        }
 
         return new QueryServerInfoCommandResponse
         {
@@ -81,8 +97,8 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
             Name = systemName.Length > 0 ? systemName : _systemOptions.Name,
             LogoPath = logoPath.Trim(),
             LoginBackgroundPath = loginBackgroundPath.Trim(),
-            RegisterEmailCodeRequired = smtpEnabled && ResolveFlag(SettingDefinitions.RegisterEmailCodeEnabledKey),
-            PasswordResetEnabled = smtpEnabled
+            RegisterEmailCodeRequired = passwordResetEnabled && ResolveFlag(SettingDefinitions.RegisterEmailCodeEnabledKey),
+            PasswordResetEnabled = passwordResetEnabled
         };
     }
 }

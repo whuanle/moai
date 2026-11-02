@@ -251,70 +251,41 @@
       "dialectNeo4j": "Neo4j"
     },
     "email": {
-      "title": "邮件服务（SMTP）",
+      "title": "邮箱验证",
       "enable": {
-        "name": "启用 SMTP 邮件服务",
-        "desc": "启用后，平台通知将通过该 SMTP 服务发送邮件；不启用时无需填写服务器信息。"
+        "name": "启用邮箱验证",
+        "desc": "启用后，平台邮件（注册/找回密码/登录验证码、安全告警等）通过绑定的 SMTP 服务发送；SMTP 连接配置统一在通知中心维护，此处仅绑定使用。"
       },
-      "host": {
-        "name": "SMTP 服务器",
-        "placeholder": "例如：smtp.exmail.qq.com"
-      },
-      "port": {
-        "name": "端口"
-      },
-      "security": {
-        "name": "加密方式"
-      },
-      "securitySsl": "SSL（隐式 TLS，通常 465）",
-      "securityStarttls": "STARTTLS（通常 587）",
-      "securityNone": "不加密（通常 25）",
-      "username": {
-        "name": "登录账号",
-        "placeholder": "例如：notify@example.com，内网免认证中继可留空"
-      },
-      "password": {
-        "name": "登录密码 / 授权码",
-        "placeholder": "请输入密码或授权码"
-      },
-      "fromAddress": {
-        "name": "发件人地址",
-        "placeholder": "留空使用登录账号"
-      },
-      "fromName": {
-        "name": "发件人显示名",
-        "placeholder": "例如：MoAI 通知"
+      "channel": {
+        "name": "绑定 SMTP 服务",
+        "placeholder": "选择通知中心已配置的 SMTP 服务",
+        "desc": "SMTP 服务器、账号与发件人等连接配置统一在「通知中心 → 渠道管理」维护，此处只需绑定即可；未绑定或绑定的服务停用时不发送邮件。",
+        "empty": "暂无 SMTP 服务，请先到通知中心创建"
       },
       "registerCode": {
         "name": "注册需要邮箱验证码",
-        "desc": "开启后，新用户注册需先输入邮箱验证码；需 SMTP 邮件服务已启用，保存后生效。"
+        "desc": "开启后，新用户注册需先输入邮箱验证码；需已启用并绑定 SMTP 服务，保存后生效。"
       },
-      "registerCodeSubject": {
-        "name": "注册验证码邮件主题",
-        "placeholder": "留空使用默认：{siteName} 注册验证码"
+      "registerTemplate": {
+        "name": "注册验证码通知模板",
+        "placeholder": "选择通知中心模板，留空使用内置模板",
+        "desc": "绑定的通知中心模板 id；留空使用平台内置的注册验证码模板（HTML）。模板内容与渲染测试在「通知中心 → 通知模板」维护。"
       },
-      "registerCodeBody": {
-        "name": "注册验证码邮件正文",
-        "placeholder": "留空使用默认模板"
+      "resetTemplate": {
+        "name": "找回密码验证码通知模板",
+        "placeholder": "选择通知中心模板，留空使用内置模板",
+        "desc": "绑定的通知中心模板 id；留空使用平台内置的找回密码验证码模板（HTML）。模板内容与渲染测试在「通知中心 → 通知模板」维护。"
       },
-      "resetCodeSubject": {
-        "name": "找回密码验证码邮件主题",
-        "placeholder": "留空使用默认：{siteName} 找回密码验证码"
+      "loginTemplate": {
+        "name": "登录验证码通知模板",
+        "placeholder": "选择通知中心模板，留空使用内置模板",
+        "desc": "绑定的通知中心模板 id；留空使用平台内置的登录验证码模板（HTML），登录策略在「两步验证与登录验证码」中配置。"
       },
-      "resetCodeBody": {
-        "name": "找回密码验证码邮件正文",
-        "placeholder": "留空使用默认模板"
+      "template": {
+        "builtinTag": "内置",
+        "empty": "暂无通知模板，请先到通知中心创建"
       },
-      "templateTip": "模板支持 {code}（验证码）、{siteName}（网站名称）、{expireMinutes}（有效分钟数）变量；留空使用内置默认模板。",
-      "testTo": {
-        "name": "测试收件地址",
-        "placeholder": "填写一个可收信的邮箱地址"
-      },
-      "testSend": "发送测试邮件",
-      "testSuccess": "测试邮件已发送，请到收件箱查收",
-      "testSaveFirst": "配置有修改尚未保存，请先保存再发送测试邮件",
-      "testToRequired": "请先填写测试收件地址",
-      "invalidPort": "端口必须是 1~65535 之间的整数"
+      "templateTip": "模板变量使用双花括号形态：{{code}}（验证码）、{{siteName}}（网站名称）、{{expireMinutes}}（有效分钟数），可原样复制到云邮件平台提审；内置模板可在通知中心编辑内容（不可删除），也可新建模板后在此绑定。"
     },
     "wikiUpload": {
       "title": "知识库",
@@ -387,7 +358,6 @@
       "clearSuccess": "已清空全部记忆。"
     },
     "twofactor": {
-      "title": "两步验证与登录验证码",
       "forced.name": "强制两步验证",
       "forced.desc": "开启后，未绑定 2FA 的用户登录时将强制进入个人设置绑定两步验证，绑定完成后才能使用系统",
       "loginCodeMode.name": "登录邮箱验证码",
@@ -402,18 +372,15 @@
         "name": "登录安全风控",
         "desc": "开启后记录登录日志并执行风险判定（新 IP/异地/疾速旅行/IP 爆破/撞库喷洒）；关闭时仅记录登录日志"
       },
-      "notifyUser": {
-        "name": "用户登录提醒邮件",
-        "desc": "中/高风险登录（新 IP、异地等）成功后给用户本人发提醒邮件；需邮件服务已启用"
+      "notifyChannels": {
+        "name": "风险事件通知渠道",
+        "desc": "高风险事件（IP 爆破/撞库/疾速旅行/管理员新环境）自动推送到勾选渠道，通知内容内置多语言模板（默认中文）；中/高风险登录始终给受影响用户发站内信；需要邮件就勾选 SMTP 渠道",
+        "placeholder": "选择要接收高风险告警的通知渠道"
       },
-      "notifyAdmin": {
-        "name": "管理员风险告警邮件",
-        "desc": "高风险事件给管理员发告警邮件；需邮件服务已启用"
-      },
-      "recipients": {
-        "name": "告警收件人",
-        "desc": "逗号分隔的额外收件人邮箱；留空时发送给全部 admin/root 用户的邮箱",
-        "placeholder": "ops@example.com,sec@example.com"
+      "notifyEmails": {
+        "name": "告警收件人邮箱",
+        "desc": "通知渠道含 SMTP 邮件渠道时必填；高风险事件告警邮件投递给这些邮箱",
+        "placeholder": "输入邮箱后回车，可填多个"
       },
       "ipFailThreshold": {
         "name": "IP 失败封禁阈值",
@@ -437,24 +404,7 @@
         "name": "疾速旅行窗口"
       },
       "minutesUnit": "分钟",
-      "daysUnit": "天",
-      "userAlertSubject": {
-        "name": "用户提醒邮件主题",
-        "placeholder": "留空使用默认模板"
-      },
-      "userAlertBody": {
-        "name": "用户提醒邮件正文",
-        "placeholder": "留空使用默认模板"
-      },
-      "adminAlertSubject": {
-        "name": "管理员告警邮件主题",
-        "placeholder": "留空使用默认模板"
-      },
-      "adminAlertBody": {
-        "name": "管理员告警邮件正文",
-        "placeholder": "留空使用默认模板"
-      },
-      "templateTip": "模板支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量"
+      "daysUnit": "天"
     }
   },
   "oauthconnect": {
@@ -1944,17 +1894,11 @@
   "adminOrgRoles": {
     "searchPlaceholder": "搜索组织名称",
     "refresh": "刷新",
-    "assign": "按用户分配",
+    "resizeHandleHint": "拖拽调整左栏宽度，双击恢复自适应",
     "rootNode": "默认根",
     "createTop": "新建顶级组织",
     "addChild": "新建下级组织",
     "emptySelection": "在左侧选择一个组织查看成员",
-    "defaultRoleBadge": "默认组织",
-    "setDefault": "设为默认组织",
-    "clearDefault": "取消默认组织",
-    "setDefaultSuccess": "已设为默认组织，新注册用户将自动获得",
-    "clearDefaultSuccess": "已取消默认组织",
-    "clearDefaultConfirm": "取消后新注册用户将不再自动获得该组织（存量绑定不变），确认取消？",
     "dropBlocked": "不能挂到自身或其下级组织之下",
     "moveSuccess": "组织层级已调整",
     "colActions": "操作",
@@ -1985,20 +1929,14 @@
     "updateSuccess": "组织已更新",
     "deleteSuccess": "组织已删除",
     "membersSearchPlaceholder": "搜索用户名/昵称",
+    "membersQuery": "查询",
     "addMember": "添加成员",
     "addMemberPlaceholder": "搜索用户（用户名/昵称/邮箱）",
     "addMemberEmpty": "未找到用户",
     "addMemberSuccess": "成员已添加",
     "removeMember": "移除",
     "removeMemberConfirm": "确认将该用户从该组织移除？",
-    "removeMemberSuccess": "成员已移除",
-    "assignTitle": "按用户分配组织",
-    "assignUserPlaceholder": "搜索用户（用户名/昵称/邮箱）",
-    "assignUserEmpty": "未找到用户",
-    "assignRolesPlaceholder": "选择该用户的组织（可多选）",
-    "assignSave": "保存",
-    "assignSuccess": "用户组织已保存",
-    "assignHint": "保存将整体覆盖该用户的组织集合，清空选择即移除其全部组织。"
+    "removeMemberSuccess": "成员已移除"
   },
   "grantScope": {
     "title": "授权范围",
@@ -3275,6 +3213,7 @@
   },
   "notification": {
     "tabChannels": "渠道管理",
+    "tabTemplates": "通知模板",
     "tabLogs": "发送记录",
     "colName": "渠道名称",
     "colType": "类型",
@@ -3291,6 +3230,8 @@
     "colContent": "正文",
     "colError": "失败原因",
     "colDuration": "耗时",
+    "colTargetUsers": "关联用户",
+    "colRecipients": "收件人",
     "enabledOn": "启用",
     "enabledOff": "停用",
     "create": "新建渠道",
@@ -3300,6 +3241,7 @@
     "test": "测试",
     "testForm": "保存前试发",
     "testFormTip": "用当前表单配置同步发送一条测试通知（无需先保存）",
+    "rowTestTitle": "测试渠道「{{name}}」",
     "refresh": "刷新",
     "searchName": "按渠道名称搜索",
     "searchChannel": "按渠道过滤",
@@ -3316,14 +3258,17 @@
     "broadcastTitle": "发送广播通知",
     "broadcastSend": "发送",
     "broadcastQueued": "广播已提交，将投递到 {{count}} 个启用渠道，结果见发送记录",
-    "broadcastTip": "广播异步投递全部启用渠道，投递结果可在「发送记录」中查看",
+    "broadcastTip": "投递结果可在「发送记录」中查看",
+    "broadcastInSiteSent": "站内信已发送给全部启用用户",
     "formName": "渠道名称",
     "formType": "渠道类型（保存后不可变更）",
     "form": {
       "webhookUrl": "Webhook 地址",
-      "webhookUrlExtra": "机器人消息推送地址（https）",
+      "webhookUrlExtraFeishu": "在飞书群聊「设置 → 群机器人 → 添加机器人 → 自定义机器人」创建后获取；要按用户对个人推送请改选「飞书应用机器人」（填 App ID / App Secret）",
+      "webhookUrlExtraDingTalk": "在钉钉群聊「群设置 → 智能群助手 → 机器人管理 → 自定义机器人」创建后获取；要按用户对个人推送请改选「钉钉应用机器人」（填 AppKey / AppSecret / AgentId）",
       "secret": "签名密钥",
-      "secretExtra": "机器人开启签名校验时必填，否则留空",
+      "secretExtraFeishu": "自定义机器人安全设置勾选「签名校验」时必填，否则留空",
+      "secretExtraDingTalk": "SEC 开头的加签密钥，安全设置选择「加签」时必填，否则留空",
       "baseUrl": "Bot API 地址",
       "baseUrlExtra": "默认官方地址，可指向镜像",
       "botToken": "Bot Token",
@@ -3334,11 +3279,17 @@
       "headers": "自定义请求头（JSON）",
       "headersExtra": "可选，对象形式，键值对将被原样附加到请求头",
       "bodyTemplate": "请求体模板",
-      "bodyTemplateExtra": "可选，占位符 {title} {content} {level} {source} {time}；留空发送默认 JSON",
-      "recipients": "收件人邮箱",
-      "recipientsExtra": "回车或逗号分隔多个；SMTP 服务器复用系统设置",
-      "subjectPrefix": "邮件主题前缀",
-      "subjectPrefixExtra": "留空使用【MoAI】",
+      "bodyTemplateExtra": "可选，占位符 {title} {content} {level} {source} {time}；留空发送默认 JSON；JSON 模板请在自定义请求头配置 Content-Type: application/json，否则按 text/plain 发送",
+      "testRecipients": "试发收件人邮箱",
+      "testRecipientsExtra": "保存前试发时投递给这些邮箱",
+      "testRecipientsRowExtra": "收件人发送时动态指定，本次试发投递给这些邮箱",
+      "testPhoneNumbers": "试发收件人手机号",
+      "testPhoneNumbersExtra": "保存前试发时投递给这些手机号",
+      "testPhoneNumbersRowExtra": "收件人发送时动态指定，本次试发投递给这些手机号",
+      "broadcastEmailRecipients": "收件人邮箱",
+      "broadcastEmailRecipientsExtra": "所选渠道含邮件渠道时必填；广播投递给这些邮箱",
+      "broadcastPhoneNumbers": "收件人手机号",
+      "broadcastPhoneNumbersExtra": "所选渠道含短信渠道时必填；广播投递给这些手机号（短信需模板）",
       "insiteUserIds": "收件用户 ID",
       "insiteUserIdsExtra": "逗号分隔的用户 id",
       "insiteToAdmins": "推送全部管理员",
@@ -3347,16 +3298,82 @@
       "description": "渠道描述",
       "title": "标题",
       "content": "正文",
-      "level": "级别"
+      "level": "级别",
+      "broadcastChannels": "投递渠道",
+      "broadcastChannelsPlaceholder": "选择要投递的启用渠道，可多选",
+      "broadcastChannelsExtra": "仅投递所选启用渠道；与站内信至少选择其一",
+      "sendInSite": "发送站内信",
+      "sendInSiteExtra": "勾选后站内信将发送给全部启用用户",
+      "gotifyUrl": "Gotify 服务器地址",
+      "gotifyToken": "Gotify 应用 Token",
+      "ntfyUrl": "ntfy 服务器地址",
+      "ntfyTopic": "ntfy Topic",
+      "barkUrl": "bark-server 地址",
+      "barkDeviceKey": "Bark Device Key",
+      "serverChanUrl": "Server酱 接口地址",
+      "serverChanKey": "Server酱 SendKey",
+      "pushPlusUrl": "PushPlus 接口地址",
+      "pushPlusToken": "PushPlus Token",
+      "selfHostExtra": "留空使用官方地址，自建服务填自己的地址",
+      "appId": "App ID",
+      "appSecret": "App Secret",
+      "appKey": "AppKey",
+      "corpId": "企业 ID（CorpId）",
+      "corpSecret": "应用 Secret",
+      "agentId": "AgentId",
+      "appBotTargetExtra": "投递目标为「已绑定该平台账号」的站内用户（个人中心 → 第三方账号绑定），可对个人推送；此处应用凭证可与第三方登录的应用不同，测试发送仅发给当前管理员",
+      "accessKeyId": "AccessKey Id",
+      "accessKeySecret": "AccessKey Secret",
+      "secretId": "SecretId",
+      "secretKey": "SecretKey",
+      "smsSdkAppId": "短信应用 SdkAppId",
+      "smsSignName": "短信签名名称",
+      "smsSignNameExtra": "需为平台侧审核通过的签名",
+      "smsEndpoint": "短信服务地址",
+      "smtpHost": "SMTP 服务器",
+      "smtpHostPlaceholder": "例如：smtp.exmail.qq.com",
+      "smtpPort": "端口",
+      "smtpSecurity": "加密方式",
+      "smtpSecuritySsl": "SSL（隐式 TLS，通常 465）",
+      "smtpSecurityStarttls": "STARTTLS（通常 587）",
+      "smtpSecurityNone": "不加密（通常 25）",
+      "smtpUsername": "登录账号",
+      "smtpUsernamePlaceholder": "例如：notify@example.com，免认证中继可留空",
+      "smtpPassword": "登录密码 / 授权码",
+      "smtpPasswordPlaceholder": "请输入密码或授权码",
+      "smtpFromAddress": "发件人地址",
+      "smtpFromAddressPlaceholder": "留空使用登录账号",
+      "smtpFromName": "发件人显示名",
+      "smtpFromNamePlaceholder": "例如：MoAI 通知",
+      "smtpConnectionExtra": "连接配置随渠道保存，可被系统设置「邮箱验证」绑定复用；修改后可先「测试」验证连通性。",
+      "useTemplate": "使用通知模板",
+      "useTemplateExtra": "按模板插值生成标题与正文；短信渠道只能经模板发送",
+      "template": "通知模板",
+      "templatePlaceholder": "选择要使用的通知模板",
+      "titleTemplateExtra": "使用模板时标题由模板生成（模板未配置主题时才回退到此值）",
+      "contentTemplateExtra": "使用模板时正文由模板插值生成"
     },
     "type": {
-      "feishuWebhook": "飞书机器人",
-      "dingtalkWebhook": "钉钉机器人",
-      "wecomWebhook": "企业微信机器人",
+      "feishuWebhook": "飞书自定义机器人",
+      "dingtalkWebhook": "钉钉自定义机器人",
+      "wecomWebhook": "企业微信群机器人",
+      "feishuAppBot": "飞书应用机器人",
+      "dingtalkAppBot": "钉钉应用机器人",
+      "wecomAppBot": "企业微信应用机器人",
       "telegramBot": "Telegram Bot",
       "webhook": "通用 Webhook",
       "smtp": "SMTP 邮件",
-      "inSite": "站内推送"
+      "inSite": "站内推送",
+      "slack": "Slack",
+      "discord": "Discord",
+      "microsoftTeams": "Microsoft Teams",
+      "gotify": "Gotify",
+      "ntfy": "ntfy",
+      "bark": "Bark",
+      "serverChan": "Server酱",
+      "pushPlus": "PushPlus",
+      "aliyunSms": "阿里云短信",
+      "tencentSms": "腾讯云短信"
     },
     "level": {
       "info": "信息",
@@ -3366,7 +3383,8 @@
     "status": {
       "pending": "待发送",
       "success": "成功",
-      "failed": "失败"
+      "failed": "失败",
+      "disabled": "已停用"
     },
     "error": {
       "nameRequired": "请输入渠道名称",
@@ -3381,8 +3399,86 @@
       "chatIdRequired": "请输入目标 Chat ID",
       "urlRequired": "请输入请求地址",
       "headersInvalid": "自定义请求头必须是 JSON 对象",
-      "recipientsRequired": "请至少添加一个收件人邮箱",
-      "inSiteTargetRequired": "请填写收件用户或开启推送管理员"
+      "testRecipientsRequired": "请至少添加一个试发收件人邮箱",
+      "testRecipientsRequiredSms": "请至少添加一个试发收件人手机号",
+      "broadcastEmailRecipientsRequired": "投递渠道包含邮件渠道，请填写收件人邮箱",
+      "broadcastPhoneRecipientsRequired": "投递渠道包含短信渠道，请填写收件人手机号",
+      "inSiteTargetRequired": "请填写收件用户或开启推送管理员",
+      "broadcastTargetRequired": "请选择投递渠道或勾选发送站内信",
+      "baseUrlRequired": "请输入服务器地址",
+      "tokenRequired": "请输入 Token",
+      "topicRequired": "请输入 ntfy Topic",
+      "deviceKeyRequired": "请输入 Bark Device Key",
+      "sendKeyRequired": "请输入 Server酱 SendKey",
+      "appIdRequired": "请输入 App ID",
+      "appSecretRequired": "请输入 App Secret",
+      "appKeyRequired": "请输入 AppKey",
+      "corpIdRequired": "请输入企业 ID（CorpId）",
+      "corpSecretRequired": "请输入应用 Secret",
+      "agentIdRequired": "请输入 AgentId",
+      "smtpHostRequired": "请输入 SMTP 服务器地址",
+      "smtpPortInvalid": "端口必须是 1~65535 之间的整数",
+      "smtpFromAddressInvalid": "发件人地址不是合法的邮箱地址",
+      "accessKeyIdRequired": "请输入 AccessKey Id",
+      "accessKeySecretRequired": "请输入 AccessKey Secret",
+      "secretIdRequired": "请输入 SecretId",
+      "secretKeyRequired": "请输入 SecretKey",
+      "smsSdkAppIdRequired": "请输入短信应用 SdkAppId",
+      "signNameRequired": "请输入短信签名名称",
+      "templateRequired": "请选择通知模板",
+      "templateVarRequired": "请输入变量值"
+    },
+    "template": {
+      "create": "新建模板",
+      "createTitle": "新建通知模板",
+      "editTitle": "编辑模板：{{name}}",
+      "builtinTag": "内置",
+      "builtinTip": "平台内置模板（验证码邮件等）：可编辑内容，不可删除；系统设置未绑定自定义模板时按用途自动使用",
+      "deleteSuccess": "模板已删除",
+      "deleteConfirm": "确定删除模板「{{name}}」？历史发送记录将保留",
+      "saveSuccess": "模板已保存",
+      "colVariables": "变量",
+      "colContentType": "内容类型",
+      "colPlatformMapping": "平台模板映射",
+      "noVariables": "无变量",
+      "contentTypeText": "纯文本",
+      "test": "测试",
+      "testTitle": "测试模板：{{name}}",
+      "testRun": "渲染并发送",
+      "testChannel": "试发渠道",
+      "testChannelPlaceholder": "选择要试发的启用渠道",
+      "testChannelExtra": "可选；不选时仅渲染预览不发送",
+      "testSendSuccess": "试发成功（{{ms}}ms），发送记录可在「发送记录」查看",
+      "testSendFailed": "试发失败",
+      "renderedTitle": "渲染后主题",
+      "renderedContent": "渲染后正文",
+      "formName": "模板名称",
+      "formContentType": "内容类型",
+      "formContentTypeExtra": "HTML 模板经 SMTP 渠道发送带样式邮件；其它渠道自动降级为纯文本",
+      "formTitle": "通知主题模板",
+      "formTitlePlaceholder": "例如：【{{siteName}}】告警通知",
+      "formTitleExtra": "邮件主题用，短信无主题；可含 {{变量}} 双花括号占位符",
+      "formContent": "通知正文模板",
+      "formContentPlaceholder": "正文内容，使用 {{变量名}} 双花括号作为占位符，例如：您的验证码为 {{code}}，{{expireMinutes}} 分钟内有效",
+      "formContentHtmlPlaceholder": "<!DOCTYPE html> 或 <html> 开头的完整 HTML 模板，可从在线邮件平台复制后按需修改变量占位符",
+      "formContentExtra": "正文使用 {{变量名}} 双花括号占位符（与云邮件平台提审形态一致），发送时按下方变量定义传入值插值；模板内容可复制到阿里云/腾讯云等平台提交模板审核",
+      "formVariables": "变量定义",
+      "formVariablesExtra": "变量名需字母开头，仅字母/数字/下划线；示例值便于复制到外部平台提审时对照",
+      "varName": "变量名",
+      "varDescription": "说明",
+      "varExample": "示例值",
+      "addVariable": "添加变量",
+      "formAliyunCode": "阿里云短信模板 Code",
+      "formAliyunCodeExtra": "可选；在阿里云平台审核通过后回填，阿里云短信渠道发送时使用",
+      "formTencentId": "腾讯云短信模板 Id",
+      "formTencentIdExtra": "可选；在腾讯云平台审核通过后回填，腾讯云短信渠道发送时使用",
+      "error": {
+        "titleMax": "模板主题不能超过 256 字",
+        "contentRequired": "请输入模板正文",
+        "codeMax": "长度不能超过 128 字",
+        "varNameRequired": "请输入变量名",
+        "varNameInvalid": "变量名需字母开头，仅字母/数字/下划线"
+      }
     }
   },
   "loginsafety": {
@@ -3460,14 +3556,20 @@
     "tabAll": "全部",
     "tabUnread": "未读",
     "markRead": "标记已读",
-    "markAllRead": "全部已读",
-    "markAllReadConfirm": "将全部消息标记为已读？",
-    "markAllReadSuccess": "已全部标记为已读",
     "readSuccess": "已标记为已读",
     "delete": "删除",
     "deleteConfirm": "确定删除这条消息吗？",
     "deleteSuccess": "已删除",
     "empty": "暂无消息",
-    "senderSystem": "系统"
+    "senderSystem": "系统",
+    "selectAll": "全选",
+    "selectMessage": "选择消息：{{title}}",
+    "selectedCount": "已选 {{count}} 条",
+    "batchRead": "批量已读",
+    "batchReadSuccess": "已批量标记为已读",
+    "batchDelete": "批量删除",
+    "batchDeleteConfirm": "确定删除选中的 {{count}} 条消息吗？",
+    "batchDeleteConfirmSkip": "确定删除选中的 {{count}} 条已读消息吗？未读 {{unread}} 条将自动忽略",
+    "batchDeleteSkippedSuccess": "已删除 {{deleted}} 条，{{unread}} 条未读已自动忽略"
   }
 }

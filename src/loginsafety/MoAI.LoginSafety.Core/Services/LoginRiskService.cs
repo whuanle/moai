@@ -11,7 +11,7 @@ using StackExchange.Redis.Extensions.Core.Abstractions;
 namespace MoAI.LoginSafety.Services;
 
 /// <summary>
-/// 登录风控领域服务实现：规则判定 + 登录日志/风险事件落库 + IP 封禁 + Hangfire 异步邮件通知.
+/// 登录风控领域服务实现：规则判定 + 登录日志/风险事件落库 + IP 封禁 + Hangfire 异步通知（站内信/通知渠道）.
 /// 所有持久化与通知均在评估内完成，评估异常不影响登录主流程.
 /// </summary>
 public class LoginRiskService : ILoginRiskService
@@ -123,12 +123,12 @@ public class LoginRiskService : ILoginRiskService
             ? $"滑动窗口内登录失败 {totalFail} 次"
             : $"滑动窗口内对 {distinctUsers} 个不同用户名登录失败", cancellationToken);
 
-        // 封禁属于高风险事件，记录风险事件并告警管理员
+        // 封禁属于高风险事件，记录风险事件并推送已配置的通知渠道
         var reason = LoginRiskRule.GetTitle(ruleCode);
         var eventId = await PersistRiskEventAsync(context, geo, ruleCode, LoginRiskLevel.High, reason, now, cancellationToken);
-        if (settings.NotifyAdminEnabled)
+        if (settings.NotifyChannelIds.Count > 0)
         {
-            EnqueueNotify(eventId, LoginRiskNotifyJob.Targets.Admin);
+            EnqueueNotify(eventId, LoginRiskNotifyJob.Targets.Channels);
         }
 
         return new RiskEvaluationResult { RiskLevel = LoginRiskLevel.High, Reasons = new[] { reason }, IpBanned = true };
@@ -228,14 +228,12 @@ public class LoginRiskService : ILoginRiskService
 
         var eventId = await PersistRiskEventAsync(context, geo, primaryRule, level, string.Join("；", reasons), now, cancellationToken, lastProvince: lastSuccess?.Province ?? string.Empty);
 
-        if (settings.NotifyUserEnabled)
-        {
-            EnqueueNotify(eventId, LoginRiskNotifyJob.Targets.User);
-        }
+        // 中/高风险登录成功：站内信提醒受影响用户（固定逻辑，无开关）
+        EnqueueNotify(eventId, LoginRiskNotifyJob.Targets.User);
 
-        if (level == LoginRiskLevel.High && settings.NotifyAdminEnabled)
+        if (level == LoginRiskLevel.High && settings.NotifyChannelIds.Count > 0)
         {
-            EnqueueNotify(eventId, LoginRiskNotifyJob.Targets.Admin);
+            EnqueueNotify(eventId, LoginRiskNotifyJob.Targets.Channels);
         }
 
         return new RiskEvaluationResult { RiskLevel = level, Reasons = reasons };

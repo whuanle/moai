@@ -9,7 +9,6 @@ import {
   getOrgRoles,
   getUserOrgRoles,
   updateOrgRole,
-  updateOrgRoleDefault,
   updateUserOrgRoles,
 } from '@/api/org'
 
@@ -18,7 +17,6 @@ vi.mock('@/api/org', () => ({
   createOrgRole: vi.fn().mockResolvedValue({ orgRoleId: 3, path: '/3/' }),
   updateOrgRole: vi.fn().mockResolvedValue(undefined),
   deleteOrgRole: vi.fn().mockResolvedValue(undefined),
-  updateOrgRoleDefault: vi.fn().mockResolvedValue(undefined),
   getOrgRoleUsers: vi.fn().mockResolvedValue([]),
   getUserOrgRoles: vi.fn().mockResolvedValue({ userId: 100, userName: 'zhangsan', nickName: '张三', items: [] }),
   updateUserOrgRoles: vi.fn().mockResolvedValue(undefined),
@@ -54,8 +52,8 @@ describe('OrgRolesPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getOrgRoles).mockResolvedValue([
-      { orgRoleId: 1, name: '集团总部', parentId: null, path: '/1/', userCount: 0, hasChildren: true, isDefault: false },
-      { orgRoleId: 2, name: '销售部', parentId: 1, path: '/1/2/', userCount: 2, hasChildren: false, isDefault: true },
+      { orgRoleId: 1, name: '集团总部', parentId: null, path: '/1/', userCount: 0, hasChildren: true },
+      { orgRoleId: 2, name: '销售部', parentId: 1, path: '/1/2/', userCount: 2, hasChildren: false },
     ])
     vi.mocked(getOrgRoleUsers).mockResolvedValue([
       {
@@ -78,12 +76,11 @@ describe('OrgRolesPanel', () => {
     })
   })
 
-  it('左侧树顶部固定默认根，组织挂其下且带成员数与默认徽标', async () => {
+  it('左侧树顶部固定默认根，组织挂其下且带成员数', async () => {
     renderPanel()
     expect(await screen.findByText('默认根')).toBeTruthy()
     expect(await screen.findByText('集团总部')).toBeTruthy()
     expect(screen.getByText('销售部')).toBeTruthy()
-    expect(document.querySelector('[aria-label="默认组织"]')).toBeTruthy()
   })
 
   it('点击组织后右栏按用户管理样式加载成员列表', async () => {
@@ -94,7 +91,7 @@ describe('OrgRolesPanel', () => {
     expect(screen.getByText('13800000000')).toBeTruthy()
     expect(screen.getByText('普通用户')).toBeTruthy()
     expect(screen.getByText('正常')).toBeTruthy()
-    await waitFor(() => expect(getOrgRoleUsers).toHaveBeenCalledWith(2, ''))
+    await waitFor(() => expect(getOrgRoleUsers).toHaveBeenCalledWith(2))
   })
 
   it('未选中组织时右栏为空态提示', async () => {
@@ -120,10 +117,18 @@ describe('OrgRolesPanel', () => {
     await waitFor(() => expect(createOrgRole).toHaveBeenCalledWith({ name: '子公司', parentId: 1 }))
   })
 
+  it('每个组织节点行内带新建下级/编辑/删除三个图标按钮', async () => {
+    renderPanel()
+    await screen.findByText('销售部')
+    expect(nodeButton('销售部', '新建下级组织')).toBeTruthy()
+    expect(nodeButton('销售部', '编辑')).toBeTruthy()
+    expect(nodeButton('销售部', '删除')).toBeTruthy()
+  })
+
   it('编辑组织仅改名（层级保持不变）', async () => {
     renderPanel()
-    await selectRole('销售部', '/1/2/')
-    fireEvent.click(screen.getByRole('button', { name: '编辑' }))
+    await screen.findByText('销售部')
+    fireEvent.click(nodeButton('销售部', '编辑'))
     const input = await screen.findByPlaceholderText('请输入组织名称')
     expect((input as HTMLInputElement).value).toBe('销售部')
     fireEvent.change(input, { target: { value: '市场部' } })
@@ -131,27 +136,26 @@ describe('OrgRolesPanel', () => {
     await waitFor(() => expect(updateOrgRole).toHaveBeenCalledWith(2, { name: '市场部', parentId: 1 }))
   })
 
-  it('非默认组织可一键设为默认组织', async () => {
+  it('删除组织需 Popconfirm 二次确认（无需先选中组织）', async () => {
     renderPanel()
-    await selectRole('集团总部', '/1/')
-    fireEvent.click(screen.getByRole('button', { name: '设为默认组织' }))
-    await waitFor(() => expect(updateOrgRoleDefault).toHaveBeenCalledWith(1))
-  })
-
-  it('取消默认组织需二次确认后提交清空', async () => {
-    renderPanel()
-    await selectRole('销售部', '/1/2/')
-    fireEvent.click(screen.getByRole('button', { name: '取消默认组织' }))
-    fireEvent.click(await screen.findByRole('button', { name: /确\s*定|OK|确\s*认/ }))
-    await waitFor(() => expect(updateOrgRoleDefault).toHaveBeenCalledWith(null))
-  })
-
-  it('删除组织需 Popconfirm 二次确认', async () => {
-    renderPanel()
-    await selectRole('销售部', '/1/2/')
-    fireEvent.click(screen.getByRole('button', { name: '删除' }))
+    await screen.findByText('销售部')
+    fireEvent.click(nodeButton('销售部', '删除'))
     fireEvent.click(await screen.findByRole('button', { name: /确\s*定|OK|确\s*认/ }))
     await waitFor(() => expect(deleteOrgRole).toHaveBeenCalledWith(2))
+  })
+
+  it('成员查询按钮按用户名/昵称前端筛选当前组织成员', async () => {
+    renderPanel()
+    await selectRole('销售部', '/1/2/')
+    expect(await screen.findByText('张三')).toBeTruthy()
+    // 输入不匹配关键字并点击查询：列表被前端过滤，不触发后端请求
+    fireEvent.change(screen.getByPlaceholderText('搜索用户名/昵称'), { target: { value: 'lisi' } })
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    await waitFor(() => expect(screen.queryByText('张三')).toBeNull())
+    expect(getOrgRoleUsers).toHaveBeenCalledTimes(1)
+    // 清空输入后恢复全量
+    fireEvent.change(screen.getByPlaceholderText('搜索用户名/昵称'), { target: { value: '' } })
+    await waitFor(() => expect(screen.getByText('张三')).toBeTruthy())
   })
 
   it('成员移除按整体覆盖该用户组织集合提交', async () => {

@@ -50,6 +50,18 @@ public class PluginManageController : ControllerBase
     }
 
     /// <summary>
+    /// 查询插件使用统计（全团队汇总：概览计数 + 调用量 TOP（团队自有插件带团队名）+ 分类分布 + 近 30 天趋势）.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginStatsCommandResponse"/>.</returns>
+    [HttpGet("stats")]
+    public async Task<QueryPluginStatsCommandResponse> QueryStats(CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryPluginStatsCommand(), ct);
+    }
+
+    /// <summary>
     /// 设置插件头像.
     /// </summary>
     /// <param name="id">插件记录 id.</param>

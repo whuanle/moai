@@ -77,7 +77,7 @@ export function AccountOauth() {
 
   return (
     <Page>
-      <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Card title={t('account.oauthTitle')} loading={loading}>
           {providerList.length === 0 ? (
             <Text type="secondary">{t('account.oauthEmpty')}</Text>

@@ -370,66 +370,69 @@ Feature: 知识库允许上传的文件类型
 ```
 
 ```gherkin
-Feature: SMTP 邮件服务
+Feature: 邮箱验证与 SMTP 服务绑定（SMTP 连接配置统一在通知中心维护，此处仅绑定；旧 SET-S48~S55 随直连 SMTP 配置下线作废）
   Background:
-    Given 系统内置设置项 SMTP_ENABLED（默认 "false"）与 SMTP_HOST/SMTP_PORT/SMTP_SECURITY/SMTP_USERNAME/SMTP_PASSWORD/SMTP_FROM_ADDRESS/SMTP_FROM_NAME（默认空串，端口默认 "465"、加密默认 "ssl"）
+    Given 系统内置设置项 SMTP_ENABLED（默认 "false"）与 SMTP_CHANNEL_ID（默认空串）
+    And 通知中心存在 SMTP 渠道类型（自带 host/端口/加密/账号/发件人连接配置）
 
-  @SET-S48 @auto:e2e
-  Scenario: root 配置 SMTP 邮件服务并回读生效
-    When 保存 SMTP_ENABLED="true" 与服务器地址、端口、加密方式、登录账号、密码、发件人地址、发件人显示名
-    Then 八项保存成功，再次查询返回提交值
-    And 开关与加密方式的大小写输入归一为小写落库
+  @SET-S61 @auto:e2e
+  Scenario: SMTP 渠道连接配置在通知中心校验
+    When 管理员创建 host 为空 / 端口越界 / 加密方式非法 / 发件人非法的 SMTP 渠道
+    Then 均被拒绝（400）并提示对应错误
+    When 连接配置合法时创建
+    Then 渠道创建成功并返回 id
 
-  @SET-S49 @auto:e2e
-  Scenario: SMTP 配置保存格式校验
-    Given root 已登录
-    When 保存端口 "0"、"70000" 或 "abc"，或加密方式 "tls"，或开关 "yes"，或非法的发件人邮箱
-    Then 返回请求错误（400）提示格式无效
+  @SET-S62 @auto:e2e
+  Scenario: root 绑定 SMTP 服务并回读
+    When 保存 SMTP_ENABLED="true" 与 SMTP_CHANNEL_ID=<渠道 id>
+    Then 保存成功且回读一致
+    When 保存 SMTP_CHANNEL_ID 为非数字或负数，或 SMTP_ENABLED 为 "yes"
+    Then 返回请求错误（400）
 
-  @SET-S50 @auto:e2e
-  Scenario: 非 root 不能修改或发送测试邮件
+  @SET-S63 @auto:e2e
+  Scenario: 非 root 不能修改邮箱验证绑定
     Given member 已登录
-    When 修改任一 SMTP 设置
-    Then 返回禁止访问（403）
-    When member 或未登录发送测试邮件
-    Then 分别返回禁止访问（403）与未授权（401）
+    When 修改 SMTP_ENABLED 或 SMTP_CHANNEL_ID
+    Then 返回禁止访问（403）；未登录返回未授权（401）
 
-  @SET-S51 @auto:e2e
-  Scenario: 未启用或未配置服务器时测试邮件被拒绝
-    Given SMTP_ENABLED 为 "false"，或已启用但服务器地址为空
-    When root 发送测试邮件
-    Then 返回请求错误（400）提示未启用或未配置服务器地址
+  @SET-S64 @auto:e2e
+  Scenario: serverinfo 公开门禁联动
+    When 未启用开关、或未绑定、或绑定的渠道不存在/已停用
+    Then 公开 serverinfo 的 passwordResetEnabled 为 false
+    When 启用开关且绑定可用渠道
+    Then passwordResetEnabled 为 true；注册验证码开关未开启时 registerEmailCodeRequired 仍为 false
 
-  @SET-S52 @auto:e2e
-  Scenario: 发送测试邮件全链路
-    Given SMTP 指向本地 SMTP 桩服务器（不加密、免认证）
-    When root 发送测试邮件到指定收件地址
-    Then 操作成功，桩服务器收到一封邮件
-    And 信封发件人为配置的发件人地址、收件人为目标地址，DATA 含 Subject 与 Message-Id 头
+  @SET-S65 @auto:e2e
+  Scenario: 渠道自包含配置真实发信（免认证中继）
+    Given 渠道连接指向本地 SMTP 桩（不加密、免认证）
+    When 管理员执行渠道测试发送
+    Then 成功且桩收到一封邮件，信封发件人与收件人同渠道配置一致，DATA 含 Subject 与 Message-Id 头
 
-  @SET-S53 @auto:e2e
-  Scenario: 配置账号密码时先认证再发送
-    Given SMTP 配置了登录账号与密码，桩服务器要求认证
-    When root 发送测试邮件
-    Then 桩服务器记录到 AUTH 凭据与配置一致，认证后收到邮件
+  @SET-S66 @auto:e2e
+  Scenario: 渠道自带账号密码时先认证再发送
+    Given 渠道配置了登录账号与密码，桩服务器要求认证
+    When 管理员执行渠道测试发送
+    Then 桩记录到 AUTH 凭据与渠道配置一致，认证后收到邮件
 
-  @SET-S54 @auto:vitest
-  Scenario: 设置页邮件服务卡片
+  @SET-S67 @auto:vitest
+  Scenario: 设置页邮箱验证卡片
     Given root 登录并进入系统设置页
-    Then 「邮件服务（SMTP）」卡片默认折叠，未启用时不显示服务器字段与测试邮件入口
-    When 启用并填写连接信息保存
-    Then 先提交 SMTP_ENABLED 再提交七项连接设置
-    When 配置未保存时点击发送测试邮件
-    Then 被提示先保存；保存后填写收件地址可成功调用发送
+    Then 「邮箱验证」卡片默认折叠，未启用时不显示绑定下拉与模板绑定字段，也不再有服务器/账号连接字段
+    When 启用后展开绑定下拉
+    Then 选项来自通知中心的 SMTP 渠道（停用渠道带标记，其它类型不出现），并有注册/找回密码/登录三个验证码通知模板绑定下拉（选项来自通知模板列表，内置模板带标识）
+    When 保存
+    Then 提交 SMTP_ENABLED、SMTP_CHANNEL_ID、注册验证码开关与三个验证码模板绑定 id，不提交任何连接字段
+    When 清空绑定后保存
+    Then 提交空绑定
 
-  @SET-S55 @manual
-  Scenario: 业务读取 SMTP 配置与通知发送
+  @SET-S68 @manual
+  Scenario: 业务读取邮箱验证配置与系统邮件发送
     When 业务模块调用 IEmailSettingsService
-    Then 未启用时 Enabled=false 且不携带连接信息；启用时返回解析后的端口/加密方式与发件人（发件人留空回退登录账号）
-    When 业务模块调用 IEmailSenderService 发送通知邮件
-    Then 使用该配置经 MailKit 发送；未启用或未配置时抛出业务异常
+    Then 未启用、未绑定或绑定渠道不可用时 Enabled=false 且 ChannelId=0；可用时返回绑定渠道 id
+    When 业务模块调用 IEmailSenderService 发送系统邮件
+    Then 按绑定渠道的连接配置发送；不可用时抛出业务异常提示绑定
 
-Feature: 邮箱验证码设置（注册 / 找回密码）
+Feature: 邮箱验证码设置（注册 / 找回密码；旧 SET-S57/S58 随验证码邮件模板收敛到通知中心作废——模板统一在通知中心维护，此处仅绑定模板 id）
   @SET-S56 @auto:e2e
   Scenario: 注册验证码开关保存校验
     When 保存 REGISTER_EMAIL_CODE_ENABLED 为非布尔的非法值
@@ -437,18 +440,12 @@ Feature: 邮箱验证码设置（注册 / 找回密码）
     When 保存合法值
     Then 归一为小写并生效（注册验证码需 SMTP 邮件服务已启用才真正开启）
 
-  @SET-S57 @auto:e2e
-  Scenario: 注册验证码邮件主题模板保存
-    When 保存 SMTP_REGISTER_CODE_SUBJECT 超过 500 字符
-    Then 返回请求错误（400）
-    When 保存带首尾空白的内容
-    Then 去空白后落库回读
-
-  @SET-S58 @auto:e2e
-  Scenario: 验证码邮件正文模板保存
-    When 保存 SMTP_REGISTER_CODE_BODY 或 SMTP_RESET_CODE_BODY 超过 2000 字符
-    Then 返回请求错误（400）
-    And 模板渲染行为见 [@AUTH-S31](../auth/bdd.md#auth-s31)
+  @SET-S69 @auto:e2e
+  Scenario: 验证码通知模板绑定校验
+    When 保存 SMTP_REGISTER_CODE_TEMPLATE_ID / SMTP_RESET_CODE_TEMPLATE_ID / SMTP_LOGIN_CODE_TEMPLATE_ID 为非数字或负数
+    Then 返回请求错误（400）提示绑定的验证码通知模板 id 无效
+    When 保存带首尾空白的合法数字 id 或空值
+    Then 去空白后落库回读；空值合法（发送时回退内置模板，渲染语义见 [@AUTH-S31](../auth/bdd.md#auth-s31)）
 
   @SET-S59 @auto:e2e
   Scenario: 强制两步验证开关保存校验
@@ -461,5 +458,5 @@ Feature: 邮箱验证码设置（注册 / 找回密码）
   Scenario: 登录邮箱验证码策略保存校验
     When 保存 LOGIN_EMAIL_CODE_MODE 为 off/always/after_fail 之外的值
     Then 返回请求错误（400）提示必须为 off、always 或 after_fail
-    And 策略语义见 [@AUTH-S42](../auth/bdd.md#auth-s42)；SMTP_LOGIN_CODE_SUBJECT/BODY 模板超长 400，行为同 [@SET-S57](./bdd.md#set-s57)/[@SET-S58](./bdd.md#set-s58)
+    And 策略语义见 [@AUTH-S42](../auth/bdd.md#auth-s42)；登录验证码邮件模板同 [@SET-S69](./bdd.md#set-s69) 绑定校验
 ```

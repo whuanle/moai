@@ -61,7 +61,10 @@ public class TestNotificationChannelCommandHandler : IRequestHandler<TestNotific
             Title = $"通知渠道测试 - {(channel.Name.Length == 0 ? "未保存配置" : channel.Name)}",
             Content = $"这是一条 MoAI 通知中心的测试通知，发送时间 {NotificationText.Time()}。收到即表示渠道配置可用。",
             Level = NotificationLevel.Info,
-            Source = "notification"
+            Source = "notification",
+            TargetUserIds = new List<long> { request.ContextUserId },
+            EmailRecipients = channel.Type == (int)NotificationChannelType.Smtp ? request.Recipients : null,
+            PhoneNumbers = channel.Type is (int)NotificationChannelType.AliyunSms or (int)NotificationChannelType.TencentSms ? request.Recipients : null
         };
 
         var (success, error, durationMs) = await _dispatcher.SendAsync(channel, message, cancellationToken);

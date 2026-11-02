@@ -1,7 +1,10 @@
 // 组织管理 · E2E（场景 @ORG-S1..）
 // 覆盖：管理员门禁 / 组织树创建（path 物化路径计算）/ 同父重名 / 改名不动 path /
 //       子树整体迁移（path 重写）/ 防环 / 删除保护与级联解绑 / 用户组织分配与整体覆盖 /
+//       同级排序（sort_order：置顶/插位/跨级移动带排序，列表树序随排序）/
 //       统一组织授权（org_grant：self/up/down 方向判定、并集、树迁移重判、删除组织级联清授权）。
+// 注：默认组织（ORG_DEFAULT_ROLE 设置 + /org/role/default 端点 + 注册自动赋予）已下线，
+//     ORG-33~38 随之退役，编号永久不复用（留空洞）。
 // 前置：后端运行中；种子账号 admin / abcd123456（root 即管理员）。全部用例零真实外部依赖。
 // 用法：node local-dev/org-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 ORG_BASE 覆盖）
 import crypto from 'node:crypto'
@@ -195,47 +198,53 @@ async function main() {
   check('ORG-31 删除后列表不再出现', ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []).every((x) => x.orgRoleId !== leaf.id))
   check('ORG-32 重复删除 404', (await api('DELETE', `/api/org/role/${leaf.id}`, { token: root })).status === 404)
 
-  // ---- 默认组织（注册自动赋予）----
-  const defRole = await mkrole(root, `默认组织${TS}`, null)
-
-  check('ORG-33 非管理员设置默认组织 403', (await api('PUT', '/api/org/role/default', { token: user.token, body: { orgRoleId: defRole.id } })).status === 403)
-  check('ORG-34 设置不存在的默认组织 404', (await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: 999999 } })).status === 404)
-
-  const setDefault = await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: defRole.id } })
-  const listWithDefault = (await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []
-  const defItem = listWithDefault.find((x) => x.orgRoleId === defRole.id)
+  // 默认组织功能已下线，ORG-33~38 退役（编号不复用）
+  const defaultGone = await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: null } })
+  const listNoDefault = (await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []
   check(
-    'ORG-35 设置默认成功且列表回传 isDefault',
-    setDefault.status === 200 && defItem?.isDefault === true && listWithDefault.filter((x) => x.isDefault).length === 1,
-    JSON.stringify(defItem ?? {}).slice(0, 120),
+    'ORG-54 默认组织端点下线（请求落到更新路由 400）且列表不再回传默认标记',
+    defaultGone.status === 400 && listNoDefault.every((x) => x.isDefault === undefined),
+    `${defaultGone.status}`,
   )
 
-  const autoUser = await mkuser('od') // 注册于默认组织生效期间
-  const autoUserRoles = await api('GET', `/api/org/user/${autoUser.userId}/roles`, { token: root })
+  // ---- 同级排序（sort_order：拖拽排序落库，列表树序随排序）----
+  const sortE = await mkrole(root, `排序组${TS}`, null)
+  const rootIdsBefore = ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? [])
+    .filter((x) => x.parentId == null).map((x) => x.orgRoleId)
   check(
-    'ORG-36 注册新用户自动获得默认组织',
-    (autoUserRoles.json?.items ?? []).some((x) => x.orgRoleId === defRole.id),
-    JSON.stringify(autoUserRoles.json?.items ?? []).slice(0, 120),
+    'ORG-55 新组织追加同级末尾（创建晚也只排最后，列表树序可证）',
+    rootIdsBefore[rootIdsBefore.length - 1] === sortE.id && rootIdsBefore.indexOf(A.id) < rootIdsBefore.indexOf(D.id),
+    JSON.stringify(rootIdsBefore),
   )
 
-  const clearDefault = await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: null } })
-  const noDefaultUser = await mkuser('oe') // 注册于默认组织清空后
-  const noDefaultRoles = await api('GET', `/api/org/user/${noDefaultUser.userId}/roles`, { token: root })
+  const toFirst = await api('PUT', `/api/org/role/${sortE.id}/order`, { token: root, body: { parentId: null, prevOrgRoleId: null } })
+  const rootIdsFirst = ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? [])
+    .filter((x) => x.parentId == null).map((x) => x.orgRoleId)
   check(
-    'ORG-37 清空默认后新注册用户无组织',
-    clearDefault.status === 200 && (noDefaultRoles.json?.items ?? []).length === 0,
-    JSON.stringify(noDefaultRoles.json?.items ?? []).slice(0, 120),
+    'ORG-56 置顶排序（prev=null）后排在所有根组织之前',
+    toFirst.status === 200 && rootIdsFirst[0] === sortE.id,
+    `${toFirst.status} ${JSON.stringify(rootIdsFirst)}`,
   )
 
-  await api('PUT', '/api/org/role/default', { token: root, body: { orgRoleId: defRole.id } })
-  const delDefault = await api('DELETE', `/api/org/role/${defRole.id}`, { token: root })
-  const listAfterDel = (await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []
-  const afterDelUser = await mkuser('of') // 注册于默认组织被删后
-  const afterDelRoles = await api('GET', `/api/org/user/${afterDelUser.userId}/roles`, { token: root })
+  const afterA = await api('PUT', `/api/org/role/${sortE.id}/order`, { token: root, body: { parentId: null, prevOrgRoleId: A.id } })
+  const rootIdsAfter = ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? [])
+    .filter((x) => x.parentId == null).map((x) => x.orgRoleId)
   check(
-    'ORG-38 删除默认组织自动清空设置且新注册无组织',
-    delDefault.status === 200 && listAfterDel.every((x) => x.isDefault !== true) && (afterDelRoles.json?.items ?? []).length === 0,
-    `${delDefault.status} items=${(afterDelRoles.json?.items ?? []).length}`,
+    'ORG-57 插到指定组织之后（prev=A）紧随其后',
+    afterA.status === 200 && rootIdsAfter.indexOf(sortE.id) === rootIdsAfter.indexOf(A.id) + 1,
+    `${afterA.status} ${JSON.stringify(rootIdsAfter)}`,
+  )
+
+  const badPrev = await api('PUT', `/api/org/role/${sortE.id}/order`, { token: root, body: { parentId: null, prevOrgRoleId: C.id } })
+  check('ORG-58 插入参照不在目标同级 400', badPrev.status === 400, `${badPrev.status} ${badPrev.text.slice(0, 100)}`)
+
+  // 跨级移动带排序：D 的子组织升为根层置顶，path 重写为顶级
+  const moveToRoot = await api('PUT', `/api/org/role/${sameNameOtherParent.id}/order`, { token: root, body: { parentId: null, prevOrgRoleId: null } })
+  const movedItem = ((await api('GET', '/api/org/role/list', { token: root })).json?.items ?? []).find((x) => x.orgRoleId === sameNameOtherParent.id)
+  check(
+    'ORG-59 跨级移动带排序（子组织升顶级置顶、path 重写）',
+    moveToRoot.status === 200 && movedItem?.parentId == null && movedItem?.path === `/${sameNameOtherParent.id}/`,
+    `${moveToRoot.status} ${JSON.stringify(movedItem ?? {}).slice(0, 140)}`,
   )
 
   // ---- 统一组织授权（org_grant：资源按组织线定向放通）----
@@ -315,7 +324,7 @@ async function main() {
   )
 
   // ---- 清理（尽力而为）----
-  for (const roleId of [C.id, B.id, sameNameOtherParent.id, A.id, D.id]) {
+  for (const roleId of [C.id, B.id, sameNameOtherParent.id, sortE.id, A.id, D.id]) {
     await api('DELETE', `/api/org/role/${roleId}`, { token: root })
   }
   // 成员用户的组织集合随组织删除自动清空，无需单独清理

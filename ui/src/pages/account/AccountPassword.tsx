@@ -33,7 +33,7 @@ export function AccountPassword() {
 
   return (
     <Page>
-      <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Card title={t('account.passwordTitle')}>
           <Form<PasswordFormValues>
             form={passwordForm}

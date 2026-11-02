@@ -71,6 +71,15 @@ internal partial class NotificationLogConfiguration : IEntityTypeConfiguration<N
         entity.Property(e => e.Status)
             .HasComment("发送状态")
             .HasColumnName("status");
+        entity.Property(e => e.TargetUserIds)
+            .HasMaxLength(1000)
+            .HasComment("关联用户 id 快照（逗号分隔，定向个人推送时记录收件人；空为广播/全员）")
+            .HasColumnName("target_user_ids");
+        entity.Property(e => e.Recipients)
+            .HasMaxLength(1000)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("实际收件人快照（逗号分隔；SMTP 渠道记邮箱、短信渠道记手机号；固定地址渠道留空）")
+            .HasColumnName("recipients");
         entity.Property(e => e.Title)
             .HasMaxLength(256)
             .HasComment("通知标题")

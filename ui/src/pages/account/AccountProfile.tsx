@@ -76,7 +76,7 @@ export function AccountProfile() {
 
   return (
     <Page>
-      <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 24 }}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <Avatar size={72} src={avatar || undefined} icon={<UploadOutlined />}>

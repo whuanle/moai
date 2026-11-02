@@ -83,6 +83,40 @@ internal static class OrgRoleTreeGuard
         => $"{parentPath}{roleId}/";
 
     /// <summary>
+    /// 防环校验 + 子树整体迁移重写 path：本角色新 path = 新父 path + 本角色段，后代 = 新 path + 原相对后缀.
+    /// </summary>
+    /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="role">被移动角色（ParentId/Path 由调用方随后更新）.</param>
+    /// <param name="newParent">新父角色实体，根为 null.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>异步任务.</returns>
+    public static async Task RewriteSubtreePathsAsync(DatabaseContext databaseContext, OrgRoleEntity role, OrgRoleEntity? newParent, CancellationToken cancellationToken)
+    {
+        // 防环：新父 path 不得以本角色 path 为前缀（自身或任意后代作父都会命中）
+        if (newParent != null && newParent.Path.StartsWith(role.Path, StringComparison.Ordinal))
+        {
+            throw new BusinessException("不能将组织移动到自身或其下级组织之下.") { StatusCode = 400 };
+        }
+
+        var oldPath = role.Path;
+        var descendants = await databaseContext.OrgRoles
+            .Where(x => x.Id != role.Id && EF.Functions.Like(x.Path, oldPath + "%"))
+            .ToListAsync(cancellationToken);
+        var newParentPath = newParent?.Path ?? "/";
+        var maxDescendantSuffixLength = descendants.Count == 0 ? 0 : descendants.Max(x => x.Path.Length - oldPath.Length);
+        EnsurePathLength(newParentPath, role.Id, maxDescendantSuffixLength);
+
+        // 子树整体迁移：本角色新 path = 新父 path + 本角色段；后代 = 新 path + 原相对后缀
+        var newPath = BuildPath(newParentPath, role.Id);
+        foreach (var descendant in descendants)
+        {
+            descendant.Path = newPath + descendant.Path.Substring(oldPath.Length);
+        }
+
+        role.Path = newPath;
+    }
+
+    /// <summary>
     /// path 层级序比较：按 "/" 分段数值比较（"/7/" 与 "/10/" 数值序正确，纯字符串序会因位数不同乱序）.
     /// </summary>
     /// <param name="left">左 path.</param>

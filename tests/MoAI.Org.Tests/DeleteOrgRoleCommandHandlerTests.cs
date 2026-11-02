@@ -53,49 +53,4 @@ public class DeleteOrgRoleCommandHandlerTests
 
         Assert.Equal(404, ex.StatusCode);
     }
-
-    [Fact]
-    public async Task DeleteDefaultRole_ClearsDefaultSetting()
-    {
-        using var db = TestSqliteContext.Create();
-        db.Context.Users.Add(OrgTestSeed.User(100, "zhangsan", "张三"));
-        db.Context.OrgRoles.Add(OrgTestSeed.Role(3, "华东组", 2, "/1/2/3/"));
-        db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(100, 3));
-        db.Context.Settings.Add(new MoAI.Database.Entities.SettingEntity
-        {
-            Key = MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey,
-            Name = "组织默认角色",
-            Description = string.Empty,
-            Value = "3",
-        });
-        await db.Context.SaveChangesAsync();
-        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
-
-        await handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 3 }, CancellationToken.None);
-
-        var setting = await db.Context.Settings.SingleAsync(x => x.Key == MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey);
-        Assert.Equal(string.Empty, setting.Value);
-        Assert.False(await db.Context.OrgUserRoles.AnyAsync(x => x.RoleId == 3));
-    }
-
-    [Fact]
-    public async Task DeleteNonDefaultRole_KeepsDefaultSetting()
-    {
-        using var db = TestSqliteContext.Create();
-        db.Context.OrgRoles.Add(OrgTestSeed.Role(3, "华东组", 2, "/1/2/3/"));
-        db.Context.Settings.Add(new MoAI.Database.Entities.SettingEntity
-        {
-            Key = MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey,
-            Name = "组织默认角色",
-            Description = string.Empty,
-            Value = "9",
-        });
-        await db.Context.SaveChangesAsync();
-        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
-
-        await handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 3 }, CancellationToken.None);
-
-        var setting = await db.Context.Settings.SingleAsync(x => x.Key == MoAI.Database.Seed.SettingDefinitions.OrgDefaultRoleKey);
-        Assert.Equal("9", setting.Value);
-    }
 }

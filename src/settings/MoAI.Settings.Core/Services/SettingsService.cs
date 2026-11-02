@@ -22,32 +22,7 @@ public class SettingsService : ISettingsService
     public const int MaxSystemNameLength = 50;
 
     /// <summary>
-    /// SMTP 服务器地址最大长度.
-    /// </summary>
-    public const int MaxSmtpHostLength = 255;
-
-    /// <summary>
-    /// SMTP 登录账号最大长度.
-    /// </summary>
-    public const int MaxSmtpUsernameLength = 320;
-
-    /// <summary>
-    /// SMTP 登录密码最大长度.
-    /// </summary>
-    public const int MaxSmtpPasswordLength = 200;
-
-    /// <summary>
-    /// 发件人显示名最大长度.
-    /// </summary>
-    public const int MaxSmtpFromNameLength = 100;
-
-    /// <summary>
-    /// 验证码邮件主题模板最大长度（与 EmailSenderService 主题上限一致）.
-    /// </summary>
-    public const int MaxEmailSubjectLength = 500;
-
-    /// <summary>
-    /// 验证码邮件正文模板最大长度（setting.value 列上限）.
+    /// 设置值通用最大长度（setting.value 列上限，如通知渠道 ID 列表）.
     /// </summary>
     public const int MaxSettingValueLength = 2000;
 
@@ -123,8 +98,8 @@ public class SettingsService : ISettingsService
     }
 
     /// <summary>
-    /// 校验带格式约束的设置值（沙箱上限三项、网站名称、知识库文件类型、SMTP 邮件服务组），非法值直接拒绝，避免脏上限卡住全部应用的沙箱配置保存.
-    /// 知识库文件类型返回归一后的值（小写去重），SMTP 开关/端口/加密方式与主机账号等返回归一后的值，其余原样返回.
+    /// 校验带格式约束的设置值（沙箱上限三项、网站名称、知识库文件类型、邮箱验证绑定组），非法值直接拒绝，避免脏上限卡住全部应用的沙箱配置保存.
+    /// 知识库文件类型返回归一后的值（小写去重），邮箱验证开关与绑定渠道 id 返回归一后的值，其余原样返回.
     /// </summary>
     private static string ValidateValue(string key, string value)
     {
@@ -168,18 +143,18 @@ public class SettingsService : ISettingsService
                 var enabled = value.Trim().ToLowerInvariant();
                 if (enabled != "true" && enabled != "false")
                 {
-                    throw new BusinessException("SMTP 邮件服务开关必须为 true 或 false.") { StatusCode = 400 };
+                    throw new BusinessException("邮箱验证开关必须为 true 或 false.") { StatusCode = 400 };
                 }
 
                 return enabled;
-            case SettingDefinitions.SmtpHostKey:
-                var host = value.Trim();
-                if (host.Length > MaxSmtpHostLength)
+            case SettingDefinitions.SmtpChannelIdKey:
+                var channelId = value.Trim();
+                if (channelId.Length > 0 && (!long.TryParse(channelId, out var parsedChannelId) || parsedChannelId <= 0))
                 {
-                    throw new BusinessException($"SMTP 服务器地址长度不能超过 {MaxSmtpHostLength} 个字符.") { StatusCode = 400 };
+                    throw new BusinessException("绑定的 SMTP 服务 id 无效.") { StatusCode = 400 };
                 }
 
-                return host;
+                return channelId;
             case SettingDefinitions.StatisticsGranularityKey:
                 var granularity = value.Trim().ToLowerInvariant();
                 if (granularity != "day" && granularity != "hour")
@@ -188,57 +163,6 @@ public class SettingsService : ISettingsService
                 }
 
                 return granularity;
-            case SettingDefinitions.SmtpPortKey:
-                if (!int.TryParse(value.Trim(), out var port) || port < 1 || port > 65535)
-                {
-                    throw new BusinessException("SMTP 端口必须是 1~65535 之间的整数.") { StatusCode = 400 };
-                }
-
-                return value.Trim();
-            case SettingDefinitions.SmtpSecurityKey:
-                var security = value.Trim().ToLowerInvariant();
-                if (security != "ssl" && security != "starttls" && security != "none")
-                {
-                    throw new BusinessException("SMTP 加密方式必须是 ssl、starttls 或 none.") { StatusCode = 400 };
-                }
-
-                return security;
-            case SettingDefinitions.SmtpUsernameKey:
-                var username = value.Trim();
-                if (username.Length > MaxSmtpUsernameLength)
-                {
-                    throw new BusinessException($"SMTP 登录账号长度不能超过 {MaxSmtpUsernameLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return username;
-            case SettingDefinitions.SmtpPasswordKey:
-                if (value.Length > MaxSmtpPasswordLength)
-                {
-                    throw new BusinessException($"SMTP 登录密码长度不能超过 {MaxSmtpPasswordLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return value;
-            case SettingDefinitions.SmtpFromAddressKey:
-                var fromAddress = value.Trim();
-                if (fromAddress.Length == 0)
-                {
-                    return fromAddress;
-                }
-
-                if (fromAddress.Length > MaxSmtpUsernameLength || !System.Net.Mail.MailAddress.TryCreate(fromAddress, out _))
-                {
-                    throw new BusinessException("发件人地址不是合法的邮箱地址.") { StatusCode = 400 };
-                }
-
-                return fromAddress;
-            case SettingDefinitions.SmtpFromNameKey:
-                var fromName = value.Trim();
-                if (fromName.Length > MaxSmtpFromNameLength)
-                {
-                    throw new BusinessException($"发件人显示名长度不能超过 {MaxSmtpFromNameLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return fromName;
             case SettingDefinitions.RegisterEmailCodeEnabledKey:
                 var codeEnabled = value.Trim().ToLowerInvariant();
                 if (codeEnabled != "true" && codeEnabled != "false")
@@ -247,23 +171,16 @@ public class SettingsService : ISettingsService
                 }
 
                 return codeEnabled;
-            case SettingDefinitions.SmtpRegisterCodeSubjectKey:
-            case SettingDefinitions.SmtpResetCodeSubjectKey:
-                var subjectTemplate = value.Trim();
-                if (subjectTemplate.Length > MaxEmailSubjectLength)
+            case SettingDefinitions.SmtpRegisterCodeTemplateIdKey:
+            case SettingDefinitions.SmtpResetCodeTemplateIdKey:
+            case SettingDefinitions.SmtpLoginCodeTemplateIdKey:
+                var codeTemplateId = value.Trim();
+                if (codeTemplateId.Length > 0 && (!long.TryParse(codeTemplateId, out var parsedCodeTemplateId) || parsedCodeTemplateId <= 0))
                 {
-                    throw new BusinessException($"验证码邮件主题长度不能超过 {MaxEmailSubjectLength} 个字符.") { StatusCode = 400 };
+                    throw new BusinessException("绑定的验证码通知模板 id 无效.") { StatusCode = 400 };
                 }
 
-                return subjectTemplate;
-            case SettingDefinitions.SmtpRegisterCodeBodyKey:
-            case SettingDefinitions.SmtpResetCodeBodyKey:
-                if (value.Length > MaxSettingValueLength)
-                {
-                    throw new BusinessException($"验证码邮件正文长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return value;
+                return codeTemplateId;
             case SettingDefinitions.MemoryEnabledKey:
                 var memoryEnabled = value.Trim().ToLowerInvariant();
                 if (memoryEnabled != "true" && memoryEnabled != "false")
@@ -303,24 +220,7 @@ public class SettingsService : ISettingsService
                 }
 
                 return loginCodeMode;
-            case SettingDefinitions.SmtpLoginCodeSubjectKey:
-                var loginSubjectTemplate = value.Trim();
-                if (loginSubjectTemplate.Length > MaxEmailSubjectLength)
-                {
-                    throw new BusinessException($"验证码邮件主题长度不能超过 {MaxEmailSubjectLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return loginSubjectTemplate;
-            case SettingDefinitions.SmtpLoginCodeBodyKey:
-                if (value.Length > MaxSettingValueLength)
-                {
-                    throw new BusinessException($"验证码邮件正文长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return value;
             case SettingDefinitions.LoginSafetyEnabledKey:
-            case SettingDefinitions.LoginSafetyNotifyUserEnabledKey:
-            case SettingDefinitions.LoginSafetyNotifyAdminEnabledKey:
                 var lsSwitch = value.Trim().ToLowerInvariant();
                 if (lsSwitch != "true" && lsSwitch != "false")
                 {
@@ -328,22 +228,50 @@ public class SettingsService : ISettingsService
                 }
 
                 return lsSwitch;
-            case SettingDefinitions.LoginSafetyAdminRecipientsKey:
-                var recipients = value.Trim();
-                if (recipients.Length > MaxSettingValueLength)
+            case SettingDefinitions.LoginSafetyNotifyChannelIdsKey:
+                var channelIds = value.Trim();
+                if (channelIds.Length > MaxSettingValueLength)
                 {
-                    throw new BusinessException($"告警收件人长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
+                    throw new BusinessException($"通知渠道 ID 列表长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
                 }
 
-                foreach (var recipient in recipients.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                var channelIdParts = channelIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (channelIdParts.Length > 50)
                 {
-                    if (!System.Net.Mail.MailAddress.TryCreate(recipient, out _))
+                    throw new BusinessException("通知渠道数量不能超过 50 个.") { StatusCode = 400 };
+                }
+
+                foreach (var part in channelIdParts)
+                {
+                    if (!long.TryParse(part, out var lsChannelId) || lsChannelId <= 0)
                     {
-                        throw new BusinessException($"告警收件人不是合法的邮箱地址：{recipient}.") { StatusCode = 400 };
+                        throw new BusinessException($"通知渠道 ID 不是合法的正整数：{part}.") { StatusCode = 400 };
                     }
                 }
 
-                return recipients;
+                return channelIds;
+            case SettingDefinitions.LoginSafetyNotifyEmailsKey:
+                var notifyEmails = value.Trim();
+                if (notifyEmails.Length > MaxSettingValueLength)
+                {
+                    throw new BusinessException($"告警收件人邮箱列表长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
+                }
+
+                var emailParts = notifyEmails.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (emailParts.Length > 50)
+                {
+                    throw new BusinessException("告警收件人邮箱数量不能超过 50 个.") { StatusCode = 400 };
+                }
+
+                foreach (var part in emailParts)
+                {
+                    if (!System.Net.Mail.MailAddress.TryCreate(part, out _))
+                    {
+                        throw new BusinessException($"告警收件人邮箱不是合法的邮箱地址：{part}.") { StatusCode = 400 };
+                    }
+                }
+
+                return notifyEmails;
             case SettingDefinitions.LoginSafetyIpFailThresholdKey:
             case SettingDefinitions.LoginSafetyDistinctUserThresholdKey:
                 if (!int.TryParse(value.Trim(), out var lsThreshold) || lsThreshold < 1 || lsThreshold > 10000)
@@ -368,23 +296,6 @@ public class SettingsService : ISettingsService
                 }
 
                 return value.Trim();
-            case SettingDefinitions.LoginSafetyUserAlertSubjectKey:
-            case SettingDefinitions.LoginSafetyAdminAlertSubjectKey:
-                var lsSubject = value.Trim();
-                if (lsSubject.Length > MaxEmailSubjectLength)
-                {
-                    throw new BusinessException($"告警邮件主题长度不能超过 {MaxEmailSubjectLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return lsSubject;
-            case SettingDefinitions.LoginSafetyUserAlertBodyKey:
-            case SettingDefinitions.LoginSafetyAdminAlertBodyKey:
-                if (value.Length > MaxSettingValueLength)
-                {
-                    throw new BusinessException($"告警邮件正文长度不能超过 {MaxSettingValueLength} 个字符.") { StatusCode = 400 };
-                }
-
-                return value;
         }
 
         return value;

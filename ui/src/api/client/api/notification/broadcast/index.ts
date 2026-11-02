@@ -11,8 +11,8 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface BroadcastRequestBuilder extends BaseRequestBuilder<BroadcastRequestBuilder> {
     /**
-     * 广播通知（仅管理员）：异步投递给全部启用渠道，结果在发送记录中查看.
-     * @param body 广播通知：投递给全部启用渠道（管理员验证渠道连通性或下发平台公告）.
+     * 广播通知（仅管理员）：异步投递给全部启用渠道，结果在发送记录中查看；使用模板时按变量值渲染.
+     * @param body 广播通知：管理员下发平台公告，投递目标为「渠道（指定集合或全部启用）」与「站内信」的组合，至少选择其一.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<BroadcastNotificationCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -23,8 +23,8 @@ export interface BroadcastRequestBuilder extends BaseRequestBuilder<BroadcastReq
      */
      post(body: BroadcastNotificationCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<BroadcastNotificationCommandResponse | undefined>;
     /**
-     * 广播通知（仅管理员）：异步投递给全部启用渠道，结果在发送记录中查看.
-     * @param body 广播通知：投递给全部启用渠道（管理员验证渠道连通性或下发平台公告）.
+     * 广播通知（仅管理员）：异步投递给全部启用渠道，结果在发送记录中查看；使用模板时按变量值渲染.
+     * @param body 广播通知：管理员下发平台公告，投递目标为「渠道（指定集合或全部启用）」与「站内信」的组合，至少选择其一.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

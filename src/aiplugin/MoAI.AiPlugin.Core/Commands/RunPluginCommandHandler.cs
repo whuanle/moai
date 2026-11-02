@@ -51,29 +51,29 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
             Source = PluginRunSource.Admin,
         };
 
-        var plugin = _registry.Get(request.Key);
-        if (plugin == null)
-        {
-            var dynamic = _dynamicResolver.Resolve(request.Key);
-            if (dynamic != null)
+            var plugin = _registry.Get(request.Key);
+            if (plugin == null)
             {
-                await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
-                return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, context, cancellationToken).ConfigureAwait(false);
+                var dynamic = _dynamicResolver.Resolve(request.Key);
+                if (dynamic != null)
+                {
+                    await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
+                    return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, context, cancellationToken).ConfigureAwait(false);
+                }
+
+                // 数据库中的自定义插件（团队 MCP/OpenAPI 与系统导入的 MCP/OpenAPI）
+                var customResult = await _customPluginCaller.RunAsync(request.Key, request.Function, request.RequestJson, cancellationToken).ConfigureAwait(false);
+                if (customResult != null)
+                {
+                    await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
+                    return customResult;
+                }
+
+                throw new BusinessException("插件不存在") { StatusCode = 404 };
             }
 
-            // 数据库中的自定义插件（团队 MCP/OpenAPI 与系统导入的 MCP/OpenAPI）
-            var customResult = await _customPluginCaller.RunAsync(request.Key, request.Function, request.RequestJson, cancellationToken).ConfigureAwait(false);
-            if (customResult != null)
-            {
-                await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
-                return customResult;
-            }
-
-            throw new BusinessException("插件不存在") { StatusCode = 404 };
-        }
-
-        await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
-        return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken).ConfigureAwait(false);
+            await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
+            return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken).ConfigureAwait(false);
     }
 
     private Task RecordUsageAsync(string key, CancellationToken cancellationToken)

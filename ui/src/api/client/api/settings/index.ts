@@ -4,8 +4,6 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQuerySettingsCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeSaveSettingCommand, type BusinessValidationResult, type EmptyCommandResponse, type QuerySettingsCommandResponse, type SaveSettingCommand } from '../../models/index.js';
 // @ts-ignore
-import { EmailRequestBuilderNavigationMetadata, type EmailRequestBuilder } from './email/index.js';
-// @ts-ignore
 import { LoginBackgroundRequestBuilderRequestsMetadata, type LoginBackgroundRequestBuilder } from './loginBackground/index.js';
 // @ts-ignore
 import { LogoRequestBuilderRequestsMetadata, type LogoRequestBuilder } from './logo/index.js';
@@ -16,10 +14,6 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/settings
  */
 export interface SettingsRequestBuilder extends BaseRequestBuilder<SettingsRequestBuilder> {
-    /**
-     * The email property
-     */
-    get email(): EmailRequestBuilder;
     /**
      * The loginBackground property
      */
@@ -73,9 +67,6 @@ export const SettingsRequestBuilderUriTemplate = "{+baseurl}/api/settings";
  * Metadata for all the navigation properties in the request builder.
  */
 export const SettingsRequestBuilderNavigationMetadata: Record<Exclude<keyof SettingsRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
-    email: {
-        navigationMetadata: EmailRequestBuilderNavigationMetadata,
-    },
     loginBackground: {
         requestsMetadata: LoginBackgroundRequestBuilderRequestsMetadata,
     },

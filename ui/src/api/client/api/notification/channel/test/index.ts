@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface TestRequestBuilder extends BaseRequestBuilder<TestRequestBuilder> {
     /**
      * 测试通知渠道（仅管理员）：同步试发一条测试通知，立即返回结果.
-     * @param body 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.
+     * @param body 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.SMTP 渠道须传入收件人邮箱、短信渠道须传入收件人手机号（发送时动态指定）；应用机器人渠道（feishuAppBot/dingtalkAppBot/wecomAppBot）测试仅定向当前管理员本人（按其平台账号绑定投递）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<TestNotificationChannelCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface TestRequestBuilder extends BaseRequestBuilder<TestRequestBuilde
      post(body: TestNotificationChannelCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<TestNotificationChannelCommandResponse | undefined>;
     /**
      * 测试通知渠道（仅管理员）：同步试发一条测试通知，立即返回结果.
-     * @param body 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.
+     * @param body 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.SMTP 渠道须传入收件人邮箱、短信渠道须传入收件人手机号（发送时动态指定）；应用机器人渠道（feishuAppBot/dingtalkAppBot/wecomAppBot）测试仅定向当前管理员本人（按其平台账号绑定投递）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

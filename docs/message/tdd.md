@@ -20,8 +20,9 @@
 | @MSG-S14 | [ui/src/pages/account/__tests__/Messages.test.tsx](../../ui/src/pages/account/__tests__/Messages.test.tsx) + 浏览器走查（角标 2→1→0 实时变化） | PASS 6/6（2026-11-01） |
 | @MSG-S15 | 浏览器走查（MQ 管理口发事件 → 右上角 Notification 带标题悬浮，刷新后消失） | PASS（2026-11-01） |
 | @MSG-S16 | 浏览器走查（/account/messages 二级菜单高亮，/account 重定向） | PASS（2026-11-01） |
-| @MSG-S17 | 同上 vitest（点击已读/全部已读/删除气泡确认）+ 浏览器走查 | PASS（2026-11-01） |
+| @MSG-S17 | 同上 vitest（点击已读/删除气泡确认；「全部已读」按钮已移除）+ 浏览器走查 | PASS（2026-11-02 复验） |
 | @MSG-S18 | 浏览器直查 + E2E 回归：unread-count 按登录态统计（修复 Controller 内自建命令丢失 ContextUserId） | PASS（2026-11-01） |
+| @MSG-S19 | [ui/src/pages/account/__tests__/Messages.test.tsx](../../ui/src/pages/account/__tests__/Messages.test.tsx)（页头批量已读/全选批量删除只删已读·未读忽略/仅勾未读删除禁用/选择清空/默认 20 条/无全部已读按钮）+ 浏览器走查（勾选 2 条批量删除 44→42、全选气泡文案、页面级无滚动） | PASS 11/11（2026-11-02；ui typecheck 0、lint 0、vitest 全量 711/711） |
 
 说明：
 

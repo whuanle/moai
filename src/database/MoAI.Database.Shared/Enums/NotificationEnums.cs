@@ -41,7 +41,7 @@ public enum NotificationChannelType
     Webhook = 5,
 
     /// <summary>
-    /// SMTP 邮件（复用系统设置中的 SMTP 邮件服务）.
+    /// SMTP 邮件渠道（自带连接配置；系统设置「邮箱验证」仅绑定渠道 id）.
     /// </summary>
     [JsonPropertyName("smtp")]
     Smtp = 6,
@@ -51,6 +51,102 @@ public enum NotificationChannelType
     /// </summary>
     [JsonPropertyName("inSite")]
     InSite = 7,
+
+    /// <summary>
+    /// Slack Incoming Webhook.
+    /// </summary>
+    [JsonPropertyName("slack")]
+    Slack = 8,
+
+    /// <summary>
+    /// Discord Webhook.
+    /// </summary>
+    [JsonPropertyName("discord")]
+    Discord = 9,
+
+    /// <summary>
+    /// Microsoft Teams（Workflows/Connector webhook）.
+    /// </summary>
+    [JsonPropertyName("microsoftTeams")]
+    MicrosoftTeams = 10,
+
+    /// <summary>
+    /// Gotify 自建推送.
+    /// </summary>
+    [JsonPropertyName("gotify")]
+    Gotify = 11,
+
+    /// <summary>
+    /// ntfy 推送.
+    /// </summary>
+    [JsonPropertyName("ntfy")]
+    Ntfy = 12,
+
+    /// <summary>
+    /// Bark（iOS 推送）.
+    /// </summary>
+    [JsonPropertyName("bark")]
+    Bark = 13,
+
+    /// <summary>
+    /// Server酱（Turbo）.
+    /// </summary>
+    [JsonPropertyName("serverChan")]
+    ServerChan = 14,
+
+    /// <summary>
+    /// PushPlus（微信推送）.
+    /// </summary>
+    [JsonPropertyName("pushPlus")]
+    PushPlus = 15,
+
+    /// <summary>
+    /// 飞书应用机器人（按用户绑定反查 union_id/open_id 单聊推送，渠道应用与登录应用可不同）.
+    /// </summary>
+    [JsonPropertyName("feishuAppBot")]
+    FeishuAppBot = 16,
+
+    /// <summary>
+    /// 钉钉应用机器人（工作通知，按用户绑定 unionId 换算 userid 投递；成员名 DingtalkAppBot 使其 camelCase 与 json 名一致）.
+    /// </summary>
+    [JsonPropertyName("dingtalkAppBot")]
+    DingtalkAppBot = 17,
+
+    /// <summary>
+    /// 企业微信应用机器人（应用消息，按用户绑定 userid 直投）.
+    /// </summary>
+    [JsonPropertyName("wecomAppBot")]
+    WecomAppBot = 18,
+
+    /// <summary>
+    /// 阿里云短信（Dysmsapi SendSms，平台侧已审核模板 Code + 参数发送，收件人取渠道配置）.
+    /// </summary>
+    [JsonPropertyName("aliyunSms")]
+    AliyunSms = 19,
+
+    /// <summary>
+    /// 腾讯云短信（SendSms，平台侧已审核模板 Id + 参数发送，收件人取渠道配置）.
+    /// </summary>
+    [JsonPropertyName("tencentSms")]
+    TencentSms = 20,
+}
+
+/// <summary>
+/// 通知内容类型：模板正文的形态，SMTP 渠道按此发送 HTML 邮件，其它渠道降级纯文本.
+/// </summary>
+public enum NotificationContentType
+{
+    /// <summary>
+    /// 纯文本.
+    /// </summary>
+    [JsonPropertyName("text")]
+    Text = 0,
+
+    /// <summary>
+    /// HTML（邮件模板用；非邮件渠道发送时自动去标签降级）.
+    /// </summary>
+    [JsonPropertyName("html")]
+    Html = 1,
 }
 
 /// <summary>

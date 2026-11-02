@@ -49,6 +49,16 @@ public partial class NotificationLogEntity : IFullAudited
     public string Content { get; set; } = default!;
 
     /// <summary>
+    /// 关联用户 id 快照（逗号分隔，定向个人推送时记录收件人；空为广播/全员）.
+    /// </summary>
+    public string TargetUserIds { get; set; } = default!;
+
+    /// <summary>
+    /// 实际收件人快照（逗号分隔；SMTP 渠道记邮箱、短信渠道记手机号；固定地址渠道留空）.
+    /// </summary>
+    public string Recipients { get; set; } = default!;
+
+    /// <summary>
     /// 发送状态.
     /// </summary>
     public int Status { get; set; }

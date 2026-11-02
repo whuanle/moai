@@ -75,49 +75,14 @@ public static class SettingDefinitions
     public const string LoginBackgroundKey = "LOGIN_BACKGROUND";
 
     /// <summary>
-    /// 组织默认角色（org_role 主键，空表示新注册用户无默认角色）.
-    /// </summary>
-    public const string OrgDefaultRoleKey = "ORG_DEFAULT_ROLE";
-
-    /// <summary>
-    /// 是否启用 SMTP 邮件服务（平台通知邮件发送总开关）.
+    /// 是否启用平台邮件发送（总开关）：需在通知中心配置 SMTP 渠道并在此绑定后才生效.
     /// </summary>
     public const string SmtpEnabledKey = "SMTP_ENABLED";
 
     /// <summary>
-    /// SMTP 服务器地址.
+    /// 绑定的通知中心 SMTP 渠道（notification_channel.id，空表示未绑定；SMTP 连接配置统一在通知中心维护）.
     /// </summary>
-    public const string SmtpHostKey = "SMTP_HOST";
-
-    /// <summary>
-    /// SMTP 服务器端口.
-    /// </summary>
-    public const string SmtpPortKey = "SMTP_PORT";
-
-    /// <summary>
-    /// SMTP 加密方式（ssl / starttls / none）.
-    /// </summary>
-    public const string SmtpSecurityKey = "SMTP_SECURITY";
-
-    /// <summary>
-    /// SMTP 登录账号（中继服务器免认证时可留空）.
-    /// </summary>
-    public const string SmtpUsernameKey = "SMTP_USERNAME";
-
-    /// <summary>
-    /// SMTP 登录密码或授权码.
-    /// </summary>
-    public const string SmtpPasswordKey = "SMTP_PASSWORD";
-
-    /// <summary>
-    /// 发件人邮箱地址（留空取登录账号）.
-    /// </summary>
-    public const string SmtpFromAddressKey = "SMTP_FROM_ADDRESS";
-
-    /// <summary>
-    /// 发件人显示名.
-    /// </summary>
-    public const string SmtpFromNameKey = "SMTP_FROM_NAME";
+    public const string SmtpChannelIdKey = "SMTP_CHANNEL_ID";
 
     /// <summary>
     /// 是否开启长期记忆（总开关）：应用记忆与个人全局记忆（跨应用记忆）统一受此管控，关闭时应用不可开启记忆.
@@ -140,24 +105,14 @@ public static class SettingDefinitions
     public const string RegisterEmailCodeEnabledKey = "REGISTER_EMAIL_CODE_ENABLED";
 
     /// <summary>
-    /// 注册验证码邮件主题模板（支持 {code} {siteName} {expireMinutes} 变量）.
+    /// 注册验证码绑定的通知中心模板 id（notification_template.id，留空使用内置模板）.
     /// </summary>
-    public const string SmtpRegisterCodeSubjectKey = "SMTP_REGISTER_CODE_SUBJECT";
+    public const string SmtpRegisterCodeTemplateIdKey = "SMTP_REGISTER_CODE_TEMPLATE_ID";
 
     /// <summary>
-    /// 注册验证码邮件正文模板（支持 {code} {siteName} {expireMinutes} 变量）.
+    /// 找回密码验证码绑定的通知中心模板 id（notification_template.id，留空使用内置模板）.
     /// </summary>
-    public const string SmtpRegisterCodeBodyKey = "SMTP_REGISTER_CODE_BODY";
-
-    /// <summary>
-    /// 找回密码验证码邮件主题模板（支持 {code} {siteName} {expireMinutes} 变量）.
-    /// </summary>
-    public const string SmtpResetCodeSubjectKey = "SMTP_RESET_CODE_SUBJECT";
-
-    /// <summary>
-    /// 找回密码验证码邮件正文模板（支持 {code} {siteName} {expireMinutes} 变量）.
-    /// </summary>
-    public const string SmtpResetCodeBodyKey = "SMTP_RESET_CODE_BODY";
+    public const string SmtpResetCodeTemplateIdKey = "SMTP_RESET_CODE_TEMPLATE_ID";
 
     /// <summary>
     /// 资源使用统计落库粒度（day=按天 / hour=按小时），数据量由管理员权衡.
@@ -175,14 +130,9 @@ public static class SettingDefinitions
     public const string LoginEmailCodeModeKey = "LOGIN_EMAIL_CODE_MODE";
 
     /// <summary>
-    /// 登录验证码邮件主题模板（支持 {code} {siteName} {expireMinutes} 变量）.
+    /// 登录验证码绑定的通知中心模板 id（notification_template.id，留空使用内置模板）.
     /// </summary>
-    public const string SmtpLoginCodeSubjectKey = "SMTP_LOGIN_CODE_SUBJECT";
-
-    /// <summary>
-    /// 登录验证码邮件正文模板（支持 {code} {siteName} {expireMinutes} 变量）.
-    /// </summary>
-    public const string SmtpLoginCodeBodyKey = "SMTP_LOGIN_CODE_BODY";
+    public const string SmtpLoginCodeTemplateIdKey = "SMTP_LOGIN_CODE_TEMPLATE_ID";
 
     /// <summary>
     /// 登录安全风控总开关：关闭时仅记录登录日志，不执行风险判定与处置.
@@ -190,19 +140,14 @@ public static class SettingDefinitions
     public const string LoginSafetyEnabledKey = "LS_ENABLED";
 
     /// <summary>
-    /// 风险登录给用户本人发提醒邮件开关（异地/新 IP 等中风险场景）.
+    /// 高风险事件推送的通知渠道 ID 列表（逗号分隔 notification_channel.id，留空不推送渠道）.
     /// </summary>
-    public const string LoginSafetyNotifyUserEnabledKey = "LS_NOTIFY_USER_ENABLED";
+    public const string LoginSafetyNotifyChannelIdsKey = "LS_NOTIFY_CHANNEL_IDS";
 
     /// <summary>
-    /// 高风险事件给管理员发告警邮件开关.
+    /// 高风险事件渠道告警的收件人邮箱列表（逗号分隔，渠道含 SMTP 邮件渠道时必填）.
     /// </summary>
-    public const string LoginSafetyNotifyAdminEnabledKey = "LS_NOTIFY_ADMIN_ENABLED";
-
-    /// <summary>
-    /// 管理员告警额外收件人（逗号分隔邮箱，留空发送给全部 admin/root 用户邮箱）.
-    /// </summary>
-    public const string LoginSafetyAdminRecipientsKey = "LS_ADMIN_ALERT_RECIPIENTS";
+    public const string LoginSafetyNotifyEmailsKey = "LS_NOTIFY_EMAILS";
 
     /// <summary>
     /// 同一 IP 登录失败次数封禁阈值（滑动窗口内，默认 20）.
@@ -235,74 +180,34 @@ public static class SettingDefinitions
     public const string LoginSafetyTravelWindowMinutesKey = "LS_TRAVEL_WINDOW_MINUTES";
 
     /// <summary>
-    /// 用户风险登录提醒邮件主题模板（支持 {userName} {ip} {location} {time} {siteName} 变量）.
-    /// </summary>
-    public const string LoginSafetyUserAlertSubjectKey = "LS_USER_ALERT_SUBJECT";
-
-    /// <summary>
-    /// 用户风险登录提醒邮件正文模板（支持 {userName} {ip} {location} {time} {siteName} 变量）.
-    /// </summary>
-    public const string LoginSafetyUserAlertBodyKey = "LS_USER_ALERT_BODY";
-
-    /// <summary>
-    /// 管理员风险告警邮件主题模板（支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量）.
-    /// </summary>
-    public const string LoginSafetyAdminAlertSubjectKey = "LS_ADMIN_ALERT_SUBJECT";
-
-    /// <summary>
-    /// 管理员风险告警邮件正文模板（支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量）.
-    /// </summary>
-    public const string LoginSafetyAdminAlertBodyKey = "LS_ADMIN_ALERT_BODY";
-
-    /// <summary>
-    /// 注册验证码邮件主题默认模板.
+    /// 注册验证码邮件主题兜底模板（通知中心内置模板缺失或渲染失败时使用）.
     /// </summary>
     public const string DefaultRegisterCodeSubject = "{siteName} 注册验证码";
 
     /// <summary>
-    /// 注册验证码邮件正文默认模板.
+    /// 注册验证码邮件正文兜底模板（通知中心内置模板缺失或渲染失败时使用）.
     /// </summary>
     public const string DefaultRegisterCodeBody = "你的注册验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.";
 
     /// <summary>
-    /// 找回密码验证码邮件主题默认模板.
+    /// 找回密码验证码邮件主题兜底模板（通知中心内置模板缺失或渲染失败时使用）.
     /// </summary>
     public const string DefaultResetCodeSubject = "{siteName} 找回密码验证码";
 
     /// <summary>
-    /// 找回密码验证码邮件正文默认模板.
+    /// 找回密码验证码邮件正文兜底模板（通知中心内置模板缺失或渲染失败时使用）.
     /// </summary>
     public const string DefaultResetCodeBody = "你的找回密码验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.";
 
     /// <summary>
-    /// 登录验证码邮件主题默认模板.
+    /// 登录验证码邮件主题兜底模板（通知中心内置模板缺失或渲染失败时使用）.
     /// </summary>
     public const string DefaultLoginCodeSubject = "{siteName} 登录验证码";
 
     /// <summary>
-    /// 登录验证码邮件正文默认模板.
+    /// 登录验证码邮件正文兜底模板（通知中心内置模板缺失或渲染失败时使用）.
     /// </summary>
     public const string DefaultLoginCodeBody = "你的登录验证码是 {code}，{expireMinutes} 分钟内有效。如非本人操作请忽略本邮件.";
-
-    /// <summary>
-    /// 用户风险登录提醒邮件主题默认模板.
-    /// </summary>
-    public const string DefaultUserAlertSubject = "{siteName} 登录安全提醒";
-
-    /// <summary>
-    /// 用户风险登录提醒邮件正文默认模板.
-    /// </summary>
-    public const string DefaultUserAlertBody = "{userName}，你好：\n\n你的账号于 {time} 在新环境登录成功。\n\n登录 IP：{ip}\n登录地点：{location}\n\n如非本人操作，请立即修改密码并联系管理员。";
-
-    /// <summary>
-    /// 管理员风险告警邮件主题默认模板.
-    /// </summary>
-    public const string DefaultAdminAlertSubject = "【{siteName}】登录风险告警：{userName}";
-
-    /// <summary>
-    /// 管理员风险告警邮件正文默认模板.
-    /// </summary>
-    public const string DefaultAdminAlertBody = "检测到高风险登录行为：\n\n用户：{userName}\n风险等级：{riskLevel}\n命中规则：{reasons}\n登录 IP：{ip}\n登录地点：{location}\n时间：{time}\n\n请在管理后台「日志事件」中查看详情并处置。";
 
     private static readonly List<SettingDefinition> BackingField = new()
     {
@@ -399,65 +304,16 @@ public static class SettingDefinitions
         },
         new SettingDefinition
         {
-            Key = OrgDefaultRoleKey,
-            Name = "组织默认角色",
-            Description = "新注册用户自动获得的角色（org_role 主键），留空表示新用户无默认角色；在组织页维护.",
-            DefaultValue = string.Empty
-        },
-        new SettingDefinition
-        {
             Key = SmtpEnabledKey,
-            Name = "SMTP 邮件服务",
-            Description = "启用后，平台通知将通过 SMTP 服务发送邮件；不启用时无需填写服务器信息.",
+            Name = "邮箱验证",
+            Description = "启用后，平台邮件（注册/找回密码/登录验证码、安全告警等）通过绑定的 SMTP 服务发送；SMTP 连接配置统一在通知中心维护，此处仅绑定使用.",
             DefaultValue = "false"
         },
         new SettingDefinition
         {
-            Key = SmtpHostKey,
-            Name = "SMTP 服务器地址",
-            Description = "SMTP 服务器域名或 IP，例如 smtp.exmail.qq.com.",
-            DefaultValue = string.Empty
-        },
-        new SettingDefinition
-        {
-            Key = SmtpPortKey,
-            Name = "SMTP 端口",
-            Description = "SMTP 服务器端口，1~65535；隐式 TLS 通常 465，STARTTLS 通常 587.",
-            DefaultValue = "465"
-        },
-        new SettingDefinition
-        {
-            Key = SmtpSecurityKey,
-            Name = "SMTP 加密方式",
-            Description = "ssl（隐式 TLS，通常 465）/ starttls（通常 587）/ none（不加密，通常 25）.",
-            DefaultValue = "ssl"
-        },
-        new SettingDefinition
-        {
-            Key = SmtpUsernameKey,
-            Name = "SMTP 登录账号",
-            Description = "SMTP 登录账号，内网中继服务器免认证时可留空.",
-            DefaultValue = string.Empty
-        },
-        new SettingDefinition
-        {
-            Key = SmtpPasswordKey,
-            Name = "SMTP 登录密码",
-            Description = "SMTP 登录密码或邮箱授权码.",
-            DefaultValue = string.Empty
-        },
-        new SettingDefinition
-        {
-            Key = SmtpFromAddressKey,
-            Name = "发件人地址",
-            Description = "通知邮件的发件人邮箱地址，留空时使用 SMTP 登录账号.",
-            DefaultValue = string.Empty
-        },
-        new SettingDefinition
-        {
-            Key = SmtpFromNameKey,
-            Name = "发件人显示名",
-            Description = "通知邮件的发件人显示名，例如 MoAI 通知.",
+            Key = SmtpChannelIdKey,
+            Name = "绑定 SMTP 服务",
+            Description = "绑定的通知中心 SMTP 渠道 id（notification_channel.id），留空表示未绑定；渠道连接配置在通知中心维护.",
             DefaultValue = string.Empty
         },
         new SettingDefinition
@@ -490,31 +346,17 @@ public static class SettingDefinitions
         },
         new SettingDefinition
         {
-            Key = SmtpRegisterCodeSubjectKey,
-            Name = "注册验证码邮件主题",
-            Description = "注册验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
-            DefaultValue = DefaultRegisterCodeSubject
+            Key = SmtpRegisterCodeTemplateIdKey,
+            Name = "注册验证码通知模板",
+            Description = "绑定的通知中心模板 id（notification_template.id），留空使用平台内置的注册验证码模板；模板内容与渲染测试在通知中心维护.",
+            DefaultValue = string.Empty
         },
         new SettingDefinition
         {
-            Key = SmtpRegisterCodeBodyKey,
-            Name = "注册验证码邮件正文",
-            Description = "注册验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
-            DefaultValue = DefaultRegisterCodeBody
-        },
-        new SettingDefinition
-        {
-            Key = SmtpResetCodeSubjectKey,
-            Name = "找回密码验证码邮件主题",
-            Description = "找回密码验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
-            DefaultValue = DefaultResetCodeSubject
-        },
-        new SettingDefinition
-        {
-            Key = SmtpResetCodeBodyKey,
-            Name = "找回密码验证码邮件正文",
-            Description = "找回密码验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
-            DefaultValue = DefaultResetCodeBody
+            Key = SmtpResetCodeTemplateIdKey,
+            Name = "找回密码验证码通知模板",
+            Description = "绑定的通知中心模板 id（notification_template.id），留空使用平台内置的找回密码验证码模板；模板内容与渲染测试在通知中心维护.",
+            DefaultValue = string.Empty
         },
         new SettingDefinition
         {
@@ -539,17 +381,10 @@ public static class SettingDefinitions
         },
         new SettingDefinition
         {
-            Key = SmtpLoginCodeSubjectKey,
-            Name = "登录验证码邮件主题",
-            Description = "登录验证码邮件主题模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
-            DefaultValue = DefaultLoginCodeSubject
-        },
-        new SettingDefinition
-        {
-            Key = SmtpLoginCodeBodyKey,
-            Name = "登录验证码邮件正文",
-            Description = "登录验证码邮件正文模板，支持 {code} {siteName} {expireMinutes} 变量，留空使用默认模板.",
-            DefaultValue = DefaultLoginCodeBody
+            Key = SmtpLoginCodeTemplateIdKey,
+            Name = "登录验证码通知模板",
+            Description = "绑定的通知中心模板 id（notification_template.id），留空使用平台内置的登录验证码模板；模板内容与渲染测试在通知中心维护.",
+            DefaultValue = string.Empty
         },
         new SettingDefinition
         {
@@ -560,23 +395,16 @@ public static class SettingDefinitions
         },
         new SettingDefinition
         {
-            Key = LoginSafetyNotifyUserEnabledKey,
-            Name = "用户登录提醒邮件",
-            Description = "中风险登录（新 IP/异地）成功后给用户本人发提醒邮件；需 SMTP 邮件服务已启用才生效.",
-            DefaultValue = "true"
+            Key = LoginSafetyNotifyChannelIdsKey,
+            Name = "风险事件通知渠道",
+            Description = "高风险事件推送的通知中心渠道 ID（逗号分隔）；留空不推送渠道，站内信始终推送给受影响用户.",
+            DefaultValue = string.Empty
         },
         new SettingDefinition
         {
-            Key = LoginSafetyNotifyAdminEnabledKey,
-            Name = "管理员风险告警邮件",
-            Description = "高风险登录事件给管理员发告警邮件；需 SMTP 邮件服务已启用才生效.",
-            DefaultValue = "true"
-        },
-        new SettingDefinition
-        {
-            Key = LoginSafetyAdminRecipientsKey,
-            Name = "管理员告警收件人",
-            Description = "告警邮件额外收件人（逗号分隔邮箱）；留空时发送给全部 admin/root 用户的邮箱.",
+            Key = LoginSafetyNotifyEmailsKey,
+            Name = "风险事件告警收件人",
+            Description = "高风险事件渠道告警的收件人邮箱（逗号分隔）；投递渠道含 SMTP 邮件渠道时必填.",
             DefaultValue = string.Empty
         },
         new SettingDefinition
@@ -620,34 +448,6 @@ public static class SettingDefinitions
             Name = "疾速旅行窗口",
             Description = "与上次成功登录属地不同且间隔小于该值（分钟）判定为疾速旅行（高风险）；默认 120.",
             DefaultValue = "120"
-        },
-        new SettingDefinition
-        {
-            Key = LoginSafetyUserAlertSubjectKey,
-            Name = "用户登录提醒邮件主题",
-            Description = "用户风险登录提醒邮件主题模板，支持 {userName} {ip} {location} {time} {siteName} 变量，留空使用默认模板.",
-            DefaultValue = DefaultUserAlertSubject
-        },
-        new SettingDefinition
-        {
-            Key = LoginSafetyUserAlertBodyKey,
-            Name = "用户登录提醒邮件正文",
-            Description = "用户风险登录提醒邮件正文模板，支持 {userName} {ip} {location} {time} {siteName} 变量，留空使用默认模板.",
-            DefaultValue = DefaultUserAlertBody
-        },
-        new SettingDefinition
-        {
-            Key = LoginSafetyAdminAlertSubjectKey,
-            Name = "管理员告警邮件主题",
-            Description = "管理员风险告警邮件主题模板，支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量，留空使用默认模板.",
-            DefaultValue = DefaultAdminAlertSubject
-        },
-        new SettingDefinition
-        {
-            Key = LoginSafetyAdminAlertBodyKey,
-            Name = "管理员告警邮件正文",
-            Description = "管理员风险告警邮件正文模板，支持 {userName} {ip} {location} {riskLevel} {reasons} {time} {siteName} 变量，留空使用默认模板.",
-            DefaultValue = DefaultAdminAlertBody
         }
     };
 
