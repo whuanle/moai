@@ -16,6 +16,7 @@ import {
   type PublicationReviewItem,
   type PublicationState,
 } from '@/api/publication'
+import { VisibleScopeTag } from '@/components/VisibleScopeTag'
 
 const { Text } = Typography
 
@@ -157,6 +158,16 @@ export function Publications() {
         dataIndex: 'publishVersion',
         width: 90,
         render: (v: number | null | undefined) => (v == null ? '-' : <Tag>v{formatAppVersion(v)}</Tag>),
+      },
+      {
+        title: t('publications.colVisibleScope'),
+        key: 'visibleScope',
+        width: 130,
+        render: (_, record) => {
+          // 仅应用类型有可视范围（提示词/技能公开即全员可见）
+          if (record.resourceType !== 'app') return <Text type="secondary">-</Text>
+          return <VisibleScopeTag visibleScope={record.visibleScope} orgGrants={record.visibleOrgGrants} />
+        },
       },
       { title: t('publications.colTeam'), dataIndex: 'teamName', width: 150, render: (v: string | null) => v || '-' },
       {

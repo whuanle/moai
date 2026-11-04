@@ -13,7 +13,7 @@ using MoAI.Infra.Models;
 namespace MoAI.App;
 
 /// <summary>
-/// 外部 token 认证方案：校验 /api/external 专用的 access token（audience = Server + |external），
+/// 外部 token 认证方案：校验 /api/teamres 专用的 access token（audience = Server + |external），
 /// 与内部 JWT（audience = Server）互相隔离，外部 token 无法访问内部接口，内部 token 也无法访问外部接口.
 /// </summary>
 public class ExternalJwtBearerAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>

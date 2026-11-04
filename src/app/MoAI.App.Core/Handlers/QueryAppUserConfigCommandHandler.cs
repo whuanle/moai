@@ -6,8 +6,10 @@ using MoAI.App.Queries.Responses;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
+using MoAI.Database.Seed;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.App.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -19,16 +21,19 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IPublicAppScopeService _publicAppScopeService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAppUserConfigCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public QueryAppUserConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="publicAppScopeService">应用市场可视范围判定服务.</param>
+    public QueryAppUserConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IPublicAppScopeService publicAppScopeService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _publicAppScopeService = publicAppScopeService;
     }
 
     /// <inheritdoc/>
@@ -38,7 +43,9 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             ?? throw new BusinessException("应用不存在.") { StatusCode = 404 };
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
-        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        // 非团队成员仅在「已发布且公开到平台且在可视范围内」时可使用（团队成员不受市场可视范围限制）
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1
+            && (myRole != null || await _publicAppScopeService.IsAllowedAsync(app.Id, request.ContextUserId, cancellationToken));
         if (myRole == null && !canUseAsPublic)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
@@ -46,8 +53,18 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 
         var config = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
-            .Select(x => new AppApprovalConfigRow(x.Skills, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps))
+            .Select(x => new AppApprovalConfigRow(x.Skills, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps, x.ModelId, x.ModelIds))
             .FirstOrDefaultAsync(cancellationToken);
+
+        // 对话模型切换器数据源（与正式对话同一生效口径：已发布取快照，否则草稿）；
+        // 存量快照无 modelIds 或行内为空时归一为仅默认模型
+        var modelSnapshot = app.PublishStatus == 1 ? AppAgentConfigSnapshot.TryParse(config?.PublishedConfig) : null;
+        var defaultModelId = modelSnapshot?.ModelId ?? config?.ModelId ?? Guid.Empty;
+        var modelIds = ParseGuidList(modelSnapshot?.ModelIds ?? config?.ModelIds);
+        if (modelIds.Count == 0 && defaultModelId != Guid.Empty)
+        {
+            modelIds = new List<Guid> { defaultModelId };
+        }
 
         var defaultSkillIds = ParseGuidList(config?.Skills);
 
@@ -94,7 +111,8 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         // 审批策略按发布快照解析（与对话闸口一致）：白名单资源与沙箱在审批模式下自动放行，前端据此免展示审批卡
         var (autoNames, autoPrefixes) = await ResolveAutoApprovedToolsAsync(app, config, cancellationToken);
 
-        // 记忆偏好：按发布快照（已发布应用）解析应用记忆配置，返回用户存储模式与应用开启状态
+        // 记忆偏好：按发布快照（已发布应用）解析应用记忆配置，返回用户存储模式与应用开启状态；
+        // 跨应用共享（全局记忆）额外要求平台已开启跨应用记忆（MEMORY_GLOBAL_ENABLED）
         int memoryMode = userConfig?.MemoryMode ?? 0;
         int memoryGlobalMode = userConfig?.MemoryGlobalMode ?? 0;
         var memoryEnabled = false;
@@ -108,11 +126,22 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             : memoryConfigRow?.ExecutionSettings;
         var memorySettings = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(memoryEffectiveSettings);
         memoryEnabled = memorySettings is { Enabled: true };
-        memoryGlobalAllowed = memorySettings is { Enabled: true, AllowGlobalMemory: true };
+        memoryGlobalAllowed = false;
+        if (memorySettings is { Enabled: true, AllowGlobalMemory: true })
+        {
+            var memoryGlobalSetting = await _databaseContext.Settings.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Key == SettingDefinitions.MemoryGlobalEnabledKey, cancellationToken);
+            var platformGlobalEnabled = !string.IsNullOrWhiteSpace(memoryGlobalSetting?.Value)
+                ? string.Equals(memoryGlobalSetting.Value.Trim(), "true", StringComparison.OrdinalIgnoreCase)
+                : string.Equals(SettingDefinitions.Find(SettingDefinitions.MemoryGlobalEnabledKey)?.DefaultValue?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+            memoryGlobalAllowed = platformGlobalEnabled;
+        }
 
         return new QueryAppUserConfigCommandResponse
         {
             PromptId = userConfig?.PromptId ?? 0,
+            DefaultModelId = defaultModelId,
+            ModelIds = modelIds,
             MemoryMode = memoryMode,
             MemoryEnabled = memoryEnabled,
             MemoryGlobalMode = memoryGlobalMode,
@@ -139,7 +168,9 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         string? WikiIds,
         string? GraphIds,
         string? WorkflowApps,
-        string? AgentApps);
+        string? AgentApps,
+        Guid ModelId,
+        string? ModelIds);
 
     /// <summary>
     /// 解析审批策略自动放行的工具名/前缀：已发布应用按发布快照的执行参数（与闸口一致），未发布按实时草稿；

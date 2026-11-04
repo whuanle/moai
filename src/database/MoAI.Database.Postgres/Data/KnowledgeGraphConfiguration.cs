@@ -57,6 +57,10 @@ internal partial class KnowledgeGraphConfiguration : IEntityTypeConfiguration<Kn
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除，0=未删除")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsMcpEnabled)
+            .HasDefaultValue(false)
+            .HasComment("是否开启 MCP 接入（仅托管图；开启时自动生成/复用该图的团队资源 key）")
+            .HasColumnName("is_mcp_enabled");
         entity.Property(e => e.Mode)
             .HasMaxLength(20)
             .HasDefaultValueSql("'managed'::character varying")

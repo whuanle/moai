@@ -6,8 +6,6 @@ import { MineRequestBuilderNavigationMetadata, MineRequestBuilderRequestsMetadat
 // @ts-ignore
 import { ModelOptionsRequestBuilderRequestsMetadata, type ModelOptionsRequestBuilder } from './modelOptions/index.js';
 // @ts-ignore
-import { PromoteRequestBuilderRequestsMetadata, type PromoteRequestBuilder } from './promote/index.js';
-// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -22,10 +20,6 @@ export interface GlobalRequestBuilder extends BaseRequestBuilder<GlobalRequestBu
      * The modelOptions property
      */
     get modelOptions(): ModelOptionsRequestBuilder;
-    /**
-     * The promote property
-     */
-    get promote(): PromoteRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -41,9 +35,6 @@ export const GlobalRequestBuilderNavigationMetadata: Record<Exclude<keyof Global
     },
     modelOptions: {
         requestsMetadata: ModelOptionsRequestBuilderRequestsMetadata,
-    },
-    promote: {
-        requestsMetadata: PromoteRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

@@ -1,9 +1,14 @@
 // 登录锁定自检：5 次错误密码 → 第 6 次正确密码也应 403 → 清 Redis key → 恢复
 // 用法: node auth-lockout-check.mjs [baseUrl] [userName] [password]
+// 清 key 走 Redis 直连（E2E_REDIS=host:port 覆盖地址，默认 127.0.0.1:6379；E2E_REDIS_PREFIX 覆盖键前缀，默认 moai:，
+// StackExchange.Redis.Extensions 写入的键带 moai: 前缀）。
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
 const USER = process.argv[3] ?? 'admin'
 const PASS = process.argv[4] ?? 'abcd123456'
+const [REDIS_HOST, REDIS_PORT] = (process.env.E2E_REDIS ?? '127.0.0.1:6379').split(':')
+const REDIS_PREFIX = process.env.E2E_REDIS_PREFIX ?? 'moai:'
 const crypto = await import('node:crypto')
+const net = await import('node:net')
 
 const { rsaPublic } = await fetch(`${BASE}/api/common/serverinfo`).then((r) => r.json())
 
@@ -21,12 +26,35 @@ async function login(password) {
   return { status: r.status, body: await r.json().catch(() => null) }
 }
 
+// 极简 RESP 客户端（仅 DEL）
+function redisCommand(...args) {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection({ host: REDIS_HOST, port: Number(REDIS_PORT) }, () => {
+      let payload = `*${args.length}\r\n`
+      for (const a of args) payload += `$${Buffer.byteLength(a)}\r\n${a}\r\n`
+      socket.write(payload)
+    })
+    let buffer = Buffer.alloc(0)
+    socket.on('data', (d) => {
+      buffer = Buffer.concat([buffer, d])
+      if (buffer.includes('\r\n')) {
+        socket.end()
+        resolve(buffer.toString('utf-8'))
+      }
+    })
+    socket.on('error', reject)
+  })
+}
+
 let pass = 0
 let fail = 0
 const check = (name, cond) => {
   console.log(`${cond ? 'PASS' : 'FAIL'} ${name}`)
   cond ? pass++ : fail++
 }
+
+// 0. 预清理：上次异常退出残留的失败计数会让基线直接 403
+await redisCommand('DEL', `${REDIS_PREFIX}login:fail:${USER}`)
 
 // 1. 正常登录可用
 const ok0 = await login(PASS)
@@ -42,9 +70,8 @@ for (let i = 1; i <= 5; i++) {
 const locked = await login(PASS)
 check('锁定后正确密码也 403', locked.status === 403 && /次数过多/.test(locked.body?.detail ?? ''))
 
-// 4. 清 key 恢复（StackExchange.Redis.Extensions 默认带 moai: 前缀）
-const { execSync } = await import('node:child_process')
-execSync(`docker exec moai-redis redis-cli DEL "moai:login:fail:${USER}"`)
+// 4. 清 key 恢复
+await redisCommand('DEL', `${REDIS_PREFIX}login:fail:${USER}`)
 const ok1 = await login(PASS)
 check('清 key 后恢复登录', ok1.status === 200)
 

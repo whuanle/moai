@@ -207,7 +207,7 @@ async function main() {
   const chatModelId = adminToken ? await createStubChatModel(adminToken, TID, modelStubPort) : ''
   let convReady = false
   if (chatModelId) {
-    const cfg = await api('PUT', `/api/app/${appA}/agent-config`, { token: owner.token, body: { modelId: chatModelId, prompt: '', wikiIds: [], plugins: [] } })
+    const cfg = await api('PUT', `/api/app/${appA}/agent-config`, { token: owner.token, body: { modelId: chatModelId, prompt: '你是企业微信助手', wikiIds: [], plugins: [] } })
     const pub = await api('POST', `/api/app/${appA}/publish`, { token: owner.token })
     convReady = cfg.status === 200 && pub.status === 200
     if (!convReady) console.log(`INFO | 应用配置/发布失败：cfg=${cfg.status}(${cfg.text.slice(0, 120)}) pub=${pub.status}(${pub.text.slice(0, 120)})，依赖对话的场景将跳过`)

@@ -44,6 +44,8 @@
 
 7. **头像存 objectKey**：与团队/用户头像同规则——数据库只存 `avatar_path`（objectKey 或绝对地址），前端 `resolveStorageUrl` 拼展示地址；后端校验 objectKey 必须是已完成上传并登记（`files.is_uploaded`）的文件，防伪造。
 
+8. **工具栏对齐规范第 7 条（2026-11-03，同技能中心）**：`PromptCenter` 工具栏由手写 flex 换 `PageToolbar`（搜索输入框 → 「查询」按钮 → 竖分隔线 → 「新建提示词」），「新建」从搜索框左侧移到分隔线右侧；`Input.Search` 换普通 `Input`（去自带 suffix 放大镜，保留 `SearchOutlined` 前缀），回车或「查询」应用关键字——关键字变化走 state 重载并回第一页，未变化时手动重查一次。纯前端改动，`PromptCenter.test.tsx` 7/7。
+
 ## 已知问题
 
 - `UpdatePromptCommand.PromptId` 已加 `[JsonIgnore]`：PUT `/{id}` 的请求体不再暴露 promptId（由路由提供）；存量 Kiota 客户端若仍发送该字段需为可绑定 int，不能为 null。

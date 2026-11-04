@@ -33,7 +33,8 @@ public sealed class CompactionContextProviderContributor : IAppContextProviderCo
     /// <inheritdoc/>
     public async Task<AIContextProvider?> CreateAsync(AppAgentBuildContext context, CancellationToken cancellationToken)
     {
-        var strategy = await _strategyFactory.BuildAsync(context.Config, cancellationToken).ConfigureAwait(false);
+        // 压缩阈值按本轮实际对话模型推导（对话端多模型切换后跟随所选模型的上下文窗口）
+        var strategy = await _strategyFactory.BuildAsync(context.Config, cancellationToken, context.ChatModelId).ConfigureAwait(false);
         return new CompactionProvider(strategy, "moai:compaction", _loggerFactory);
     }
 }

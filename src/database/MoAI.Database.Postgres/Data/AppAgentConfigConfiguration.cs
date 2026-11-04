@@ -56,8 +56,12 @@ internal partial class AppAgentConfigConfiguration : IEntityTypeConfiguration<Ap
             .HasComment("软删除，0=未删除（legacy bigint 约定）")
             .HasColumnName("is_deleted");
         entity.Property(e => e.ModelId)
-            .HasComment("对话使用的模型ID，逻辑关联ai_model.id（uuid）")
+            .HasComment("默认对话模型ID，逻辑关联ai_model.id（uuid）；必须属于模型可选列表")
             .HasColumnName("model_id");
+        entity.Property(e => e.ModelIds)
+            .HasDefaultValueSql("'[]'::text")
+            .HasComment("开放给用户选择的对话模型ID列表（含默认模型），JSON uuid 字符串数组文本，如 '[\"...\"]'；空为'[]'，运行时视为仅默认模型")
+            .HasColumnName("model_ids");
         entity.Property(e => e.OpeningStatement)
             .HasMaxLength(4000)
             .HasDefaultValueSql("''::character varying")

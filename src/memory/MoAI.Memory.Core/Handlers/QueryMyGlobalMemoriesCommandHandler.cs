@@ -25,7 +25,7 @@ public class QueryMyGlobalMemoriesCommandHandler : IRequestHandler<QueryMyGlobal
     public async Task<QueryMyGlobalMemoriesCommandResponse> Handle(QueryMyGlobalMemoriesCommand request, CancellationToken cancellationToken)
     {
         var settings = await _memoryService.GetPlatformSettingsAsync(cancellationToken);
-        var (items, total) = await _memoryService.ListGlobalMineAsync(request.ContextUserId, request.Page, request.PageSize, cancellationToken);
+        var (items, total) = await _memoryService.ListGlobalMineAsync(request.ContextUserId, request.Page, request.PageSize, request.Keywords, cancellationToken);
 
         return new QueryMyGlobalMemoriesCommandResponse
         {

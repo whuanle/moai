@@ -9,6 +9,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
   ShareAltOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { Button, Dropdown, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -20,12 +21,14 @@ import {
   type ClassifyFilter,
   type DynamicPluginManageItem,
   type DynamicPluginTemplate,
+  type PluginToolItem,
 } from '@/api/plugin'
 import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { PluginAvatar } from './components/PluginAvatarUpload'
 import { DynamicPluginInstanceModal } from './components/DynamicPluginInstanceModal'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
+import { PluginSemanticModal } from './components/PluginSemanticModal'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
 import {
   PluginCard,
@@ -52,7 +55,9 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<DynamicPluginManageItem | null>(null)
   const [drawerTarget, setDrawerTarget] = useState<DynamicPluginManageItem | null>(null)
+  const [runTools, setRunTools] = useState<PluginToolItem[] | null>(null)
   const [authPlugin, setAuthPlugin] = useState<DynamicPluginManageItem | null>(null)
+  const [semanticTarget, setSemanticTarget] = useState<DynamicPluginManageItem | null>(null)
   const [filter, setFilter] = useState<ClassifyFilter>('all')
   const [searchText, setSearchText] = useState('')
   const [filterVis, setFilterVis] = useState<boolean | undefined>(undefined)
@@ -134,6 +139,19 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
   )
 
   /** 行/卡片操作区：运行、编辑内联（模板下线时禁用），授权团队收进更多菜单，删除走 Popconfirm；卡片底栏用图标+Tooltip 紧凑形态. */
+  /** 打开运行抽屉：拉取插件工具清单（多工具插件可在抽屉内切换工具）. */
+  const openRun = async (record: DynamicPluginManageItem) => {
+    setDrawerTarget(record)
+    setRunTools(null)
+    const key = record.pluginName ?? record.pluginKey
+    if (!key) return
+    try {
+      setRunTools(await pluginApi.getPluginTools(key))
+    } catch {
+      setRunTools(null)
+    }
+  }
+
   const renderActions = (record: DynamicPluginManageItem, iconOnly = false) => {
     const missing = isTemplateMissing(record)
     const moreItems = [
@@ -162,8 +180,9 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
       )
     return (
       <Space size={0} wrap={false}>
-        {btn('run', <PlayCircleOutlined />, t('plugins.run'), () => setDrawerTarget(record), missing)}
+        {btn('run', <PlayCircleOutlined />, t('plugins.run'), () => void openRun(record), missing)}
         {btn('edit', <EditOutlined />, t('plugins.editPlugin'), () => openEdit(record), missing)}
+        {btn('semantic', <TagsOutlined />, t('plugins.semanticConfig'), () => setSemanticTarget(record))}
         {moreItems.length > 0 && (
           <Dropdown
             key="more"
@@ -370,8 +389,17 @@ export function DynamicPluginPanel({ classifies }: DynamicPluginPanelProps) {
           onClose={() => setDrawerTarget(null)}
           pluginKey={drawerTarget.pluginName ?? drawerTarget.pluginKey}
           paramsExample={drawerTarget.paramsExample}
+          tools={runTools}
         />
       )}
+
+      <PluginSemanticModal
+        open={Boolean(semanticTarget)}
+        pluginId={semanticTarget?.id ?? null}
+        pluginTitle={semanticTarget?.title ?? null}
+        onClose={() => setSemanticTarget(null)}
+        onSaved={() => undefined}
+      />
 
       <PluginTeamAuthorizationDrawer
         open={Boolean(authPlugin)}

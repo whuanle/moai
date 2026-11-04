@@ -18,6 +18,33 @@ import { useAppStore } from '@/store/app'
 
 const { Text } = Typography
 
+/** 绑定流程步骤标题：数字圆点 + 标题 */
+function StepHeader({ index, title }: { index: number; title: string }) {
+  const { token } = theme.useToken()
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 20,
+          height: 20,
+          borderRadius: '50%',
+          background: token.colorPrimary,
+          color: token.colorTextLightSolid,
+          fontSize: 12,
+          fontWeight: 600,
+          flexShrink: 0,
+        }}
+      >
+        {index}
+      </span>
+      <Text strong>{title}</Text>
+    </div>
+  )
+}
+
 /**
  * 两步验证（2FA/TOTP）管理面板：绑定（扫码/手输密钥 + 动态码激活）与关闭。
  * 独立组件，供个人设置页与后续个人中心 2FA 菜单复用.
@@ -147,41 +174,81 @@ export function TwoFactorPanel() {
               </Tooltip>
             </div>
           ) : setup ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Text type="secondary">{t('account.twofa.bindSteps')}</Text>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                {setupQr && (
-                  <img
-                    src={setupQr}
-                    alt={t('account.twofa.qrAlt')}
-                    style={{ width: 160, height: 160, borderRadius: 8, border: `1px solid ${token.colorBorderSecondary}` }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                    {t('account.twofa.secretLabel')}
+            <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                <div
+                  style={{
+                    padding: 12,
+                    lineHeight: 0,
+                    borderRadius: token.borderRadiusLG,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                  }}
+                >
+                  {setupQr && (
+                    <img
+                      src={setupQr}
+                      alt={t('account.twofa.qrAlt')}
+                      style={{ width: 168, height: 168, display: 'block' }}
+                    />
+                  )}
+                </div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('account.twofa.bindStep1Desc')}
+                </Text>
+              </div>
+              <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div>
+                  <StepHeader index={1} title={t('account.twofa.bindStep1')} />
+                  <Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 8 }}>
+                    {t('account.twofa.secretHint')}
                   </Text>
-                  <Text copyable style={{ wordBreak: 'break-all' }}>
-                    {setup.secret}
-                  </Text>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      borderRadius: token.borderRadius,
+                      border: `1px solid ${token.colorBorderSecondary}`,
+                      background: token.colorFillQuaternary,
+                    }}
+                  >
+                    <Text
+                      copyable={{ text: setup.secret }}
+                      style={{ fontFamily: token.fontFamilyCode, fontSize: 13, wordBreak: 'break-all', flex: 1 }}
+                    >
+                      {setup.secret}
+                    </Text>
+                  </div>
+                </div>
+                <div>
+                  <StepHeader index={2} title={t('account.twofa.bindStep2')} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Input
+                      size="large"
+                      placeholder={t('account.twofa.codePlaceholder')}
+                      maxLength={6}
+                      inputMode="numeric"
+                      style={{ width: 200, textAlign: 'center', fontWeight: 600 }}
+                      value={bindCode}
+                      onChange={(e) => setBindCode(e.target.value.replace(/\D/g, ''))}
+                      onPressEnter={handleConfirmBind}
+                    />
+                    <Button
+                      size="large"
+                      type="primary"
+                      loading={binding}
+                      disabled={bindCode.length !== 6}
+                      onClick={handleConfirmBind}
+                    >
+                      {t('account.twofa.confirmBind')}
+                    </Button>
+                  </div>
+                  <Button type="text" style={{ marginTop: 8, paddingLeft: 0 }} onClick={() => setSetup(null)}>
+                    {t('account.twofa.cancelBind')}
+                  </Button>
                 </div>
               </div>
-              <Space.Compact style={{ width: '100%', maxWidth: 320 }}>
-                <Input
-                  placeholder={t('account.twofa.codePlaceholder')}
-                  maxLength={6}
-                  inputMode="numeric"
-                  value={bindCode}
-                  onChange={(e) => setBindCode(e.target.value.replace(/\D/g, ''))}
-                  onPressEnter={handleConfirmBind}
-                />
-                <Button type="primary" loading={binding} disabled={bindCode.length !== 6} onClick={handleConfirmBind}>
-                  {t('account.twofa.confirmBind')}
-                </Button>
-              </Space.Compact>
-              <Button type="text" style={{ alignSelf: 'flex-start', paddingLeft: 0 }} onClick={() => setSetup(null)}>
-                {t('account.twofa.cancelBind')}
-              </Button>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

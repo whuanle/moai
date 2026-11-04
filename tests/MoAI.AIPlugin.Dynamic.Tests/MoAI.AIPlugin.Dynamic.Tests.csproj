@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\aiplugin\MoAI.AIPlugin.Dynamic\MoAI.AIPlugin.Dynamic.csproj" />
+    <!-- 多工具契约发现与执行引擎（PluginTypeHelper/PluginExecutor）在 Core 层 -->
+    <ProjectReference Include="..\..\src\aiplugin\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -262,4 +262,154 @@ public class AppToolContextProviderTests
             Assert.Equal("print(2)", doc2.RootElement.GetProperty("code").GetString());
         }
     }
+
+    [Fact]
+    public async Task Instructions_ContainsUsageNotesSection()
+    {
+        var provider = new AppToolContextProvider([new AppTool
+        {
+            Name = "db",
+            Title = "db-title",
+            Description = "d",
+            Kind = "static",
+            UsageNotes = "orders 表存订单主单",
+            InvokeAsync = (_, _) => Task.FromResult(AppToolResult.Ok("{}")),
+        }]);
+
+        var aiContext = await provider.BuildAIContextAsync();
+
+        Assert.Contains("插件使用须知", aiContext.Instructions, System.StringComparison.Ordinal);
+        Assert.Contains("orders 表存订单主单", aiContext.Instructions, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Instructions_UsageNotes_DeduplicatedAcrossToolsOfSamePlugin()
+    {
+        AppTool Make(string name) => new()
+        {
+            Name = name,
+            Title = "plugin-title",
+            Description = "d",
+            Kind = "dynamic",
+            UsageNotes = "同一段须知",
+            InvokeAsync = (_, _) => Task.FromResult(AppToolResult.Ok("{}")),
+        };
+        var provider = new AppToolContextProvider([Make("p__a"), Make("p__b")]);
+
+        var aiContext = await provider.BuildAIContextAsync();
+
+        // 同一插件的多工具共享一份须知文本，注入时只出现一次
+        var count = aiContext.Instructions!.Split("同一段须知").Length - 1;
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task SemanticNotes_RegisteredAsPluginNoteTool_AndFetchContent()
+    {
+        var noteId = System.Guid.CreateVersion7();
+        var tool = new AppTool
+        {
+            Name = "db",
+            Title = "db",
+            Description = "d",
+            Kind = "static",
+            SemanticNotes = [new AppPluginSemanticNote(noteId, "orders 表", "订单主单表结构…")],
+            InvokeAsync = (_, _) => Task.FromResult(AppToolResult.Ok("{}")),
+        };
+        var provider = new AppToolContextProvider([tool]);
+
+        var aiContext = await provider.BuildAIContextAsync();
+
+        // 目录注入 instructions + plugin_note 元工具已注册
+        Assert.Contains("语义资料目录", aiContext.Instructions, System.StringComparison.Ordinal);
+        Assert.Contains(noteId.ToString("N"), aiContext.Instructions, System.StringComparison.Ordinal);
+        var pluginNote = aiContext.Tools.OfType<Microsoft.Extensions.AI.AIFunction>().FirstOrDefault(f => f.Name == "plugin_note");
+        Assert.NotNull(pluginNote);
+
+        var result = await provider.InvokePluginNoteAsync(noteId.ToString());
+        using var doc = JsonDocument.Parse(result);
+        Assert.Equal("orders 表", doc.RootElement.GetProperty("title").GetString());
+        Assert.Contains("订单主单表结构", doc.RootElement.GetProperty("content").GetString(), System.StringComparison.Ordinal);
+
+        var missing = await provider.InvokePluginNoteAsync(System.Guid.CreateVersion7().ToString());
+        using var missingDoc = JsonDocument.Parse(missing);
+        Assert.False(missingDoc.RootElement.GetProperty("success").GetBoolean());
+    }
+
+    [Fact]
+    public void NoSemanticNotes_PluginNoteToolNotRegistered()
+    {
+        var provider = new AppToolContextProvider([MakeTool("echo")]);
+
+        var aiContext = provider.BuildAIContextAsync().Result;
+
+        Assert.DoesNotContain("语义资料目录", aiContext.Instructions, System.StringComparison.Ordinal);
+        Assert.DoesNotContain(aiContext.Tools.OfType<Microsoft.Extensions.AI.AIFunction>(), f => f.Name == "plugin_note");
+    }
+
+    [Fact]
+    public async Task CallPolicy_DenyPatternMatch_BlocksInvocation()
+    {
+        var invoked = false;
+        var tool = MakeTool("sql", invoke: (_, _) => { invoked = true; return Task.FromResult(AppToolResult.Ok("{}")); });
+        var withPolicy = new AppTool
+        {
+            Name = tool.Name,
+            Title = tool.Title,
+            Description = tool.Description,
+            Kind = tool.Kind,
+            CallPolicy = "{\"denyPatterns\":[\"delete\\\\s+from\"],\"action\":\"block\"}",
+            InvokeAsync = tool.InvokeAsync,
+        };
+        var provider = new AppToolContextProvider([withPolicy]);
+
+        var result = await provider.InvokeJsonAsync("sql", "{\"sql\":\"DELETE FROM orders\"}");
+
+        Assert.False(invoked);
+        using var doc = JsonDocument.Parse(result);
+        Assert.False(doc.RootElement.GetProperty("success").GetBoolean());
+        Assert.Contains("插件调用策略", doc.RootElement.GetProperty("error").GetString(), System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CallPolicy_NoMatch_PassesThrough()
+    {
+        var tool = new AppTool
+        {
+            Name = "sql",
+            Title = "sql",
+            Description = "d",
+            Kind = "static",
+            CallPolicy = "{\"denyPatterns\":[\"delete\\\\s+from\"],\"action\":\"block\"}",
+            InvokeAsync = (_, _) => Task.FromResult(AppToolResult.Ok("{\"ok\":true}")),
+        };
+        var provider = new AppToolContextProvider([tool]);
+
+        var result = await provider.InvokeJsonAsync("sql", "{\"sql\":\"SELECT 1\"}");
+
+        Assert.Contains("\"ok\":true", result, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExtraNotes_AppendedIntoToolDescription()
+    {
+        var tool = new AppTool
+        {
+            Name = "sql",
+            Title = "sql",
+            Description = "原始描述",
+            Kind = "static",
+            ExtraNotes = "只允许查询 orders 表",
+            InvokeAsync = (_, _) => Task.FromResult(AppToolResult.Ok("{}")),
+        };
+        var provider = new AppToolContextProvider([tool]);
+
+        var json = await provider.BuildListJsonAsync(null);
+
+        // 序列化会把非 ASCII 转义，解析后按字段断言（与 E2E 内容断言同一口径）
+        using var doc = JsonDocument.Parse(json);
+        var description = doc.RootElement.GetProperty("tools")[0].GetProperty("description").GetString();
+        Assert.Contains("原始描述", description, System.StringComparison.Ordinal);
+        Assert.Contains("只允许查询 orders 表", description, System.StringComparison.Ordinal);
+    }
 }

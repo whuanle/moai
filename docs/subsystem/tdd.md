@@ -22,7 +22,9 @@
 | @SUB-S61、@SUB-S62 | 同上（SUB-70 ~ SUB-75：缺实例标识 400/单实例 1/双实例 2/自省实例数） | PASS 101/101（2026-11-01） |
 | @SUB-S53 ~ @SUB-S60、@SUB-S63 ~ @SUB-S66 | 同上（SUB-76 ~ SUB-94：多地址 redirect_uri 指定入口/未注册 403/缺省取第一个为 SUB-91~94；appid 结构化自校验 SUB-82a~d：格式不符/非法字符/差一位/篡改 HMAC 均 401 不打库；公网限流 SUB-95/96：同 (IP, appid) 失败 10 次 429 + 维度隔离：应用接入自动 appid/保留前缀 400/同表回显不漏原文/类型过滤/统一 token/直连轨界限/资源面全量/旧端点下线/专属端点 404/SSO 过滤 404/应用接入心跳/删除失效） | PASS 101/101（2026-11-01） |
 | @SUB-S63（单测侧） | RevealSubsysAppSecretCommandHandlerTests（v2 信封可解密/存量 400/信封长度 400/404） | PASS 45/45（2026-11-01） |
+| @SUB-S67 ~ @SUB-S70（单测侧） | CreateSubsysAppCommandHandlerTests（已登记 objectKey 落库/未登记与未完成上传 404/缺省空串/255 上限校验）+ SubsysAppCommandsHandlerTests（更新 null=不修改/伪造 404/已登记替换） | PASS 53/53（2026-11-04） |
 | @SUB-S53 ~ @SUB-S55（UI 侧） | [AdminIntegrations.test.tsx](../../ui/src/pages/admin/__tests__/AdminIntegrations.test.tsx)（单列表无 Tab/类型列/实例数展示/非 root 重定向） | PASS 3/3（2026-11-01） |
+| @SUB-S67 ~ @SUB-S70 | [local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)（SUB-97 ~ SUB-103：创建携带头像落库回显/创建与更新携带未登记 objectKey 404/替换头像回显新 key/更新不携带字段头像不变/缺省空串与应用接入同构回显；走 pre_upload_image→PUT→complate_url 真实存储链路，存储不可用时整段跳过） | PASS 109/109（2026-11-04） |
 
 ## 场景映射表（SAA）
 
@@ -48,7 +50,7 @@
 | 统一 token 换取（子系统/应用接入/停用 403/重置失效） | 同上（SubsystemTokenCommandHandlerTests 7 例，含存量哈希行校验） | PASS 45/45（2026-11-01） |
 | 组织授权并集门禁/委托/回显、SSO 全链（含应用接入行 404） | 同上（SubsystemSsoHandlerTests 15 例） | PASS 45/45（2026-11-01） |
 | 团队可用列表（仅 appType=subsystem） | 同上（QueryTeamAvailableSubsystemsCommandHandlerTests 4 例） | PASS 45/45（2026-11-01） |
-| 统一表回归 | team-apikey-scope-e2e（TA-40~42 密钥兑换语义）+ org-e2e 回归 | 全绿（2026-11-01，TA 24/24、ORG 53/53） |
+| 统一表回归 | teamres-key-e2e.mjs（TR-S8 应用接入 key 换 token 携 secret、TR-S27 资源 key 不可换 token、TR-S29 伪造/旧前缀 401）+ org-e2e 回归 | 全绿（2026-11-04，TR 31/31、ORG 53/53；原 team-apikey-scope-e2e TA-40~42 随 scope 体系退役删除，TA 编号不复用） |
 
 ## 回归命令
 

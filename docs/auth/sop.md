@@ -6,11 +6,12 @@
 
 | 事项 | 操作 | 对应场景 |
 |---|---|---|
-| 解锁被锁用户 | `docker exec moai-redis redis-cli DEL "moai:login:fail:{userName}"`（键带库默认 `moai:` 前缀；不处理则 5 分钟自动解锁） | [@AUTH-S3](./bdd.md#auth-s3) |
+| 解锁被锁用户 | Redis `DEL "moai:login:fail:{userName}"`（键带库默认 `moai:` 前缀；不处理则 5 分钟自动解锁） | [@AUTH-S3](./bdd.md#auth-s3) |
+| 图形验证码刷量/误限流 | Redis `KEYS "moai:login:rl:*"` 查看，`DEL` 对应 `login:rl:captcha_new:{ip}` / `login:rl:send_code:{ip}` 立即解除（窗口分别 1 分钟/10 分钟，不处理自动过期）；验证码本体键 `moai:login:captcha:{id}` 5 分钟自过期 | [@AUTH-S53](./bdd.md#auth-s53) |
 | 撤销全部登录态 | 无黑名单机制。禁用账号即可下一请求拦截（[../user-management/sop.md](../user-management/sop.md)）；彻底吊销需轮换 RSA 密钥（删 `configs/rsa_private.key` 重启，**所有 token 失效**） | [@AUTH-S12](./bdd.md#auth-s12) |
-| 排查登录失败 | 后端日志 `User login.` 事件；401 连发先查 Redis 失败计数再查密码 | [@AUTH-S2](./bdd.md#auth-s2) |
+| 排查登录失败 | 后端日志 `User login.` 事件；401 连发先查 Redis 失败计数再查密码；after_fail 场景先确认图形验证码策略（`LOGIN_CAPTCHA_MODE`）与失败计数残留 | [@AUTH-S2](./bdd.md#auth-s2)、[@AUTH-S45](./bdd.md#auth-s45) |
 | 第三方登录不可用 | 用户管理→第三方登录页检查连接配置；oauth_login 500 多为第三方接口错误，查日志 `Get openid error` | [@AUTH-S15](./bdd.md#auth-s15) |
-| 锁定机制自检 | 跑 [local-dev/auth-lockout-check.mjs](../../local-dev/auth-lockout-check.mjs)：5 错→403→删 key→恢复 | [@AUTH-S3](./bdd.md#auth-s3) |
+| 锁定机制自检 | 跑 [local-dev/auth-lockout-check.mjs](../../local-dev/auth-lockout-check.mjs)：5 错→403→Redis 直连清 key→恢复 | [@AUTH-S3](./bdd.md#auth-s3) |
 
 ## 2. 密钥与有效期
 
@@ -30,8 +31,8 @@
 
 ## 4. 验收流程（发布前）
 
-1. 自动化：跑 [TDD 回归命令](./tdd.md)（E2E 34/34 + lockout 脚本 + build/typecheck/lint/test 全绿）。
-2. 手动走查：登录/注册/OAuth 回调页核对 [@AUTH-S20](./bdd.md#auth-s20) ~ [@AUTH-S23](./bdd.md#auth-s23)；curl 复核 [@AUTH-S14](./bdd.md#auth-s14) 缺陷现状。
+1. 自动化：跑 [TDD 回归命令](./tdd.md)（auth 四脚本 67/40/39/8 + build/typecheck/lint/test 全绿）。
+2. 手动走查：登录/注册/OAuth 回调页核对 [@AUTH-S20](./bdd.md#auth-s20) ~ [@AUTH-S23](./bdd.md#auth-s23)；一体化登录页在三种图形验证码模式下走查字段显隐（[@AUTH-S48](./bdd.md#auth-s48)）；curl 复核 [@AUTH-S14](./bdd.md#auth-s14) 缺陷现状。
 3. 历史记录见下「历史验收存档」。
 
 ## 5. 历史验收存档（L3 证据，保留原始记录）
@@ -49,3 +50,4 @@
 | 2026-09-02 | 随第三轮验收更新 OAuth 证据 |
 | 2026-09-01 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@AUTH-S1~S23）、四件互链、职责瘦身 |
 | 2026-10-27 | 飞书第三方登录 `redirect_uri` 不一致缺陷修复（授权地址去除多余 `?redirectUri=` 后缀 + 删伪 PKCE `code_verifier`）；排障表补飞书行、清理 AUTH-S14 过期备注 |
+| 2026-11-03 | 登录一体化改造（@AUTH-S42 退役 → S43~S46）+ 图形验证码分级递进（S48~S53）；运维表补图形验证码限流清理行；lockout 脚本改 Redis 直连 |

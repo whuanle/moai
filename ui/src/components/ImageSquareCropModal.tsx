@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Modal, Slider, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { pickImageEncodeType } from '@/utils/image'
 
 /** 裁剪视口边长（px），视口即正方形裁剪框. */
 const VIEW_SIZE = 280
@@ -52,7 +53,8 @@ export function clampCropOffset(
 /**
  * 正方形图片裁剪弹窗：图片初始完整显示并居中（宽图/长图立即可以上下或左右拖动），
  * 支持拖动定位、滑块/滚轮缩放（放大可铺满方形视口做紧致裁剪），确认后按视口内容
- * 经 Canvas 裁剪导出正方形 PNG，未铺满处的留白保留为透明。
+ * 经 Canvas 裁剪导出正方形图片（优先 WebP，不支持编码的浏览器回退 PNG），
+ * 未铺满处的留白保留为透明。
  */
 export function ImageSquareCropModal({ open, src, fileName, onConfirm, onCancel }: ImageSquareCropModalProps) {
   const { t } = useTranslation()
@@ -186,11 +188,13 @@ export function ImageSquareCropModal({ open, src, fileName, onConfirm, onCancel 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.drawImage(image, sx, sy, sourceSide, sourceSide, 0, 0, outSide, outSide)
+    // 输出优先 WebP（体积远小于 PNG 且支持透明），浏览器不支持编码时回退 PNG
+    const encode = pickImageEncodeType(true)
     canvas.toBlob((blob) => {
       if (!blob) return
       const base = (fileName ?? 'icon').replace(/\.[^.]+$/, '')
-      onConfirm(new File([blob], `${base}.png`, { type: 'image/png' }))
-    }, 'image/png')
+      onConfirm(new File([blob], `${base}${encode.ext}`, { type: encode.type }))
+    }, encode.type, 0.9)
   }
 
   return (

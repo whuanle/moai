@@ -53,18 +53,28 @@ public class SubsysTokenRateLimiter : ISubsysTokenRateLimiter
             return "unknown";
         }
 
-        // 反代部署取 X-Forwarded-For 首段，否则取连接对端地址
+        // 反代部署取 X-Forwarded-For 首段，否则取连接对端地址；统一做 IPv4-mapped IPv6 归一化（::ffff:a.b.c.d → a.b.c.d）
         var forwarded = context.Request.Headers["X-Forwarded-For"].ToString();
         if (forwarded.Length > 0)
         {
             var first = forwarded.Split(',')[0].Trim();
             if (first.Length > 0)
             {
-                return first;
+                return NormalizeIp(first);
             }
         }
 
-        return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return NormalizeIp(context.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+    }
+
+    private static string NormalizeIp(string ip)
+    {
+        if (System.Net.IPAddress.TryParse(ip, out var parsed) && parsed.IsIPv4MappedToIPv6)
+        {
+            return parsed.MapToIPv4().ToString();
+        }
+
+        return ip;
     }
 
     /// <inheritdoc/>

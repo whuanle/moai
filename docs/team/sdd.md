@@ -74,7 +74,7 @@
 - **D5 管理员治理接口独立路由**：`/admin/team/*` 与团队内接口（`/team/*`）分离，避免管理面与协作面权限混淆；门禁在 Controller（`EnsureAdminAsync`，沿用 account 的 `GetUserStateAsync`），Handler 只做事实校验（团队/用户存在性、目标已是负责人）。治理接口归 `team` 模块实现，未使用尚空的 `admin` 模块。
 - **D6 禁用仅状态标记**：`team.is_disable` 为既有列，本轮只做「标记 + 列表展示 + 状态筛选」，不做跨模块级联停用（知识库/网关/插件仍可访问），级联留待后续轮次（见 §6）。
 - **D7 转让目标可为任意用户**：管理员转让不要求目标已在团——非成员自动入团并成为 Owner，原 Owner 降为 Admin；目标已是 Owner 时 400。区别于团队内转让（`PUT /team/{id}/owner`，要求操作者本人是 Owner 且目标须已在团）。
-- **D8 团队详情页导航收敛**：详情页无「团队信息」分区（信息卡与菜单项已移除，团队资料维护走「设置」分区）；面包屑为「主页（→ /dashboard）/ 团队头像+团队名称」，默认分区与越权/非法子路由回落分区均为「内部应用」（见 [@TM-S17](./bdd.md#tm-s17)）。
+- **D8 团队详情页导航收敛**：详情页无「团队信息」分区（信息卡与菜单项已移除，团队资料维护走「设置」分区）；页面顶部无面包屑（原「主页 / 团队头像+团队名称」面包屑已移除，右侧内容区不再预留其空白高度），返回入口收敛进侧边栏头部——团队头像+团队名称下方「返回主页」（→ /apps）；默认分区与越权/非法子路由回落分区均为「内部应用」（见 [@TM-S17](./bdd.md#tm-s17)）。
 - **D9 批量添加与团队侧组织视图**（2026-10-29，见 [@TM-S19](./bdd.md#tm-s19)/[@TM-S20](./bdd.md#tm-s20)）：添加成员改为弹窗（组织树按组织批量选人 + 关键字实时搜索全站用户，前端 `TeamMemberAddModal`）。批量端点整批校验（非空/去重/≤200），对已入团与不存在用户**跳过而非整批拒绝**，回传 `addedCount/skippedUserIds/notFoundUserIds` 供前端分层提示；授予 Admin 仍需 Owner。组织树数据不复制 Org 模块实现——Team.Api 引用 `MoAI.Org.Shared` 经 MediatR 复用 `QueryOrgRolesCommand`/`QueryOrgRoleUsersCommand`（两个 Handler 本身无门禁逻辑，团队侧门禁统一走 `EnsureTeamManagerAsync`，Admin 起可读；组织管理面 `/org/*` 仍仅管理员）。内联用户下拉已移除，单添加端点 `POST /users` 与 `candidates` 搜索接口保留（后者供弹窗实时搜索）。
 
 ## 6. 已知问题 / 下阶段

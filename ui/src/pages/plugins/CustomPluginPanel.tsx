@@ -8,6 +8,7 @@ import {
   SearchOutlined,
   ShareAltOutlined,
   SyncOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { Button, Dropdown, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -22,6 +23,7 @@ import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { McpPluginModal, type McpFormValues } from './components/McpPluginModal'
 import { OpenApiModal, type OpenApiFormValues } from './components/OpenApiModal'
+import { PluginSemanticModal } from './components/PluginSemanticModal'
 import { FunctionListModal } from './components/FunctionListModal'
 import { PluginAvatar } from './components/PluginAvatarUpload'
 import { PluginTeamAuthorizationDrawer } from './components/PluginTeamAuthorizationDrawer'
@@ -80,6 +82,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
   const [editMode, setEditMode] = useState<'mcp' | 'openApi' | null>(null)
   const [functionPlugin, setFunctionPlugin] = useState<CustomPlugin | null>(null)
   const [authPlugin, setAuthPlugin] = useState<CustomPlugin | null>(null)
+  const [semanticTarget, setSemanticTarget] = useState<CustomPlugin | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -251,6 +254,7 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
       <Space size={0} wrap={false}>
         {btn('view', <EyeOutlined />, t('plugins.viewFunctions'), () => setFunctionPlugin(record))}
         {btn('edit', <EditOutlined />, t('plugins.editPlugin'), () => openEdit(record))}
+        {btn('semantic', <TagsOutlined />, t('plugins.semanticConfig'), () => setSemanticTarget(record))}
         {moreItems.length > 0 && (
           <Dropdown
             key="more"
@@ -516,6 +520,14 @@ export function CustomPluginPanel({ classifies }: CustomPluginPanelProps) {
         pluginId={authPlugin?.pluginId ?? null}
         pluginName={authPlugin?.pluginName ?? null}
         onClose={() => setAuthPlugin(null)}
+      />
+
+      <PluginSemanticModal
+        open={Boolean(semanticTarget)}
+        pluginId={semanticTarget?.pluginId ?? null}
+        pluginTitle={semanticTarget?.title ?? null}
+        onClose={() => setSemanticTarget(null)}
+        onSaved={() => undefined}
       />
     </>
   )

@@ -1,9 +1,12 @@
 // 知识图谱外部接口 E2E（真实 HTTP；复用 kg-e2e / external-app-e2e 同款登录/断言 helper；后端 127.0.0.1:5210）
-// 场景编号 KX-01..KX-14（新编号，不复用 KG-S*）：/api/external/knowledge-graph 仅接受应用 token（团队级授权），并按 kg_read/kg_write 分档校验
+// 场景编号 KX-01..KX-15（新编号，不复用 KG-S*）：/api/teamres/knowledge-graph 仅接受应用 token（团队级授权）；
+//   接入 scopes（kg_read/kg_write 分档）已退役：moai-ac- 全量 key 读写均放行（KX-09/KX-11 正向断言）；
+//   KX-15 团队资源 key（moai-tr-，knowledgeGraph）包围圈：本图 REST 放行/团队级 KG/list 只含绑定图/越圈 403
 // KX-10..KX-12：外部批量导入（/import 类型名引用+业务key幂等upsert+逐条结果）、按key批删/查询、connected 409（图库不可达时跳过）
 // KX-13..KX-14：按 key 同步闭环（keys/list 枚举 + edges/batch-delete 按引用删边 + 单节点 key 收养）、导入预检 validateOnly
 // 用法：node local-dev/kg-external-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5210）
 // 前置：后端 + 图数据库可达 且 KG_ENABLED=true（未开启时打印 SKIP 并退出码 0）
+//   Memgraph 依赖场景在无 Memgraph 环境失败属预期（同改动前基线），不为此删除依赖场景。
 import crypto from 'node:crypto'
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:5210'
@@ -36,7 +39,7 @@ async function api(method, path, { token, body } = {}) {
 
 const TS = Date.now().toString().slice(-8)
 const kg = (id) => `/api/knowledge-graph/${id}`
-const xkg = (id) => `/api/external/knowledge-graph/${id}`
+const xkg = (id) => `/api/teamres/knowledge-graph/${id}`
 let kx07Skipped = false
 
 async function main() {
@@ -82,19 +85,19 @@ async function main() {
 
   try {
     // ===== KX-01 接入点换应用 token；列表仅含本团队 managed 图谱 =====
-    const tok1 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY1, secret: acc1.json?.secret } })
+    const tok1 = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY1, secret: acc1.json?.secret } })
     check('KX-01a accessAppKey 换应用 token 200 tokenType=app', tok1.status === 200 && tok1.json?.tokenType === 'app' && typeof tok1.json?.accessToken === 'string', `${tok1.status} ${tok1.text.slice(0, 120)}`)
     const AT1 = tok1.json?.accessToken
-    const tok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
+    const tok2 = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
     const AT2 = tok2.json?.accessToken
 
-    const list1 = await api('POST', '/api/external/knowledge-graph/list', { token: AT1, body: {} })
+    const list1 = await api('POST', '/api/teamres/knowledge-graph/list', { token: AT1, body: {} })
     const ids1 = (list1.json?.items ?? []).map((x) => Number(x.id))
     const item1 = (list1.json?.items ?? []).find((x) => Number(x.id) === G1)
     check('KX-01b 团队1 列表 200 含本团队 managed 图谱且 mode=managed', list1.status === 200 && ids1.includes(G1) && item1?.mode === 'managed', `${list1.status} ${list1.text.slice(0, 160)}`)
     check('KX-01c 团队1 列表不含他团队图谱与 connected 图谱', !ids1.includes(G2) && (CONN === 0 || !ids1.includes(CONN)), JSON.stringify(ids1))
 
-    const list2 = await api('POST', '/api/external/knowledge-graph/list', { token: AT2, body: {} })
+    const list2 = await api('POST', '/api/teamres/knowledge-graph/list', { token: AT2, body: {} })
     const ids2 = (list2.json?.items ?? []).map((x) => Number(x.id))
     check('KX-01d 团队2 token 列表仅含团队2 图谱', list2.status === 200 && ids2.includes(G2) && !ids2.includes(G1), JSON.stringify(ids2))
 
@@ -288,45 +291,40 @@ async function main() {
     }
 
     // ===== KX-08 鉴权边界 =====
-    check('KX-08a 无 token 调外部接口 401', (await api('POST', '/api/external/knowledge-graph/list', { body: {} })).status === 401)
-    check('KX-08b 伪造 token 401', (await api('POST', '/api/external/knowledge-graph/list', { token: 'kx-invalid-token', body: {} })).status === 401)
+    check('KX-08a 无 token 调外部接口 401', (await api('POST', '/api/teamres/knowledge-graph/list', { body: {} })).status === 401)
+    check('KX-08b 伪造 token 401', (await api('POST', '/api/teamres/knowledge-graph/list', { token: 'kx-invalid-token', body: {} })).status === 401)
     {
-      const internal = await api('POST', '/api/external/knowledge-graph/list', { token, body: {} })
+      const internal = await api('POST', '/api/teamres/knowledge-graph/list', { token, body: {} })
       check('KX-08c 内部用户 JWT 调外部接口 401/403', internal.status === 401 || internal.status === 403, `${internal.status}`)
     }
-    // ===== KX-09 知识图谱读/写范围（kg_read/kg_write）=====
+    // ===== KX-09 moai-ac- 全量 key（kg_read/kg_write 分档随 scopes 退役）：读+写均放行 =====
     {
-      const accRO = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入只读-' + TS, description: 'kg scope e2e', scopes: ['kg_read'] } })
-      const KEY_RO = accRO.json?.key
-      const ID_RO = accRO.json?.accessAppId
-      check('KX-09a 创建 kg_read 只读接入 200', accRO.status === 200, `${accRO.status} ${accRO.text.slice(0, 120)}`)
+      const accFull = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入全量-' + TS, description: 'kg scope 退役 e2e' } })
+      const KEY_FULL = accFull.json?.key
+      const ID_FULL = accFull.json?.accessAppId
+      check('KX-09a 创建接入不传 scopes 200 moai-ac- 前缀', accFull.status === 200 && String(KEY_FULL ?? '').startsWith('moai-ac-'), `${accFull.status} ${accFull.text.slice(0, 120)}`)
 
-      const tokRO = await api('POST', '/api/external/token', { body: { accessAppKey: KEY_RO, secret: accRO.json?.secret } })
-      const AT_RO = tokRO.json?.accessToken
-      check('KX-09b 只读接入换应用 token 200', tokRO.status === 200, `${tokRO.status}`)
+      const tokFull = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY_FULL, secret: accFull.json?.secret } })
+      const AT_FULL = tokFull.json?.accessToken
+      check('KX-09b 换应用 token 200', tokFull.status === 200 && typeof AT_FULL === 'string', `${tokFull.status}`)
 
-      const roSchema = await api('GET', xkg(G1) + '/schema', { token: AT_RO })
-      check('KX-09c kg_read token 读 schema 200', roSchema.status === 200, `${roSchema.status} ${roSchema.text.slice(0, 120)}`)
-      const roList = await api('POST', xkg(G1) + '/nodes/list', { token: AT_RO, body: { pageNo: 1, pageSize: 10 } })
-      check('KX-09d kg_read token 节点列表 200', roList.status === 200, `${roList.status}`)
-      const roWrite = await api('POST', xkg(G1) + '/entity-types', { token: AT_RO, body: { name: 'kx-写权限应拒-' + TS, color: '#ef4444' } })
-      check('KX-09e kg_read token 建实体类型 403', roWrite.status === 403, `${roWrite.status} ${roWrite.text.slice(0, 120)}`)
-      const roWiki = await api('POST', '/api/external/wiki/list', { token: AT_RO, body: {} })
-      check('KX-09f kg_read token 无 wiki_read 跨资源组 403', roWiki.status === 403, `${roWiki.status}`)
+      const roSchema = await api('GET', xkg(G1) + '/schema', { token: AT_FULL })
+      check('KX-09c 全量 token 读 schema 200', roSchema.status === 200, `${roSchema.status} ${roSchema.text.slice(0, 120)}`)
+      const roList = await api('POST', xkg(G1) + '/nodes/list', { token: AT_FULL, body: { pageNo: 1, pageSize: 10 } })
+      check('KX-09d 全量 token 节点列表 200', roList.status === 200, `${roList.status}`)
+      const rwWrite = await api('POST', xkg(G1) + '/entity-types', { token: AT_FULL, body: { name: 'kx-全量写-' + TS, color: '#22c55e' } })
+      const NEW_ET = Number(rwWrite.json?.value)
+      check('KX-09e 全量 token 建实体类型 200（写放行）', rwWrite.status === 200 && NEW_ET > 0, `${rwWrite.status} ${rwWrite.text.slice(0, 120)}`)
+      const roWiki = await api('POST', '/api/teamres/wiki/list', { token: AT_FULL, body: {} })
+      check('KX-09f 全量 token 跨资源组 wiki/list 200', roWiki.status === 200 && Array.isArray(roWiki.json?.items), `${roWiki.status}`)
 
-      // 直连 key：kg_read 直连读放行、写 403
-      const dSchema = await fetch(`${BASE}${xkg(G1)}/schema`, { headers: { Authorization: `Bearer ${KEY_RO}` } })
-      check('KX-09g kg_read 直连读 schema 200', dSchema.status === 200, `${dSchema.status}`)
-      const dWrite = await fetch(`${BASE}${xkg(G1)}/nodes`, { method: 'POST', headers: { Authorization: `Bearer ${KEY_RO}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ entityTypeId: 1, name: 'kx-直连写拒-' + TS }) })
-      check('KX-09h kg_read 直连写节点 403', dWrite.status === 403, `${dWrite.status}`)
+      // 直连 key：读写均放行
+      const dSchema = await fetch(`${BASE}${xkg(G1)}/schema`, { headers: { Authorization: `Bearer ${KEY_FULL}` } })
+      check('KX-09g moai-ac- 直连读 schema 200', dSchema.status === 200, `${dSchema.status}`)
+      const dWrite = await fetch(`${BASE}${xkg(G1)}/nodes`, { method: 'POST', headers: { Authorization: `Bearer ${KEY_FULL}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ entityTypeId: NEW_ET || 1, name: 'kx-直连写-' + TS }) })
+      check('KX-09h moai-ac- 直连写节点 200', dWrite.status === 200, `${dWrite.status}`)
 
-      // 补 kg_write 后 token 刷新写放行（范围以接入当前勾选为准）
-      await api('PUT', `/api/access-app/${ID_RO}`, { token, body: { name: 'kx接入只读-' + TS, description: 'kg scope e2e', scopes: ['kg_read', 'kg_write'] } })
-      const refRO = await api('POST', '/api/external/token/refresh', { body: { refreshToken: tokRO.json?.refreshToken } })
-      const rwWrite = await api('POST', xkg(G1) + '/entity-types', { token: refRO.json?.accessToken, body: { name: 'kx-补写后-' + TS, color: '#22c55e' } })
-      check('KX-09i 补 kg_write 刷新后建实体类型 200', refRO.status === 200 && rwWrite.status === 200, `ref=${refRO.status} write=${rwWrite.status} ${rwWrite.text.slice(0, 120)}`)
-
-      await api('DELETE', `/api/access-app/${ID_RO}`, { token })
+      await api('DELETE', `/api/access-app/${ID_FULL}`, { token })
     }
 
     // ===== KX-10 外部批量导入：类型名自动创建 + 业务 key + 名称引用 + 逐条失败报告 =====
@@ -400,14 +398,16 @@ async function main() {
       const oldKey = await api('GET', `${xkg(G1)}/nodes/by-key/${encodeURIComponent('kx-p-2')}`, { token: AT1 })
       check('KX-11c 无 key 行按（类型+名称）匹配并收养新 key：kx-p-2b 200 / kx-p-2 404', adopt.status === 200 && adopt.json?.name === nameAcme && oldKey.status === 404, `adopt=${adopt.status} old=${oldKey.status}`)
 
-      // 只读 token：导入/批删是写档 403，by-key 是读档放行（验证新路由分档正确）
-      const accRO2 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入导入只读-' + TS, description: 'import scope e2e', scopes: ['kg_read'] } })
-      const tokRO2 = await api('POST', '/api/external/token', { body: { accessAppKey: accRO2.json?.key, secret: accRO2.json?.secret } })
-      const AT_RO2 = tokRO2.json?.accessToken
-      check('KX-11d kg_read token 导入 403', (await api('POST', xkg(G1) + '/import', { token: AT_RO2, body: importBody })).status === 403)
-      check('KX-11e kg_read token 批删 403', (await api('POST', xkg(G1) + '/nodes/batch-delete', { token: AT_RO2, body: { keys: ['kx-p-1'] } })).status === 403)
-      check('KX-11f kg_read token by-key 查询 200', (await api('GET', `${xkg(G1)}/nodes/by-key/${encodeURIComponent('kx-p-1')}`, { token: AT_RO2 })).status === 200)
-      await api('DELETE', `/api/access-app/${accRO2.json?.accessAppId}`, { token })
+      // 原「kg_read 只读分档 403」反例已随 scopes 退役：接入全量放行，
+      // 写档端点放行以无副作用调用验证（validateOnly 预检 / 幽灵 key 批删），by-key 读档放行
+      const accFull2 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入导入全量-' + TS, description: 'import scope 退役 e2e' } })
+      const tokFull2 = await api('POST', '/api/teamres/token', { body: { accessAppKey: accFull2.json?.key, secret: accFull2.json?.secret } })
+      const AT_FULL2 = tokFull2.json?.accessToken
+      check('KX-11d 全量 key 导入端点放行（validateOnly 预检 200）', (await api('POST', xkg(G1) + '/import', { token: AT_FULL2, body: { ...importBody, validateOnly: true } })).status === 200)
+      const fullDel = await api('POST', xkg(G1) + '/nodes/batch-delete', { token: AT_FULL2, body: { keys: ['kx-p-none-' + TS] } })
+      check('KX-11e 全量 key 批删端点放行（幽灵 key deletedCount=0）', fullDel.status === 200 && fullDel.json?.deletedCount === 0, `${fullDel.status} ${fullDel.text.slice(0, 120)}`)
+      check('KX-11f 全量 key by-key 查询 200', (await api('GET', `${xkg(G1)}/nodes/by-key/${encodeURIComponent('kx-p-1')}`, { token: AT_FULL2 })).status === 200)
+      await api('DELETE', `/api/access-app/${accFull2.json?.accessAppId}`, { token })
 
       const del = await api('POST', xkg(G1) + '/nodes/batch-delete', { token: AT1, body: { keys: ['kx-p-1', 'kx-p-2b', 'kx-p-3', 'kx-p-none'] } })
       check('KX-11g 按 key 批删 deletedCount=3（不存在的 key 忽略）', del.status === 200 && del.json?.deletedCount === 3, `${del.status} ${del.text.slice(0, 160)}`)
@@ -504,6 +504,40 @@ async function main() {
       check('KX-14f 同体真导入：created=1 且 by-key 200', real.status === 200 && real.json?.nodeCreatedCount === 1 && realByKey.status === 200, `${real.status} ${real.text.slice(0, 200)}`)
       check('KX-14g 真导入边入库（自环边、约束任意）', real.json?.edgeCreatedCount === 1, JSON.stringify(real.json?.edgeCreatedCount))
       await api('POST', xkg(G1) + '/nodes/batch-delete', { token: AT1, body: { keys: ['kx-v-1'] } })
+    }
+
+    // ===== KX-15 团队资源 key（moai-tr-，knowledgeGraph）包围圈 =====
+    {
+      // kg 资源 key 唯一生成时机=开启该图 MCP（仅托管图；开启自动生成，显式建 key 复用 created=false）
+      const cfgOn = await api('PUT', `/api/knowledge-graph/${G1}/mcp-config`, { token, body: { isMcpEnabled: true } })
+      const AUTO_KEY = String(cfgOn.json?.key ?? '')
+      const kG1 = await api('POST', '/api/team-resource-key', { token, body: { teamId: T1, resourceType: 'knowledgeGraph', resourceId: String(G1) } })
+      const KEY_G1 = String(kG1.json?.key ?? '')
+      const TRG_ROW = String(kG1.json?.teamResourceKeyId ?? '')
+      check('KX-15a 开启图 MCP 自动生成 key（moai-tr-）且显式建 key 复用（created=false 同值）',
+        cfgOn.status === 200 && AUTO_KEY.startsWith('moai-tr-') && kG1.status === 200 && kG1.json?.created === false && KEY_G1 === AUTO_KEY && kG1.json?.resourceId === String(G1), `${kG1.status} ${kG1.text.slice(0, 160)}`)
+
+      const gRead = await api('POST', xkg(G1) + '/nodes/list', { token: KEY_G1, body: { pageNo: 1, pageSize: 10 } })
+      check('KX-15b 资源 key 本图 REST 读放行', gRead.status === 200, `${gRead.status} ${gRead.text.slice(0, 120)}`)
+
+      const kgList = await api('POST', '/api/teamres/knowledge-graph/list', { token: KEY_G1, body: {} })
+      const kgIds = (kgList.json?.items ?? []).map((x) => Number(x.id))
+      check('KX-15c 资源 key 团队级 KG/list 只含绑定图 G1', kgList.status === 200 && kgIds.includes(G1) && !kgIds.includes(G2) && (CONN === 0 || !kgIds.includes(CONN)), `${kgList.status} ids=${JSON.stringify(kgIds)}`)
+
+      const wikiList = await api('POST', '/api/teamres/wiki/list', { token: KEY_G1, body: {} })
+      check('KX-15d 资源 key 越 wiki 端点 403 insufficient_scope', wikiList.status === 403 && wikiList.json?.error?.code === 'insufficient_scope', `${wikiList.status} ${wikiList.text.slice(0, 140)}`)
+
+      if (CONN > 0) {
+        const crossGraph = await api('GET', xkg(CONN) + '/schema', { token: KEY_G1 })
+        check('KX-15e 资源 key 越圈其它图 403 insufficient_scope', crossGraph.status === 403 && crossGraph.json?.error?.code === 'insufficient_scope', `${crossGraph.status}`)
+      } else {
+        console.warn('WARN | KX-15e 跳过：connected 图谱不可用（无第二张图可作越圈反例）')
+      }
+
+      if (TRG_ROW) {
+        const delK = await api('DELETE', `/api/team-resource-key/${TRG_ROW}`, { token })
+        if (delK.status !== 200) console.warn(`WARN | 清理 KG 资源 key 未成功: ${delK.status}`)
+      }
     }
 
   } finally {

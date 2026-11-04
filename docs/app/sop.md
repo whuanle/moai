@@ -30,15 +30,16 @@
 - **外部应用**：团队「外部应用」分区创建，卡片底部展示发布状态与「需授权/免授权」(`is_auth`)。外部应用**内部用户看不到**；`is_auth=true` 的应用必须经「应用接入」key 换 token 才能被第三方使用，`is_auth=false` 可匿名换取 token。
 - **普通成员（Member）**：分区菜单只有 信息 / 应用 / 知识库；应用分区为只读卡片（无新建按钮、无「管理」入口），直接改 URL 访问管理分区或应用管理页会回落到「信息」。后端同样以 403/404 兜底；成员可读配置（`GET /agent-config`）但保存返回 403。
 - **应用广场**：侧边栏「应用广场」列出平台内所有公开且已发布的内部应用，任意登录用户可进入对话（非成员凭公开应用可建会话）。
-- **应用接入**：团队「应用接入」分区创建 key 并勾选其可访问的外部应用（只能选本团队外部应用）。创建后弹窗展示 key；列表中 key 默认掩码，**点击即可查看完整 key 或复制**。编辑可改名称/描述/授权应用但**不能改 key**；删除后 key 立即失效。
+- **应用接入**：团队「应用接入」分区创建 key 并勾选其可访问的外部应用（只能选本团队外部应用）。创建后弹窗展示 key；列表中 key 默认掩码，**点击即可查看完整 key 或复制**。编辑可改名称/描述/授权应用但**不能改 key**；删除后 key 立即失效。**无范围勾选**（scopes 已退役，moai-ac- key 全量访问 `/api/teamres`）。
+- **团队资源 key（`moai-tr-`，[@TR-S10](./bdd.md#tr-s10) 起）**：单资源接入凭证——「应用接入」分区的应用资源 key 卡片、知识库/知识图谱详情「MCP」页各自挂 `ResourceKeyCard`，生成（get-or-create，每资源一把；应用为团队级 ACP/A2A 共用一把）/复制/重置/启停/删除；用户复制「端点地址 + key」即可访问绑定资源端点（越圈 403），**不可换 token**，仅团队 Admin+ 可见。
 - **第三方接入调用流程（外部 token，验收见 @EA-S*）**：
-  1. **换 token**：`POST /api/external/token`——只传 `accessAppKey` 得**应用 token**（授权 = 接入配置的全部应用）；传 `accessAppKey + appId + externalUserId`（nickname 可选）得**用户 token**（绑定外部用户 id、仅授权该单个应用）；对 `is_auth=false` 的外部应用只传 `appId` 即可匿名换取（生成临时身份）。
-  2. **调用外部接口**：以 `Authorization: Bearer <accessToken>` 访问 `/api/external/*`。外部 token **不能**访问 `/api/*` 内部接口，内部用户 token 也**不能**访问 `/api/external/*`（双 audience 隔离）。
-  3. **会话与对话**：`POST /api/external/agent/{appId}/session` 建会话（返回 sessionId，需外部**用户** token，应用 token 无用户身份会 403）；对话走 AG-UI SSE `POST /api/external/agent/{appId}/chat`（体为 AG-UI 协议，`threadId` = sessionId）；`GET /api/external/agent/{appId}/session/list` 与 `GET /api/external/session/{sessionId}/messages` 查会话与消息。会话归属按 `external_user.id` 校验，同一外部身份继承会话与消费记录。
-  4. **刷新**：`POST /api/external/token/refresh` 传 `refreshToken` 换新 token 对；管理员调整接入授权范围后，**下次刷新即按最新配置生效**（access token 默认 2 小时、refresh 7 天）。
+  1. **换 token**：`POST /api/teamres/token`——只传 `accessAppKey` 得**应用 token**（授权 = 接入配置的全部应用）；传 `accessAppKey + appId + externalUserId`（nickname 可选）得**用户 token**（绑定外部用户 id、仅授权该单个应用）；对 `is_auth=false` 的外部应用只传 `appId` 即可匿名换取（生成临时身份）。
+  2. **调用外部接口**：以 `Authorization: Bearer <accessToken>` 访问 `/api/teamres/*`。外部 token **不能**访问 `/api/*` 内部接口，内部用户 token 也**不能**访问 `/api/teamres/*`（双 audience 隔离）。
+  3. **会话与对话**：`POST /api/teamres/agent/{appId}/session` 建会话（返回 sessionId，需外部**用户** token，应用 token 无用户身份会 403）；对话走 AG-UI SSE `POST /api/teamres/agent/{appId}/chat`（体为 AG-UI 协议，`threadId` = sessionId）；`GET /api/teamres/agent/{appId}/session/list` 与 `GET /api/teamres/session/{sessionId}/messages` 查会话与消息。会话归属按 `external_user.id` 校验，同一外部身份继承会话与消费记录。
+  4. **刷新**：`POST /api/teamres/token/refresh` 传 `refreshToken` 换新 token 对；管理员调整接入授权应用后，**下次刷新即按最新配置生效**（access token 默认 2 小时、refresh 7 天）。
   5. **吊销**：删除应用接入后其 key 与全部 token 刷新即失效；已签发的 access token 在剩余有效期内仍可用。
 - **访问点（外部应用工作台 `access` 分区）**：配置面板标题/欢迎语/占位/主题色/位置/按钮文案/头像/尺寸/默认展开/启用；同页展示对话端点地址与嵌入代码（免授权应用为 `<script data-app-id>` 自动引导；需授权应用为两个签页签——「后端签发 token（推荐）」给出 `MoaiWidget.mount + tokenProvider` 写法，「快速验证（data-key）」给出直填 key 写法），并提供「下载组件 JS」按钮（`/embed/moai-widget.js`，下载后可改造自托管）。嵌入代码 `src` 指向**站点自身源**的 `/embed/moai-widget.js`（开发期=前端 dev server 托管，生产=前后端同源）；组件默认以 script 源调用 API（开发期 Vite 代理 `/api` 到后端），前后端分离部署可在 script 上加 `data-server` 显式指向后端。
-- **需授权应用生产接入（token 拦截器，[@EA-S20](./bdd.md#ea-s20)）**：业务后端持应用接入 key 调 `POST /api/external/token`（`accessAppKey`+`appId`+`externalUserId`，externalUserId 用业务系统自己的用户标识）签发外部用户 token，宿主页引组件 JS 后调 `MoaiWidget.mount({ appId, server, tokenProvider: async () => 业务后端返回的 accessToken })`——key 不落前端；组件对过期 token 自动续期（provider 重新调用，或 refresh_token 换新）。`onRequest` 中间件可改写组件全部 API 请求（加头/整体代理到业务后端）。`data-key` 直填仅快速验证用（key 暴露在宿主页源码）。注意：直接调对话端点时，**即使免授权应用也需先** `POST /api/external/token` 换外部 token（免授权仅传 `appId`），悬浮组件已自动处理。
+- **需授权应用生产接入（token 拦截器，[@EA-S20](./bdd.md#ea-s20)）**：业务后端持应用接入 key 调 `POST /api/teamres/token`（`accessAppKey`+`appId`+`externalUserId`，externalUserId 用业务系统自己的用户标识）签发外部用户 token，宿主页引组件 JS 后调 `MoaiWidget.mount({ appId, server, tokenProvider: async () => 业务后端返回的 accessToken })`——key 不落前端；组件对过期 token 自动续期（provider 重新调用，或 refresh_token 换新）。`onRequest` 中间件可改写组件全部 API 请求（加头/整体代理到业务后端）。`data-key` 直填仅快速验证用（key 暴露在宿主页源码）。注意：直接调对话端点时，**即使免授权应用也需先** `POST /api/teamres/token` 换外部 token（免授权仅传 `appId`），悬浮组件已自动处理。
 
 ## 3. 常见问题
 
@@ -53,11 +54,11 @@
 | 保存配置 400，提示模型不可用/无权使用 | 模型需启用且渠道启用；私有模型必须已授权本团队（管理员在「AI 渠道/模型管理」页做渠道级授权）。到模型管理确认授权后再选 |
 | 外部应用保存配置 400，提示不能绑定技能/不能开启沙箱 | 设计约束（D46）：外部应用面向外部用户/匿名开放，不允许技能与沙箱；配置页已隐藏对应区块，移除后保存。存量配置对话时也会被装配层强制关闭（[@EA-S13](./bdd.md#ea-s13)） |
 | 嵌入悬浮组件后宿主页无按钮 | 依次查：① 宿主页控制台 `[moai-widget]` 日志（配置拉取失败/访问点未启用均有告警）；② 应用已发布且「启用访问点」开启——未发布/已禁用/开关关闭时组件按设计不渲染；③ script src 站点能直达 `/embed/moai-widget.js`（404 时先 `cd ui && npm run build:embed` 重建产物）；④ 前后端分离部署需加 `data-server` 指向后端 |
-| 需授权应用组件提示「需要授权访问」 | 换 token 未成功：① 生产接法用 `MoaiWidget.mount + tokenProvider`（业务后端持 key 调 `/api/external/token`）；② 快速验证在 script 加 `data-key`；③ 若用 `onRequest` 代理换 token 请求，确认中间件已把请求改写到业务后端 |
+| 需授权应用组件提示「需要授权访问」 | 换 token 未成功：① 生产接法用 `MoaiWidget.mount + tokenProvider`（业务后端持 key 调 `/api/teamres/token`）；② 快速验证在 script 加 `data-key`；③ 若用 `onRequest` 代理换 token 请求，确认中间件已把请求改写到业务后端 |
 | `MoaiWidget.mount is not a function` | 宿主页引入的不是本轮产物（缺全局 API），`cd ui && npm run build:embed` 重建后再引；自托管副本需同步重新下载 |
 | 组件报「初始化失败」，控制台有 CORS preflight 报错 | 多为 `file://`/沙箱宿主页（`Origin: null`）或跨源环境：后端 CORS 已 `AllowAnyOrigin` 直接可用；开发期经 Vite 代理时须保持 `vite.config.ts` 的 `server.cors: false`（内置 cors 只放行 localhost 系 origin，会抢答 null origin 预检且不带 ACAO）。后端重启中代理会回 502 `backend_unreachable`，稍后重试即可 |
 | 组件报「发送失败」 | ① 控制台看 `[moai-widget]` 与网络面板：token/会话接口是否 200；② 旧版组件在非安全上下文（http 局域网 IP、about:blank 等，无 `crypto.randomUUID`）发送必失败，重建产物（`npm run build:embed`）后即修复；③ 模型渠道间歇性错误（如腾讯 MaaS 400001）也会以发送失败呈现，重试或换模型 |
-| 直接浏览器打开对话端点返回 401 invalid_token | 正常行为（[@EA-S1](./bdd.md#ea-s1)）：外部端点一律需外部 token，免授权≠免 token；按返回体提示先 `POST /api/external/token` 换 token（免授权应用 body 仅传 `appId`），或直接用悬浮组件（自动处理） |
+| 直接浏览器打开对话端点返回 401 invalid_token | 正常行为（[@EA-S1](./bdd.md#ea-s1)）：外部端点一律需外部 token，免授权≠免 token；按返回体提示先 `POST /api/teamres/token` 换 token（免授权应用 body 仅传 `appId`），或直接用悬浮组件（自动处理） |
 | 对话模型下拉为空 | 该团队还没有可用模型（无公开模型、也没有授权给本团队的私有模型）；先让管理员在「AI 渠道/模型管理」页授权 |
 | 应用卡片「N 次使用」/使用分析「累计使用次数」不增长 | 计数为异步：会话创建推 Redis `counter:app-usage`，Hangfire「counter」任务每分钟批量落库（最多滞后约 1 分钟）。长时间不增长依次查：① Hangfire 面板 counter 周期任务是否在跑；② Redis 中 `counter:app-usage` 是否持续堆积（落库失败会保留待重试）；③ 调试会话与已删会话本就不计数/不回退（[@AP-S100](./bdd.md#ap-s100)~[@AP-S103](./bdd.md#ap-s103)） |
 | 删除会话后「累计使用次数」没变小 | 预期行为：累计口径删除不回退；要看「当前会话数」看使用分析的会话总数（[@AP-S102](./bdd.md#ap-s102)） |
@@ -73,7 +74,7 @@
 | 内部应用设为「公开到平台」后广场仍看不到 | 需**先发布**（卡片/管理页发布按钮）；平台只列 已发布 且未禁用的公开内部应用 |
 | 「外部应用」菜单看不到 | 该分区仅团队 Owner/Admin 可见 |
 | 外部应用在内部应用列表里找不到 | 正常：内部/外部应用相互隔离，外部应用只在「外部应用」分区 |
-| 外部应用现在能被第三方调用吗 | 能：先在「应用接入」分区创建 key 并授权该外部应用，第三方凭 key 调 `POST /api/external/token` 换 token 后访问 `/api/external/*`；免授权(`is_auth=false`)应用无需 key，直接凭 appId 匿名换取。会话/对话端点用外部用户 token 访问 `/api/external/agent/{appId}/session|chat` |
+| 外部应用现在能被第三方调用吗 | 能：先在「应用接入」分区创建 key 并授权该外部应用，第三方凭 key 调 `POST /api/teamres/token` 换 token 后访问 `/api/teamres/*`；免授权(`is_auth=false`)应用无需 key，直接凭 appId 匿名换取。会话/对话端点用外部用户 token 访问 `/api/teamres/agent/{appId}/session|chat` |
 | 应用接入 key 忘了保存 | 不会丢：列表里 key 默认掩码，点击即可查看完整 key 或复制 |
 | 删除应用接入后外部系统报错 | 正常：删除后 key 立即失效；如仍需访问请重建并更新外部系统配置 |
 | 应用类型填错 | 类型不可修改，暂需删除重建（删除能力待开放） |
@@ -91,11 +92,14 @@
 | 「日志」没有任何记录 | 日志只含**正式会话**（不含调试会话）；且必须有用户真实对话过才有记录 |
 | 日志里用户显示为「外部用户 #id」 | 该会话归属外部用户（`user_type != normal`），无内部人名，属正常 |
 | 日志只看得到部分消息 | 历史按压缩策略留存，日志为**压缩后视图**；被压缩掉的原文不可回溯 |
+| 长对话没触发摘要压缩 | 压缩策略默认**自动**：阈值按所选对话模型窗口推导（工具折叠 ~50% 预算、摘要 ~80% 触发压回 ~50%、紧急截断 ~95%），大窗口模型要积累很多内容才触发，属预期；确认「启用 LLM 摘要压缩」已开（关着只做工具折叠+截断）；模型无窗口元数据时按 16K/64K 兜底 |
+| 压缩触发太频繁/太保守 | 配置页「上下文压缩」把压缩策略切**自定义参数**手工指定阈值（摘要触发须 < 紧急截断），保存并重新发布生效；auto 模式阈值跟随所选模型自动伸缩，换大窗口模型无需改配置 |
+| 保存压缩配置 400 | 模式只能是 auto/custom；custom 模式摘要触发 ≥200、紧急截断须大于摘要触发（auto 模式不校验历史绝对值字段，存量兼容） |
 
 ## 4. 验收流程
 
 1. `dotnet build src/MoAI/MoAI.csproj` → 0 error，`cd src/MoAI && dotnet run`
-2. `node local-dev/app-e2e.mjs` → 172/172 PASS（含 AP-43 应用用量监控 汇总/按模型/权限，AP-42 应用对话日志 分页/过滤/权限/消息详情，AP-40 调试会话创建/角色与类型门禁/不落库、AP-45 对话开场白 配置回读/详情下发/权限与校验，AP-54 发布配置快照双轨，AP-57 快捷输入，AP-58/AP-59 流程应用绑定与对话调用工具，AP-60 审批策略，及 AP-13e~y 外部应用/应用接入/应用广场；AP-20 需本地库存在可授权的私有模型，脚本用 root 管理员临时授权给 E2E 团队；无 admin 账号时自动跳过绑定用例）
+2. `node local-dev/app-e2e.mjs` → 227/227 PASS（含 AP-43 应用用量监控 汇总/按模型/权限，AP-42 应用对话日志 分页/过滤/权限/消息详情，AP-40 调试会话创建/角色与类型门禁/不落库、AP-45 对话开场白 配置回读/详情下发/权限与校验，AP-54 发布配置快照双轨，AP-57 快捷输入，AP-58/AP-59 流程应用绑定与对话调用工具，AP-60 审批策略，AP-100~104 上下文压缩 默认值/auto·custom 往返/校验 400，及 AP-13e~y 外部应用/应用接入/应用广场；AP-20 需本地库存在可授权的私有模型，脚本用 root 管理员临时授权给 E2E 团队；无 admin 账号时自动跳过绑定用例）
 2b. `node local-dev/agent-app-tool-e2e.mjs` → 21/21 PASS（AP-109~S111 Agent 应用绑定为工具：校验/环防护/无头单轮调用/解绑下线，内置桩模型零依赖；存量库需先执行 asserts/app_agent_config_agent_apps.sql 补列）
 3. `cd ui && CODEBUDDY_SAFE_DELETE_ENABLED=0 npm run syncapi && npm run typecheck && npm run lint && npm run test` 全绿（`syncapi` 需后端运行中）
 4. 浏览器：进入某团队 →「应用」新建 Agent/流程应用（可带头像、可开「允许外部使用」）→ 点卡片右上角「管理」→ 在**同一页**左栏改基础信息（保存信息）、右栏选对话模型 + 勾插件/知识库 + 填提示词（保存配置）→ 换头像；再用 Member 账号确认其团队页只有 信息/应用/知识库 且应用卡片只读（无「管理」）

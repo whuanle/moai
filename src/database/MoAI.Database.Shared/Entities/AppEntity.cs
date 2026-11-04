@@ -115,7 +115,22 @@ public partial class AppEntity : IFullAudited
     public bool IsAuth { get; set; }
 
     /// <summary>
+    /// 是否开启 ACP 接入（agent-to-agent 端点 /api/teamres/app/{id}/acp）；开启时自动生成/复用该应用唯一的团队资源 key（ACP/A2A 共用一把）.
+    /// </summary>
+    public bool IsAcpEnabled { get; set; }
+
+    /// <summary>
+    /// 是否开启 A2A 接入（Google Agent2Agent 端点 /api/teamres/app/{id}/a2a）；开启时自动生成/复用该应用唯一的团队资源 key（与 ACP 共用一把）.
+    /// </summary>
+    public bool IsA2aEnabled { get; set; }
+
+    /// <summary>
     /// 累计使用次数（会话创建计数，删除会话不减少），由 Redis 计数器每分钟批量累加.
     /// </summary>
     public int UseCount { get; set; }
+
+    /// <summary>
+    /// 累计消息条数（会话落库的物理消息行数增量累计，删除会话不减少），由 Redis 计数器每分钟批量累加.
+    /// </summary>
+    public long MessageCount { get; set; }
 }

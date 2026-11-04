@@ -10,6 +10,8 @@ import { DocumentsRequestBuilderNavigationMetadata, DocumentsRequestBuilderReque
 // @ts-ignore
 import { EmbeddingConfigRequestBuilderRequestsMetadata, type EmbeddingConfigRequestBuilder } from './embeddingConfig/index.js';
 // @ts-ignore
+import { McpConfigRequestBuilderRequestsMetadata, type McpConfigRequestBuilder } from './mcpConfig/index.js';
+// @ts-ignore
 import { RecallTestRequestBuilderRequestsMetadata, type RecallTestRequestBuilder } from './recallTest/index.js';
 // @ts-ignore
 import { RerankModelRequestBuilderRequestsMetadata, type RerankModelRequestBuilder } from './rerankModel/index.js';
@@ -36,6 +38,10 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * The embeddingConfig property
      */
     get embeddingConfig(): EmbeddingConfigRequestBuilder;
+    /**
+     * The mcpConfig property
+     */
+    get mcpConfig(): McpConfigRequestBuilder;
     /**
      * The recallTest property
      */
@@ -123,6 +129,9 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
     },
     embeddingConfig: {
         requestsMetadata: EmbeddingConfigRequestBuilderRequestsMetadata,
+    },
+    mcpConfig: {
+        requestsMetadata: McpConfigRequestBuilderRequestsMetadata,
     },
     recallTest: {
         requestsMetadata: RecallTestRequestBuilderRequestsMetadata,

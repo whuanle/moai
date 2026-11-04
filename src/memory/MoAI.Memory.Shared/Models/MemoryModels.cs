@@ -25,14 +25,19 @@ public sealed class MemoryResolution
     public int UserGlobalMode { get; init; }
 
     /// <summary>
+    /// 平台跨应用记忆开关（MEMORY_GLOBAL_ENABLED）是否开启；由 Resolve 时平台设置回填.
+    /// </summary>
+    public bool GlobalPlatformEnabled { get; init; }
+
+    /// <summary>
     /// 记忆是否对该用户生效（开启且非关闭模式）.
     /// </summary>
     public bool IsEnabled => UserMode != AgentMemorySettings.UserModeOff;
 
     /// <summary>
-    /// 是否允许该用户在本应用接入个人全局记忆（应用 allowGlobalMemory 且用户未关闭接入；平台开关由检索/写入路径另行校验）.
+    /// 是否允许该用户在本应用接入个人全局记忆（平台跨应用记忆开关开启 + 应用 allowGlobalMemory + 用户未关闭接入）.
     /// </summary>
-    public bool GlobalAllowed => IsEnabled && Settings.AllowGlobalMemory && UserGlobalMode != AgentMemorySettings.UserGlobalModeOff;
+    public bool GlobalAllowed => GlobalPlatformEnabled && IsEnabled && Settings.AllowGlobalMemory && UserGlobalMode != AgentMemorySettings.UserGlobalModeOff;
 }
 
 /// <summary>
@@ -189,7 +194,17 @@ public sealed class MemoryPlatformSettings
     public int EmbeddingDimensions { get; init; }
 
     /// <summary>
+    /// 是否开启跨应用记忆（MEMORY_GLOBAL_ENABLED，管控应用可否允许用户接入全局记忆）.
+    /// </summary>
+    public bool GlobalEnabled { get; init; }
+
+    /// <summary>
     /// 配置是否完整可用（开启且已选模型）.
     /// </summary>
     public bool IsUsable => Enabled && EmbeddingModelId != Guid.Empty && EmbeddingDimensions > 0;
+
+    /// <summary>
+    /// 跨应用记忆是否可用（总开关与模型就绪且跨应用记忆开关开启）.
+    /// </summary>
+    public bool IsGlobalUsable => IsUsable && GlobalEnabled;
 }

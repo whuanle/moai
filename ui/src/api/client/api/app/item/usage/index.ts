@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createQueryAppUsageCommandResponseFromDiscriminatorValue, type BusinessValidationResult, type QueryAppUsageCommandResponse } from '../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { TrendRequestBuilderRequestsMetadata, type TrendRequestBuilder } from './trend/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/app/{id}/usage
  */
 export interface UsageRequestBuilder extends BaseRequestBuilder<UsageRequestBuilder> {
+    /**
+     * The trend property
+     */
+    get trend(): TrendRequestBuilder;
     /**
      * 查询应用用量统计（调用次数与 token，汇总 + 按模型分布；基于聚合用量表，最多滞后约 1 分钟）；需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -32,6 +38,14 @@ export interface UsageRequestBuilder extends BaseRequestBuilder<UsageRequestBuil
  * Uri template for the request builder.
  */
 export const UsageRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}/usage";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const UsageRequestBuilderNavigationMetadata: Record<Exclude<keyof UsageRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    trend: {
+        requestsMetadata: TrendRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

@@ -172,6 +172,41 @@ export async function updateKnowledgeGraph(kgId: number, payload: { name: string
   await client.api.knowledgeGraph.byId(String(kgId)).put({ name: payload.name, description: payload.description })
 }
 
+/** 知识图谱 MCP 接入配置：开关 + 该图的团队资源 key（开启过 MCP 才有） */
+export interface KnowledgeGraphMcpConfig {
+  isMcpEnabled?: boolean | null
+  teamResourceKeyId?: string | null
+  key?: string | null
+  keyPrefix?: string | null
+  status?: 'enabled' | 'disabled' | null
+}
+
+/** 查询知识图谱 MCP 接入配置（仅团队 Admin+） */
+export async function getKnowledgeGraphMcpConfig(kgId: number): Promise<KnowledgeGraphMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).mcpConfig.get()
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+    status: res?.status ?? null,
+  }
+}
+
+/** 更新知识图谱 MCP 接入开关（仅托管图）；开启时后端自动生成/复用该图的团队资源 key */
+export async function updateKnowledgeGraphMcpConfig(kgId: number, isMcpEnabled: boolean): Promise<KnowledgeGraphMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).mcpConfig.put({ isMcpEnabled })
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+    status: res?.status ?? null,
+  }
+}
+
 export async function deleteKnowledgeGraph(kgId: number): Promise<void> {
   const client = getApiClient()
   await client.api.knowledgeGraph.byId(String(kgId)).delete()

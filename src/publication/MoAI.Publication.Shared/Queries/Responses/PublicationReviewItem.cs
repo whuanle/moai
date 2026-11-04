@@ -1,5 +1,6 @@
 ﻿using MoAI.Database.Enums;
 using MoAI.Infra.Models;
+using MoAI.Publication.Models;
 
 namespace MoAI.Publication.Queries.Responses;
 
@@ -37,6 +38,16 @@ public class PublicationReviewItem : AuditsInfo
     /// 申请上架的版本号（int 编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc），仅应用类型有值.
     /// </summary>
     public int? PublishVersion { get; set; }
+
+    /// <summary>
+    /// 可视范围（仅应用类型使用）：all=全员可见，organization=按组织限定.
+    /// </summary>
+    public AppVisibleScope VisibleScope { get; set; }
+
+    /// <summary>
+    /// 可视范围组织授权展示项（含组织名称），仅 VisibleScope=organization 时有值.
+    /// </summary>
+    public List<VisibleOrgGrantInfoItem> VisibleOrgGrants { get; set; } = [];
 
     /// <summary>
     /// 资源所属团队 id.

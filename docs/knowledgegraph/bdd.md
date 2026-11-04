@@ -224,7 +224,7 @@ Scenario: JSON 结构化导入（导入页）
 Scenario: MCP 地址页
   Given 托管图详情左侧菜单含「MCP」（接入图无此菜单）
   When 进入 MCP 菜单
-  Then 展示该图谱的 MCP 端点地址（serverinfo serviceUrl + /api/external/knowledge-graph/{kgId}/mcp）并可复制
+  Then 展示该图谱的 MCP 端点地址（serverinfo serviceUrl + /api/teamres/knowledge-graph/{kgId}/mcp）并可复制
   And 展示四个只读工具清单与鉴权提示（勾选「知识图谱 MCP」范围的接入 key）
 ```
 
@@ -304,7 +304,7 @@ Scenario: 设置卡片折叠与图数据库类型排版
   And 用户名与密码输入框同行展示
 ```
 
-> 外部开放接口（`/api/external/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-14），不复用 KG-\*。授权模型：应用 token 即团队级授权（等价团队 Admin 作用于本团队托管图谱），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
+> 外部开放接口（`/api/teamres/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-15），不复用 KG-\*。授权模型：moai-ac- 接入 key/token 即团队级授权（kg_read/kg_write 分档已随 scope 体系退役），moai-tr- 图资源 key 受包围圈约束（[@KX-15](#kx-15)），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
 
 ## Feature: 外部开放接口（应用 token，KX-*）
 
@@ -363,12 +363,12 @@ Scenario: 外部接口仅接受应用 token
   Then 分别返回未认证/未认证/未认证或禁止
 
 @KX-09 @auto:e2e
-Scenario: 知识图谱读/写范围（kg_read/kg_write）
-  When 以仅勾选 kg_read 的接入 token 查询模式与节点列表
+Scenario: 全量凭证读写（kg_read/kg_write 分档已退役改写）
+  When 以 moai-ac- 接入 key 换取的应用 token 查询模式与节点列表
   Then 放行
-  But 建实体类型等写接口禁止；跨资源组（知识库）亦禁止
-  When 以 kg_read key 直连或补勾 kg_write 后刷新 token
-  Then 直连读放行、直连写禁止；刷新后写放行
+  And 建实体类型等写接口与跨资源组（知识库 list）均放行（无范围分档）
+  When 以 moai-ac- key 直连读写
+  Then 读与写均放行（接入创建不传/传 scopes 均被忽略）
 
 @KX-10 @auto:e2e
 Scenario: 外部批量导入（类型名引用 + 业务 key + 名称引用 + 逐条失败报告）
@@ -384,8 +384,8 @@ Scenario: 幂等重导与按 key 维护（upsert / key 收养 / 只读门禁 / �
   When 以相同数据重导（upsert 模式），其中一行改用新 key 但（类型+名称）与现有节点相同
   Then 已有节点按 key 更新（updated 计数、不新建），边按（起点,关系,终点）幂等跳过
   And 改名行整体覆盖名称与属性（未传属性视为清空）；无 key 行按（类型+名称）匹配并收养新 key
-  When 以仅勾选 kg_read 的 token 调导入或批删
-  Then 写档接口 403，按 key 查询放行
+  When 以 moai-ac- 全量 token 调导入或批删
+  Then 导入预检与批删均放行（原 kg_read 只读 token 403 断言随 scope 退役删除）、按 key 查询放行
   When 按业务 key 批量删除节点（含不存在的 key）
   Then 实际删除数准确返回、不存在的 key 忽略，节点连带其边删除（DETACH），按 key 查询转 404
 
@@ -412,9 +412,18 @@ Scenario: 导入预检（validateOnly 只读预测）
   But 不建类型（schema 不变）、不写图库（by-key 404）、不发向量增量
   When 以同体（validateOnly=false）真实导入
   Then 类型创建、节点边落库，坏行仍逐条报告
+
+@KX-15 @auto:e2e
+Scenario: 图资源 key（moai-tr-）包围圈
+  When 团队管理员为本图生成资源 key
+  Then 返回 moai-tr- 前缀 key（get-or-create 幂等）
+  When 以资源 key 直连本图 REST 读接口
+  Then 放行
+  And 团队级知识图谱列表返回 200 且仅含绑定图（OnlyGraphId 过滤）
+  But 越 wiki 端点或越圈其它图返回 403 insufficient_scope
 ```
 
-> 知识图谱 MCP 服务器场景编号沿用证据脚本 `kg-mcp-e2e.mjs` 的 KGM-\* 体系，不复用 KG-\*/KX-\*。与知识库 MCP（wiki_mcp）同构：接入 key/token + kg_mcp 范围 + kgId 归属门禁，仅托管图参与，工具域隔离。
+> 知识图谱 MCP 服务器场景编号沿用证据脚本 `kg-mcp-e2e.mjs` 的 KGM-\* 体系，不复用 KG-\*/KX-\*。与知识库 MCP 同构：moai-ac- 接入 key/token（kg_mcp 范围已随 scope 体系退役）+ 本图 moai-tr- 资源 key（包围圈内）+ kgId 归属门禁，仅托管图参与，工具域隔离。
 
 ## Feature: 知识图谱 MCP 服务器（KGM-*）
 
@@ -423,9 +432,9 @@ Scenario: 导入预检（validateOnly 只读预测）
 Scenario: 鉴权门禁
   When 无凭证、伪造 key 调用 MCP 端点
   Then 返回未认证（401）
-  When 以勾选 kg_mcp 的应用接入 key（Bearer/x-api-key）initialize
+  When 以 moai-ac- 应用接入 key（Bearer/x-api-key，范围概念已退役）或本图 moai-tr- 资源 key initialize
   Then 握手成功
-  But 无 kg_mcp 范围 403（insufficient_scope）；kgId 不存在与跨团队一律 404
+  But 以 wiki 的 moai-tr- 资源 key 越域连接 403（insufficient_scope）；kgId 不存在与跨团队一律 404
 
 @KGM-S2 @auto:e2e
 Scenario: 工具域隔离
@@ -466,6 +475,11 @@ Scenario: 协议行为
   Then 被拒（JSON-RPC error 或 isError 结果）
   When GET 访问端点
   Then 405；无状态模式免 initialize 直接调用成功；通知返回 202
+
+@KGM-S8 @auto:e2e
+Scenario: 绑定图资源 key 访问本图 MCP
+  When 以本图的 moai-tr- 资源 key initialize
+  Then 握手成功并返回服务器信息
 ```
 
 > Text2Cypher 查图插件消费场景编号沿用证据脚本 `kg-text2cypher-e2e.mjs` 的 KT-\* 体系（@KT-S1~S10），不复用 KG-\*/KX-\*。插件本体与安全设计见 [Text2Cypher 设计文档](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)。**E2E 已通过 15/15（2026-09-22，真实后端）**。

@@ -105,3 +105,7 @@ Agent 运行时(src/ai)                 ▼
 - **计数挂点**：`SkillAppToolProvider.LoadSkillAsync`（模型真实调用装载工具即视为一次使用）原子自增（`ExecuteUpdateAsync use_count+1`），失败仅告警不影响技能返回；个人技能不能被应用绑定，故计数只发生在系统/公开/团队技能上。
 - **下发**：`GET /api/skill/options` 与应用 `GET userconfig.defaultSkills` 均带 `useCount`；前端应用设置面板技能卡片默认按 `useCount` 降序取前十（应用层 UI，见 [../app/sdd.md](../app/sdd.md)）。
 - 证据：[local-dev/skill-usecount-e2e.mjs](../../local-dev/skill-usecount-e2e.mjs)（装载一次 0→1 双接口回显，8/8）。
+
+## 增量设计（2026-11-03：技能中心工具栏对齐规范第 7 条）
+
+- 用户反馈「搜索框后面图标多余、刷新改查询、我的技能按钮排序参考最新文档」：工具栏由手写 flex 换 `PageToolbar`（搜索输入框 → 查询类按钮 → 竖分隔线 → 操作类按钮），「新建技能」从搜索框左侧移到分隔线右侧（`actions`）；`Input.Search` 换普通 `Input`（去 `Input.Search` 自带的冗余 suffix 放大镜，仅保留 `SearchOutlined` 前缀），回车或「查询」按钮（`ds.query.search`，原「刷新」）应用关键字——关键字变化走 state 触发重载并回第一页，关键字未变化时手动重查一次；纯前端改动，`Skills.test.tsx` 3/3。

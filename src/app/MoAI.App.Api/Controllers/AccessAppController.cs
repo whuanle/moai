@@ -70,7 +70,6 @@ public class AccessAppController : ControllerBase
             AccessAppId = id,
             Name = req.Name,
             Description = req.Description,
-            Scopes = req.Scopes,
             Status = req.Status,
         };
         _userContextProvider.SetUserContext(cmd);

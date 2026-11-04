@@ -114,6 +114,16 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Then 沙箱运行时无需再拉取镜像即可创建沙箱
     And 沙箱容器本身不随部署启动
 
+  @DEP-S19 @manual
+  Scenario: 沙箱出站网络强制与入站防火墙
+    Given sandbox.toml 的 egress mode 为 "dns+nft"（宿主机内核支持 nftables）
+    When 在 MoAI 中为应用配置出站策略（默认拒绝 + 放行域名/网段）并让会话创建沙箱
+    Then 沙箱内访问白名单目标可达，访问黑名单目标与直连 IP 的流量被网络层丢弃（dns 模式下 CIDR/IP 规则不强制，不用于安全场景）
+    When 启用加固镜像（egress-hardened 叠加 deny.always）
+    Then 平台级黑名单对新建沙箱强制生效且应用侧无法覆盖
+    When 宿主机公网可达
+    Then 用防火墙限制沙箱发布端口段（默认 40000~60000）的来源（仅 MoAI 主机/内网网段），签名令牌 gateway 入站仅 Kubernetes 运行时支持
+
   @DEP-S17 @manual
   Scenario: 单容器 Docker 部署
     Given 外部提供 PostgreSQL/Redis/RabbitMQ/OSS

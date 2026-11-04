@@ -38,7 +38,7 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 - **接入图图览**：接入图详情也有「图览」——按标签色板过滤 + 关键字搜索 + 点节点一跳展开；外部节点无平台 id 体系，以 `elementId` 定位、`name/title/id` 属性启发式取名（要求 Memgraph ≥ 2.14）。
 - **设置图谱头像**：图谱详情「设置」页 → 点头像或「更换头像」上传（支持 JPG/PNG，≤5MB，走存储直传管线）；仅 Owner/Admin；列表卡片同步展示。
 - **配置向量化与图检索（SP-A）**：托管图详情「设置」页选 embedding 模型（团队可用向量化模型，`GET /model-options` 的 `embeddingModels` 桶）+ 维度（默认 1024）；配置保存后已有节点自动全量重嵌（上限 5000，超出部分告警不重嵌），之后的节点增删改经 MQ 增量同步，延迟秒级。配置好后可在图检索中语义搜实体（应用对话 `search_knowledge_graph` 工具、流程 `kgSearch` 节点、检索 API `POST /{id}/search`）；未配模型的图不参与检索（检索 API 直接 409 提示）。
-- **导入菜单页（v3.2）**：托管图详情「导入」菜单，两个页签——**AI 智能导入**（上传 pdf/docx/xlsx 等文档 → Maomi.ToMarkdown 提取 → 对话模型按图谱现有模型抽取实体/关系，≤20MB，30 秒级同步）与 **JSON 导入**（粘贴或上传结构化 JSON，可「下载示例 JSON」照改；先「预检」看预测结果不落库，再导入；类型按名称引用可自动创建、节点带业务 key 幂等 upsert、坏行逐条报告不阻断；开启「疑似重复检测」时对新建节点按向量相似度报告与已有节点/本批次高度相似的实体对，导入前核对可避免重复数据）。批量结构化数据优先走 JSON 导入（也等价于外部接口 `POST /api/external/knowledge-graph/{kgId}/import`）。
+- **导入菜单页（v3.2）**：托管图详情「导入」菜单，两个页签——**AI 智能导入**（上传 pdf/docx/xlsx 等文档 → Maomi.ToMarkdown 提取 → 对话模型按图谱现有模型抽取实体/关系，≤20MB，30 秒级同步）与 **JSON 导入**（粘贴或上传结构化 JSON，可「下载示例 JSON」照改；先「预检」看预测结果不落库，再导入；类型按名称引用可自动创建、节点带业务 key 幂等 upsert、坏行逐条报告不阻断；开启「疑似重复检测」时对新建节点按向量相似度报告与已有节点/本批次高度相似的实体对，导入前核对可避免重复数据）。批量结构化数据优先走 JSON 导入（也等价于外部接口 `POST /api/teamres/knowledge-graph/{kgId}/import`）。
 - **召回测试（v3.4）**：托管图详情「召回测试」菜单——输入自然语言问题做向量召回（返回实体 + 相似度得分 + 一跳关系），可调召回条数与相似度阈值；开启「AI 优化问题」让模型先把问题改写成适合检索的查询，「AI 回答」基于召回事实直接回答。前置：图谱设置页已配置向量化模型。用于调参验证「应用对话 / 工作流 / MCP 里语义检索的效果」。
 - **删除图谱**：托管图 = 软删登记 + 清空该图在图库的节点与边 + 清空 `__kg_{id}` 向量集合；接入图 = **仅移除平台登记，绝不动外部数据**。
 
@@ -60,7 +60,7 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 | 成员看不到新增 / 编辑 / 删除按钮 | v2 权限收紧：Member 全只读，写操作需 Admin+ |
 | Memgraph 3.x 报 `no procedure named 'mg.labels'` 或 `UNWIND must be a list` | v2.1 已修复：memgraph 方言内省改为数据派生查询（3.x 移除了 `mg.*` 过程，且 `labels(n)` 单标签返回字符串）；升级前版本请拉取最新代码 |
 | MCP 端点返回 401 | 凭证缺失或伪造：请求须携带应用接入 key（`Authorization: Bearer moai-ac-…` 或 `x-api-key` 头） |
-| MCP 端点返回 403 `insufficient_scope` | 应用接入未勾选「知识库 MCP」/「知识图谱 MCP」范围；在应用接入编辑弹窗勾选后立即生效（key 直连无需换 token） |
+| MCP 端点返回 403 `insufficient_scope` | moai-tr- 资源 key 越出包围圈（该 key 只能访问绑定资源端点）；moai-ac- 接入 key 全量放行无范围概念（scope 体系已退役）。改用绑定资源的 key 或接入 key |
 | MCP 端点返回 404 | 地址中的 wikiId/kgId 不存在或属于其他团队（不泄露存在性）；从对应详情「MCP」菜单复制完整地址 |
 | MCP 工具列表里出现别域工具 / 调用提示「在当前 MCP 端点不可用」 | 工具按接入地址分域：wiki 地址只有知识库三工具、图谱地址只有图谱四工具；核对地址资源 |
 | MCP 向量召回结果为空 | 图谱未配置向量化模型（工具返回 skippedHint 提示）或阈值过高；先配置向量化并降低 minScore |
@@ -71,7 +71,7 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 2. 后端运行且 Memgraph 可达、`KG_ENABLED=true` 后执行 `node local-dev/kg-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KG-S1](../knowledgegraph/bdd.md#kg-s1)…[@KG-S19](../knowledgegraph/bdd.md#kg-s19)（S15 成员只读由单测覆盖）；无图数据库时脚本 SKIP。
 3. 外部开放接口验收：`node local-dev/kg-external-e2e.mjs http://127.0.0.1:5210` → 覆盖 KX-01~KX-08（应用 token 团队级授权、类型/节点/边 CRUD 与批量导入、connected 只读；前置：至少一个应用接入 key，脚本自建）；无图数据库或能力未开启时 SKIP。
 4. 图检索验收（SP-A）：`node local-dev/kg-search-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KGS-S1](../knowledgegraph/bdd.md#kgs-s1)~[@KGS-S9](../knowledgegraph/bdd.md#kgs-s9)（前置：RabbitMQ + pgvector + 图数据库，脚本自建本地 embeddings 桩渠道，无需真实模型；向量化为 MQ 异步，脚本自带轮询）。
-5. MCP 验收：`node local-dev/kg-mcp-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KGM-S1](../knowledgegraph/bdd.md#kgm-s1)~[@KGM-S7](../knowledgegraph/bdd.md#kgm-s7)（kg_mcp 门禁、工具域隔离、四只读工具、协议行为；本地桩 embedding）；知识库侧 `node local-dev/wiki-mcp-e2e.mjs`。
+5. MCP 验收：`node local-dev/kg-mcp-e2e.mjs http://127.0.0.1:5000` → 覆盖 [@KGM-S1](../knowledgegraph/bdd.md#kgm-s1)~[@KGM-S8](../knowledgegraph/bdd.md#kgm-s8)（鉴权与资源 key 包围圈门禁、工具域隔离、四只读工具、协议行为；本地桩 embedding）；知识库侧 `node local-dev/wiki-mcp-e2e.mjs`；凭证总账户 `node local-dev/teamres-key-e2e.mjs`。
 5. 浏览器走查：`/knowledge-graph` 与团队「知识图谱」分区建托管图（含模板）→ 图览（画布撑满 / 缩放·适应·全屏工具栏 / 加载上限选择 / 截断提示）→ 维护页步骤条切换 模型 / 实例 / 关系 维护（Member 只读）→ 删除清库；接入外部库 → 只读内省与刷新 → 接入图图览（标签过滤 / 展开）→ 删除仅移除登记；重启 Memgraph 容器验证快照恢复。
 
 ### 验收记录
@@ -119,12 +119,12 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 
 把平台的团队知识以 **MCP（Model Context Protocol）** 标准暴露给外部 AI 客户端（Claude Desktop、Cursor 等）。streamable HTTP 无状态传输：无需换 token，key 直接进请求头，每个请求独立鉴权。
 
-**前置**：团队详情「应用接入」创建 key（`moai-ac-…`），编辑勾选「**知识图谱 MCP**」和/或「**知识库 MCP**」范围； 地址与工具从对应详情菜单复制——图谱详情「MCP」菜单、知识库详情「MCP」菜单均有完整地址与复制按钮。
+**前置**：凭证二选一——①团队「应用接入」创建接入 key（`moai-ac-…`，全量访问，无范围勾选）；②在图谱/知识库详情「MCP」菜单的资源 key 卡片生成该资源的 `moai-tr-` key（仅能访问本资源端点）。地址与工具从对应详情菜单复制——图谱详情「MCP」菜单、知识库详情「MCP」菜单均有完整地址、资源 key 卡片与复制按钮。
 
 | 域 | 地址 | 工具（均只读） |
 |---|---|---|
-| 知识图谱 | `{服务地址}/api/external/knowledge-graph/{kgId}/mcp` | `list_knowledge_graphs` / `get_knowledge_graph_schema` / `search_knowledge_graph_nodes`（关键字搜实体）/ `search_knowledge_graph_recall`（语义召回 + 一跳关系） |
-| 知识库 | `{服务地址}/api/external/wiki/{wikiId}/mcp` | `list_knowledge_bases` / `search_knowledge_base_files` / `search_knowledge_base_recall`（切片召回） |
+| 知识图谱 | `{服务地址}/api/teamres/knowledge-graph/{kgId}/mcp` | `list_knowledge_graphs` / `get_knowledge_graph_schema` / `search_knowledge_graph_nodes`（关键字搜实体）/ `search_knowledge_graph_recall`（语义召回 + 一跳关系） |
+| 知识库 | `{服务地址}/api/teamres/wiki/{wikiId}/mcp` | `list_knowledge_bases` / `search_knowledge_base_files` / `search_knowledge_base_recall`（切片召回） |
 
 **Claude Desktop / Cursor 配置**（`mcpServers` 片段，headers 携带 key）：
 
@@ -132,7 +132,7 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 {
   "mcpServers": {
     "moai-knowledge-graph": {
-      "url": "http://<服务地址>/api/external/knowledge-graph/<kgId>/mcp",
+      "url": "http://<服务地址>/api/teamres/knowledge-graph/<kgId>/mcp",
       "headers": { "Authorization": "Bearer moai-ac-xxxxxxxxxxxxxxxx" }
     }
   }
@@ -144,10 +144,10 @@ docker compose up -d memgraph     # 已配 snapshot 持久化（300s 间隔 + �
 **curl 调试**（无状态模式，免 initialize 直接列工具）：
 
 ```bash
-curl -s -X POST 'http://<服务地址>/api/external/knowledge-graph/<kgId>/mcp'   -H 'Authorization: Bearer moai-ac-xxxx'   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream'   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+curl -s -X POST 'http://<服务地址>/api/teamres/knowledge-graph/<kgId>/mcp'   -H 'Authorization: Bearer moai-ac-xxxx'   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream'   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
 # 召回示例
-curl -s -X POST 'http://<服务地址>/api/external/knowledge-graph/<kgId>/mcp'   -H 'Authorization: Bearer moai-ac-xxxx'   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream'   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_knowledge_graph_recall","arguments":{"queryText":"上海到宁波的运价","top":5}}}'
+curl -s -X POST 'http://<服务地址>/api/teamres/knowledge-graph/<kgId>/mcp'   -H 'Authorization: Bearer moai-ac-xxxx'   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream'   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_knowledge_graph_recall","arguments":{"queryText":"上海到宁波的运价","top":5}}}'
 ```
 
 **排错**：见 §4 常见问题 MCP 相关行（401 凭证 / 403 未勾选范围 / 404 资源不存在或跨团队 / 工具域不匹配）。另注意：地址里的 kgId/wikiId 决定数据范围（单资源授权），换资源需换地址；接入图（外部图库登记）不参与 MCP 召回，结构化查询可用 Text2Cypher 插件（§6）。

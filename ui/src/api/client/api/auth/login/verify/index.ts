@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface VerifyRequestBuilder extends BaseRequestBuilder<VerifyRequestBuilder> {
     /**
-     * 登录二次验证：凭一次性登录票据提交动态码（认证器 TOTP 或邮箱验证码），通过后颁发令牌.
+     * 登录二次验证：凭一次性登录票据提交认证器动态码（TOTP），通过后颁发令牌（邮箱验证码已并入 login 一体提交）.
      * @param body 登录二次验证：凭一次性登录票据提交动态码（认证器 TOTP 或邮箱验证码），通过后颁发令牌.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<LoginCommandResponse>}
@@ -23,7 +23,7 @@ export interface VerifyRequestBuilder extends BaseRequestBuilder<VerifyRequestBu
      */
      post(body: LoginVerifyCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<LoginCommandResponse | undefined>;
     /**
-     * 登录二次验证：凭一次性登录票据提交动态码（认证器 TOTP 或邮箱验证码），通过后颁发令牌.
+     * 登录二次验证：凭一次性登录票据提交认证器动态码（TOTP），通过后颁发令牌（邮箱验证码已并入 login 一体提交）.
      * @param body 登录二次验证：凭一次性登录票据提交动态码（认证器 TOTP 或邮箱验证码），通过后颁发令牌.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}

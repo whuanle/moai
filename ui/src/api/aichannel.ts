@@ -307,8 +307,18 @@ export interface TeamAvailableModelItem {
   modelId?: string | null
   channelName?: string | null
   providerKey?: string | null
+  /** 模型类型（conversation/embedding/image-generation 等），对话类场景按 conversation 筛选 */
+  modelKind?: string | null
   /** 是否支持视觉（图片输入） */
   supportsVision?: boolean | null
+  /** 是否支持工具调用（function calling） */
+  supportsToolCall?: boolean | null
+  /** 是否支持推理（reasoning） */
+  supportsReasoning?: boolean | null
+  /** 上下文最大 token 数（目录元数据缺失时为 0） */
+  contextWindow?: number | null
+  /** 最大输出 token 数（目录元数据缺失时为 0） */
+  maxOutput?: number | null
   /** 是否来自团队自有渠道（false=系统公开或授权模型） */
   isTeamChannel?: boolean | null
 }

@@ -4,6 +4,7 @@ import type { MenuProps, TableColumnsType } from 'antd'
 import {
   AppstoreAddOutlined,
   AppstoreOutlined,
+  ArrowLeftOutlined,
   BookOutlined,
   CloudServerOutlined,
   ClusterOutlined,
@@ -21,7 +22,7 @@ import {
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { AvatarUpload, Card as DSCard, DataTable, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
@@ -347,12 +348,17 @@ export function TeamManage() {
     [t, isOwner, detail, currentUserId],
   )
 
-  const menuItems: Required<MenuProps>['items'] = [
+  /** 成员可用分区菜单（key 须与 SECTION_KEYS / ADMIN_ONLY_SECTIONS 保持同步） */
+  const memberMenuItems = [
     { key: 'apps', icon: <AppstoreOutlined />, label: t('team.apps') },
     { key: 'prompts', icon: <ProfileOutlined />, label: t('team.prompts') },
     { key: 'skills', icon: <ThunderboltOutlined />, label: t('team.skills') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
     { key: 'knowledgegraph', icon: <ClusterOutlined />, label: t('team.knowledgeGraph') },
+  ].filter((item) => visibleSections.includes(item.key as SectionKey))
+
+  /** Owner/Admin 管理分区菜单 */
+  const adminMenuItems = [
     { key: 'externalApps', icon: <GlobalOutlined />, label: t('team.externalApps') },
     { key: 'accessApps', icon: <KeyOutlined />, label: t('team.accessApps') },
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
@@ -363,24 +369,39 @@ export function TeamManage() {
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
   ].filter((item) => visibleSections.includes(item.key as SectionKey))
 
+  /** 普通成员只见使用分区平铺；Owner/Admin 以分隔线+分组标题把管理分区与使用分区隔离 */
+  const menuItems: Required<MenuProps>['items'] = isAdminPlus
+    ? [
+        ...memberMenuItems,
+        { type: 'divider' as const },
+        { type: 'group' as const, label: t('team.menuGroupManage') },
+        ...adminMenuItems,
+      ]
+    : memberMenuItems
+
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to="/apps">{t('common.home')}</Link> },
-        {
-          title: (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
-              <Avatar size={20} src={detail?.avatar || undefined}>
-                {(detail?.name ?? '?').slice(0, 1).toUpperCase()}
-              </Avatar>
-              <span>{detail?.name ?? ''}</span>
-            </span>
-          ),
-        },
-      ]}
-    >
+    <Page>
       <Layout style={{ background: 'transparent', gap: spacing.md }}>
         <Sider width={200} style={{ background: 'transparent' }}>
+          <div style={{ padding: `0 ${spacing.xs}px ${spacing.sm}px` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `0 ${spacing.xs}px` }}>
+              <Avatar size={30} src={detail?.avatar || undefined}>
+                {(detail?.name ?? '?').slice(0, 1).toUpperCase()}
+              </Avatar>
+              <Text strong ellipsis style={{ flex: 1, minWidth: 0, fontSize: 15 }}>
+                {detail?.name ?? ''}
+              </Text>
+            </div>
+            <Button
+              block
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate('/apps')}
+              style={{ justifyContent: 'flex-start', marginTop: spacing.xs }}
+            >
+              {t('team.backHome')}
+            </Button>
+          </div>
           <Menu
             mode="inline"
             items={loading ? [] : menuItems}

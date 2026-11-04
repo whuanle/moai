@@ -250,6 +250,19 @@ try {
     check('LS-S7b 海外 IP 归属地解析', us?.country === 'United States' && us?.province === 'California', JSON.stringify({ country: us?.country, province: us?.province }))
   }
 
+  // ---------- LS-S27 直连登录 IP 归一化（ClientInfoProvider）----------
+  {
+    // 双栈监听下 IPv4 连接的 RemoteIpAddress 常表现为 ::ffff:a.b.c.d，落库前必须归一化，
+    // 保证登录日志/新 IP 判定/IP 封禁的 IP 字符串单一形态（BASE 为 127.0.0.1，fetch 直连走 IPv4）
+    const u = await mkuser('lsd')
+    await login(u.name, u.password)
+    const got = await waitFor(async () => {
+      const q = await api('GET', `/api/loginsafety/loginlog?pageNo=1&pageSize=5&userName=${u.name}`, { token: admin })
+      return (q.json?.items ?? []).find((x) => x.isSuccess)
+    })
+    check('LS-S27 直连登录 IP 归一化（无 ::ffff: 前缀）', got != null && !String(got.ip ?? '').includes(':'), `ip=${got?.ip}`)
+  }
+
   // ---------- LS-S8~S12 R1 IP 爆破自动封禁与解封 ----------
   {
     await putSetting(admin, 'LS_IP_FAIL_THRESHOLD', '4')

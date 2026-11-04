@@ -92,6 +92,8 @@ describe('AppChat（Agent 应用对话页）', () => {
     })
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'auto',
@@ -365,6 +367,8 @@ describe('AppChat（Agent 应用对话页）', () => {
   it('审批模式：call_tool 触及沙箱工具时展示审批卡，批准后调用决策接口', async () => {
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'approval',
@@ -419,6 +423,8 @@ describe('AppChat（Agent 应用对话页）', () => {
   it('审批模式：知识库检索为豁免工具，不展示审批按钮', async () => {
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'approval',
@@ -461,6 +467,8 @@ describe('AppChat（Agent 应用对话页）', () => {
     // 应用审批策略：白名单插件（weather 工具名精确命中）+ 沙箱自动放行（sandbox_ 前缀命中）
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'approval',

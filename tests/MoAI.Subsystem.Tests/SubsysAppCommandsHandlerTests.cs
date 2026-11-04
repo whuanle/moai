@@ -85,6 +85,58 @@ public class SubsysAppCommandsHandlerTests
     }
 
     [Fact]
+    public async Task Update_AvatarPath_NullKeeps_Unregistered404_RegisteredReplaces()
+    {
+        using var db = TestSqliteContext.Create();
+        var created = await TestSeeds.SeedSubsysAppAsync(db.Context, "report");
+        created.AvatarPath = "images/old.png";
+        await db.Context.SaveChangesAsync();
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+
+        // null=不修改（停用切换等不带头像字段的调用不受影响）
+        await handler.Handle(new UpdateSubsysAppCommand
+        {
+            Id = created.Id,
+            Name = "a",
+            Status = AccessAppStatus.Disabled,
+        }, CancellationToken.None);
+        var entity = await db.Context.AccessApps.FindAsync(created.Id);
+        Assert.Equal("images/old.png", entity!.AvatarPath);
+
+        // 未登记/未完成上传的 objectKey 404（防伪造）
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new UpdateSubsysAppCommand
+        {
+            Id = created.Id,
+            Name = "a",
+            Status = AccessAppStatus.Enabled,
+            AvatarPath = "images/ghost.png",
+        }, CancellationToken.None));
+        Assert.Equal(404, ex.StatusCode);
+
+        // 已登记文件替换成功
+        db.Context.Files.Add(new MoAI.Database.Entities.FileEntity
+        {
+            Id = 3,
+            ObjectKey = "images/new.png",
+            FileExtension = ".png",
+            FileSha256 = new string('a', 64),
+            FileSize = 8,
+            ContentType = "image/png",
+            IsUploaded = true,
+        });
+        await db.Context.SaveChangesAsync();
+        await handler.Handle(new UpdateSubsysAppCommand
+        {
+            Id = created.Id,
+            Name = "a",
+            Status = AccessAppStatus.Enabled,
+            AvatarPath = "images/new.png",
+        }, CancellationToken.None);
+        entity = await db.Context.AccessApps.FindAsync(created.Id);
+        Assert.Equal("images/new.png", entity!.AvatarPath);
+    }
+
+    [Fact]
     public async Task Update_Missing_Throws404()
     {
         using var db = TestSqliteContext.Create();

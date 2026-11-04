@@ -393,6 +393,28 @@ describe('Settings（系统设置）', () => {
     expect(saveSetting).not.toHaveBeenCalled()
   })
 
+  it('沙箱禁用命令清单随卡片保存提交，非法模式拦截不发请求', async () => {
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getByRole('button', { name: /沙箱资源上限/ }))
+    const denyInput = await screen.findByLabelText('平台级禁用命令清单')
+
+    // 非法模式（regex: 不可编译）拦截
+    fireEvent.change(denyInput, { target: { value: 'shutdown\nregex:([bad' } })
+    const saveButton = screen
+      .getAllByRole('button', { name: /保\s*存/ })
+      .find((b) => !(b as HTMLButtonElement).disabled)
+    expect(saveButton).toBeTruthy()
+    fireEvent.click(saveButton!)
+    expect(saveSetting).not.toHaveBeenCalled()
+
+    // 合法清单随卡片保存一并提交（换行分隔原文）
+    fireEvent.change(denyInput, { target: { value: 'shutdown\nmkfs' } })
+    fireEvent.click(screen.getAllByRole('button', { name: /保\s*存/ }).find((b) => !(b as HTMLButtonElement).disabled)!)
+    await waitFor(() => expect(saveSetting).toHaveBeenCalledWith('SANDBOX_DENIED_COMMANDS', 'shutdown\nmkfs'))
+  })
+
   it('非 root 管理员被重定向，不渲染知识图谱设置', async () => {
     useAppStore.setState({
       userInfo: { accessToken: 'token', userId: '2', userName: 'admin2', isAdmin: true, isRoot: false },

@@ -68,10 +68,13 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
     private async Task<SimpleGuid> CreateAsync(SaveTeamMcpPluginCommand request, CancellationToken cancellationToken)
     {
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
+        IReadOnlyDictionary<string, McpToolHints> toolHints;
         try
         {
             var connectionOptions = await BuildInterpolatedConnectionOptionsAsync(request, cancellationToken);
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, Guid.Empty, _loggerFactory, cancellationToken);
+            var syncResult = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, Guid.Empty, _loggerFactory, cancellationToken);
+            pluginFunctionEntities = syncResult.Functions;
+            toolHints = syncResult.Hints;
         }
         catch (Exception ex)
         {
@@ -120,6 +123,9 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
+        // MCP 工具注解（readOnlyHint/destructiveHint）同步到工具元数据表
+        await McpToolHintsSyncHelper.UpsertAsync(_databaseContext, pluginEntity.Id, toolHints, cancellationToken);
+
         transactionScope.Complete();
 
         return (SimpleGuid)pluginEntity.Id;
@@ -155,10 +161,13 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
         pluginCustomEntity.Queries = request.Query.ToJsonString();
 
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
+        IReadOnlyDictionary<string, McpToolHints> toolHints;
         try
         {
             var connectionOptions = await BuildInterpolatedConnectionOptionsAsync(request, cancellationToken);
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            var syncResult = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            pluginFunctionEntities = syncResult.Functions;
+            toolHints = syncResult.Hints;
         }
         catch (Exception ex)
         {
@@ -176,6 +185,9 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // MCP 工具注解（readOnlyHint/destructiveHint）同步到工具元数据表（只回写注解位，保留管理员配置）
+        await McpToolHintsSyncHelper.UpsertAsync(_databaseContext, pluginEntity.Id, toolHints, cancellationToken);
 
         transactionScope.Complete();
 

@@ -9,7 +9,7 @@ using MoAI.Wiki.Queries.Responses;
 namespace MoAI.Wiki.External;
 
 /// <summary>
-/// 外部调用方身份（应用 token 解析后由 Controller 填充）.
+/// 外部调用方身份（应用 token / 资源 key 解析后由 Controller / MCP 工具填充）.
 /// </summary>
 public class ExternalWikiCaller
 {
@@ -19,9 +19,14 @@ public class ExternalWikiCaller
     public long TeamId { get; init; }
 
     /// <summary>
-    /// 来源应用接入 id；团队接入 key 换取的应用 token 无此值.
+    /// 来源应用接入 id；匿名 token 与资源 key 直连无此值.
     /// </summary>
     public Guid? AccessAppId { get; init; }
+
+    /// <summary>
+    /// 团队资源 key（moai-tr-）绑定的知识库 id：团队级列表端点只返回该库；团队级凭证为 null.
+    /// </summary>
+    public long? OnlyWikiId { get; init; }
 }
 
 /// <summary>

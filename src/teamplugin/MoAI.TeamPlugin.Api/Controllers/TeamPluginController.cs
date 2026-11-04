@@ -212,6 +212,44 @@ public class TeamPluginController : ControllerBase
     }
 
     /// <summary>
+    /// 查询团队自有插件的语义配置，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="pluginId">插件记录 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginSemanticCommandResponse"/>.</returns>
+    [HttpGet("{pluginId}/semantic")]
+    public async Task<QueryPluginSemanticCommandResponse> QuerySemantic(long teamId, Guid pluginId, CancellationToken ct)
+    {
+        var cmd = new QueryTeamPluginSemanticCommand { TeamId = teamId, PluginId = pluginId };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 保存团队自有插件的语义配置（整体覆盖），需团队 Owner/Admin.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="pluginId">插件记录 id.</param>
+    /// <param name="req">请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{pluginId}/semantic")]
+    public async Task<EmptyCommandResponse> SaveSemantic(long teamId, Guid pluginId, [FromBody] SaveTeamPluginSemanticCommand req, CancellationToken ct)
+    {
+        var cmd = new SaveTeamPluginSemanticCommand
+        {
+            TeamId = teamId,
+            PluginId = pluginId,
+            UsageNotes = req.UsageNotes,
+            Notes = req.Notes,
+            ToolMetas = req.ToolMetas,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 预上传团队 OpenAPI 文件，需团队 Owner/Admin.
     /// </summary>
     /// <param name="teamId">团队 id.</param>

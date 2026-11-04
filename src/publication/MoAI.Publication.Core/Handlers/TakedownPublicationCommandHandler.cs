@@ -5,6 +5,7 @@ using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Org.Services;
 using MoAI.Publication.Commands;
 using MoAI.Team.Services;
 
@@ -17,16 +18,19 @@ public class TakedownPublicationCommandHandler : IRequestHandler<TakedownPublica
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IOrgGrantService _orgGrantService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TakedownPublicationCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public TakedownPublicationCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="orgGrantService">统一组织授权领域服务.</param>
+    public TakedownPublicationCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IOrgGrantService orgGrantService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _orgGrantService = orgGrantService;
     }
 
     /// <inheritdoc/>
@@ -136,6 +140,13 @@ public class TakedownPublicationCommandHandler : IRequestHandler<TakedownPublica
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 下架生效后同步清空应用的组织可见授权（重新上架会按新申请重新物化）；
+        // 必须在鉴权与保存之后执行，避免授权服务内部保存把未授权调用的中间状态一并持久化
+        if (request.ResourceType == PublicationResourceType.App && Guid.TryParse(request.ResourceId, out var takedownAppId))
+        {
+            await _orgGrantService.ReplaceGrantsAsync(OrgGrantResourceType.PublicApp, takedownAppId, [], cancellationToken);
+        }
 
         return EmptyCommandResponse.Default;
     }

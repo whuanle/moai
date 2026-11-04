@@ -16,6 +16,7 @@ namespace MoAI.Auth.Handlers;
 
 /// <summary>
 /// <inheritdoc cref="LoginVerifyCommand"/>.
+/// 登录二次验证端点仅服务 TOTP 票据：邮箱验证码已并入 /auth/login 一体提交，emailCode 票据不再签发（存量票据 5 分钟自然过期）.
 /// </summary>
 public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, LoginCommandResponse>
 {
@@ -23,7 +24,6 @@ public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, Log
     private readonly ILoginChallengeService _challengeService;
     private readonly ILoginSecurityService _loginSecurityService;
     private readonly ITotpService _totpService;
-    private readonly IEmailCodeService _emailCodeService;
     private readonly IAESProvider _aesProvider;
     private readonly ITokenProvider _tokenProvider;
     private readonly IRedisDatabase _redisDatabase;
@@ -36,7 +36,6 @@ public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, Log
         ILoginChallengeService challengeService,
         ILoginSecurityService loginSecurityService,
         ITotpService totpService,
-        IEmailCodeService emailCodeService,
         IAESProvider aesProvider,
         ITokenProvider tokenProvider,
         IRedisDatabase redisDatabase)
@@ -45,7 +44,6 @@ public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, Log
         _challengeService = challengeService;
         _loginSecurityService = loginSecurityService;
         _totpService = totpService;
-        _emailCodeService = emailCodeService;
         _aesProvider = aesProvider;
         _tokenProvider = tokenProvider;
         _redisDatabase = redisDatabase;
@@ -68,18 +66,13 @@ public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, Log
             throw new BusinessException("用户不存在或已被禁用") { StatusCode = 401 };
         }
 
-        if (payload.Factor == LoginChallengeFactors.Totp)
-        {
-            await VerifyTotpAsync(user, request.Code, cancellationToken);
-        }
-        else if (payload.Factor == LoginChallengeFactors.EmailCode)
-        {
-            await _emailCodeService.VerifyAndConsumeAsync(EmailCodePurpose.Login, user.Email, request.Code, cancellationToken);
-        }
-        else
+        // 仅支持 TOTP 票据：邮箱验证码走登录请求一体提交，不再签发 emailCode 票据
+        if (payload.Factor != LoginChallengeFactors.Totp)
         {
             throw new BusinessException("登录会话已过期，请重新登录.") { StatusCode = 401 };
         }
+
+        await VerifyTotpAsync(user, request.Code, cancellationToken);
 
         var mfaPending = await _loginSecurityService.IsForced2faAsync(cancellationToken) && !user.IsTotpEnabled;
 

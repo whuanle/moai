@@ -23,6 +23,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AccessAppEntity> AccessApps { get; set; }
 
     /// <summary>
+    /// 团队资源 key（应用 ACP/A2A、知识库、知识图谱外部访问凭证）.
+    /// </summary>
+    public virtual DbSet<TeamResourceKeyEntity> TeamResourceKeys { get; set; }
+
+    /// <summary>
     /// 登录日志：每次登录尝试（成功/失败）与来源环境、风险评估结果.
     /// </summary>
     public virtual DbSet<LoginLogEntity> LoginLogs { get; set; }
@@ -96,6 +101,11 @@ public partial class DatabaseContext : DbContext
     /// 应用.
     /// </summary>
     public virtual DbSet<AppEntity> Apps { get; set; }
+
+    /// <summary>
+    /// 应用收藏，(app_id, user_id) 唯一（活跃行），应用广场收藏置顶排序的数据源.
+    /// </summary>
+    public virtual DbSet<AppFavoriteEntity> AppFavorites { get; set; }
 
     /// <summary>
     /// 外部应用访问点配置，与外部应用 1:1.
@@ -224,6 +234,16 @@ public partial class DatabaseContext : DbContext
     /// 内置插件.
     /// </summary>
     public virtual DbSet<PluginStaticEntity> PluginStatics { get; set; }
+
+    /// <summary>
+    /// 插件语义条目.
+    /// </summary>
+    public virtual DbSet<PluginSemanticNoteEntity> PluginSemanticNotes { get; set; }
+
+    /// <summary>
+    /// 插件工具元数据.
+    /// </summary>
+    public virtual DbSet<PluginToolMetaEntity> PluginToolMetas { get; set; }
 
     /// <summary>
     /// 授权私有系统插件给哪些团队使用.

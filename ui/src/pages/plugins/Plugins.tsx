@@ -5,6 +5,7 @@ import {
   PlayCircleOutlined,
   ReloadOutlined,
   SearchOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { Button, Form, Input, Modal, Select, Space, Tabs, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -26,6 +27,7 @@ import { DynamicPluginPanel } from './DynamicPluginPanel'
 import { PluginStatsPanel } from './PluginStatsPanel'
 import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
+import { PluginSemanticModal } from './components/PluginSemanticModal'
 import {
   PluginCard,
   PluginCardEmpty,
@@ -52,6 +54,7 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
   const [filterVis, setFilterVis] = useState<boolean | undefined>(undefined)
   const [view, setView] = useState<PluginView>('card')
   const [drawerTarget, setDrawerTarget] = useState<StaticPluginManageItem | null>(null)
+  const [semanticTarget, setSemanticTarget] = useState<StaticPluginManageItem | null>(null)
   const [editTarget, setEditTarget] = useState<PluginManageItem | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [editSubmitting, setEditSubmitting] = useState(false)
@@ -147,6 +150,7 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
       <Space size={0} wrap={false}>
         {btn('run', <PlayCircleOutlined />, t('plugins.run'), () => setDrawerTarget(record))}
         {btn('edit', <EditOutlined />, t('plugins.editPlugin'), () => openEdit(record))}
+        {btn('semantic', <TagsOutlined />, t('plugins.semanticConfig'), () => setSemanticTarget(record))}
       </Space>
     )
   }
@@ -333,6 +337,13 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
           paramsExample={drawerTarget?.paramsExample}
         />
       )}
+      <PluginSemanticModal
+        open={Boolean(semanticTarget)}
+        pluginId={semanticTarget?.id ?? null}
+        pluginTitle={semanticTarget?.title ?? null}
+        onClose={() => setSemanticTarget(null)}
+        onSaved={() => undefined}
+      />
       {isStatic && (
         <Modal
           open={editOpen}

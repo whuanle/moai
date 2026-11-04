@@ -60,6 +60,21 @@ public static class SettingDefinitions
     public const string SandboxMaxMemoryKey = "SANDBOX_MAX_MEMORY";
 
     /// <summary>
+    /// 沙箱出站网络管控模式：app（应用自定义）/ deny（强制默认拒绝）/ intranet（默认拒绝并放行内网网段）.
+    /// </summary>
+    public const string SandboxNetworkModeKey = "SANDBOX_NETWORK_MODE";
+
+    /// <summary>
+    /// 沙箱内网网段（逗号分隔 IP / CIDR），intranet 模式下自动放行.
+    /// </summary>
+    public const string SandboxIntranetCidrsKey = "SANDBOX_INTRANET_CIDRS";
+
+    /// <summary>
+    /// 沙箱禁用命令清单（换行分隔模式，全站强制），拦截 sandbox_run_shell / sandbox_run_code.
+    /// </summary>
+    public const string SandboxDeniedCommandsKey = "SANDBOX_DENIED_COMMANDS";
+
+    /// <summary>
     /// 网站 Logo（存储中的 ObjectKey，空表示使用默认 Logo）.
     /// </summary>
     public const string SystemLogoKey = "SYSTEM_LOGO";
@@ -100,6 +115,11 @@ public static class SettingDefinitions
     public const string MemoryEmbeddingDimensionsKey = "MEMORY_EMBEDDING_DIMENSIONS";
 
     /// <summary>
+    /// 是否开启跨应用记忆：管控应用可否允许用户接入个人跨应用记忆（全局记忆），开启须先开启长期记忆总开关.
+    /// </summary>
+    public const string MemoryGlobalEnabledKey = "MEMORY_GLOBAL_ENABLED";
+
+    /// <summary>
     /// 注册是否需要邮箱验证码（需 SMTP 邮件服务已启用才生效）.
     /// </summary>
     public const string RegisterEmailCodeEnabledKey = "REGISTER_EMAIL_CODE_ENABLED";
@@ -128,6 +148,16 @@ public static class SettingDefinitions
     /// 登录邮箱验证码策略（off=关闭 / always=始终需要 / after_fail=密码错误一次后需要），需 SMTP 邮件服务已启用才生效.
     /// </summary>
     public const string LoginEmailCodeModeKey = "LOGIN_EMAIL_CODE_MODE";
+
+    /// <summary>
+    /// 图形验证码策略（off=关闭 / always=始终需要 / after_fail=出现风险行为后需要），覆盖登录与注册/找回密码发码.
+    /// </summary>
+    public const string LoginCaptchaModeKey = "LOGIN_CAPTCHA_MODE";
+
+    /// <summary>
+    /// 邮箱验证码 after_fail 触发阈值：同一用户名累计登录失败达到该次数后的登录需要邮箱验证码（分级递进，图形验证码 fail≥1 先行）.
+    /// </summary>
+    public const string LoginEmailCodeFailThresholdKey = "LOGIN_EMAIL_CODE_FAIL_THRESHOLD";
 
     /// <summary>
     /// 登录验证码绑定的通知中心模板 id（notification_template.id，留空使用内置模板）.
@@ -283,6 +313,27 @@ public static class SettingDefinitions
         },
         new SettingDefinition
         {
+            Key = SandboxNetworkModeKey,
+            Name = "沙箱出站网络管控模式",
+            Description = "app=应用自定义出站策略；deny=强制默认拒绝（应用仅可追加放行规则）；intranet=默认拒绝并自动放行内网网段（应用可追加白名单）.",
+            DefaultValue = "app"
+        },
+        new SettingDefinition
+        {
+            Key = SandboxIntranetCidrsKey,
+            Name = "沙箱内网网段",
+            Description = "逗号分隔的 IP / CIDR 网段，intranet 管控模式下自动放行；默认覆盖三类私有地址段.",
+            DefaultValue = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+        },
+        new SettingDefinition
+        {
+            Key = SandboxDeniedCommandsKey,
+            Name = "沙箱禁用命令清单",
+            Description = "换行分隔的禁用命令模式，全站强制（与应用级清单取并集），命中即拦截 sandbox_run_shell / sandbox_run_code；模式默认按全词匹配（rm 不误杀 confirm），regex: 前缀为原生正则；留空表示不启用平台级禁用清单.",
+            DefaultValue = "shutdown\nreboot\npoweroff\nhalt\ninit\nmkfs\ndd\nfdisk\nparted\niptables\nufw\nuseradd\nuserdel\nusermod\npasswd\nvisudo\ncrontab\ninsmod"
+        },
+        new SettingDefinition
+        {
             Key = SystemLogoKey,
             Name = "网站 Logo",
             Description = "上传后替换全局网站 Logo（侧边栏与登录/注册页），留空使用默认 Logo.",
@@ -339,6 +390,13 @@ public static class SettingDefinitions
         },
         new SettingDefinition
         {
+            Key = MemoryGlobalEnabledKey,
+            Name = "跨应用记忆",
+            Description = "是否开启跨应用记忆：开启后应用才可允许用户接入个人跨应用记忆（全局记忆）；关闭时所有应用的用户跨应用记忆接入停用，应用内记忆不受影响.",
+            DefaultValue = "false"
+        },
+        new SettingDefinition
+        {
             Key = RegisterEmailCodeEnabledKey,
             Name = "注册需要邮箱验证码",
             Description = "开启后，新用户注册必须先获取邮箱验证码并校验通过才能完成注册；需 SMTP 邮件服务已启用才生效.",
@@ -376,8 +434,22 @@ public static class SettingDefinitions
         {
             Key = LoginEmailCodeModeKey,
             Name = "登录邮箱验证码策略",
-            Description = "off=关闭（默认）/ always=每次登录都需要邮箱验证码 / after_fail=密码错误一次后的登录需要邮箱验证码；需 SMTP 邮件服务已启用才生效.",
+            Description = "off=关闭（默认）/ always=每次登录都需要邮箱验证码 / after_fail=密码错误达到阈值后的登录需要邮箱验证码；需 SMTP 邮件服务已启用才生效.",
             DefaultValue = "off"
+        },
+        new SettingDefinition
+        {
+            Key = LoginCaptchaModeKey,
+            Name = "图形验证码策略",
+            Description = "off=关闭（默认）/ always=始终需要 / after_fail=出现风险行为后需要（登录：用户名或 IP 有登录失败记录；注册/找回：该 IP 已发过一次验证码）；覆盖登录提交与注册/找回密码的发码，本地生成不依赖外部服务.",
+            DefaultValue = "off"
+        },
+        new SettingDefinition
+        {
+            Key = LoginEmailCodeFailThresholdKey,
+            Name = "邮箱验证码触发失败次数",
+            Description = "邮箱验证码策略为 after_fail 时，同一用户名累计登录失败达到该次数后的登录才需要邮箱验证码（fail≥1 先出现图形验证码，分级递进）；默认 3.",
+            DefaultValue = "3"
         },
         new SettingDefinition
         {

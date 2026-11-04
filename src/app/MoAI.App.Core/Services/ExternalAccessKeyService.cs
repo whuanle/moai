@@ -31,7 +31,8 @@ public class ExternalAccessKeyService : IExternalAccessKeyService
 
     /// <summary>
     /// 解析 key 直连请求上下文；key 无效返回 null（调用方按 401 处理）.
-    /// 应用接入 key 沿用既有语义（存在即有效，软删除自动过滤）.
+    /// 应用接入 key（moai-ac-）存在即有效（软删除自动过滤），团队级全量访问；
+    /// 团队资源 key（moai-tr-）须启用状态，仅能访问绑定资源的端点.
     /// </summary>
     /// <param name="apiKey">key 原文.</param>
     /// <param name="cancellationToken">取消令牌.</param>
@@ -55,8 +56,30 @@ public class ExternalAccessKeyService : IExternalAccessKeyService
                 ExternalId = 0,
                 TeamId = accessApp.TeamId,
                 AccessAppId = accessApp.Id,
-                Scopes = ToWikiScopes(accessApp.Scopes),
                 IsKeyDirect = true,
+            };
+        }
+
+        if (apiKey.StartsWith(ExternalAuthDefaults.ResourceKeyPrefix, StringComparison.Ordinal))
+        {
+            var resourceKey = await _databaseContext.TeamResourceKeys
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Key == apiKey, cancellationToken);
+            if (resourceKey == null || resourceKey.Status != TeamResourceKeyStatus.Enabled)
+            {
+                return null;
+            }
+
+            return new ExternalTokenContext
+            {
+                SubjectType = UserType.ExternalApp,
+                SubjectId = resourceKey.Id.ToString(),
+                ExternalId = 0,
+                TeamId = resourceKey.TeamId,
+                IsKeyDirect = true,
+                IsResourceKey = true,
+                ResourceKeyType = resourceKey.ResourceType,
+                ResourceKeyId = resourceKey.ResourceId,
             };
         }
 
@@ -64,15 +87,16 @@ public class ExternalAccessKeyService : IExternalAccessKeyService
     }
 
     /// <summary>
-    /// 定位（必要时创建）key 直连会话身份：按（来源应用接入, 固定标识）唯一，
-    /// 应用接入 key 直连发起会话/对话时复用为 external_user 记录.
+    /// 定位（必要时创建）key 直连会话身份：应用接入 key 按（来源接入, 固定标识）唯一，
+    /// 团队资源 key 按（无来源接入, key 行 id 派生标识）唯一（重置 key 值不变行 id，身份延续）.
     /// </summary>
     /// <param name="teamId">归属团队 id.</param>
-    /// <param name="accessAppId">来源应用接入 id.</param>
+    /// <param name="accessAppId">来源应用接入 id，资源 key 直连为 null.</param>
     /// <param name="appId">当前访问应用 id，会话面已知时回填授权应用.</param>
+    /// <param name="externalUserIdMarker">直连身份标识，null 时用应用接入固定标识.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>返回 key 直连身份对应的外部用户.</returns>
-    public async Task<ExternalUserEntity> EnsurePrincipalUserAsync(int teamId, Guid accessAppId, Guid? appId, CancellationToken cancellationToken = default)
+    public async Task<ExternalUserEntity> EnsurePrincipalUserAsync(int teamId, Guid? accessAppId, Guid? appId, string? externalUserIdMarker = null, CancellationToken cancellationToken = default)
     {
         // 独立子作用域落库：SaveChanges 的审计拦截会触发本请求 IUserContextProvider 的懒加载用户上下文，
         // 此时直连身份尚未写入 NameIdentifier，请求级缓存会被 0 污染（会话 create_user_id 归属错误）；
@@ -80,7 +104,9 @@ public class ExternalAccessKeyService : IExternalAccessKeyService
         using var scope = _scopeFactory.CreateScope();
         var databaseContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
 
-        var marker = ExternalAuthDefaults.KeyDirectExternalUserId;
+        var marker = string.IsNullOrEmpty(externalUserIdMarker)
+            ? ExternalAuthDefaults.KeyDirectExternalUserId
+            : externalUserIdMarker;
         var external = await databaseContext.ExternalUsers
             .FirstOrDefaultAsync(x => x.AccessAppId == accessAppId && x.ExternalUserId == marker, cancellationToken);
 
@@ -102,13 +128,5 @@ public class ExternalAccessKeyService : IExternalAccessKeyService
 
         await databaseContext.SaveChangesAsync(cancellationToken);
         return external;
-    }
-
-    /// <summary>
-    /// key 直连的资源范围只保留知识库维度（model/external_token 是 key 层概念，不进入外部资源范围）.
-    /// </summary>
-    private static TeamApiKeyScopes ToWikiScopes(int scopes)
-    {
-        return (TeamApiKeyScopes)scopes & TeamApiKeyScopeCodes.ExternalDimensions;
     }
 }

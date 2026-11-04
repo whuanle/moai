@@ -11,6 +11,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using MoAI.AI.Models;
 using MoAI.AIChannel.Services;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
@@ -42,6 +43,7 @@ public sealed class AppChatFlushService
     private readonly IAiChatCompletionService _aiChatCompletionService;
     private readonly IAiModelResolver _aiModelResolver;
     private readonly IMemoryExtractionTrigger _memoryExtractionTrigger;
+    private readonly IAppMessageUsageCounter _appMessageUsageCounter;
     private readonly ILogger<AppChatFlushService> _logger;
 
     /// <summary>
@@ -53,6 +55,7 @@ public sealed class AppChatFlushService
     /// <param name="aiChatCompletionService">一次性对话服务.</param>
     /// <param name="aiModelResolver">模型解析服务.</param>
     /// <param name="memoryExtractionTrigger">长期记忆提取触发端口.</param>
+    /// <param name="appMessageUsageCounter">应用消息条数计数器.</param>
     /// <param name="logger">日志.</param>
     public AppChatFlushService(
         AppChatHotStore hotStore,
@@ -61,6 +64,7 @@ public sealed class AppChatFlushService
         IAiChatCompletionService aiChatCompletionService,
         IAiModelResolver aiModelResolver,
         IMemoryExtractionTrigger memoryExtractionTrigger,
+        IAppMessageUsageCounter appMessageUsageCounter,
         ILogger<AppChatFlushService> logger)
     {
         _hotStore = hotStore;
@@ -69,6 +73,7 @@ public sealed class AppChatFlushService
         _aiChatCompletionService = aiChatCompletionService;
         _aiModelResolver = aiModelResolver;
         _memoryExtractionTrigger = memoryExtractionTrigger;
+        _appMessageUsageCounter = appMessageUsageCounter;
         _logger = logger;
     }
 
@@ -87,6 +92,8 @@ public sealed class AppChatFlushService
             return;
         }
 
+        // 本轮落库消息增量（压缩折叠历史时为负），落库成功后推送统计
+        var messageDelta = 0L;
         if (records.Count > 0)
         {
             var config = await _databaseContext.AppAgentConfigs.FirstOrDefaultAsync(x => x.AppId == session.AppId, cancellationToken).ConfigureAwait(false);
@@ -101,11 +108,18 @@ public sealed class AppChatFlushService
 
             var compacted = await CompactAsync(config, records, cancellationToken).ConfigureAwait(false);
 
+            var existingCount = await _databaseContext.AppAgentMessages.AsNoTracking()
+                .Where(x => x.SessionId == sessionId)
+                .CountAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             // 物理替换：被压缩掉的行原文丢弃（绕过软删除，避免 (session_id, seq) 唯一索引冲突）
             await _databaseContext.AppAgentMessages
                 .Where(x => x.SessionId == sessionId)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
+
+            messageDelta = compacted.Count - existingCount;
 
             var seq = 0;
             foreach (var message in compacted)
@@ -152,6 +166,19 @@ public sealed class AppChatFlushService
 
         await _databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Agent 会话 {SessionId} flush 完成，热态消息 {RecordCount} 条.", sessionId, records.Count);
+
+        // 消息条数统计：落库成功后推送增量（统计模块每分钟批量累加到 app.message_count），尽力而为不阻塞落库
+        if (messageDelta != 0)
+        {
+            try
+            {
+                await _appMessageUsageCounter.IncrementAsync(session.AppId, messageDelta, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "会话 {SessionId} 消息条数统计推送失败.", sessionId);
+            }
+        }
 
         // 落库后投递长期记忆提取任务（开启记忆 + 自动提取 + 用户未关闭时生效；失败仅告警）
         try

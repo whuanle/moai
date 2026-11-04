@@ -7,7 +7,7 @@ import { MoaiWidget, type WidgetOptions } from './widget'
  * 1. 标准嵌入（免改造）：script 标签携带 data-* 自动初始化；
  * 2. 自托管改造（需授权应用推荐）：把 moai-widget.js 下载放到业务系统自己的站点（或直接引用），
  *    再调 MoaiWidget.mount(options) 编程挂载，通过 tokenProvider 注入业务后端签发的外部用户
- *    token（业务后端持应用接入 key 调 POST {server}/api/external/token），key 不落前端；
+ *    token（业务后端持应用接入 key 调 POST {server}/api/teamres/token），key 不落前端；
  *    onRequest 请求中间件可改写组件发出的全部 API 请求（加头/代理）.
  */
 const api = {

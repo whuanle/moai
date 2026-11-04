@@ -9,7 +9,9 @@
 //       TemplateParam JSON、TemplateParamSet 顺序）/平台错误码失败归一）/
 //       HTML 模板（NT-106..107：SMTP 发 text/html、webhook 降级去标签）/
 //       广播带模板（NT-108..：标题正文可空/缺变量 400/渲染文本落记录与站内信/模板删除不影响历史）/
-//       应用机器人渠道（飞书/钉钉/企微 App 凭证按 oauth 绑定反查个人推送：NT-56..）。
+//       应用机器人渠道（飞书/钉钉/企微 App 凭证按 oauth 绑定反查个人推送：NT-56..）/
+//       站内信托底（NT-120..：TargetUserIds 定向通知站内信必达且先于外部渠道、与渠道成败解耦；
+//       渠道试发改走领域服务——已保存渠道落发送记录留痕、试发人收站内信副本；未绑定渠道试发失败但站内信仍送达）。
 // 前置：后端运行中；种子账号 admin / abcd123456（root 即管理员）。内置 webhook 收集桩与 SMTP 桩，零真实外部依赖。
 // 应用机器人场景（NT-56..）额外前置：后端需把三平台登录客户端端点覆盖到本脚本的桩（固定端口 19081，可用
 // NT_APPBOT_PORT 覆盖），启动示例：
@@ -451,6 +453,19 @@ async function main() {
   const ppPayload = JSON.parse(hook.state.hits.filter((h) => h.path === '/send').pop()?.raw ?? '{}')
   check('NT-55 test PushPlus token 与模板', tPp.json?.success === true && ppPayload?.token === 'pp-token' && ppPayload?.template === 'txt', tPp.text?.slice(0, 160))
 
+  // ============ 站内信托底：渠道试发改走领域服务（落发送记录留痕 + 试发人站内信必达） ============
+  // 已保存渠道试发（如 NT-26 对失败渠道的试发）现在落 notification_log；站内信在领域服务内先行同步发送，响应返回时已写入
+  const testFailLog = ((await api('GET', `/api/notification/log/list?pageNo=1&pageSize=50&channelId=${failId}`, { token: root })).json?.items ?? [])
+    .find((x) => x.title === `通知渠道测试 - ${chName('失败2号')}` && x.status === 'failed') ?? null
+  check('NT-120 已保存渠道试发落发送记录留痕（含定向用户快照）', testFailLog != null && String(testFailLog?.targetUserIds ?? '').length > 0, JSON.stringify(testFailLog)?.slice(0, 200))
+  let testInSite = false
+  for (let i = 0; i < 5 && !testInSite; i++) {
+    await sleep(1000)
+    const ml = await api('GET', '/api/message/list?pageNo=1&pageSize=50', { token: root })
+    testInSite = (ml.json?.items ?? []).some((x) => x.title?.startsWith('通知渠道测试') && String(x.content).includes('收到即表示渠道配置可用'))
+  }
+  check('NT-121 渠道试发站内信托底送达试发人', testInSite)
+
   // ============ 广播（异步 Hangfire；渠道含 SMTP 需动态邮箱收件人） ============
   const enabledCount = (await api('GET', '/api/notification/channel/list', { token: root })).json.items.filter((x) => x.enabled).length
   const bc = await api('POST', '/api/notification/broadcast', { token: root, body: { title: `NT${RUN} 广播一`, content: '通知中心广播正文', level: 'warning', allChannels: true, emailRecipients: ['nt@test.local'] } })
@@ -487,6 +502,12 @@ async function main() {
   check('NT-37 记录按渠道过滤', byChannel.json?.items?.length >= 1 && byChannel.json.items.every((x) => String(x.channelId) === String(feishuId)))
   const byStatus = await api('GET', '/api/notification/log/list?pageNo=1&pageSize=100&status=failed', { token: root })
   check('NT-38 记录按状态过滤', (byStatus.json?.items ?? []).length >= 2 && byStatus.json.items.every((x) => x.status === 'failed'))
+
+  // 菜单角标：发送失败记录数（@NT-S35，此时广播一已产生失败记录）
+  check('NT-123a 未登录查失败数量 401', (await api('GET', '/api/notification/log/failed-count')).status === 401)
+  check('NT-123b 普通用户查失败数量 403', (await api('GET', '/api/notification/log/failed-count', { token: member.token })).status === 403)
+  const fcRoot = await api('GET', '/api/notification/log/failed-count', { token: root })
+  check('NT-123c 失败数量与记录列表 totalCount 一致', fcRoot.status === 200 && fcRoot.json?.count === byStatus.json?.totalCount, `count=${fcRoot.json?.count} total=${byStatus.json?.totalCount}`)
 
   // 禁用渠道不投递
   await api('PUT', `/api/notification/channel/${failId}`, { token: root, body: { name: chName('失败2号'), type: 'webhook', config: JSON.stringify({ url: `${STUB}/fail` }), enabled: false, description: '' } })
@@ -797,6 +818,15 @@ async function main() {
     // 试发定向当前管理员：root 尚未绑定企微 → 无可投递绑定
     const tWx0 = await testCh({ id: wecomAppId })
     check('NT-64 未绑定时试发企微渠道失败回显', tWx0.json?.success === false && String(tWx0.json?.error).includes('没有站内用户绑定企业微信账号'), tWx0.text?.slice(0, 160))
+
+    // 站内信托底：渠道零绑定失败不影响站内信先行必达（试发人收到站内信副本）
+    let unboundInSite = false
+    for (let i = 0; i < 5 && !unboundInSite; i++) {
+      await sleep(1000)
+      const ml = await api('GET', '/api/message/list?pageNo=1&pageSize=50', { token: root })
+      unboundInSite = (ml.json?.items ?? []).some((x) => x.title === `通知渠道测试 - ${chName('企微应用')}` && String(x.content).includes('收到即表示渠道配置可用'))
+    }
+    check('NT-122 未绑定渠道试发失败但站内信托底仍送达', unboundInSite)
 
     const rFeishu = await bindPlatform('admin', root, 'feishu')
     const rDing = await bindPlatform('admin', root, 'dingtalk')

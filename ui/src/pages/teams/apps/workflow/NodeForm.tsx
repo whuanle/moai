@@ -375,7 +375,8 @@ function ModelSelectSection({
         if (cancelled) return
         setModels(
           res
-            .filter((m) => m.aiModelId && (!visionOnly || m.supportsVision === true))
+            // 节点对话/图片理解均为对话类场景：只列 conversation 类型模型（embedding/图像生成等不适用）
+            .filter((m) => m.aiModelId && m.modelKind === 'conversation' && (!visionOnly || m.supportsVision === true))
             .map((m) => ({ value: String(m.aiModelId), label: m.name || m.modelId || '-' })),
         )
       })

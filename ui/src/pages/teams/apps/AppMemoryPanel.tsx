@@ -29,8 +29,10 @@ export interface AppMemorySettingsPanelProps {
 
 /**
  * 长期记忆设置面板（「配置」分区收缩卡片承载）：长期记忆总开关级联
- * （记忆提示词、自动提取、检索参数、单用户容量；记忆类型由 AI 自行判定，不提供限制）；
+ * （记忆提示词、自动提取、跨应用共享、单用户容量；记忆类型由 AI 自行判定，不提供限制；
+ * 检索条数已退役，由 AI 经 memory_search 工具自行决定——默认 10 条、最多 30 条，界面不再提供）；
  * 向量化模型/维度统一由系统设置（MEMORY_*）决定，应用侧只读回显、不可自选；
+ * 跨应用共享（允许用户接入全局记忆）受系统设置「跨应用记忆」开关管控，平台未开启时禁用；
  * 记忆提示词追加为记忆工具描述（指导 AI 如何管理与使用记忆），留空用平台默认（占位符展示）；
  * memory 节经 registerSettings 注册给宿主页，随「保存设置」并入 executionSettings 一次提交；
  * 下方维护应用记忆统计、管理员本人记忆样例与「清空应用全部记忆」危险区（即时接口，不经发布快照）；
@@ -47,10 +49,11 @@ export function AppMemorySettingsPanel({ appId, canManage, registerSettings }: A
   const [defaultPrompt, setDefaultPrompt] = useState('')
   // 平台统一记忆设置回显（系统设置 MEMORY_*：应用记忆与全局记忆共用，应用侧不可自选）
   const [platformEnabled, setPlatformEnabled] = useState(true)
+  // 平台跨应用记忆开关（MEMORY_GLOBAL_ENABLED）：关闭时「允许用户接入全局记忆」禁用
+  const [platformGlobalEnabled, setPlatformGlobalEnabled] = useState(false)
   const [platformModelName, setPlatformModelName] = useState('')
   const [platformDimensions, setPlatformDimensions] = useState(1024)
   const [autoExtract, setAutoExtract] = useState(true)
-  const [retrievalTopK, setRetrievalTopK] = useState<number | null>(null)
   const [maxPerUser, setMaxPerUser] = useState<number | null>(null)
   // 应用内本人记忆样例（帮助管理员确认记忆在生效；只读）
   const [myMemories, setMyMemories] = useState<MyMemoryItem[]>([])
@@ -72,10 +75,10 @@ export function AppMemorySettingsPanel({ appId, canManage, registerSettings }: A
       setPrompt(typeof memory.prompt === 'string' ? (memory.prompt as string) : '')
       setDefaultPrompt(defaults.prompt)
       setPlatformEnabled(defaults.platformEnabled)
+      setPlatformGlobalEnabled(defaults.globalEnabled)
       setPlatformModelName(defaults.embeddingModelName)
       setPlatformDimensions(defaults.embeddingDimensions)
       setAutoExtract(memory.autoExtract !== false)
-      setRetrievalTopK(typeof memory.retrievalTopK === 'number' ? (memory.retrievalTopK as number) : null)
       setMaxPerUser(typeof memory.maxPerUser === 'number' ? (memory.maxPerUser as number) : null)
       try {
         const mine = await getMyMemories(appId, 1, 5)
@@ -108,10 +111,9 @@ export function AppMemorySettingsPanel({ appId, canManage, registerSettings }: A
       ...(prompt.trim() ? { prompt: prompt.trim() } : {}),
       ...(memoryEnabled
         ? {
-            // 允许用户接入全局记忆：可随保存自由切换（全局记忆同样受系统设置总开关管控）
-            allowGlobalMemory,
+            // 允许用户接入全局记忆：受系统设置「跨应用记忆」开关管控（平台未开启时收敛为关闭，随保存清除存量开启值）
+            allowGlobalMemory: platformGlobalEnabled && allowGlobalMemory,
             autoExtract,
-            ...(retrievalTopK != null && retrievalTopK > 0 ? { retrievalTopK } : {}),
             ...(maxPerUser != null && maxPerUser >= 10 ? { maxPerUser } : {}),
           }
         : {}),
@@ -183,33 +185,29 @@ export function AppMemorySettingsPanel({ appId, canManage, registerSettings }: A
             <Form.Item label={t('appMemory.autoExtract')} valuePropName="checked" extra={t('appMemory.autoExtractHint')} style={{ marginBottom: spacing.sm }}>
               <Switch checked={autoExtract} onChange={setAutoExtract} />
             </Form.Item>
-            <Form.Item label={t('appMemory.allowGlobalMemory')} valuePropName="checked" extra={t('appMemory.allowGlobalMemoryHint')} style={{ marginBottom: spacing.sm }}>
-              <Switch checked={allowGlobalMemory} onChange={setAllowGlobalMemory} />
+            <Form.Item
+              label={t('appMemory.allowGlobalMemory')}
+              valuePropName="checked"
+              extra={platformGlobalEnabled ? t('appMemory.allowGlobalMemoryHint') : t('appMemory.platformGlobalOffHint')}
+              style={{ marginBottom: spacing.sm }}
+            >
+              <Switch
+                checked={platformGlobalEnabled && allowGlobalMemory}
+                disabled={!platformGlobalEnabled}
+                onChange={setAllowGlobalMemory}
+              />
             </Form.Item>
             <Row gutter={spacing.md}>
-              <Col xs={24} md={8}>
-                <Form.Item label={t('appMemory.retrievalTopK')}>
-                  <InputNumber
-                    min={1}
-                    max={50}
-                    precision={0}
-                    style={{ width: '100%' }}
-                    value={retrievalTopK ?? undefined}
-                    onChange={(value) => setRetrievalTopK(typeof value === 'number' ? value : null)}
-                    placeholder="5"
-                  />
-                </Form.Item>
-              </Col>
               <Col xs={24} md={8}>
                 <Form.Item label={t('appMemory.maxPerUser')}>
                   <InputNumber
                     min={10}
-                    max={10000}
+                    max={500}
                     precision={0}
                     style={{ width: '100%' }}
                     value={maxPerUser ?? undefined}
                     onChange={(value) => setMaxPerUser(typeof value === 'number' ? value : null)}
-                    placeholder="500"
+                    placeholder="100"
                   />
                 </Form.Item>
               </Col>

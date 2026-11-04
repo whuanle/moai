@@ -8,7 +8,7 @@ namespace MoAI.App.Queries.Responses;
 public class ExternalTokenCommandResponse
 {
     /// <summary>
-    /// 访问令牌，请求 /api/external 接口时以 Authorization: Bearer 携带.
+    /// 访问令牌，请求 /api/teamres 接口时以 Authorization: Bearer 携带.
     /// </summary>
     public string AccessToken { get; init; } = default!;
 

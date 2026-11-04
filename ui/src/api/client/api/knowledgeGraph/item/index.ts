@@ -18,6 +18,8 @@ import { ImportFileRequestBuilderRequestsMetadata, type ImportFileRequestBuilder
 // @ts-ignore
 import { ImportJsonRequestBuilderRequestsMetadata, type ImportJsonRequestBuilder } from './importJson/index.js';
 // @ts-ignore
+import { McpConfigRequestBuilderRequestsMetadata, type McpConfigRequestBuilder } from './mcpConfig/index.js';
+// @ts-ignore
 import { NodesRequestBuilderNavigationMetadata, NodesRequestBuilderRequestsMetadata, type NodesRequestBuilder } from './nodes/index.js';
 // @ts-ignore
 import { RecallTestRequestBuilderRequestsMetadata, type RecallTestRequestBuilder } from './recallTest/index.js';
@@ -62,6 +64,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      * The importJson property
      */
     get importJson(): ImportJsonRequestBuilder;
+    /**
+     * The mcpConfig property
+     */
+    get mcpConfig(): McpConfigRequestBuilder;
     /**
      * The nodes property
      */
@@ -166,6 +172,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
     },
     importJson: {
         requestsMetadata: ImportJsonRequestBuilderRequestsMetadata,
+    },
+    mcpConfig: {
+        requestsMetadata: McpConfigRequestBuilderRequestsMetadata,
     },
     nodes: {
         requestsMetadata: NodesRequestBuilderRequestsMetadata,

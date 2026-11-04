@@ -254,3 +254,10 @@ export async function getNotificationLogs(query: { pageNo: number; pageSize: num
   })
   return res as unknown as PagedResponse<NotificationLogItem>
 }
+
+/** 查询发送失败的记录数量（仅管理员，菜单「通知中心」角标数据源） */
+export async function getNotificationFailedCount(): Promise<number> {
+  const client = getApiClient()
+  const res = await client.api.notification.log.failedCount.get()
+  return res?.count ?? 0
+}

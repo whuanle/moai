@@ -19,5 +19,7 @@ public class AuthCoreModule : IModule
         context.Services.AddScoped<ILoginSecurityService, LoginSecurityService>();
         context.Services.AddScoped<ITotpService, TotpService>();
         context.Services.AddScoped<ILoginChallengeService, LoginChallengeService>();
+        context.Services.AddScoped<ICaptchaService, CaptchaService>();
+        context.Services.AddScoped<IPublicAuthRateLimiter, PublicAuthRateLimiter>();
     }
 }

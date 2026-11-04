@@ -1,6 +1,7 @@
-// 知识图谱 MCP 服务器 E2E（场景 @KGM-S1 ~ @KGM-S7；后端 127.0.0.1:5000，可用参数覆盖）
-// 端点：/api/external/knowledge-graph/{kgId}/mcp（MCP streamable HTTP，无状态模式，免 Mcp-Session-Id）
-// 覆盖：鉴权门禁（无凭证 401 / 伪造 key 401 / 无 kg_mcp 范围 403 / kgId 不存在与跨团队 404）
+// 知识图谱 MCP 服务器 E2E（场景 @KGM-S1 ~ @KGM-S8；后端 127.0.0.1:5000，可用参数覆盖）
+// 端点：/api/teamres/knowledge-graph/{kgId}/mcp（MCP streamable HTTP，无状态模式，免 Mcp-Session-Id）
+// 覆盖：鉴权门禁（无凭证 401 / 伪造 key 401 / wiki 资源 key 越圈 403 / kgId 不存在与跨团队 404；
+//       接入 scopes（kg_read/kg_mcp/wiki_mcp）已退役：moai-ac- 不传 scopes 全量放行，绑定图资源 key 放行 @KGM-S8）
 //       → tools/list 恰好四个只读工具（域隔离：KG 端点无 wiki 工具、wiki 端点无 KG 工具，跨域工具调用被拒）
 //       → list_knowledge_graphs（团队托管图谱列表）
 //       → get_knowledge_graph_schema（实体类型属性定义 + 关系类型起止约束）
@@ -9,6 +10,7 @@
 //       → 协议行为（未知工具 -32602 / GET 405 / 无 initialize 直接调用 / 通知 202 / 外部 REST 回归）。
 // 模型策略：与 kg-search-e2e 一致——本地 OpenAI 兼容桩（确定性 3-gram 哈希向量）自举渠道与模型，
 //       桩不可用时不影响鉴权/schema/节点搜索/协议场景，仅召回正向用例跳过。
+//   Memgraph 依赖场景在无 Memgraph 环境失败属预期（同改动前基线），不为此删除依赖场景。
 import crypto from 'node:crypto'
 import http from 'node:http'
 
@@ -76,7 +78,7 @@ const initHandshake = (mcpPath, key, mode) => mcp(mcpPath, rpc('initialize', { p
 
 const TS = Date.now().toString().slice(-8)
 const kg = (id) => `/api/knowledge-graph/${id}`
-const mcpOf = (kgId) => `/api/external/knowledge-graph/${kgId}/mcp`
+const mcpOf = (kgId) => `/api/teamres/knowledge-graph/${kgId}/mcp`
 
 function startStubServer() {
   const stub = http.createServer((req, res) => {
@@ -146,20 +148,21 @@ async function main() {
   const G1 = Number(g1Res.json?.value)
   const G2 = Number(g2Res.json?.value)
   const G3 = Number(g3Res.json?.value)
+
+  // G1/G2 开启 MCP（资源 key 生成时机）；G2 仅用于「未配向量化 skippedHint」反例（非未开功能）
+  await retryApi('PUT', `/api/knowledge-graph/${G1}/mcp-config`, { isMcpEnabled: true }, admin)
+  await retryApi('PUT', `/api/knowledge-graph/${G2}/mcp-config`, { isMcpEnabled: true }, admin)
   if (!Number.isFinite(G1) || !Number.isFinite(G2) || !Number.isFinite(G3)) throw new Error(`建图失败: ${g1Res.status}/${g2Res.status}/${g3Res.status}`)
 
-  const acc = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-' + TS, description: 'kg mcp e2e', scopes: ['kg_read', 'kg_mcp'] }, admin)
+  // 接入 scopes 字段（kg_read/kg_mcp）已退役：moai-ac- 不传 scopes 即全量
+  const acc = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-' + TS, description: 'kg mcp e2e' }, admin)
   const ACCESS_KEY = acc.json?.key
   if (!ACCESS_KEY) throw new Error(`创建应用接入失败: ${acc.status} ${acc.text.slice(0, 120)}`)
 
   // 团队接入 key（moai-）已下线：MCP 场景改用应用接入 key（moai-ac-，命名带 kgm接入- 前缀便于清理）
-  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-MCP-' + TS, description: 'kg mcp e2e', scopes: ['kg_mcp'] }, admin)
+  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-MCP-' + TS, description: 'kg mcp e2e' }, admin)
   const TEAM_KEY = kMcp.json?.key
-  const kRead = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-READ-' + TS, description: 'kg mcp e2e', scopes: ['kg_read'] }, admin)
-  const TEAM_KEY_READ = kRead.json?.key
-  const kWiki = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-WIKI-' + TS, description: 'kg mcp e2e', scopes: ['wiki_mcp'] }, admin)
-  const TEAM_KEY_WIKI_MCP = kWiki.json?.key
-  if (!TEAM_KEY || !TEAM_KEY_READ || !TEAM_KEY_WIKI_MCP) throw new Error(`创建应用接入 key 失败: ${kMcp.status}/${kRead.status}/${kWiki.status}`)
+  if (!TEAM_KEY) throw new Error(`创建应用接入 key 失败: ${kMcp.status}`)
 
   // schema/节点/边准备（向量化随节点写入自动触发）
   const portType = 'MCP港口-' + TS
@@ -187,6 +190,18 @@ async function main() {
   // wiki MCP 端点（域隔离反向断言用，建一个空知识库即可）
   const wRes = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'kgm-wiki-' + TS, description: 'kg mcp e2e 域隔离' }, admin)
   const W1 = Number(wRes.json?.value)
+
+  // wiki W1 的资源 key（moai-tr-）：KG MCP 的越圈反例（KGM-S1e）；G1 自己的资源 key：包围圈内放行（KGM-S8）
+  // 资源 key 唯一生成时机=开启资源对外功能（PUT mcp-config 自动生成/复用）
+  await retryApi('PUT', `/api/wiki/${W1}/mcp-config`, { isMcpEnabled: true }, admin)
+  await retryApi('PUT', `/api/knowledge-graph/${G1}/mcp-config`, { isMcpEnabled: true }, admin)
+  const kW1Key = await retryApi('POST', '/api/team-resource-key', { teamId: T1, resourceType: 'wiki', resourceId: String(W1) }, admin)
+  const TR_KEY_WIKI = String(kW1Key.json?.key ?? '')
+  const TR_KEY_WIKI_ROW = String(kW1Key.json?.teamResourceKeyId ?? '')
+  const kG1Key = await retryApi('POST', '/api/team-resource-key', { teamId: T1, resourceType: 'knowledgeGraph', resourceId: String(G1) }, admin)
+  const TR_KEY_G1 = String(kG1Key.json?.key ?? '')
+  const TR_KEY_G1_ROW = String(kG1Key.json?.teamResourceKeyId ?? '')
+  if (!TR_KEY_WIKI || !TR_KEY_G1) throw new Error(`创建资源 key 失败: ${kW1Key.status}/${kG1Key.status} ${kW1Key.text.slice(0, 120)}`)
 
   // ===== 向量准备：桩渠道 + 模型授权 + G1 embedding 配置 =====
   let hasEmb = false
@@ -239,8 +254,9 @@ async function main() {
     const initTeamKey = await mcp(mcpOf(G1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY, 'x-api-key')
     check('KGM-S1d 团队接入 key（x-api-key）initialize 200', initTeamKey.status === 200 && Boolean(initTeamKey.json?.result?.serverInfo?.name), `${initTeamKey.status}`)
 
-    const noScope = await mcp(mcpOf(G1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY_READ)
-    check('KGM-S1e 无 kg_mcp 范围 403', noScope.status === 403 && noScope.json?.error?.code === 'insufficient_scope', `${noScope.status} ${noScope.text.slice(0, 160)}`)
+    // 原「无 kg_mcp 范围 403」反例已随 scopes 退役，改为资源 key 包围圈：wiki 资源 key 打 KG MCP 403
+    const wrongResKey = await mcp(mcpOf(G1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TR_KEY_WIKI)
+    check('KGM-S1e wiki 资源 key 打 KG MCP 403 insufficient_scope', wrongResKey.status === 403 && wrongResKey.json?.error?.code === 'insufficient_scope', `${wrongResKey.status} ${wrongResKey.text.slice(0, 160)}`)
 
     const missingKg = await mcp(mcpOf(99999999), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY)
     check('KGM-S1f kgId 不存在 404', missingKg.status === 404, `${missingKg.status}`)
@@ -257,7 +273,8 @@ async function main() {
     check('KGM-S2b 工具带 inputSchema', Boolean(recallTool?.inputSchema?.properties), '')
 
     if (Number.isFinite(W1) && W1 > 0) {
-      const wikiTools = await mcp(`/api/external/wiki/${W1}/mcp`, rpc('tools/list', {}), TEAM_KEY_WIKI_MCP)
+      // wiki 端点以 moai-ac- 全量 key 访问（wiki_mcp 范围已退役）
+      const wikiTools = await mcp(`/api/teamres/wiki/${W1}/mcp`, rpc('tools/list', {}), ACCESS_KEY)
       const wikiNames = (wikiTools.json?.result?.tools ?? []).map((t) => t.name).sort()
       check('KGM-S2c wiki 端点 tools/list 仍恰好三个知识库工具（反向域隔离）', wikiTools.status === 200
         && JSON.stringify(wikiNames) === JSON.stringify(['list_knowledge_bases', 'search_knowledge_base_files', 'search_knowledge_base_recall']), `status=${wikiTools.status} tools=${JSON.stringify(wikiNames)}`)
@@ -268,6 +285,10 @@ async function main() {
     } else {
       skip('KGM-S2c/d 域隔离反向断言（wiki 创建失败）')
     }
+
+    // ===== @KGM-S8 绑定图资源 key（moai-tr-）访问自己的 MCP 端点放行 =====
+    const ownResInit = await mcp(mcpOf(G1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TR_KEY_G1)
+    check('KGM-S8 绑定图资源 key 访问本图 MCP initialize 200', ownResInit.status === 200 && Boolean(ownResInit.json?.result?.serverInfo?.name), `${ownResInit.status} ${ownResInit.text.slice(0, 160)}`)
 
     // ===== @KGM-S3 list_knowledge_graphs =====
     const listRes = await mcp(mcpOf(G1), rpc('tools/call', { name: 'list_knowledge_graphs', arguments: {} }), TEAM_KEY)
@@ -371,6 +392,9 @@ async function main() {
     const accList = await api('GET', '/api/access-app/list?teamId=' + T1, { token: admin }).catch(() => ({ json: { items: [] } }))
     for (const item of (accList.json?.items ?? [])) {
       if (String(item.name ?? '').startsWith('kgm接入-')) await api('DELETE', `/api/access-app/${item.id}`, { token: admin })
+    }
+    for (const rowId of [TR_KEY_WIKI_ROW, TR_KEY_G1_ROW]) {
+      if (rowId) await api('DELETE', `/api/team-resource-key/${rowId}`, { token: admin })
     }
     await api('PUT', `/api/admin/team/${T1}/disable`, { token: admin, body: { isDisable: true } })
     await api('PUT', `/api/admin/team/${T2}/disable`, { token: admin, body: { isDisable: true } })

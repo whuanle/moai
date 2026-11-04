@@ -17,8 +17,8 @@ export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuil
      */
     get verify(): VerifyRequestBuilder;
     /**
-     * 用户登录.
-     * @param body 登录.
+     * 用户登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
+     * @param body 登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<LoginCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -29,8 +29,8 @@ export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuil
      */
      post(body: LoginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<LoginCommandResponse | undefined>;
     /**
-     * 用户登录.
-     * @param body 登录.
+     * 用户登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
+     * @param body 登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

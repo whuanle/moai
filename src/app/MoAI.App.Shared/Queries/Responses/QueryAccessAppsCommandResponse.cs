@@ -34,11 +34,6 @@ public class AccessAppItem
     /// 最近使用时间（通过模型网关调用时刷新），未使用为 null.
     /// </summary>
     public DateTimeOffset? LastUsedTime { get; set; }
-
-    /// <summary>
-    /// 功能范围代码列表（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a），知识库维度决定签发 token 的知识库权限.
-    /// </summary>
-    public List<string> Scopes { get; set; } = new();
 }
 
 /// <summary>
@@ -78,7 +73,7 @@ public class CreateAccessAppCommandResponse
     public string Key { get; set; } = default!;
 
     /// <summary>
-    /// 接入密钥原文（仅此一次；经 /api/external/token 换取 token 时须携带）.
+    /// 接入密钥原文（仅此一次；经 /api/teamres/token 换取 token 时须携带）.
     /// </summary>
     public string Secret { get; set; } = default!;
 

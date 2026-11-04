@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useParams } from 'react-router'
 import { TeamKnowledgeGraphs } from '../TeamKnowledgeGraphs'
 import { createKnowledgeGraph, getKnowledgeGraphs, getKnowledgeGraphTemplates, uploadKnowledgeGraphAvatar } from '@/api/knowledgeGraph'
@@ -151,6 +151,8 @@ describe('TeamKnowledgeGraphs', () => {
     const file = new File(['png'], 'avatar.png', { type: 'image/png' })
     const input = modal.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [file] } })
+    // AvatarUpload 选图经前端压缩 Promise 异步回调，冲刷微任务让头像状态落地
+    await act(async () => {})
     fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(uploadKnowledgeGraphAvatar).toHaveBeenCalledWith(9, expect.any(File)))
@@ -171,6 +173,8 @@ describe('TeamKnowledgeGraphs', () => {
     const file = new File(['png'], 'avatar.png', { type: 'image/png' })
     const input = modal.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [file] } })
+    // AvatarUpload 选图经前端压缩 Promise 异步回调，冲刷微任务让头像状态落地
+    await act(async () => {})
     fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(createKnowledgeGraph).toHaveBeenCalledTimes(1))

@@ -10,6 +10,7 @@ namespace MoAI.Memory.Controllers;
 
 /// <summary>
 /// Agent 应用长期记忆接口：用户本人的记忆列表/删除/清空与团队管理员清空应用记忆.
+/// 记忆内容由 AI 自动维护（memory_save 工具与会话结束自动提取），不提供人工新建/编辑.
 /// </summary>
 [ApiController]
 [Route("/app")]
@@ -30,17 +31,18 @@ public class AppMemoryController : ControllerBase
     }
 
     /// <summary>
-    /// 分页查询本人在某应用下的长期记忆（按创建时间倒序）.
+    /// 分页查询本人在某应用下的长期记忆（按创建时间倒序，可按内容关键字过滤）.
     /// </summary>
     /// <param name="id">应用 id.</param>
     /// <param name="page">页码（1 起）.</param>
     /// <param name="pageSize">页大小（1~100）.</param>
+    /// <param name="keyword">内容关键字（不区分大小写包含匹配，留空返回全部）.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryMyMemoriesCommandResponse"/>.</returns>
     [HttpGet("{id:guid}/memory/mine")]
-    public Task<QueryMyMemoriesCommandResponse> QueryMyMemories([FromRoute] Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    public Task<QueryMyMemoriesCommandResponse> QueryMyMemories([FromRoute] Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? keyword = null, CancellationToken ct = default)
     {
-        var cmd = new QueryMyMemoriesCommand { AppId = id, Page = page, PageSize = pageSize };
+        var cmd = new QueryMyMemoriesCommand { AppId = id, Page = page, PageSize = pageSize, Keywords = keyword };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }
@@ -56,28 +58,6 @@ public class AppMemoryController : ControllerBase
     public async Task<EmptyCommandResponse> DeleteMyMemory([FromRoute] Guid id, [FromRoute] Guid memoryId, CancellationToken ct)
     {
         var cmd = new DeleteMyMemoryCommand { AppId = id, MemoryId = memoryId };
-        _userContextProvider.SetUserContext(cmd);
-        return await _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 编辑本人的一条长期记忆（保留原 id 与创建时间，内容重嵌向量）.
-    /// </summary>
-    /// <param name="id">应用 id.</param>
-    /// <param name="memoryId">记忆 id.</param>
-    /// <param name="req">编辑请求体.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPut("{id:guid}/memory/mine/{memoryId:guid}")]
-    public async Task<EmptyCommandResponse> UpdateMyMemory([FromRoute] Guid id, [FromRoute] Guid memoryId, [FromBody] UpdateMyMemoryCommand req, CancellationToken ct)
-    {
-        var cmd = new UpdateMyMemoryCommand
-        {
-            AppId = id,
-            MemoryId = memoryId,
-            Content = req.Content,
-            MemoryType = req.MemoryType,
-        };
         _userContextProvider.SetUserContext(cmd);
         return await _mediator.Send(cmd, ct);
     }

@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
-using MoAI.Message.Models;
 using MoAI.Message.Services;
 using MoAI.Notification.Commands;
 using MoAI.Notification.Models;
@@ -68,17 +67,8 @@ public class BroadcastNotificationCommandHandler : IRequestHandler<BroadcastNoti
 
         if (request.SendInSite)
         {
-            // 站内信以纯文本展示：HTML 模板降级去标签
-            var inSiteContent = message.ContentType == NotificationContentType.Html
-                ? NotificationTemplateRenderer.HtmlToPlain(message.Content)
-                : message.Content;
-            await _messageService.SendToAllUsersAsync(new MessageSendItem
-            {
-                Title = message.Title,
-                Content = inSiteContent,
-                MessageType = MessageType.System,
-                Source = "notification"
-            }, cancellationToken);
+            // 站内信以纯文本展示：HTML 模板降级去标签（与站内信托底共用同一构造规则）
+            await _messageService.SendToAllUsersAsync(NotificationInSiteMessage.Create(message), cancellationToken);
         }
 
         return new BroadcastNotificationCommandResponse { ChannelCount = channelCount };

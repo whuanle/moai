@@ -98,4 +98,9 @@ public partial class PluginEntity : IFullAudited
     /// 头像.
     /// </summary>
     public string AvatarPath { get; set; } = default!;
+
+    /// <summary>
+    /// 使用须知/领域背景（管理员维护，随工具清单注入模型系统提示）.
+    /// </summary>
+    public string UsageNotes { get; set; } = default!;
 }

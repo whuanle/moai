@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
 using MoAI.AI.Models;
+using MoAI.Settings.Services;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
 using MoAI.Storage.Services;
@@ -15,7 +17,8 @@ namespace MoAI.AI.Services;
 
 /// <summary>
 /// 沙箱工具来源：当应用开启沙箱时，暴露代码执行 / shell / 文件读写等工具（经 list_tools 渐进披露）.
-/// <para>沙箱按会话惰性创建，同会话内代码、命令、文件持续存在.</para>
+/// <para>沙箱按会话惰性创建，同会话内代码、命令、文件持续存在；run_shell / run_code 执行前经命令过滤
+/// （平台级禁用清单 ∪ 应用级 commandFilter，命中即拦截并返回说明，模型可调整方案）.</para>
 /// </summary>
 [InjectOnScoped]
 public sealed class SandboxAppToolProvider : IAppToolProvider
@@ -26,28 +29,31 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
 
     private readonly IAppSandboxService _sandboxService;
     private readonly IStorageService _storageService;
+    private readonly ISandboxSettingsService _sandboxSettingsService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SandboxAppToolProvider"/> class.
     /// </summary>
     /// <param name="sandboxService">会话沙箱服务.</param>
     /// <param name="storageService">存储领域服务.</param>
-    public SandboxAppToolProvider(IAppSandboxService sandboxService, IStorageService storageService)
+    /// <param name="sandboxSettingsService">沙箱系统设置（平台级禁用命令清单）.</param>
+    public SandboxAppToolProvider(IAppSandboxService sandboxService, IStorageService storageService, ISandboxSettingsService sandboxSettingsService)
     {
         _sandboxService = sandboxService;
         _storageService = storageService;
+        _sandboxSettingsService = sandboxSettingsService;
     }
 
     /// <inheritdoc/>
     public int Order => 15;
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<AppTool>> GetToolsAsync(AppAgentBuildContext context, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<AppTool>> GetToolsAsync(AppAgentBuildContext context, CancellationToken cancellationToken)
     {
         var settings = AppAgentExecutionSettings.Parse(context.Config?.ExecutionSettings);
         if (settings.Sandbox is not { Enabled: true })
         {
-            return Task.FromResult<IReadOnlyList<AppTool>>([]);
+            return [];
         }
 
         var session = new SandboxSessionContext
@@ -57,6 +63,10 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
             TeamId = context.TeamId,
             Settings = settings.Sandbox,
         };
+
+        // 命令过滤清单快照（每轮对话装配读取一次；清单更新对已装配轮次不回溯，下一轮生效）
+        var limits = await _sandboxSettingsService.GetLimitsAsync(cancellationToken).ConfigureAwait(false);
+        var commandDeny = MergeCommandDeny(settings.Sandbox.CommandFilter, limits.DeniedCommands);
 
         IReadOnlyList<AppTool> tools =
         [
@@ -72,6 +82,12 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
                     if (!TryRead(args, "code", out var code) || string.IsNullOrWhiteSpace(code))
                     {
                         return AppToolResult.Fail("缺少参数 code.");
+                    }
+
+                    var blocked = SandboxCommandGuard.Evaluate(code, isShell: false, commandDeny);
+                    if (blocked != null)
+                    {
+                        return AppToolResult.Fail(FormatBlocked(blocked));
                     }
 
                     TryRead(args, "language", out var language);
@@ -90,6 +106,12 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
                     if (!TryRead(args, "command", out var command) || string.IsNullOrWhiteSpace(command))
                     {
                         return AppToolResult.Fail("缺少参数 command.");
+                    }
+
+                    var blocked = SandboxCommandGuard.Evaluate(command, isShell: true, commandDeny);
+                    if (blocked != null)
+                    {
+                        return AppToolResult.Fail(FormatBlocked(blocked));
                     }
 
                     TryRead(args, "cwd", out var cwd);
@@ -211,7 +233,7 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
             },
         ];
 
-        return Task.FromResult(tools);
+        return tools;
     }
 
     /// <summary>
@@ -288,4 +310,28 @@ public sealed class SandboxAppToolProvider : IAppToolProvider
             return false;
         }
     }
+
+    /// <summary>
+    /// 合并命令过滤清单：平台级全站强制，应用级仅在 enabled 时追加（运行时取并集）.
+    /// </summary>
+    /// <param name="filter">应用级命令过滤配置.</param>
+    /// <param name="platformDeny">平台级禁用清单.</param>
+    /// <returns>合并后的禁用清单.</returns>
+    private static IReadOnlyList<string> MergeCommandDeny(SandboxCommandFilterSettings? filter, IReadOnlyList<string> platformDeny)
+    {
+        if (filter is { Enabled: true } && filter.Deny.Count > 0)
+        {
+            return filter.Deny.Concat(platformDeny).ToList();
+        }
+
+        return platformDeny;
+    }
+
+    /// <summary>
+    /// 命令过滤拦截反馈文案（返回给模型，模型可调整方案；不中断对话）.
+    /// </summary>
+    /// <param name="blocked">命中信息.</param>
+    /// <returns>工具错误文案.</returns>
+    private static string FormatBlocked(SandboxCommandBlock blocked)
+        => $"该请求已被沙箱命令过滤拦截：命中平台/应用配置的禁用模式「{blocked.Pattern}」。请改用其他方式完成任务，不要尝试绕过过滤。";
 }

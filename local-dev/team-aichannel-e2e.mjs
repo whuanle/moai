@@ -4,7 +4,7 @@
 //   - 团队模型渠道 CRUD 门禁（Member 403 / 非成员 404）
 //   - 渠道与模型管理（创建/更新/删除/重复校验/团队模型不可公开）
 //   - 供应商模型同步（桩 /models）+ 挑选导入 + exists 标记
-//   - 团队可用模型聚合：团队自有渠道 + 系统公开模型（/team/{teamId}/ai/model/available isTeamChannel 标记）
+//   - 团队可用模型聚合：团队自有渠道 + 系统公开模型（/team/{teamId}/ai/model/available isTeamChannel 标记 + modelKind 回显）
 //   - 模型网关下线：/api/aigateway/* 404、model 范围代码 400、网关用量统计随之下线
 //   - 团队隔离：其他团队看不到本团队自有模型；跨团队/系统渠道操作 404
 //   - 额度体系下线：额度端点 404、团队模型无授权概念 400
@@ -222,6 +222,8 @@ const teamModel = gwItems.find((x) => x.modelId === 'tc-model-manual')
 const sysPublic = gwItems.find((x) => x.modelId === 'tc-sys-public-model')
 check('TC-S5 可用模型含团队自有模型 isTeamChannel=true', Boolean(teamModel) && teamModel?.isTeamChannel === true, JSON.stringify(gwItems.map((x) => [x.modelId, x.isTeamChannel])))
 check('TC-S5 可用模型含系统公开模型 isTeamChannel=false', Boolean(sysPublic) && sysPublic?.isTeamChannel === false)
+// 聚合项回显 modelKind，前端按 conversation 过滤对话类模型下拉（Agent 应用配置/流程节点）
+check('TC-S5 可用模型回显 modelKind=conversation', teamModel?.modelKind === 'conversation' && sysPublic?.modelKind === 'conversation', JSON.stringify([teamModel?.modelKind, sysPublic?.modelKind]))
 
 // ---------- 模型网关下线 ----------
 // 团队模型网关整体下线：/api/aigateway/* 端点移除，model 范围代码不再合法
@@ -236,7 +238,7 @@ const gwModelsEp = await fetch(`${BASE}/api/aigateway/${teamId}/v1/models`)
 check('TC-S5 模型网关 models 端点已下线 404', gwModelsEp.status === 404, `${gwModelsEp.status}`)
 
 const acc = await api(owner.token, '/api/access-app', 'POST', { teamId, name: `tch-e2e-接入-${ts}`, description: 'team aichannel e2e', scopes: ['model'] })
-check('TC-S5 创建应用接入含 model 范围 400（范围已随网关下线）', acc.status === 400, JSON.stringify(acc.body))
+check('TC-S5 scopes 字段退役被忽略创建 200（含 model 范围也 200）', acc.status === 200, JSON.stringify(acc.body))
 
 // ---------- 团队隔离 ----------
 const otherModels = await api(other.token, `/api/team/${otherTeamId}/ai/model/available`)

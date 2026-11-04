@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import { useAppStore } from '@/store/app'
 import { useBadgeStore } from '@/store/badges'
 import { getRiskEventUnreadCount } from '@/api/loginsafety'
+import { getPublicationPendingCount } from '@/api/publication'
+import { getNotificationFailedCount } from '@/api/notification'
 
 const POLL_INTERVAL_MS = 60_000
 
 /**
- * 菜单角标数据源轮询：管理员登录后每 60s 拉取一次未读风险事件数写入 badge store。
- * 后续其它菜单需要待处理角标时，在此追加对应数据源即可。
+ * 菜单角标数据源轮询：管理员登录后每 60s 拉取一次各菜单待处理数量写入 badge store。
+ * 数据源并行拉取、互不阻塞，单个失败只跳过该角标等下一轮；key 与 AppSider NavItem.key 对齐。
  */
 export function useMenuBadges() {
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
@@ -21,14 +23,24 @@ export function useMenuBadges() {
     let disposed = false
 
     const refresh = async () => {
-      try {
-        const count = await getRiskEventUnreadCount()
-        if (!disposed) {
-          setBadge('logEvents', count)
-        }
-      } catch {
-        // 401/网络错误静默，下一轮再试
-      }
+      const sources: Array<[key: string, loader: () => Promise<number>]> = [
+        ['logEvents', getRiskEventUnreadCount],
+        ['publications', getPublicationPendingCount],
+        ['notificationCenter', getNotificationFailedCount],
+      ]
+
+      await Promise.all(
+        sources.map(async ([key, loader]) => {
+          try {
+            const count = await loader()
+            if (!disposed) {
+              setBadge(key, count)
+            }
+          } catch {
+            // 401/网络错误静默，下一轮再试
+          }
+        }),
+      )
     }
 
     void refresh()

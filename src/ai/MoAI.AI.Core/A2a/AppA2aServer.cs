@@ -31,7 +31,7 @@ namespace MoAI.AI.A2a;
 /// final）事件并以最终完整 Task 收口；<c>tasks/get</c> 查询任务（进程内尽力而为）；<c>tasks/cancel</c> 中断；
 /// <c>contextId</c> 承载 MoAI 会话 id（缺省自动建会话，携带即续聊）。
 /// 认证与门禁（app_a2a 范围、团队归属、已发布应用、外部用户语义）由 ExternalAuthenticationMiddleware 前置完成；
-/// Agent Card 见 <c>GET /api/external/app/{"{appId}"}/a2a/agent.json</c>.</para>
+/// Agent Card 见 <c>GET /api/teamres/app/{"{appId}"}/a2a/agent.json</c>.</para>
 /// </summary>
 [InjectOnScoped]
 public sealed class AppA2aServer
@@ -84,7 +84,7 @@ public sealed class AppA2aServer
         {
             ["name"] = app.Name,
             ["description"] = string.IsNullOrEmpty(app.Description) ? $"MoAI application {app.Name}" : app.Description,
-            ["url"] = $"{baseUrl}/api/external/app/{appId}/a2a",
+            ["url"] = $"{baseUrl}/api/teamres/app/{appId}/a2a",
             ["protocolVersion"] = "0.3.0",
             ["version"] = "1.0.0",
             ["capabilities"] = new JsonObject

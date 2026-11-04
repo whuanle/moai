@@ -5,7 +5,7 @@
 回归命令（需后端运行中；内置 webhook/SMTP 桩，零真实外部依赖）：
 
 ```bash
-node local-dev/notification-e2e.mjs   # NT 106（应用机器人场景需后端以 MoAI:Feishu/DingTalk/WeixinWork:Endpoint 覆盖启动，见脚本文件头）
+node local-dev/notification-e2e.mjs   # NT 126（应用机器人场景需后端以 MoAI:Feishu/DingTalk/WeixinWork:Endpoint 覆盖启动，见脚本文件头）
 ```
 
 | 场景 | 验证物 | 结果（日期） |
@@ -21,7 +21,7 @@ node local-dev/notification-e2e.mjs   # NT 106（应用机器人场景需后端�
 | @NT-S9 | local-dev/notification-e2e.mjs#NT-32..34（Hangfire 轮询终态；广播含 SMTP 渠道时附收件人邮箱） | PASS 3/3（2026-11-02） |
 | @NT-S10 | local-dev/notification-e2e.mjs#NT-35..36 | PASS 2/2（2026-11-02） |
 | @NT-S11 | local-dev/notification-e2e.mjs#NT-37..38 | PASS 2/2（2026-11-02） |
-| @NT-S22 | local-dev/notification-e2e.mjs#NT-36（广播记录关联用户空串回显）；定向非空场景 @manual（当前无 REST 触达路径，业务方经 NotifyAsync 定向投递接入后补 e2e） | PASS（2026-11-02） |
+| @NT-S22 | local-dev/notification-e2e.mjs#NT-36（广播记录关联用户空串回显）+ NT-120（定向非空场景经渠道试发落记录，关联用户快照=试发人） | PASS（2026-11-03） |
 | @NT-S12 | local-dev/notification-e2e.mjs#NT-39 | PASS 1/1（2026-11-02） |
 | @NT-S13 | local-dev/notification-e2e.mjs#NT-40（/api/message/list 断言） | PASS 1/1（2026-11-02） |
 | @NT-S14 | local-dev/notification-e2e.mjs#NT-41 | PASS 1/1（2026-11-02） |
@@ -41,6 +41,22 @@ node local-dev/notification-e2e.mjs   # NT 106（应用机器人场景需后端�
 | @NT-S29 | local-dev/notification-e2e.mjs#NT-106..107（SMTP 桩 MIME base64/QP 解码断言 text/html + webhook 降级去标签） | PASS 2/2（2026-11-02） |
 | @NT-S30 | local-dev/notification-e2e.mjs#NT-108..112（标题正文可空入队/缺变量 400/模板不存在 404/渲染文本落记录与站内信） | PASS 5/5（2026-11-02） |
 | @NT-S32 | local-dev/notification-e2e.mjs#NT-119（广播 SMTP 渠道记录快照实际收件人邮箱、webhook 固定地址渠道留空） | PASS 1/1（2026-11-02） |
+| @NT-S33 | local-dev/notification-e2e.mjs#NT-121..122（渠道试发站内信先行送达；未绑定企微渠道试发失败但站内信仍达）；空目标不自动发场景 @manual（领域服务分支，业务方全员型调用无 REST 触达点） | PASS 2/2（2026-11-03） |
+| @NT-S34 | local-dev/notification-e2e.mjs#NT-120..121（已保存渠道试发落发送记录含关联用户快照 + 试发人站内信副本）；保存前试发不落记录由 NT-20/24/27（未保存配置试发）行为覆盖 | PASS 3/3（2026-11-03） |
+| @NT-S35 | local-dev/notification-e2e.mjs#NT-123a..c（未登录 401 + 普通用户 403 + 失败数量与 status=failed 列表 totalCount 一致） | PASS 3/3（2026-11-04，新增 `GET /api/notification/log/failed-count`，syncapi 已重新生成客户端） |
+
+### 第八轮（站内信托底 + 渠道试发走领域服务，106 → 126 用例）
+
+- **站内信托底**：`NotificationService` 注入 `IMessageService`，NotifyAsync/SendNowAsync 在模板渲染后、渠道分发前，
+  `TargetUserIds` 非空即同步发站内信（@NT-S33）——站内信必达且与渠道解析/投递结果解耦（渠道未选/停用/失败/零绑定均不影响）；
+  空目标的全员型通知不自动发（登录安全渠道告警等不误伤），站内触达仍由调用方决定（广播 sendInSite）。
+  站内信条目构造抽 `NotificationInSiteMessage`（HTML 降级规则与广播 sendInSite 共用一处）。
+- **渠道试发走领域服务**（@NT-S34）：TestNotificationChannelCommandHandler 改经 `NotificationService.SendToChannelAsync(channel, message)`
+  ——已保存渠道（Id>0）落发送记录留痕（关联用户快照=试发人，@NT-S22 定向非空路径就此有 REST 触达点）；
+  保存前试发（临时渠道 Id=0）不落记录；两者站内信托底同样生效（试发人收站内信副本）。
+  修订决策 2「测试端点不落发送记录」旧语义；试发不校验渠道启用状态（停用渠道可先试发再启用）。
+- e2e：新增 NT-120..122；广播计数类断言按标题前缀过滤天然不受试发记录影响，无需改动。
+- 回归：全量 **NT 126/126 全绿**（2026-11-03，应用机器人段带三平台端点覆盖启动，连跑两轮验证可重复执行）。
 
 ## 自检记录（2026-11-02）
 

@@ -99,13 +99,6 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
             }
         }
 
-        // 应用对话范围以来源接入当前勾选为准：撤销后刷新即拒绝（匿名身份不受限）
-        if (accessApp != null
-            && !((Database.Enums.TeamApiKeyScopes)accessApp.Scopes).HasFlag(Database.Enums.TeamApiKeyScopes.AppChat))
-        {
-            throw new BusinessException("应用接入未勾选应用对话范围.") { StatusCode = 403 };
-        }
-
         if (external.AppId != null)
         {
             var app = await _databaseContext.Apps

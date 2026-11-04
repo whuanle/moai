@@ -103,4 +103,9 @@ public partial class AppAgentSessionEntity : IFullAudited
     /// 会话绑定的专家提示词 id（prompt.id），0 表示未绑定.
     /// </summary>
     public int PromptId { get; set; }
+
+    /// <summary>
+    /// 最近一轮对话实际使用的模型ID（ai_model.id），用户在对话端切换模型后随轮更新；空=从未对话.
+    /// </summary>
+    public Guid LastModelId { get; set; }
 }

@@ -50,6 +50,11 @@ public class QuerySubsysAppsCommandResponseItem : AuditsInfo
     public string Name { get; init; } = default!;
 
     /// <summary>
+    /// 接入头像 objectKey，空串=未设置（前端拼装 /static 地址展示）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
+
+    /// <summary>
     /// 描述.
     /// </summary>
     public string Description { get; init; } = string.Empty;

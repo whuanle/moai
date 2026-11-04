@@ -6,6 +6,9 @@ import { uploadImageWithKey } from '@/utils/storage'
 /** 应用类型：agent=Agent 应用，workflow=流程应用（对齐后端 AppType 枚举） */
 export type AppKind = 'agent' | 'workflow'
 
+/** 后端 Guid 字段未配置时的全零值 */
+const EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
+
 /** 应用开通的外部渠道（应用的对外服务入口，如飞书/钉钉机器人单聊） */
 export interface AppExternalChannel {
   /** 渠道类型：feishu=飞书，dingtalk=钉钉（未回填机器人 dingtalk id 时用 AppKey 兜底生成链接） */
@@ -41,6 +44,8 @@ export interface AppItem {
   /** 发布时间，未发布为 null */
   publishTime?: string | null
   createTime?: string | null
+  /** 当前用户是否已收藏（仅公开列表填充，团队/外部列表恒为 false） */
+  isFavorite?: boolean | null
   /** 应用开通的外部渠道列表（如飞书/钉钉机器人单聊入口），未开通为空 */
   externalChannels?: AppExternalChannel[] | null
 }
@@ -70,7 +75,7 @@ export async function getExternalApps(teamId: number): Promise<AppsResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
-/** 查询平台公开应用（内部且已公开、已发布、未禁用），任意登录用户可访问；支持名称/描述关键字与分类过滤 */
+/** 查询平台公开应用（内部且已公开、已发布、未禁用），任意登录用户可访问；支持名称/描述关键字与分类过滤；收藏的应用置顶 */
 export async function getPublicApps(filters?: { keywords?: string; classifyId?: number }): Promise<AppItem[]> {
   const client = getApiClient()
   const res = await client.api.app.public.list.get({
@@ -80,6 +85,18 @@ export async function getPublicApps(filters?: { keywords?: string; classifyId?: 
     },
   })
   return (res?.items ?? []) as AppItem[]
+}
+
+/** 收藏应用（仅限应用广场可见的应用），重复收藏幂等返回成功；收藏后广场列表置顶 */
+export async function favoriteApp(appId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.byId(appId).favorite.post()
+}
+
+/** 取消收藏应用，未收藏时幂等返回成功；应用下架/停用后仍可取消收藏 */
+export async function unfavoriteApp(appId: string): Promise<void> {
+  const client = getApiClient()
+  await client.api.app.byId(appId).favorite.delete()
 }
 
 export async function getAppDetail(appId: string) {
@@ -144,11 +161,15 @@ export async function uploadAppAvatar(appId: string, file: File): Promise<string
 
 // ==================== Agent 应用配置 ====================
 
-/** 沙箱资源上限（每个应用可配置的存活时间 / CPU / 内存最大值，由超级管理员在系统设置调整） */
+/** 沙箱资源上限（每个应用可配置的存活时间 / CPU / 内存最大值与出站网络管控模式，由超级管理员在系统设置调整） */
 export interface SandboxLimits {
   maxTtlSeconds: number
   maxCpu: string
   maxMemory: string
+  /** 出站网络管控模式：app=应用自定义 / deny=强制默认拒绝 / intranet=默认拒绝并放行内网网段 */
+  networkMode: string
+  /** 内网网段（IP / CIDR，逗号分隔原文），intranet 模式下运行时自动放行 */
+  intranetCidrs: string
 }
 
 /** 查询沙箱资源上限；接口异常时回退内置默认值（与后端 SettingDefinitions 一致） */
@@ -159,6 +180,8 @@ export async function getSandboxLimits(): Promise<SandboxLimits> {
     maxTtlSeconds: res?.maxTtlSeconds ?? 86400,
     maxCpu: res?.maxCpu || '4',
     maxMemory: res?.maxMemory || '8Gi',
+    networkMode: res?.networkMode || 'app',
+    intranetCidrs: res?.intranetCidrs || '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16',
   }
 }
 
@@ -168,8 +191,10 @@ export interface AppAgentConfig {
   appType?: AppKind | null
   /** 系统提示词，未配置时为空串 */
   prompt?: string | null
-  /** 对话模型 id（uuid）；模型选择未开放时为空 Guid */
+  /** 默认对话模型 id（uuid）；模型选择未开放时为空 Guid */
   modelId?: string | null
+  /** 开放给用户选择的对话模型 id 列表（含默认模型，uuid）；未配置时仅含默认模型 */
+  modelIds?: string[] | null
   /** 允许使用的知识库 id 列表（元素为 wiki.id） */
   wikiIds?: number[] | null
   /** 允许检索的知识图谱 id 列表（元素为 kg.id，仅托管图） */
@@ -206,6 +231,7 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     appType: (res?.appType as AppKind | null | undefined) ?? null,
     prompt: res?.prompt ?? '',
     modelId: res?.modelId ?? null,
+    modelIds: (res?.modelIds ?? []).map((id) => String(id)),
     // Kiota 把后端 long 生成为 string，前端统一收敛为 number 便于与 wikiId 比较
     wikiIds: (res?.wikiIds ?? []).map((id) => Number(id)),
     graphIds: (res?.graphIds ?? []).map((id) => Number(id)),
@@ -224,12 +250,15 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
 
 /**
  * 保存 Agent 应用配置；对话模型与绑定的插件/知识库必须在该团队有权使用的范围内（后端校验）。
- * `modelId` 传 null / 空串表示不选择模型。
+ * `modelId` 传 null / 空串表示不选择模型；`modelIds` 为开放给用户选择的可选模型列表（须包含默认模型，
+ * 后端校验逐个团队可用性与上限），null / 空时后端归一为仅默认模型。
  */
 export async function saveAppAgentConfig(
   appId: string,
   payload: {
     modelId?: string | null
+    /** 开放给用户选择的可选模型列表（含默认模型）；缺省表示仅默认模型 */
+    modelIds?: string[] | null
     prompt: string
     wikiIds: number[]
     /** 允许检索的知识图谱 id 列表（仅托管图，后端校验归属与模式） */
@@ -250,6 +279,7 @@ export async function saveAppAgentConfig(
   const client = getApiClient()
   await client.api.app.byId(appId).agentConfig.put({
     modelId: (payload.modelId || null) as Guid | null,
+    modelIds: ((payload.modelIds ?? []).filter(Boolean)) as Guid[],
     prompt: payload.prompt,
     // 后端 wiki_ids 为 long，Kiota 生成的请求体为 string[]，此处按生成类型传字符串
     wikiIds: payload.wikiIds.map((id) => String(id)),
@@ -268,11 +298,23 @@ export async function saveAppAgentConfig(
 
 // ==================== Agent 压缩默认参数 ====================
 
-/** Agent 上下文压缩生效默认参数（系统设置，应用配置页输入框预填值） */
+/** Agent 上下文压缩生效默认参数（系统设置，应用配置页预填值与自动模式换算展示） */
 export interface AgentCompactionDefaults {
+  /** 默认压缩策略（auto=按模型上下文窗口比例推导） */
+  compactionMode: string
+  /** 自动模式：工具结果折叠触发比例（占 input budget） */
+  toolEvictionRatio: number
+  /** 自动模式：LLM 摘要压缩触发比例（占 input budget） */
+  summarizeTriggerRatio: number
+  /** 自动模式：摘要压缩目标比例（压回该水位） */
+  summarizeTargetRatio: number
+  /** 自动模式：紧急截断触发比例（占 input budget） */
+  truncationRatio: number
+  /** 自定义模式：工具结果折叠触发消息数默认值 */
   toolResultTriggerMessages: number
+  /** 自定义模式：摘要触发 token 默认值 */
   summarizeTriggerTokens: number
-  preserveTurns: number
+  /** 自定义模式：紧急截断 token 上限默认值 */
   hardTokenLimit: number
   enableSummarization: boolean
   summarizerModelId: string
@@ -284,9 +326,13 @@ export async function getCompactionDefaults(): Promise<AgentCompactionDefaults> 
   const res = await client.api.app.agent.compactionDefaults.get()
   const raw = res as unknown as Partial<AgentCompactionDefaults> | undefined
   return {
+    compactionMode: raw?.compactionMode ?? 'auto',
+    toolEvictionRatio: raw?.toolEvictionRatio ?? 0.5,
+    summarizeTriggerRatio: raw?.summarizeTriggerRatio ?? 0.8,
+    summarizeTargetRatio: raw?.summarizeTargetRatio ?? 0.5,
+    truncationRatio: raw?.truncationRatio ?? 0.95,
     toolResultTriggerMessages: raw?.toolResultTriggerMessages ?? 16,
     summarizeTriggerTokens: raw?.summarizeTriggerTokens ?? 16000,
-    preserveTurns: raw?.preserveTurns ?? 8,
     hardTokenLimit: raw?.hardTokenLimit ?? 64000,
     enableSummarization: raw?.enableSummarization === true,
     summarizerModelId: raw?.summarizerModelId ?? '',
@@ -298,6 +344,8 @@ export interface MemoryDefaults {
   prompt: string
   /** 平台是否已开启长期记忆（总开关关闭时应用不可开启记忆） */
   platformEnabled: boolean
+  /** 平台是否已开启跨应用记忆（关闭时应用不可开启用户跨应用共享记忆） */
+  globalEnabled: boolean
   /** 平台统一向量化模型名称（应用记忆与全局记忆共用；未配置为空） */
   embeddingModelName: string
   /** 平台统一向量维度 */
@@ -312,6 +360,7 @@ export async function getMemoryDefaults(): Promise<MemoryDefaults> {
   return {
     prompt: raw?.prompt ?? '',
     platformEnabled: raw?.platformEnabled === true,
+    globalEnabled: raw?.globalEnabled === true,
     embeddingModelName: raw?.embeddingModelName ?? '',
     embeddingDimensions: raw?.embeddingDimensions ?? 1024,
   }
@@ -445,6 +494,8 @@ export interface AppLogItem {
   userType?: string | null
   /** 会话归属用户原始 id（内部为 user.id，外部为 external.id），后端 long 序列化为字符串 */
   ownerId?: string | number | null
+  /** 会话归属用户的登录用户名（仅内部用户；createUserName 为昵称，两者并列展示） */
+  ownerUserName?: string | null
   inputTokens?: number | null
   outTokens?: number | null
   totalTokens?: number | null
@@ -493,6 +544,7 @@ export async function getAppLogs(appId: string, params: QueryAppLogsParams): Pro
       title: item.title,
       userType: item.userType,
       ownerId: item.ownerId,
+      ownerUserName: item.ownerUserName ?? null,
       inputTokens: item.inputTokens,
       outTokens: item.outTokens,
       totalTokens: item.totalTokens,
@@ -591,6 +643,39 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
   }
 }
 
+/** 应用使用趋势单日数据 */
+export interface AppUsageTrendItem {
+  /** 统计日期（YYYY-MM-DD） */
+  date?: string | null
+  /** 当日使用次数（会话创建计数） */
+  useCount: number
+  /** 当日消息条数 */
+  messageCount: number
+}
+
+/** 应用使用趋势（按日聚合）结果 */
+export interface AppUsageTrendResult {
+  items: AppUsageTrendItem[]
+  startDate?: string | null
+  endDate?: string | null
+}
+
+/** 查询应用使用趋势（近 N 天使用次数与消息条数按日聚合）；后端 long 以字符串下发，此处归一化为 number */
+export async function getAppUsageTrend(appId: string, days = 30): Promise<AppUsageTrendResult> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).usage.trend.get({ queryParameters: { days } })
+  return {
+    items: (res?.items ?? []).map((item) => ({
+      // syncapi 生成物把日期字段生成为 Kiota DateOnly，统一收敛为字符串（YYYY-MM-DD）
+      date: item.date == null ? null : String(item.date),
+      useCount: toFiniteNumber(item.useCount),
+      messageCount: toFiniteNumber(item.messageCount),
+    })),
+    startDate: res?.startDate == null ? null : String(res.startDate),
+    endDate: res?.endDate == null ? null : String(res.endDate),
+  }
+}
+
 // ==================== 用户级应用配置 ====================
 
 /** 应用设置中展示的默认技能项（管理员配置） */
@@ -610,6 +695,10 @@ export interface AppUserSkillOption {
 export interface AppUserConfig {
   /** 用户当前选择的专家提示词 id，0=未选择 */
   promptId: number
+  /** 默认对话模型 id（uuid，与正式对话同一生效口径）；未配置模型时为空串 */
+  defaultModelId: string
+  /** 开放给用户选择的对话模型 id 列表（含默认模型）；仅默认模型或未配置时为单元素/空列表 */
+  modelIds: string[]
   /** 用户当前勾选的技能 id 列表（应用默认技能的子集；未配置过时为默认技能全集） */
   skills: string[]
   /** 应用默认技能目录（管理员配置） */
@@ -637,6 +726,8 @@ export interface AppUserConfig {
 /** userconfig.get 响应的原始 JSON 形状（新契约字段经原始 JSON 投射读取，regen 后行为一致） */
 interface RawAppUserConfigResponse {
   promptId?: number | null
+  defaultModelId?: string | null
+  modelIds?: string[] | null
   skills?: string[] | null
   defaultSkills?: AppUserSkillOption[] | null
   toolApprovalMode?: string | null
@@ -658,6 +749,9 @@ export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
   const res = (await client.api.app.byId(appId).userconfig.get()) as unknown as RawAppUserConfigResponse
   return {
     promptId: res?.promptId ?? 0,
+    defaultModelId: res?.defaultModelId ? String(res.defaultModelId) : '',
+    // 存量应用未配置多模型时后端已归一为 [默认模型]；空 Guid 视为未配置
+    modelIds: (res?.modelIds ?? []).map((id) => String(id)).filter((id) => id && id !== EMPTY_GUID),
     skills: (res?.skills ?? []).map((id) => String(id)),
     defaultSkills: res?.defaultSkills ?? [],
     toolApprovalMode: res?.toolApprovalMode === 'approval' ? 'approval' : 'auto',
@@ -828,10 +922,16 @@ export async function getAppSecurityEvents(
   appId: string,
   pageNo = 1,
   pageSize = 20,
+  filters?: { keyword?: string; scope?: string },
 ): Promise<{ items: AppSecurityEventItem[]; total: number; pageNo: number; pageSize: number }> {
   const client = getApiClient()
   const res = await client.api.app.byId(appId).security.events.get({
-    queryParameters: { pageNo, pageSize },
+    queryParameters: {
+      pageNo,
+      pageSize,
+      keyword: filters?.keyword || undefined,
+      scope: filters?.scope || undefined,
+    },
   })
   return {
     items: (res?.items ?? []).map((e) => ({

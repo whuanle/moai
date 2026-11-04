@@ -46,9 +46,9 @@ export async function getServerInfo(): Promise<ServerInfo> {
   return refreshServerInfo()
 }
 
-/** 登录二次验证挑战：密码校验通过后服务端要求第二步（认证器动态码 / 邮箱验证码） */
+/** 登录二次验证挑战：账号密码校验通过后服务端要求第二步（认证器动态码，邮箱验证码已并入登录请求一体提交） */
 export interface LoginChallenge {
-  secondFactor: 'totp' | 'emailCode'
+  secondFactor: 'totp'
   loginTicket: string
 }
 
@@ -56,25 +56,41 @@ export function isLoginChallenge(res: unknown): res is LoginChallenge {
   return typeof res === 'object' && res !== null && 'loginTicket' in res && 'secondFactor' in res
 }
 
+/** 登录页按策略随登录请求一体提交的附加验证字段 */
+export interface LoginExtraFields {
+  /** 邮箱验证码（邮箱验证码策略命中且账号绑定邮箱时必填） */
+  emailCode?: string
+  /** 图形验证码 id（图形验证码策略命中时必填） */
+  captchaId?: string
+  /** 图形验证码用户输入 */
+  captchaCode?: string
+}
+
 /**
- * 用户名密码登录：返回 UserInfo 表示登录完成；返回 LoginChallenge 表示需二次验证
- * （secondFactor=emailCode 时服务端已向用户邮箱发送验证码，secondFactor=totp 时输入认证器动态码）.
+ * 登录：账号 + 密码 + 按策略的验证码一体验证；返回 UserInfo 表示登录完成，
+ * 返回 LoginChallenge 表示需输入认证器动态码（TOTP，凭 loginTicket 调 verifyLogin）.
  */
-export async function login(userName: string, password: string): Promise<UserInfo | LoginChallenge | null> {
+export async function login(userName: string, password: string, extra?: LoginExtraFields): Promise<UserInfo | LoginChallenge | null> {
   const info = await getServerInfo()
   const encryptedPassword = rsaEncrypt(info.rsaPublic, password)
   const client = getAnonymousClient()
-  const res = await client.api.auth.login.post({ userName, password: encryptedPassword })
+  const res = await client.api.auth.login.post({
+    userName,
+    password: encryptedPassword,
+    emailCode: extra?.emailCode,
+    captchaId: extra?.captchaId,
+    captchaCode: extra?.captchaCode,
+  })
   if (!res) return null
   if (res.secondFactor && res.secondFactor !== 'none') {
-    return { secondFactor: res.secondFactor as 'totp' | 'emailCode', loginTicket: res.loginTicket ?? '' }
+    return { secondFactor: 'totp', loginTicket: res.loginTicket ?? '' }
   }
   const userInfo = toUserInfo(res)
   useAppStore.getState().setUserInfo(userInfo)
   return userInfo
 }
 
-/** 登录二次验证：凭一次性登录票据提交 6 位动态码，通过后写入会话 */
+/** 登录二次验证：凭一次性登录票据提交 6 位认证器动态码，通过后写入会话 */
 export async function verifyLogin(loginTicket: string, code: string): Promise<UserInfo | null> {
   const client = getAnonymousClient()
   const res = await client.api.auth.login.verify.post({ loginTicket, code })
@@ -84,10 +100,44 @@ export async function verifyLogin(loginTicket: string, code: string): Promise<Us
   return userInfo
 }
 
-/** 重发登录邮箱验证码（凭一次性登录票据，60 秒冷却） */
-export async function sendLoginCode(loginTicket: string): Promise<void> {
+/** 查询当前客户端的验证策略（登录/注册/找回密码页据此决定显示哪些验证字段） */
+export type ChallengePurpose = 'login' | 'register' | 'forgot'
+
+export interface ChallengePolicy {
+  captchaRequired: boolean
+  emailCodeRequired: boolean
+}
+
+export async function fetchChallengePolicy(purpose: ChallengePurpose, userName?: string): Promise<ChallengePolicy> {
   const client = getAnonymousClient()
-  await client.api.auth.login_code.send.post({ loginTicket })
+  const res = await client.api.auth.challenge_policy.get({ queryParameters: { purpose, userName } })
+  return { captchaRequired: res?.captchaRequired ?? false, emailCodeRequired: res?.emailCodeRequired ?? false }
+}
+
+/** 图形验证码生成结果（image 为 base64，不含 data: 前缀） */
+export interface CaptchaImage {
+  captchaId: string
+  image: string
+  imageMimeType: string
+  expiresInSeconds: number
+}
+
+/** 获取新的图形验证码（20 次/分钟/IP） */
+export async function fetchCaptcha(): Promise<CaptchaImage> {
+  const client = getAnonymousClient()
+  const res = await client.api.auth.captcha.newEscaped.get()
+  return {
+    captchaId: res?.captchaId ?? '',
+    image: res?.image ?? '',
+    imageMimeType: res?.imageMimeType ?? 'image/svg+xml',
+    expiresInSeconds: res?.expiresInSeconds ?? 300,
+  }
+}
+
+/** 发送登录邮箱验证码（按用户名定位账号邮箱；60 秒冷却 + IP 限流，图形验证码策略命中时需先过码） */
+export async function sendLoginCode(userName: string, captcha?: { captchaId?: string; captchaCode?: string }): Promise<void> {
+  const client = getAnonymousClient()
+  await client.api.auth.login_code.send.post({ userName, captchaId: captcha?.captchaId, captchaCode: captcha?.captchaCode })
 }
 
 export async function register(payload: {
@@ -112,10 +162,14 @@ export async function register(payload: {
   })
 }
 
-/** 发送邮箱验证码（注册 / 找回密码；服务端校验开关与 SMTP 配置） */
-export async function sendEmailCode(email: string, purpose: 'register' | 'resetPassword'): Promise<void> {
+/** 发送邮箱验证码（注册 / 找回密码；服务端校验开关与 SMTP 配置，图形验证码策略命中时需先过码） */
+export async function sendEmailCode(
+  email: string,
+  purpose: 'register' | 'resetPassword',
+  captcha?: { captchaId?: string; captchaCode?: string },
+): Promise<void> {
   const client = getAnonymousClient()
-  await client.api.auth.email_code.send.post({ email, purpose })
+  await client.api.auth.email_code.send.post({ email, purpose, captchaId: captcha?.captchaId, captchaCode: captcha?.captchaCode })
 }
 
 /** 通过邮箱验证码重置密码（找回密码；需 SMTP 邮件服务已启用） */

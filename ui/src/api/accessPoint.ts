@@ -2,7 +2,7 @@ import { type Guid } from '@microsoft/kiota-abstractions'
 import { Env } from '@/config/env'
 import { getApiClient } from '@/api/kiota'
 
-/** 访问点公开配置（外部匿名端点返回结构，/openapi/external.json） */
+/** 访问点公开配置（外部匿名端点返回结构，/openapi/teamres.json） */
 export interface ExternalAccessPointResponse {
   appId?: string | null
   title?: string | null
@@ -96,9 +96,9 @@ export async function saveAppAccessPoint(appId: string, payload: SaveAccessPoint
 }
 
 /** 查询访问点公开配置（匿名，悬浮组件用）。
- * 外部接口（/api/external）已从内部 Kiota 客户端文档拆分（/openapi/external.json），此处直接 fetch。 */
+ * 团队资源接口（/api/teamres）已从内部 Kiota 客户端文档拆分（/openapi/teamres.json），此处直接 fetch。 */
 export async function getExternalAccessPoint(appId: string): Promise<ExternalAccessPointResponse | null> {
-  const res = await fetch(`${Env.serverUrl}/api/external/app/${appId}/access-point`)
+  const res = await fetch(`${Env.serverUrl}/api/teamres/app/${appId}/access-point`)
   if (!res.ok) {
     return null
   }

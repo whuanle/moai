@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, GlobalOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Tabs, Tag, Tooltip, Typography } from 'antd'
+import { ArrowLeftOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, Popconfirm, Space, Tabs, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { DataTable, Page, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
 import {
   clearMyAppMemory,
@@ -15,10 +14,6 @@ import {
   getMyGlobalMemories,
   getMyMemories,
   getMyMemoryOverview,
-  promoteMemoryToGlobal,
-  saveMyGlobalMemory,
-  updateMyGlobalMemory,
-  updateMyMemory,
   type MyMemoryAppItem,
   type MyMemoryItem,
 } from '@/api/memory'
@@ -31,32 +26,22 @@ const PAGE_SIZE = 20
 const TYPE_EPISODIC = 1
 const TYPE_PROCEDURAL = 2
 
-/** 记忆类型下拉选项（0 语义 / 1 情景 / 2 程序） */
-const memoryTypeOptions = (t: (key: string) => string) => [
-  { value: 0, label: t('appMemory.typeSemantic') },
-  { value: TYPE_EPISODIC, label: t('appMemory.typeEpisodic') },
-  { value: TYPE_PROCEDURAL, label: t('appMemory.typeProcedural') },
-]
-
-interface MemoryFormValues {
-  content?: string
-  memoryType?: number
-}
-
 /**
- * 记忆管理页（个人跨应用视图）：「应用记忆」按应用查看/编辑/删除本人记忆并可存为全局；
- * 「全局记忆」维护个人跨应用记忆（新建/编辑/删除/清空），平台未开启时展示引导提示.
+ * 记忆管理页（个人跨应用视图）：「应用记忆」按应用查看/删除/清空本人记忆；
+ * 「全局记忆」删除/清空个人跨应用记忆。记忆内容由 AI 自动维护
+ * （memory_save 工具与会话结束自动提取），页面不提供人工新建/编辑/存为全局.
  */
 export function MemoryManagement() {
   const { t } = useTranslation()
-  const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
 
   const [activeTab, setActiveTab] = useState<'apps' | 'global'>('apps')
 
   const [overviewLoading, setOverviewLoading] = useState(false)
   const [apps, setApps] = useState<MyMemoryAppItem[]>([])
-  const [globalEnabled, setGlobalEnabled] = useState(false)
   const [globalMyCount, setGlobalMyCount] = useState(0)
+
+  /** 应用记忆 Tab 工具栏搜索（应用名/团队名，前端过滤） */
+  const [appsKeyword, setAppsKeyword] = useState('')
 
   const [selectedApp, setSelectedApp] = useState<MyMemoryAppItem | null>(null)
   const [appMemories, setAppMemories] = useState<MyMemoryItem[]>([])
@@ -64,25 +49,23 @@ export function MemoryManagement() {
   const [appPage, setAppPage] = useState(1)
   const [appMemoryEnabled, setAppMemoryEnabled] = useState(true)
   const [appMemoriesLoading, setAppMemoriesLoading] = useState(false)
+  /** 应用记忆明细搜索（按内容，服务端过滤）：input 为输入框实时值，keyword 为已提交生效值 */
+  const [appMemKeywordInput, setAppMemKeywordInput] = useState('')
+  const [appMemKeyword, setAppMemKeyword] = useState('')
 
   const [globalMemories, setGlobalMemories] = useState<MyMemoryItem[]>([])
   const [globalTotal, setGlobalTotal] = useState(0)
   const [globalPage, setGlobalPage] = useState(1)
   const [globalLoading, setGlobalLoading] = useState(false)
-
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<MyMemoryItem | null>(null)
-  /** 编辑目标：global=全局记忆；否则为应用记忆（应用 id 存于 editing.appId） */
-  const [editingScope, setEditingScope] = useState<'app' | 'global'>('app')
-  const [saving, setSaving] = useState(false)
-  const [form] = Form.useForm<MemoryFormValues>()
+  /** 全局记忆搜索（按内容，服务端过滤）：input 为输入框实时值，keyword 为已提交生效值 */
+  const [globalKeywordInput, setGlobalKeywordInput] = useState('')
+  const [globalKeyword, setGlobalKeyword] = useState('')
 
   const loadOverview = useCallback(async () => {
     setOverviewLoading(true)
     try {
       const res = await getMyMemoryOverview()
       setApps(res.apps)
-      setGlobalEnabled(res.global.enabled)
       setGlobalMyCount(res.global.myCount)
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -91,98 +74,70 @@ export function MemoryManagement() {
     }
   }, [])
 
-  const loadAppMemories = useCallback(async (appId: string, page: number) => {
+  const loadAppMemories = useCallback(async (appId: string, page: number, keyword = appMemKeyword) => {
     setAppMemoriesLoading(true)
     try {
-      const res = await getMyMemories(appId, page, PAGE_SIZE)
+      const res = await getMyMemories(appId, page, PAGE_SIZE, keyword || undefined)
       setAppMemories(res.items)
       setAppTotal(res.total)
       setAppMemoryEnabled(res.memoryEnabled)
       // 删除末页最后一条后回退一页
       if (res.items.length === 0 && page > 1) {
         setAppPage(page - 1)
-        await loadAppMemories(appId, page - 1)
+        await loadAppMemories(appId, page - 1, keyword)
       }
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setAppMemoriesLoading(false)
     }
-  }, [])
+  }, [appMemKeyword])
 
-  const loadGlobalMemories = useCallback(async (page: number) => {
+  const loadGlobalMemories = useCallback(async (page: number, keyword = globalKeyword) => {
     setGlobalLoading(true)
     try {
-      const res = await getMyGlobalMemories(page, PAGE_SIZE)
+      const res = await getMyGlobalMemories(page, PAGE_SIZE, keyword || undefined)
       setGlobalMemories(res.items)
       setGlobalTotal(res.total)
-      setGlobalEnabled(res.globalEnabled)
       if (res.items.length === 0 && page > 1) {
         setGlobalPage(page - 1)
-        await loadGlobalMemories(page - 1)
+        await loadGlobalMemories(page - 1, keyword)
       }
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
       setGlobalLoading(false)
     }
-  }, [])
+  }, [globalKeyword])
 
   useEffect(() => {
     void loadOverview()
     void loadGlobalMemories(1)
-  }, [loadOverview, loadGlobalMemories])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (selectedApp?.appId) {
       void loadAppMemories(selectedApp.appId, appPage)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedApp?.appId, appPage])
+  }, [selectedApp?.appId, appPage, appMemKeyword])
 
-  const openCreateGlobal = () => {
-    setEditing(null)
-    setEditingScope('global')
-    form.resetFields()
-    form.setFieldsValue({ memoryType: 0 })
-    setFormOpen(true)
+  /** 全局记忆搜索：提交关键字并回到第一页重查 */
+  const handleGlobalSearch = (value: string) => {
+    const kw = value.trim()
+    setGlobalKeywordInput(value)
+    setGlobalKeyword(kw)
+    setGlobalPage(1)
+    void loadGlobalMemories(1, kw)
   }
 
-  const openEdit = (item: MyMemoryItem, scope: 'app' | 'global') => {
-    setEditing(item)
-    setEditingScope(scope)
-    form.setFieldsValue({ content: item.content ?? '', memoryType: item.memoryType ?? 0 })
-    setFormOpen(true)
-  }
-
-  const handleSubmit = async () => {
-    const values = await form.validateFields()
-    setSaving(true)
-    try {
-      if (editing) {
-        if (editingScope === 'global') {
-          await updateMyGlobalMemory(String(editing.id), values.content ?? '', values.memoryType ?? 0)
-        } else {
-          await updateMyMemory(String(editing.appId), String(editing.id), values.content ?? '', values.memoryType ?? 0)
-        }
-        feedback.success(t('memoryMgmt.updateSuccess'))
-      } else {
-        await saveMyGlobalMemory(values.content ?? '', values.memoryType ?? 0)
-        feedback.success(t('memoryMgmt.createSuccess'))
-      }
-      setFormOpen(false)
-      if (selectedApp?.appId && editingScope === 'app') {
-        void loadAppMemories(selectedApp.appId, appPage)
-      }
-      if (editingScope === 'global') {
-        void loadGlobalMemories(globalPage)
-      }
-      void loadOverview()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSaving(false)
-    }
+  /** 应用记忆明细搜索：提交关键字并回到第一页（由 effect 重查） */
+  const handleAppMemSearch = (value: string) => {
+    const kw = value.trim()
+    setAppMemKeywordInput(value)
+    setAppMemKeyword(kw)
+    setAppPage(1)
   }
 
   const handleDeleteAppMemory = async (item: MyMemoryItem) => {
@@ -206,17 +161,6 @@ export function MemoryManagement() {
       feedback.success(t('myMemory.clearSuccess'))
       setAppPage(1)
       void loadAppMemories(selectedApp.appId, 1)
-      void loadOverview()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const handlePromote = async (item: MyMemoryItem) => {
-    if (!item.appId) return
-    try {
-      await promoteMemoryToGlobal(item.appId, String(item.id))
-      feedback.success(t('memoryMgmt.promoteSuccess'))
       void loadOverview()
     } catch {
       // 错误已由全局请求中间件统一提示
@@ -252,6 +196,12 @@ export function MemoryManagement() {
       : type === TYPE_PROCEDURAL
         ? t('appMemory.typeProcedural')
         : t('appMemory.typeSemantic')
+
+  // 应用记忆 Tab 关键字过滤（应用名/团队名，前端过滤）
+  const appsKw = appsKeyword.trim().toLowerCase()
+  const filteredApps = appsKw
+    ? apps.filter((a) => (a.appName ?? '').toLowerCase().includes(appsKw) || (a.teamName ?? '').toLowerCase().includes(appsKw))
+    : apps
 
   const typeColumn = {
     title: t('memoryMgmt.colType'),
@@ -325,43 +275,19 @@ export function MemoryManagement() {
     {
       title: t('memoryMgmt.colActions'),
       key: 'actions',
-      width: 240,
+      width: 110,
       fixed: 'right',
       render: (_: unknown, record: MyMemoryItem) => (
-        <Space size={0}>
-          <Tooltip title={appMemoryEnabled ? undefined : t('memoryMgmt.editDisabledAppMemory')}>
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              disabled={!appMemoryEnabled}
-              onClick={() => openEdit(record, 'app')}
-            >
-              {t('memoryMgmt.edit')}
-            </Button>
-          </Tooltip>
-          <Tooltip title={globalEnabled ? undefined : t('memoryMgmt.promoteDisabled')}>
-            <Button
-              type="link"
-              size="small"
-              icon={<GlobalOutlined />}
-              disabled={!globalEnabled}
-              onClick={() => void handlePromote(record)}
-            >
-              {t('memoryMgmt.promote')}
-            </Button>
-          </Tooltip>
-          <Popconfirm
-            title={t('myMemory.deleteConfirm')}
-            okText={t('common.ok')}
-            cancelText={t('common.cancel')}
-            onConfirm={() => void handleDeleteAppMemory(record)}
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              {t('memoryMgmt.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
+        <Popconfirm
+          title={t('myMemory.deleteConfirm')}
+          okText={t('common.ok')}
+          cancelText={t('common.cancel')}
+          onConfirm={() => void handleDeleteAppMemory(record)}
+        >
+          <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+            {t('memoryMgmt.delete')}
+          </Button>
+        </Popconfirm>
       ),
     },
   ]
@@ -373,32 +299,19 @@ export function MemoryManagement() {
     {
       title: t('memoryMgmt.colActions'),
       key: 'actions',
-      width: 170,
+      width: 110,
       fixed: 'right',
       render: (_: unknown, record: MyMemoryItem) => (
-        <Space size={0}>
-          <Tooltip title={globalEnabled ? undefined : t('memoryMgmt.globalDisabled')}>
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              disabled={!globalEnabled}
-              onClick={() => openEdit(record, 'global')}
-            >
-              {t('memoryMgmt.edit')}
-            </Button>
-          </Tooltip>
-          <Popconfirm
-            title={t('memoryMgmt.deleteConfirm')}
-            okText={t('common.ok')}
-            cancelText={t('common.cancel')}
-            onConfirm={() => void handleDeleteGlobal(record)}
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              {t('memoryMgmt.delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
+        <Popconfirm
+          title={t('memoryMgmt.deleteConfirm')}
+          okText={t('common.ok')}
+          cancelText={t('common.cancel')}
+          onConfirm={() => void handleDeleteGlobal(record)}
+        >
+          <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+            {t('memoryMgmt.delete')}
+          </Button>
+        </Popconfirm>
       ),
     },
   ]
@@ -440,7 +353,6 @@ export function MemoryManagement() {
                 </Button>
               </Popconfirm>
             </div>
-            <Text type="secondary">{t('memoryMgmt.appMemoryHint')}</Text>
             <DataTable<MyMemoryItem>
               rowKey="id"
               columns={appMemoryColumns}
@@ -454,8 +366,25 @@ export function MemoryManagement() {
                 total: appTotal,
                 onChange: setAppPage,
               }}
-              onRefresh={() => selectedApp.appId && void loadAppMemories(selectedApp.appId, appPage)}
-              refreshLoading={appMemoriesLoading}
+              toolbar={
+                <Space size={8}>
+                  <Input
+                    value={appMemKeywordInput}
+                    onChange={(e) => {
+                      setAppMemKeywordInput(e.target.value)
+                      if (!e.target.value) handleAppMemSearch('')
+                    }}
+                    onPressEnter={() => handleAppMemSearch(appMemKeywordInput)}
+                    allowClear
+                    maxLength={100}
+                    placeholder={t('memoryMgmt.searchAppMemoryPlaceholder')}
+                    style={{ width: 260 }}
+                  />
+                  <Button onClick={() => handleAppMemSearch(appMemKeywordInput)}>
+                    {t('memoryMgmt.search')}
+                  </Button>
+                </Space>
+              }
             />
           </>
         ) : (
@@ -471,13 +400,21 @@ export function MemoryManagement() {
                     <DataTable<MyMemoryAppItem>
                       rowKey="appId"
                       columns={appListColumns}
-                      dataSource={apps}
+                      dataSource={filteredApps}
                       loading={overviewLoading}
                       sticky
                       scroll={{ x: 760 }}
-                      pagination={apps.length > PAGE_SIZE ? { pageSize: PAGE_SIZE } : false}
+                      pagination={filteredApps.length > PAGE_SIZE ? { pageSize: PAGE_SIZE } : false}
                       toolbar={
-                        <Text type="secondary">{t('memoryMgmt.appsHint')}</Text>
+                        <Input
+                          value={appsKeyword}
+                          onChange={(e) => setAppsKeyword(e.target.value)}
+                          allowClear
+                          maxLength={100}
+                          prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+                          placeholder={t('memoryMgmt.searchAppsPlaceholder')}
+                          style={{ width: 260 }}
+                        />
                       }
                       onRefresh={() => void loadOverview()}
                       refreshLoading={overviewLoading}
@@ -489,92 +426,55 @@ export function MemoryManagement() {
                 label: t('memoryMgmt.tabGlobal', { count: globalMyCount }),
                 children:
                   activeTab === 'global' ? (
-                    <>
-                      <div style={{ marginBottom: spacing.md }}>
-                        {globalEnabled ? (
-                          <Text type="secondary">{t('memoryMgmt.globalHint')}</Text>
-                        ) : (
-                          <Text type="secondary">
-                            {isRoot
-                              ? t('memoryMgmt.globalDisabledRoot')
-                              : t('memoryMgmt.globalDisabled')}
-                          </Text>
-                        )}
-                      </div>
-                      <DataTable<MyMemoryItem>
-                        rowKey="id"
-                        columns={globalColumns}
-                        dataSource={globalMemories}
-                        loading={globalLoading}
-                        sticky
-                        scroll={{ x: 830 }}
-                        pagination={{
-                          current: globalPage,
-                          pageSize: PAGE_SIZE,
-                          total: globalTotal,
-                          onChange: setGlobalPage,
-                        }}
-                        toolbar={
-                          <Space size={12}>
-                            <Button type="primary" icon={<PlusOutlined />} disabled={!globalEnabled} onClick={openCreateGlobal}>
-                              {t('memoryMgmt.create')}
+                    <DataTable<MyMemoryItem>
+                      rowKey="id"
+                      columns={globalColumns}
+                      dataSource={globalMemories}
+                      loading={globalLoading}
+                      sticky
+                      scroll={{ x: 830 }}
+                      pagination={{
+                        current: globalPage,
+                        pageSize: PAGE_SIZE,
+                        total: globalTotal,
+                        onChange: setGlobalPage,
+                      }}
+                      toolbar={
+                        <Space size={12}>
+                          <Input
+                            value={globalKeywordInput}
+                            onChange={(e) => {
+                              setGlobalKeywordInput(e.target.value)
+                              if (!e.target.value) handleGlobalSearch('')
+                            }}
+                            onPressEnter={() => handleGlobalSearch(globalKeywordInput)}
+                            allowClear
+                            maxLength={100}
+                            placeholder={t('memoryMgmt.searchGlobalPlaceholder')}
+                            style={{ width: 260 }}
+                          />
+                          <Button onClick={() => handleGlobalSearch(globalKeywordInput)}>
+                            {t('memoryMgmt.search')}
+                          </Button>
+                          <Popconfirm
+                            title={t('memoryMgmt.clearConfirm')}
+                            okText={t('common.ok')}
+                            cancelText={t('common.cancel')}
+                            onConfirm={() => void handleClearGlobal()}
+                          >
+                            <Button danger disabled={globalTotal === 0}>
+                              {t('memoryMgmt.clear')}
                             </Button>
-                            <Popconfirm
-                              title={t('memoryMgmt.clearConfirm')}
-                              okText={t('common.ok')}
-                              cancelText={t('common.cancel')}
-                              onConfirm={() => void handleClearGlobal()}
-                            >
-                              <Button danger disabled={globalTotal === 0}>
-                                {t('memoryMgmt.clear')}
-                              </Button>
-                            </Popconfirm>
-                          </Space>
-                        }
-                        onRefresh={() => void loadGlobalMemories(globalPage)}
-                        refreshLoading={globalLoading}
-                      />
-                    </>
+                          </Popconfirm>
+                        </Space>
+                      }
+                    />
                   ) : null,
               },
             ]}
           />
         )}
       </div>
-
-      <Modal
-        open={formOpen}
-        title={
-          editing
-            ? editingScope === 'global'
-              ? t('memoryMgmt.editGlobalTitle')
-              : t('memoryMgmt.editAppTitle')
-            : t('memoryMgmt.createTitle')
-        }
-        onOk={() => void handleSubmit()}
-        onCancel={() => setFormOpen(false)}
-        okText={t('memoryMgmt.save')}
-        cancelText={t('common.cancel')}
-        confirmLoading={saving}
-        destroyOnHidden
-        maskClosable={false}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="content"
-            label={t('memoryMgmt.colContent')}
-            rules={[
-              { required: true, message: t('memoryMgmt.contentRequired') },
-              { max: 500, message: t('memoryMgmt.contentMax') },
-            ]}
-          >
-            <Input.TextArea placeholder={t('memoryMgmt.contentPlaceholder')} rows={4} maxLength={500} showCount />
-          </Form.Item>
-          <Form.Item name="memoryType" label={t('memoryMgmt.colType')} initialValue={0}>
-            <Select options={memoryTypeOptions(t)} style={{ width: 200 }} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </Page>
   )
 }

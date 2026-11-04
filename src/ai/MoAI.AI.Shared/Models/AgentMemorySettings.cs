@@ -32,17 +32,22 @@ public sealed class AgentMemorySettings
     /// <summary>
     /// 默认单用户记忆条数上限.
     /// </summary>
-    public const int DefaultMaxPerUser = 500;
+    public const int DefaultMaxPerUser = 100;
 
     /// <summary>
-    /// 默认检索条数.
+    /// 单用户记忆条数上限（系统层面限制，应用配置不得超过）.
     /// </summary>
-    public const int DefaultRetrievalTopK = 5;
+    public const int MaxPerUserLimit = 500;
 
     /// <summary>
-    /// 检索条数上限.
+    /// 默认检索条数（memory_search 未携带 topK 与每轮自动注入时生效）.
     /// </summary>
-    public const int MaxRetrievalTopK = 50;
+    public const int DefaultRetrievalTopK = 10;
+
+    /// <summary>
+    /// 检索条数上限（memory_search 工具 topK 可选范围 1~30）.
+    /// </summary>
+    public const int MaxRetrievalTopK = 30;
 
     /// <summary>
     /// 记忆提示词上限（追加为记忆工具描述，指导 AI 如何管理与使用记忆）.
@@ -127,17 +132,12 @@ public sealed class AgentMemorySettings
     public string Prompt { get; set; } = string.Empty;
 
     /// <summary>
-    /// 每轮注入上下文与 memory_search 的默认召回条数（1~50）.
-    /// </summary>
-    public int RetrievalTopK { get; set; } = DefaultRetrievalTopK;
-
-    /// <summary>
     /// 相似度阈值（0~1，低于该值的召回被过滤）.
     /// </summary>
     public double MinScore { get; set; } = DefaultMinScore;
 
     /// <summary>
-    /// 单用户在该应用的记忆条数上限（10~10000），超限删除最旧记忆.
+    /// 单用户在该应用的记忆条数上限（10~500，系统层面限制），超限删除最旧记忆（覆盖）.
     /// </summary>
     public int MaxPerUser { get; set; } = DefaultMaxPerUser;
 

@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ClearOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Tooltip, Typography, theme } from 'antd'
+import { Button, Input, Popconfirm, Select, Tooltip, Typography, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { useParams } from 'react-router'
 import type { HttpAgent } from '@ag-ui/client'
 import { feedback } from '@/design-system'
 import { fontSize, radius, spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { resolveStorageUrl } from '@/utils/storage'
-import { createDebugSession } from '@/api/app'
+import { createDebugSession, getAppUserConfig } from '@/api/app'
+import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage } from './ChatMessageList'
 import { chatCssVars } from './chatCssVars'
@@ -22,14 +24,18 @@ export interface AppDebugChatProps {
   appAvatar?: string
   /** 应用配置的对话开场白（已按启用状态过滤），调试会话开始时展示 */
   openingStatement?: string
+  /** 标题右侧扩展区（如「进入对话」入口），由调用方按状态拼装 */
+  headerExtra?: ReactNode
 }
 
 /**
  * 调试对话面板：进入即创建 Redis 调试会话（不落库、不计用量），
  * 页面刷新即放弃会话 id 并重新创建；后端注册表过期时自动重建一次并重试。
  */
-export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugChatProps) {
+export function AppDebugChat({ appId, appAvatar, openingStatement, headerExtra }: AppDebugChatProps) {
   const { t } = useTranslation()
+  const params = useParams()
+  const teamId = Number(params.teamId)
   const { token } = theme.useToken()
   const userInfo = useAppStore((state) => state.userInfo)
   const agentRef = useRef<HttpAgent | null>(null)
@@ -40,6 +46,10 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  // 调试对话模型切换：应用草稿配置的可选模型（经团队可用性过滤）与当前选择（null=未选择）
+  const [chatModelOptions, setChatModelOptions] = useState<TeamAvailableModelItem[]>([])
+  const [chatDefaultModelId, setChatDefaultModelId] = useState('')
+  const [selectedChatModelId, setSelectedChatModelId] = useState<string | null>(null)
 
   const userName = userInfo?.nickName || userInfo?.userName || 'U'
   const userAvatar = resolveStorageUrl(userInfo?.avatar ?? null)
@@ -75,9 +85,36 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
     setMessages((prev) => (prev.length === 0 && openingMessage ? [openingMessage] : prev))
   }, [openingMessage])
 
+  // 调试会话按最新草稿装配（后端同口径）：切换器选项 = 草稿可选模型 ∩ 团队可用 conversation 模型
+  useEffect(() => {
+    if (!appId) return
+    getAppUserConfig(appId)
+      .then((cfg) => {
+        const selectableIds = new Set(cfg.modelIds ?? [])
+        setChatDefaultModelId(cfg.defaultModelId)
+        if (selectableIds.size > 0) {
+          getTeamAvailableModels(teamId)
+            .then((models) => {
+              const options = models.filter((m) => m.modelKind === 'conversation' && selectableIds.has(String(m.aiModelId)))
+              setChatModelOptions(options)
+              setSelectedChatModelId((prev) => {
+                if (prev && options.some((m) => String(m.aiModelId) === prev)) return prev
+                return options[0] ? String(options[0].aiModelId) : null
+              })
+            })
+            .catch(() => undefined)
+        } else {
+          setChatModelOptions([])
+          setSelectedChatModelId(null)
+        }
+      })
+      .catch(() => undefined)
+  }, [appId, teamId])
+
   const runOnce = useCallback(
     async (text: string, assistantId: string, sessionId: string) => {
-      agentRef.current = createAppChatAgent(appId, sessionId)
+      // 用户所选对话模型随每轮下发（后端校验须在可选列表内，否则回退默认模型）；未切换时不携带
+      agentRef.current = createAppChatAgent(appId, sessionId, { modelId: selectedChatModelId ?? undefined })
       await runAppChat(agentRef.current, text, {
         onDelta: (buffer) => {
           if (buffer.includes(SESSION_NOT_FOUND_MARKER)) {
@@ -99,7 +136,7 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: message || t('appDebug.runError') } : m))),
       })
     },
-    [appId, t],
+    [appId, t, selectedChatModelId],
   )
 
   const send = useCallback(async () => {
@@ -167,23 +204,48 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
     <div style={{ ...chatCssVars(token), display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.sm }}>
         <div>
-          <Text strong>{t('appDebug.title')}</Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+            <Text strong>{t('appDebug.title')}</Text>
+            {headerExtra}
+          </div>
           <div>
             <Text type="secondary" style={{ fontSize: fontSize.xs }}>
               {t('appDebug.hint')}
             </Text>
           </div>
         </div>
-        <Tooltip title={t('appDebug.clear')}>
-          <Popconfirm
-            title={t('appDebug.clearConfirm')}
-            onConfirm={() => void clear()}
-            okText={t('appManage.confirm')}
-            cancelText={t('appManage.cancel')}
-          >
-            <Button type="text" size="small" icon={<ClearOutlined />} />
-          </Popconfirm>
-        </Tooltip>
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+          {chatModelOptions.length > 1 && (
+            <Tooltip title={t('appChat.chatModel')}>
+              <Select
+                size="small"
+                showSearch
+                optionFilterProp="label"
+                style={{ minWidth: 130, maxWidth: 200 }}
+                value={selectedChatModelId ?? undefined}
+                onChange={(value) => setSelectedChatModelId(value)}
+                options={chatModelOptions.map((m) => {
+                  const name = m.name || m.modelId || '-'
+                  return {
+                    value: String(m.aiModelId),
+                    label: String(m.aiModelId) === chatDefaultModelId ? `${name}（${t('appChat.modelDefaultTag')}）` : name,
+                  }
+                })}
+                disabled={sending}
+              />
+            </Tooltip>
+          )}
+          <Tooltip title={t('appDebug.clear')}>
+            <Popconfirm
+              title={t('appDebug.clearConfirm')}
+              onConfirm={() => void clear()}
+              okText={t('appManage.confirm')}
+              cancelText={t('appManage.cancel')}
+            >
+              <Button type="text" size="small" icon={<ClearOutlined />} />
+            </Popconfirm>
+          </Tooltip>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: radius.default, padding: spacing.sm }}>
@@ -204,7 +266,7 @@ export function AppDebugChat({ appId, appAvatar, openingStatement }: AppDebugCha
 
       <div style={{ display: 'flex', gap: spacing.sm, marginTop: spacing.sm }}>
         <Input.TextArea
-          autoSize={{ minRows: 1, maxRows: 6 }}
+          autoSize={{ minRows: 3, maxRows: 10 }}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onPressEnter={(e) => {

@@ -35,9 +35,15 @@ public partial class AppAgentConfigEntity : IFullAudited
     public string Prompt { get; set; } = default!;
 
     /// <summary>
-    /// 对话使用的模型ID，逻辑关联ai_model.id（uuid）.
+    /// 默认对话模型ID，逻辑关联ai_model.id（uuid）；必须属于模型可选列表.
     /// </summary>
     public Guid ModelId { get; set; }
+
+    /// <summary>
+    /// 开放给用户选择的对话模型ID列表（含默认模型），JSON uuid 字符串数组文本，如 &apos;[&quot;...&quot;]&apos;；
+    /// 空为&apos;[]&apos;，运行时视为仅默认模型.
+    /// </summary>
+    public string ModelIds { get; set; } = default!;
 
     /// <summary>
     /// 绑定的知识库ID列表，JSON 数组文本，元素为 wiki.id（整数），如 &apos;[1,2]&apos;.

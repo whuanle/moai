@@ -17,7 +17,7 @@ import {
   ThunderboltFilled,
   UserSwitchOutlined,
 } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Tag, Tooltip, theme } from 'antd'
+import { Button, Input, Popconfirm, Select, Tag, Tooltip, theme } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
@@ -43,6 +43,7 @@ import {
   type AppSessionItem,
 } from '@/api/app'
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts, type PromptItem } from '@/api/prompt'
+import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type ToolApprovalMode } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage, type ToolCallDisplay } from './chat/ChatMessageList'
 import { parseHistoryToolCalls } from './chat/historyToolCalls'
@@ -147,6 +148,10 @@ export function AppChat() {
   // 会话上下文用量（累计 token + 模型上下文窗口）：输入卡左下角环形指示，随会话分桶
   const [contextUsageBySession, setContextUsageBySession] = useState<Record<string, AppSessionContextUsage>>({})
   const [input, setInput] = useState('')
+  // 对话端模型切换：应用配置的可选模型（经团队可用性过滤，仅多模型时展示切换器）与当前选择（null=未选择）
+  const [chatModelOptions, setChatModelOptions] = useState<TeamAvailableModelItem[]>([])
+  const [chatDefaultModelId, setChatDefaultModelId] = useState('')
+  const [selectedChatModelId, setSelectedChatModelId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // 前端展示工具（ui_ 前缀）产出内容的右侧侧边栏：多项标签集合 + 当前项 + 展开状态；
   // 收起只置 open=false（标签保留，点击消息卡片可再展开），切换会话时清空
@@ -275,6 +280,25 @@ export function AppChat() {
         savedSkillsRef.current = cfg.skills
         setSelectedPromptId((prev) => (prev === 0 ? cfg.promptId : prev))
         setApprovalMode(cfg.toolApprovalMode)
+        // 模型切换器数据源：应用可选模型 ∩ 团队可用 conversation 模型（已停用/取消授权的模型不出现）；
+        // 默认选择=应用默认模型，不在可用集合时落回第一项（后端运行时同样回退默认模型）
+        const selectableIds = new Set(cfg.modelIds ?? [])
+        setChatDefaultModelId(cfg.defaultModelId)
+        if (selectableIds.size > 0) {
+          getTeamAvailableModels(teamId)
+            .then((models) => {
+              const options = models.filter((m) => m.modelKind === 'conversation' && selectableIds.has(String(m.aiModelId)))
+              setChatModelOptions(options)
+              setSelectedChatModelId((prev) => {
+                if (prev && options.some((m) => String(m.aiModelId) === prev)) return prev
+                return options[0] ? String(options[0].aiModelId) : null
+              })
+            })
+            .catch(() => undefined)
+        } else {
+          setChatModelOptions([])
+          setSelectedChatModelId(null)
+        }
         exemptRef.current = {
           names: cfg.toolApprovalExemptNames,
           prefixes: cfg.toolApprovalExemptPrefixes,
@@ -283,7 +307,7 @@ export function AppChat() {
         }
       })
       .catch(() => undefined)
-  }, [agentFeatures, appId])
+  }, [agentFeatures, appId, teamId])
 
   useEffect(() => {
     if (!teamId || !agentFeatures) return
@@ -599,7 +623,11 @@ export function AppChat() {
     setSendingBySession((prev) => ({ ...prev, [sessionId]: true }))
     setRunStates((prev) => ({ ...prev, [sessionId]: createWorkflowRunState(true) }))
 
-    const agent = createAppChatAgent(appId, sessionId, { toolApprovalMode: approvalMode })
+    // 用户所选对话模型随每轮下发（后端校验须在可选列表内，否则回退默认模型）；未切换时不携带
+    const agent = createAppChatAgent(appId, sessionId, {
+      toolApprovalMode: approvalMode,
+      modelId: selectedChatModelId ?? undefined,
+    })
     agentsRef.current.set(sessionId, agent)
 
     try {
@@ -671,7 +699,7 @@ export function AppChat() {
       void refreshContextUsage(sessionId)
       void loadSessions()
     }
-  }, [activeSending, activeSessionId, appId, approvalMode, attachments, input, isExemptTool, loadSessions, navigateSession, openingMessage, openUiPanelItem, refreshContextUsage, selectedPromptId, t, urlSessionId])
+  }, [activeSending, activeSessionId, appId, approvalMode, attachments, input, isExemptTool, loadSessions, navigateSession, openingMessage, openUiPanelItem, refreshContextUsage, selectedChatModelId, selectedPromptId, t, urlSessionId])
 
   // 选择附件：直传存储 →（文档）文本提取 → 就绪；失败标记在 chip 上由用户移除
   const handleFiles = useCallback(
@@ -980,6 +1008,27 @@ export function AppChat() {
                 {approvalMode === 'approval' ? <SafetyCertificateOutlined /> : <ThunderboltFilled />}
                 <span>{approvalMode === 'approval' ? t('appChat.modeApproval') : t('appChat.modeAuto')}</span>
               </button>
+            </Tooltip>
+          )}
+          {!isWorkflow && chatModelOptions.length > 1 && (
+            <Tooltip title={t('appChat.chatModel')}>
+              <Select
+                size="small"
+                variant="borderless"
+                showSearch
+                optionFilterProp="label"
+                style={{ minWidth: 130, maxWidth: 220 }}
+                value={selectedChatModelId ?? undefined}
+                onChange={(value) => setSelectedChatModelId(value)}
+                options={chatModelOptions.map((m) => {
+                  const name = m.name || m.modelId || '-'
+                  return {
+                    value: String(m.aiModelId),
+                    label: String(m.aiModelId) === chatDefaultModelId ? `${name}（${t('appChat.modelDefaultTag')}）` : name,
+                  }
+                })}
+                disabled={activeSending}
+              />
             </Tooltip>
           )}
         </div>

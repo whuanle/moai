@@ -62,23 +62,23 @@ if (app.Environment.IsDevelopment())
     {
         c.Path = "/openapi/{documentName}.json";
     });
-    // API 文档：/scalar 同页下拉切换 v1（内部接口）、external（外部接口）与 subsys（子系统协作接口）三份文档，
-    // 原始文档分别为 /openapi/v1.json、/openapi/external.json 与 /openapi/subsys.json（也可直接访问 /scalar/external、/scalar/subsys）
+    // API 文档：/scalar 同页下拉切换 v1（内部接口）、teamres（团队资源接口）与 subsys（子系统协作接口）三份文档，
+    // 原始文档分别为 /openapi/v1.json、/openapi/teamres.json 与 /openapi/subsys.json（也可直接访问 /scalar/teamres、/scalar/subsys）
     app.MapScalarApiReference(options =>
     {
         options.AddDocument("v1", "AI API", isDefault: true);
-        options.AddDocument("external", "AI External API");
+        options.AddDocument("teamres", "AI Team Resource API");
         options.AddDocument("subsys", "AI Subsystem API");
     });
 }
 else
 {
-    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留外部接口文档与子系统协作文档供接入方获取
+    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留团队资源接口文档与子系统协作文档供接入方获取
     // （Path 不含 {documentName} 占位符时 DocumentName 为固定绑定，NSwag 不会响应其它文档名）
     app.UseOpenApi(c =>
     {
-        c.Path = "/openapi/external.json";
-        c.DocumentName = "external";
+        c.Path = "/openapi/teamres.json";
+        c.DocumentName = "teamres";
     });
 
     app.UseOpenApi(c =>
@@ -162,11 +162,11 @@ app.Use(async (HttpContext context, RequestDelegate next) =>
 
 app.UseHttpLogging();
 
-// 知识库 MCP 服务器（/api/external/wiki/{wikiId}/mcp）：
+// 知识库 MCP 服务器（/api/teamres/wiki/{wikiId}/mcp）：
 // 接入 key 鉴权（含 wiki_mcp 范围与 wikiId 归属校验）由 ExternalAuthenticationMiddleware 在上方统一处理
 app.MapWikiMcp();
 
-// 知识图谱 MCP 服务器（/api/external/knowledge-graph/{kgId}/mcp）：鉴权（kg_mcp 范围与 kgId 归属）同由中间件统一处理；
+// 知识图谱 MCP 服务器（/api/teamres/knowledge-graph/{kgId}/mcp）：鉴权（kg_mcp 范围与 kgId 归属）同由中间件统一处理；
 // 与知识库 MCP 共享 McpServerOptions，工具按请求路径经 KnowledgeGraphMcpToolGate 分域（启动时注入一次 HttpContextAccessor）
 KnowledgeGraphMcpToolGate.Initialize(app.Services.GetRequiredService<IHttpContextAccessor>());
 app.MapKnowledgeGraphMcp();
@@ -181,10 +181,10 @@ app.MapHub<MoAIEventHub>("/hub/moai").RequireAuthorization();
 // Agent 应用对话（AG-UI SSE 端点 /api/app/{appId}/chat）
 app.MapAppAgentEndpoints();
 
-// 应用 ACP 服务器（/api/external/app/{appId}/acp，agent-to-agent）：鉴权（app_acp 范围与 appId 归属）同由中间件统一处理
+// 应用 ACP 服务器（/api/teamres/app/{appId}/acp，agent-to-agent）：鉴权（app_acp 范围与 appId 归属）同由中间件统一处理
 app.MapAppAcpEndpoint();
 
-// 应用 A2A 服务器（/api/external/app/{appId}/a2a，Google Agent2Agent JSON-RPC）：鉴权（app_a2a 范围与 appId 归属）同由中间件统一处理
+// 应用 A2A 服务器（/api/teamres/app/{appId}/a2a，Google Agent2Agent JSON-RPC）：鉴权（app_a2a 范围与 appId 归属）同由中间件统一处理
 app.MapAppA2aEndpoint();
 
 // SPA 回退：未匹配的路由返回 index.html（放在最后，以免抢在认证分发之前）

@@ -4,7 +4,6 @@ import {
   EditOutlined,
   EyeOutlined,
   FireOutlined,
-  ReloadOutlined,
   SearchOutlined,
   SendOutlined,
   UndoOutlined,
@@ -12,7 +11,7 @@ import {
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
-import { Card, Page, feedback, useNeutralColors } from '@/design-system'
+import { Card, Page, PageToolbar, feedback, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -101,9 +100,14 @@ export function PromptCenter() {
   }
 
   const applySearch = (value: string) => {
-    setSearchText(value)
-    setKeywords(value.trim() || undefined)
+    const next = value.trim() || undefined
+    if (next === keywords) {
+      // 关键字未变化时状态更新不触发 effect，手动重查一次
+      void load()
+      return
+    }
     setPage(1)
+    setKeywords(next)
   }
 
   const openDetail = async (record: PromptItem) => {
@@ -217,34 +221,32 @@ export function PromptCenter() {
   return (
     <Page>
       <Tabs activeKey={tab} onChange={handleTabChange} items={tabItems} />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing.sm,
-          flexWrap: 'wrap',
-          marginBottom: spacing.md,
-        }}
-      >
-        {tab === 'mine' && (
-          <Button type="primary" onClick={() => navigate('/prompts/new')}>
-            {t('prompt.create')}
+      <PageToolbar
+        filters={
+          <Input
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onPressEnter={() => applySearch(searchText)}
+            placeholder={t('prompt.searchPlaceholder')}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            allowClear
+            maxLength={100}
+            style={{ width: 280 }}
+          />
+        }
+        queries={
+          <Button loading={loading} onClick={() => applySearch(searchText)}>
+            {t('ds.query.search')}
           </Button>
-        )}
-        <Input.Search
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onSearch={applySearch}
-          placeholder={t('prompt.searchPlaceholder')}
-          prefix={<SearchOutlined style={{ color: 'inherit' }} />}
-          allowClear
-          maxLength={100}
-          style={{ width: 280 }}
-        />
-        <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-          {t('ds.table.refresh')}
-        </Button>
-      </div>
+        }
+        actions={
+          tab === 'mine' && (
+            <Button type="primary" onClick={() => navigate('/prompts/new')}>
+              {t('prompt.create')}
+            </Button>
+          )
+        }
+      />
       <Space size={4} wrap style={{ marginBottom: spacing.md }}>
         <Tag.CheckableTag checked={promptClassId === undefined} onChange={() => { setPromptClassId(undefined); setPage(1) }}>
           {t('prompt.categoryAll')}

@@ -333,3 +333,41 @@ ui/src/
 - **统计口径不在列表端点做**：`GET /ai/plugin/manage/list` 保持 `TeamId == 0` 系统侧过滤不变（@DYN-S70 团队隔离修复），汇总口径走独立 stats 端点，两个 Tab 列表不受影响。
 - **前端**：`PluginStatsPanel` 改为薄封装（取数 `pluginApi.getPluginStats()`，`ui/src/api/plugin.ts` 归一 `normalizePluginStats`——long 生成物可能为 string、DateOnly 统一 unknown 归一）；渲染逻辑抽出共享组件 **`PluginStatsView`**（`ui/src/pages/plugins/components/`，团队插件页统计 Tab 同构复用，见 [../teamplugin/sdd.md](../teamplugin/sdd.md) 4d）。TOP 名称渲染规则：`showTeamName && teamName` 时显示 `{name}-({teamName})`，系统侧与团队端只显示名称。分类分布标签改用后端 classifyName（未分类 key=0 兜底文案），统计页签不再依赖 `classifyApi`。
 - 证据：`local-dev/team-plugin-e2e.mjs` TP-37a/b（门禁）+ TP-38a~d（全团队口径/结构），场景 [@DYN-S125](./bdd.md#dyn-s125)、[@DYN-S126](./bdd.md#dyn-s126)。
+
+## 多工具动态插件（2026-11-04，@DYN-S127~S136）
+
+需求：一个动态插件模板对外暴露多个工具（如雅虎财经拆 quote/news/search），每个工具可独立调试且拥有独立的参数运行示例接口；与既有「接口+特性」风格一致，且 37 个存量单工具模板零改动兼容。
+
+1. **契约**：新接口 `IDynamicPluginToolsRuntime<TConfig>`（`GetConfigExampleValue` + `InitAsync` 语义与单工具动态插件完全一致）；模板类在公开实例方法上标 `[AiPluginTool(key, Title, Description, ParamsExample?)]`，签名约定 `Task<TResponse> XxxAsync(TRequest request, CancellationToken ct)`。参数示例取值：特性 `ParamsExample` 内联 > 请求类型 `static GetParamsExampleValue()`（与 `GetConfigExampleValue` 同款带注释 JSON 风格）。
+2. **发现**：`PluginTypeHelper.TryGetPluginInfo` 识别三接口（static/dynamic/multi-tools）；`DiscoverTools` 按声明顺序（MetadataToken）扫描，重复 key、签名不符、零工具均在注册期抛 `InvalidOperationException` 快速失败。`PluginInfo.Request/Response` 改可空（多工具为 null，参数/响应类型在 `Tools` 各项上），新增 `Tools`/`IsMultiTool`/`FindTool`。
+3. **执行**：`IPluginExecutor.ExecuteAsync` 增可选 `toolKey`——多工具按 key 路由到对应方法（未知 key 400 且列出可用工具）；单工具仅接受空/run。响应序列化按命中工具的 Response 类型。`RunPluginCommand.Function` 兼作动态插件 toolKey（原语义：自定义插件函数名）。
+4. **AI 侧**：`PluginAppToolProvider` 对多工具实例展开为 N 个 `AppTool`，名称 `{实例key}__{toolKey}`（与自定义插件 `FunctionToolName` 同款），各带自己的 description/paramsExample；单工具路径不变。
+5. **接口**：`GET /ai/plugin/tools?key=`（模板 key 或实例 key；单工具固定返回一个 `run` 项，前端工具选择统一形态）与 `GET /ai/plugin/tool/example?key=&toolKey=`（每工具独立示例端点，用户点名要求）；均 admin 门禁挂在 `PluginController`。
+6. **演示模板**：`text_toolkit`（slugify/word_count/reverse，无外部依赖）承载契约验证与 E2E；37 个存量模板零改动（自动包装为单工具）。
+7. 已知：多工具仅开放给动态插件（`IStaticPluginRuntime` 未扩）；多工具模板的插件级 `ParamsExample` 为 null（示例在工具上）。
+
+## 插件语义配置（2026-11-04，@DYN-S137~S144）
+
+需求：管理员可为任意插件维护「语义处理」——使用须知、结构化语义条目（库表用途/字段说明/术语/示例问答）、工具级补充说明与调用限制，随工具注入 AI 上下文或在调用前拦截；与插件类型解耦（插件后续动态化/平台托管不受影响）。
+
+1. **数据**（存量库执行 `asserts/plugin_semantic.sql`）：
+   - `plugin.usage_notes`：插件级使用须知（≤2000 字符）。
+   - `plugin_semantic_note`：语义条目 `{plugin_id, tool_key(''=插件级), title, content(markdown), mode(0=always 常驻注入,1=on_demand 按需取回), sort_order}`。
+   - `plugin_tool_meta`：工具元数据 `{plugin_id, tool_key, extra_notes, call_policy, read_only_hint, destructive_hint}`；tool_key 口径——MCP/OpenAPI=函数名、多工具动态=模板工具 key、单工具=run。
+2. **调用策略**：`PluginToolCallPolicy` JSON `{denyPatterns:[正则], action: block|confirm|audit}`（Shared 层模型，保存校验与运行时预检共用）；策略是语义引导与纵深防御，**不构成安全边界**（真正强制靠执行层，如只读数据库账号）。
+3. **API**：`GET/PUT /ai/plugin/manage/{id}/semantic`（admin；PUT 整体覆盖：条目按 id 集合差软删、元数据按 toolKey 集合差软删）；查询响应附工具清单（`QueryPluginSemanticCommandHandler` 按插件类型组装，口径与 AI 侧展开一致）。⚠️ 命令不校验 PluginId（路由回填字段，自动验证先于回填——见 cqrs skill 路由参数时序坑），缺失由 Handler 404 兜底。
+4. **注入**（`PluginAppToolProvider` 装配 → `AppToolContextProvider` 呈现）：
+   - 插件级使用须知 + 插件级 always 条目 → 系统提示「插件使用须知」段（同一插件的多工具共享一份文本，注入时按文本去重）；
+   - 工具级 `ExtraNotes` + 工具级 always 条目 → `list_tools` 该工具 description 追加「【使用说明】」（字段由 provider 填充、呈现层统一合并，单一职责）；
+   - on_demand 条目 → 系统提示「语义资料目录」（`noteId={Guid:N}：标题`）+ 仅当存在条目时注册 `plugin_note(noteId)` 元工具按需取回正文（大 schema 不撑上下文，`describe_table` 场景的通用化形态）。
+5. **拦截**：`call_tool` 分发处按 `AppTool.CallPolicy` 预检——denyPatterns 命中参数 JSON 即按 action 处置；`block`（或无审批链/非审批模式）直接拒绝并向模型返回可读信息；`confirm` 复用既有工具人工审批链（自动模式下等价 block）；`audit` 当前等价放行。
+6. **MCP 注解采集**：导入/更新/刷新 MCP 连接器读取 `ToolAnnotations`（readOnlyHint/destructiveHint）落 `plugin_tool_meta`（`McpToolHintsSyncHelper` 只回写注解位，保留管理员配置）；注解为提示不构成安全保证（MCP 规范口径）。
+7. **管理 UI**：系统插件三个页签（自定义/动态/静态）行操作新增「语义配置」抽屉（使用须知 + 工具 Collapse：补充说明/拒绝规则/动作/只读·破坏性开关 + 语义条目增删改）；保存走整体覆盖。
+8. **已知问题**：①策略命中未接 `app_security_event` 审计（后续接 `AppSecurityAuditWriter`）；②`confirm` 依赖审批模式，自动模式下等价 block；③AI 会话内注入/取回/拦截由单测覆盖，未铺桩模型端到端场景。
+
+## 团队插件语义配置（2026-11-04b，@DYN-S154~S158）
+
+1. **端点**：`GET/PUT /team/{teamId}/plugin/{pluginId}/semantic`（teamplugin 模块）。查询=团队成员；保存=团队 Owner/Admin；**仅团队自有插件**（`plugin.team_id == teamId`，否则 403）——系统授权插件的语义属全局数据影响全平台，团队侧不可改（与编辑/删除权限同口径）。
+2. **实现**：teamplugin 薄命令（路由回填 TeamId/PluginId 不校验）经 MediatR 进程内转发 aiplugin 的 `QueryPluginSemanticCommand`/`SavePluginSemanticCommand`——同一存储、同一校验、同一注入链路（`PluginAppToolProvider` 本就不区分团队/系统，团队实例早已生效），零逻辑复制。
+3. **前端**：`PluginSemanticModal` 加 `teamId` prop 分流读写端点；团队动态/自定义两面板行操作「语义配置」（`canManage && isTeamOwned`）。
+4. 运维坑：`TaskStop` 只杀 shell 不杀 dotnet 子进程，重启后端须 `taskkill` 残留 PID，否则新进程绑定 5000 失败 exit 1（且旧进程继续以旧代码服务，排查时先核对端口归属）。

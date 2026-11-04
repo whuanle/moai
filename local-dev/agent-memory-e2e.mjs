@@ -311,12 +311,31 @@ async function main() {
     const bad = await saveConfig(owner.token, APP1, models.conversationModelId)
     check('AM-01 平台未开启长期记忆时应用开启 400', bad.status === 400 && bad.text.includes('平台未开启长期记忆'), `${bad.status} ${bad.text.slice(0, 120)}`)
 
-    // 平台记忆设置：先模型与维度，再开总开关（root；统一模型为桩 embedding 模型，已授权该团队）
+    // 跨应用记忆开关校验：未开启总开关时先开跨应用记忆被拒；非法值被拒
+    const globalBeforeMaster = await saveSetting(adminToken, 'MEMORY_GLOBAL_ENABLED', 'true')
+    check('AM-01e 未开启总开关时开启跨应用记忆 400', globalBeforeMaster.status === 400 && globalBeforeMaster.text.includes('长期记忆'), `${globalBeforeMaster.status} ${globalBeforeMaster.text.slice(0, 120)}`)
+    const badGlobal = await saveSetting(adminToken, 'MEMORY_GLOBAL_ENABLED', 'yes')
+    check('AM-01f 跨应用记忆开关非法值 400', badGlobal.status === 400, `${badGlobal.status} ${badGlobal.text.slice(0, 120)}`)
+
+    // 平台记忆设置：先模型与维度，再开总开关与跨应用记忆开关（root；统一模型为桩 embedding 模型，已授权该团队）
     const setModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', models.embeddingModelId)
     const setDims = await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')
     const setEnabled = await saveSetting(adminToken, 'MEMORY_ENABLED', 'true')
     check('AM-01b 平台记忆设置保存（模型/维度/开关）', setModel.status === 200 && setDims.status === 200 && setEnabled.status === 200,
       `${setModel.status}/${setDims.status}/${setEnabled.status} ${setModel.text.slice(0, 120)}`)
+
+    // 应用跨应用共享门禁：平台长期记忆可用但 MEMORY_GLOBAL_ENABLED 未开启时，应用开启 allowGlobalMemory 被拒绝
+    const globalAppOff = await api('PUT', `/api/app/${APP1}/agent-config`, {
+      token: owner.token,
+      body: {
+        prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
+        executionSettings: { memory: { enabled: true, allowGlobalMemory: true } },
+      },
+    })
+    check('AM-01h 平台未开启跨应用记忆时应用开启全局共享 400', globalAppOff.status === 400 && globalAppOff.text.includes('平台未开启跨应用记忆'), `${globalAppOff.status} ${globalAppOff.text.slice(0, 140)}`)
+
+    const setGlobal = await saveSetting(adminToken, 'MEMORY_GLOBAL_ENABLED', 'true')
+    check('AM-01g 总开关开启后跨应用记忆开关开启 200', setGlobal.status === 200, `${setGlobal.status} ${setGlobal.text.slice(0, 120)}`)
     const badEnabled = await saveSetting(adminToken, 'MEMORY_ENABLED', 'yes')
     check('AM-01c 平台开关非法值 400', badEnabled.status === 400, `${badEnabled.status} ${badEnabled.text.slice(0, 120)}`)
     const badModel = await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', 'not-a-guid')
@@ -330,6 +349,53 @@ async function main() {
       && cfgBack.json?.executionSettings?.memory?.embeddingModelId === undefined
       && cfgBack.json?.executionSettings?.memory?.embeddingDimensions === undefined,
       cfgBack.text.slice(0, 200))
+
+    // 跨应用共享门禁放行：平台开启后应用开启 allowGlobalMemory 200
+    const globalAppOn = await api('PUT', `/api/app/${APP1}/agent-config`, {
+      token: owner.token,
+      body: {
+        prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
+        executionSettings: { memory: { enabled: true, allowGlobalMemory: true } },
+      },
+    })
+    check('AM-03b 平台开启跨应用记忆后应用开启全局共享 200', globalAppOn.status === 200
+      && (await api('GET', `/api/app/${APP1}/agent-config`, { token: owner.token })).json?.executionSettings?.memory?.allowGlobalMemory === true,
+      `${globalAppOn.status} ${globalAppOn.text.slice(0, 140)}`)
+
+    // 检索条数退役：携带 retrievalTopK 保存 200 且落库剥离（由 AI 经 memory_search 工具自行决定，默认 10 上限 30）
+    const topkSave = await api('PUT', `/api/app/${APP1}/agent-config`, {
+      token: owner.token,
+      body: {
+        prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
+        executionSettings: { memory: { enabled: true, retrievalTopK: 5 } },
+      },
+    })
+    const topkBack = await api('GET', `/api/app/${APP1}/agent-config`, { token: owner.token })
+    check('AM-03c 检索条数字段退役：携带 retrievalTopK 保存 200 且落库剥离', topkSave.status === 200
+      && topkBack.json?.executionSettings?.memory?.retrievalTopK === undefined
+      && topkBack.json?.executionSettings?.memory?.enabled === true,
+      `${topkSave.status} echo=${topkBack.text.slice(0, 200)}`)
+
+    // 单用户记忆上限：系统层面限制最多 500
+    const badMax = await api('PUT', `/api/app/${APP1}/agent-config`, {
+      token: owner.token,
+      body: {
+        prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
+        executionSettings: { memory: { enabled: true, maxPerUser: 600 } },
+      },
+    })
+    check('AM-03d 单用户记忆上限超过 500 400', badMax.status === 400 && badMax.text.includes('10~500'), `${badMax.status} ${badMax.text.slice(0, 140)}`)
+    const okMax = await api('PUT', `/api/app/${APP1}/agent-config`, {
+      token: owner.token,
+      body: {
+        prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
+        executionSettings: { memory: { enabled: true, maxPerUser: 500 } },
+      },
+    })
+    check('AM-03e 单用户记忆上限 500 保存 200', okMax.status === 200, `${okMax.status} ${okMax.text.slice(0, 140)}`)
+
+    // 恢复常规配置继续后续用例（保留 allowGlobalMemory=false 基线）
+    await saveConfig(owner.token, APP1, models.conversationModelId)
 
     check('AM-04 发布应用 200', (await api('POST', `/api/app/${APP1}/publish`, { token: owner.token })).status === 200)
 
@@ -479,6 +545,7 @@ async function main() {
     // 先清空平台全部记忆（脚本遗留的应用记忆会锁住模型重置），再重置设置键
     if (adminToken) {
       await api('DELETE', '/api/memory/all', { token: adminToken })
+      await saveSetting(adminToken, 'MEMORY_GLOBAL_ENABLED', 'false')
       await saveSetting(adminToken, 'MEMORY_ENABLED', 'false')
       await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', '')
       await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')

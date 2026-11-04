@@ -121,7 +121,7 @@ export function KnowledgeGraphDetail() {
             ) : section === 'recall' ? (
               <KnowledgeGraphRecallTest kgId={graphId} teamId={teamId} />
             ) : section === 'mcp' ? (
-              <KnowledgeGraphMcpPage kgId={graphId} />
+              <KnowledgeGraphMcpPage kgId={graphId} teamId={teamId} canManage={graph.myRole != null && graph.myRole !== 0} />
             ) : section === 'schema' ? (
               // 接入图只读模型页（托管图旧路径已重定向，正常不会进入）
               <Card styles={{ body: { padding: spacing.lg } }}>

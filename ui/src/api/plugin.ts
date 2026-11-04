@@ -358,10 +358,20 @@ async function updatePluginAvatar(pluginId: string, objectKey: string): Promise<
   await client.api.ai.plugin.manage.byId(pluginId).avatar.post({ objectKey })
 }
 
-/** 运行插件（复用 /ai/plugin/run）；动态插件传实例 key 为 key，不传 configJson（后端按存储配置初始化）.*/
-async function runPlugin(payload: { key: string; requestJson: string }): Promise<PluginRunResult | null> {
+/** 运行插件（复用 /ai/plugin/run）；动态插件传实例 key 为 key，不传 configJson（后端按存储配置初始化）；多工具插件经 toolKey 选工具.*/
+async function runPlugin(payload: {
+  key: string
+  requestJson: string
+  /** 多工具插件的目标工具 key；单工具插件不传. */
+  toolKey?: string | null
+}): Promise<PluginRunResult | null> {
   const client = getAiPluginClient()
-  const body: RunPluginCommand = { key: payload.key, requestJson: payload.requestJson }
+  const body: RunPluginCommand = {
+    key: payload.key,
+    requestJson: payload.requestJson,
+    // Kiota 将关键字 function 转义为 functionEscaped（后端字段 function：工具/函数标识）
+    ...(payload.toolKey ? { functionEscaped: payload.toolKey } : {}),
+  }
   return (await client.api.ai.plugin.run.post(body)) ?? null
 }
 
@@ -419,6 +429,149 @@ async function deleteDynamicPlugin(pluginKey: string): Promise<EmptyCommandRespo
   return (await client.api.ai.plugin.dynamic.delete(body)) ?? null
 }
 
+/** 插件工具项（工具清单/语义配置共用；单工具插件固定一个 key=run 的项）. */
+export interface PluginToolItem {
+  key: string
+  title: string
+  description: string
+  paramsExample?: string | null
+}
+
+/** 查询插件工具清单（模板 key 或实例 key；多工具插件返回全部工具）. */
+async function getPluginTools(key: string): Promise<PluginToolItem[]> {
+  const client = getAiPluginClient()
+  const res = await client.api.ai.plugin.tools.get({
+    queryParameters: { key },
+  })
+  return (res?.items ?? []).map((x) => ({
+    key: String(x.key ?? 'run'),
+    title: String(x.title ?? ''),
+    description: String(x.description ?? ''),
+    paramsExample: x.paramsExample ?? null,
+  }))
+}
+
+/** 查询单个工具的参数运行示例 JSON（每个工具独立的示例接口）. */
+async function getPluginToolExample(key: string, toolKey: string): Promise<string | null> {
+  const client = getAiPluginClient()
+  const res = await client.api.ai.plugin.tool.example.get({
+    queryParameters: { key, toolKey },
+  })
+  return res?.paramsExample ?? null
+}
+
+/** 插件语义条目项（mode: always=常驻注入 / onDemand=按需经 plugin_note 取回）. */
+export interface PluginSemanticNoteItem {
+  id?: string | null
+  toolKey: string
+  title: string
+  content: string
+  mode: 'always' | 'onDemand'
+  sortOrder: number
+}
+
+/** 插件工具元数据项（补充说明/调用策略/MCP 注解）. */
+export interface PluginToolMetaItem {
+  toolKey: string
+  extraNotes: string
+  callPolicy: string
+  readOnlyHint: boolean
+  destructiveHint: boolean
+}
+
+/** 插件语义配置（查询/保存共用形状）. */
+export interface PluginSemanticData {
+  pluginId: string
+  title: string
+  pluginName: string
+  usageNotes: string
+  notes: PluginSemanticNoteItem[]
+  toolMetas: PluginToolMetaItem[]
+  tools: PluginToolItem[]
+}
+
+/** 归一语义配置响应（系统侧与团队侧生成客户端共用；字段可空统一兜底）. */
+export function normalizePluginSemantic(
+  res: {
+    pluginId?: string | null
+    title?: string | null
+    pluginName?: string | null
+    usageNotes?: string | null
+    notes?: {
+      id?: string | null
+      toolKey?: string | null
+      title?: string | null
+      content?: string | null
+      mode?: string | null
+      sortOrder?: unknown
+    }[] | null
+    toolMetas?: {
+      toolKey?: string | null
+      extraNotes?: string | null
+      callPolicy?: string | null
+      readOnlyHint?: boolean | null
+      destructiveHint?: boolean | null
+    }[] | null
+    tools?: {
+      key?: string | null
+      title?: string | null
+      description?: string | null
+      paramsExample?: string | null
+    }[] | null
+  },
+  fallbackPluginId: string,
+): PluginSemanticData {
+  return {
+    pluginId: String(res.pluginId ?? fallbackPluginId),
+    title: String(res.title ?? ''),
+    pluginName: String(res.pluginName ?? ''),
+    usageNotes: String(res.usageNotes ?? ''),
+    notes: (res.notes ?? []).map((x) => ({
+      id: x.id ?? null,
+      toolKey: String(x.toolKey ?? ''),
+      title: String(x.title ?? ''),
+      content: String(x.content ?? ''),
+      mode: x.mode === 'onDemand' ? 'onDemand' : 'always',
+      sortOrder: Number(x.sortOrder ?? 0),
+    })),
+    toolMetas: (res.toolMetas ?? []).map((x) => ({
+      toolKey: String(x.toolKey ?? ''),
+      extraNotes: String(x.extraNotes ?? ''),
+      callPolicy: String(x.callPolicy ?? ''),
+      readOnlyHint: x.readOnlyHint === true,
+      destructiveHint: x.destructiveHint === true,
+    })),
+    tools: (res.tools ?? []).map((x) => ({
+      key: String(x.key ?? 'run'),
+      title: String(x.title ?? ''),
+      description: String(x.description ?? ''),
+      paramsExample: x.paramsExample ?? null,
+    })),
+  }
+}
+
+/** 查询插件语义配置（使用须知/语义条目/工具元数据/工具清单）. */
+async function getPluginSemantic(pluginId: string): Promise<PluginSemanticData | null> {
+  const client = getAiPluginClient()
+  const res = await client.api.ai.plugin.manage.byId(pluginId).semantic.get()
+  if (!res) return null
+  return normalizePluginSemantic(res, pluginId)
+}
+
+/** 保存插件语义配置（整体覆盖：使用须知/语义条目/工具元数据）. */
+async function savePluginSemantic(
+  pluginId: string,
+  payload: { usageNotes: string; notes: PluginSemanticNoteItem[]; toolMetas: PluginToolMetaItem[] },
+): Promise<void> {
+  const client = getAiPluginClient()
+  await client.api.ai.plugin.manage.byId(pluginId).semantic.put({
+    pluginId,
+    usageNotes: payload.usageNotes,
+    notes: payload.notes,
+    toolMetas: payload.toolMetas,
+  })
+}
+
 export const pluginApi = {
   getManagePlugins,
   getPluginStats,
@@ -428,4 +581,8 @@ export const pluginApi = {
   saveDynamicPlugin,
   deleteDynamicPlugin,
   updatePluginAvatar,
+  getPluginTools,
+  getPluginToolExample,
+  getPluginSemantic,
+  savePluginSemantic,
 }

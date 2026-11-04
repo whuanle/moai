@@ -20,7 +20,7 @@ src/notification/
     Commands/Queries/            渠道 CRUD/测试/广播（渠道多选+站内信组合，广播支持 templateId+变量）+
                                  模板 CRUD/测试（template/test：渲染预览或按渠道试发）+ 渠道/模板列表/发送记录分页（+Responses）
   MoAI.Notification.Core/        NotificationCoreModule（注册 HttpClient + 20 个发送器）
-    Services/                    NotificationService（[InjectOnScoped]，NotifyAsync=Hangfire 异步 / SendNowAsync=同步，入口经模板应用器渲染）、
+    Services/                    NotificationService（[InjectOnScoped]，NotifyAsync=Hangfire 异步 / SendNowAsync=同步 / SendToChannelAsync=单渠道试发，入口经模板应用器渲染 + 站内信托底）、NotificationInSiteMessage（站内信条目构造：HTML 降级广播 sendInSite 与信托底共用）、
                                  NotificationTemplateApplier（模板渲染管线：查模板→校验变量完整性→插值渲染→填充短信平台映射与参数顺序，渲染一次并清空 TemplateId，幂等）、
                                  NotificationTemplateRenderer（{{key}} 双花括号白名单插值 + 占位符顺序提取 + HTML 去标签降级）、
                                  NotificationChannelDispatcher（按类型路由发送器、计时、异常归一）、
@@ -40,7 +40,7 @@ src/database/.../Entities/Notification{Channel,Log,Template}Entity.cs + Database
 ui/src/pages/admin/NotificationCenter.tsx + ui/src/api/notification.ts（渠道管理/通知模板/发送记录三 Tab 管理页）
 ```
 
-调用链：业务模块 → `INotificationService.NotifyAsync`（携带 TemplateId 时先经 `NotificationTemplateApplier` 渲染）→ 解析启用渠道（可 ChannelIds 定向）→ 每渠道落 `notification_log`（Pending）→ Hangfire Enqueue → `NotificationSendJob` → `NotificationChannelDispatcher` → 渠道发送器 → 外部接口；终态回写 log（success/failed + 耗时 + 失败原因）。
+调用链：业务模块 → `INotificationService.NotifyAsync`（携带 TemplateId 时先经 `NotificationTemplateApplier` 渲染；TargetUserIds 非空时站内信托底先行，见决策 13）→ 解析启用渠道（可 ChannelIds 定向）→ 每渠道落 `notification_log`（Pending）→ Hangfire Enqueue → `NotificationSendJob` → `NotificationChannelDispatcher` → 渠道发送器 → 外部接口；终态回写 log（success/failed + 耗时 + 失败原因）。
 
 ## 数据模型
 
@@ -77,11 +77,11 @@ ui/src/pages/admin/NotificationCenter.tsx + ui/src/api/notification.ts（渠道�
 ## 关键决策
 
 1. **统一消息模型**：业务方只给 `Title/Content/Level/Source`；纯文本形态 `【MoAI】<级别图标> 标题\n正文\n来源`、Markdown 形态（企微）加粗标题+时间脚注，由 NotificationText 统一渲染，渠道差异全部封在发送器内。
-2. **异步为默认，同步按需**：`NotifyAsync` 走 Hangfire（不阻塞业务流，失败自动重试 3 次，至少一次语义——超时场景可能重复推送）；`SendNowAsync` 供渠道测试等需要即时结果的场景；测试端点不落发送记录。
+2. **异步为默认，同步按需**：`NotifyAsync` 走 Hangfire（不阻塞业务流，失败自动重试 3 次，至少一次语义——超时场景可能重复推送）；`SendNowAsync`/`SendToChannelAsync` 供渠道测试等需要即时结果的场景；渠道试发经领域服务（`SendToChannelAsync`）——已保存渠道落发送记录留痕、保存前试发（临时渠道）不落记录，不校验渠道启用状态（停用渠道可先试发再启用）。
 3. **广播目标组合**：`BroadcastNotificationCommand` 的投递目标 = 渠道（`channelIds` 指定集合 或 `allChannels` 全部启用）与「发送站内信」（`sendInSite`，经 `IMessageService.SendToAllUsersAsync` 直发全部启用用户，**无需渠道配置**）的组合，至少选其一（校验 400）；站内信选项不落 notification_log（消息本身即记录，在消息中心可查）。**站内推送不作为可创建渠道类型**（前端下拉隐藏；枚举与发送器保留以兼容历史数据与定向调用）。
 4. **发送器策略模式**：`INotificationChannelSender` 每类型一实现，Dispatcher 按 `channel.Type` 路由并把异常归一为 `(success, error, durationMs)`；新渠道扩枚举 + 加一个发送器即可。签名内聚在发送器内：飞书 `HMAC-SHA256(key="timestamp\nsecret", 空)`、钉钉 `HMAC-SHA256(key=secret, "timestamp\nsecret")` Base64 + URL 编码追加查询参数。
 5. **复用既有底座不重复造轮**：SMTP 渠道**自带完整连接配置**（host/端口/加密/账号/发件人，经 `SmtpMailTransport` MailKit 直发；2026-11-02 起不再复用系统设置——系统设置「邮箱验证」仅绑定渠道 id，系统邮件由 `SystemEmailSenderService` 按 `SMTP_ENABLED`+`SMTP_CHANNEL_ID` 定位渠道后走同一传输，见 [settings/sdd 决策 14](../settings/sdd.md)）；**收件人与邮件主题前缀已移出渠道配置**——收件人由发送时动态指定（`NotificationMessage.EmailRecipients`，广播/试发传入，缺失该渠道投递失败并留痕），邮件主题=message.Title 不再叠加固定前缀（系统验证码邮件本就动态收件人，不受影响）；站内推送渠道 = `IMessageService.SendToUsersAsync`（userIds ∪ admin/root，root 走 setting 表 `root` 键识别）；通用 webhook 支持自定义请求头与请求体模板（`{title} {content} {level} {source} {time}` 占位符），无模板发默认 JSON，2xx 即成功。
-6. **发送记录即审计**：每渠道每次投递一行，channel_name 做快照；管理页「发送记录」Tab 分页 + 按渠道/状态过滤，含创建/更新审计列、「关联用户」列（`target_user_ids` 快照回显用户名）与「收件人」列（`recipients` 快照回显实际收件人邮箱/手机号；渠道测试同步直发不落记录，定向快照随业务方 `NotifyAsync(TargetUserIds)` 落库）。
+6. **发送记录即审计**：每渠道每次投递一行，channel_name 做快照；管理页「发送记录」Tab 分页 + 按渠道/状态过滤，含创建/更新审计列、「关联用户」列（`target_user_ids` 快照回显用户名）与「收件人」列（`recipients` 快照回显实际收件人邮箱/手机号；渠道测试同步直发不落记录，定向快照随业务方 `NotifyAsync(TargetUserIds)` 落库）。`GET /notification/log/failed-count`（2026-11-04，[@NT-S35](./bdd.md#nt-s35)）返回发送失败记录数，供前端 `useMenuBadges` 60s 轮询在管理员侧边栏「通知中心」菜单显示角标；失败记录为审计留痕无已读态，角标语义是「存在失败记录」而非待办清零。
 7. **门禁**：Controller 层 `EnsureAdminAsync`（IsAdmin，403）；请求模型 `IModelValidator` 拦截格式错误；Handler 复核配置合法性（400/404），渠道类型不可变更。
 8. **i18n**：错误消息以中文原文为 key，`src/MoAI/i18n/{zh-CN,en-US}.json` 同步登记；动态错误（外部渠道返回原文）不翻译原样回显。
 9. **应用机器人渠道按绑定反查个人**（feishuAppBot/dingtalkAppBot/wecomAppBot）：IM 渠道分两族——**webhook 族「自定义机器人」**（飞书自定义机器人/钉钉自定义机器人/企微群机器人，在群聊内创建，配置 Webhook 地址+可选签名密钥，只能推群聊）与**应用族「应用机器人」**（App 凭证，按用户绑定反查可对个人推送），前端类型命名与官方术语对齐以防混淆。App 凭证在渠道配置内独立填写（**通知应用 ≠ 第三方登录应用**），
@@ -105,6 +105,7 @@ ui/src/pages/admin/NotificationCenter.tsx + ui/src/api/notification.ts（渠道�
    Endpoint 覆盖（自建网关/E2E 桩）。模板正文即外部平台提审内容的对照源（在线平台模板审核场景复制即用）。
 12. **HTML 模板分渠道投递**：`ContentType=html` 时 SMTP 渠道发 `text/html`（模板自带样式，不再叠加【MoAI】前缀与来源脚注）；其余渠道经
    `NotificationText.ContentText` 统一降级为去标签纯文本（含广播站内信路径）。
+13. **站内信托底**：`TargetUserIds` 定向到具体站内用户时，领域服务在渠道分发前同步发站内信（条目经 `NotificationInSiteMessage` 统一构造，HTML 降级与广播 sendInSite 共用规则）——站内信必达且与渠道解析/投递结果解耦（渠道未选/停用/失败/应用机器人零绑定均不影响）；空目标的全员型通知**不**自动发站内信，站内触达由调用方决定（如广播 `sendInSite`）；业务方给用户发通知只需构造 `TargetUserIds`。
 
 ## 已知问题
 
@@ -114,5 +115,5 @@ ui/src/pages/admin/NotificationCenter.tsx + ui/src/api/notification.ts（渠道�
 - 枚举成员命名需满足「camelCase(成员名) == JsonPropertyName」（钉钉成员为 `DingtalkWebhook`/`DingtalkAppBot`），否则 NSwag 契约与运行时反序列化分叉，前端 Kiota 发送的字符串会 400。
 - 应用机器人渠道投递能力依赖用户主动绑定第三方账号（个人中心），未绑定用户无法触达；钉钉跨企业（通知应用与登录应用不同企业）unionId 无法换算，相关绑定跳过。
 - `oauth_bind_account` 既有校验为「同一 OAuth 连接仅允许一个用户绑定」（按 providerId 判重，见 account 模块），多用户测试需各自一套连接；E2E 已按此规避。
-- 发送记录关联用户快照记录的是**消息声明的定向收件人**（`TargetUserIds`），非发送时反查的实际收件人；当前落记录路径（广播/风控告警）均为全员语义故为空串。SMTP/短信的实际收件人（发送时动态指定）已由 `recipients` 快照列留痕；应用机器人广播的实际收件人（按绑定反查）暂不回写记录，需要时由发送器回写（待按需）。
+- 发送记录关联用户快照记录的是**消息声明的定向收件人**（`TargetUserIds`），非发送时反查的实际收件人；定向落记录路径现有渠道试发（快照=试发人），广播/风控告警为全员语义故为空串。SMTP/短信的实际收件人已由 `recipients` 快照列留痕；应用机器人广播的实际收件人（按绑定反查）暂不回写记录，需要时由发送器回写（待按需）。
 - 短信渠道内容完全由平台侧已审核模板决定，MoAI 侧渲染文本仅用于发送记录留痕；站内用户表无手机号字段，短信无法按站内用户定向，收件人手机号只能由发送方动态指定（广播/试发由管理员填写）。

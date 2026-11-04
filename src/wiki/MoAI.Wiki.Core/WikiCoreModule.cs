@@ -30,7 +30,7 @@ public class WikiCoreModule : IModule
         context.Services.AddScoped<IWikiUsageCounter, WikiUsageCounter>();
         context.Services.AddScoped<IResourceUsageWriter, WikiUsageCounterActivatorJob>();
 
-        // 知识库 MCP 服务器（/api/external/wiki/{wikiId}/mcp）：
+        // 知识库 MCP 服务器（/api/teamres/wiki/{wikiId}/mcp）：
         // 无状态模式（不维护 Mcp-Session-Id，每个 JSON-RPC 请求独立走接入 key 鉴权），
         // 端点挂载在 MoAI 宿主 Program.cs 的 MapWikiMcp()
         context.Services.AddMcpServer()

@@ -221,6 +221,27 @@ docker pull opensandbox/execd:v1.1.0
 docker pull opensandbox/egress:v1.1.7
 ```
 
+#### 出站网络策略（egress）
+
+`deploy/opensandbox/sandbox.toml` 的 `[egress]` 段控制沙箱出站过滤的强制层：
+
+- `mode = "dns+nft"`（当前默认）：DNS 层域名过滤 + nftables 网络层强制，**CIDR/IP 规则与严格默认拒绝才会真正生效**；要求宿主机内核支持 nftables。
+- `mode = "dns"`：仅 DNS 层过滤，CIDR/IP 规则解析但不执行，**直连 IP 的出站流量完全绕过**——不要用于安全场景。
+- 版本同步注意：`sandbox.toml` 的 `[egress] image` 与 `deploy-compose.sh` 的 `OPENSANDBOX_EGRESS_IMAGE`（仅预拉用）需人工保持一致。
+
+应用侧（`execution_settings.sandbox.network`）与平台侧（系统设置 `SANDBOX_NETWORK_MODE` / `SANDBOX_INTRANET_CIDRS`）的语义见 `docs/app/sdd.md` 与 `docs/settings/sdd.md`；策略仅在沙箱创建时下发，改配置对已存活沙箱不回溯（随 TTL 自然收敛）。命令级拦截（`SANDBOX_DENIED_COMMANDS` 与应用级 commandFilter）是 MoAI 侧纵深防御的一层、非安全边界；网络策略与容器隔离才是边界。
+
+**平台强制基线（可选加固镜像）**：应用侧策略用户可配、系统设置可被 root 调整；如需「任何人都不可放开」的黑名单（如云元数据端点 `169.254.169.254`），用加固镜像叠加 `/var/egress/rules/deny.always`（优先级高于用户策略、每分钟热加载）：
+
+```bash
+docker build -t your-registry/opensandbox/egress:hardened deploy/opensandbox/egress-hardened
+# 取消 sandbox.toml [egress] image 的加固镜像注释行，重启 opensandbox-server 后仅对新建沙箱生效
+```
+
+#### 入站访问限制（部署层）
+
+Docker 运行时每个沙箱向宿主机发布 `sandbox.toml` `[docker] port_range_min/max`（默认 40000~60000）内的端口，MoAI 经宿主机回连沙箱。该端口段默认绑定所有网卡，**公网可达的宿主机必须用防火墙限制来源**（仅放行 MoAI 主机/内网网段），或仅绑定内网接口。带签名令牌的 gateway 入站模式目前仅 Kubernetes 运行时支持（`[ingress] secure_access`），Docker 运行时应用层无法管控入站。
+
 ## 6. 构建与发布镜像（Docker Hub）
 
 发布脚本：`deploy/publish.sh`（默认推送 `whuanle/moai`）。

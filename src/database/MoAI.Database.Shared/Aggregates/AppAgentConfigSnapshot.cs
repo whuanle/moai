@@ -19,9 +19,14 @@ public sealed class AppAgentConfigSnapshot
     public string Prompt { get; set; } = string.Empty;
 
     /// <summary>
-    /// 对话使用的模型ID.
+    /// 默认对话模型ID.
     /// </summary>
     public Guid ModelId { get; set; }
+
+    /// <summary>
+    /// 开放给用户选择的对话模型ID列表（含默认模型），JSON 数组文本；空视为仅默认模型（存量快照兼容）.
+    /// </summary>
+    public string ModelIds { get; set; } = "[]";
 
     /// <summary>
     /// 绑定的知识库ID列表，JSON 数组文本.
@@ -84,6 +89,7 @@ public sealed class AppAgentConfigSnapshot
         {
             Prompt = config.Prompt ?? string.Empty,
             ModelId = config.ModelId,
+            ModelIds = string.IsNullOrWhiteSpace(config.ModelIds) ? "[]" : config.ModelIds,
             WikiIds = string.IsNullOrWhiteSpace(config.WikiIds) ? "[]" : config.WikiIds,
             GraphIds = string.IsNullOrWhiteSpace(config.GraphIds) ? "[]" : config.GraphIds,
             Plugins = string.IsNullOrWhiteSpace(config.Plugins) ? "[]" : config.Plugins,
@@ -148,6 +154,7 @@ public sealed class AppAgentConfigSnapshot
             AppId = config.AppId,
             Prompt = snapshot.Prompt,
             ModelId = snapshot.ModelId,
+            ModelIds = snapshot.ModelIds ?? "[]",
             WikiIds = snapshot.WikiIds,
             GraphIds = snapshot.GraphIds,
             Plugins = snapshot.Plugins,

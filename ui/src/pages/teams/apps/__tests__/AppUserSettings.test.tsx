@@ -32,6 +32,8 @@ describe('AppUserSettings（应用设置面板）', () => {
     vi.clearAllMocks()
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 11,
+      defaultModelId: '',
+      modelIds: [],
       skills: ['sk-2'],
       defaultSkills: [
         { id: 'sk-1', key: 'docx_writer', name: '系统技能', description: '', isSystem: true, teamId: 0 },
@@ -110,6 +112,8 @@ describe('AppUserSettings（应用设置面板）', () => {
     // 当前生效专家 promptId=105 不在热度前十里（useCount=6）
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 11,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'auto',
@@ -164,6 +168,8 @@ describe('AppUserSettings（应用设置面板）', () => {
     }))
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: skills,
       toolApprovalMode: 'auto',
@@ -214,6 +220,8 @@ describe('AppUserSettings（应用设置面板）', () => {
   it('应用允许全局接入时展示全局记忆开关，切换后随保存提交 memoryGlobalMode', async () => {
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 11,
+      defaultModelId: '',
+      modelIds: [],
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'auto',

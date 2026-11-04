@@ -97,6 +97,7 @@ public class QuerySubsysAppsCommandHandler : IRequestHandler<QuerySubsysAppsComm
                 KeyPrefix = x.KeyPrefix,
                 SecretMask = x.SecretMask,
                 Name = x.Name,
+                AvatarPath = x.AvatarPath,
                 Description = x.Description,
                 Status = x.Status,
                 TeamScope = x.TeamScope,

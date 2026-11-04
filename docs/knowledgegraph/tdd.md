@@ -16,14 +16,15 @@
 - 2026-09-27 召回测试菜单（对齐知识库召回测试）：新端点 `POST {id}/recall-test`（`QueryKnowledgeGraphRecallTestCommand`，IUserIdContext + Controller SetUserContext——路由回填命令手动注入用户上下文坑的又一实例；团队成员级）复用 GraphSearchService，AI 优化问题/AI 回答语义与 wiki 召回测试一致（DisableThinking、优化失败即抛、无命中跳过回答）；前端新增「召回测试」菜单页（managed only，双栏表单 + AI 回答卡/优化前缀/命中项含实体类型与一跳邻居）。E2E kg-search-e2e 扩 KGS-S10a~f（桩补 chat 分支）**46/46**；前端 KG vitest 29/29（RecallTest 3 例 + Detail 菜单断言）、typecheck/lint 0（Canvas WIP 除外）。
 - 2026-09-27 导入疑似重复检测（向量相似度）：`KnowledgeGraphImportPayload.detectDuplicates`（默认开启，页面开关可关）→ 导入后对**新建节点**批量向量化（「名称
 描述」契约）→ ①向量库检索对照图谱已有节点（top3/行）②批内两两余弦；阈值 0.85（`DuplicateScoreThreshold`）、每图每次最多检查 100 行、检测结果随响应 `duplicateSuspects` 返回（kind=existing/inbatch + score + matchName/matchNodeId/matchIndex）；**任何失败仅记日志不影响导入**（未配置向量化模型/模型不可用静默跳过）。前端导入页加「疑似重复检测」开关（默认开）与疑似重复结果表。**E2E 数据坑（实踩）**：3-gram 桩是字符级相似度——「同名+2」余弦仅 0.815/0.810（低于 0.85），测试数据须用文本全同（同名不同类型/同描述）才能稳定过阈；产品阈值 0.85 面向语义 embedding 不改。kg-import-e2e 扩至 **20/20**（KG-S29j~m）；回归 kg-external **101/101**、kg-mcp **35/35**；前端 vitest 26/26（ImportPage 断言含疑似重复渲染）。
-- 2026-09-27 导入页下载示例 + MCP 菜单：JSON 导入表单加「下载示例 JSON」（Blob 下载可导入的完整示例，含 key/类型名引用/属性/边两种端点引用形态）；详情页新增「MCP」菜单（managed only，镜像 wiki WikiMcp：serverinfo serviceUrl + /api/external/knowledge-graph/{kgId}/mcp 地址框复制 + 四只读工具清单 + kg_mcp 鉴权提示，`KnowledgeGraphMcpPage`）；KG vitest **26/26**（Detail MCP 菜单断言 managed 有/connected 无 + ImportPage 下载示例 1 例）、typecheck/lint 0（Canvas WIP 除外）。
+- 2026-09-27 导入页下载示例 + MCP 菜单：JSON 导入表单加「下载示例 JSON」（Blob 下载可导入的完整示例，含 key/类型名引用/属性/边两种端点引用形态）；详情页新增「MCP」菜单（managed only，镜像 wiki WikiMcp：serverinfo serviceUrl + /api/teamres/knowledge-graph/{kgId}/mcp 地址框复制 + 四只读工具清单 + kg_mcp 鉴权提示，`KnowledgeGraphMcpPage`）；KG vitest **26/26**（Detail MCP 菜单断言 managed 有/connected 无 + ImportPage 下载示例 1 例）、typecheck/lint 0（Canvas WIP 除外）。
 - 2026-09-27 导入入口收敛：移除维护页「录入实例」步骤的 AI 导入按钮与 `KnowledgeGraphImportModal`（组件删除、i18n import.title/button/cancel/close 键清理 zh/en），AI 导入统一走「导入」菜单页内嵌表单；KG vitest 25/25、typecheck/lint 0（Canvas WIP 除外）。
 - 2026-09-27 导入页（新增「导入」菜单 + /import-json）：内部 `POST {id}/import-json`（仅托管图 Admin+）容错解析导入页 JSON 文本（AllowTrailingCommas+注释跳过，解析错误带行定位）→ 载荷校验（KnowledgeGraphImportPayloadValidator，与外部 /import 共用规则集；页面控件 mode/autoCreateTypes/validateOnly 覆盖 JSON 内同名字段）→ **KnowledgeGraphDataImportService 共享管线**（外部 /import handler 同步瘦身为委托，外部入口行为零变化）。前端新增导入菜单页（Tabs：AI 智能导入内嵌表单 + JSON 导入粘贴/上传/预检/逐条结果表），syncapi 重生成。E2E kg-import-e2e 扩 @KG-S29a~i **16/16**；回归 kg-external **101/101**；前端 KG 目录 vitest **25/25**（新增 ImportPage 3 例 + Detail 导入菜单断言）、typecheck/lint 0（Canvas WIP 除外）。
-- 2026-09-27 知识图谱 MCP 服务器（@KGM-S1~S7）：端点 `/api/external/knowledge-graph/{kgId}/mcp`（streamable HTTP 无状态），新增 `kg_mcp` scope 位（256，接入/团队 key 均可勾选；asserts/access_app_kg_mcp_scopes.sql 存量 `|=256`、DEFAULT 486，开发库 219 条已回填）；四只读工具 list_knowledge_graphs/get_knowledge_graph_schema/search_knowledge_graph_nodes/search_knowledge_graph_recall（召回复用 GraphSearchService，未配向量化返回 skippedHint 不报错、接入图 409）。与知识库 MCP 共享 McpServerOptions——**工具域隔离**经 `KnowledgeGraphMcpToolGate`（AddListToolsFilter/AddCallToolFilter 按请求路径过滤；SDK spike 确认 filter 为中间件形态 `next => async (RequestContext<TParams>, ct)`、工具名在 `Params.Name`；未知工具放行 SDK 原生 -32602，避免破坏 WM-S6a 基线）；中间件 GetRequiredResourceScope 对 `/mcp` 短路（MCP 端点 403 insufficient_scope 曾因落入 kg_write 分档）。E2E `kg-mcp-e2e.mjs` **35/35 零 SKIP**（本地桩 embedding）；回归 wiki-mcp 30/30、kg-external 101/101、team-apikey-scope 49/49。
+- 2026-09-27 知识图谱 MCP 服务器（@KGM-S1~S7）：端点 `/api/teamres/knowledge-graph/{kgId}/mcp`（streamable HTTP 无状态），新增 `kg_mcp` scope 位（256，接入/团队 key 均可勾选；asserts/access_app_kg_mcp_scopes.sql 存量 `|=256`、DEFAULT 486，开发库 219 条已回填）；四只读工具 list_knowledge_graphs/get_knowledge_graph_schema/search_knowledge_graph_nodes/search_knowledge_graph_recall（召回复用 GraphSearchService，未配向量化返回 skippedHint 不报错、接入图 409）。与知识库 MCP 共享 McpServerOptions——**工具域隔离**经 `KnowledgeGraphMcpToolGate`（AddListToolsFilter/AddCallToolFilter 按请求路径过滤；SDK spike 确认 filter 为中间件形态 `next => async (RequestContext<TParams>, ct)`、工具名在 `Params.Name`；未知工具放行 SDK 原生 -32602，避免破坏 WM-S6a 基线）；中间件 GetRequiredResourceScope 对 `/mcp` 短路（MCP 端点 403 insufficient_scope 曾因落入 kg_write 分档）。E2E `kg-mcp-e2e.mjs` **35/35 零 SKIP**（本地桩 embedding）；回归 wiki-mcp 30/30、kg-external 101/101、team-apikey-scope 49/49。
 - 2026-09-27 维护步骤条去重序号（前端）：antd Steps 自带圆圈序号，i18n guide.step1~3 文案里的手写 ①②③（en 为 "1. "）与之重复——去掉前缀；无引用的 guide.step4 键删除（zh/en）；Detail 测试断言同步。vitest KG 22/22。
 - 2026-09-27 维护页工具栏合并（前端）：录入实例/连接关系两步骤的筛选栏原在 DataTable 外部、刷新按钮在 DataTable 内置 toolbar 行，导致刷新独占一行——筛选栏（新建/AI 导入/类型筛选/搜索/节点 Tag）整体迁入 `DataTable.toolbar` prop 与刷新同行；vitest KG 22/22、eslint 0 error、typecheck（除 Canvas 并行 WIP）0。
 - 2026-09-27 类型弹窗美化（前端）：实体/关系类型编辑弹窗加宽 560、颜色 `Input[type=color]` 换 antd `ColorPicker`（showText/allowClear，`getValueFromEvent` 归一 hex 字符串兼容后端可空 color 契约）、名称+颜色同行、关系起止类型并排、描述 TextArea autoSize、属性行改卡片式两行布局（名称 flex 加宽/说明独占一行，底色取 `token.colorFillQuaternary`）。vitest KG 目录 22/22、改动文件 eslint 0 error（4 warning 为存量非组件导出提示）、typecheck 除并行画布 WIP 外 0。
 - 2026-09-27 维护页「模型」步骤微调（前端）：去掉「模型是什么？」说明 Alert（i18n schema.introTitle/introDesc zh/en 键删除），实体类型/关系类型区块标题加数量 Tag——关系类型维护区（新增/编辑/删除）本就在实体类型表格下方，去掉 Alert 后首屏直达。vitest KG 目录 22/22（Schema/Detail/Entities/Relations/Maintenance）、改动文件 eslint 0（typecheck 唯一错误在 KnowledgeGraphCanvas.tsx:733，系并行画布 WIP 与本改动无关）。
+- 2026-11-04 团队外部接入大改（@KX-09/@KX-11 改写去范围化语义、新增 @KX-15a~e、@KGM-S1e 改越域资源 key 403、新增 @KGM-S8）：moai-ac- 接入 key 全量读写放行（kg_read/kg_write/kg_mcp 概念删除，接入创建/更新不再收 scopes），图资源 key（moai-tr-，`/api/team-resource-key`）包围圈——本图 REST+MCP 放行、团队级 KG list 经 OnlyGraphId 只见绑定图、越 wiki/越圈 403 insufficient_scope、重置/停用/删除即时生效。E2E kg-external **101→110/110**、kg-mcp **35→36/36**；回归 teamres-key-e2e **31/31**；设计见 [../app/sdd.md](../app/sdd.md)「增量设计（2026-11-04）」与 [../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)。
 - 2026-09-27 第二批：按 key 同步闭环 + 导入预检（@KX-13~KX-14）。新增 `POST {kgId}/nodes/keys/list`（分页枚举已落 key 节点，全量比对找删除差集）、`POST {kgId}/edges/batch-delete`（按关系类型 + 端点引用删边，同三元组平行边全删，端点未命中按行失败、无边幂等计 0；建议先删边后删点）、`import` 增 `validateOnly`（只读预演：不建类型不写图库不发向量，created 行 id 恒空）；单节点 `POST /nodes`、`PUT /nodes/{id}` 增可选 `key`（创建即落 key / PUT 附 key 收养）。KG 单测 **81/81**（Moq 表达式树不能省可选参数——Setup/Callback/Returns 需同步补 `string?` 形参）；E2E 扩至 **101/101**（KX-13a~j / KX-14a~g；注意 `WhenWritingNull` 会省略 null 字段，断言可空字段用 `== null`）。
 - v2.4 设置页体验：vitest **303/303**（Settings 5/5：卡片折叠/展开、图数据库类型保存、关闭不提交连接信息）；typecheck 0、lint 0 错误（2026-09-17）。
 - v2.5 物流模板 + 默认图览：单测 **43/43**（模板断言改物流运输 + 预置属性落库断言；顺带修复脚手架重生成后测试种子缺 `Properties` 非空赋值的 7 例存量失败）；E2E `node local-dev/kg-e2e.mjs http://127.0.0.1:5310` → **PASS 61/61**（2026-09-21，5310 独立实例，KG-S2 扩为 a…h 含航段预置属性断言，图库可达零 SKIP）；前端 typecheck 0、lint 0 错误（8 warning 存量）、vitest **424/424**。
@@ -68,7 +69,7 @@
 | @KG-S26 | `KnowledgeGraphImportParserTests`（JSON/fence/snake_case/缺字段/非文本 4 例） | local-dev/kg-import-e2e.mjs#KG-S26a…g（桩模型） | 单测 PASS；**E2E PASS 7/7（2026-09-21）**；真实模型冒烟（Qwen3.5 9B 导入 txt → 6 节点 6 边入图） |
 | @KG-S29 | —（JSON 解析器为容错手写，规则由 payload validator 把关；服务管线复用外部导入既有单测覆盖；疑似重复检测复用向量栈无独立单测，E2E 覆盖） | local-dev/kg-import-e2e.mjs#KG-S29a…m | **E2E PASS 20/20（2026-09-27，含 KG-S26 7 项）** |
 
-## 外部开放接口映射（KX-*，/api/external/knowledge-graph）
+## 外部开放接口映射（KX-*，/api/teamres/knowledge-graph）
 
 > 编号沿用证据脚本 `kg-external-e2e.mjs`（不复用 KG-\*）；行为场景见 [bdd 外部接口段](./bdd.md#feature-外部开放接口应用-token-kx)。
 
@@ -82,18 +83,20 @@
 | KX-06 | 批量导入 ≤200、任一失败整批 400 且数据不变 | 同上 |
 | KX-07 | connected 图谱外部写 409 | 同上 |
 | KX-08 | 无/伪造/内部 token 401·403 | 同上 |
-| KX-09 | kg_read/kg_write 分档：只读 token/直连读写分档/跨资源组隔离/补权刷新放行 | **PASS 67/67（2026-09-26）** |
+| KX-09 | 全量凭证读写（kg 分档已退役改写）：不传/传 scopes 均 200、全量 token 与 moai-ac- 直连读写均放行、跨资源组 wiki/list 放行 | **PASS 110/110（2026-11-04）** |
 | KX-10 | 外部批量导入：autoCreateTypes + 业务 key + 名称引用 + 逐条失败报告 + by-key 查询 | **PASS 101/101（2026-09-27）** |
-| KX-11 | 幂等重导：key upsert 更新/边去重跳过/整体覆盖语义/key 收养/只读门禁 403/按 key 批删 | 同上 |
+| KX-11 | 幂等重导：key upsert 更新/边去重跳过/整体覆盖语义/key 收养/全量 key 导入与批删放行（原只读门禁 403 断言随 scope 退役改写）/按 key 批删 | 同上 |
+| KX-15 | 图资源 key（moai-tr-）包围圈：生成 moai-tr- key/本图 REST 放行/团队级 KG list 仅含绑定图/越 wiki 与越圈其它图 403 insufficient_scope | **PASS 110/110（2026-11-04）** |
 | KX-12 | connected 图谱导入 409（图库不可达时跳过） | 同上 |
 | KX-13 | 按 key 同步闭环：单节点 key 创建/收养、keys/list 分页枚举、edges/batch-delete 按引用删边（幂等/幽灵 key 行级失败/先删边后删点） | 同上 |
 | KX-14 | 导入预检 validateOnly：预测计数与逐条结果/id 恒空/不建类型不落库/同体真导入对照 | 同上 |
 
-## 知识图谱 MCP 映射（KGM-*，/api/external/knowledge-graph/{kgId}/mcp）
+## 知识图谱 MCP 映射（KGM-*，/api/teamres/knowledge-graph/{kgId}/mcp）
 
 | 场景（脚本编号） | 覆盖 | 结果 |
 |---|---|---|
-| KGM-S1 | 鉴权门禁：401/401/接入与团队 key 握手/无 kg_mcp 403/kgId 404·跨团队 404 | **PASS 35/35（2026-09-27）** |
+| KGM-S1 | 鉴权门禁：401/伪造 key 401/moai-ac- 全量 key 握手（kg_mcp 概念已退役）/wiki 资源 key 越域 403 insufficient_scope/kgId 404·跨团队 404 | **PASS 36/36（2026-11-04）** |
+| KGM-S8 | 绑定图 moai-tr- 资源 key initialize 200 | **PASS 36/36（2026-11-04）** |
 | KGM-S2 | 工具域隔离：KG 端点恰好四工具/wiki 端点仍三工具/跨域工具调用拒绝 | 同上 |
 | KGM-S3 | list_knowledge_graphs 团队托管列表 | 同上 |
 | KGM-S4 | schema：默认路径 kgId/属性定义/关系约束/跨团队拒绝 | 同上 |

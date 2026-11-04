@@ -4,7 +4,6 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
-  ReloadOutlined,
   SearchOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
@@ -697,9 +696,9 @@ export function OrgRolesPanel() {
             />
           }
           queries={
-            <Tooltip title={t('adminOrgRoles.refresh')}>
-              <Button icon={<ReloadOutlined />} aria-label={t('adminOrgRoles.refresh')} onClick={() => void load()} />
-            </Tooltip>
+            <Button icon={<SearchOutlined />} onClick={() => void load()}>
+              {t('adminOrgRoles.query')}
+            </Button>
           }
         />
         <div

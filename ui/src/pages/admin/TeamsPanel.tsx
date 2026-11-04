@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CheckCircleOutlined,
-  ReloadOutlined,
   SearchOutlined,
   StopOutlined,
   SwapOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AuditCell, DataTable, PageToolbar, feedback } from '@/design-system'
@@ -324,15 +323,6 @@ export function TeamsPanel() {
               {t('adminTeams.search')}
             </Button>
           </Space>
-        }
-        actions={
-          <Tooltip title={t('adminTeams.refresh')}>
-            <Button
-              icon={<ReloadOutlined />}
-              aria-label={t('adminTeams.refresh')}
-              onClick={() => void load(pageNo, pageSize, keyword, statusFilter)}
-            />
-          </Tooltip>
         }
       />
       <div style={{ flex: 1, minHeight: 0 }}>

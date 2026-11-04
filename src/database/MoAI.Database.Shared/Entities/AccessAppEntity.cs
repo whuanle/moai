@@ -113,14 +113,12 @@ public partial class AccessAppEntity : IFullAudited
     public string CallbackUrls { get; set; } = "[]";
 
     /// <summary>
-    /// 功能范围位标记（位或组合），限制可访问的资源范围：
-    /// 团队级（低位 1..1024）1=model(已下线) 2=wiki_read 4=wiki_write 16=wiki_mcp 32=app_chat 64=kg_read 128=kg_write 256=kg_mcp 512=app_acp 1024=app_a2a；
-    /// 系统级不再使用（=0，全量访问 /api/subsys，资源范围分档已下线）.
-    /// </summary>
-    public int Scopes { get; set; }
-
-    /// <summary>
     /// 最近使用时间（通过模型网关调用时刷新）.
     /// </summary>
     public DateTimeOffset? LastUsedTime { get; set; }
+
+    /// <summary>
+    /// 接入头像 objectKey，空串=未设置（前端拼装 /static 地址展示）.
+    /// </summary>
+    public string AvatarPath { get; set; } = string.Empty;
 }

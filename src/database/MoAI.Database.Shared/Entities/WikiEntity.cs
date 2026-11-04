@@ -93,4 +93,9 @@ public partial class WikiEntity : IFullAudited
     /// 默认工作流配置（JSON：切割/元数据生成/向量化三步预设），空串表示未配置.
     /// </summary>
     public string? DefaultWorkflowConfig { get; set; }
+
+    /// <summary>
+    /// 是否开启 MCP 接入（/api/teamres/wiki/{id}/mcp 与该库外部资源 key）；开启时自动生成/复用该库唯一的团队资源 key.
+    /// </summary>
+    public bool IsMcpEnabled { get; set; }
 }

@@ -71,9 +71,10 @@ public interface IMemoryService
     /// <param name="userId">用户 id.</param>
     /// <param name="page">页码（1 起）.</param>
     /// <param name="pageSize">页大小（1~100）.</param>
+    /// <param name="keywords">关键字（按内容不区分大小写包含匹配，空白返回全部）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>记忆条目与总数.</returns>
-    Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListMineAsync(Guid appId, long userId, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListMineAsync(Guid appId, long userId, int page, int pageSize, string? keywords = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 应用记忆统计：全部用户的记忆总条数与已有记忆的用户数（shard 聚合）.
@@ -100,16 +101,6 @@ public interface IMemoryService
     Task ExtractAndConsolidateAsync(Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 读取本人的一条应用内记忆（不存在或非本人返回 null）.
-    /// </summary>
-    /// <param name="appId">应用 id.</param>
-    /// <param name="userId">用户 id.</param>
-    /// <param name="memoryId">记忆 id.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>记忆条目或 null.</returns>
-    Task<MemoryItem?> GetAppMemoryAsync(Guid appId, long userId, Guid memoryId, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// 解析平台记忆设置（系统设置 MEMORY_*：总开关与统一向量化模型/维度）；未配置返回 Enabled=false.
     /// </summary>
     /// <param name="cancellationToken">取消令牌.</param>
@@ -117,26 +108,15 @@ public interface IMemoryService
     Task<MemoryPlatformSettings> GetPlatformSettingsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 编辑本人的一条应用内记忆：保留原 id 与创建时间，内容重嵌向量（同应用配置模型）.
-    /// </summary>
-    /// <param name="appId">应用 id.</param>
-    /// <param name="userId">用户 id.</param>
-    /// <param name="memoryId">记忆 id.</param>
-    /// <param name="content">新内容.</param>
-    /// <param name="memoryType">记忆类型.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>是否更新成功（记忆不存在或非本人返回 false）.</returns>
-    Task<bool> UpdateAppMemoryAsync(Guid appId, long userId, Guid memoryId, string content, int memoryType, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// 分页列举本人的全局记忆（按创建时间倒序）.
     /// </summary>
     /// <param name="userId">用户 id.</param>
     /// <param name="page">页码（1 起）.</param>
     /// <param name="pageSize">页大小.</param>
+    /// <param name="keywords">关键字（按内容不区分大小写包含匹配，空白返回全部）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>记忆条目与总数.</returns>
-    Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListGlobalMineAsync(long userId, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListGlobalMineAsync(long userId, int page, int pageSize, string? keywords = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 新增本人的一条全局记忆：与既有高相似记忆合并，受单用户容量约束；平台未开启时抛 BusinessException.
@@ -147,17 +127,6 @@ public interface IMemoryService
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>保存后的记忆条目.</returns>
     Task<MemoryItem> SaveGlobalAsync(long userId, string content, int memoryType, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 编辑本人的一条全局记忆：保留原 id 与创建时间，内容按全局模型重嵌向量.
-    /// </summary>
-    /// <param name="userId">用户 id.</param>
-    /// <param name="memoryId">记忆 id.</param>
-    /// <param name="content">新内容.</param>
-    /// <param name="memoryType">记忆类型.</param>
-    /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>是否更新成功.</returns>
-    Task<bool> UpdateGlobalAsync(long userId, Guid memoryId, string content, int memoryType, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 删除本人的一条全局记忆.

@@ -28,8 +28,9 @@ public class NotificationMessage
     public string Source { get; init; } = string.Empty;
 
     /// <summary>
-    /// 定向站内用户 id 集合（可选）：仅应用机器人渠道（feishuAppBot/dingtalkAppBot/wecomAppBot）生效，
-    /// 只投递这些用户中已绑定平台账号者；空表示投递全部绑定用户。渠道测试场景定向当前管理员.
+    /// 定向站内用户 id 集合（可选）：站内信托底——非空时先给这些用户发站内信（必达，与渠道无关）；
+    /// 外部渠道中仅应用机器人（feishuAppBot/dingtalkAppBot/wecomAppBot）生效，只投递这些用户中已绑定平台账号者
+    /// （未绑定者忽略），其它渠道忽略该字段；空表示投递全部绑定用户且不自动发站内信。渠道测试场景定向当前管理员.
     /// </summary>
     public IReadOnlyList<long>? TargetUserIds { get; init; }
 

@@ -148,9 +148,10 @@ describe('OrgRolesPanel', () => {
     renderPanel()
     await selectRole('销售部', '/1/2/')
     expect(await screen.findByText('张三')).toBeTruthy()
-    // 输入不匹配关键字并点击查询：列表被前端过滤，不触发后端请求
+    // 输入不匹配关键字并点击查询：列表被前端过滤，不触发后端请求（页面有两个「查询」——左栏组织树搜索在先、成员筛选在后）
     fireEvent.change(screen.getByPlaceholderText('搜索用户名/昵称'), { target: { value: 'lisi' } })
-    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    const queryButtons = screen.getAllByRole('button', { name: /查\s*询/ })
+    fireEvent.click(queryButtons[queryButtons.length - 1])
     await waitFor(() => expect(screen.queryByText('张三')).toBeNull())
     expect(getOrgRoleUsers).toHaveBeenCalledTimes(1)
     // 清空输入后恢复全量

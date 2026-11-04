@@ -64,4 +64,9 @@ public partial class KnowledgeGraphEntity : IFullAudited
     /// 知识图谱向量维度（1-2000，建 hnsw 索引的硬上限）.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
+
+    /// <summary>
+    /// 是否开启 MCP 接入（/api/teamres/knowledge-graph/{id}/mcp 与该图外部资源 key，仅托管图）；开启时自动生成/复用该图唯一的团队资源 key.
+    /// </summary>
+    public bool IsMcpEnabled { get; set; }
 }

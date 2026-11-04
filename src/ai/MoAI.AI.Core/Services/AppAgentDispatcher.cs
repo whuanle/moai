@@ -164,7 +164,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                 throw new BusinessException("会话不存在.") { StatusCode = 404 };
             }
 
-            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider)).ConfigureAwait(false);
+            return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider), ResolveRequestedModelId(serviceProvider)).ConfigureAwait(false);
         }
 
         // 无正式会话行：回落调试会话注册表（Redis）；命中且本人时按调试装配，不落库、不计数
@@ -175,7 +175,7 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }
 
-        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider)).ConfigureAwait(false);
+        return await factory.CreateAsync(debug.AppId, debug.TeamId, userId, sessionId, true, 0, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider), ResolveRequestedModelId(serviceProvider)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -213,5 +213,18 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
     {
         var httpContext = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
         return httpContext?.Request.Headers[FrontendToolContract.HeaderName].ToString() == "1";
+    }
+
+    /// <summary>
+    /// 从对话 SSE 请求头解析用户所选对话模型（X-Moai-Model-Id，值为 ai_model.id 的 uuid），
+    /// 非法值按未携带处理（装配时回退默认模型）.
+    /// </summary>
+    /// <param name="serviceProvider">请求作用域服务.</param>
+    /// <returns>所选模型 id，未携带或非法时为 null.</returns>
+    private static Guid? ResolveRequestedModelId(IServiceProvider serviceProvider)
+    {
+        var httpContext = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+        var raw = httpContext?.Request.Headers[AppAgentConstants.ModelHeaderName].ToString();
+        return Guid.TryParse(raw, out var modelId) && modelId != Guid.Empty ? modelId : null;
     }
 }

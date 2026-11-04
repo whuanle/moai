@@ -4,6 +4,8 @@
 // @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
 // @ts-ignore
+import { SemanticRequestBuilderRequestsMetadata, type SemanticRequestBuilder } from './semantic/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -14,6 +16,10 @@ export interface ManageItemRequestBuilder extends BaseRequestBuilder<ManageItemR
      * The avatar property
      */
     get avatar(): AvatarRequestBuilder;
+    /**
+     * The semantic property
+     */
+    get semantic(): SemanticRequestBuilder;
 }
 /**
  * Uri template for the request builder.
@@ -25,6 +31,9 @@ export const ManageItemRequestBuilderUriTemplate = "{+baseurl}/api/ai/plugin/man
 export const ManageItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ManageItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
+    semantic: {
+        requestsMetadata: SemanticRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

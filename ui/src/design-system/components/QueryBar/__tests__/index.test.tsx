@@ -16,9 +16,15 @@ describe('QueryBar', () => {
     fireEvent.click(screen.getByText('重置'))
     expect(onReset).toHaveBeenCalled()
   })
+  it('omits reset button when onReset is not provided', () => {
+    render(<QueryBar onSearch={() => {}} />)
+    expect(screen.queryByText('重置')).toBeNull()
+    expect(screen.getByText('查询')).toBeTruthy()
+  })
   it('renders extra actions to the right of reset', () => {
     const onExtra = vi.fn()
-    render(<QueryBar extra={<button onClick={onExtra}>extra-action</button>} />)
+    const onReset = vi.fn()
+    render(<QueryBar onReset={onReset} extra={<button onClick={onExtra}>extra-action</button>} />)
     const reset = screen.getByText('重置')
     const extraBtn = screen.getByText('extra-action')
     // extra 渲染在重置按钮右侧（DOM 顺序其后）

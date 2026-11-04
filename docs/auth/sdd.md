@@ -15,7 +15,7 @@
 | 密码存储 | PBKDF2（`src/infra/MoAI.Infra.Shared/Helpers/PBKDF2Helper.cs`）：迭代 10000、SHA256、salt 128 字节、输出 128 字节，哈希与 salt Base64 落库 |
 | Access Token | RS256；Issuer/Audience = `SystemOptions.Server`；claims 含 `sub/name/nickname/email/jti/typ` + `Properties`（角色）；有效期 Release 30 分钟、DEBUG 条件编译 7 天 |
 | Refresh Token | 仅 `sub/jti/token_type=refresh_token`；7 天；`/auth/refresh_token` 强制校验类型（[@AUTH-S10](./bdd.md#auth-s10)） |
-| 登录防爆破 | Redis `moai:login:fail:{userName}`（库默认 `moai:` 前缀），失败 INCR + 5 分钟 TTL，≥5 次 403；成功清零（[@AUTH-S3](./bdd.md#auth-s3)） |
+| 登录防爆破 | Redis `moai:login:fail:{userName}`（库默认 `moai:` 前缀），失败 INCR + 5 分钟 TTL，≥5 次 403；全部验证通过后清零（[@AUTH-S3](./bdd.md#auth-s3)） |
 | 用户态缓存 | `IUserAccountService`（`src/account`，Redis 1h）供鉴权中间件读取；OAuth 注册改写用户名后失效 |
 | 角色注入 | root = `setting.key="root"` 的 value=用户 id；否则 `IsAdmin==true` → admin。随 `Properties` 写入 token，业务判权走用户态缓存不重复解 JWT |
 
@@ -23,29 +23,32 @@
 
 ```
 src/auth/
-├── MoAI.Auth.Shared/   Commands/{Login,RegisterUser,SendEmailCode,ResetPasswordByEmail,OAuthLogin,OAuthRegister,RefreshToken}Command + Responses
-│                       Queries/{QueryRepeatedUserName,QueryAllOAuthPrivider}Command
-│                       Services/{ITokenProvider,IOAuthUserProfileService,IEmailCodeService}、Models/{OAuthBindUserProfile,EmailCodePurpose}
-├── MoAI.Auth.Core/     Handlers/ 七个 CommandHandler + Queries/ 两个 QueryHandler
-│                       Services/{OAuthUserProfileService,EmailCodeService（验证码生成/Redis 存储/模板发送）,EmailCodeTemplate（SmartFormat 白名单插值）}
-└── MoAI.Auth.Api/      AuthController（[Route("/auth")]，全部 [AllowAnonymous]，部署加 /api 前缀）
+├── MoAI.Auth.Shared/   Commands/{Login,RegisterUser,SendEmailCode,SendLoginCode,ResetPasswordByEmail,OAuthLogin,OAuthRegister,RefreshToken,EnableTwoFactor,DisableTwoFactor,SetupTwoFactor}Command + Responses
+│                       Queries/{QueryCaptchaNew,QueryChallengePolicy,QueryTwoFactorStatus,QueryRepeatedUserName,QueryAllOAuthPrivider} + Responses
+│                       Services/{ITokenProvider,IOAuthUserProfileService,IEmailCodeService,ICaptchaService,IPublicAuthRateLimiter,ILoginSecurityService,ILoginChallengeService,ITotpService}
+│                       Models/{OAuthBindUserProfile,EmailCodePurpose,LoginChallengeFactors,LoginEmailCodeMode,LoginCaptchaMode,CaptchaInfo,LoginCaptchaPurposes}
+├── MoAI.Auth.Core/     Handlers/ 各 CommandHandler + QueryHandler
+│                       Services/{OAuthUserProfileService,EmailCodeService,CaptchaService（自绘 SVG+Redis 校验）,PublicAuthRateLimiter（IP 固定窗口）,LoginSecurityService（策略判定）,LoginChallengeService,TotpService}
+└── MoAI.Auth.Api/      AuthController（[Route("/auth")]，公共端点 [AllowAnonymous]，部署加 /api 前缀）
 src/account/            TokenProvider（RS256 签发/校验）
-ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,OAuthLogin}.tsx、utils/{rsa,jwt}.ts
+ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,OAuthLogin}.tsx、pages/auth/components/{CaptchaField,useCaptcha}、utils/{rsa,jwt}.ts
 ```
 
 ## API 契约
 
 | 方法 | 路由 | 说明 |
 |---|---|---|
-| POST | `/auth/login` | userName（用户名或邮箱）+ RSA 密文密码 → token 对；需二次验证时返回 `secondFactor`（totp/emailCode）+ `loginTicket`（不颁发令牌）；强制 2FA 未绑定时令牌附 `mfa_pending` 且 `mfaPending=true` |
-| POST | `/auth/login/verify` | 匿名；loginTicket + 6 位动态码 → 验证 TOTP 或邮箱验证码后颁发 token 对（票据一次性） |
-| POST | `/auth/login_code/send` | 匿名；loginTicket → 重发登录邮箱验证码（60 秒冷却 429）；公共 email_code/send 拒绝 login 用途 |
+| POST | `/auth/login` | 一体化登录：userName + RSA 密文密码 + 按策略的 `captchaId/captchaCode`（图形验证码）与 `emailCode`（邮箱验证码）→ 全部通过直颁 token 对；已绑 TOTP 时返回 `secondFactor=totp`+`loginTicket`（不颁发令牌）；强制 2FA 未绑定时令牌附 `mfa_pending` 且 `mfaPending=true` |
+| POST | `/auth/login/verify` | 匿名；loginTicket + 6 位认证器动态码 → 仅服务 TOTP 票据（emailCode 票据已随一体化改造退役） |
+| POST | `/auth/login_code/send` | 匿名；userName（+策略命中时的 captchaId/captchaCode）→ 按用户名预发登录邮箱验证码（60 秒冷却 429 + IP 发码限流；账号不存在/未绑定邮箱静默成功防枚举） |
+| GET | `/auth/captcha/new` | 匿名；生成自绘 SVG 图形验证码 `{captchaId, image(base64), imageMimeType, expiresInSeconds}`（20 次/分钟/IP） |
+| GET | `/auth/challenge_policy` | 匿名；`purpose=login/register/forgot`（+可选 userName）→ `{captchaRequired, emailCodeRequired}` 实时判定（登录页/注册页/找回页据此显隐验证码输入框） |
 | GET | `/auth/two_factor/status` | 当前用户 2FA 状态 `{enabled, forced}` |
 | POST | `/auth/two_factor/setup` | 生成密钥（AES 加密落库未启用）→ `{secret, otpauthUri}` |
 | POST | `/auth/two_factor/enable` | 6 位动态码验证后激活绑定 |
 | POST | `/auth/two_factor/disable` | 6 位动态码验证后解绑；系统强制开启时 400 |
 | POST | `/auth/register` | 五字段（+可选 emailCode）→ 新用户 id；Handler 解密后校验强度（`(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$`）；注册验证码开启时先校验邮箱验证码 |
-| POST | `/auth/email_code/send` | purpose（register/resetPassword；login 用途仅限内部票据端点）+ email → 发送验证码；注册用途需 SMTP+开关双开启且邮箱未占用（409），找回用途需 SMTP 启用（未注册 404） |
+| POST | `/auth/email_code/send` | purpose（register/resetPassword；login 用途拒绝）+ email + 策略命中时的 captchaId/captchaCode → 发送验证码；注册用途需 SMTP+开关双开启且邮箱未占用（409），找回用途需 SMTP 启用（未注册 404）；发码成功计入 IP 发码限流与 sendct 计数（驱动 after_fail 策略） |
 | POST | `/auth/reset_password` | email + 6 位验证码 + RSA 新密码 → 重置密码；需 SMTP 邮件服务启用 |
 | POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId`；强制 2FA 未绑定时同样附 mfa_pending（OAuth 跳过 TOTP 挑战，外部认证已足够） |
 | POST | `/auth/oauth_register` | tempOAuthBindId → 一键注册并登录 |
@@ -64,7 +67,8 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,
 6. **所有内部签发 token 的处理器必须显式设 `UserType = Normal`**（Login/Refresh/OAuthLogin/OAuthRegister）：claim `typ` 缺失会解析为 None，下游 `app_agent_session.user_type` 落 0，对话日志把内部用户误标为外部用户（2026-09-20 修复 Refresh/OAuth 两类三处漏设，回归 [@AUTH-S24](./bdd.md#auth-s24)；存量数据见 `asserts/app_agent_session_user_type_fix.sql`）。
 7. **邮箱验证码**（[@AUTH-S28](./bdd.md#auth-s28) ~ [@AUTH-S32](./bdd.md#auth-s32)）：6 位数字（`RandomNumberGenerator` CSPRNG），Redis `emailcode:{purpose}:{email}`（10 分钟 TTL）+ `emailcode:cd:*`（60 秒发送冷却），错 5 次作废；邮件发送成功才落验证码，失败可立即重试。找回密码可用性**仅取决于 SMTP 邮件服务是否启用**（未启用由管理员在用户管理重置），注册验证码需 SMTP + `REGISTER_EMAIL_CODE_ENABLED` 双条件；两者经 `serverinfo` 匿名回显给前端渲染开关。邮件模板（2026-11-02 收敛到通知中心）：优先渲染系统设置绑定的通知中心模板 id（`SMTP_*_CODE_TEMPLATE_ID`，经 `INotificationTemplateRenderService` 复用 Applier 的变量校验与白名单插值，仅 `{{code}}/{{siteName}}/{{expireMinutes}}` 双花括号占位符，HTML 模板按 HTML 邮件发送）；绑定为空时按用途回退通知中心内置模板（register/login/reset_email_code，种子提供不可删除）；绑定模板缺失/渲染失败再回退，最终兜底代码内置纯文本模板（`EmailCodeTemplate` SmartFormat 白名单，未知花括号字面保留）——保证验证码链路永不因模板配置中断。auth 模块因此引用 `MoAI.Settings.Shared` 与 `MoAI.Notification.Shared`（只用接口，实现注册在对应 Core 模块）。
 8. **两步验证（TOTP）**（[@AUTH-S37](./bdd.md#auth-s37) ~ [@AUTH-S39](./bdd.md#auth-s39)）：RFC 6238 SHA1/6 位/30 秒步长（`TotpHelper`，`src/infra/MoAI.Infra.Shared/Helpers`，不引第三方包；单测对 RFC 附录 B 向量），密钥 20 字节 CSPRNG → base32 无填充，**AES 加密落库**（`user.totp_secret`，key 复用 `SystemOptions.AES` 的 `IAESProvider`）。绑定两段式：setup 落密钥不启用 → enable 验动态码激活（±1 步窗口容差）。登录挑战：密码通过后 `ILoginChallengeService` 签发一次性票据（Redis `login:ticket:{guid}`，5 分钟），`login/verify` 消费票据验证后颁发令牌；TOTP 防重放 Redis `totp:used:{userId}` 记最后命中步长（90 秒 TTL，同步长复用 400）。管理员兜底：`PUT /usermanage/user/{id}/reset_2fa`（见 [../user-management/sdd.md](../user-management/sdd.md)）。
-9. **登录二次验证策略**（[@AUTH-S36](./bdd.md#auth-s36)、[@AUTH-S40](./bdd.md#auth-s40)、[@AUTH-S42](./bdd.md#auth-s42)）：`ILoginSecurityService` 读 `LOGIN_FORCED_2FA` 与 `LOGIN_EMAIL_CODE_MODE`（off/always/after_fail，邮箱码生效需 SMTP 已启用双开关）。优先级：已绑 TOTP → TOTP 挑战；否则策略命中 → 自动发登录验证码（purpose=login；60 秒冷却内重登容忍 429 复用在途验证码）；一次登录只叠加一种二次验证。**强制 2FA**：未绑定用户照常登录但令牌携带 `mfa_pending=true` 声明，`CustomAuthorizaMiddleware` 仅放行 `/auth/two_factor/*` 与 `/account/userinfo`（403 提示绑定），绑定成功 `RemoveUserStateAsync` 后旧令牌立即恢复（中间件按用户态 `TwoFactorEnabled` 复判，不要求重新登录）；refresh/OAuth 签发时同规则重估。公共端点防滥用：`/auth/email_code/send` 显式拒绝 login 用途，登录验证码只能凭票据重发。
+9. **登录二次验证策略**（[@AUTH-S36](./bdd.md#auth-s36)、[@AUTH-S40](./bdd.md#auth-s40)、[@AUTH-S43](./bdd.md#auth-s43)）：`ILoginSecurityService` 读 `LOGIN_FORCED_2FA` 与 `LOGIN_EMAIL_CODE_MODE`（off/always/after_fail，邮箱码生效需 SMTP 已启用双开关，after_fail 触发阈值 `LOGIN_EMAIL_CODE_FAIL_THRESHOLD` 默认 3）。优先级：已绑 TOTP → TOTP 挑战（跳过邮箱验证码，policy 同口径回显 false）；否则策略命中 → 登录页预发验证码、随登录请求一体校验；一次登录只叠加 TOTP 或邮箱码一种二次验证。**强制 2FA**：未绑定用户照常登录但令牌携带 `mfa_pending=true` 声明，`CustomAuthorizaMiddleware` 仅放行 `/auth/two_factor/*` 与 `/account/userinfo`（403 提示绑定），绑定成功 `RemoveUserStateAsync` 后旧令牌立即恢复（中间件按用户态 `TwoFactorEnabled` 复判，不要求重新登录）；refresh/OAuth 签发时同规则重估。公共端点防滥用：`/auth/email_code/send` 显式拒绝 login 用途，登录验证码只能经 `/auth/login_code/send` 按用户名预发。
+10. **登录一体化 + 图形验证码分级递进（2026-11-03）**（[@AUTH-S43](./bdd.md#auth-s43) ~ [@AUTH-S53](./bdd.md#auth-s53)）：登录改为单表单一次提交——`/auth/login` 校验链为 **图形验证码（消费）→ 密码 → 邮箱验证码（消费）→ TOTP 挑战（票据）→ 颁令牌**，独立二次验证页与 emailCode 票据退役（`LoginChallengeFactors.EmailCode` 删除，遗留票据 5 分钟自然过期）。**图形验证码**（`ICaptchaService`）：4 位随机字符自绘 SVG（旋转/干扰线/噪点，零外部依赖），Redis `login:captcha:{id}` 5 分钟，错 3 次作废，答案不区分大小写；登录提交消费（一码一登录），发码端点只验不消费（答对可续用于登录）。策略 `LOGIN_CAPTCHA_MODE`（off/always/after_fail）覆盖三个公共面：login=用户名或 IP 任一有失败记录（IP 计数读风控 `ls:ipfail` 只读方法 `GetIpFailCountAsync`）；register/forgot=该 IP 本目的已发过一次验证码（Redis `login:rl:sendct_{purpose}:{ip}` 1 小时窗口，首免费再发过码）。**前端**：登录页三字段一体（图形码/邮箱码行按 `challenge_policy` 实时显隐，失败/发码后重拉策略并刷新图形码），TOTP 内联同卡片；注册/找回页复用 `CaptchaField`。**失败计数清除时机**：密码通过但邮箱验证码缺失/错误时不清零（维持 after_fail 策略），全部验证通过（或 TOTP 票据签发）才清零；图形验证码错误不计登录失败。**限流**（`IPublicAuthRateLimiter` Redis 固定窗口）：captcha/new 20 次/分/IP；发码类 10 次/10 分/IP（只计成功发出的）。
 
 ## 已知问题
 

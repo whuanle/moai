@@ -24,6 +24,11 @@ public sealed class AppAgentBuildContext
     public AppAgentConfigEntity? Config { get; init; }
 
     /// <summary>
+    /// 本轮实际对话模型 id（对话端多模型切换后与所选模型一致，未切换=默认模型）；压缩阈值按它推导.
+    /// </summary>
+    public Guid ChatModelId { get; init; }
+
+    /// <summary>
     /// 应用 id.
     /// </summary>
     public Guid AppId { get; init; }

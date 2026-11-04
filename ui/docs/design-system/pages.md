@@ -29,7 +29,7 @@
   <PageToolbar actions={<Button type="primary">新建</Button>} />
   ```
 - 约定：不要手动用 `Space` 拼装左右两段，一律交给 `PageToolbar` 的 `filters` / `actions` 两个插槽。
-- 其余独立（不依赖 `PageToolbar`）的查询表单用 `QueryBar`，用于展示「字段 + 查询/重置」的脱离工具行场景。
+- 其余独立（不依赖 `PageToolbar`）的查询表单用 `QueryBar`，用于展示「字段 + 查询/重置（重置仅在传 `onReset` 时渲染）」的脱离工具行场景；工具栏按钮取舍规则见 [frontend-conventions 第 7 条](../frontend-conventions.md#7-列表页工具栏排序与分隔)。
 
 ### 工具行与表格视觉（Dify 模式）
 

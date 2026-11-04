@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
-import { Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd'
+import { ApiOutlined, ArrowLeftOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
+import { Avatar, Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { Page } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { fontSize, spacing } from '@/design-system/theme'
+import { formatAppVersion } from '@/utils/appVersion'
 import { useShellStore } from '@/store/shell'
 import { getAppDetail } from '@/api/app'
+import { resolveStorageUrl } from '@/utils/storage'
 import { AppAccessSection } from './AppAccessSection'
 import { AppAcpSection } from './AppAcpSection'
 import { AppA2aSection } from './AppA2aSection'
@@ -41,12 +43,15 @@ const CONFIG_GROUP_SECTIONS = ['info', 'publication', 'security', 'logs', 'monit
  * - 内部应用：左侧菜单承载 配置/信息/上架管理/日志/外部渠道（外部应用另有访问点），「配置」分区为左配置栏 + 右调试对话，
  *   安全（内容脱敏）与长期记忆并入「配置」分区收缩卡片；「日志」为 Tab 容器（日志/安全事件/使用分析，原「监控」分区并入、菜单移除）；
  * - 流程应用：头部 Tab（设计/调试/配置/运行历史），「调试」为会话式对话，「配置」下挂二级菜单（信息/上架管理/安全/日志/外部渠道，功能与内部应用一致）。
- * 面包屑与「进入对话/返回列表」页级操作在此；发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）；
+ * 应用身份（头像/名称）与「返回团队」收敛在左侧菜单栏顶部（与团队工作台一致），不渲染面包屑页头；
+ * 「进入对话」移至「配置」分区调试面板标题右侧（AppDebugChat headerExtra）；发布状态/线上版本/当前版本与未发布变更收敛在菜单栏底部；
+ * 发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）；
  * 外部应用同一分区收敛为「发布」（仅团队发布卡，无上架审批与申请记录，外部应用不公开到平台）。
  */
 export function AppWorkspace() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { token } = theme.useToken()
   const params = useParams<{ teamId: string; appId: string; section?: string }>()
   const teamId = Number(params.teamId)
   const appId = params.appId ?? ''
@@ -62,6 +67,10 @@ export function AppWorkspace() {
   const isAgent = detail?.appType !== 'workflow'
   const isExternal = detail?.isExternal === true
   const isPublished = detail?.publishStatus === 1
+  const liveVersion = formatAppVersion(detail?.publishVersion)
+  const draftVersion = formatAppVersion(detail?.version)
+  // 已发布且当前版本号大于线上快照版本号：版本号已递增但尚未随发布生效
+  const versionPending = isPublished && detail?.publishVersion != null && detail.publishVersion !== detail.version
 
   const load = useCallback(async (silent = false) => {
     if (!appId) return
@@ -252,8 +261,8 @@ export function AppWorkspace() {
     // 旧 /monitor 深链：同一 Tab 容器落到「使用分析」
     if (validSection === 'monitor') return <AppLogsSection appId={appId} canManage={canManage} defaultTab="usage" />
     if (validSection === 'security') return <AppSecuritySection appId={appId} canManage={canManage} />
-    if (validSection === 'acp') return <AppAcpSection appId={appId} />
-    if (validSection === 'a2a') return <AppA2aSection appId={appId} />
+    if (validSection === 'acp') return <AppAcpSection appId={appId} teamId={teamId} canManage={canManage} />
+    if (validSection === 'a2a') return <AppA2aSection appId={appId} teamId={teamId} canManage={canManage} />
     if (validSection === 'channels') {
       return (
         <Space direction="vertical" style={{ width: '100%' }}>
@@ -310,33 +319,7 @@ export function AppWorkspace() {
   }
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to="/team">{t('team.title')}</Link> },
-        {
-          title: (
-            <Link to={isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}/apps`}>
-              {t(isExternal ? 'team.externalApps' : 'team.apps')}
-            </Link>
-          ),
-        },
-        { title: detail?.name ?? '' },
-      ]}
-      extra={
-        <Space>
-          {isPublished ? (
-            <Tag color="green">{t('appManage.published')}</Tag>
-          ) : (
-            <Tag>{t('appManage.unpublished')}</Tag>
-          )}
-          {/* 发布/重新发布入口收敛在「上架管理」分区的「团队应用」卡（版本号在发布弹窗中设置）；流程应用发布走编排设计器 */}
-          {isPublished && (
-            <Button onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)}>{t('appManage.enterChat')}</Button>
-          )}
-          <Button onClick={() => navigate(`/team/${teamId}/apps`)}>{t('appManage.backToList')}</Button>
-        </Space>
-      }
-    >
+    <Page>
       {loading ? (
         <div style={{ padding: spacing.xl, textAlign: 'center' }}>
           <Spin />
@@ -344,14 +327,64 @@ export function AppWorkspace() {
       ) : detail?.appId ? (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
           <Sider width={200} style={{ background: 'transparent' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              {/* 应用身份收敛在菜单栏顶部（与团队工作台一致）：头像/名称 + 返回团队；「进入对话」移至「配置」分区调试面板标题右侧 */}
+              <div style={{ padding: `0 ${spacing.xs}px ${spacing.sm}px` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `0 ${spacing.xs}px` }}>
+                  <Avatar shape="square" size={30} src={resolveStorageUrl(detail?.avatarPath ?? null) || undefined} alt={detail?.name ?? undefined}>
+                    {(detail?.name ?? '?').slice(0, 1).toUpperCase()}
+                  </Avatar>
+                  <Text strong ellipsis style={{ flex: 1, minWidth: 0, fontSize: 15 }}>
+                    {detail?.name ?? ''}
+                  </Text>
+                </div>
+                <Button
+                  block
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => navigate(isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}`)}
+                  style={{ justifyContent: 'flex-start', marginTop: spacing.xs }}
+                >
+                  {t('appManage.backToTeam')}
+                </Button>
+              </div>
               <Menu
                 mode="inline"
                 items={menuItems}
                 selectedKeys={[validSection]}
                 onClick={({ key }) => navigate(key === 'config' ? `/team/${teamId}/app/${appId}` : `/team/${teamId}/app/${appId}/${key}`)}
-                style={{ borderRadius: spacing.sm }}
+                style={{ flex: 1, borderRadius: spacing.sm }}
               />
-            </Sider>
+              {/* 发布状态收敛在菜单栏底部：状态/未发布变更 + 线上版本 + 当前版本（空间充裕，替代原名称下方状态 Tag） */}
+              <div style={{ marginTop: spacing.sm, padding: `${spacing.sm}px ${spacing.sm}px 0`, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+                <Space size={spacing.xs} wrap style={{ marginBottom: spacing.xs }}>
+                  {isPublished ? (
+                    <Tag color="green" style={{ marginInlineEnd: 0 }}>{t('appManage.published')}</Tag>
+                  ) : (
+                    <Tag style={{ marginInlineEnd: 0 }}>{t('appManage.unpublished')}</Tag>
+                  )}
+                  {configStatus === 0 && (
+                    <Tag color="orange" style={{ marginInlineEnd: 0 }}>{t('appManage.publicationDraftChanged')}</Tag>
+                  )}
+                </Space>
+                {isPublished && liveVersion && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+                      {t('appManage.sidebarOnlineVersion')}：v{liveVersion}
+                    </Text>
+                  </div>
+                )}
+                {draftVersion && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+                      {t('appManage.sidebarCurrentVersion')}：v{draftVersion}
+                      {versionPending ? `（${t('appManage.publicationVersionUnreleased')}）` : ''}
+                    </Text>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Sider>
           <Content>{renderSection()}</Content>
         </Layout>
       ) : (

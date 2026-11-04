@@ -7,6 +7,7 @@ import { spacing } from '@/design-system/theme'
 export interface QueryBarProps {
   form?: FormInstance
   onSearch?: (values: Record<string, unknown>) => void
+  /** 提供时才渲染「重置」按钮；筛选简单（如仅一个搜索框）的页面可不传以省略重置 */
   onReset?: () => void
   loading?: boolean
   children?: ReactNode
@@ -45,14 +46,16 @@ export function QueryBar({ form, onSearch, onReset, loading, children, extra }: 
               >
                 {t('ds.query.search')}
               </Button>
-              <Button
-                onClick={() => {
-                  activeForm.resetFields()
-                  onReset?.()
-                }}
-              >
-                {t('ds.query.reset')}
-              </Button>
+              {onReset && (
+                <Button
+                  onClick={() => {
+                    activeForm.resetFields()
+                    onReset()
+                  }}
+                >
+                  {t('ds.query.reset')}
+                </Button>
+              )}
             </Space>
             {extra ? (
               <>

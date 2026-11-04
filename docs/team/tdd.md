@@ -19,6 +19,11 @@
 
 - 前端：`ui/src/pages/teams/__tests__/TeamManage.test.tsx` → **PASS 15/15**（2026-09-17）；团队详情页面包屑改为「主页 / 团队头像+团队名称」，移除「团队信息」菜单与信息卡片，默认分区与越权/非法子路由回落分区均改为「内部应用」。
 
+### 2026-11-03 团队侧边栏头部收敛（@TM-S17）
+
+- 前端：`ui/src/pages/teams/TeamManage.tsx` 移除 `Page` 面包屑（「主页 / 团队名」），右侧内容区不再预留面包屑空白高度；侧边栏头部改为「团队头像(30px)+团队名称（ellipsis）+ 返回主页」按钮（→ /apps），其下再渲染分区菜单；i18n 新增 `team.backHome`（zh-CN/en-US）。测试断言同步（无「主页」面包屑、有「返回主页」）→ **PASS 18/18**（2026-11-03）；`npm run typecheck` 0 错误、`npm run lint` 0 error（无新增警告）。
+- 前端：菜单分组隔离——原 13 项平铺菜单拆为「成员可用分区」（apps/prompts/skills/knowledge/knowledgegraph）与「Owner/Admin 管理分区」（externalApps 及以下）两段，Owner/Admin 视图在两段之间渲染 antd Menu divider + `type:'group'` 分组标题「管理」（i18n `team.menuGroupManage`），普通成员仍平铺使用分区不渲染分组；新增用例断言 Owner 有且仅有一个「管理」分组标题、成员无分组标题 → **PASS 19/19**（2026-11-03）。
+
 ### 2026-09-18 团队不可解散（@TM-S12/S13/S14）
 
 - 需求变更：团队不可被解散，仅平台管理员可在「团队」界面禁用/启用团队。后端移除 `DissolveTeamCommand`/Handler 与 `DELETE /api/team/{id}` 端点；前端移除团队设置页「解散」按钮、`api/team.ts` 的 `dissolveTeam` 及相关 i18n key，Kiota 客户端已 `npm run syncapi` 重新生成。

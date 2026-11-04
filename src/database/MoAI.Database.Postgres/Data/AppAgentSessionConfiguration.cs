@@ -56,6 +56,9 @@ internal partial class AppAgentSessionConfiguration : IEntityTypeConfiguration<A
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除，0=未删除（legacy bigint 约定）")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.LastModelId)
+            .HasComment("最近一轮对话实际使用的模型ID（ai_model.id），用户在对话端切换模型后随轮更新；空=从未对话")
+            .HasColumnName("last_model_id");
         entity.Property(e => e.LastMessageTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("最后一条消息时间，会话列表按此倒序")

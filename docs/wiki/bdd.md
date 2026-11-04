@@ -107,7 +107,7 @@ Scenario: 详情页新增 MCP 菜单并展示接入地址
   Given 团队成员打开知识库详情页
   Then 左侧菜单包含「MCP」入口
   When 进入 MCP 页
-  Then 页面展示该知识库的 MCP 服务器地址（服务对外地址 + /api/external/wiki/{wikiId}/mcp）且可一键复制
+  Then 页面展示该知识库的 MCP 服务器地址（服务对外地址 + /api/teamres/wiki/{wikiId}/mcp）且可一键复制
   And 页面提示鉴权方式（携带勾选「知识库 MCP」范围的接入 key）
 ```
 
@@ -362,7 +362,7 @@ Scenario: 多选生成策略
   And 任务仅按所选策略生成对应元数据类型，未勾选策略不生成
 ```
 
-> 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-10），不复用 WK-\*。授权模型：应用 token 即团队级授权，端点清单见 [../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)。
+> 外部开放接口（`/api/teamres/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-12），不复用 WK-\*。授权模型：moai-ac- 接入 key/token 即团队级授权（scope 分档已退役），moai-tr- 库资源 key 受包围圈约束，端点清单见 [../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)。
 
 ## Feature: 召回测试（文档范围过滤 + AI 优化问题 + AI 生成回答）
 
@@ -463,15 +463,10 @@ Scenario: 外部接口仅接受应用 token
   Then 分别返回未认证/未认证/未认证或禁止
 
 @WX-07 @auto:e2e
-Scenario: 知识库读/写功能范围
-  When 以未勾选 wiki_read 的接入 key token 查询知识库或文档
-  Then 返回禁止
-  When 以勾选 wiki_read 未勾选 wiki_write 的 token 上传文档
-  Then 返回禁止
-  When 以勾选读写的 token 三段式上传
-  Then 成功入库
-  When 以旧应用接入 key 的 token 读写
-  Then 按接入勾选范围放行（存量接入默认读写全量）
+Scenario: 知识库读/写功能范围（已退役改写：无范围分档）
+  When 以 moai-ac- 接入 key token 或 key 直连查询、上传知识库文档
+  Then 读写均放行（wiki_read/wiki_write 分档随 scope 体系退役，团队归属即授权）
+  And 接入创建/更新不再接收范围字段（传入被忽略）
 
 @WX-08 @auto:e2e
 Scenario: 原文件下载
@@ -489,8 +484,8 @@ Scenario: 向量召回检索
   Then 结果条数与范围受参数约束
   When 提交非法参数（条数越界或空查询）
   Then 返回参数错误
-  When 以只读范围 key 召回或以只写范围 key 召回
-  Then 分别放行与禁止（召回属读档）
+  When 以 moai-ac- 全量 key 直连召回与写操作
+  Then 读写均放行（原只读/只写 key 分档断言随 scope 退役改写为全量正向）
 
 @WX-10 @auto:e2e
 Scenario: 切片元数据生成
@@ -503,6 +498,17 @@ Scenario: 切片元数据生成
   Then 保留已有元数据并累计
   When 对未切割文档生成元数据或选用非对话模型或不存在的模型
   Then 分别返回参数错误、参数错误与不存在
+
+@WX-12 @auto:e2e
+Scenario: 库资源 key（moai-tr-）包围圈
+  When 团队管理员为本库生成资源 key
+  Then 返回 moai-tr- 前缀 key（get-or-create 幂等）
+  When 以资源 key 直连本库 REST 读接口与写接口
+  Then 放行
+  But 访问同团队其它知识库返回 403 insufficient_scope
+  And 团队级知识库列表返回 200 且仅含绑定库（越 KG 端点 403）
+  When 管理端重置资源 key
+  Then 行 id 不变，旧 key 直连下一请求 401
 ```
 
 ## Feature: 外部源（飞书文档 / 网页爬虫）
@@ -651,12 +657,17 @@ Scenario: 连续失败时提前熔断
 Scenario: MCP 端点鉴权门禁
   When 未携带凭证或伪造 key 连接 MCP 端点
   Then 返回未认证
-  When 以勾选 wiki_mcp 的应用接入 key 连接
+  When 以 moai-ac- 应用接入 key（范围概念已退役）或本库 moai-tr- 资源 key 连接
   Then MCP 初始化成功并返回服务器信息（两种 key 均可直连，Bearer 与 x-api-key 头均支持）
-  When 以未勾选 wiki_mcp 范围的凭证连接
-  Then 返回禁止（范围不足）
+  When 以其它库的 moai-tr- 资源 key 连接
+  Then 返回 403 insufficient_scope（资源 key 包围圈）
   When 连接的知识库 id 不存在或属于其他团队
   Then 返回不存在（不泄露存在性）
+
+@WM-S8 @auto:e2e
+Scenario: 绑定库资源 key 访问本库 MCP
+  When 以本库的 moai-tr- 资源 key 对本库 MCP 端点 initialize
+  Then 握手成功并返回服务器信息
 
 @WM-S2 @auto:e2e
 Scenario: 工具清单仅含三个只读工具

@@ -67,6 +67,14 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
         entity.Property(e => e.IsExternal)
             .HasComment("是否外部应用")
             .HasColumnName("is_external");
+        entity.Property(e => e.IsAcpEnabled)
+            .HasDefaultValue(false)
+            .HasComment("是否开启 ACP 接入（开启时自动生成/复用该应用的团队资源 key，ACP/A2A 共用）")
+            .HasColumnName("is_acp_enabled");
+        entity.Property(e => e.IsA2aEnabled)
+            .HasDefaultValue(false)
+            .HasComment("是否开启 A2A 接入（开启时自动生成/复用该应用的团队资源 key，与 ACP 共用）")
+            .HasColumnName("is_a2a_enabled");
         entity.Property(e => e.IsPublic)
             .HasComment("公开到团队外使用")
             .HasColumnName("is_public");
@@ -102,6 +110,10 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
             .HasDefaultValueSql("0")
             .HasComment("累计使用次数（会话创建计数，删除会话不减少），由 Redis 计数器每分钟批量累加")
             .HasColumnName("use_count");
+        entity.Property(e => e.MessageCount)
+            .HasDefaultValueSql("0")
+            .HasComment("累计消息条数（会话落库的物理消息行数增量累计，删除会话不减少），由 Redis 计数器每分钟批量累加")
+            .HasColumnName("message_count");
 
         OnConfigurePartial(entity);
     }

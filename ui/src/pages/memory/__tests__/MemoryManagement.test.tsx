@@ -2,14 +2,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryManagement } from '../MemoryManagement'
 import {
+  clearMyGlobalMemory,
   deleteMyGlobalMemory,
+  deleteMyMemory,
   getMyGlobalMemories,
   getMyMemories,
   getMyMemoryOverview,
-  promoteMemoryToGlobal,
-  saveMyGlobalMemory,
-  updateMyGlobalMemory,
-  updateMyMemory,
 } from '@/api/memory'
 
 vi.mock('@/api/memory', () => ({
@@ -20,10 +18,6 @@ vi.mock('@/api/memory', () => ({
   getMyGlobalMemories: vi.fn().mockResolvedValue({ items: [], total: 0, globalEnabled: false }),
   getMyMemories: vi.fn().mockResolvedValue({ items: [], total: 0, memoryEnabled: true }),
   getMyMemoryOverview: vi.fn().mockResolvedValue({ apps: [], global: { enabled: false, myCount: 0 } }),
-  promoteMemoryToGlobal: vi.fn().mockResolvedValue({ id: 'g1' }),
-  saveMyGlobalMemory: vi.fn().mockResolvedValue({ id: 'g2' }),
-  updateMyGlobalMemory: vi.fn().mockResolvedValue(undefined),
-  updateMyMemory: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/store/app', () => ({
@@ -69,31 +63,65 @@ describe('MemoryManagement', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.view' }))
     expect(await screen.findByText('用户偏好简洁回复')).toBeInTheDocument()
-    expect(vi.mocked(getMyMemories)).toHaveBeenCalledWith('app-1', 1, 20)
+    expect(vi.mocked(getMyMemories)).toHaveBeenCalledWith('app-1', 1, 20, undefined)
   })
 
-  it('应用记忆明细：编辑调用更新接口', async () => {
+  it('应用记忆 tab：工具栏关键字前端过滤应用列表', async () => {
+    mockOverview(
+      [
+        { appId: 'app-1', appName: '客服机器人', teamName: '团队A', memoryCount: 2, lastActiveTime: '2026-01-01T00:00:00Z' },
+        { appId: 'app-2', appName: '翻译助手', teamName: '团队B', memoryCount: 1, lastActiveTime: '2026-01-02T00:00:00Z' },
+      ],
+      { enabled: false, myCount: 0 },
+    )
+
+    render(<MemoryManagement />)
+    expect(await screen.findByText('客服机器人')).toBeInTheDocument()
+    expect(screen.getByText('翻译助手')).toBeInTheDocument()
+
+    // 原提示文案已移除，工具栏为搜索框
+    expect(screen.queryByText('memoryMgmt.appsHint')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText('memoryMgmt.searchAppsPlaceholder'), { target: { value: '客服' } })
+
+    expect(screen.getByText('客服机器人')).toBeInTheDocument()
+    expect(screen.queryByText('翻译助手')).not.toBeInTheDocument()
+    // 按团队名也可命中
+    fireEvent.change(screen.getByPlaceholderText('memoryMgmt.searchAppsPlaceholder'), { target: { value: '团队b' } })
+    expect(screen.getByText('翻译助手')).toBeInTheDocument()
+    expect(screen.queryByText('客服机器人')).not.toBeInTheDocument()
+  })
+
+  it('应用记忆明细：仅可删除（走删除接口），无编辑/存为全局入口', async () => {
     render(<MemoryManagement />)
     fireEvent.click(await screen.findByRole('button', { name: 'memoryMgmt.view' }))
+    expect(await screen.findByText('用户偏好简洁回复')).toBeInTheDocument()
 
-    fireEvent.click(await screen.findByRole('button', { name: /memoryMgmt\.edit/ }))
-    const textarea = await screen.findByRole('textbox')
-    fireEvent.change(textarea, { target: { value: '用户偏好极简回复' } })
-    fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.save' }))
+    // 人工维护入口已全部下线：不存在编辑/新建/存为全局按钮
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.edit/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.promote/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.create/ })).not.toBeInTheDocument()
 
+    // 删除走删除接口（Popconfirm 确认）
+    fireEvent.click(screen.getByRole('button', { name: /memoryMgmt\.delete/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'common.ok' }))
     await waitFor(() => {
-      expect(updateMyMemory).toHaveBeenCalledWith('app-1', 'm1', '用户偏好极简回复', 0)
+      expect(deleteMyMemory).toHaveBeenCalledWith('app-1', 'm1')
     })
   })
 
-  it('全局记忆未开启：展示引导提示且不可新建', async () => {
+  it('全局记忆未开启：无解说文案，仅空表格且无新建入口', async () => {
     render(<MemoryManagement />)
     fireEvent.click(await screen.findByRole('tab', { name: 'memoryMgmt.tabGlobal:0' }))
-    expect(await screen.findByText('memoryMgmt.globalDisabled')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /memoryMgmt\.create/ })).toBeDisabled()
+    // 页签内容渲染完成（工具栏搜索框在）
+    expect(await screen.findByPlaceholderText('memoryMgmt.searchGlobalPlaceholder')).toBeInTheDocument()
+    // 不再有整段解说式提示文案
+    expect(screen.queryByText('memoryMgmt.globalDisabled')).not.toBeInTheDocument()
+    expect(screen.queryByText('memoryMgmt.globalDisabledRoot')).not.toBeInTheDocument()
+    expect(screen.queryByText('memoryMgmt.globalHint')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.create/ })).not.toBeInTheDocument()
   })
 
-  it('全局记忆开启：新建与删除走全局接口', async () => {
+  it('全局记忆开启：仅可删除（走全局删除接口），无新建/编辑入口', async () => {
     mockOverview([], { enabled: true, myCount: 1 })
     vi.mocked(getMyGlobalMemories).mockResolvedValue({
       items: [
@@ -107,44 +135,58 @@ describe('MemoryManagement', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'memoryMgmt.tabGlobal:1' }))
     expect(await screen.findByText('全局事实：用户在杭州办公')).toBeInTheDocument()
 
-    // 新建全局记忆（按钮内图标带 aria-label，按正则匹配可访问名）
-    fireEvent.click(screen.getByRole('button', { name: /memoryMgmt\.create/ }))
-    const textarea = await screen.findByRole('textbox')
-    fireEvent.change(textarea, { target: { value: '用户习惯使用暗色主题' } })
-    fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.save' }))
-    await waitFor(() => {
-      expect(saveMyGlobalMemory).toHaveBeenCalledWith('用户习惯使用暗色主题', 0)
-    })
+    // 人工维护入口已全部下线
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.create/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.edit/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /memoryMgmt\.promote/ })).not.toBeInTheDocument()
 
-    // 编辑全局记忆（操作列按钮图标+文字，按正则匹配可访问名）
-    fireEvent.click(screen.getAllByRole('button', { name: /memoryMgmt\.edit/ })[0])
-    const editBox = await screen.findByRole('textbox')
-    fireEvent.change(editBox, { target: { value: '全局事实：用户在杭州远程办公' } })
-    fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.save' }))
-    await waitFor(() => {
-      expect(updateMyGlobalMemory).toHaveBeenCalledWith('g1', '全局事实：用户在杭州远程办公', 1)
-    })
-
-    // 删除全局记忆（Popconfirm 确认）
-    fireEvent.click(screen.getAllByRole('button', { name: /memoryMgmt\.delete/ })[0])
+    // 删除走全局删除接口（Popconfirm 确认）
+    fireEvent.click(screen.getByRole('button', { name: /memoryMgmt\.delete/ }))
     fireEvent.click(await screen.findByRole('button', { name: 'common.ok' }))
     await waitFor(() => {
       expect(deleteMyGlobalMemory).toHaveBeenCalledWith('g1')
     })
   })
 
-  it('应用记忆可存为全局（平台开启后可用）', async () => {
-    mockOverview(
-      [{ appId: 'app-1', appName: '客服机器人', teamName: '团队A', memoryCount: 1, lastActiveTime: '2026-01-01T00:00:00Z' }],
-      { enabled: true, myCount: 0 },
-    )
+  it('全局记忆搜索：输入后点「查询」按钮按关键字重查', async () => {
+    mockOverview([], { enabled: true, myCount: 1 })
+    vi.mocked(getMyGlobalMemories).mockResolvedValue({
+      items: [
+        { id: 'g1', scope: 'global', memoryType: 0, content: '全局事实：用户在杭州办公', updateTime: '2026-01-01T00:00:00Z' },
+      ],
+      total: 1,
+      globalEnabled: true,
+    } as never)
 
     render(<MemoryManagement />)
-    fireEvent.click(await screen.findByRole('button', { name: 'memoryMgmt.view' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'memoryMgmt.tabGlobal:1' }))
+    await screen.findByText('全局事实：用户在杭州办公')
 
-    fireEvent.click(await screen.findByRole('button', { name: /memoryMgmt\.promote/ }))
+    fireEvent.change(screen.getByPlaceholderText('memoryMgmt.searchGlobalPlaceholder'), { target: { value: '杭州' } })
+    fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.search' }))
     await waitFor(() => {
-      expect(promoteMemoryToGlobal).toHaveBeenCalledWith('app-1', 'm1')
+      expect(getMyGlobalMemories).toHaveBeenCalledWith(1, 20, '杭州')
+    })
+  })
+
+  it('全局记忆工具栏：仅保留清空按钮（Popconfirm 确认后走清空接口）', async () => {
+    mockOverview([], { enabled: true, myCount: 1 })
+    vi.mocked(getMyGlobalMemories).mockResolvedValue({
+      items: [
+        { id: 'g1', scope: 'global', memoryType: 0, content: '全局事实：用户在杭州办公', updateTime: '2026-01-01T00:00:00Z' },
+      ],
+      total: 1,
+      globalEnabled: true,
+    } as never)
+
+    render(<MemoryManagement />)
+    fireEvent.click(await screen.findByRole('tab', { name: 'memoryMgmt.tabGlobal:1' }))
+    await screen.findByText('全局事实：用户在杭州办公')
+
+    fireEvent.click(screen.getByRole('button', { name: 'memoryMgmt.clear' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'common.ok' }))
+    await waitFor(() => {
+      expect(clearMyGlobalMemory).toHaveBeenCalled()
     })
   })
 })

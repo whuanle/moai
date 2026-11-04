@@ -332,7 +332,7 @@ export function WikiDetail() {
             </Card>
           ) : section === 'mcp' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
-              <WikiMcp wikiId={wikiId} />
+              <WikiMcp wikiId={wikiId} teamId={teamId} canManage={isAdminPlus} />
             </Card>
           ) : (
             // 设置表单按设计系统 FormPage 同款 720 阅读宽度收口，输入框不铺满整屏

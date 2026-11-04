@@ -21,6 +21,8 @@
 | @SET-S20、@SET-S21 | [local-dev/sandbox-limits-e2e.mjs](../../local-dev/sandbox-limits-e2e.mjs)（root 保存三项上限并回读、TTL 越界与 CPU/内存格式非法 400） | PASS 21/21（2026-09-19） |
 | @SET-S22 | [tests/MoAI.App.Tests](../../tests/MoAI.App.Tests/)（`SandboxQuantityTests` K8s 数量解析）+ @manual 代码走查（`SandboxSettingsService.GetLimitsAsync` 回退默认） | PASS 35/35（2026-09-19） |
 | @SET-S23 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（沙箱卡片折叠回显、保存三项、非法格式拦截不发请求） | PASS 8/8（2026-09-19） |
+| @SET-S93 | [local-dev/sandbox-limits-e2e.mjs](../../local-dev/sandbox-limits-e2e.mjs)（SB-01c 管控模式/网段回显、SB-02e/02f 非法值 400、SB-03e/03f/03g 保存与回读生效、SB-09 还原默认） | PASS 34/34（2026-11-03） |
+| @SET-S94 | [local-dev/sandbox-limits-e2e.mjs](../../local-dev/sandbox-limits-e2e.mjs)（SB-02g/02h 非法模式与超量 400、SB-03h/03i 保存与回显、SB-09 还原内置默认清单）+ Settings.test.tsx（平台级清单保存提交与非法拦截） | PASS 42/42、28/28（2026-11-04） |
 | @SET-S24 ~ @SET-S29 | [local-dev/settings-logo-e2e.mjs](../../local-dev/settings-logo-e2e.mjs)（匿名 serverinfo 暴露 logoPath、root 上传/生效、member 403 与未登录 401、伪造 objectKey 404、空标识恢复默认） | PASS 11/11（2026-09-20；2026-10-29 起脚本开头快照三项原值、场景内清空断言后恢复，不再破坏共享实例站点配置） |
 | @SET-S30 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（网站信息卡片 Logo 分区回显/上传刷新/非图片拦截/确认恢复默认） | PASS 12/12（2026-09-20，2026-10-29 卡片合并后复核） |
 | @SET-S31 ~ @SET-S33 | [local-dev/settings-logo-e2e.mjs](../../local-dev/settings-logo-e2e.mjs)（网站名称：root 保存后 serverinfo/设置项生效、超长 400、member 403、清空回退配置默认） | PASS 7/7（2026-09-20） |
@@ -55,7 +57,7 @@ npx vitest run src/pages/settings/__tests__/Settings.test.tsx   # 知识图谱�
 
 ## 覆盖率说明
 
-- 共 60 个场景（@SET-S48~S55 随 SMTP 直连配置下线作废不复用）：自动化 46 个（@SET-S1~S4、S6~S7、S16~S18、S20~S47、S56~S58、S61~S67），走查/手动 14 个（@SET-S5、S8~S9、S11~S15、S19、S42、S68）；对称分支（关闭开关、admin 保存 403、首写建行、知识图谱读取未开启短路）以代码走查覆盖，补自动化成本低。
+- 共 62 个场景（@SET-S48~S55 随 SMTP 直连配置下线作废不复用）：自动化 48 个（@SET-S1~S4、S6~S7、S16~S18、S20~S47、S56~S58、S61~S67、S93~S94），走查/手动 14 个（@SET-S5、S8~S9、S11~S15、S19、S42、S68）；对称分支（关闭开关、admin 保存 403、首写建行、知识图谱读取未开启短路）以代码走查覆盖，补自动化成本低。
 - `settings-smtp-e2e.mjs` 会真实写入 SMTP_ENABLED/SMTP_CHANNEL_ID 并创建临时 SMTP 渠道：脚本开头快照原值、结尾 SET-90/SET-91 恢复与删渠道，共享开发实例上执行不破坏现场。
 - `settings-logo-e2e.mjs` 会真实写入 SYSTEM_NAME/SYSTEM_LOGO/LOGIN_BACKGROUND：2026-10-29 起脚本开头快照三项原值、清空类场景（SET-29/33/40）断言完成后即恢复，结尾 SET-90 校验恢复结果——在共享开发实例上执行不再清掉已配置的站点品牌（此前一次回归把用户已设置的名称/Logo/背景清空，靠探活快照手工恢复）。
 - 门禁为 Controller 层实现，若重构须复跑 @SET-S2/@SET-S6/@SET-S9。

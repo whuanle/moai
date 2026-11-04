@@ -100,8 +100,9 @@ public sealed class AppAgentFactory
     /// <param name="toolApprovalMode">工具审批模式（auto/approval，来自对话 SSE 请求头），approval 时重要工具执行前需人工批准.</param>
     /// <param name="workflowDraft">流程应用是否按最新草稿执行（工作台「调试」Tab 请求头 X-Moai-Workflow-Draft）.</param>
     /// <param name="enableUiTools">是否注册前端展示工具（X-Moai-Ui-Tools=1）：ui_ 前缀工具后端桩执行、前端侧边栏渲染.</param>
+    /// <param name="requestedModelId">用户在对话端选择的模型 id（X-Moai-Model-Id 请求头），须在应用可选模型列表内且团队可用，否则回退默认模型.</param>
     /// <returns>内层 Agent.</returns>
-    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false, bool enableUiTools = false)
+    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false, bool enableUiTools = false, Guid? requestedModelId = null)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == appId, cancellationToken).ConfigureAwait(false);
         if (app == null || app.TeamId != teamId)
@@ -158,10 +159,19 @@ public sealed class AppAgentFactory
             throw new BusinessException("应用尚未配置对话模型，无法对话.") { StatusCode = 400 };
         }
 
-        var pair = await _modelResolver.ResolveByIdAsync(effectiveConfig.ModelId, teamId, cancellationToken).ConfigureAwait(false);
+        // 对话端多模型切换：所选模型须在生效配置的可选列表内且该团队可用，否则静默回退默认模型
+        // （管理员调整配置后旧会话的旧选择平滑降级，不炸会话）；默认模型也不可用才拒绝
+        var selectableModelIds = ParseSelectableModelIds(effectiveConfig);
+        var pair = await ResolveChatModelAsync(selectableModelIds, effectiveConfig.ModelId, requestedModelId, teamId, cancellationToken).ConfigureAwait(false);
         if (pair == null)
         {
             throw new BusinessException("应用的对话模型不可用，请重新配置.") { StatusCode = 400 };
+        }
+
+        // 记录本轮实际对话模型（对话端切换模型后用量回显跟随）；调试会话不落库
+        if (!isDebug)
+        {
+            await UpdateSessionLastModelIdAsync(sessionId, pair.Value.Model.Id, cancellationToken).ConfigureAwait(false);
         }
 
         var inner = await _chatClientProvider.GetChatClientAsync(pair.Value.Model, pair.Value.Channel, cancellationToken).ConfigureAwait(false);
@@ -207,6 +217,7 @@ public sealed class AppAgentFactory
         {
             App = app,
             Config = effectiveConfig,
+            ChatModelId = pair.Value.Model.Id,
             AppId = appId,
             TeamId = teamId,
             UserId = userId,
@@ -254,6 +265,75 @@ public sealed class AppAgentFactory
         var securedAgent = AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy, _appSecurityAuditWriter);
         // Debug 埋点包在脱敏中间件之外，Span 只记录脱敏后内容
         return _systemOptions.Debug ? AiObservabilityMiddleware.WrapAgent(securedAgent) : securedAgent;
+    }
+
+    /// <summary>
+    /// 解析生效配置的可选模型列表：行内 model_ids 为空时归一为仅默认模型（存量应用兼容）.
+    /// </summary>
+    /// <param name="config">生效配置行.</param>
+    /// <returns>可选模型 id 列表.</returns>
+    private static IReadOnlyList<Guid> ParseSelectableModelIds(AppAgentConfigEntity config)
+    {
+        var ids = ParsePluginIds(config.ModelIds);
+        if (ids.Count == 0)
+        {
+            ids = new List<Guid> { config.ModelId };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 解析本轮对话模型：用户所选模型在可选列表内且团队可用时用之，否则回退默认模型；默认也不可用返回 null.
+    /// </summary>
+    /// <param name="selectableModelIds">生效配置的可选模型列表.</param>
+    /// <param name="defaultModelId">默认模型 id.</param>
+    /// <param name="requestedModelId">用户所选模型 id，null 表示未携带（用默认模型）.</param>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>模型与渠道.</returns>
+    private async Task<(AiModelEntity Model, AiChannelEntity Channel)?> ResolveChatModelAsync(IReadOnlyList<Guid> selectableModelIds, Guid defaultModelId, Guid? requestedModelId, int teamId, CancellationToken cancellationToken)
+    {
+        var candidates = new List<Guid>();
+        if (requestedModelId is { } requested && requested != Guid.Empty && selectableModelIds.Contains(requested))
+        {
+            candidates.Add(requested);
+        }
+
+        if (defaultModelId != Guid.Empty)
+        {
+            candidates.Add(defaultModelId);
+        }
+
+        foreach (var modelId in candidates)
+        {
+            var pair = await _modelResolver.ResolveByIdAsync(modelId, teamId, cancellationToken).ConfigureAwait(false);
+            if (pair != null)
+            {
+                return pair;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 记录本轮实际对话模型到会话行（用量回显跟随对话端切换）；仅在变化时写入，正式会话行不存在时忽略.
+    /// </summary>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="modelId">本轮实际模型 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    private async Task UpdateSessionLastModelIdAsync(Guid sessionId, Guid modelId, CancellationToken cancellationToken)
+    {
+        var sessionRow = await _databaseContext.AppAgentSessions
+            .FirstOrDefaultAsync(x => x.Id == sessionId, cancellationToken).ConfigureAwait(false);
+        if (sessionRow == null || sessionRow.LastModelId == modelId)
+        {
+            return;
+        }
+
+        sessionRow.LastModelId = modelId;
+        await _databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static IReadOnlyList<long> ParseWikiIds(string? json)    {
@@ -307,6 +387,7 @@ public sealed class AppAgentFactory
             AppId = config.AppId,
             Prompt = config.Prompt ?? string.Empty,
             ModelId = config.ModelId,
+            ModelIds = config.ModelIds,
             WikiIds = config.WikiIds,
             GraphIds = config.GraphIds,
             Plugins = config.Plugins,

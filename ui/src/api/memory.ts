@@ -21,11 +21,11 @@ export interface MyMemoriesResult {
   memoryEnabled: boolean
 }
 
-/** 分页查询本人在某应用下的长期记忆（按创建时间倒序） */
-export async function getMyMemories(appId: string, page = 1, pageSize = 20): Promise<MyMemoriesResult> {
+/** 分页查询本人在某应用下的长期记忆（按创建时间倒序，可按内容关键字过滤） */
+export async function getMyMemories(appId: string, page = 1, pageSize = 20, keyword?: string): Promise<MyMemoriesResult> {
   const client = getApiClient()
   const res = await client.api.app.byId(appId).memory.mine.get({
-    queryParameters: { page, pageSize },
+    queryParameters: { page, pageSize, keyword: keyword?.trim() || undefined },
   })
   const raw = res as unknown as {
     items?: MyMemoryItem[] | null
@@ -106,17 +106,6 @@ export async function getMyMemoryOverview(): Promise<MyMemoryOverview> {
   }
 }
 
-/** 编辑本人的一条应用内记忆（内容重嵌向量） */
-export async function updateMyMemory(appId: string, memoryId: string, content: string, memoryType: number): Promise<void> {
-  const client = getApiClient()
-  await client.api.app.byId(appId).memory.mine.byMemoryId(memoryId).put({
-    appId,
-    memoryId,
-    content,
-    memoryType,
-  })
-}
-
 /** 全局记忆列表结果 */
 export interface MyGlobalMemoriesResult {
   items: MyMemoryItem[]
@@ -125,11 +114,11 @@ export interface MyGlobalMemoriesResult {
   globalEnabled: boolean
 }
 
-/** 分页查询本人的全局记忆（按创建时间倒序） */
-export async function getMyGlobalMemories(page = 1, pageSize = 20): Promise<MyGlobalMemoriesResult> {
+/** 分页查询本人的全局记忆（按创建时间倒序，可按内容关键字过滤） */
+export async function getMyGlobalMemories(page = 1, pageSize = 20, keyword?: string): Promise<MyGlobalMemoriesResult> {
   const client = getApiClient()
   const res = await client.api.memory.global.mine.get({
-    queryParameters: { page, pageSize },
+    queryParameters: { page, pageSize, keyword: keyword?.trim() || undefined },
   })
   const raw = res as unknown as {
     items?: MyMemoryItem[] | null
@@ -141,30 +130,6 @@ export async function getMyGlobalMemories(page = 1, pageSize = 20): Promise<MyGl
     total: raw?.total ?? 0,
     globalEnabled: raw?.globalEnabled === true,
   }
-}
-
-/** 新增本人的一条全局记忆（平台未开启时后端返回 400） */
-export async function saveMyGlobalMemory(content: string, memoryType: number): Promise<MyMemoryItem> {
-  const client = getApiClient()
-  const res = await client.api.memory.global.mine.post({ content, memoryType })
-  return (res ?? {}) as MyMemoryItem
-}
-
-/** 把本人的一条应用内记忆存为全局记忆（原应用记忆保留） */
-export async function promoteMemoryToGlobal(appId: string, memoryId: string): Promise<MyMemoryItem> {
-  const client = getApiClient()
-  const res = await client.api.memory.global.promote.post({ appId, memoryId })
-  return (res ?? {}) as MyMemoryItem
-}
-
-/** 编辑本人的一条全局记忆 */
-export async function updateMyGlobalMemory(memoryId: string, content: string, memoryType: number): Promise<void> {
-  const client = getApiClient()
-  await client.api.memory.global.mine.byMemoryId(memoryId).put({
-    memoryId,
-    content,
-    memoryType,
-  })
 }
 
 /** 删除本人的一条全局记忆 */

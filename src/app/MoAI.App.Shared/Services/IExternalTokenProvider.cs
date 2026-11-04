@@ -4,7 +4,7 @@ using MoAI.Database.Entities;
 namespace MoAI.App.Services;
 
 /// <summary>
-/// 外部 token 服务：签发/校验 /api/external 的 access_token 与 refresh_token.
+/// 外部 token 服务：签发/校验 /api/teamres 的 access_token 与 refresh_token.
 /// 外部 token 与内部 JWT 使用同一 RSA 私钥签发，但 audience 为 SystemOptions.Server + ExternalAuthDefaults.AudienceSuffix，
 /// 内部接口的 JWT 校验（aud = SystemOptions.Server）天然拒绝外部 token.
 /// </summary>

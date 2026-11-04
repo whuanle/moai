@@ -13,10 +13,10 @@ namespace MoAI.App.Controllers;
 
 /// <summary>
 /// 外部应用接入接口：第三方应用使用应用接入 key 换取外部 token（应用 token / 用户 token，含 refresh_token），
-/// 再以外部 token 访问 /api/external 下的外部接口。外部 token 与内部 JWT 使用不同 audience，互相隔离.
+/// 再以外部 token 访问 /api/teamres 下的外部接口。外部 token 与内部 JWT 使用不同 audience，互相隔离.
 /// </summary>
 [ApiController]
-[Route("/external")]
+[Route("/teamres")]
 [AllowAnonymous]
 public class ExternalController : ControllerBase
 {

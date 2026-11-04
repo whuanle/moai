@@ -76,6 +76,40 @@ public class PluginManageController : ControllerBase
         return await _mediator.Send(cmd, ct);
     }
 
+    /// <summary>
+    /// 查询插件语义配置（使用须知/语义条目/工具元数据/工具清单）.
+    /// </summary>
+    /// <param name="id">插件记录 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginSemanticCommandResponse"/>.</returns>
+    [HttpGet("{id}/semantic")]
+    public async Task<QueryPluginSemanticCommandResponse> QuerySemantic(Guid id, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryPluginSemanticCommand { PluginId = id }, ct);
+    }
+
+    /// <summary>
+    /// 保存插件语义配置（整体覆盖：使用须知/语义条目/工具元数据）.
+    /// </summary>
+    /// <param name="id">插件记录 id.</param>
+    /// <param name="req">保存请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id}/semantic")]
+    public async Task<EmptyCommandResponse> SaveSemantic(Guid id, [FromBody] SavePluginSemanticCommand req, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        var cmd = new SavePluginSemanticCommand
+        {
+            PluginId = id,
+            UsageNotes = req.UsageNotes,
+            Notes = req.Notes,
+            ToolMetas = req.ToolMetas,
+        };
+        return await _mediator.Send(cmd, ct);
+    }
+
     private async Task EnsureAdminAsync(CancellationToken ct)
     {
         var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);

@@ -15,10 +15,12 @@ import {
 } from '@/api/memory'
 import {
   getSettings,
+  LOGIN_CAPTCHA_MODE_OPTIONS,
   LOGIN_EMAIL_CODE_MODE_OPTIONS,
   MEMORY_DEFAULT_DIMENSIONS,
   normalizeWikiFileTypes,
   parseWikiFileTypes,
+  SANDBOX_NETWORK_MODE_OPTIONS,
   SANDBOX_TTL_LIMITS,
   saveSetting,
   SandboxLimitDefaults,
@@ -28,6 +30,7 @@ import {
   resetSystemLogo,
   updateLoginBackground,
   updateSystemLogo,
+  type LoginCaptchaMode,
   type LoginEmailCodeMode,
 } from '@/api/settings'
 import { AvatarUpload, Card, feedback, useNeutralColors, Page, spacing } from '@/design-system'
@@ -35,6 +38,8 @@ import { radius } from '@/design-system/theme'
 import { DEFAULT_LOGO_SRC } from '@/layouts/useSystemLogo'
 import { useAppStore } from '@/store/app'
 import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
+import { isValidIntranetCidrs, isValidNetworkMode } from '@/utils/sandboxNetwork'
+import { isValidCommandPatternList } from '@/utils/sandboxCommand'
 import { resolveStorageUrl } from '@/utils/storage'
 
 const { Text } = Typography
@@ -207,6 +212,9 @@ export function Settings() {
   const [sandboxMaxTtl, setSandboxMaxTtl] = useState<number>(SandboxLimitDefaults.maxTtlSeconds)
   const [sandboxMaxCpu, setSandboxMaxCpu] = useState<string>(SandboxLimitDefaults.maxCpu)
   const [sandboxMaxMemory, setSandboxMaxMemory] = useState<string>(SandboxLimitDefaults.maxMemory)
+  const [sandboxNetworkMode, setSandboxNetworkMode] = useState<string>(SandboxLimitDefaults.networkMode)
+  const [sandboxIntranetCidrs, setSandboxIntranetCidrs] = useState<string>(SandboxLimitDefaults.intranetCidrs)
+  const [sandboxDeniedCommands, setSandboxDeniedCommands] = useState<string>(SandboxLimitDefaults.deniedCommands)
   const [sandboxDirty, setSandboxDirty] = useState(false)
   const [logoPath, setLogoPath] = useState('')
   const [logoUploading, setLogoUploading] = useState(false)
@@ -230,6 +238,8 @@ export function Settings() {
   const [savingTwofactor, setSavingTwofactor] = useState(false)
   const [twofaForced, setTwofaForced] = useState(false)
   const [loginCodeMode, setLoginCodeMode] = useState<LoginEmailCodeMode>('off')
+  const [captchaMode, setCaptchaMode] = useState<LoginCaptchaMode>('off')
+  const [emailCodeFailThreshold, setEmailCodeFailThreshold] = useState(3)
   const [twofaDirty, setTwofaDirty] = useState(false)
   const [savingLoginSafety, setSavingLoginSafety] = useState(false)
   const [lsEnabled, setLsEnabled] = useState(true)
@@ -246,6 +256,7 @@ export function Settings() {
   const [savingMemory, setSavingMemory] = useState(false)
   const [clearingMemory, setClearingMemory] = useState(false)
   const [memoryEnabled, setMemoryEnabled] = useState(false)
+  const [memoryGlobalEnabled, setMemoryGlobalEnabled] = useState(false)
   const [memoryModelId, setMemoryModelId] = useState('')
   const [memoryDimensions, setMemoryDimensions] = useState<number>(MEMORY_DEFAULT_DIMENSIONS)
   const [memoryModels, setMemoryModels] = useState<GlobalMemoryModelOption[]>([])
@@ -332,6 +343,16 @@ export function Settings() {
       setSandboxMaxCpu(sandboxCpu || SandboxLimitDefaults.maxCpu)
       const sandboxMemory = valueOf(SettingKeys.sandboxMaxMemory).trim()
       setSandboxMaxMemory(sandboxMemory || SandboxLimitDefaults.maxMemory)
+      const parsedNetworkMode = valueOf(SettingKeys.sandboxNetworkMode).trim().toLowerCase()
+      setSandboxNetworkMode(
+        (SANDBOX_NETWORK_MODE_OPTIONS as readonly string[]).includes(parsedNetworkMode)
+          ? parsedNetworkMode
+          : SandboxLimitDefaults.networkMode,
+      )
+      const intranetCidrs = valueOf(SettingKeys.sandboxIntranetCidrs).trim()
+      setSandboxIntranetCidrs(intranetCidrs || SandboxLimitDefaults.intranetCidrs)
+      // 禁用命令清单：显式空串 = 平台级关闭（保持空串回显），行缺失时接口回退内置默认清单
+      setSandboxDeniedCommands(valueOf(SettingKeys.sandboxDeniedCommands))
       setSandboxDirty(false)
       setStatisticsGranularity(valueOf(SettingKeys.statisticsGranularity).trim() === 'hour' ? 'hour' : 'day')
       setStatisticsDirty(false)
@@ -353,6 +374,14 @@ export function Settings() {
           ? (parsedLoginCodeMode as LoginEmailCodeMode)
           : 'off',
       )
+      const parsedCaptchaMode = valueOf(SettingKeys.loginCaptchaMode).trim().toLowerCase()
+      setCaptchaMode(
+        (LOGIN_CAPTCHA_MODE_OPTIONS as readonly string[]).includes(parsedCaptchaMode)
+          ? (parsedCaptchaMode as LoginCaptchaMode)
+          : 'off',
+      )
+      const parsedThreshold = Number.parseInt(valueOf(SettingKeys.loginEmailCodeFailThreshold), 10)
+      setEmailCodeFailThreshold(Number.isFinite(parsedThreshold) && parsedThreshold >= 1 && parsedThreshold <= 10 ? parsedThreshold : 3)
       setTwofaDirty(false)
       setLsEnabled(valueOf(SettingKeys.lsEnabled) !== 'false')
       setLsNotifyChannelIds(
@@ -381,6 +410,7 @@ export function Settings() {
       setLsTravelWindow(lsInt(SettingKeys.lsTravelWindowMinutes, 120, 1, 525600))
       setLoginSafetyDirty(false)
       setMemoryEnabled(valueOf(SettingKeys.memoryEnabled) === 'true')
+      setMemoryGlobalEnabled(valueOf(SettingKeys.memoryGlobalEnabled) === 'true')
       setMemoryModelId(valueOf(SettingKeys.memoryEmbeddingModel).trim())
       const parsedMemoryDimensions = Number.parseInt(valueOf(SettingKeys.memoryEmbeddingDimensions), 10)
       const effectiveMemoryDimensions =
@@ -458,11 +488,30 @@ export function Settings() {
       feedback.error(t('settings.sandbox.invalidFormat'))
       return
     }
+    if (!isValidNetworkMode(sandboxNetworkMode)) {
+      feedback.error(t('settings.sandbox.invalidNetworkMode'))
+      return
+    }
+    if (!isValidIntranetCidrs(sandboxIntranetCidrs)) {
+      feedback.error(t('settings.sandbox.invalidIntranetCidrs'))
+      return
+    }
+    if (!isValidCommandPatternList(sandboxDeniedCommands)) {
+      feedback.error(t('settings.sandbox.invalidDeniedCommands'))
+      return
+    }
     setSavingSandbox(true)
     try {
       await saveSetting(SettingKeys.sandboxMaxTtl, String(sandboxMaxTtl))
       await saveSetting(SettingKeys.sandboxMaxCpu, sandboxMaxCpu.trim())
       await saveSetting(SettingKeys.sandboxMaxMemory, sandboxMaxMemory.trim())
+      await saveSetting(SettingKeys.sandboxNetworkMode, sandboxNetworkMode.trim().toLowerCase())
+      await saveSetting(SettingKeys.sandboxIntranetCidrs, sandboxIntranetCidrs.trim())
+      // 空清单保存空串 = 平台级禁用清单关闭（后端行存在空串时不再回退内置默认）
+      await saveSetting(
+        SettingKeys.sandboxDeniedCommands,
+        sandboxDeniedCommands.split('\n').map((x) => x.trim()).filter(Boolean).join('\n'),
+      )
       feedback.success(t('settings.saveSuccess'))
       setSandboxDirty(false)
     } catch {
@@ -577,6 +626,8 @@ export function Settings() {
     try {
       await saveSetting(SettingKeys.loginForced2fa, twofaForced ? 'true' : 'false')
       await saveSetting(SettingKeys.loginEmailCodeMode, loginCodeMode)
+      await saveSetting(SettingKeys.loginCaptchaMode, captchaMode)
+      await saveSetting(SettingKeys.loginEmailCodeFailThreshold, String(emailCodeFailThreshold))
       feedback.success(t('settings.saveSuccess'))
       setTwofaDirty(false)
       // 强制 2FA 影响登录后行为，登录页/网关侧按实时设置读取，无需刷新缓存
@@ -668,14 +719,18 @@ export function Settings() {
     }
     setSavingMemory(true)
     try {
+      // 跨应用记忆随总开关级联：总开关关闭时强制关闭（先写总开关再写全局，开启校验要求总开关已开启）
+      const effectiveGlobalEnabled = memoryEnabled && memoryGlobalEnabled
       if (memoryLocked) {
         // 已有记忆时模型/维度被锁定（更换须走迁移重建），保存仅提交开关
         await saveSetting(SettingKeys.memoryEnabled, memoryEnabled ? 'true' : 'false')
+        await saveSetting(SettingKeys.memoryGlobalEnabled, effectiveGlobalEnabled ? 'true' : 'false')
       } else {
         // 先写模型与维度，再写开关：开启校验要求模型已保存
         await saveSetting(SettingKeys.memoryEmbeddingModel, memoryModelId)
         await saveSetting(SettingKeys.memoryEmbeddingDimensions, String(memoryDimensions))
         await saveSetting(SettingKeys.memoryEnabled, memoryEnabled ? 'true' : 'false')
+        await saveSetting(SettingKeys.memoryGlobalEnabled, effectiveGlobalEnabled ? 'true' : 'false')
       }
       feedback.success(t('settings.saveSuccess'))
       setMemoryDirty(false)
@@ -852,7 +907,7 @@ export function Settings() {
             </div>
           </div>
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingSiteName}
@@ -898,7 +953,7 @@ export function Settings() {
             <Text type="secondary">{t('settings.wikiUpload.fileTypes.desc')}</Text>
           </Field>
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingWiki}
@@ -1001,7 +1056,7 @@ export function Settings() {
             </div>
           )}
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingGraph}
@@ -1094,7 +1149,7 @@ export function Settings() {
             </div>
           )}
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingEmail}
@@ -1153,8 +1208,50 @@ export function Settings() {
               </Field>
             </div>
           </div>
+          <Field label={t('settings.sandbox.networkMode.name')}>
+            <Select
+              value={sandboxNetworkMode}
+              aria-label={t('settings.sandbox.networkMode.name')}
+              style={{ width: 320 }}
+              onChange={(value) => {
+                setSandboxNetworkMode(value)
+                setSandboxDirty(true)
+              }}
+              options={[
+                { value: 'app', label: t('settings.sandbox.networkMode.app') },
+                { value: 'deny', label: t('settings.sandbox.networkMode.deny') },
+                { value: 'intranet', label: t('settings.sandbox.networkMode.intranet') },
+              ]}
+            />
+            <Text type="secondary">{t('settings.sandbox.networkMode.desc')}</Text>
+          </Field>
+          <Field label={t('settings.sandbox.intranetCidrs.name')}>
+            <Input
+              value={sandboxIntranetCidrs}
+              placeholder={SandboxLimitDefaults.intranetCidrs}
+              aria-label={t('settings.sandbox.intranetCidrs.name')}
+              onChange={(e) => {
+                setSandboxIntranetCidrs(e.target.value)
+                setSandboxDirty(true)
+              }}
+            />
+            <Text type="secondary">{t('settings.sandbox.intranetCidrs.desc')}</Text>
+          </Field>
+          <Field label={t('settings.sandbox.deniedCommands.name')}>
+            <Input.TextArea
+              value={sandboxDeniedCommands}
+              placeholder={SandboxLimitDefaults.deniedCommands}
+              aria-label={t('settings.sandbox.deniedCommands.name')}
+              onChange={(e) => {
+                setSandboxDeniedCommands(e.target.value)
+                setSandboxDirty(true)
+              }}
+              autoSize={{ minRows: 4, maxRows: 10 }}
+            />
+            <Text type="secondary">{t('settings.sandbox.deniedCommands.desc')}</Text>
+          </Field>
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingSandbox}
@@ -1203,7 +1300,49 @@ export function Settings() {
               </Text>
             </Field>
 
-            <div style={{ textAlign: 'right' }}>
+            {loginCodeMode === 'after_fail' && (
+              <Field label={t('settings.twofactor.emailCodeFailThreshold.name')}>
+                <InputNumber
+                  aria-label={t('settings.twofactor.emailCodeFailThreshold.name')}
+                  min={1}
+                  max={10}
+                  precision={0}
+                  value={emailCodeFailThreshold}
+                  disabled={loading}
+                  style={{ width: 160 }}
+                  onChange={(v) => {
+                    if (typeof v === 'number') {
+                      setEmailCodeFailThreshold(v)
+                      setTwofaDirty(true)
+                    }
+                  }}
+                />
+                <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                  {t('settings.twofactor.emailCodeFailThreshold.desc')}
+                </Text>
+              </Field>
+            )}
+
+            <Field label={t('settings.twofactor.captchaMode.name')}>
+              <Radio.Group
+                aria-label={t('settings.twofactor.captchaMode.name')}
+                value={captchaMode}
+                disabled={loading}
+                onChange={(e) => {
+                  setCaptchaMode(e.target.value as LoginCaptchaMode)
+                  setTwofaDirty(true)
+                }}
+              >
+                <Radio value="off">{t('settings.twofactor.captchaMode.off')}</Radio>
+                <Radio value="always">{t('settings.twofactor.captchaMode.always')}</Radio>
+                <Radio value="after_fail">{t('settings.twofactor.captchaMode.afterFail')}</Radio>
+              </Radio.Group>
+              <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                {t('settings.twofactor.captchaMode.desc')}
+              </Text>
+            </Field>
+
+            <div style={{ textAlign: 'left' }}>
               <Button type="primary" loading={savingTwofactor} disabled={!twofaDirty || loading} onClick={handleSaveTwofactor}>
                 {t('settings.save')}
               </Button>
@@ -1377,7 +1516,7 @@ export function Settings() {
             </div>
           </div>
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingLoginSafety}
@@ -1407,7 +1546,7 @@ export function Settings() {
             <Text type="secondary">{t('settings.statistics.granularity.desc')}</Text>
           </Field>
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingStatistics}
@@ -1452,6 +1591,28 @@ export function Settings() {
                 marginTop: spacing.lg,
               }}
             >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.md,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <Text strong>{t('settings.memory.globalEnable.name')}</Text>
+                  <br />
+                  <Text type="secondary">{t('settings.memory.globalEnable.desc')}</Text>
+                </div>
+                <Switch
+                  checked={memoryGlobalEnabled}
+                  onChange={(checked) => {
+                    setMemoryGlobalEnabled(checked)
+                    setMemoryDirty(true)
+                  }}
+                />
+              </div>
+
               <Field label={t('settings.memory.model.name')}>
                 <Select
                   value={memoryModelId || undefined}
@@ -1534,7 +1695,7 @@ export function Settings() {
             </div>
           )}
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'right' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
             <Button
               type="primary"
               loading={savingMemory}

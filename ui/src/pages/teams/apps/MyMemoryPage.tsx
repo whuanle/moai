@@ -106,8 +106,6 @@ export function MyMemoryPage() {
         </Popconfirm>
       </div>
 
-      <Text type="secondary">{t('myMemory.hint')}</Text>
-
       {loading ? (
         <div style={{ padding: spacing.xl, textAlign: 'center' }}>
           <Spin />

@@ -45,6 +45,30 @@ public enum OrgGrantResourceType
     /// </summary>
     [JsonPropertyName("subsystem")]
     Subsystem = 5,
+
+    /// <summary>
+    /// 应用市场上架可见范围（应用申请上架时设置的组织可视范围，审批通过后物化），主键 Guid.
+    /// </summary>
+    [JsonPropertyName("publicApp")]
+    PublicApp = 6,
+}
+
+/// <summary>
+/// 应用上架可视范围：全员可见或按组织节点限定（仅应用上架申请使用，其他资源上架不涉及）.
+/// </summary>
+public enum AppVisibleScope
+{
+    /// <summary>
+    /// 全员可见：平台内任意用户可在应用广场发现并使用.
+    /// </summary>
+    [JsonPropertyName("all")]
+    All = 0,
+
+    /// <summary>
+    /// 按组织限定：仅可见范围组织授权覆盖的用户可见可用（org_grant 物化为 publicApp 资源授权）.
+    /// </summary>
+    [JsonPropertyName("organization")]
+    Organization = 1,
 }
 
 /// <summary>

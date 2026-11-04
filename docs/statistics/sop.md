@@ -32,7 +32,7 @@
 ```bash
 dotnet build src/MoAI/MoAI.csproj          # 0 error
 node local-dev/statistics-usage-e2e.mjs [base]   # ST 32（门禁/触发/落库/查询/校验/prompt/粒度切换/插件链路+趋势）
-node local-dev/app-usecount-e2e.mjs [base]       # AU 13 回归
+node local-dev/app-usecount-e2e.mjs [base]       # AU 22 回归（含使用分析趋势端点 AU-07）
 node local-dev/skill-usecount-e2e.mjs [base]     # SKC 8 回归（含 100s 轮询）
 ```
 

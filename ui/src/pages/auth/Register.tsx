@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Button, Card, Form, Input, Space, Typography, theme as antdTheme } from 'antd'
 import { IdcardOutlined, LockOutlined, MailOutlined, PhoneOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useFeedback } from '@/design-system'
 import { radius, spacing } from '@/design-system/theme'
-import { getServerInfo, register, sendEmailCode } from '@/api/auth'
+import { fetchChallengePolicy, getServerInfo, register, sendEmailCode, type ChallengePolicy } from '@/api/auth'
 import { AppLogo } from '@/layouts/components/AppLogo'
 import { useSystemName } from '@/layouts/useSystemLogo'
+import { CaptchaField } from './components/CaptchaField'
+import { useCaptcha } from './components/useCaptcha'
 
 interface RegisterFormValues {
   userName: string
@@ -17,6 +19,7 @@ interface RegisterFormValues {
   password: string
   confirmPassword: string
   emailCode?: string
+  captchaCode?: string
 }
 
 export function Register() {
@@ -28,15 +31,25 @@ export function Register() {
   const [form] = Form.useForm<RegisterFormValues>()
   const [loading, setLoading] = useState(false)
   const [needEmailCode, setNeedEmailCode] = useState(false)
+  const [policy, setPolicy] = useState<ChallengePolicy>({ captchaRequired: false, emailCodeRequired: false })
   const [sendingCode, setSendingCode] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const { captcha, refreshCaptcha } = useCaptcha()
 
   // 注册页在 AppLayout 之外，浏览器标签页标题需要自行同步网站名称
   useEffect(() => {
     document.title = systemName
   }, [systemName])
 
-  // 注册验证码开关来自服务器信息（SMTP 启用 + 管理员开启注册验证码）
+  const refreshPolicy = useCallback(async () => {
+    try {
+      setPolicy(await fetchChallengePolicy('register'))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }, [])
+
+  // 注册验证码开关来自服务器信息（SMTP 启用 + 管理员开启注册验证码）；图形验证码策略来自 challenge_policy
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -46,11 +59,17 @@ export function Register() {
       } catch {
         // 错误已由全局请求中间件统一提示
       }
+      await refreshPolicy()
     })()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [refreshPolicy])
+
+  // 图形验证码按需拉取：策略命中且还没有可用图片时
+  useEffect(() => {
+    if (policy.captchaRequired && !captcha) void refreshCaptcha()
+  }, [policy.captchaRequired, captcha, refreshCaptcha])
 
   // 发送冷却倒计时（秒）
   useEffect(() => {
@@ -69,11 +88,18 @@ export function Register() {
     if (!email) return
     setSendingCode(true)
     try {
-      await sendEmailCode(email, 'register')
+      await sendEmailCode(email, 'register', {
+        captchaId: policy.captchaRequired ? captcha?.captchaId : undefined,
+        captchaCode: (form.getFieldValue('captchaCode') as string | undefined) || undefined,
+      })
       feedback.success(t('auth.emailCodeSent'))
       setCountdown(60)
+      // 发码后重新拉取策略（after_fail 模式：本 IP 已发过码，下次发码需要过图形验证码）
+      await refreshPolicy()
+      void refreshCaptcha()
     } catch (error) {
-      // 错误已由全局请求中间件统一提示
+      // 图形验证码错误时旧图已失效，换一张
+      if (policy.captchaRequired) void refreshCaptcha()
       console.error('Send email code failed:', error)
     } finally {
       setSendingCode(false)
@@ -151,6 +177,15 @@ export function Register() {
           >
             <Input prefix={<MailOutlined />} placeholder={t('auth.emailPlaceholder')} size="large" />
           </Form.Item>
+          {policy.captchaRequired && (
+            <Form.Item
+              name="captchaCode"
+              label={t('auth.captcha.label')}
+              rules={[{ required: true, message: t('auth.captcha.required') }]}
+            >
+              <CaptchaField captcha={captcha} onRefresh={() => void refreshCaptcha()} />
+            </Form.Item>
+          )}
           {needEmailCode && (
             <Form.Item label={t('auth.emailCode')} required>
               <Space.Compact style={{ width: '100%' }}>

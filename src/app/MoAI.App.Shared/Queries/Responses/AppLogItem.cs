@@ -19,6 +19,9 @@ public class AppLogItem : AuditsInfo
     /// <summary>会话归属用户原始 id（内部用户为 user.id，外部用户为 external.id）.</summary>
     public long OwnerId { get; set; }
 
+    /// <summary>会话归属用户的登录用户名（user.user_name，仅内部用户填充；CreateUserName 经填充服务为昵称，两者并列展示）.</summary>
+    public string OwnerUserName { get; set; } = string.Empty;
+
     /// <summary>输入 token.</summary>
     public int InputTokens { get; set; }
 

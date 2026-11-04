@@ -73,7 +73,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
   }, [load])
 
   const serverUrl = Env.serverUrl.replace(/\/+$/, '')
-  const chatEndpoint = `POST ${serverUrl}/api/external/agent/${appId}/chat`
+  const chatEndpoint = `POST ${serverUrl}/api/teamres/agent/${appId}/chat`
   // 嵌入代码用站点自身源（开发期即前端 dev server，生产为同源部署）；widget 默认以 script 源调用 API，
   // 开发期由 Vite 代理 /api 到后端，分离部署可在 script 上加 data-server 指向后端
   const siteOrigin = window.location.origin
@@ -100,7 +100,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
     `    appId: '${appId}',`,
     `    server: '${serverUrl}',`,
     `    tokenProvider: function () {`,
-    `      // 业务后端持应用接入 key 调 POST ${serverUrl}/api/external/token 签发外部用户 token`,
+    `      // 业务后端持应用接入 key 调 POST ${serverUrl}/api/teamres/token 签发外部用户 token`,
     `      return fetch('/your-backend/moai-token').then(function (r) { return r.json() })`,
     `        .then(function (d) { return d.accessToken })`,
     `    }`,

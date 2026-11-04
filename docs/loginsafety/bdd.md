@@ -49,6 +49,11 @@ Feature: 登录日志与来源环境记录
   Scenario: 用户可查看本人登录记录
     When 用户查询本人登录记录
     Then 仅返回本人成功登录记录且不含失败原因等敏感字段
+
+  @LS-S27 @auto:e2e
+  Scenario: 客户端 IP 归一化落库
+    When 未启用反向代理穿透时 IPv4 连接登录（双栈监听下 RemoteIpAddress 表现为 ::ffff:a.b.c.d）
+    Then 登录日志的 IP 为纯 IPv4 形态（不含 ::ffff: 前缀；同一客户端不因连接栈差异产生多种 IP 形态，新 IP 判定与 IP 封禁比对不受影响）
 ```
 
 ```gherkin
@@ -144,14 +149,14 @@ Feature: 风险登录识别与通知
 
   @LS-S20 @auto:e2e
   Scenario: 高风险事件推送到通知渠道
-    Given 管理员已勾选通知渠道（LS_NOTIFY_CHANNEL_IDS）
+    Given 管理员已勾选通知渠道（LS_NOTIFY_CHANNEL_IDS）并配置告警收件人邮箱（LS_NOTIFY_EMAILS）
     When 高风险事件发生
-    Then 各渠道收到告警（webhook 渠道收 JSON 体、SMTP 渠道向其收件人发告警邮件）
+    Then 各渠道收到告警（webhook 渠道收 JSON 体、SMTP 渠道向告警收件人邮箱发告警邮件）
 
   @LS-S20b @auto:e2e
   Scenario: 渠道告警使用内置模板
     When 渠道告警发出
-    Then 标题为内置模板「登录风险告警：{userName}」插值结果（SMTP 渠道邮件主题为标题加渠道前缀）
+    Then 标题为内置模板「登录风险告警：{userName}」插值结果（SMTP 渠道邮件主题=告警标题，不再叠加渠道主题前缀）
 
   @LS-S21 @auto:e2e
   Scenario: 标记已读联动未读计数
@@ -168,11 +173,14 @@ Feature: 风险登录识别与通知
 
 ```gherkin
 Feature: 风控设置
-  阈值、开关与通知渠道通过系统设置管理
+  阈值、开关、通知渠道与告警收件人邮箱通过系统设置管理
 
   @LS-S25 @auto:e2e
   Scenario: 非法设置值被拒绝
     When 管理员保存低于下限的失败阈值
     Then 返回 400
     And 开关非布尔值、回看天数越界、通知渠道 ID 非法（非正整数）同样返回 400
+  Scenario: 告警收件人邮箱非法被拒
+    When 管理员保存 LS_NOTIFY_EMAILS 含非法邮箱地址
+    Then 返回 400
 ```

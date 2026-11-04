@@ -30,7 +30,7 @@ export interface MineRequestBuilder extends BaseRequestBuilder<MineRequestBuilde
      */
      delete(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 分页查询本人在某应用下的长期记忆（按创建时间倒序）.
+     * 分页查询本人在某应用下的长期记忆（按创建时间倒序，可按内容关键字过滤）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<QueryMyMemoriesCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -47,16 +47,20 @@ export interface MineRequestBuilder extends BaseRequestBuilder<MineRequestBuilde
      */
      toDeleteRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 分页查询本人在某应用下的长期记忆（按创建时间倒序）.
+     * 分页查询本人在某应用下的长期记忆（按创建时间倒序，可按内容关键字过滤）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<MineRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
 }
 /**
- * 分页查询本人在某应用下的长期记忆（按创建时间倒序）.
+ * 分页查询本人在某应用下的长期记忆（按创建时间倒序，可按内容关键字过滤）.
  */
 export interface MineRequestBuilderGetQueryParameters {
+    /**
+     * 内容关键字（不区分大小写包含匹配，留空返回全部）.
+     */
+    keyword?: string;
     /**
      * 页码（1 起）.
      */
@@ -69,7 +73,7 @@ export interface MineRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const MineRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}/memory/mine{?page*,pageSize*}";
+export const MineRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}/memory/mine{?keyword*,page*,pageSize*}";
 /**
  * Metadata for all the navigation properties in the request builder.
  */

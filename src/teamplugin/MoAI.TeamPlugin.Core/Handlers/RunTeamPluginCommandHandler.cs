@@ -70,13 +70,13 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
         var plugin = _registry.Get(request.Key);
         if (plugin != null)
         {
-            return await _executor.ExecuteAsync(plugin, request.RequestJson, null, BuildRunContext(request), cancellationToken).ConfigureAwait(false);
+            return await _executor.ExecuteAsync(plugin, request.RequestJson, null, BuildRunContext(request), cancellationToken, request.Function).ConfigureAwait(false);
         }
 
         var dynamic = _dynamicResolver.Resolve(request.Key);
         if (dynamic != null)
         {
-            return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, BuildRunContext(request), cancellationToken).ConfigureAwait(false);
+            return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, BuildRunContext(request), cancellationToken, request.Function).ConfigureAwait(false);
         }
 
         // 数据库中的自定义插件（MCP/OpenAPI）：团队自有、公开或已授权本团队的系统插件

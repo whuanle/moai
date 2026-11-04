@@ -54,6 +54,8 @@ import { SubsystemRequestBuilderNavigationMetadata, type SubsystemRequestBuilder
 // @ts-ignore
 import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadata, type TeamRequestBuilder } from './team/index.js';
 // @ts-ignore
+import { TeamResourceKeyRequestBuilderNavigationMetadata, TeamResourceKeyRequestBuilderRequestsMetadata, type TeamResourceKeyRequestBuilder } from './teamResourceKey/index.js';
+// @ts-ignore
 import { TimerRequestBuilderNavigationMetadata, TimerRequestBuilderRequestsMetadata, type TimerRequestBuilder } from './timer/index.js';
 // @ts-ignore
 import { type UsermanageRequestBuilder, UsermanageRequestBuilderNavigationMetadata } from './usermanage/index.js';
@@ -175,6 +177,10 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get team(): TeamRequestBuilder;
     /**
+     * The teamResourceKey property
+     */
+    get teamResourceKey(): TeamResourceKeyRequestBuilder;
+    /**
      * The timer property
      */
     get timer(): TimerRequestBuilder;
@@ -290,6 +296,10 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     team: {
         requestsMetadata: TeamRequestBuilderRequestsMetadata,
         navigationMetadata: TeamRequestBuilderNavigationMetadata,
+    },
+    teamResourceKey: {
+        requestsMetadata: TeamResourceKeyRequestBuilderRequestsMetadata,
+        navigationMetadata: TeamResourceKeyRequestBuilderNavigationMetadata,
     },
     timer: {
         requestsMetadata: TimerRequestBuilderRequestsMetadata,

@@ -232,6 +232,24 @@ export function createPluginRunResultFromDiscriminatorValue(parseNode: ParseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginSemanticNoteItem}
+ */
+// @ts-ignore
+export function createPluginSemanticNoteItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginSemanticNoteItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginToolMetaItem}
+ */
+// @ts-ignore
+export function createPluginToolMetaItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginToolMetaItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {PreUploadOpenApiFilePluginCommand}
  */
 // @ts-ignore
@@ -340,6 +358,15 @@ export function createQueryPluginManageListCommandResponseItemFromDiscriminatorV
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginSemanticCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginSemanticCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginSemanticCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryPluginStatsClassifyItem}
  */
 // @ts-ignore
@@ -403,6 +430,33 @@ export function createQueryPluginTeamAuthorizationCommandResponseItemFromDiscrim
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginToolExampleCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginToolExampleCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginToolExampleCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginToolItem}
+ */
+// @ts-ignore
+export function createQueryPluginToolItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginToolItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryPluginToolsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryPluginToolsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryPluginToolsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {RefreshMcpServerPluginCommand}
  */
 // @ts-ignore
@@ -426,6 +480,33 @@ export function createRunPluginCommandFromDiscriminatorValue(parseNode: ParseNod
 // @ts-ignore
 export function createSaveDynamicPluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoSaveDynamicPluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SavePluginSemanticCommand}
+ */
+// @ts-ignore
+export function createSavePluginSemanticCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSavePluginSemanticCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SavePluginSemanticNoteItem}
+ */
+// @ts-ignore
+export function createSavePluginSemanticNoteItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSavePluginSemanticNoteItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SavePluginToolMetaItem}
+ */
+// @ts-ignore
+export function createSavePluginToolMetaItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSavePluginToolMetaItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -727,6 +808,35 @@ export function deserializeIntoPluginRunResult(pluginRunResult: Partial<PluginRu
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoPluginSemanticNoteItem(pluginSemanticNoteItem: Partial<PluginSemanticNoteItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { pluginSemanticNoteItem.content = n.getStringValue(); },
+        "id": n => { pluginSemanticNoteItem.id = n.getGuidValue(); },
+        "mode": n => { pluginSemanticNoteItem.mode = n.getStringValue(); },
+        "sortOrder": n => { pluginSemanticNoteItem.sortOrder = n.getNumberValue(); },
+        "title": n => { pluginSemanticNoteItem.title = n.getStringValue(); },
+        "toolKey": n => { pluginSemanticNoteItem.toolKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPluginToolMetaItem(pluginToolMetaItem: Partial<PluginToolMetaItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "callPolicy": n => { pluginToolMetaItem.callPolicy = n.getStringValue(); },
+        "destructiveHint": n => { pluginToolMetaItem.destructiveHint = n.getBooleanValue(); },
+        "extraNotes": n => { pluginToolMetaItem.extraNotes = n.getStringValue(); },
+        "readOnlyHint": n => { pluginToolMetaItem.readOnlyHint = n.getBooleanValue(); },
+        "toolKey": n => { pluginToolMetaItem.toolKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoPreUploadOpenApiFilePluginCommand(preUploadOpenApiFilePluginCommand: Partial<PreUploadOpenApiFilePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "contentType": n => { preUploadOpenApiFilePluginCommand.contentType = n.getStringValue(); },
@@ -851,6 +961,8 @@ export function deserializeIntoQueryPluginListCommandResponseItem(queryPluginLis
         "paramsExample": n => { queryPluginListCommandResponseItem.paramsExample = n.getStringValue(); },
         "requestType": n => { queryPluginListCommandResponseItem.requestType = n.getStringValue(); },
         "responseType": n => { queryPluginListCommandResponseItem.responseType = n.getStringValue(); },
+        "toolCount": n => { queryPluginListCommandResponseItem.toolCount = n.getNumberValue(); },
+        "tools": n => { queryPluginListCommandResponseItem.tools = n.getCollectionOfObjectValues<QueryPluginToolItem>(createQueryPluginToolItemFromDiscriminatorValue); },
     }
 }
 /**
@@ -889,6 +1001,22 @@ export function deserializeIntoQueryPluginManageListCommandResponseItem(queryPlu
         "templeteKey": n => { queryPluginManageListCommandResponseItem.templeteKey = n.getStringValue(); },
         "title": n => { queryPluginManageListCommandResponseItem.title = n.getStringValue(); },
         "type": n => { queryPluginManageListCommandResponseItem.type = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginSemanticCommandResponse(queryPluginSemanticCommandResponse: Partial<QueryPluginSemanticCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "notes": n => { queryPluginSemanticCommandResponse.notes = n.getCollectionOfObjectValues<PluginSemanticNoteItem>(createPluginSemanticNoteItemFromDiscriminatorValue); },
+        "pluginId": n => { queryPluginSemanticCommandResponse.pluginId = n.getGuidValue(); },
+        "pluginName": n => { queryPluginSemanticCommandResponse.pluginName = n.getStringValue(); },
+        "title": n => { queryPluginSemanticCommandResponse.title = n.getStringValue(); },
+        "toolMetas": n => { queryPluginSemanticCommandResponse.toolMetas = n.getCollectionOfObjectValues<PluginToolMetaItem>(createPluginToolMetaItemFromDiscriminatorValue); },
+        "tools": n => { queryPluginSemanticCommandResponse.tools = n.getCollectionOfObjectValues<QueryPluginToolItem>(createQueryPluginToolItemFromDiscriminatorValue); },
+        "usageNotes": n => { queryPluginSemanticCommandResponse.usageNotes = n.getStringValue(); },
     }
 }
 /**
@@ -987,6 +1115,44 @@ export function deserializeIntoQueryPluginTeamAuthorizationCommandResponseItem(q
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryPluginToolExampleCommandResponse(queryPluginToolExampleCommandResponse: Partial<QueryPluginToolExampleCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "paramsExample": n => { queryPluginToolExampleCommandResponse.paramsExample = n.getStringValue(); },
+        "toolKey": n => { queryPluginToolExampleCommandResponse.toolKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginToolItem(queryPluginToolItem: Partial<QueryPluginToolItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryPluginToolItem.description = n.getStringValue(); },
+        "key": n => { queryPluginToolItem.key = n.getStringValue(); },
+        "paramsExample": n => { queryPluginToolItem.paramsExample = n.getStringValue(); },
+        "title": n => { queryPluginToolItem.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryPluginToolsCommandResponse(queryPluginToolsCommandResponse: Partial<QueryPluginToolsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "description": n => { queryPluginToolsCommandResponse.description = n.getStringValue(); },
+        "isDynamic": n => { queryPluginToolsCommandResponse.isDynamic = n.getBooleanValue(); },
+        "items": n => { queryPluginToolsCommandResponse.items = n.getCollectionOfObjectValues<QueryPluginToolItem>(createQueryPluginToolItemFromDiscriminatorValue); },
+        "key": n => { queryPluginToolsCommandResponse.key = n.getStringValue(); },
+        "name": n => { queryPluginToolsCommandResponse.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoRefreshMcpServerPluginCommand(refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "pluginId": n => { refreshMcpServerPluginCommand.pluginId = n.getGuidValue(); },
@@ -1021,6 +1187,48 @@ export function deserializeIntoSaveDynamicPluginCommand(saveDynamicPluginCommand
         "pluginKey": n => { saveDynamicPluginCommand.pluginKey = n.getStringValue(); },
         "templeteKey": n => { saveDynamicPluginCommand.templeteKey = n.getStringValue(); },
         "title": n => { saveDynamicPluginCommand.title = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSavePluginSemanticCommand(savePluginSemanticCommand: Partial<SavePluginSemanticCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "notes": n => { savePluginSemanticCommand.notes = n.getCollectionOfObjectValues<SavePluginSemanticNoteItem>(createSavePluginSemanticNoteItemFromDiscriminatorValue); },
+        "pluginId": n => { savePluginSemanticCommand.pluginId = n.getGuidValue(); },
+        "toolMetas": n => { savePluginSemanticCommand.toolMetas = n.getCollectionOfObjectValues<SavePluginToolMetaItem>(createSavePluginToolMetaItemFromDiscriminatorValue); },
+        "usageNotes": n => { savePluginSemanticCommand.usageNotes = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSavePluginSemanticNoteItem(savePluginSemanticNoteItem: Partial<SavePluginSemanticNoteItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "content": n => { savePluginSemanticNoteItem.content = n.getStringValue(); },
+        "id": n => { savePluginSemanticNoteItem.id = n.getGuidValue(); },
+        "mode": n => { savePluginSemanticNoteItem.mode = n.getStringValue(); },
+        "sortOrder": n => { savePluginSemanticNoteItem.sortOrder = n.getNumberValue(); },
+        "title": n => { savePluginSemanticNoteItem.title = n.getStringValue(); },
+        "toolKey": n => { savePluginSemanticNoteItem.toolKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSavePluginToolMetaItem(savePluginToolMetaItem: Partial<SavePluginToolMetaItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "callPolicy": n => { savePluginToolMetaItem.callPolicy = n.getStringValue(); },
+        "destructiveHint": n => { savePluginToolMetaItem.destructiveHint = n.getBooleanValue(); },
+        "extraNotes": n => { savePluginToolMetaItem.extraNotes = n.getStringValue(); },
+        "readOnlyHint": n => { savePluginToolMetaItem.readOnlyHint = n.getBooleanValue(); },
+        "toolKey": n => { savePluginToolMetaItem.toolKey = n.getStringValue(); },
     }
 }
 /**
@@ -1334,6 +1542,60 @@ export interface PluginRunResult extends Parsable {
      */
     success?: boolean | null;
 }
+/**
+ * 插件语义条目项.
+ */
+export interface PluginSemanticNoteItem extends Parsable {
+    /**
+     * 条目内容（markdown）.
+     */
+    content?: string | null;
+    /**
+     * 条目 id，新增时为空.
+     */
+    id?: Guid | null;
+    /**
+     * 披露方式：always=常驻注入；onDemand=按需经 plugin_note 取回.
+     */
+    mode?: string | null;
+    /**
+     * 排序.
+     */
+    sortOrder?: number | null;
+    /**
+     * 条目标题.
+     */
+    title?: string | null;
+    /**
+     * 工具 key，空串=插件级条目.
+     */
+    toolKey?: string | null;
+}
+/**
+ * 插件工具元数据项.
+ */
+export interface PluginToolMetaItem extends Parsable {
+    /**
+     * 调用策略 JSON（denyPatterns + action），空串=未配置.
+     */
+    callPolicy?: string | null;
+    /**
+     * 破坏性提示.
+     */
+    destructiveHint?: boolean | null;
+    /**
+     * 工具补充说明.
+     */
+    extraNotes?: string | null;
+    /**
+     * 只读提示.
+     */
+    readOnlyHint?: boolean | null;
+    /**
+     * 工具 key.
+     */
+    toolKey?: string | null;
+}
 export type PluginType = (typeof PluginTypeObject)[keyof typeof PluginTypeObject];
 /**
  * 预上传 openapi 文件，支持 json、yaml.
@@ -1544,6 +1806,14 @@ export interface QueryPluginListCommandResponseItem extends Parsable {
      * 响应结果类型.
      */
     responseType?: string | null;
+    /**
+     * 工具数（多工具动态插件为工具数，其余固定 1）.
+     */
+    toolCount?: number | null;
+    /**
+     * 工具清单（单工具插件固定一个 key=run 的项）.
+     */
+    tools?: QueryPluginToolItem[] | null;
 }
 /**
  * 插件管理列表查询响应.
@@ -1630,6 +1900,39 @@ export interface QueryPluginManageListCommandResponseItem extends AuditsInfo, Pa
      * 类型：mcp|openapi|native|tool（对应 PluginEntity.Type）.
      */
     type?: number | null;
+}
+/**
+ * 插件语义配置查询响应.
+ */
+export interface QueryPluginSemanticCommandResponse extends Parsable {
+    /**
+     * 语义条目列表.
+     */
+    notes?: PluginSemanticNoteItem[] | null;
+    /**
+     * 插件记录 id.
+     */
+    pluginId?: Guid | null;
+    /**
+     * 插件 key.
+     */
+    pluginName?: string | null;
+    /**
+     * 插件标题.
+     */
+    title?: string | null;
+    /**
+     * 工具元数据列表（仅已配置的工具）.
+     */
+    toolMetas?: PluginToolMetaItem[] | null;
+    /**
+     * 插件的工具清单（语义配置的编辑参照：MCP/OpenAPI 为函数，动态插件为模板工具，静态插件为 run）.
+     */
+    tools?: QueryPluginToolItem[] | null;
+    /**
+     * 插件级使用须知/领域背景（随工具清单注入模型系统提示），≤2000 字符.
+     */
+    usageNotes?: string | null;
 }
 /**
  * 插件分类分布项.
@@ -1779,6 +2082,65 @@ export interface QueryPluginTeamAuthorizationCommandResponseItem extends Parsabl
     teamName?: string | null;
 }
 /**
+ * 单工具参数运行示例查询响应.
+ */
+export interface QueryPluginToolExampleCommandResponse extends Parsable {
+    /**
+     * 参数运行示例 JSON 字符串，可为空.
+     */
+    paramsExample?: string | null;
+    /**
+     * 工具 key.
+     */
+    toolKey?: string | null;
+}
+/**
+ * 插件工具项（多工具动态插件的工具元数据；单工具插件固定一个 key=run 的项）.
+ */
+export interface QueryPluginToolItem extends Parsable {
+    /**
+     * 工具描述.
+     */
+    description?: string | null;
+    /**
+     * 工具 key（单工具插件固定为 run）.
+     */
+    key?: string | null;
+    /**
+     * 参数运行示例 JSON.
+     */
+    paramsExample?: string | null;
+    /**
+     * 工具展示标题.
+     */
+    title?: string | null;
+}
+/**
+ * 插件工具清单查询响应.
+ */
+export interface QueryPluginToolsCommandResponse extends Parsable {
+    /**
+     * 插件描述.
+     */
+    description?: string | null;
+    /**
+     * 是否为动态插件.
+     */
+    isDynamic?: boolean | null;
+    /**
+     * 工具清单.
+     */
+    items?: QueryPluginToolItem[] | null;
+    /**
+     * 插件 key.
+     */
+    key?: string | null;
+    /**
+     * 插件名称.
+     */
+    name?: string | null;
+}
+/**
  * 刷新 MCP 服务器的工具列表，也就是重新从 mcp 服务器拉取这个服务的 tool 列表.
  */
 export interface RefreshMcpServerPluginCommand extends Parsable {
@@ -1804,7 +2166,7 @@ export interface RunPluginCommand extends Parsable {
      */
     contextUserType?: UserType | null;
     /**
-     * 自定义插件（MCP/OpenAPI）的函数名称；为空时插件仅有一个函数才可执行.
+     * 工具标识：自定义插件（MCP/OpenAPI）为函数名称；多工具动态插件为 [AiPluginTool] 的工具 key；为空时单工具插件可执行.
      */
     functionEscaped?: string | null;
     /**
@@ -1848,6 +2210,81 @@ export interface SaveDynamicPluginCommand extends Parsable {
      * 实例标题（展示名称）.
      */
     title?: string | null;
+}
+/**
+ * 保存插件的语义配置（整体覆盖）：插件级使用须知、语义条目与工具元数据.
+ */
+export interface SavePluginSemanticCommand extends Parsable {
+    /**
+     * 语义条目列表（整体覆盖：不在列表内的既有条目将被删除），≤50 条.
+     */
+    notes?: SavePluginSemanticNoteItem[] | null;
+    /**
+     * 插件记录 id（plugin.id）.
+     */
+    pluginId?: Guid | null;
+    /**
+     * 工具元数据列表（整体覆盖：按 toolKey upsert，不在列表内的既有元数据将被删除），≤100 条.
+     */
+    toolMetas?: SavePluginToolMetaItem[] | null;
+    /**
+     * 插件级使用须知/领域背景（随工具清单注入模型系统提示），≤2000 字符，空串清除.
+     */
+    usageNotes?: string | null;
+}
+/**
+ * 语义条目保存项.
+ */
+export interface SavePluginSemanticNoteItem extends Parsable {
+    /**
+     * 条目内容（markdown），always ≤4000 字符、onDemand ≤12000 字符.
+     */
+    content?: string | null;
+    /**
+     * 条目 id，更新已有条目时必传，新增为空.
+     */
+    id?: Guid | null;
+    /**
+     * 披露方式：always=常驻注入；onDemand=按需经 plugin_note 取回.
+     */
+    mode?: string | null;
+    /**
+     * 排序.
+     */
+    sortOrder?: number | null;
+    /**
+     * 条目标题，≤100 字符.
+     */
+    title?: string | null;
+    /**
+     * 工具 key，空串=插件级条目.
+     */
+    toolKey?: string | null;
+}
+/**
+ * 工具元数据保存项.
+ */
+export interface SavePluginToolMetaItem extends Parsable {
+    /**
+     * 调用策略 JSON（denyPatterns + action：block/confirm/audit），空串=未配置.
+     */
+    callPolicy?: string | null;
+    /**
+     * 破坏性提示.
+     */
+    destructiveHint?: boolean | null;
+    /**
+     * 工具补充说明，≤2000 字符.
+     */
+    extraNotes?: string | null;
+    /**
+     * 只读提示.
+     */
+    readOnlyHint?: boolean | null;
+    /**
+     * 工具 key，必填 ≤200 字符.
+     */
+    toolKey?: string | null;
 }
 /**
  * 保存/写回静态插件信息。静态插件默认无 DB 记录，首次保存创建记录，之后更新.
@@ -2089,6 +2526,35 @@ export function serializePluginRunResult(writer: SerializationWriter, pluginRunR
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializePluginSemanticNoteItem(writer: SerializationWriter, pluginSemanticNoteItem: Partial<PluginSemanticNoteItem> | undefined | null = {}) : void {
+    if (pluginSemanticNoteItem) {
+        writer.writeStringValue("content", pluginSemanticNoteItem.content);
+        writer.writeGuidValue("id", pluginSemanticNoteItem.id);
+        writer.writeStringValue("mode", pluginSemanticNoteItem.mode);
+        writer.writeNumberValue("sortOrder", pluginSemanticNoteItem.sortOrder);
+        writer.writeStringValue("title", pluginSemanticNoteItem.title);
+        writer.writeStringValue("toolKey", pluginSemanticNoteItem.toolKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePluginToolMetaItem(writer: SerializationWriter, pluginToolMetaItem: Partial<PluginToolMetaItem> | undefined | null = {}) : void {
+    if (pluginToolMetaItem) {
+        writer.writeStringValue("callPolicy", pluginToolMetaItem.callPolicy);
+        writer.writeBooleanValue("destructiveHint", pluginToolMetaItem.destructiveHint);
+        writer.writeStringValue("extraNotes", pluginToolMetaItem.extraNotes);
+        writer.writeBooleanValue("readOnlyHint", pluginToolMetaItem.readOnlyHint);
+        writer.writeStringValue("toolKey", pluginToolMetaItem.toolKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializePreUploadOpenApiFilePluginCommand(writer: SerializationWriter, preUploadOpenApiFilePluginCommand: Partial<PreUploadOpenApiFilePluginCommand> | undefined | null = {}) : void {
     if (preUploadOpenApiFilePluginCommand) {
         writer.writeStringValue("contentType", preUploadOpenApiFilePluginCommand.contentType);
@@ -2213,6 +2679,8 @@ export function serializeQueryPluginListCommandResponseItem(writer: Serializatio
         writer.writeStringValue("paramsExample", queryPluginListCommandResponseItem.paramsExample);
         writer.writeStringValue("requestType", queryPluginListCommandResponseItem.requestType);
         writer.writeStringValue("responseType", queryPluginListCommandResponseItem.responseType);
+        writer.writeNumberValue("toolCount", queryPluginListCommandResponseItem.toolCount);
+        writer.writeCollectionOfObjectValues<QueryPluginToolItem>("tools", queryPluginListCommandResponseItem.tools, serializeQueryPluginToolItem);
     }
 }
 /**
@@ -2251,6 +2719,22 @@ export function serializeQueryPluginManageListCommandResponseItem(writer: Serial
         writer.writeStringValue("templeteKey", queryPluginManageListCommandResponseItem.templeteKey);
         writer.writeStringValue("title", queryPluginManageListCommandResponseItem.title);
         writer.writeNumberValue("type", queryPluginManageListCommandResponseItem.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginSemanticCommandResponse(writer: SerializationWriter, queryPluginSemanticCommandResponse: Partial<QueryPluginSemanticCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginSemanticCommandResponse) {
+        writer.writeCollectionOfObjectValues<PluginSemanticNoteItem>("notes", queryPluginSemanticCommandResponse.notes, serializePluginSemanticNoteItem);
+        writer.writeGuidValue("pluginId", queryPluginSemanticCommandResponse.pluginId);
+        writer.writeStringValue("pluginName", queryPluginSemanticCommandResponse.pluginName);
+        writer.writeStringValue("title", queryPluginSemanticCommandResponse.title);
+        writer.writeCollectionOfObjectValues<PluginToolMetaItem>("toolMetas", queryPluginSemanticCommandResponse.toolMetas, serializePluginToolMetaItem);
+        writer.writeCollectionOfObjectValues<QueryPluginToolItem>("tools", queryPluginSemanticCommandResponse.tools, serializeQueryPluginToolItem);
+        writer.writeStringValue("usageNotes", queryPluginSemanticCommandResponse.usageNotes);
     }
 }
 /**
@@ -2349,6 +2833,44 @@ export function serializeQueryPluginTeamAuthorizationCommandResponseItem(writer:
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryPluginToolExampleCommandResponse(writer: SerializationWriter, queryPluginToolExampleCommandResponse: Partial<QueryPluginToolExampleCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginToolExampleCommandResponse) {
+        writer.writeStringValue("paramsExample", queryPluginToolExampleCommandResponse.paramsExample);
+        writer.writeStringValue("toolKey", queryPluginToolExampleCommandResponse.toolKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginToolItem(writer: SerializationWriter, queryPluginToolItem: Partial<QueryPluginToolItem> | undefined | null = {}) : void {
+    if (queryPluginToolItem) {
+        writer.writeStringValue("description", queryPluginToolItem.description);
+        writer.writeStringValue("key", queryPluginToolItem.key);
+        writer.writeStringValue("paramsExample", queryPluginToolItem.paramsExample);
+        writer.writeStringValue("title", queryPluginToolItem.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryPluginToolsCommandResponse(writer: SerializationWriter, queryPluginToolsCommandResponse: Partial<QueryPluginToolsCommandResponse> | undefined | null = {}) : void {
+    if (queryPluginToolsCommandResponse) {
+        writer.writeStringValue("description", queryPluginToolsCommandResponse.description);
+        writer.writeBooleanValue("isDynamic", queryPluginToolsCommandResponse.isDynamic);
+        writer.writeCollectionOfObjectValues<QueryPluginToolItem>("items", queryPluginToolsCommandResponse.items, serializeQueryPluginToolItem);
+        writer.writeStringValue("key", queryPluginToolsCommandResponse.key);
+        writer.writeStringValue("name", queryPluginToolsCommandResponse.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeRefreshMcpServerPluginCommand(writer: SerializationWriter, refreshMcpServerPluginCommand: Partial<RefreshMcpServerPluginCommand> | undefined | null = {}) : void {
     if (refreshMcpServerPluginCommand) {
         writer.writeGuidValue("pluginId", refreshMcpServerPluginCommand.pluginId);
@@ -2383,6 +2905,48 @@ export function serializeSaveDynamicPluginCommand(writer: SerializationWriter, s
         writer.writeStringValue("pluginKey", saveDynamicPluginCommand.pluginKey);
         writer.writeStringValue("templeteKey", saveDynamicPluginCommand.templeteKey);
         writer.writeStringValue("title", saveDynamicPluginCommand.title);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSavePluginSemanticCommand(writer: SerializationWriter, savePluginSemanticCommand: Partial<SavePluginSemanticCommand> | undefined | null = {}) : void {
+    if (savePluginSemanticCommand) {
+        writer.writeCollectionOfObjectValues<SavePluginSemanticNoteItem>("notes", savePluginSemanticCommand.notes, serializeSavePluginSemanticNoteItem);
+        writer.writeGuidValue("pluginId", savePluginSemanticCommand.pluginId);
+        writer.writeCollectionOfObjectValues<SavePluginToolMetaItem>("toolMetas", savePluginSemanticCommand.toolMetas, serializeSavePluginToolMetaItem);
+        writer.writeStringValue("usageNotes", savePluginSemanticCommand.usageNotes);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSavePluginSemanticNoteItem(writer: SerializationWriter, savePluginSemanticNoteItem: Partial<SavePluginSemanticNoteItem> | undefined | null = {}) : void {
+    if (savePluginSemanticNoteItem) {
+        writer.writeStringValue("content", savePluginSemanticNoteItem.content);
+        writer.writeGuidValue("id", savePluginSemanticNoteItem.id);
+        writer.writeStringValue("mode", savePluginSemanticNoteItem.mode);
+        writer.writeNumberValue("sortOrder", savePluginSemanticNoteItem.sortOrder);
+        writer.writeStringValue("title", savePluginSemanticNoteItem.title);
+        writer.writeStringValue("toolKey", savePluginSemanticNoteItem.toolKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeSavePluginToolMetaItem(writer: SerializationWriter, savePluginToolMetaItem: Partial<SavePluginToolMetaItem> | undefined | null = {}) : void {
+    if (savePluginToolMetaItem) {
+        writer.writeStringValue("callPolicy", savePluginToolMetaItem.callPolicy);
+        writer.writeBooleanValue("destructiveHint", savePluginToolMetaItem.destructiveHint);
+        writer.writeStringValue("extraNotes", savePluginToolMetaItem.extraNotes);
+        writer.writeBooleanValue("readOnlyHint", savePluginToolMetaItem.readOnlyHint);
+        writer.writeStringValue("toolKey", savePluginToolMetaItem.toolKey);
     }
 }
 /**

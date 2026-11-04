@@ -366,3 +366,28 @@ node local-dev/clickstack-e2e.mjs                             # ClickStack 查�
 - 前端：`PluginStatsPanel` 改新端点 + 共享 `PluginStatsView`；`npx vitest run src/pages/plugins/__tests__/PluginStatsPanel.test.tsx` → 5/5（概览/团队名后缀/分类兜底/趋势有数/趋势空态）；插件套件 15/15。
 - E2E：`team-plugin-e2e.mjs` TP_BASE 指向 5000 → **61/61**（新增 TP-37p/37a~e/38a~d/39a~d 共 14 断言）；`statistics-usage-e2e.mjs` 回归全绿（统计模块只读接入，写链路无改动）。
 - team-plugin-e2e 从 47 断言增至 61（AGENTS TP 计数同步）。
+
+### 2026-11-04 动态插件多工具 + 插件语义配置（@DYN-S127~S144）
+
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @DYN-S127~S136 | local-dev/plugin-multi-tool-semantic-e2e.mjs（MT-1~16） | PASS 16/16（2026-11-04） |
+| @DYN-S137~S144 | local-dev/plugin-multi-tool-semantic-e2e.mjs（SM-1~14） | PASS 14/14（2026-11-04） |
+| 多工具契约发现与执行路由 | tests/MoAI.AIPlugin.Dynamic.Tests/TextToolkitPluginTests.cs | PASS 10/10（2026-11-04） |
+| 语义注入/元工具/预检 | tests/MoAI.AI.Core.Tests/AppToolContextProviderTests.cs（新增 8 例） | PASS 179/179（2026-11-04） |
+| 前端回归 | ui typecheck 0 error + lint 0 error + plugins 套件单跑通过 | PASS（2026-11-04） |
+
+- 构建与回归：`dotnet build src/MoAI/MoAI.csproj` **0 error**；存量库执行 `asserts/plugin_semantic.sql`（usage_notes 列 + plugin_semantic_note/plugin_tool_meta 两表）后端到端全链路可跑。
+- E2E：`node local-dev/plugin-multi-tool-semantic-e2e.mjs` → **PASS 30 / FAIL 0**（后端 127.0.0.1:5000）。覆盖：模板/实例工具清单与参数示例接口、按 toolKey 独立运行与未知 toolKey 拒绝、存量单工具兼容（run 项 + 不带 toolKey 运行）、配置注释原文保留、语义配置整体覆盖保存/回显/校验 400/门禁 403/404。
+- 单测新增：`TextToolkitPluginTests`（契约发现 3 工具/单工具形态不变/toolKey 路由/未知 key/配置校验/长度护栏）、`AppToolContextProviderTests` 增 8 例（使用须知注入与同插件去重、语义目录注入 + plugin_note 元工具取回/缺失报错、无条目不注册、CallPolicy 命中拦截/未命中放行、ExtraNotes 并入 list_tools 描述）。
+- 客户端重建：`npm run syncapi` 已固化双客户端生成（主 client + aiplugin-client include `/api/ai/plugin` + `/api/ai/plugin/**`，只带 `/**` 会丢挂在该节点的 `GET /api/ai/plugin`）。
+- 实踩坑：①`SavePluginSemanticCommand.Validate` 校验路由回填的 PluginId → body 不带 pluginId 恒 400（路由参数时序坑复命中，oauthconnect 同款）；修复为不校验该字段、Handler 查不到插件 404 兜底；②`PluginInfo.Request/Response` 改可空后，`QueryTeamDynamicTemplatesCommandHandler`（团队动态模板列表）残留裸解引用 `x.Request.FullName` → 注册表含多工具模板即 NRE「服务器错误 Object reference not set to an instance of an object」——修复为可空访问，并把工具清单组装收敛为 `PluginTypeHelper.BuildToolItems` 共享实现（团队模板列表同步带出 Tools/ToolCount）；③全量 vitest 在本机并发下有 14 例资源竞争 flaky（分类/维基/接入页等，与存量页同类），单文件重跑全过。
+- 回归：修复②后 `team-plugin-e2e.mjs`（TP_BASE=5000）**68/68**（追加 TSM-1~7 团队语义用例，见下）、`dynamic-plugin-e2e.mjs` **PASS 165 / FAIL 0 / SKIP 4**、`plugin-multi-tool-semantic-e2e.mjs` **30/30**。
+
+### 2026-11-04b 团队插件语义配置（@DYN-S154~S158）
+
+- 后端：`QueryTeamPluginSemanticCommand`/`SaveTeamPluginSemanticCommand`（teamplugin.Shared）+ Handler（成员可读 / Owner-Admin 可写 / 团队自有归属校验，非自有 403）经 MediatR 转发 aiplugin 同一 Handler——零逻辑复制，团队侧与系统侧同一存储同一校验；路由 `GET/PUT /team/{teamId}/plugin/{pluginId}/semantic`。⚠️ `TaskStop` 只杀 shell 不杀 dotnet 子进程——重启后端时端口被残留进程占用致新进程 exit 1，需 `taskkill` PID 后再起（实踩）。
+- 前端：`PluginSemanticModal` 加 `teamId` prop（走团队端点）+ `team-plugin.ts` 封装（归一复用 `normalizePluginSemantic`）+ 团队动态/自定义两面板「语义配置」入口（`canManage && isTeamOwned`——系统授权插件的语义属全局数据，团队侧不可改）。
+- E2E：`team-plugin-e2e.mjs` → **68/68**（TSM-1 非成员 404 / TSM-2 成员可读 / TSM-3 成员写 403 / TSM-4~5 Owner 保存回显 / TSM-6 策略校验 400 / TSM-7 跨团队 404）；`plugin-multi-tool-semantic-e2e.mjs` 回归 **30/30**；主客户端 `npm run syncapi` 重建（新端点进生成物）。
+- 口径说明：团队侧语义仅限团队自有插件；系统授权插件在团队侧不可配置（其语义影响全平台），这与编辑/删除权限口径一致。
+- 已知留白：AI 会话内 plugin_note 取回与 CallPolicy 拦截的真实对话链路由单测覆盖（`AppToolContextProviderTests`），未铺桩模型端到端；CallPolicy 命中未接 app_security_event 审计。

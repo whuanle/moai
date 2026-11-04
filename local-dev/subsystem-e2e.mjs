@@ -4,7 +4,8 @@
 //       心跳 v2（按实例 ZSET，多实例在线实例数）/ 团队授权（全员与指定团队）/
 //       组织授权（统一组织授权表 org_grant：角色+方向 self/up/down，团队∪组织并集门禁）/
 //       停用即拒 / 密钥重置 / 删除释放 appid / 团队可用列表门禁 / 委托 SSO /
-//       应用接入同表同接口（appid 直连、全量资源面、子系统专属端点 404）。
+//       应用接入同表同接口（appid 直连、全量资源面、子系统专属端点 404）/
+//       接入头像（创建携带/防伪 404/替换/不携带不变/缺省空串；存储不可用时跳过）。
 // 前置：后端运行中；种子账号 admin / abcd123456（root）。全部用例零真实外部依赖。
 // 用法：node local-dev/subsystem-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 SUBSYS_BASE 覆盖）
 import crypto from 'node:crypto'
@@ -447,6 +448,62 @@ async function main() {
   // 清理应用接入
   await api('DELETE', `/api/subsystem/${APP_ID}`, { token: root })
   check('SUB-90 删除应用接入后直连立即失效 401', (await api('GET', '/api/subsys/info', { token: APP_KEY })).status === 401)
+
+  // ---- 接入头像（子系统/应用接入通用）：直传走公开存储预上传链路，存储不可用时整段跳过 ----
+  // 1x1 PNG（最小合法图片）
+  const PNG_BYTES = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64')
+  const uploadAvatar = async (token, tag) => {
+    const fileName = `avatar-${TS}-${tag}.png`
+    const pre = await api('POST', '/api/storage/public/pre_upload_image', {
+      token,
+      body: { fileName, contentType: 'image/png', fileSize: PNG_BYTES.length, sha256: crypto.createHash('sha256').update(PNG_BYTES).digest('hex') },
+    })
+    if (pre.status !== 200 || !pre.json?.objectKey) return { error: `pre_upload ${pre.status} ${pre.text.slice(0, 120)}` }
+    if (!pre.json.isExist && pre.json.uploadUrl) {
+      const put = await fetch(pre.json.uploadUrl, { method: 'PUT', body: PNG_BYTES, headers: { 'Content-Type': 'image/png' } })
+      if (!put.ok) return { error: `PUT ${put.status}` }
+      const done = await api('POST', '/api/storage/complate_url', { token, body: { fileId: pre.json.fileId, isSuccess: true } })
+      if (done.status !== 200) return { error: `complate_url ${done.status} ${done.text.slice(0, 120)}` }
+    }
+    return { objectKey: pre.json.objectKey }
+  }
+
+  const avA = await uploadAvatar(root, 'a')
+  if (avA.error) {
+    console.log(`SKIP | 接入头像场景（存储不可用: ${avA.error}）`)
+  } else {
+    const avCreated = await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'subsystem', key: `avatar${TS}`, name: '头像子系统', teamScope: 'allTeams', avatarPath: avA.objectKey } })
+    const AV_ID = avCreated.json?.id
+    check('SUB-97 创建子系统携带头像 objectKey 落库成功', avCreated.status === 200 && !!AV_ID, `${avCreated.status} ${avCreated.text.slice(0, 120)}`)
+    const avItem = AV_ID ? (await listHasId(AV_ID)).item : null
+    check('SUB-97a 列表回显头像 objectKey', avItem?.avatarPath === avA.objectKey, `avatarPath=${avItem?.avatarPath}`)
+
+    check('SUB-98 创建携带未登记 objectKey 404', (await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'subsystem', key: `avbad${TS}`, name: 'x', teamScope: 'allTeams', avatarPath: 'images/ghost-no-such-key.png' } })).status === 404)
+    check('SUB-99 更新携带未登记 objectKey 404', AV_ID ? (await api('PUT', `/api/subsystem/${AV_ID}`, { token: root, body: { name: '头像子系统', status: 'enabled', avatarPath: 'images/ghost-no-such-key.png' } })).status === 404 : false)
+
+    const avB = await uploadAvatar(root, 'b')
+    if (avB.objectKey) {
+      const upd = await api('PUT', `/api/subsystem/${AV_ID}`, { token: root, body: { name: '头像子系统', status: 'enabled', avatarPath: avB.objectKey } })
+      const avItem2 = (await listHasId(AV_ID)).item
+      check('SUB-100 更新替换头像并回显新 objectKey', upd.status === 200 && avItem2?.avatarPath === avB.objectKey, `upd=${upd.status} avatarPath=${avItem2?.avatarPath}`)
+    } else {
+      console.log(`SKIP | SUB-100 替换头像（第二张上传失败: ${avB.error}）`)
+    }
+
+    const updKeep = await api('PUT', `/api/subsystem/${AV_ID}`, { token: root, body: { name: '头像子系统改名', status: 'enabled' } })
+    const avItem3 = (await listHasId(AV_ID)).item
+    check('SUB-101 更新不携带头像字段时头像保持不变', updKeep.status === 200 && avItem3?.avatarPath === (avB.objectKey ?? avA.objectKey), `avatarPath=${avItem3?.avatarPath}`)
+
+    const avApp = await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'app', name: '无头像应用接入' } })
+    const avAppItem = avApp.json?.id ? (await listHasId(avApp.json.id)).item : null
+    check('SUB-102 创建不带头像默认空串', avApp.status === 200 && avAppItem?.avatarPath === '', `avatarPath=${JSON.stringify(avAppItem?.avatarPath)}`)
+    check('SUB-103 应用接入行同样支持头像字段回显（同表同结构）', avAppItem !== null && typeof avAppItem?.avatarPath === 'string', `type=${avAppItem?.appType}`)
+
+    // 清理头像场景造数
+    await api('DELETE', `/api/subsystem/${AV_ID}`, { token: root })
+    await api('DELETE', `/api/subsystem/${avApp.json?.id}`, { token: root })
+  }
+
 
   // ---- 公网限流：token 换取失败 (IP, appid) 维度 10 次/60s 触发 429，按维度隔离 ----
   let rlStatus = 0

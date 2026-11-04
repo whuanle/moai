@@ -87,10 +87,35 @@ public sealed class AppTool
     public Func<CancellationToken, Task<string?>>? ResolveParametersExampleAsync { get; init; }
 
     /// <summary>
+    /// 插件级使用须知/领域背景（管理员维护，同一插件的所有工具带同一份文本，注入系统提示时按文本去重），可为空.
+    /// </summary>
+    public string? UsageNotes { get; init; }
+
+    /// <summary>
+    /// 工具级补充说明（叠加在 Description 之上进入工具说明），可为空.
+    /// </summary>
+    public string? ExtraNotes { get; init; }
+
+    /// <summary>
+    /// 工具调用策略 JSON（<see cref="MoAI.AIPlugin.Models.PluginToolCallPolicy"/>：denyPatterns + action），空=未配置.
+    /// </summary>
+    public string? CallPolicy { get; init; }
+
+    /// <summary>
+    /// 所属插件的按需语义条目（标题进目录、正文经 plugin_note 元工具取回；同一插件的所有工具共享同一列表），可为空.
+    /// </summary>
+    public IReadOnlyList<AppPluginSemanticNote>? SemanticNotes { get; init; }
+
+    /// <summary>
     /// 调用工具.
     /// </summary>
     public required Func<string?, CancellationToken, Task<AppToolResult>> InvokeAsync { get; init; }
 }
+
+/// <summary>
+/// 插件按需语义条目（标题做目录展示，正文按需取回）.
+/// </summary>
+public sealed record AppPluginSemanticNote(Guid Id, string Title, string Content);
 
 /// <summary>
 /// 工具来源提供者：把某一类资源（插件/知识库）转换为 <see cref="AppTool"/> 列表；新增来源实现本接口即可.

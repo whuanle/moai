@@ -1,28 +1,23 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Avatar, Button, Radio, Select, Space, Switch, Tag, theme, TreeSelect, Typography } from 'antd'
 import type { TreeDataNode } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { spacing } from '@/design-system/theme'
+import { getOrgRoles } from '@/api/org'
+import { buildGrantScopeRoleTree, type GrantScopeDirection, type GrantScopeRoleNode } from '@/utils/orgScopeTree'
 import { resolveStorageUrl } from '@/utils/storage'
 
-const { Text } = Typography
+// 组织角色树节点与授权方向类型收敛在 @/utils/orgScopeTree（组树辅助 buildGrantScopeRoleTree 同在彼处）
+export type { GrantScopeDirection, GrantScopeRoleNode }
 
-/** 组织授权方向：self=仅该组织 up=该组织及以上 down=该组织及以下 */
-export type GrantScopeDirection = 'self' | 'up' | 'down'
+const { Text } = Typography
 
 /** 团队选项（带头像） */
 export interface GrantScopeTeamOption {
   label: string
   value: number
   avatar?: string | null
-}
-
-/** 组织角色树节点 */
-export interface GrantScopeRoleNode {
-  title: string
-  value: number
-  children?: GrantScopeRoleNode[]
 }
 
 /** 组织授权行：一个组织角色一个方向规则 */
@@ -47,18 +42,22 @@ interface GrantScopeEditorProps {
   /** 团队选项（带头像），由调用方拉取传入 */
   teamOptions?: GrantScopeTeamOption[]
   teamLoading?: boolean
-  /** 组织角色树（按 path 层级序），由调用方拉取传入 */
+  /** 组织角色树（按 path 层级序）；不传时组件 mount 自行拉取（getOrgRoles → 组树），调用方零样板接入 */
   roleTree?: GrantScopeRoleNode[]
   disabled?: boolean
+  /** 隐藏授权团队区（仅全员开关 + 组织授权，如应用上架可视范围场景） */
+  hideTeams?: boolean
 }
 
 /**
  * 授权范围编辑器（全局复用组件）：标题行为「全员可用」开关，关闭后展开
  * 授权团队（带头像多选）与授权组织（组织角色 + 方向规则 self/up/down）两组配置；
+ * hideTeams 时不渲染授权团队区（仅全员开关 + 组织授权）；
+ * 组织角色树不传 roleTree 时组件自行拉取（mount 一次），调用方无需各自维护加载样板；
  * 组织下拉跨行共享覆盖高亮（现有授权并集覆盖的组织以主题色高亮，已选组织禁选），
  * 作为受控组件配合 Form.Item 使用，保存语义由调用方决定（惯例为整体覆盖，全员可用时清空细粒度授权）。
  */
-export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoading = false, roleTree = [], disabled = false }: GrantScopeEditorProps) {
+export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoading = false, roleTree, disabled = false, hideTeams = false }: GrantScopeEditorProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const emptyOrgGrants = useMemo<GrantScopeOrgGrant[]>(() => [], [])
@@ -66,6 +65,33 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
   const teamIds = value?.teamIds ?? []
   const orgGrants = value?.orgGrants ?? emptyOrgGrants
   const update = (patch: Partial<GrantScopeValue>) => onChange?.({ allUsers, teamIds, orgGrants, ...patch })
+
+  // 组织树自加载：未传 roleTree 时 mount 拉取一次（错误已由全局请求中间件统一提示）
+  const selfLoadTree = roleTree === undefined
+  const [fetchedRoleTree, setFetchedRoleTree] = useState<GrantScopeRoleNode[]>([])
+  const [roleTreeLoading, setRoleTreeLoading] = useState(false)
+  useEffect(() => {
+    if (!selfLoadTree) return
+    let cancelled = false
+    setRoleTreeLoading(true)
+    getOrgRoles()
+      .then((roles) => {
+        if (!cancelled) setFetchedRoleTree(buildGrantScopeRoleTree(roles))
+      })
+      .catch(() => {
+        // 错误已由全局请求中间件统一提示
+      })
+      .finally(() => {
+        if (!cancelled) setRoleTreeLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selfLoadTree])
+  const tree = useMemo(
+    () => (selfLoadTree ? fetchedRoleTree : (roleTree ?? [])),
+    [selfLoadTree, fetchedRoleTree, roleTree],
+  )
 
   // 角色父子关系（用于方向展开判定祖先）
   const parentOf = useMemo(() => {
@@ -76,9 +102,9 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
         if (node.children) walk(node.children, node.value)
       }
     }
-    walk(roleTree, null)
+    walk(tree, null)
     return parents
-  }, [roleTree])
+  }, [tree])
 
   // 展开一条授权覆盖的角色集合：self 仅自身、up 自身+祖先、down 自身+子树
   const expandGrant = useMemo(() => {
@@ -112,10 +138,10 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
         }
         return false
       }
-      collectSubtree(roleTree)
+      collectSubtree(tree)
       return hit
     }
-  }, [parentOf, roleTree])
+  }, [parentOf, tree])
 
   // 全部授权的并集覆盖（跨行共享高亮）
   const coveredRoles = useMemo(() => {
@@ -142,7 +168,7 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
           : node.title,
         children: node.children ? mark(node.children) : undefined,
       }))
-    return mark(roleTree)
+    return mark(tree)
   }
 
   return (
@@ -153,10 +179,12 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
       </Space>
       {!allUsers && (
         <>
-          <Text strong style={{ fontSize: 13, marginTop: spacing.xs }}>
-            {t('grantScope.teamTitle')}
-          </Text>
-          <Select
+          {!hideTeams && (
+            <>
+              <Text strong style={{ fontSize: 13, marginTop: spacing.xs }}>
+                {t('grantScope.teamTitle')}
+              </Text>
+              <Select
             mode="multiple"
             value={teamIds}
             options={teamOptions}
@@ -203,9 +231,11 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
             }}
             style={{ width: '100%' }}
           />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('grantScope.teamHint')}
-          </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t('grantScope.teamHint')}
+              </Text>
+            </>
+          )}
           <Text strong style={{ fontSize: 13, marginTop: spacing.xs }}>
             {t('grantScope.orgTitle')}
           </Text>
@@ -218,7 +248,10 @@ export function GrantScopeEditor({ value, onChange, teamOptions = [], teamLoadin
                 filterTreeNode={(input, node) =>
                   !input || String((node as ScopeTreeNode | undefined)?.rawName ?? '').toLowerCase().includes(input.toLowerCase())
                 }
-                style={{ flex: 1, minWidth: 170 }}
+                // 下拉宽度自适应内容（最小为触发器宽）：窄容器里组织名依然完整可读
+                popupMatchSelectWidth={false}
+                style={{ flex: 1, minWidth: 220 }}
+                loading={roleTreeLoading}
                 disabled={disabled}
                 placeholder={t('grantScope.orgRolePlaceholder')}
                 onChange={(roleId) => {

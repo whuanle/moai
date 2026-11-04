@@ -151,8 +151,9 @@ describe('TeamManage', () => {
     expect(getApps).toHaveBeenCalledWith(7)
     // 团队信息菜单已移除
     expect(screen.queryByText('团队信息')).not.toBeInTheDocument()
-    // 面包屑：主页 + 团队名
-    expect(screen.getByText('主页')).toBeInTheDocument()
+    // 侧边栏头部：团队名 + 返回主页（原「主页」面包屑已移除，不再占据右侧内容高度）
+    expect(screen.queryByText('主页')).not.toBeInTheDocument()
+    expect(screen.getByText('返回主页')).toBeInTheDocument()
     expect(screen.getAllByText('Alpha 团队').length).toBeGreaterThan(0)
   })
 
@@ -308,6 +309,21 @@ describe('TeamManage', () => {
     expect(screen.queryByText('插件')).not.toBeInTheDocument()
     expect(screen.queryByText('环境变量')).not.toBeInTheDocument()
     expect(screen.queryByText('设置')).not.toBeInTheDocument()
+    // 普通成员整份菜单都是使用分区，不渲染「管理」分组标题
+    expect(document.querySelector('.ant-menu-item-group-title')).toBeNull()
+  })
+
+  it('Owner/Admin 菜单以「管理」分组标题隔离使用分区与管理分区', async () => {
+    renderManage()
+
+    expect((await screen.findAllByText('Alpha 团队')).length).toBeGreaterThan(0)
+    // 使用分区（内部应用等）在上平铺，管理分区前有且仅有一个「管理」分组标题
+    const groupTitles = document.querySelectorAll('.ant-menu-item-group-title')
+    expect(groupTitles.length).toBe(1)
+    expect(groupTitles[0].textContent).toBe('管理')
+    // 管理分区入口仍在分组之后可见
+    expect(screen.getByText('成员管理')).toBeInTheDocument()
+    expect(screen.getByText('外部应用')).toBeInTheDocument()
   })
 
   it('普通成员直接访问管理分区的 URL 会回落到内部应用', async () => {

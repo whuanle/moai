@@ -46,7 +46,7 @@ public sealed class MemoryService : IMemoryService
     /// <summary>
     /// 单用户全局记忆条数上限（超限删除最旧）.
     /// </summary>
-    private const int GlobalMaxPerUser = 500;
+    private const int GlobalMaxPerUser = AgentMemorySettings.MaxPerUserLimit;
 
     /// <summary>
     /// 提取用对话片段总长度上限（字符）.
@@ -100,7 +100,7 @@ public sealed class MemoryService : IMemoryService
             return null;
         }
 
-        var settings = await ResolveSettingsAsync(app.Id, app.TeamId, app.AppType, app.PublishStatus, cancellationToken);
+        var (settings, platform) = await ResolveSettingsAsync(app.Id, app.TeamId, app.AppType, app.PublishStatus, cancellationToken);
         if (settings is not { Enabled: true })
         {
             return null;
@@ -118,6 +118,7 @@ public sealed class MemoryService : IMemoryService
             Settings = settings,
             UserMode = settings.ResolveUserMode(userMode),
             UserGlobalMode = settings.ResolveUserGlobalMode(userGlobalMode),
+            GlobalPlatformEnabled = platform.GlobalEnabled,
         };
     }
 
@@ -135,8 +136,9 @@ public sealed class MemoryService : IMemoryService
             ? query.Types.Distinct().ToList()
             : AllTypes();
 
-        // 记忆检索以本应用为主；平台开启全局记忆时，个人全局记忆一并召回并按相似度归并（跨应用）
-        var top = Math.Clamp(query.TopK <= 0 ? settings.RetrievalTopK : query.TopK, 1, AgentMemorySettings.MaxRetrievalTopK);
+        // 记忆检索以本应用为主；平台开启跨应用记忆时，个人全局记忆一并召回并按相似度归并（跨应用）
+        // 检索条数由调用方（AI 工具）自行决定，缺省 10、上限 30
+        var top = Math.Clamp(query.TopK <= 0 ? AgentMemorySettings.DefaultRetrievalTopK : query.TopK, 1, AgentMemorySettings.MaxRetrievalTopK);
         var minScore = query.MinScore is > 0 and <= 1 ? query.MinScore : settings.MinScore;
 
         var queryVector = await GenerateQueryVectorAsync(settings.EmbeddingModelId, settings.EmbeddingDimensions, await ResolveTeamIdAsync(query.AppId, cancellationToken), query.QueryText, cancellationToken);
@@ -183,10 +185,11 @@ public sealed class MemoryService : IMemoryService
         var shard = await GetShardAsync(request.AppId, request.UserId, cancellationToken);
         var currentCount = shard?.MemoryCount ?? 0;
 
-        // 容量淘汰：超出单用户上限时删除最旧记忆腾出空间
-        if (currentCount >= settings.MaxPerUser)
+        // 容量淘汰：超出单用户上限时删除最旧记忆腾出空间（上限系统层面 clamp 至 MaxPerUserLimit，防存量超大值绕过）
+        var maxPerUser = Math.Clamp(settings.MaxPerUser, 1, AgentMemorySettings.MaxPerUserLimit);
+        if (currentCount >= maxPerUser)
         {
-            var need = currentCount - settings.MaxPerUser + 1;
+            var need = currentCount - maxPerUser + 1;
             var all = await _vectorStore.ListUserAsync(request.AppId, request.UserId, ListMaxRecords, cancellationToken);
             var oldest = all.OrderBy(x => x.CreateTimeMs).Take(need).ToList();
             if (oldest.Count > 0)
@@ -293,9 +296,9 @@ public sealed class MemoryService : IMemoryService
     }
 
     /// <inheritdoc/>
-    public async Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListMineAsync(Guid appId, long userId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListMineAsync(Guid appId, long userId, int page, int pageSize, string? keywords = null, CancellationToken cancellationToken = default)
     {
-        var records = await _vectorStore.ListUserAsync(appId, userId, ListMaxRecords, cancellationToken);
+        var records = FilterByKeywords(await _vectorStore.ListUserAsync(appId, userId, ListMaxRecords, cancellationToken), keywords);
         var ordered = records.OrderByDescending(x => x.CreateTimeMs).ToList();
         var items = ordered
             .Skip((Math.Max(page, 1) - 1) * pageSize)
@@ -303,6 +306,20 @@ public sealed class MemoryService : IMemoryService
             .Select(x => ToItem(appId, x, 0))
             .ToList();
         return (items, ordered.Count);
+    }
+
+    /// <summary>
+    /// 按关键字过滤记忆内容（不区分大小写包含匹配，空白关键字直通）.
+    /// </summary>
+    private static IEnumerable<AgentMemoryVectorRecord> FilterByKeywords(IEnumerable<AgentMemoryVectorRecord> records, string? keywords)
+    {
+        var kw = keywords?.Trim();
+        if (string.IsNullOrEmpty(kw))
+        {
+            return records;
+        }
+
+        return records.Where(x => x.Content.Contains(kw, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <inheritdoc/>
@@ -397,14 +414,6 @@ public sealed class MemoryService : IMemoryService
     }
 
     /// <inheritdoc/>
-    public async Task<MemoryItem?> GetAppMemoryAsync(Guid appId, long userId, Guid memoryId, CancellationToken cancellationToken = default)
-    {
-        var records = await _vectorStore.ListUserAsync(appId, userId, ListMaxRecords, cancellationToken);
-        var target = records.FirstOrDefault(x => x.Key == memoryId);
-        return target == null ? null : ToItem(appId, target, 0);
-    }
-
-    /// <inheritdoc/>
     public async Task<MemoryPlatformSettings> GetPlatformSettingsAsync(CancellationToken cancellationToken = default)
     {
         var keys = new[]
@@ -412,6 +421,7 @@ public sealed class MemoryService : IMemoryService
             SettingDefinitions.MemoryEnabledKey,
             SettingDefinitions.MemoryEmbeddingModelKey,
             SettingDefinitions.MemoryEmbeddingDimensionsKey,
+            SettingDefinitions.MemoryGlobalEnabledKey,
         };
         var values = await _databaseContext.Settings.AsNoTracking()
             .Where(s => keys.Contains(s.Key))
@@ -427,55 +437,21 @@ public sealed class MemoryService : IMemoryService
             ? parsed
             : AgentMemorySettings.DefaultEmbeddingDimensions;
         dimensions = Math.Clamp(dimensions, 1, 2000);
+        var globalEnabled = string.Equals(Resolve(SettingDefinitions.MemoryGlobalEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
 
         return new MemoryPlatformSettings
         {
             Enabled = enabled,
             EmbeddingModelId = modelId,
             EmbeddingDimensions = dimensions,
+            GlobalEnabled = globalEnabled,
         };
     }
 
     /// <inheritdoc/>
-    public async Task<bool> UpdateAppMemoryAsync(Guid appId, long userId, Guid memoryId, string content, int memoryType, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListGlobalMineAsync(long userId, int page, int pageSize, string? keywords = null, CancellationToken cancellationToken = default)
     {
-        await EnsureNotMigratingAsync(cancellationToken);
-        var resolution = await ResolveAsync(appId, userId, cancellationToken);
-        if (resolution is not { IsEnabled: true })
-        {
-            throw new BusinessException("应用未开启长期记忆.") { StatusCode = 400 };
-        }
-
-        content = NormalizeContent(content);
-        var records = await _vectorStore.ListUserAsync(appId, userId, ListMaxRecords, cancellationToken);
-        var target = records.FirstOrDefault(x => x.Key == memoryId);
-        if (target == null)
-        {
-            return false;
-        }
-
-        var vector = await GenerateVectorAsync(appId, await ResolveTeamIdAsync(appId, cancellationToken), resolution.Settings, content, cancellationToken)
-            ?? throw new BusinessException("记忆向量化模型不可用.") { StatusCode = 400 };
-
-        var record = new AgentMemoryVectorRecord
-        {
-            Key = target.Key,
-            UserId = userId,
-            MemoryType = memoryType,
-            Content = content,
-            SourceSessionId = target.SourceSessionId,
-            CreateTimeMs = target.CreateTimeMs,
-            UpdateTimeMs = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-            Embedding = vector,
-        };
-        await _vectorStore.UpsertAsync(appId, [record], cancellationToken);
-        return true;
-    }
-
-    /// <inheritdoc/>
-    public async Task<(IReadOnlyList<MemoryItem> Items, int Total)> ListGlobalMineAsync(long userId, int page, int pageSize, CancellationToken cancellationToken = default)
-    {
-        var records = await _vectorStore.ListGlobalUserAsync(userId, ListMaxRecords, cancellationToken);
+        var records = FilterByKeywords(await _vectorStore.ListGlobalUserAsync(userId, ListMaxRecords, cancellationToken), keywords);
         var ordered = records.OrderByDescending(x => x.CreateTimeMs).ToList();
         var items = ordered
             .Skip((Math.Max(page, 1) - 1) * pageSize)
@@ -490,9 +466,9 @@ public sealed class MemoryService : IMemoryService
     {
         await EnsureNotMigratingAsync(cancellationToken);
         var settings = await GetPlatformSettingsAsync(cancellationToken);
-        if (!settings.IsUsable)
+        if (!settings.IsGlobalUsable)
         {
-            throw new BusinessException("平台未开启长期记忆，请联系管理员在系统设置中开启.") { StatusCode = 400 };
+            throw new BusinessException("平台未开启跨应用记忆，请联系管理员在系统设置中开启.") { StatusCode = 400 };
         }
 
         content = NormalizeContent(content);
@@ -552,42 +528,6 @@ public sealed class MemoryService : IMemoryService
         await _vectorStore.UpsertGlobalAsync([record], cancellationToken);
         await UpdateShardAsync(MemoryGlobalScope.GlobalAppId, 0, userId, 1, cancellationToken);
         return ToGlobalItem(record, 0);
-    }
-
-    /// <inheritdoc/>
-    public async Task<bool> UpdateGlobalAsync(long userId, Guid memoryId, string content, int memoryType, CancellationToken cancellationToken = default)
-    {
-        await EnsureNotMigratingAsync(cancellationToken);
-        var settings = await GetPlatformSettingsAsync(cancellationToken);
-        if (!settings.IsUsable)
-        {
-            throw new BusinessException("平台未开启长期记忆，请联系管理员在系统设置中开启.") { StatusCode = 400 };
-        }
-
-        content = NormalizeContent(content);
-        var records = await _vectorStore.ListGlobalUserAsync(userId, ListMaxRecords, cancellationToken);
-        var target = records.FirstOrDefault(x => x.Key == memoryId);
-        if (target == null)
-        {
-            return false;
-        }
-
-        var vector = await GenerateQueryVectorAsync(settings.EmbeddingModelId, settings.EmbeddingDimensions, 0, content, cancellationToken)
-            ?? throw new BusinessException("记忆向量化模型不可用，请检查模型是否已公开启用.") { StatusCode = 400 };
-
-        var record = new AgentMemoryVectorRecord
-        {
-            Key = target.Key,
-            UserId = userId,
-            MemoryType = memoryType,
-            Content = content,
-            SourceSessionId = target.SourceSessionId,
-            CreateTimeMs = target.CreateTimeMs,
-            UpdateTimeMs = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-            Embedding = vector,
-        };
-        await _vectorStore.UpsertGlobalAsync([record], cancellationToken);
-        return true;
     }
 
     /// <inheritdoc/>
@@ -672,7 +612,7 @@ public sealed class MemoryService : IMemoryService
     public async Task<IReadOnlyList<MemoryItem>> SearchGlobalAsync(long userId, string queryText, int topK, double minScore, CancellationToken cancellationToken = default)
     {
         var settings = await GetPlatformSettingsAsync(cancellationToken);
-        if (!settings.IsUsable)
+        if (!settings.IsGlobalUsable)
         {
             return [];
         }
@@ -961,7 +901,7 @@ public sealed class MemoryService : IMemoryService
         return builder.Length > MaxConversationLength ? builder.ToString()[..MaxConversationLength] : builder.ToString();
     }
 
-    private async Task<AgentMemorySettings?> ResolveSettingsAsync(Guid appId, int teamId, int appType, int publishStatus, CancellationToken cancellationToken)
+    private async Task<(AgentMemorySettings? Settings, MemoryPlatformSettings Platform)> ResolveSettingsAsync(Guid appId, int teamId, int appType, int publishStatus, CancellationToken cancellationToken)
     {
         var config = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == appId)
@@ -969,7 +909,7 @@ public sealed class MemoryService : IMemoryService
             .FirstOrDefaultAsync(cancellationToken);
         if (config == null)
         {
-            return null;
+            return (null, new MemoryPlatformSettings());
         }
 
         var effective = AppAgentConfigSnapshot.ResolveEffectiveConfig(
@@ -979,20 +919,21 @@ public sealed class MemoryService : IMemoryService
         var settings = AgentMemorySettings.ParseExecutionSettings(effective.ExecutionSettings);
         if (settings is not { Enabled: true })
         {
-            return null;
+            return (null, new MemoryPlatformSettings());
         }
 
         // 向量化模型/维度统一由平台记忆设置决定（应用配置不再存储）：运行时回填保证全部路径口径一致；
-        // 平台未开启长期记忆或未选模型时一律视为未开启记忆（注入/工具/提取/检索单一收口）
+        // 平台未开启长期记忆或未选模型时一律视为未开启记忆（注入/工具/提取/检索单一收口）；
+        // 平台跨应用记忆开关（MEMORY_GLOBAL_ENABLED）随平台设置回填 MemoryResolution，统一收口全局接入判定
         var platform = await GetPlatformSettingsAsync(cancellationToken);
         if (!platform.IsUsable)
         {
-            return null;
+            return (null, platform);
         }
 
         settings.EmbeddingModelId = platform.EmbeddingModelId;
         settings.EmbeddingDimensions = platform.EmbeddingDimensions;
-        return settings;
+        return (settings, platform);
     }
 
     /// <summary>

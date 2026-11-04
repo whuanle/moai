@@ -1,6 +1,7 @@
-// 知识库 MCP 服务器 E2E（场景 @WM-S1 ~ @WM-S6；后端 127.0.0.1:5330，可用参数覆盖）
-// 端点：/api/external/wiki/{wikiId}/mcp（MCP streamable HTTP，无状态模式，免 Mcp-Session-Id）
-// 覆盖：鉴权门禁（无凭证 401 / 伪造 key 401 / 无 wiki_mcp 范围 403 / wikiId 不存在与跨团队 404）
+// 知识库 MCP 服务器 E2E（场景 @WM-S1 ~ @WM-S8；后端 127.0.0.1:5330，可用参数覆盖）
+// 端点：/api/teamres/wiki/{wikiId}/mcp（MCP streamable HTTP，无状态模式，免 Mcp-Session-Id）
+// 覆盖：鉴权门禁（无凭证 401 / 伪造 key 401 / 其它 wiki 资源 key 越圈 403 / wikiId 不存在与跨团队 404；
+//       接入 scopes 已退役：moai-ac- 不传 scopes 全量放行 WM-S1c/S1d，绑定库资源 key 放行 @WM-S8）
 //       → tools/list 三个只读工具 → list_knowledge_bases（团队知识库列表）
 //       → search_knowledge_base_files（默认路径 wikiId / 显式 wikiId / 关键字 / 分页 / 跨团队拒绝）
 //       → search_knowledge_base_recall（向量召回 / 文档范围 / 阈值 / top / 参数校验 / 切片序号与相邻上下文去重 @WM-S7）
@@ -74,7 +75,7 @@ function toolPayload(res) {
 const initHandshake = (mcpPath, key, mode) => mcp(mcpPath, rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'wiki-mcp-e2e', version: '0' } }), key, mode)
 
 const TS = Date.now().toString().slice(-8)
-const mcpOf = (wikiId) => `/api/external/wiki/${wikiId}/mcp`
+const mcpOf = (wikiId) => `/api/teamres/wiki/${wikiId}/mcp`
 
 async function uploadWikiDoc(token, wikiId, fileName, content, contentType) {
   const sha256 = crypto.createHash('sha256').update(content).digest('hex')
@@ -177,17 +178,25 @@ async function main() {
   const W2 = Number(w2Res.json?.value)
   if (!Number.isFinite(W1) || !Number.isFinite(W2)) throw new Error(`创建知识库失败: W1=${w1Res.status} ${w1Res.text.slice(0, 160)} | W2=${w2Res.status} ${w2Res.text.slice(0, 160)}`)
 
-  // 应用接入勾选 wiki_read + wiki_mcp（wiki_read 供末尾 REST 回归，wiki_mcp 供 MCP 端点）
-  const acc = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入-' + TS, description: 'wiki mcp e2e', scopes: ['wiki_read', 'wiki_mcp'] }, admin)
+  // 接入 scopes 字段（wiki_read/wiki_mcp）已退役：moai-ac- 不传 scopes 即全量
+  const acc = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入-' + TS, description: 'wiki mcp e2e' }, admin)
   const ACCESS_KEY = acc.json?.key
   if (!ACCESS_KEY) throw new Error(`创建应用接入失败: ${acc.status} ${acc.text.slice(0, 120)}`)
 
   // 团队接入 key（moai-）已下线：MCP 场景改用应用接入 key（moai-ac-）
-  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入MCP-' + TS, description: 'wiki mcp e2e', scopes: ['wiki_mcp'] }, admin)
+  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入MCP-' + TS, description: 'wiki mcp e2e' }, admin)
   const TEAM_KEY = kMcp.json?.key
-  const kRead = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入READ-' + TS, description: 'wiki mcp e2e', scopes: ['wiki_read'] }, admin)
-  const TEAM_KEY_READ = kRead.json?.key
-  if (!TEAM_KEY || !TEAM_KEY_READ) throw new Error(`创建应用接入 key 失败: ${kMcp.status}/${kRead.status}`)
+  if (!TEAM_KEY) throw new Error(`创建应用接入 key 失败: ${kMcp.status}`)
+
+  // 副库 W2 的资源 key（moai-tr-）：本库 MCP 的越圈反例（WM-S1e）；主库 W1 的资源 key：包围圈内放行（WM-S8）
+  // wiki 资源 key 唯一生成时机=开启该库 MCP（PUT mcp-config 自动生成/复用）
+  await retryApi('PUT', `/api/wiki/${W2}/mcp-config`, { isMcpEnabled: true }, admin)
+  await retryApi('PUT', `/api/wiki/${W1}/mcp-config`, { isMcpEnabled: true }, admin)
+  const kW2 = await retryApi('POST', '/api/team-resource-key', { teamId: T, resourceType: 'wiki', resourceId: String(W2) }, admin)
+  const TR_KEY_W2 = String(kW2.json?.key ?? '')
+  const kW1 = await retryApi('POST', '/api/team-resource-key', { teamId: T, resourceType: 'wiki', resourceId: String(W1) }, admin)
+  const TR_KEY_W1 = String(kW1.json?.key ?? '')
+  if (!TR_KEY_W2 || !TR_KEY_W1) throw new Error(`创建资源 key 失败: ${kW2.status}/${kW1.status} ${kW2.text.slice(0, 120)}`)
 
   // 跨团队知识库（404 用例）
   const T2 = Number((await retryApi('POST', '/api/team', { name: 'wm-team2-' + TS }, admin)).json?.value)
@@ -266,14 +275,19 @@ async function main() {
   const initTeamKey = await mcp(mcpOf(W1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY, 'x-api-key')
   check('WM-S1d 团队接入 key（x-api-key）initialize 200', initTeamKey.status === 200 && Boolean(initTeamKey.json?.result?.serverInfo?.name), `${initTeamKey.status}`)
 
-  const noScope = await mcp(mcpOf(W1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY_READ)
-  check('WM-S1e 无 wiki_mcp 范围 403', noScope.status === 403 && noScope.json?.error?.code === 'insufficient_scope', `${noScope.status} ${noScope.text.slice(0, 160)}`)
+  // 原「无 wiki_mcp 范围 403」反例已随 scopes 退役，改为资源 key 包围圈：其它 wiki 的 moai-tr- key 打本库 MCP 403
+  const wrongResKey = await mcp(mcpOf(W1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TR_KEY_W2)
+  check('WM-S1e 其它 wiki 的资源 key 打本库 MCP 403 insufficient_scope', wrongResKey.status === 403 && wrongResKey.json?.error?.code === 'insufficient_scope', `${wrongResKey.status} ${wrongResKey.text.slice(0, 160)}`)
 
   const missingWiki = await mcp(mcpOf(99999999), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY)
   check('WM-S1f wikiId 不存在 404', missingWiki.status === 404, `${missingWiki.status}`)
 
   const crossTeam = await mcp(mcpOf(W3), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TEAM_KEY)
   check('WM-S1g 跨团队 wikiId 404', crossTeam.status === 404, `${crossTeam.status}`)
+
+  // ===== @WM-S8 绑定库资源 key（moai-tr-）访问自己的 MCP 端点放行 =====
+  const ownResInit = await mcp(mcpOf(W1), rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'e2e', version: '0' } }), TR_KEY_W1)
+  check('WM-S8 绑定库资源 key 访问本库 MCP initialize 200', ownResInit.status === 200 && Boolean(ownResInit.json?.result?.serverInfo?.name), `${ownResInit.status} ${ownResInit.text.slice(0, 160)}`)
 
   // ===== @WM-S2 tools/list =====
   const listTools = await mcp(mcpOf(W1), rpc('tools/list', {}), TEAM_KEY)
@@ -371,8 +385,8 @@ async function main() {
   check('WM-S6d 通知返回 202', note.status === 202, `${note.status}`)
 
   // 回归：外部 REST 知识库接口不受 MCP 上线影响
-  const appToken = await api('POST', '/api/external/token', { body: { accessAppKey: ACCESS_KEY, secret: acc.json?.secret } })
-  const restList = await api('POST', `/api/external/wiki/${W1}/documents/list`, { token: appToken.json?.accessToken, body: { pageNo: 1, pageSize: 10 } })
+  const appToken = await api('POST', '/api/teamres/token', { body: { accessAppKey: ACCESS_KEY, secret: acc.json?.secret } })
+  const restList = await api('POST', `/api/teamres/wiki/${W1}/documents/list`, { token: appToken.json?.accessToken, body: { pageNo: 1, pageSize: 10 } })
   check('WM-S6e 外部 REST 接口回归 200', restList.status === 200 && Array.isArray(restList.json?.items), `${restList.status} ${restList.text.slice(0, 120)}`)
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL} SKIP=${SKIP}`)

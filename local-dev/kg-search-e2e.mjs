@@ -193,6 +193,16 @@ async function main() {
   }
   const TID = Number(team.json.value)
 
+  // 对话模型/系统提示词必填（保存强校验）：造一个本团队自有渠道模型，供 Agent 配置保存用（无对话流量）
+  const cfgChName = `kgs-cfg渠道-${TS}`
+  await api('POST', '/api/ai/channel', { token, body: { providerKey: 'openai', name: cfgChName, protocolFamily: 'openaiChatCompletions', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'kgs-cfg-key', enabled: true, description: 'kg-search 配置保存桩渠道' } })
+  const cfgChannels = await api('GET', '/api/ai/channel', { token })
+  const cfgChId = String((cfgChannels.json?.items ?? []).find((c) => c.name === cfgChName)?.id ?? '')
+  const cfgModelName = `kgs-cfg-chat-${TS}`
+  await api('POST', '/api/ai/model', { token, body: { channelId: cfgChId, meta: { modelId: cfgModelName, name: cfgModelName, modelKind: 'conversation', description: 'kg-search 配置保存桩模型' }, enabled: true, isPublic: false } })
+  const cfgModels = await api('GET', `/api/ai/model?channelId=${cfgChId}`, { token })
+  const KGS_CFG_MODEL_ID = String((cfgModels.json?.items ?? []).find((m) => m.name === cfgModelName)?.id ?? '')
+
   // 能力检测：list.enabled
   const list0 = await api('GET', `/api/knowledge-graph/list?teamId=${TID}`, { token })
   if (list0.status !== 200) {
@@ -368,7 +378,7 @@ async function main() {
   const AGENT = String(appR.json?.value ?? '')
   check('KGS-S8b 前置：Agent 应用创建 200', appR.status === 200 && /^[0-9a-f-]{36}$/i.test(AGENT), `${appR.status} ${appR.text.slice(0, 120)}`)
   const cfgUrl = `/api/app/${AGENT}/agent-config`
-  const agentBody = (graphIds) => ({ modelId: null, prompt: '', wikiIds: [], plugins: [], graphIds, openingStatement: '', openingStatementEnabled: false })
+  const agentBody = (graphIds) => ({ modelId: KGS_CFG_MODEL_ID, prompt: '你是图谱测试助手', wikiIds: [], plugins: [], graphIds, openingStatement: '', openingStatementEnabled: false })
 
   const s8c = await api('PUT', cfgUrl, { token, body: agentBody([G3]) })
   check('KGS-S8c 绑定他团队图谱 400 且文案含「知识图谱」', s8c.status === 400 && s8c.text.includes('知识图谱'), `${s8c.status} ${s8c.text.slice(0, 160)}`)

@@ -72,6 +72,41 @@ export async function updateWiki(wikiId: number, payload: { name: string; descri
   await client.api.wiki.byId(String(wikiId)).put({ name: payload.name, description: payload.description })
 }
 
+/** 知识库 MCP 接入配置：开关 + 该库的团队资源 key（开启过 MCP 才有） */
+export interface WikiMcpConfig {
+  isMcpEnabled?: boolean | null
+  teamResourceKeyId?: string | null
+  key?: string | null
+  keyPrefix?: string | null
+  status?: 'enabled' | 'disabled' | null
+}
+
+/** 查询知识库 MCP 接入配置（仅团队 Admin+） */
+export async function getWikiMcpConfig(wikiId: number): Promise<WikiMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).mcpConfig.get()
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+    status: res?.status ?? null,
+  }
+}
+
+/** 更新知识库 MCP 接入开关；开启时后端自动生成/复用该库的团队资源 key */
+export async function updateWikiMcpConfig(wikiId: number, isMcpEnabled: boolean): Promise<WikiMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).mcpConfig.put({ isMcpEnabled })
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+    status: res?.status ?? null,
+  }
+}
+
 export async function deleteWiki(wikiId: number): Promise<void> {
   const client = getApiClient()
   await client.api.wiki.byId(String(wikiId)).delete()

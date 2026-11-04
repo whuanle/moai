@@ -19,12 +19,18 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public Guid AppId { get; init; }
 
     /// <summary>
-    /// 对话使用的模型 id（元素为 ai_model.id 的 uuid）；null 或空 Guid 表示未选择模型.
+    /// 对话使用的模型 id（元素为 ai_model.id 的 uuid）；Agent 应用必填（不存在「默认模型」回退语义），流程应用忽略.
     /// </summary>
     public Guid? ModelId { get; init; }
 
     /// <summary>
-    /// 系统提示词，最长 4000 字符.
+    /// 开放给用户选择的对话模型 id 列表（元素为 ai_model.id 的 uuid），须包含 ModelId（默认模型），
+    /// 最多 20 个，每个均须该团队可用；null 或空时归一为仅默认模型（单模型应用，存量客户端兼容），流程应用忽略.
+    /// </summary>
+    public IReadOnlyCollection<Guid>? ModelIds { get; init; }
+
+    /// <summary>
+    /// 系统提示词，最长 4000 字符；Agent 应用必填非空，流程应用忽略.
     /// </summary>
     public string Prompt { get; init; } = string.Empty;
 

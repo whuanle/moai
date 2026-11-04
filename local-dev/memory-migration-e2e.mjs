@@ -1,7 +1,8 @@
 // 长期记忆向量化模型迁移 E2E（后端 127.0.0.1:5000，可用 argv[2] 覆盖）
 // 覆盖：无记忆时迁移 400 → 校验 400（同模型维度/未知模型/维度越界）→ 非管理员 403
-//       → 写入应用记忆（memory_save 工具）+ 全局记忆 → 迁移状态回显（锁定口径）
-//       → 迁移期间写入 409 + 并发发起 409 → 迁移全链路（MQ 异步重嵌 → 临时表 → 换表 → 设置切换）
+//       → 写入应用记忆与全局记忆（均经 memory_save 工具轮，人工写入端点已下线）→ 迁移状态回显（锁定口径）
+//       → 迁移期间写入阻断（工具轮写入被拒不落库 + 删除触发迁移守卫 409）+ 并发发起 409
+//       → 迁移全链路（MQ 异步重嵌 → 临时表 → 换表 → 设置切换）
 //       → 迁移后设置生效/记忆保留/向量检索命中（新维度）→ 失败迁移回滚（死渠道模型：任务失败、设置不变、数据完好）
 //       → 失败后可重新发起并成功（重试链路）。
 // 模型策略：本地 OpenAI 兼容桩（/v1/embeddings 按请求 dimensions 出确定性哈希向量 + /v1/chat/completions memory_save 条件行为），零 SKIP。
@@ -95,10 +96,17 @@ function startStubServer() {
         return sseReply(res, payload, '已按要求完成记忆操作。')
       }
 
-      // 用户要求记住 → memory_save 工具调用
+      // 用户要求记住 → memory_save 工具调用（「全局记住」携带 scope=global；人工写入端点已下线，全局记忆同样经工具写入）
       if (allText.includes('memory_save') && (userText.includes('记住') || userText.includes('保存记忆'))) {
-        const content = userText.replace(/^(请|帮我)?记住[:：]?/, '').trim() || '用户偏好简洁回复'
-        return sseToolCall(res, payload, 'call_tool', JSON.stringify({ toolName: 'memory_save', argumentsJson: JSON.stringify({ content, type: 'semantic' }) }))
+        const isGlobal = userText.includes('全局记住')
+        const content = userText
+          .replace(/^(请|帮我)?(全局)?记住[:：]?/, '')
+          .replace(/^(请|帮我)?记住[:：]?/, '')
+          .trim() || '用户偏好简洁回复'
+        const args = isGlobal
+          ? { content, type: 'semantic', scope: 'global' }
+          : { content, type: 'semantic' }
+        return sseToolCall(res, payload, 'call_tool', JSON.stringify({ toolName: 'memory_save', argumentsJson: JSON.stringify(args) }))
       }
 
       // 指令中注入了长期记忆块 → 命中标记（迁移后新维度向量检索可用）
@@ -279,6 +287,21 @@ async function mine(token, appId, page = 1, pageSize = 50) {
   return api('GET', `/api/app/${appId}/memory/mine?page=${page}&pageSize=${pageSize}`, { token })
 }
 
+const globalMine = (token, page = 1, pageSize = 50) => api('GET', `/api/memory/global/mine?page=${page}&pageSize=${pageSize}`, { token })
+
+async function pollGlobal(token, predicate, timeoutMs = 60000) {
+  const start = Date.now()
+  let last = null
+  while (Date.now() - start < timeoutMs) {
+    last = await globalMine(token)
+    const items = last.json?.items ?? []
+    if (predicate(items, last)) return { ok: true, items, last }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  const items = last?.json?.items ?? []
+  return { ok: false, items, last }
+}
+
 async function pollMine(token, appId, predicate, timeoutMs = 60000) {
   const start = Date.now()
   let last = null
@@ -307,20 +330,21 @@ async function main() {
   if (!models) { console.log('FAIL | 桩模型创建失败，终止'); process.exit(1) }
 
   try {
-    // ===== 平台设置：模型 A（1024 维）+ 开启 =====
+    // ===== 平台设置：模型 A（1024 维）+ 开启 + 跨应用记忆（MG-05 全局记忆写入依赖） =====
     check('MG-01a 平台设置模型A 200', (await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', models.embeddingModelA)).status === 200)
     check('MG-01b 平台设置维度 1024 200', (await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')).status === 200)
     check('MG-01c 平台开启记忆 200', (await saveSetting(adminToken, 'MEMORY_ENABLED', 'true')).status === 200)
+    check('MG-01d 平台开启跨应用记忆 200', (await saveSetting(adminToken, 'MEMORY_GLOBAL_ENABLED', 'true')).status === 200)
 
     // ===== 无记忆时迁移 400（直接保存设置即可） =====
     const emptyStart = await startMigration(adminToken, models.embeddingModelB, 768)
     check('MG-02 无记忆时发起迁移 400', emptyStart.status === 400 && emptyStart.text.includes('暂无记忆'), `${emptyStart.status} ${emptyStart.text.slice(0, 120)}`)
 
-    // ===== 写入记忆：应用记忆（工具）+ 全局记忆（接口） =====
+    // ===== 写入记忆：应用记忆与全局记忆均经 memory_save 工具轮（人工写入端点已下线） =====
     const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '迁移应用-' + TS, appType: 'agent' } })
     const APP1 = String(ca.json?.value ?? '')
     check('MG-03a 应用创建 200', isGuid(APP1), ca.text.slice(0, 120))
-    check('MG-03b 记忆配置保存 200', (await saveConfig(owner.token, APP1, models.conversationModelId)).status === 200)
+    check('MG-03b 记忆配置保存 200', (await saveConfig(owner.token, APP1, models.conversationModelId, { allowGlobalMemory: true })).status === 200)
     check('MG-03c 发布应用 200', (await api('POST', `/api/app/${APP1}/publish`, { token: owner.token })).status === 200)
 
     const SID1 = await newSession(owner.token, APP1, 'mm-工具写入')
@@ -329,9 +353,17 @@ async function main() {
     const poll1 = await pollMine(owner.token, APP1, (items) => items.some((x) => (x.content ?? '').includes('发票抬头')))
     check('MG-04b 应用记忆落库可查询', poll1.ok, `count=${poll1.items.length}`)
 
-    const g1 = await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: GLOBAL_FACT_1, memoryType: 0 } })
-    const g2 = await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: GLOBAL_FACT_2, memoryType: 1 } })
-    check('MG-05 全局记忆写入 200', g1.status === 200 && g2.status === 200, `${g1.status}/${g2.status} ${g1.text.slice(0, 120)}`)
+    // 全局写入各用独立会话：会话历史含 tool 结果时桩会直接回文案而不再下发工具调用
+    const SIDG1 = await newSession(owner.token, APP1, 'mm-全局写入1')
+    const chatG1 = await chatSse(APP1, owner.token, SIDG1, `请全局记住：${GLOBAL_FACT_1}`)
+    check('MG-05a 全局记忆工具轮 1 完成', chatG1.status === 200 && !chatG1.runError, `reply=${chatG1.reply.slice(0, 80)} err=${chatG1.runError}`)
+    const pollG1 = await pollGlobal(owner.token, (items) => items.some((x) => (x.content ?? '').includes('TypeScript')))
+    check('MG-05b 全局记忆工具轮 1 落库', pollG1.ok, `count=${pollG1.items.length}`)
+    const SIDG2 = await newSession(owner.token, APP1, 'mm-全局写入2')
+    const chatG2 = await chatSse(APP1, owner.token, SIDG2, `请全局记住：${GLOBAL_FACT_2}`)
+    check('MG-05c 全局记忆工具轮 2 完成', chatG2.status === 200 && !chatG2.runError, `reply=${chatG2.reply.slice(0, 80)} err=${chatG2.runError}`)
+    const pollG = await pollGlobal(owner.token, (items) => items.some((x) => (x.content ?? '').includes('TypeScript')) && items.some((x) => (x.content ?? '').includes('UTC+8')))
+    check('MG-05d 全局记忆落库可查询', pollG.ok, `count=${pollG.items.length} total=${pollG.last?.json?.total}`)
 
     // ===== 迁移状态回显（锁定口径） =====
     const st0 = await migrationStatus(adminToken)
@@ -355,8 +387,14 @@ async function main() {
     check('MG-08a 发起迁移 200 返回任务id', start1.status === 200 && isGuid(start1.json?.taskId), `${start1.status} ${start1.text.slice(0, 160)}`)
 
     // 迁移进行中：写入阻断 + 并发发起阻断（任务行已 Wait，写入守卫立即生效）
-    const blockedGlobal = await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: '迁移期间尝试写入的记忆', memoryType: 0 } })
-    check('MG-08b 迁移期间全局写入 409', blockedGlobal.status === 409 && blockedGlobal.text.includes('迁移'), `${blockedGlobal.status} ${blockedGlobal.text.slice(0, 120)}`)
+    // 唯一剩余的写入路径是 AI 工具轮：迁移守卫拒绝落库（409 语义经工具错误回传），迁移完成后由 MG-09g 断言未落库
+    const SIDGB = await newSession(owner.token, APP1, 'mm-迁移期写入')
+    const blockedGlobal = await chatSse(APP1, owner.token, SIDGB, '请全局记住：迁移期间尝试写入的记忆')
+    check('MG-08b 迁移期间工具轮写入全局不崩且被拒', blockedGlobal.status === 200 && !blockedGlobal.runError, `status=${blockedGlobal.status} err=${blockedGlobal.runError} reply=${(blockedGlobal.reply ?? '').slice(0, 80)}`)
+    // 迁移守卫同样拦删除类变更：迁移期间删除全局记忆 409
+    const firstGlobalId = pollG.items[0]?.id
+    const blockedDelete = firstGlobalId ? await api('DELETE', `/api/memory/global/mine/${firstGlobalId}`, { token: owner.token }) : { status: 0, text: '' }
+    check('MG-08b2 迁移期间删除全局记忆 409', blockedDelete.status === 409 && blockedDelete.text.includes('迁移'), `${blockedDelete.status} ${blockedDelete.text.slice(0, 120)}`)
     const concurrentStart = await startMigration(adminToken, models.embeddingModelDead, 512)
     check('MG-08c 迁移期间并发发起 409', concurrentStart.status === 409 && concurrentStart.text.includes('迁移任务'), `${concurrentStart.status} ${concurrentStart.text.slice(0, 120)}`)
     const stRunning = await migrationStatus(adminToken)
@@ -423,6 +461,7 @@ async function main() {
     // 收尾还原（脚本临时开启 MEMORY_* 并产生记忆，先清空全部记忆解锁再重置设置键，避免污染开发实例）
     if (adminToken) {
       await api('DELETE', '/api/memory/all', { token: adminToken })
+      await saveSetting(adminToken, 'MEMORY_GLOBAL_ENABLED', 'false')
       await saveSetting(adminToken, 'MEMORY_ENABLED', 'false')
       await saveSetting(adminToken, 'MEMORY_EMBEDDING_MODEL', '')
       await saveSetting(adminToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')

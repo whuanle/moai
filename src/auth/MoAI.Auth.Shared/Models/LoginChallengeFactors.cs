@@ -1,7 +1,8 @@
 namespace MoAI.Auth.Models;
 
 /// <summary>
-/// 登录二次验证方式常量（<see cref="Commands.Responses.LoginCommandResponse"/> 的 SecondFactor 与登录票据中的 Factor）.
+/// 登录二次验证方式常量（<see cref="Commands.Responses.LoginCommandResponse"/> 的 SecondFactor 与登录票据中的 Factor）；
+/// 邮箱验证码已并入 /auth/login 一体提交，不再作为二次验证票据签发（emailCode 常量已退役）.
 /// </summary>
 public static class LoginChallengeFactors
 {
@@ -14,9 +15,4 @@ public static class LoginChallengeFactors
     /// 认证器动态码（TOTP）.
     /// </summary>
     public const string Totp = "totp";
-
-    /// <summary>
-    /// 邮箱验证码.
-    /// </summary>
-    public const string EmailCode = "emailCode";
 }

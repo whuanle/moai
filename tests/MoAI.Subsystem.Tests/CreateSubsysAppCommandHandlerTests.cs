@@ -42,7 +42,6 @@ public class CreateSubsysAppCommandHandlerTests
         Assert.Equal(MoAI.Database.Enums.AccessAppLevel.System, entity.Level);
         Assert.Equal(MoAI.Database.Enums.AccessAppType.Subsystem, entity.AppType);
         Assert.Equal(AccessAppStatus.Enabled, entity.Status);
-        Assert.Equal(0, entity.Scopes);
         Assert.Equal(0, entity.TeamId);
 
         // 库内 AES 可逆密文落库（v2: 前缀），掩码与原文一致，可解密回显
@@ -146,6 +145,115 @@ public class CreateSubsysAppCommandHandlerTests
         Assert.Equal("[]", entity!.CallbackUrls);
         Assert.Equal(SubsystemTeamScope.AllTeams, entity.TeamScope);
         Assert.Empty(db.Context.SubsystemTeamAuths.Where(x => x.SubsystemId == entity.Id).ToList());
+    }
+
+    [Fact]
+    public async Task Handle_WithRegisteredAvatarPath_PersistsAvatar()
+    {
+        using var db = TestSqliteContext.Create();
+        db.Context.Files.Add(new MoAI.Database.Entities.FileEntity
+        {
+            Id = 1,
+            ObjectKey = "images/avatar-ok.png",
+            FileExtension = ".png",
+            FileSha256 = new string('a', 64),
+            FileSize = 8,
+            ContentType = "image/png",
+            IsUploaded = true,
+        });
+        await db.Context.SaveChangesAsync();
+        var handler = new CreateSubsysAppCommandHandler(db.Context, TestSeeds.CreateCipher(), TestSeeds.CreateCodec());
+
+        var response = await handler.Handle(new CreateSubsysAppCommand
+        {
+            AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
+            Key = "report",
+            Name = "智能报表",
+            TeamScope = SubsystemTeamScope.AllTeams,
+            AvatarPath = "images/avatar-ok.png",
+        }, CancellationToken.None);
+
+        var entity = await db.Context.AccessApps.FindAsync(response.Id);
+        Assert.NotNull(entity);
+        Assert.Equal("images/avatar-ok.png", entity!.AvatarPath);
+    }
+
+    [Fact]
+    public async Task Handle_WithUnregisteredAvatarPath_Throws404()
+    {
+        using var db = TestSqliteContext.Create();
+        // 未登记/未完成上传的 objectKey 一律拒绝（防伪造，@SUB-S68）
+        db.Context.Files.Add(new MoAI.Database.Entities.FileEntity
+        {
+            Id = 2,
+            ObjectKey = "images/avatar-pending.png",
+            FileExtension = ".png",
+            FileSha256 = new string('a', 64),
+            FileSize = 8,
+            ContentType = "image/png",
+            IsUploaded = false,
+        });
+        await db.Context.SaveChangesAsync();
+        var handler = new CreateSubsysAppCommandHandler(db.Context, TestSeeds.CreateCipher(), TestSeeds.CreateCodec());
+
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new CreateSubsysAppCommand
+        {
+            AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
+            Key = "report",
+            Name = "a",
+            TeamScope = SubsystemTeamScope.AllTeams,
+            AvatarPath = "images/avatar-pending.png",
+        }, CancellationToken.None));
+        Assert.Equal(404, ex.StatusCode);
+
+        var exGhost = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new CreateSubsysAppCommand
+        {
+            AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
+            Key = "report",
+            Name = "a",
+            TeamScope = SubsystemTeamScope.AllTeams,
+            AvatarPath = "images/ghost.png",
+        }, CancellationToken.None));
+        Assert.Equal(404, exGhost.StatusCode);
+    }
+
+    [Fact]
+    public async Task Handle_WithoutAvatarPath_PersistsEmpty()
+    {
+        using var db = TestSqliteContext.Create();
+        var handler = new CreateSubsysAppCommandHandler(db.Context, TestSeeds.CreateCipher(), TestSeeds.CreateCodec());
+
+        var response = await handler.Handle(new CreateSubsysAppCommand
+        {
+            AppType = MoAI.Database.Enums.AccessAppType.App,
+            Name = "ERP 组织同步",
+        }, CancellationToken.None);
+
+        var entity = await db.Context.AccessApps.FindAsync(response.Id);
+        Assert.NotNull(entity);
+        Assert.Equal(string.Empty, entity!.AvatarPath);
+    }
+
+    [Fact]
+    public void Validate_AvatarPathMaxLength255()
+    {
+        var validator = new InlineValidator<CreateSubsysAppCommand>();
+        CreateSubsysAppCommand.Validate(validator);
+
+        Assert.True(validator.Validate(new CreateSubsysAppCommand
+        {
+            AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
+            Key = "report",
+            Name = "a",
+            AvatarPath = new string('a', 255),
+        }).IsValid);
+        Assert.False(validator.Validate(new CreateSubsysAppCommand
+        {
+            AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
+            Key = "report",
+            Name = "a",
+            AvatarPath = new string('a', 256),
+        }).IsValid);
     }
 
     [Fact]

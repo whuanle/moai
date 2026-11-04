@@ -27,12 +27,14 @@ public class QueryAgentMemoryDefaultsCommandHandler : IRequestHandler<QueryAgent
     /// <inheritdoc/>
     public async Task<QueryAgentMemoryDefaultsResponse> Handle(QueryAgentMemoryDefaultsCommand request, CancellationToken cancellationToken)
     {
-        // 平台记忆设置回显：向量化模型/维度统一在系统设置（MEMORY_*），应用面板只读展示
+        // 平台记忆设置回显：向量化模型/维度统一在系统设置（MEMORY_*），应用面板只读展示；
+        // 跨应用记忆开关（MEMORY_GLOBAL_ENABLED）供应用面板联动禁用「允许用户接入全局记忆」
         var keys = new[]
         {
             SettingDefinitions.MemoryEnabledKey,
             SettingDefinitions.MemoryEmbeddingModelKey,
             SettingDefinitions.MemoryEmbeddingDimensionsKey,
+            SettingDefinitions.MemoryGlobalEnabledKey,
         };
         var values = await _databaseContext.Settings.AsNoTracking()
             .Where(s => keys.Contains(s.Key))
@@ -42,6 +44,7 @@ public class QueryAgentMemoryDefaultsCommandHandler : IRequestHandler<QueryAgent
             : SettingDefinitions.Find(key)?.DefaultValue ?? string.Empty;
 
         var platformEnabled = string.Equals(Resolve(SettingDefinitions.MemoryEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
+        var globalEnabled = string.Equals(Resolve(SettingDefinitions.MemoryGlobalEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
         Guid.TryParse(Resolve(SettingDefinitions.MemoryEmbeddingModelKey).Trim(), out var modelId);
         var dimensions = int.TryParse(Resolve(SettingDefinitions.MemoryEmbeddingDimensionsKey).Trim(), out var parsed)
             ? Math.Clamp(parsed, 1, 2000)
@@ -60,6 +63,7 @@ public class QueryAgentMemoryDefaultsCommandHandler : IRequestHandler<QueryAgent
         {
             Prompt = AgentMemorySettings.DefaultPrompt,
             PlatformEnabled = platformEnabled,
+            GlobalEnabled = globalEnabled,
             EmbeddingModelName = modelName,
             EmbeddingDimensions = dimensions,
         };

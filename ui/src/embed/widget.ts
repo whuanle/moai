@@ -1,5 +1,5 @@
 /**
- * 悬浮对话组件的公开配置（/api/external/app/{appId}/access-point）.
+ * 悬浮对话组件的公开配置（/api/teamres/app/{appId}/access-point）.
  */
 export interface AccessPointConfig {
   appName: string
@@ -55,7 +55,7 @@ export interface WidgetOptions {
   nickname?: string
   /**
    * token 拦截器（需授权应用推荐接入方式）：向业务系统自己的后端要 token（后端持 key 调
-   * POST /api/external/token 签发外部用户 token），组件不再自己换 token，也不需要 accessAppKey。
+   * POST /api/teamres/token 签发外部用户 token），组件不再自己换 token，也不需要 accessAppKey。
    * 返回 accessToken 字符串或 { accessToken, refreshToken }；每次调用应返回当前可用凭证.
    */
   tokenProvider?: WidgetTokenProvider
@@ -141,7 +141,7 @@ export class MoaiWidget {
   async init(): Promise<void> {
     try {
       const res = await this.runRequest({
-        url: `${this.opts.server}/api/external/app/${this.opts.appId}/access-point`,
+        url: `${this.opts.server}/api/teamres/app/${this.opts.appId}/access-point`,
         method: 'GET',
         headers: {},
       })
@@ -213,7 +213,7 @@ export class MoaiWidget {
     if (!this.refreshCredential) return this.token
     try {
       const res = await this.runRequest({
-        url: `${this.opts.server}/api/external/token/refresh`,
+        url: `${this.opts.server}/api/teamres/token/refresh`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: { refreshToken: this.refreshCredential },
@@ -346,7 +346,7 @@ export class MoaiWidget {
 
     try {
       const res = await this.runRequest({
-        url: `${this.opts.server}/api/external/agent/${this.opts.appId}/session`,
+        url: `${this.opts.server}/api/teamres/agent/${this.opts.appId}/session`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await this.authHeaders()) },
         body: {},
@@ -389,7 +389,7 @@ export class MoaiWidget {
     const externalUserId = resolveExternalUserId(this.opts.appId, this.opts.externalUserId)
     try {
       const res = await this.runRequest({
-        url: `${this.opts.server}/api/external/token`,
+        url: `${this.opts.server}/api/teamres/token`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: cfg.isAuth
@@ -441,11 +441,11 @@ export class MoaiWidget {
       // 对话请求同样先经 onRequest 中间件改写（可代理/加头），再交给 AG-UI 客户端
       const routed = this.opts.onRequest
         ? await this.opts.onRequest({
-            url: `${this.opts.server}/api/external/agent/${this.opts.appId}/chat`,
+            url: `${this.opts.server}/api/teamres/agent/${this.opts.appId}/chat`,
             method: 'POST',
             headers: await this.authHeaders(),
           })
-        : { url: `${this.opts.server}/api/external/agent/${this.opts.appId}/chat`, headers: await this.authHeaders() }
+        : { url: `${this.opts.server}/api/teamres/agent/${this.opts.appId}/chat`, headers: await this.authHeaders() }
 
       const { HttpAgent } = await import('@ag-ui/client')
       const agent = new HttpAgent({

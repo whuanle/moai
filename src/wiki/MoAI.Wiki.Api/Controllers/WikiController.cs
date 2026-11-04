@@ -91,6 +91,35 @@ public class WikiController : ControllerBase
     }
 
     /// <summary>
+    /// 查询知识库 MCP 接入配置（开关 + 该库的团队资源 key），需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="WikiMcpConfigResponse"/>.</returns>
+    [HttpGet("{id}/mcp-config")]
+    public Task<WikiMcpConfigResponse> QueryWikiMcpConfig(long id, CancellationToken ct)
+    {
+        var cmd = new QueryWikiMcpConfigCommand { WikiId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 更新知识库 MCP 接入开关，开启时自动生成/复用该库的团队资源 key；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">开关请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="WikiMcpConfigResponse"/>.</returns>
+    [HttpPut("{id}/mcp-config")]
+    public Task<WikiMcpConfigResponse> UpdateWikiMcpConfig(long id, [FromBody] UpdateWikiMcpConfigCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateWikiMcpConfigCommand { WikiId = id, IsMcpEnabled = req.IsMcpEnabled };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 删除知识库，需要团队 Admin 及以上角色.
     /// </summary>
     /// <param name="id">知识库 id.</param>

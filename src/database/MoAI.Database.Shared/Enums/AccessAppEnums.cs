@@ -8,7 +8,7 @@ namespace MoAI.Database.Enums;
 public enum AccessAppLevel
 {
     /// <summary>
-    /// 团队级（moai-ac- 前缀）：只能访问所属团队的资源（/api/external/*、模型网关）.
+    /// 团队级（moai-ac- 前缀）：只能访问所属团队的资源（/api/teamres/*、模型网关）.
     /// </summary>
     [JsonPropertyName("team")]
     Team = 0,

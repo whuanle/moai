@@ -234,13 +234,18 @@ function getServerUrl(): string {
 列表页工具栏组件从左到右固定排序，整行靠左，操作按钮**不**靠右对齐：
 
 ```
-搜索输入框 → 筛选/下拉组件 → 查询类按钮（查询/重置/刷新） → | → 操作类按钮（新建/同步等）
+搜索输入框 → 筛选/下拉组件 → 查询类按钮（查询/重置） → | → 操作类按钮（新建/同步等）
 ```
 
 - 查询类按钮与操作类按钮之间必须用竖分隔线 `|`（antd `Divider type="vertical"`）区隔；页面没有查询类按钮时，分隔线兜底放在筛选控件与操作按钮之间。
+- **查询按钮自带刷新语义，不再放刷新按钮**：查询/搜索本身就是重新拉取列表，工具栏已有查询按钮时**禁止**再放刷新图标按钮（工具栏右侧只挂刷新图标的做法已废弃）；需要重新拉取的场景统一落在本工具栏的查询按钮上。
+- **重置按钮按需渲染**：筛选条件简单（如仅一个搜索框、清空后点查询即等效重置）的页面**不传** `QueryBar` 的 `onReset`，组件即不渲染重置按钮；筛选字段较多、需要一键清空的页面才传 `onReset`。
+- 查询类按钮一律「图标 + 文字」（`SearchOutlined` + 查询），禁止纯图标按钮（同第 9 条行内操作的理由：纯图标需悬浮才能猜含义）。
 - 用设计系统组件实现，禁止手写 flex 工具行：
-  - `QueryBar`：`children` 传搜索输入框与筛选项，查询/重置按钮内置，`extra` 传操作按钮（渲染在分隔线右侧）。
-  - `PageToolbar`：`filters` 传搜索输入框与筛选项，`queries` 传查询类按钮（如刷新），`actions` 传操作按钮。
+  - `QueryBar`：`children` 传搜索输入框与筛选项，查询按钮内置，`onReset` 传入时才渲染重置按钮，`extra` 传操作按钮（渲染在分隔线右侧）。
+  - `PageToolbar`：`filters` 传搜索输入框与筛选项，`queries` 传查询类按钮，`actions` 传操作按钮。
+
+规范出处：组织用户页（TeamsPanel 删刷新图标 / OrgRolesPanel 刷新改查询 / UsersPanel 省略重置）走查整改（2026-11-03）。
 
 ### 8. 实体列表必须有「创建/更新」审计列，两行单元格
 
@@ -277,4 +282,13 @@ import { AuditCell } from '@/design-system'
 
 - 文案走 `t()`，与 `aria-label` 同源；2~4 个操作时列宽约 `操作数 × 72 + 24`，多操作或空间紧张时用 `更多` 下拉收纳，同样保持图标+文字。
 - 操作列跟随滚动时 `fixed: 'right'`。
+
+### 10. 头像类图片上传先前端压缩
+
+头像/图标上传不把原图原样传到存储：`AvatarUpload` 选中文件后先经 `src/utils/image.ts` 的 `compressImage()` 压缩再回调 `onSelect`（降采样至 ≤512px、优先重编码 WebP 质量 0.9，SVG/GIF/≤200KB 跳过，解码失败或无体积收益回退原图），调用方的 `image/*` 与 5MB 校验照旧作用于压缩产物，**不要在各页面重复调用压缩**。
+
+- 绕过 `AvatarUpload` 的独立图片产出路径（如 `ImageSquareCropModal` 裁剪输出）用 `pickImageEncodeType()` 选编码：优先 WebP（保留透明），浏览器不支持编码时按透明需求回退 PNG/JPEG。
+- 全屏展示的图（登录页背景等）**不适用**本条，避免降采样损伤画质。
+- jsdom 不实现 canvas，相关单测需 stub `createImageBitmap`/`getContext`/`toBlob`/`toDataURL`（参考 `src/utils/__tests__/image.test.ts`）。
+- `onSelect` 经压缩 Promise **异步**回调（原为同步）：组件测试里「选图 → 立即触发依赖头像状态的后续操作」需在两者间 `await act(async () => {})` 冲刷微任务，否则状态未落地。
 

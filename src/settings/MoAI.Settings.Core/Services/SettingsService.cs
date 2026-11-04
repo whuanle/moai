@@ -136,6 +136,47 @@ public class SettingsService : ISettingsService
 
                 break;
 
+            case SettingDefinitions.SandboxNetworkModeKey:
+                if (!NetworkModes.IsValid(value))
+                {
+                    throw new BusinessException("沙箱出站网络管控模式无效，可选 app / deny / intranet.") { StatusCode = 400 };
+                }
+
+                return value.Trim().ToLowerInvariant();
+
+            case SettingDefinitions.SandboxIntranetCidrsKey:
+                if (!SandboxNetworkTarget.TryParseCidrList(value, out _))
+                {
+                    throw new BusinessException("沙箱内网网段格式无效，请填写逗号分隔的 IP 或 CIDR 网段，例如 10.0.0.0/8,172.16.0.0/12.") { StatusCode = 400 };
+                }
+
+                break;
+
+            case SettingDefinitions.SandboxDeniedCommandsKey:
+                {
+                    // 校验按原文行计数（ParseList 会静默截断），超限与非法模式都直接拒绝
+                    var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var raw in value.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    {
+                        if (raw.Length == 0 || !seen.Add(raw))
+                        {
+                            continue;
+                        }
+
+                        if (seen.Count > SandboxCommandPatterns.MaxPatterns)
+                        {
+                            throw new BusinessException($"沙箱禁用命令清单不能超过 {SandboxCommandPatterns.MaxPatterns} 条.") { StatusCode = 400 };
+                        }
+
+                        if (!SandboxCommandPatterns.IsValidPattern(raw))
+                        {
+                            throw new BusinessException($"沙箱禁用命令模式无效：{raw}（regex: 前缀须为可编译正则，单条不超过 {SandboxCommandPatterns.MaxPatternLength} 字符）.") { StatusCode = 400 };
+                        }
+                    }
+
+                    break;
+                }
+
             case SettingDefinitions.WikiAllowedFileTypesKey:
                 return string.Join(",", WikiFileTypes.NormalizeOrThrow(value));
 
@@ -204,6 +245,14 @@ public class SettingsService : ISettingsService
                 }
 
                 return value.Trim();
+            case SettingDefinitions.MemoryGlobalEnabledKey:
+                var memoryGlobal = value.Trim().ToLowerInvariant();
+                if (memoryGlobal != "true" && memoryGlobal != "false")
+                {
+                    throw new BusinessException("跨应用记忆开关必须为 true 或 false.") { StatusCode = 400 };
+                }
+
+                return memoryGlobal;
             case SettingDefinitions.LoginForced2faKey:
                 var forced2fa = value.Trim().ToLowerInvariant();
                 if (forced2fa != "true" && forced2fa != "false")
@@ -220,6 +269,21 @@ public class SettingsService : ISettingsService
                 }
 
                 return loginCodeMode;
+            case SettingDefinitions.LoginCaptchaModeKey:
+                var captchaMode = value.Trim().ToLowerInvariant();
+                if (captchaMode != "off" && captchaMode != "always" && captchaMode != "after_fail")
+                {
+                    throw new BusinessException("图形验证码策略必须为 off、always 或 after_fail.") { StatusCode = 400 };
+                }
+
+                return captchaMode;
+            case SettingDefinitions.LoginEmailCodeFailThresholdKey:
+                if (!int.TryParse(value.Trim(), out var emailCodeThreshold) || emailCodeThreshold < 1 || emailCodeThreshold > 10)
+                {
+                    throw new BusinessException("邮箱验证码触发失败次数必须是 1~10 之间的整数.") { StatusCode = 400 };
+                }
+
+                return value.Trim();
             case SettingDefinitions.LoginSafetyEnabledKey:
                 var lsSwitch = value.Trim().ToLowerInvariant();
                 if (lsSwitch != "true" && lsSwitch != "false")
@@ -302,7 +366,8 @@ public class SettingsService : ISettingsService
     }
 
     /// <summary>
-    /// 记忆设置联动校验：开启前须已选向量化模型；统一模型已配置且平台已有任意记忆（应用记忆或全局记忆）时模型与维度锁定（须先清空全部记忆）.
+    /// 记忆设置联动校验：开启前须已选向量化模型；开启跨应用记忆前须已开启总开关；
+    /// 统一模型已配置且平台已有任意记忆（应用记忆或全局记忆）时模型与维度锁定（须先清空全部记忆）.
     /// 尚未配置统一模型（首次设置）不触发锁定——历史存量应用分片按直接切换策略处理，由管理员按需清空后按新口径重建.
     /// </summary>
     /// <param name="key">设置项 key.</param>
@@ -314,6 +379,7 @@ public class SettingsService : ISettingsService
         var isModelKey = key == SettingDefinitions.MemoryEmbeddingModelKey;
         var isDimensionsKey = key == SettingDefinitions.MemoryEmbeddingDimensionsKey;
         var isEnabledKey = key == SettingDefinitions.MemoryEnabledKey;
+        var isGlobalKey = key == SettingDefinitions.MemoryGlobalEnabledKey;
 
         if (isEnabledKey && value == "true")
         {
@@ -321,6 +387,15 @@ public class SettingsService : ISettingsService
             if (string.IsNullOrWhiteSpace(model))
             {
                 throw new BusinessException("开启长期记忆前须先选择向量化模型.") { StatusCode = 400 };
+            }
+        }
+
+        if (isGlobalKey && value == "true")
+        {
+            var enabledValue = await ResolveStoredValueAsync(SettingDefinitions.MemoryEnabledKey, cancellationToken);
+            if (!string.Equals(enabledValue.Trim(), "true", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new BusinessException("开启跨应用记忆前须先开启长期记忆.") { StatusCode = 400 };
             }
         }
 

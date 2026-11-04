@@ -24,4 +24,12 @@ public interface ILoginRiskService
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>返回 <see cref="RiskEvaluationResult"/>，内部异常时返回无风险结果.</returns>
     Task<RiskEvaluationResult> EvaluateAsync(LoginEventContext context, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 读取当前 IP 滑动窗口内的登录失败计数（只读，不累计），供图形验证码等前置防线判定使用；IP 为空时返回 0.
+    /// </summary>
+    /// <param name="ip">客户端 IP.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>窗口内失败次数，无记录为 0.</returns>
+    Task<int> GetIpFailCountAsync(string ip, CancellationToken cancellationToken);
 }

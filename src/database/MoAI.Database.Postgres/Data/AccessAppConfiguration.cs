@@ -90,10 +90,6 @@ internal partial class AccessAppConfiguration : IEntityTypeConfiguration<AccessA
             .HasMaxLength(50)
             .HasComment("应用名称")
             .HasColumnName("name");
-        entity.Property(e => e.Scopes)
-            .HasDefaultValue(2038)
-            .HasComment("功能范围位标记（位或组合）：团队级低位 2=wiki_read 4=wiki_write 16=wiki_mcp 32=app_chat 64=kg_read 128=kg_write 256=kg_mcp 512=app_acp 1024=app_a2a；系统级不再使用（=0，全量访问 /api/subsys）")
-            .HasColumnName("scopes");
         entity.Property(e => e.TeamId)
             .HasComment("团队id（系统级接入固定 0）")
             .HasColumnName("team_id");
@@ -104,6 +100,11 @@ internal partial class AccessAppConfiguration : IEntityTypeConfiguration<AccessA
         entity.Property(e => e.UpdateUserId)
             .HasComment("更新人")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.AvatarPath)
+            .HasMaxLength(255)
+            .HasComment("接入头像 objectKey，空串=未设置")
+            .HasColumnName("avatar_path")
+            .HasDefaultValue(string.Empty);
 
         OnConfigurePartial(entity);
 

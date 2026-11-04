@@ -4,7 +4,9 @@ using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Org.Services;
 using MoAI.Publication.Commands;
+using MoAI.Publication.Queries;
 
 namespace MoAI.Publication.Handlers;
 
@@ -14,14 +16,17 @@ namespace MoAI.Publication.Handlers;
 public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublicationCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IOrgGrantService _orgGrantService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ReviewPublicationCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public ReviewPublicationCommandHandler(DatabaseContext databaseContext)
+    /// <param name="orgGrantService">统一组织授权领域服务.</param>
+    public ReviewPublicationCommandHandler(DatabaseContext databaseContext, IOrgGrantService orgGrantService)
     {
         _databaseContext = databaseContext;
+        _orgGrantService = orgGrantService;
     }
 
     /// <inheritdoc/>
@@ -40,6 +45,8 @@ public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublication
             throw new BusinessException("该上架申请已审批，请刷新后重试.") { StatusCode = 409 };
         }
 
+        // 应用审批通过后待物化的可视范围（统一在保存后物化，授权服务内部保存，避免中间状态一并持久化）
+        Guid? materializeAppId = null;
         if (request.IsApprove)
         {
             // 审批通过：将目标资源 is_public 置为 true；资源已被删除时无法通过，只能驳回
@@ -55,6 +62,7 @@ public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublication
                 }
 
                 app.IsPublic = true;
+                materializeAppId = appId;
             }
             else if ((PublicationResourceType)publicationReview.ResourceType == PublicationResourceType.Skill)
             {
@@ -93,6 +101,15 @@ public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublication
         publicationReview.ReviewComment = request.ReviewComment ?? string.Empty;
         publicationReview.ReviewTime = DateTime.UtcNow;
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        if (materializeAppId.HasValue)
+        {
+            // 物化上架可视范围到组织授权（publicApp 资源）：全员=清空陈旧授权（无记录即全员），按组织=整体覆盖
+            var orgGrants = VisibleOrgGrantSnapshot.Deserialize(publicationReview.VisibleOrgGrants)
+                .Select(x => new OrgGrantItem { OrgRoleId = x.OrgRoleId, Scope = x.Scope })
+                .ToList();
+            await _orgGrantService.ReplaceGrantsAsync(OrgGrantResourceType.PublicApp, materializeAppId.Value, orgGrants, cancellationToken);
+        }
 
         return EmptyCommandResponse.Default;
     }

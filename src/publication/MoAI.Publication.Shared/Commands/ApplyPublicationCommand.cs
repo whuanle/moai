@@ -4,6 +4,7 @@ using MediatR;
 using MoAI.Database.Enums;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
+using MoAI.Publication.Models;
 
 namespace MoAI.Publication.Commands;
 
@@ -34,6 +35,16 @@ public class ApplyPublicationCommand : IRequest<SimpleLong>, IUserIdContext, IMo
     /// </summary>
     public string? Version { get; init; }
 
+    /// <summary>
+    /// 可视范围（仅应用上架使用）：all=全员可见，organization=按组织限定；默认全员.
+    /// </summary>
+    public AppVisibleScope VisibleScope { get; init; } = AppVisibleScope.All;
+
+    /// <summary>
+    /// 可视范围组织授权清单（仅 VisibleScope=organization 时使用，同一组织不可重复），审批通过后物化为该应用的组织可见授权.
+    /// </summary>
+    public IReadOnlyList<VisibleOrgGrantItem> VisibleOrgGrants { get; init; } = [];
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -52,5 +63,21 @@ public class ApplyPublicationCommand : IRequest<SimpleLong>, IUserIdContext, IMo
             .WithMessage("应用版本号格式不正确，应为 aaa.bb.cc（如 1.2.0）.");
         validate.RuleFor(x => x.Version).Empty().When(x => x.ResourceType != PublicationResourceType.App)
             .WithMessage("仅应用申请上架需要版本号.");
+        validate.RuleFor(x => x.VisibleScope).IsInEnum().WithMessage("可视范围不正确.");
+        validate.RuleFor(x => x.VisibleScope).Equal(AppVisibleScope.All).When(x => x.ResourceType != PublicationResourceType.App)
+            .WithMessage("仅应用申请上架支持设置可视范围.");
+        validate.RuleFor(x => x.VisibleOrgGrants).Empty().When(x => x.ResourceType != PublicationResourceType.App || x.VisibleScope != AppVisibleScope.Organization)
+            .WithMessage("仅按组织限定的可视范围支持组织授权清单.");
+        validate.RuleFor(x => x.VisibleOrgGrants).NotEmpty().When(x => x.ResourceType == PublicationResourceType.App && x.VisibleScope == AppVisibleScope.Organization)
+            .WithMessage("按组织限定可视范围时组织授权清单不能为空.");
+        validate.RuleForEach(x => x.VisibleOrgGrants).ChildRules(item =>
+        {
+            item.RuleFor(x => x.OrgRoleId).GreaterThan(0).WithMessage("组织授权的组织 id 不正确.");
+            item.RuleFor(x => x.Scope).IsInEnum().WithMessage("组织授权方向不正确.");
+        });
+        validate.RuleFor(x => x.VisibleOrgGrants)
+            .Must(grants => grants.Select(x => x.OrgRoleId).Distinct().Count() == grants.Count)
+            .When(x => x.ResourceType == PublicationResourceType.App && x.VisibleScope == AppVisibleScope.Organization)
+            .WithMessage("同一组织不可重复设置授权.");
     }
 }

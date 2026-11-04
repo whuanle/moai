@@ -46,6 +46,11 @@ public class UpdateSubsysAppCommand : IRequest<EmptyCommandResponse>, IModelVali
     /// </summary>
     public IReadOnlyList<string> CallbackUrls { get; init; } = [];
 
+    /// <summary>
+    /// 接入头像 objectKey（须为已完成上传登记的文件；null=不修改，非空=替换头像）.
+    /// </summary>
+    public string? AvatarPath { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateSubsysAppCommand> validate)
     {
@@ -58,5 +63,7 @@ public class UpdateSubsysAppCommand : IRequest<EmptyCommandResponse>, IModelVali
             .Matches("^https?://.+").WithMessage("回调地址须为 http(s) 完整地址.")
             .When(x => x.CallbackUrls.Count > 0);
         validate.RuleFor(x => x.CallbackUrls).Must(x => x.Count <= 10).WithMessage("回调地址最多 10 个.");
+        validate.RuleFor(x => x.AvatarPath).MaximumLength(255).WithMessage("头像路径最长 255 字符.")
+            .When(x => !string.IsNullOrEmpty(x.AvatarPath));
     }
 }

@@ -26,9 +26,11 @@ public class QueryExternalWikisCommandHandler : IRequestHandler<QueryExternalWik
     /// <inheritdoc/>
     public async Task<QueryWikisCommandResponse> Handle(QueryExternalWikisCommand request, CancellationToken cancellationToken)
     {
-        // 外部接口按 token 归属团队过滤；应用 token 对团队知识库权限等价团队 Admin，MyRole 固定返回 Admin.
+        // 外部接口按 token 归属团队过滤；资源 key（moai-tr-）绑定单一知识库时只返回该库；
+        // 应用 token 对团队知识库权限等价团队 Admin，MyRole 固定返回 Admin.
         var items = await _databaseContext.Wikis
             .Where(x => x.TeamId == request.Caller.TeamId)
+            .Where(x => request.Caller.OnlyWikiId == null || x.Id == request.Caller.OnlyWikiId)
             .OrderBy(x => x.Id)
             .Select(x => new WikiItem
             {

@@ -51,7 +51,7 @@ export interface AgentChatHandlers {
 export function createAppChatAgent(
   appId: string,
   threadId: string,
-  options?: { toolApprovalMode?: ToolApprovalMode; workflowDraft?: boolean; uiTools?: boolean },
+  options?: { toolApprovalMode?: ToolApprovalMode; workflowDraft?: boolean; uiTools?: boolean; modelId?: string | null },
 ): HttpAgent {
   const token = useAppStore.getState().userInfo?.accessToken
   const url = `${Env.serverUrl}/api/agent/${appId}/chat`
@@ -67,6 +67,8 @@ export function createAppChatAgent(
       ...(options?.workflowDraft ? { 'X-Moai-Workflow-Draft': '1' } : {}),
       // 前端展示工具（ui_ 前缀，侧边栏渲染）：默认启用；嵌入组件未适配侧边栏前不携带即关闭
       ...(options?.uiTools !== false ? { 'X-Moai-Ui-Tools': '1' } : {}),
+      // 用户所选对话模型随每轮下发（ai_model.id uuid）：后端校验须在应用可选列表内且团队可用，否则回退默认模型
+      ...(options?.modelId ? { 'X-Moai-Model-Id': options.modelId } : {}),
     },
   })
 }

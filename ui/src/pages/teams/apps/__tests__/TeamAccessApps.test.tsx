@@ -9,6 +9,8 @@ vi.mock('@/api/access-app', () => ({
   updateAccessApp: vi.fn().mockResolvedValue(undefined),
   deleteAccessApp: vi.fn().mockResolvedValue(undefined),
   resetAccessAppSecret: vi.fn(),
+  getAppFeature: vi.fn().mockResolvedValue({ isAcpEnabled: false, isA2aEnabled: false }),
+  updateAppFeature: vi.fn().mockResolvedValue({ isAcpEnabled: false, isA2aEnabled: false }),
 }))
 
 describe('TeamAccessApps（团队应用接入分区）', () => {
@@ -34,14 +36,14 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
 
     expect(await screen.findByText('ERP 接入')).toBeTruthy()
     expect(screen.getByText('moai-ac-abcd****')).toBeTruthy()
-    expect(screen.getByText(/第三方系统可使用应用接入 key 直接访问团队资源/)).toBeTruthy()
+    expect(screen.getByText(/全量访问团队 \/api\/teamres 资源/)).toBeTruthy()
     await waitFor(() => expect(getAccessApps).toHaveBeenCalledWith(1))
 
     fireEvent.click(screen.getByRole('button', { name: '点击查看完整 key' }))
     expect(await screen.findByText('moai-ac-abcd1234efgh5678ijkl')).toBeTruthy()
   })
 
-  it('管理员可新建接入并在创建后显示一次性 key', async () => {
+  it('管理员可新建接入（无需勾选范围）并在创建后显示一次性 key', async () => {
     render(<TeamAccessApps teamId={1} canManage />)
     await screen.findByText('ERP 接入')
 
@@ -88,14 +90,11 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
     expect(screen.queryByRole('button', { name: /新建接入/ })).toBeNull()
   })
 
-  it('范围编辑器展示知识库 MCP 勾选且无占位提示文案', async () => {
+  it('接入页不出现资源 key 生成入口（资源 key 在各资源功能页自动生成）', async () => {
     render(<TeamAccessApps teamId={1} canManage />)
     await screen.findByText('ERP 接入')
 
-    fireEvent.click(screen.getByRole('button', { name: /新建接入/ }))
-    expect(await screen.findByRole('checkbox', { name: /知识库 MCP/ })).toBeTruthy()
-    expect(screen.getByRole('checkbox', { name: /应用 ACP/ })).toBeTruthy()
-    expect(screen.queryByText(/能力建设中/)).toBeNull()
-    expect(screen.queryByText(/直连知识库 MCP 服务器/)).toBeNull()
+    expect(screen.queryByText(/应用资源 Key/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /生成 Key/ })).toBeNull()
   })
 })

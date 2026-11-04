@@ -50,6 +50,16 @@ public partial class PublicationReviewEntity : IFullAudited
     public int? PublishVersion { get; set; }
 
     /// <summary>
+    /// 可视范围，见 AppVisibleScope（全员=0，按组织=1），仅应用类型使用，其他资源为 0.
+    /// </summary>
+    public short VisibleScope { get; set; }
+
+    /// <summary>
+    /// 可视范围组织授权快照 JSON：[{"orgRoleId":3,"scope":"down"}]，方向见 OrgGrantScope；仅 VisibleScope=1 时有值.
+    /// </summary>
+    public string VisibleOrgGrants { get; set; } = string.Empty;
+
+    /// <summary>
     /// 审核状态，见 PublicationState（待审核=0，已通过=1，已驳回=2）.
     /// </summary>
     public int State { get; set; }

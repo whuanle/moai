@@ -22,6 +22,8 @@ namespace MoAI.App.Handlers;
 /// </summary>
 public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConfigCommand, EmptyCommandResponse>
 {
+    private const int MaxSelectableModels = 20;
+
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
     private readonly ISandboxSettingsService _sandboxSettingsService;
@@ -74,6 +76,18 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             return EmptyCommandResponse.Default;
         }
 
+        // Agent 应用对话模型与系统提示词必填：模型不存在「默认模型」回退语义（未配置模型无法对话），
+        // 提示词为空的应用没有初始指令（应用类型在 Handler 才可知，故不放入请求体静态校验）
+        if (request.ModelId == null || request.ModelId.Value == Guid.Empty)
+        {
+            throw new BusinessException("请选择对话模型.") { StatusCode = 400 };
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Prompt))
+        {
+            throw new BusinessException("系统提示词不能为空.") { StatusCode = 400 };
+        }
+
         // 外部应用面向外部用户/匿名开放，不允许技能与沙箱：显式携带即拒绝；
         // 历史存量配置由对话装配兜底强制关闭，此处保存时同时收敛落库
         if (app.IsExternal)
@@ -99,8 +113,9 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             }
         }
 
-        // 对话模型须在该团队可用；执行参数含沙箱等扩展配置，启用沙箱时受系统上限约束
+        // 对话模型须在该团队可用；可选模型列表逐个同口径校验；执行参数含沙箱等扩展配置，启用沙箱时受系统上限约束
         var modelId = await ValidateModelIdAsync(app.TeamId, request.ModelId, cancellationToken);
+        var modelIds = await ValidateModelIdsAsync(app.TeamId, modelId, request.ModelIds, cancellationToken);
         var wikiIds = await ValidateWikiIdsAsync(app.TeamId, request.WikiIds, cancellationToken);
         var graphIds = await ValidateGraphIdsAsync(app.TeamId, request.GraphIds, cancellationToken);
         var pluginIds = await ValidatePluginIdsAsync(app.TeamId, request.Plugins, cancellationToken);
@@ -113,6 +128,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         {
             SubAgentSettingsValidator.Validate(request.ExecutionSettings.Value);
             MemorySettingsValidator.Validate(request.ExecutionSettings.Value);
+            CompactionSettingsValidator.Validate(request.ExecutionSettings.Value);
         }
 
 
@@ -167,6 +183,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 AppId = app.Id,
                 Prompt = request.Prompt ?? string.Empty,
                 ModelId = modelId,
+                ModelIds = AppAgentConfigJson.SerializePluginIds(modelIds),
                 WikiIds = wikiJson,
                 GraphIds = graphJson,
                 Plugins = pluginJson,
@@ -184,6 +201,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         {
             config.Prompt = request.Prompt ?? string.Empty;
             config.ModelId = modelId;
+            config.ModelIds = AppAgentConfigJson.SerializePluginIds(modelIds);
             config.WikiIds = wikiJson;
             config.GraphIds = graphJson;
             config.Plugins = pluginJson;
@@ -268,7 +286,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
 
     /// <summary>
     /// 校验对话模型：仅允许选择该团队可用的模型（模型与渠道均启用，且为公开模型或已授权给该团队）；
-    /// 未选择（null / 空 Guid）时返回空 Guid.
+    /// Agent 应用已在前置校验要求非空（此处对 null / 空 Guid 返回空 Guid 兜底）.
     /// </summary>
     private async Task<Guid> ValidateModelIdAsync(int teamId, Guid? modelId, CancellationToken cancellationToken)
     {
@@ -306,6 +324,36 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         }
 
         return row.Id;
+    }
+
+    /// <summary>
+    /// 校验并归一可选模型列表（开放给用户在对话端选择）：null/空归一为仅默认模型（存量客户端兼容）；
+    /// 去重、上限 20 个，逐个与默认模型同口径校验团队可用性，且必须包含默认模型.
+    /// </summary>
+    private async Task<List<Guid>> ValidateModelIdsAsync(int teamId, Guid defaultModelId, IReadOnlyCollection<Guid>? modelIds, CancellationToken cancellationToken)
+    {
+        var ids = modelIds?.Where(x => x != Guid.Empty).Distinct().ToList() ?? new List<Guid>();
+        if (ids.Count == 0)
+        {
+            return new List<Guid> { defaultModelId };
+        }
+
+        if (ids.Count > MaxSelectableModels)
+        {
+            throw new BusinessException($"可选模型最多 {MaxSelectableModels} 个.") { StatusCode = 400 };
+        }
+
+        if (!ids.Contains(defaultModelId))
+        {
+            throw new BusinessException("默认模型必须在可选模型列表中.") { StatusCode = 400 };
+        }
+
+        foreach (var id in ids)
+        {
+            await ValidateModelIdAsync(teamId, id, cancellationToken);
+        }
+
+        return ids;
     }
 
     /// <summary>
@@ -520,7 +568,9 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
     /// <summary>
     /// 校验并规范化长期记忆配置（execution_settings.memory）：向量化模型/维度统一由系统设置（MEMORY_*）决定，
     /// 应用配置不接收 embeddingModelId/embeddingDimensions（携带时剥离，历史存量值随保存收敛）；
-    /// 开启记忆时要求平台已开启长期记忆且已选统一向量化模型，否则拒绝.
+    /// 检索条数（retrievalTopK）已退役，由 AI 经 memory_search 工具自行决定（默认 10，上限 30），携带时剥离；
+    /// 开启记忆时要求平台已开启长期记忆且已选统一向量化模型；
+    /// 开启跨应用共享（allowGlobalMemory=true）时还要求平台已开启跨应用记忆（MEMORY_GLOBAL_ENABLED），否则拒绝.
     /// </summary>
     /// <param name="executionJson">本次保存的执行参数 JSON 文本.</param>
     /// <param name="cancellationToken">取消令牌.</param>
@@ -538,9 +588,10 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             return executionJson;
         }
 
-        // 模型/维度统一在系统设置：应用配置一律不落库
+        // 模型/维度统一在系统设置：应用配置一律不落库；检索条数由 AI 工具自行决定，同样不落库
         memory.Remove("embeddingModelId");
         memory.Remove("embeddingDimensions");
+        memory.Remove("retrievalTopK");
 
         var requestEnabled = memory.TryGetPropertyValue("enabled", out var enabledNode)
             && enabledNode is JsonValue enabledValue && enabledValue.TryGetValue<bool>(out var enabledFlag) && enabledFlag;
@@ -549,7 +600,37 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             throw new BusinessException("平台未开启长期记忆，请先在系统设置中开启.") { StatusCode = 400 };
         }
 
+        var requestAllowGlobal = memory.TryGetPropertyValue("allowGlobalMemory", out var allowGlobalNode)
+            && allowGlobalNode is JsonValue allowGlobalValue && allowGlobalValue.TryGetValue<bool>(out var allowGlobalFlag) && allowGlobalFlag;
+        if (requestAllowGlobal && !await IsPlatformGlobalMemoryEnabledAsync(cancellationToken))
+        {
+            throw new BusinessException("平台未开启跨应用记忆，请先在系统设置中开启.") { StatusCode = 400 };
+        }
+
         return root.ToJsonString();
+    }
+
+    /// <summary>
+    /// 解析平台跨应用记忆是否可用（MEMORY_ENABLED=true 且已选统一向量化模型且 MEMORY_GLOBAL_ENABLED=true）.
+    /// </summary>
+    private async Task<bool> IsPlatformGlobalMemoryEnabledAsync(CancellationToken cancellationToken)
+    {
+        var keys = new[]
+        {
+            SettingDefinitions.MemoryEnabledKey,
+            SettingDefinitions.MemoryEmbeddingModelKey,
+            SettingDefinitions.MemoryGlobalEnabledKey,
+        };
+        var values = await _databaseContext.Settings.AsNoTracking()
+            .Where(s => keys.Contains(s.Key))
+            .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
+        string Resolve(string key) => values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : SettingDefinitions.Find(key)?.DefaultValue ?? string.Empty;
+        var enabled = string.Equals(Resolve(SettingDefinitions.MemoryEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
+        var hasModel = Guid.TryParse(Resolve(SettingDefinitions.MemoryEmbeddingModelKey).Trim(), out var modelId) && modelId != Guid.Empty;
+        var globalEnabled = string.Equals(Resolve(SettingDefinitions.MemoryGlobalEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
+        return enabled && hasModel && globalEnabled;
     }
 
     /// <summary>

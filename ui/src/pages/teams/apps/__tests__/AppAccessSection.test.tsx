@@ -48,7 +48,7 @@ describe('AppAccessSection', () => {
     renderSection()
     expect(await screen.findByText('访问点配置')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByDisplayValue('380')).toBeInTheDocument())
-    expect(screen.getByText(/\/api\/external\/agent\/a1\/chat/)).toBeInTheDocument()
+    expect(screen.getByText(/\/api\/teamres\/agent\/a1\/chat/)).toBeInTheDocument()
   })
 
   it('嵌入代码片段包含 appId 与 server 地址', async () => {

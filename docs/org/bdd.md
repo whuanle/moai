@@ -313,3 +313,14 @@ Feature: 同级排序（sort_order）
     When 以不在目标同级中的组织作为插入参照、或以自身为参照
     Then 返回参数错误（400）
 ```
+
+```gherkin
+Feature: 新资源类型接入（扩枚举）
+
+  @ORG-S58 @auto:e2e
+  Scenario: 应用市场上架可视范围接入 org_grant
+    When 应用申请上架选择按组织限定并通过审批
+    Then 该应用的可视范围以资源类型 publicApp 写入 org_grant（self/up/down 方向语义同统一组织授权）
+    And 判定语义不变：无授权记录不在此机制约束内（由消费方定义为全员可见），下架/停用时记录被清空
+```
+

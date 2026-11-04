@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
@@ -16,16 +17,19 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly AppUsageAggregateCache _usageAggregateCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAppUsageCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public QueryAppUsageCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="usageAggregateCache">应用用量聚合缓存.</param>
+    public QueryAppUsageCommandHandler(DatabaseContext databaseContext, ITeamService teamService, AppUsageAggregateCache usageAggregateCache)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _usageAggregateCache = usageAggregateCache;
     }
 
     /// <inheritdoc/>
@@ -33,7 +37,7 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)
-            .Select(x => new { x.Id, x.TeamId, x.UseCount })
+            .Select(x => new { x.Id, x.TeamId, x.UseCount, x.MessageCount })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (app == null)
@@ -52,12 +56,57 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
             throw new BusinessException("需要团队管理员才能查看监控.") { StatusCode = 403 };
         }
 
-        var audits = _databaseContext.AiModelTokenAudits.Where(x =>
-            x.TeamId == app.TeamId
-            && x.UseType == (int)AiModelUseType.App
-            && x.UseResourceId == app.Id);
+        // tokens/调用次数/按模型分布：聚合用量表且分钟级滞后，走 1 分钟 Redis 缓存避免每次刷新都查库
+        var aggregate = await _usageAggregateCache.GetAsync(app.Id, cancellationToken).ConfigureAwait(false);
+        if (aggregate == null)
+        {
+            aggregate = await QueryAggregateAsync(app.TeamId, app.Id, cancellationToken).ConfigureAwait(false);
+            await _usageAggregateCache.SetAsync(app.Id, aggregate, cancellationToken).ConfigureAwait(false);
+        }
 
-        var byModel = await audits
+        // 使用活动统计：会话数 / 去重用户数 / 最近使用时间为实时小聚合（与缓存解耦，删除会话立即生效）；
+        // 去重用户用 SELECT DISTINCT（GroupBy(1)+Distinct().Count() 会翻译出非法 COUNT(DISTINCT)，PostgreSQL 42601）
+        var sessionQuery = _databaseContext.AppAgentSessions.AsNoTracking()
+            .Where(x => x.AppId == app.Id);
+
+        var sessionCount = await sessionQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var lastActiveTime = await sessionQuery
+            .MaxAsync(x => (DateTimeOffset?)x.LastMessageTime, cancellationToken).ConfigureAwait(false);
+
+        var userKeys = await _databaseContext.AppAgentSessions.AsNoTracking()
+            .Where(x => x.AppId == app.Id)
+            .Select(x => new { x.CreateUserId, x.UserType })
+            .Distinct()
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return new QueryAppUsageCommandResponse
+        {
+            Summary = aggregate.Summary,
+            ByModel = aggregate.ByModel,
+            Stats = new AppUsageActivityStats
+            {
+                UseCount = app.UseCount,
+                SessionCount = sessionCount,
+                UserCount = userKeys.Count,
+                MessageCount = app.MessageCount,
+                LastActiveTime = lastActiveTime,
+            },
+        };
+    }
+
+    /// <summary>
+    /// 查询聚合用量表的汇总与按模型分布.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="appId">应用 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>聚合结果.</returns>
+    private async Task<AppUsageAggregate> QueryAggregateAsync(int teamId, Guid appId, CancellationToken cancellationToken)
+    {
+        var byModel = await _databaseContext.AiModelTokenAudits.AsNoTracking()
+            .Where(x => x.TeamId == teamId
+                && x.UseType == (int)AiModelUseType.App
+                && x.UseResourceId == appId)
             .GroupBy(x => x.ModelId)
             .Select(g => new
             {
@@ -68,13 +117,13 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
                 TotalTokens = g.Sum(x => (long)x.TotalTokens),
                 CachedTokens = g.Sum(x => (long)x.CachedTokens),
             })
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         var modelIds = byModel.Select(x => x.ModelId).ToList();
-        var names = await _databaseContext.AiModels
+        var names = await _databaseContext.AiModels.AsNoTracking()
             .Where(m => modelIds.Contains(m.Id))
             .Select(m => new { m.Id, m.Name })
-            .ToDictionaryAsync(m => m.Id, m => m.Name, cancellationToken);
+            .ToDictionaryAsync(m => m.Id, m => m.Name, cancellationToken).ConfigureAwait(false);
 
         var byModelItems = byModel
             .OrderByDescending(x => x.TotalTokens)
@@ -92,38 +141,13 @@ public class QueryAppUsageCommandHandler : IRequestHandler<QueryAppUsageCommand,
 
         var summary = new AppUsageSummary
         {
-            CallCount = byModel.Sum(x => x.CallCount),
-            PromptTokens = byModel.Sum(x => x.PromptTokens),
-            CompletionTokens = byModel.Sum(x => x.CompletionTokens),
-            TotalTokens = byModel.Sum(x => x.TotalTokens),
-            CachedTokens = byModel.Sum(x => x.CachedTokens),
+            CallCount = byModelItems.Sum(x => x.CallCount),
+            PromptTokens = byModelItems.Sum(x => x.PromptTokens),
+            CompletionTokens = byModelItems.Sum(x => x.CompletionTokens),
+            TotalTokens = byModelItems.Sum(x => x.TotalTokens),
+            CachedTokens = byModelItems.Sum(x => x.CachedTokens),
         };
 
-        // 使用活动统计：会话数 / 去重用户数 / 消息数 / 最近使用时间
-        //（不可用 GroupBy(1)+Distinct().Count()：EF 会翻译出 COUNT(DISTINCT *) 非法 SQL，PostgreSQL 42601；
-        // 会话量与应用规模同阶，一次取回内存计算）
-        var sessionRows = await _databaseContext.AppAgentSessions.AsNoTracking()
-            .Where(x => x.AppId == app.Id)
-            .Select(x => new { x.Id, x.CreateUserId, x.UserType, x.LastMessageTime })
-            .ToListAsync(cancellationToken);
-
-        var messageCount = sessionRows.Count == 0
-            ? 0
-            : await _databaseContext.AppAgentMessages.AsNoTracking()
-                .CountAsync(x => sessionRows.Select(s => s.Id).Contains(x.SessionId), cancellationToken);
-
-        return new QueryAppUsageCommandResponse
-        {
-            Summary = summary,
-            ByModel = byModelItems,
-            Stats = new AppUsageActivityStats
-            {
-                UseCount = app.UseCount,
-                SessionCount = sessionRows.Count,
-                UserCount = sessionRows.Select(x => new { x.CreateUserId, x.UserType }).Distinct().Count(),
-                MessageCount = messageCount,
-                LastActiveTime = sessionRows.Count == 0 ? null : sessionRows.Max(x => x.LastMessageTime),
-            },
-        };
+        return new AppUsageAggregate(summary, byModelItems);
     }
 }

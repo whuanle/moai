@@ -1,10 +1,11 @@
 // 个人记忆管理 E2E（跨应用全局记忆，后端默认 127.0.0.1:5000）
-// 覆盖：平台记忆设置门禁与校验（MEMORY_*：未选模型开启 400/非法值 400/非 root 403；应用配置不携带模型/维度字段）
-//       → 全局记忆 CRUD（新建/编辑/删除/清空本人/用户隔离/参数校验）
-//       → 应用记忆编辑（内容更新 id 不变/门禁）与「存为全局」promote（含重复合并）
-//       → 记忆总览 overview（应用列表 + 全局概况）
+// 覆盖：人工写入端点下线断言（新建/编辑全局、应用记忆编辑、「存为全局」promote → 404/405；记忆内容一律由 AI 自动维护）
+//       → 平台记忆设置门禁与校验（MEMORY_*：未选模型开启 400/非法值 400/非 root 403；应用配置不携带模型/维度字段）
+//       → 全局记忆仅 AI 写入（memory_save scope=global 工具轮落库）
+//       → 记忆总览 overview（应用列表 + 全局概况）与关键字检索（全局/应用记忆列表 keyword 过滤）
 //       → 跨应用注入（应用 B 对话命中 A 时代入的全局记忆，注入行带「全局|」标记；用户隔离）
-//       → 统一向量化模型锁定（任意记忆存在换模型 400 → root 清空全部（应用+全局）解锁 → 换模型 200）。
+//       → 统一向量化模型锁定（任意记忆存在换模型 400 → root 清空全部（应用+全局）解锁 → 换模型 200）
+//       → 删除与清空（唯一保留的人工操作：删单条/重复删除 404/清空本人全局）。
 // 模型策略：本地 OpenAI 兼容桩（确定性哈希向量 embedding + 提示词条件 chat），零 SKIP；统一模型须为公开 embedding 模型。
 import crypto from 'node:crypto'
 import http from 'node:http'
@@ -256,7 +257,6 @@ async function main() {
   const rootToken = await rootLogin()
   const owner = await mkuser('gm')
   const userB = await mkuser('gb')
-  const outsider = await mkuser('gx')
 
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'mgmt-team-' + TS } })).json.value)
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: userB.userId, role: 0 } })
@@ -267,11 +267,17 @@ async function main() {
   if (!models) { console.log('FAIL | 桩模型创建失败，终止'); process.exit(1) }
 
   try {
-    // 起始收敛：确保平台记忆开关为关（上一次运行可能残留开启态），再验证默认门禁
+    // 起始收敛：确保平台记忆开关为关且未选模型（上一次运行可能残留开启态/模型值），再验证默认门禁
     await saveSetting(rootToken, 'MEMORY_ENABLED', 'false')
+    await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'false')
+    await saveSetting(rootToken, 'MEMORY_EMBEDDING_MODEL', '')
 
-    // ===== 平台记忆设置：门禁与校验 =====
-    check('MM-01 未开启长期记忆时新建全局记忆 400', (await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: '用户喜欢简洁回复', memoryType: 0 } })).status === 400)
+    // ===== 人工写入端点下线断言（记忆内容一律由 AI 自动维护，人工仅可删除/清空） =====
+    // 路由模板仍在（同模板保留 GET/DELETE），下线后统一返回 404/405
+    check('MM-01a 新建全局记忆端点已下线 404/405', [404, 405].includes((await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: 'x', memoryType: 0 } })).status))
+    check('MM-01b 存为全局 promote 端点已下线 404/405', [404, 405].includes((await api('POST', '/api/memory/global/promote', { token: owner.token, body: { appId: crypto.randomUUID(), memoryId: crypto.randomUUID() } })).status))
+    check('MM-01c 编辑全局记忆端点已下线 404/405', [404, 405].includes((await api('PUT', `/api/memory/global/mine/${crypto.randomUUID()}`, { token: owner.token, body: { memoryId: crypto.randomUUID(), content: 'x', memoryType: 0 } })).status))
+    check('MM-01d 编辑应用记忆端点已下线 404/405', [404, 405].includes((await api('PUT', `/api/app/${crypto.randomUUID()}/memory/mine/${crypto.randomUUID()}`, { token: owner.token, body: { appId: crypto.randomUUID(), memoryId: crypto.randomUUID(), content: 'x', memoryType: 0 } })).status))
 
     check('MM-02 非 root 保存平台记忆设置 403', (await saveSetting(owner.token, 'MEMORY_ENABLED', 'true')).status === 403)
 
@@ -281,6 +287,9 @@ async function main() {
     check('MM-04 非法开关值 400', (await saveSetting(rootToken, 'MEMORY_ENABLED', 'yes')).status === 400)
     check('MM-05 非法模型 id 400', (await saveSetting(rootToken, 'MEMORY_EMBEDDING_MODEL', 'not-a-guid')).status === 400)
     check('MM-06 非法维度 400', (await saveSetting(rootToken, 'MEMORY_EMBEDDING_DIMENSIONS', '4096')).status === 400)
+    check('MM-06b 跨应用记忆开关非法值 400', (await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'yes')).status === 400)
+    const globalEarly = await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'true')
+    check('MM-06c 未开启总开关时开启跨应用记忆 400', globalEarly.status === 400 && globalEarly.text.includes('长期记忆'), `${globalEarly.status} ${globalEarly.text.slice(0, 120)}`)
 
     const options = await api('GET', '/api/memory/global/model-options', { token: rootToken })
     const optionIds = (options.json?.items ?? []).map((i) => String(i.id))
@@ -293,42 +302,30 @@ async function main() {
     await saveSetting(rootToken, 'MEMORY_EMBEDDING_MODEL', models.publicEmbeddingId)
     await saveSetting(rootToken, 'MEMORY_EMBEDDING_DIMENSIONS', '1024')
     check('MM-09 选定模型后开启长期记忆 200', (await saveSetting(rootToken, 'MEMORY_ENABLED', 'true')).status === 200)
+    check('MM-09b 总开关开启后跨应用记忆开关开启 200', (await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'true')).status === 200)
 
-    // ===== 全局记忆 CRUD =====
-    check('MM-10 参数校验：空内容 400', (await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: '  ', memoryType: 0 } })).status === 400)
-    check('MM-11 参数校验：非法类型 400', (await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: 'x', memoryType: 9 } })).status === 400)
-
-    const created = await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: FACT_INVOICE, memoryType: 0 } })
-    const createdId = created.json?.id
-    check('MM-12 新建全局记忆 200 且 scope=global', created.status === 200 && typeof createdId === 'string' && created.json.scope === 'global',
-      `${created.status} ${created.text.slice(0, 120)}`)
-
-    const edited = await api('PUT', `/api/memory/global/mine/${createdId}`, { token: owner.token, body: { memoryId: createdId, content: FACT_INVOICE + '，默认税号 91330100AB', memoryType: 0 } })
-    check('MM-13 编辑全局记忆 200', edited.status === 200, `${edited.status} ${edited.text.slice(0, 120)}`)
-
-    const mineA = await globalMine(owner.token)
-    const editedItem = (mineA.json?.items ?? []).find((x) => String(x.id) === String(createdId))
-    check('MM-14 编辑后内容更新且 id 不变', editedItem && (editedItem.content ?? '').includes('91330100AB') && String(editedItem.id) === String(createdId),
-      `items=${(mineA.json?.items ?? []).length}`)
-
-    check('MM-15 编辑不存在的全局记忆 404', (await api('PUT', `/api/memory/global/mine/${crypto.randomUUID()}`, { token: owner.token, body: { memoryId: crypto.randomUUID(), content: 'x', memoryType: 0 } })).status === 404)
-
-    // 用户隔离：B 建自己的全局记忆，互相不可见
-    const createdB = await api('POST', '/api/memory/global/mine', { token: userB.token, body: { content: '用户B的备用键帽放在蓝色抽屉第二格', memoryType: 1 } })
-    check('MM-16 用户B新建全局记忆 200', createdB.status === 200)
-    const mineB = await globalMine(userB.token)
-    check('MM-17 全局记忆用户隔离', (mineB.json?.items ?? []).every((x) => (x.content ?? '').includes('用户B')) && !(mineB.json?.items ?? []).some((x) => (x.content ?? '').includes('星辰科技')),
-      `bItems=${(mineB.json?.items ?? []).map((x) => x.content?.slice(0, 12)).join('|')}`)
-
-    // ===== 应用记忆：写入 + 编辑 + promote =====
+    // ===== 应用记忆：AI 工具写入 + 全局记忆工具写入（人工写入端点已下线） =====
     const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用A-' + TS, appType: 'agent' } })
     const APP1 = String(ca.json?.value ?? '')
+
+    // 应用跨应用共享门禁：平台 MEMORY_GLOBAL_ENABLED 关闭时应用开启 allowGlobalMemory 400；开启后放行
+    await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'false')
+    const cfgGlobalOff = await api('PUT', `/api/app/${APP1}/agent-config`, {
+      token: owner.token,
+      body: {
+        prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
+        executionSettings: { sandbox: { enabled: false }, memory: { enabled: true, allowGlobalMemory: true, autoExtract: false, minScore: 0.2 } },
+      },
+    })
+    check('MM-18a 平台未开启跨应用记忆时应用开启全局共享 400', cfgGlobalOff.status === 400 && cfgGlobalOff.text.includes('平台未开启跨应用记忆'), `${cfgGlobalOff.status} ${cfgGlobalOff.text.slice(0, 140)}`)
+    check('MM-09c 平台跨应用记忆开关恢复开启 200', (await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'true')).status === 200)
+
     const cfg1 = await api('PUT', `/api/app/${APP1}/agent-config`, {
       token: owner.token,
       body: {
         prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.conversationModelId,
-        // 携带模型/维度字段也会被剥离：统一在系统设置
-        executionSettings: { sandbox: { enabled: false }, memory: { enabled: true, embeddingModelId: models.publicEmbeddingId, embeddingDimensions: 1024, autoExtract: false, minScore: 0.2 } },
+        // 携带模型/维度字段也会被剥离：统一在系统设置；allowGlobalMemory 供工具 scope=global 写入
+        executionSettings: { sandbox: { enabled: false }, memory: { enabled: true, allowGlobalMemory: true, embeddingModelId: models.publicEmbeddingId, embeddingDimensions: 1024, autoExtract: false, minScore: 0.2 } },
       },
     })
     const pub1 = await api('POST', `/api/app/${APP1}/publish`, { token: owner.token })
@@ -357,10 +354,11 @@ async function main() {
     check('MM-18 应用记忆写入可查询', !!appItem, `count=${appItems.length} chat=${chat1.status} reply=${(chat1.reply ?? '').slice(0, 80)} err=${chat1.runError}`)
 
     if (!appItem) {
-      // 应用记忆写入失败时，后续 promote/编辑链路无法继续，提前收尾
+      // 应用记忆写入失败时，后续全局写入/注入链路无法继续，提前收尾
       chatLog.forEach((c, i) => console.log(`  [stub#${i}] tools=${JSON.stringify((c.tools ?? []).map?.((t2) => t2?.function?.name ?? t2?.name ?? '?'))} msgs=${JSON.stringify(c.messages.map((m) => ({ role: m.role, len: String(typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '')).length, head: String(typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '')).slice(0, 80) })))}`))
       console.log('\n===== memory-management E2E 提前终止：应用记忆未写入 =====')
       await api('DELETE', '/api/memory/all', { token: rootToken })
+      await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'false')
       await saveSetting(rootToken, 'MEMORY_ENABLED', 'false')
       if (rootToken && models?.channelId) await api('DELETE', `/api/ai/channel/${models.channelId}`, { token: rootToken })
       stub.close()
@@ -368,33 +366,19 @@ async function main() {
       process.exit(1)
     }
 
-    check('MM-19 非成员编辑应用记忆 404', appItem && (await api('PUT', `/api/app/${APP1}/memory/mine/${appItem.id}`, { token: outsider.token, body: { appId: APP1, memoryId: appItem.id, content: 'x', memoryType: 0 } })).status === 404)
-
-    const appEdit = await api('PUT', `/api/app/${APP1}/memory/mine/${appItem.id}`, { token: owner.token, body: { appId: APP1, memoryId: appItem.id, content: '用户的收货地址是杭州未来科技城 3 幢', memoryType: 2 } })
-    check('MM-20 编辑应用记忆 200', appEdit.status === 200, `${appEdit.status} ${appEdit.text.slice(0, 120)}`)
-
-    const appAfter = await appMine(owner.token, APP1)
-    const appEdited = (appAfter.json?.items ?? []).find((x) => String(x.id) === String(appItem.id))
-    check('MM-21 应用记忆编辑后内容更新且 id 不变', appEdited && (appEdited.content ?? '').includes('3 幢') && appEdited.memoryType === 2,
-      `item=${JSON.stringify(appEdited ?? null).slice(0, 120)}`)
-
-    check('MM-22 编辑空内容 400', (await api('PUT', `/api/app/${APP1}/memory/mine/${appItem.id}`, { token: owner.token, body: { appId: APP1, memoryId: appItem.id, content: '', memoryType: 0 } })).status === 400)
-
-    // promote：应用记忆存为全局
-    const globalCountBefore = (await globalMine(owner.token)).json?.total ?? 0
-    const promote = await api('POST', '/api/memory/global/promote', { token: owner.token, body: { appId: APP1, memoryId: appItem.id } })
-    check('MM-23 应用记忆存为全局 200', promote.status === 200 && typeof promote.json?.id === 'string', `${promote.status} ${promote.text.slice(0, 120)}`)
-
-    const globalAfterPromote = await globalMine(owner.token)
-    check('MM-24 promote 后全局列表含应用记忆内容', (globalAfterPromote.json?.items ?? []).some((x) => (x.content ?? '').includes('收货地址')),
-      `items=${(globalAfterPromote.json?.items ?? []).map((x) => x.content?.slice(0, 12)).join('|')}`)
-
-    const promote2 = await api('POST', '/api/memory/global/promote', { token: owner.token, body: { appId: APP1, memoryId: appItem.id } })
-    const globalAfterPromote2 = await globalMine(owner.token)
-    check('MM-25 重复 promote 高相似合并不增条数', promote2.status === 200 && (globalAfterPromote2.json?.total ?? 0) === (globalAfterPromote.json?.total ?? 0),
-      `before2=${globalAfterPromote.json?.total} after2=${globalAfterPromote2.json?.total}`)
-
-    check('MM-26 非成员 promote 404', (await api('POST', '/api/memory/global/promote', { token: outsider.token, body: { appId: APP1, memoryId: appItem.id } })).status === 404)
+    // 全局记忆同样仅 AI 写入：工具轮 scope=global 落库（原人工新建端点已下线）
+    const SIDG1 = await newSession(owner.token, APP1, 'mm-全局写入')
+    const chatSeedGlobal = await chatSse(APP1, owner.token, SIDG1, '请全局记住：' + FACT_INVOICE)
+    const pollSeedGlobal = await (async () => {
+      for (let i = 0; i < 15; i++) {
+        const r = await globalMine(owner.token)
+        if ((r.json?.items ?? []).some((x) => (x.content ?? '').includes('星辰科技'))) return true
+        await new Promise((r2) => setTimeout(r2, 2000))
+      }
+      return false
+    })()
+    check('MM-12b 全局记忆仅 AI 工具写入（scope=global）落库可查询', chatSeedGlobal.status === 200 && !chatSeedGlobal.runError && pollSeedGlobal,
+      `reply=${(chatSeedGlobal.reply ?? '').slice(0, 80)} err=${chatSeedGlobal.runError}`)
 
     // ===== 记忆总览 =====
     const overview = await api('GET', '/api/memory/overview', { token: owner.token })
@@ -402,8 +386,19 @@ async function main() {
     const ovApp1 = ovApps.find((a) => String(a.appId) === APP1)
     check('MM-27 总览含应用与计数', overview.status === 200 && ovApp1 && (ovApp1.memoryCount ?? 0) >= 1 && (ovApp1.appName ?? '').includes('记忆应用A') && (ovApp1.teamName ?? '').length > 0,
       `apps=${ovApps.length} ovApp1=${JSON.stringify(ovApp1 ?? null).slice(0, 140)}`)
-    check('MM-28 总览全局概况计数', (overview.json?.global?.enabled ?? false) === true && (overview.json?.global?.myCount ?? 0) === (globalAfterPromote2.json?.total ?? 0),
-      `global=${JSON.stringify(overview.json?.global ?? null)}`)
+    const mineForOverview = await globalMine(owner.token)
+    check('MM-28 总览全局概况计数与列表一致', (overview.json?.global?.enabled ?? false) === true && (overview.json?.global?.myCount ?? 0) === (mineForOverview.json?.total ?? 0),
+      `global=${JSON.stringify(overview.json?.global ?? null)} listTotal=${mineForOverview.json?.total}`)
+
+    // ===== 工具栏关键字检索（服务端 keyword 过滤） =====
+    const globalKwHit = await api('GET', '/api/memory/global/mine?page=1&pageSize=50&keyword=' + encodeURIComponent('星辰'), { token: owner.token })
+    check('MM-28b 全局记忆按内容关键字命中', globalKwHit.status === 200 && (globalKwHit.json?.total ?? 0) >= 1 && (globalKwHit.json?.items ?? []).every((x) => (x.content ?? '').includes('星辰')),
+      `total=${globalKwHit.json?.total}`)
+    const globalKwMiss = await api('GET', '/api/memory/global/mine?page=1&pageSize=50&keyword=' + encodeURIComponent('无匹配关键字xyz'), { token: owner.token })
+    check('MM-28c 全局记忆无匹配关键字返回 0', globalKwMiss.status === 200 && (globalKwMiss.json?.total ?? 0) === 0, `total=${globalKwMiss.json?.total}`)
+    const appKwHit = await api('GET', `/api/app/${APP1}/memory/mine?page=1&pageSize=50&keyword=` + encodeURIComponent('收货'), { token: owner.token })
+    check('MM-28d 应用记忆按内容关键字命中', appKwHit.status === 200 && (appKwHit.json?.total ?? 0) >= 1 && (appKwHit.json?.items ?? []).every((x) => (x.content ?? '').includes('收货')),
+      `total=${appKwHit.json?.total}`)
 
     // ===== 跨应用注入：应用 B（无应用内记忆）命中全局记忆，三级开关（平台已开启 → 管理员允许 → 用户接入）=====
     const cb = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用B-' + TS, appType: 'agent' } })
@@ -472,6 +467,14 @@ async function main() {
     const bHasInvoice = (mineB2.json?.items ?? []).some((x) => (x.content ?? '').includes('星辰科技'))
     check('MM-30 跨应用注入按用户隔离', !(chatB.reply ?? '').includes('GLOBAL_MEMORY_HIT') && !bHasInvoice, `reply=${(chatB.reply ?? '').slice(0, 60)}`)
 
+    // ===== 平台跨应用记忆开关运行时收口：关闭后存量 allowGlobalMemory=true 的应用不再注入/回显全局 =====
+    check('MM-30b 平台关闭跨应用记忆 200', (await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'false')).status === 200)
+    const chatGateOff = await chatSse(APP2, owner.token, SID2, '我的发票抬头是什么？')
+    check('MM-30c 平台关闭后存量允许应用不注入全局记忆', !(chatGateOff.reply ?? '').includes('GLOBAL_MEMORY_HIT'), `reply=${(chatGateOff.reply ?? '').slice(0, 80)}`)
+    const ucGateOff = await api('GET', `/api/app/${APP2}/userconfig`, { token: owner.token })
+    check('MM-30d 平台关闭后 userconfig 回显 memoryGlobalAllowed=false', ucGateOff.json?.memoryGlobalAllowed === false, `allowed=${ucGateOff.json?.memoryGlobalAllowed}`)
+    check('MM-30e 平台恢复开启跨应用记忆 200', (await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'true')).status === 200)
+
     // ===== 记忆工具集：全局保存（scope=global）与全局遗忘（memory_forget 全局 id 兜底）=====
     const SIDG = await newSession(owner.token, APP2, 'mm-全局工具')
     const globalTotalBeforeTool = (await globalMine(owner.token)).json?.total ?? 0
@@ -503,14 +506,30 @@ async function main() {
     check('MM-45 memory_forget 兜底删除全局记忆', chatForgetGlobal.status === 200 && !chatForgetGlobal.runError && pollGlobalForgotten,
       `reply=${(chatForgetGlobal.reply ?? '').slice(0, 80)} err=${chatForgetGlobal.runError} msgs=${JSON.stringify((chatLog.slice(-2)).map((c) => c.messages.map((m) => `${m.role}:${String(typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '')).slice(0, 90)}`).join(' | ')))}`)
 
-    // ===== 删除与清空 =====
-    const delB = await api('DELETE', `/api/memory/global/mine/${createdB.json.id}`, { token: userB.token })
-    check('MM-31 删除单条全局记忆 200', delB.status === 200)
-    check('MM-32 重复删除 404', (await api('DELETE', `/api/memory/global/mine/${createdB.json.id}`, { token: userB.token })).status === 404)
+    // 再写入一条全局记忆供删除/清空用例使用（人工写入端点已下线，只能走 AI 工具）
+    const SIDG2 = await newSession(owner.token, APP2, 'mm-全局写入2')
+    const chatSeedGlobal2 = await chatSse(APP2, owner.token, SIDG2, '请全局记住：我偏好纸质说明书')
+    const pollSeedGlobal2 = await (async () => {
+      for (let i = 0; i < 15; i++) {
+        const r = await globalMine(owner.token)
+        if ((r.json?.items ?? []).some((x) => (x.content ?? '').includes('纸质说明书'))) return true
+        await new Promise((r2) => setTimeout(r2, 2000))
+      }
+      return false
+    })()
+    check('MM-45b 工具再次写入全局记忆', chatSeedGlobal2.status === 200 && !chatSeedGlobal2.runError && pollSeedGlobal2,
+      `reply=${(chatSeedGlobal2.reply ?? '').slice(0, 80)} err=${chatSeedGlobal2.runError}`)
 
-    const clearB = await api('DELETE', '/api/memory/global/mine', { token: userB.token })
+    // ===== 删除与清空（唯一保留的人工操作） =====
+    const mineForDel = await globalMine(owner.token)
+    const delTarget = (mineForDel.json?.items ?? []).find((x) => (x.content ?? '').includes('纸质说明书'))
+    const delB = delTarget ? await api('DELETE', `/api/memory/global/mine/${delTarget.id}`, { token: owner.token }) : { status: 0 }
+    check('MM-31 删除单条全局记忆 200', delB.status === 200, `target=${JSON.stringify(delTarget ?? null).slice(0, 100)}`)
+    check('MM-32 重复删除 404', delTarget ? (await api('DELETE', `/api/memory/global/mine/${delTarget.id}`, { token: owner.token })).status === 404 : false)
+
+    const clearB = await api('DELETE', '/api/memory/global/mine', { token: owner.token })
     check('MM-33 清空我的全局记忆 200', clearB.status === 200)
-    check('MM-34 清空后我的全局为空', ((await globalMine(userB.token)).json?.items ?? []).length === 0)
+    check('MM-34 清空后我的全局为空', ((await globalMine(owner.token)).json?.items ?? []).length === 0)
 
     // ===== 统一模型锁定与 root 清空全部（应用记忆 + 全局记忆任一存在即锁） =====
     const lockModel = await saveSetting(rootToken, 'MEMORY_EMBEDDING_MODEL', models.publicEmbeddingId2)
@@ -524,11 +543,9 @@ async function main() {
 
     check('MM-39 清空后解锁可换统一模型 200', (await saveSetting(rootToken, 'MEMORY_EMBEDDING_MODEL', models.publicEmbeddingId2)).status === 200)
 
-    const recreated = await api('POST', '/api/memory/global/mine', { token: owner.token, body: { content: '换模型后重新写入全局记忆', memoryType: 0 } })
-    check('MM-40 换模型后新建全局记忆 200', recreated.status === 200, `${recreated.status} ${recreated.text.slice(0, 120)}`)
-
     // ===== 收尾：清空平台全部记忆并关闭开关，保证脚本可重复跑 =====
     await api('DELETE', '/api/memory/all', { token: rootToken })
+    await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'false')
     await saveSetting(rootToken, 'MEMORY_ENABLED', 'false')
   } finally {
     if (rootToken && models?.channelId) await api('DELETE', `/api/ai/channel/${models.channelId}`, { token: rootToken })

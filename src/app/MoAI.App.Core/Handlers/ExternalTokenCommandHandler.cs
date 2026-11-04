@@ -102,12 +102,6 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
             throw new BusinessException("获取用户 token 必须指定应用 id.") { StatusCode = 400 };
         }
 
-        // 应用对话范围：用户 token 用于外部应用会话/对话，接入未勾选 app_chat 时拒绝换取
-        if (!((Database.Enums.TeamApiKeyScopes)accessApp.Scopes).HasFlag(Database.Enums.TeamApiKeyScopes.AppChat))
-        {
-            throw new BusinessException("应用接入未勾选应用对话范围.") { StatusCode = 403 };
-        }
-
         var targetApp = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId.Value, cancellationToken);
         ExternalAppAccessValidator.EnsureUsable(targetApp);

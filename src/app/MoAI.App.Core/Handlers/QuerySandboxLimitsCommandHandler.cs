@@ -31,7 +31,10 @@ public class QuerySandboxLimitsCommandHandler : IRequestHandler<QuerySandboxLimi
         {
             MaxTtlSeconds = limits.MaxTtlSeconds,
             MaxCpu = limits.MaxCpu,
-            MaxMemory = limits.MaxMemory
+            MaxMemory = limits.MaxMemory,
+            NetworkMode = limits.NetworkMode,
+            IntranetCidrs = string.Join(",", limits.IntranetCidrs),
+            DeniedCommands = string.Join("\n", limits.DeniedCommands)
         };
     }
 }

@@ -45,5 +45,11 @@ mode = "direct"
 
 [egress]
 image = "opensandbox/egress:v1.1.7"
-mode = "dns"
+# dns+nft：DNS 层域名过滤 + nftables 网络层强制，CIDR/IP 规则与严格默认拒绝才会真正生效（内核需支持 nftables）；
+# 仅 "dns" 模式下 CIDR/IP 规则解析但不执行，直连 IP 的出站流量完全绕过过滤。版本需与 deploy-compose.sh 的
+# OPENSANDBOX_EGRESS_IMAGE 预拉变量人工保持一致。
+mode = "dns+nft"
+# 平台强制基线（可选，默认注释）：构建含 deny.always 的加固镜像，规则优先级高于用户策略且用户不可覆盖，
+# 用法见 deploy/opensandbox/egress-hardened/ 与 docs/deployment/docker.md。
+# image = "your-registry/opensandbox/egress:hardened"
 readiness_timeout_seconds = 30.0

@@ -1,7 +1,7 @@
 namespace MoAI.App.Services;
 
 /// <summary>
-/// 外部接入（/api/external）认证常量：外部 token 与内部 JWT 同钥签发但 audience 不同，内外接口天然隔离.
+/// 外部接入（/api/teamres）认证常量：外部 token 与内部 JWT 同钥签发但 audience 不同，内外接口天然隔离.
 /// </summary>
 public static class ExternalAuthDefaults
 {
@@ -16,9 +16,15 @@ public static class ExternalAuthDefaults
     public const string AudienceSuffix = "|external";
 
     /// <summary>
-    /// 应用接入 key 前缀.
+    /// 应用接入 key 前缀（团队级全量访问 /api/teamres）.
     /// </summary>
     public const string AccessAppKeyPrefix = "moai-ac-";
+
+    /// <summary>
+    /// 团队资源 key 前缀（moai-tr-）：应用 ACP/A2A、知识库、知识图谱各自的外部访问凭证，
+    /// 仅能访问绑定的资源端点，无密钥不可换 token.
+    /// </summary>
+    public const string ResourceKeyPrefix = "moai-tr-";
 
     /// <summary>
     /// token 类型 claim.
@@ -46,12 +52,7 @@ public static class ExternalAuthDefaults
     public const string ClaimExternalUserId = "externaluserid";
 
     /// <summary>
-    /// 功能范围 claim，值为逗号分隔的 scope 代码（wiki_read/wiki_write/...）；缺省视为旧 token，按全量知识库范围处理.
-    /// </summary>
-    public const string ClaimScope = "scope";
-
-    /// <summary>
-    /// access token 类型值.
+    /// HttpContext.Items 中存放 <see cref="Models.ExternalTokenContext"/> 的 key.
     /// </summary>
     public const string TokenTypeAccess = "access_token";
 

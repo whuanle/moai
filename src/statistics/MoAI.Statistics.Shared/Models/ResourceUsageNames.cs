@@ -16,6 +16,11 @@ public static class ResourceUsageNames
     public const string App = "app-usage";
 
     /// <summary>
+    /// 应用消息（会话落库的物理消息行数增量，value 可为负；删除会话不回减）.
+    /// </summary>
+    public const string AppMessage = "app-message-usage";
+
+    /// <summary>
     /// 技能.
     /// </summary>
     public const string Skill = "skill-usage";

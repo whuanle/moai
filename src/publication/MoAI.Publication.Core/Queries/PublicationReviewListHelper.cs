@@ -3,6 +3,7 @@ using MoAI.Account.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Publication.Models;
 using MoAI.Publication.Queries.Responses;
 
 namespace MoAI.Publication.Queries;
@@ -32,6 +33,20 @@ internal static class PublicationReviewListHelper
             .Where(t => teamIds.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, t => t.Name, cancellationToken);
 
+        // 可视范围组织授权：批量解析组织名称（仅按组织限定的应用申请有值）
+        var orgRoleIds = entities
+            .Where(x => x.VisibleScope == (short)AppVisibleScope.Organization)
+            .SelectMany(x => VisibleOrgGrantSnapshot.Deserialize(x.VisibleOrgGrants))
+            .Select(x => x.OrgRoleId)
+            .Distinct()
+            .ToList();
+        var orgNames = orgRoleIds.Count == 0
+            ? []
+            : await databaseContext.OrgRoles
+                .AsNoTracking()
+                .Where(r => orgRoleIds.Contains(r.Id))
+                .ToDictionaryAsync(r => r.Id, r => r.Name, cancellationToken);
+
         var avatars = await BuildResourceAvatarMapAsync(entities, databaseContext, cancellationToken);
 
         var items = entities.Select(x => new PublicationReviewItem
@@ -45,6 +60,8 @@ internal static class PublicationReviewListHelper
             ResourceAvatar = avatars.TryGetValue(Key((PublicationResourceType)x.ResourceType, x.ResourceId), out var avatar) ? avatar : string.Empty,
             ApplyReason = x.ApplyReason,
             PublishVersion = x.PublishVersion,
+            VisibleScope = (AppVisibleScope)x.VisibleScope,
+            VisibleOrgGrants = MapVisibleOrgGrants(x, orgNames),
             State = (PublicationState)x.State,
             ReviewComment = x.ReviewComment,
             ReviewTime = x.ReviewTime,
@@ -56,6 +73,29 @@ internal static class PublicationReviewListHelper
 
         await userInfoFillService.FillAsync(items, cancellationToken);
         return items;
+    }
+
+    /// <summary>
+    /// 映射可视范围组织授权展示项（仅按组织限定时有值，组织已删除的回退空名称）.
+    /// </summary>
+    /// <param name="entity">上架审核实体.</param>
+    /// <param name="orgNames">组织名称字典.</param>
+    /// <returns>展示项集合.</returns>
+    private static List<VisibleOrgGrantInfoItem> MapVisibleOrgGrants(PublicationReviewEntity entity, Dictionary<int, string> orgNames)
+    {
+        if (entity.VisibleScope != (short)AppVisibleScope.Organization)
+        {
+            return [];
+        }
+
+        return VisibleOrgGrantSnapshot.Deserialize(entity.VisibleOrgGrants)
+            .Select(x => new VisibleOrgGrantInfoItem
+            {
+                OrgRoleId = x.OrgRoleId,
+                RoleName = orgNames.TryGetValue(x.OrgRoleId, out var name) ? name : string.Empty,
+                Scope = x.Scope,
+            })
+            .ToList();
     }
 
     /// <summary>

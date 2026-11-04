@@ -107,7 +107,7 @@ public sealed class MemoryContextProviderContributor : IAppContextProviderContri
                     AppId = _appId,
                     UserId = _userId,
                     QueryText = query,
-                    TopK = Math.Clamp(_resolution.Settings.RetrievalTopK, 1, 20),
+                    TopK = AgentMemorySettings.DefaultRetrievalTopK,
                     MinScore = _resolution.Settings.MinScore,
                 }, cancellationToken);
                 if (items.Count == 0)

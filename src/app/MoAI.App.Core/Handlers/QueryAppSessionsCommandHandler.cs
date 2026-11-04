@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -16,16 +17,19 @@ public class QueryAppSessionsCommandHandler : IRequestHandler<QueryAppSessionsCo
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IPublicAppScopeService _publicAppScopeService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAppSessionsCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public QueryAppSessionsCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="publicAppScopeService">应用市场可视范围判定服务.</param>
+    public QueryAppSessionsCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IPublicAppScopeService publicAppScopeService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _publicAppScopeService = publicAppScopeService;
     }
 
     /// <inheritdoc/>
@@ -43,8 +47,9 @@ public class QueryAppSessionsCommandHandler : IRequestHandler<QueryAppSessionsCo
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
 
-        // 非团队成员仅在应用「已发布且公开到平台」时可查看自己的会话
-        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        // 非团队成员仅在应用「已发布且公开到平台且在可视范围内」时可查看自己的会话（团队成员不受市场可视范围限制）
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1
+            && (myRole != null || await _publicAppScopeService.IsAllowedAsync(app.Id, request.ContextUserId, cancellationToken));
         if (myRole == null && !canUseAsPublic)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };

@@ -377,6 +377,37 @@ async function main() {
     }
   }
 
+  // TSM 团队插件语义配置（@DYN-S154~S158）：团队自有插件的使用须知/语义条目/工具元数据
+  if (dynItem) {
+    const semId = dynItem.pluginId
+    // @DYN-S154 非团队成员 404（团队维度隔离）
+    check('TSM-1 非成员查语义 404', (await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: outsider.token })).status === 404)
+    // @DYN-S155 团队成员可读，工具清单为单工具固定 run 项
+    const mSem = await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: member.token })
+    check('TSM-2 成员查语义 200 且工具清单含 run', mSem.status === 200 && (mSem.json?.tools ?? []).some((x) => x.key === 'run'), mSem.text.slice(0, 160))
+    // @DYN-S156 团队成员保存 403（仅 Owner/Admin 可管理）
+    check('TSM-3 成员保存语义 403', (await api('PUT', `/api/team/${TID}/plugin/${semId}/semantic`, { token: member.token, body: { usageNotes: 'x', notes: [], toolMetas: [] } })).status === 403)
+    // @DYN-S157 Owner 保存 + 回显一致（须知/条目/策略/注解位）
+    const semBody = {
+      usageNotes: '团队语义须知',
+      notes: [{ toolKey: '', title: '须知条目', content: '内容', mode: 'onDemand', sortOrder: 0 }],
+      toolMetas: [{ toolKey: 'run', extraNotes: '补充', callPolicy: '{"denyPatterns":["delete\\\\s"],"action":"block"}', readOnlyHint: true, destructiveHint: false }],
+    }
+    const semSave = await api('PUT', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner.token, body: semBody })
+    const semBack = await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner.token })
+    check('TSM-4 Owner 保存 200', semSave.status === 200, `${semSave.status} ${semSave.text.slice(0, 120)}`)
+    check('TSM-5 语义配置回显一致', semBack.json?.usageNotes === '团队语义须知'
+      && (semBack.json?.notes ?? []).length === 1 && semBack.json.notes[0].mode === 'onDemand'
+      && (semBack.json?.toolMetas ?? []).length === 1
+      && (semBack.json.toolMetas[0].callPolicy ?? '').includes('denyPatterns')
+      && semBack.json.toolMetas[0].readOnlyHint === true
+      && semBack.json.toolMetas[0].destructiveHint === false, semBack.text.slice(0, 200))
+    // @DYN-S158 调用策略 action 非法 400（与系统侧同一校验）
+    check('TSM-6 调用策略 action 非法 400', (await api('PUT', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner.token, body: { usageNotes: '', notes: [], toolMetas: [{ toolKey: 'run', extraNotes: '', callPolicy: '{"denyPatterns":["a"],"action":"nuke"}', readOnlyHint: false, destructiveHint: false }] } })).status === 400)
+    // 他团队管理员（非本团队成员）访问 → 404
+    check('TSM-7 他团队管理员访问 404', (await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner2.token })).status === 404)
+  }
+
   // TP-19 Owner 删除团队动态插件
   if (dynItem) {
     check('TP-19a Owner 删除团队插件 200', (await api('DELETE', `/api/team/${TID}/plugin/${dynItem.pluginId}`, { token: owner.token })).status === 200)

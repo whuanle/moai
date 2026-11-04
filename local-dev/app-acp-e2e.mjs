@@ -1,9 +1,10 @@
 // 应用 ACP（agent-to-agent）E2E（场景 @ACP-S01 ~ @ACP-S19；后端 127.0.0.1:5210）
-// 覆盖：认证与 scope 门禁（无凭证 401 / 无 app_acp 403 / app token 403 / GET 405）→ 协议行为
+// 覆盖：认证与包围圈门禁（无凭证 401 / wiki 资源 key 越圈 403 / app token 403 / GET 405；
+//       接入 scopes（app_acp/app_chat）已退役：moai-ac- 全量 key 放行）→ 协议行为
 //       （initialize 握手 / 未知方法 -32601 / 非法 JSON -32700）→ 应用门禁（跨团队 404 / 未发布 403）
 //       → Agent 应用对话（session/new → session/prompt SSE：agent_message_chunk + end_turn → 续聊落库）
 //       → 用户 token 路径 → 会话隔离与 session/load → Workflow 应用对话（节点 tool_call + 最终回复）
-//       → session/cancel 中断（SLOW 桩流式）→ 范围缓存立即性（授权/吊销即生效）→ 默认范围含 app_acp。
+//       → session/cancel 中断（SLOW 桩流式）→ 资源 key 停用/启用即时生效（401/200）→ 列表无 scopes 字段（退役）。
 // 模型策略：内置本地 OpenAI 兼容桩（/v1/chat/completions 固定回显文案，SLOW 标记触发慢速流），无需真实模型渠道；
 //       Workflow 应用使用引擎确定性编排（start→compute→check→hit/miss→end），不依赖模型。
 import crypto from 'node:crypto'
@@ -57,7 +58,7 @@ function acpHeaders(cred) {
 
 /** 单条 JSON-RPC 请求（非流式方法或需要 HTTP 状态断言时使用） */
 async function acp(cred, appId, body, method = 'POST') {
-  const res = await fetch(`${BASE}/api/external/app/${appId}/acp`, { method, headers: acpHeaders(cred), body: method === 'GET' ? undefined : JSON.stringify(body) })
+  const res = await fetch(`${BASE}/api/teamres/app/${appId}/acp`, { method, headers: acpHeaders(cred), body: method === 'GET' ? undefined : JSON.stringify(body) })
   const text = await res.text()
   let json = null
   try { json = JSON.parse(text) } catch { /* 非 JSON */ }
@@ -66,7 +67,7 @@ async function acp(cred, appId, body, method = 'POST') {
 
 /** session/prompt（SSE）：收集 session/update 通知与最终 response；onFirstChunk 触发时回调（用于 cancel 竞速） */
 async function acpPrompt(cred, appId, body, onFirstChunk) {
-  const res = await fetch(`${BASE}/api/external/app/${appId}/acp`, { method: 'POST', headers: acpHeaders(cred), body: JSON.stringify(body) })
+  const res = await fetch(`${BASE}/api/teamres/app/${appId}/acp`, { method: 'POST', headers: acpHeaders(cred), body: JSON.stringify(body) })
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('text/event-stream')) {
     const text = await res.text()
@@ -240,44 +241,60 @@ async function main() {
   const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-agent-${TS}`, appType: 'agent' } })).json.value)
   await api('PUT', `/api/app/${A1}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A1}/publish`, { token: owner.token })
+  // 开启 A1 的 ACP 功能（key 唯一生成时机=开启功能；未开启的 ACP 端点一律 403 feature_disabled）
+  await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpEnabled: true, isA2aEnabled: false } })
 
   const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-draft-${TS}`, appType: 'agent' } })).json.value)
 
   const W1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-wf-${TS}`, appType: 'workflow' } })).json.value)
   await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: W1, teamId: TID, definition: JSON.stringify(buildDefinition()), editorData: JSON.stringify({ nodes: POS }) } })
   await api('POST', '/api/app/workflow/publish', { token: owner.token, body: { appId: W1, teamId: TID } })
+  // workflow 应用同样开启 ACP（ACP-S14 workflow prompt 场景）
+  await api('PUT', `/api/app/${W1}/feature`, { token: owner.token, body: { isAcpEnabled: true, isA2aEnabled: false } })
 
   // A3：外部应用（is_auth=false，用户 token 换取要求 IsExternal）
   const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-ext-${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
   await api('PUT', `/api/app/${A3}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A3}/publish`, { token: owner.token })
+  // A3 开启 ACP（ACP-S11 用户 token 会话场景）
+  await api('PUT', `/api/app/${A3}/feature`, { token: owner.token, body: { isAcpEnabled: true, isA2aEnabled: false } })
 
-  // 接入 key：K1（app_acp+app_chat）、K2（无 app_acp）、K3（不传=默认全量）、K4（跨团队）
-  const mkKey = async (name, scopes) => {
-    const body = { teamId: TID, name }
-    if (scopes) body.scopes = scopes
-    const r = await api('POST', '/api/access-app', { token: owner.token, body })
+  // 接入 key：scopes 字段已退役，moai-ac- 一律全量（K1/K2/K3 同构，仅命名区分用途）；K4（跨团队）
+  const mkKey = async (name) => {
+    const r = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name } })
     return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? ''), secret: String(r.json?.secret ?? '') }
   }
-  const K1 = await mkKey(`acp-k1-${TS}`, ['app_acp', 'app_chat'])
-  const K2 = await mkKey(`acp-k2-${TS}`, ['wiki_read'])
-  const K3 = await mkKey(`acp-k3-${TS}`, null)
+  const K1 = await mkKey(`acp-k1-${TS}`)
+  const K2 = await mkKey(`acp-k2-${TS}`)
+  const K3 = await mkKey(`acp-k3-${TS}`)
   const owner2 = await mkuser('bo')
   const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `acp-team2-${TS}` } })).json.value)
-  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `acp-k4-${TS}`, scopes: ['app_acp'] } })
+  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `acp-k4-${TS}` } })
   const K4 = { id: String(K4r.json?.accessAppId ?? ''), key: String(K4r.json?.key ?? '') }
 
-  // ===== ACP-S01 ~ S05 认证 / 范围 / 协议基础 =====
+  // 知识库 + 其资源 key（moai-tr-）：ACP 包围圈反例（wiki 资源 key 越圈 403）
+  // wiki 资源 key 唯一生成时机=开启该库 MCP（PUT mcp-config 自动生成/复用）
+  const WIKI = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: `acp-wiki-${TS}`, description: 'acp e2e' } })).json?.value)
+  await api('PUT', `/api/wiki/${WIKI}/mcp-config`, { token: owner.token, body: { isMcpEnabled: true } })
+  const kW = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'wiki', resourceId: String(WIKI) } })
+  const WIKI_RES_KEY = String(kW.json?.key ?? '')
+  const WIKI_RES_ROW = String(kW.json?.teamResourceKeyId ?? '')
+
+  // ===== ACP-S01 ~ S05 认证 / 包围圈 / 协议基础 =====
   check('ACP-S01 无凭证 401', (await acp(null, A1, { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })).status === 401)
 
-  const noScope = await acp({ key: K2.key }, A1, { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })
-  check('ACP-S02 无 app_acp 范围 403 insufficient_scope',
-    noScope.status === 403 && noScope.json?.error?.code === 'insufficient_scope', JSON.stringify(noScope.json).slice(0, 140))
+  // 原「无 app_acp 范围 403」反例已随 scopes 退役：moai-ac- 全量 key 放行（正向）+ wiki 资源 key 越圈 403（包围圈）
+  const fullKeyInit = await acp({ key: K2.key }, A1, { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })
+  check('ACP-S02a moai-ac- 全量 key ACP 放行（scopes 退役）200',
+    fullKeyInit.status === 200 && fullKeyInit.json?.result?.protocolVersion === 1, JSON.stringify(fullKeyInit.json).slice(0, 140))
+  const wikiKeyHit = await acp({ key: WIKI_RES_KEY }, A1, { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })
+  check('ACP-S02b wiki 资源 key 越圈打 ACP 403 insufficient_scope',
+    wikiKeyHit.status === 403 && wikiKeyHit.json?.error?.code === 'insufficient_scope', JSON.stringify(wikiKeyHit.json).slice(0, 140))
 
-  const get405 = await fetch(`${BASE}/api/external/app/${A1}/acp`, { method: 'GET', headers: acpHeaders({ key: K1.key }) })
+  const get405 = await fetch(`${BASE}/api/teamres/app/${A1}/acp`, { method: 'GET', headers: acpHeaders({ key: K1.key }) })
   check('ACP-S03 GET 405', get405.status === 405)
 
-  const badJson = await fetch(`${BASE}/api/external/app/${A1}/acp`, { method: 'POST', headers: acpHeaders({ key: K1.key }), body: '{bad json' })
+  const badJson = await fetch(`${BASE}/api/teamres/app/${A1}/acp`, { method: 'POST', headers: acpHeaders({ key: K1.key }), body: '{bad json' })
   check('ACP-S04 非法 JSON -32700', badJson.status === 200 && (await badJson.json())?.error?.code === -32700)
 
   const unknown = await acp({ key: K1.key }, A1, { jsonrpc: '2.0', id: 2, method: 'session/frobnicate', params: {} })
@@ -313,13 +330,13 @@ async function main() {
   // ===== ACP-S10 续聊 + 会话消息落库 =====
   const p2 = await acpPrompt({ key: K1.key }, A1, { jsonrpc: '2.0', id: 8, method: 'session/prompt', params: { sessionId: SID, prompt: [{ type: 'text', text: `第二轮${marker}` }] } })
   check('ACP-S10a 续聊 end_turn', p2.final?.result?.stopReason === 'end_turn', JSON.stringify(p2.final).slice(0, 140))
-  const msgs = await api('GET', `/api/external/session/${SID}/messages`, { token: K1.key })
+  const msgs = await api('GET', `/api/teamres/session/${SID}/messages`, { token: K1.key })
   const userMsgs = (msgs.json?.items ?? []).filter((m) => m.role === 'user')
   check('ACP-S10b 会话消息落库（两轮用户消息）', msgs.status === 200 && userMsgs.length === 2, `status=${msgs.status} items=${(msgs.json?.items ?? []).length}`)
 
   // ===== ACP-S11 用户 token 路径（外部应用 A3：用户 token 换取要求 IsExternal） =====
   const EXT_UID = `acp-user-${TS}`
-  const tok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, secret: K1.secret, appId: A3, externalUserId: EXT_UID, nickname: 'acp用户' } })
+  const tok = await api('POST', '/api/teamres/token', { body: { accessAppKey: K1.key, secret: K1.secret, appId: A3, externalUserId: EXT_UID, nickname: 'acp用户' } })
   const userToken = String(tok.json?.accessToken ?? '')
   const snU = await acp({ token: userToken }, A3, { jsonrpc: '2.0', id: 9, method: 'session/new', params: {} })
   const SIDU = String(snU.json?.result?.sessionId ?? '')
@@ -356,7 +373,7 @@ async function main() {
     async () => {
       if (cancelDone) return
       cancelDone = true
-      await fetch(`${BASE}/api/external/app/${A1}/acp`, {
+      await fetch(`${BASE}/api/teamres/app/${A1}/acp`, {
         method: 'POST',
         headers: acpHeaders({ key: K1.key }),
         body: JSON.stringify({ jsonrpc: '2.0', method: 'session/cancel', params: { sessionId: SIDC } }),
@@ -364,28 +381,36 @@ async function main() {
     })
   check('ACP-S15 session/cancel 中断（stopReason=cancelled）', pC.final?.result?.stopReason === 'cancelled', JSON.stringify(pC.final).slice(0, 140))
 
-  // ===== ACP-S16/S17 范围缓存立即性（失效钩子，无 TTL 等待） =====
-  await api('PUT', `/api/access-app/${K2.id}`, { token: owner.token, body: { name: `acp-k2-${TS}`, scopes: ['wiki_read', 'app_acp'] } })
-  const granted = await acp({ key: K2.key }, A1, { jsonrpc: '2.0', id: 18, method: 'initialize', params: {} })
-  check('ACP-S16 授权 app_acp 后立即放行', granted.status === 200 && granted.json?.result?.protocolVersion === 1, JSON.stringify(granted.json).slice(0, 120))
+  // ===== ACP-S16/S17 资源 key 吊销即时性（停用即 401、启用恢复 200，失效钩子无 TTL 等待） =====
+  // app 资源 key 绑定具体应用（resourceId=应用 Guid），A1 已开 ACP，get-or-create 幂等复用
+  const kAppRes = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'app', resourceId: A1 } })
+  const APP_RES_KEY = String(kAppRes.json?.key ?? '')
+  const APP_RES_ROW = String(kAppRes.json?.teamResourceKeyId ?? '')
+  const acpRes = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 18, method: 'initialize', params: {} })
+  check('ACP-S16 app 资源 key（moai-tr-）ACP initialize 200', acpRes.status === 200 && acpRes.json?.result?.protocolVersion === 1, JSON.stringify(acpRes.json).slice(0, 120))
 
-  await api('PUT', `/api/access-app/${K2.id}`, { token: owner.token, body: { name: `acp-k2-${TS}`, scopes: ['wiki_read'] } })
-  const revoked = await acp({ key: K2.key }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
-  check('ACP-S17 吊销 app_acp 后立即 403', revoked.status === 403 && revoked.json?.error?.code === 'insufficient_scope', JSON.stringify(revoked.json).slice(0, 120))
+  const dis = await api('PUT', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token, body: { status: 'disabled' } })
+  const disHit = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
+  check('ACP-S17a 资源 key 停用后 ACP 立即 401', dis.status === 200 && disHit.status === 401, `dis=${dis.status} hit=${disHit.status}`)
+  await api('PUT', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token, body: { status: 'enabled' } })
+  const reHit = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
+  check('ACP-S17b 资源 key 重新启用后 ACP 恢复 200', reHit.status === 200 && reHit.json?.result?.protocolVersion === 1, JSON.stringify(reHit.json).slice(0, 120))
 
   // ===== ACP-S18 app token（无外部用户语义）403 =====
-  const appTok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, secret: K1.secret } })
+  const appTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: K1.key, secret: K1.secret } })
   const appTokAcp = await acp({ token: String(appTok.json?.accessToken ?? '') }, A1, { jsonrpc: '2.0', id: 20, method: 'initialize', params: {} })
   check('ACP-S18 app token 403 external_user_token_unsupported',
     appTokAcp.status === 403 && appTokAcp.json?.error?.code === 'external_user_token_unsupported', JSON.stringify(appTokAcp.json).slice(0, 140))
 
-  // ===== ACP-S19 默认范围含 app_acp（不传 scopes = 存量全量口径） =====
+  // ===== ACP-S19 scopes 字段退役：接入列表项不再回显 scopes =====
   const accList = await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })
   const k3item = (accList.json?.items ?? []).find((i) => i.accessAppId === K3.id)
-  check('ACP-S19 默认范围回显含 app_acp', Array.isArray(k3item?.scopes) && k3item.scopes.includes('app_acp'), JSON.stringify(k3item?.scopes))
+  check('ACP-S19 接入列表项无 scopes 字段（退役）', accList.status === 200 && k3item != null && !('scopes' in (k3item ?? {})), JSON.stringify(k3item ? Object.keys(k3item) : accList.text.slice(0, 120)))
 
   // ===== 清理 =====
   if (CH_ID) await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
+  if (WIKI_RES_ROW) await api('DELETE', `/api/team-resource-key/${WIKI_RES_ROW}`, { token: owner.token })
+  if (APP_RES_ROW) await api('DELETE', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token })
   for (const k of [K1, K2, K3, K4]) {
     if (k.id) await api('DELETE', `/api/access-app/${k.id}`, { token: owner.token })
   }

@@ -5,6 +5,7 @@ using MoAI.Database;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.Org.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -16,16 +17,19 @@ public class UnpublishAppCommandHandler : IRequestHandler<UnpublishAppCommand, E
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IOrgGrantService _orgGrantService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UnpublishAppCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public UnpublishAppCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="orgGrantService">统一组织授权领域服务.</param>
+    public UnpublishAppCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IOrgGrantService orgGrantService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _orgGrantService = orgGrantService;
     }
 
     /// <inheritdoc/>
@@ -69,6 +73,9 @@ public class UnpublishAppCommandHandler : IRequestHandler<UnpublishAppCommand, E
             app.PublishVersion = null;
             app.IsPublic = false;
             await _databaseContext.SaveChangesAsync(cancellationToken);
+
+            // 联动下架同步清空应用的组织可见授权（重新上架会按新申请重新物化）
+            await _orgGrantService.ReplaceGrantsAsync(OrgGrantResourceType.PublicApp, app.Id, [], cancellationToken);
         }
         else if (pendingReviews.Count > 0)
         {

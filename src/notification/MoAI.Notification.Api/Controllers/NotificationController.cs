@@ -193,6 +193,18 @@ public class NotificationController : ControllerBase
         return await _mediator.Send(req, ct);
     }
 
+    /// <summary>
+    /// 查询发送失败的记录数量（前端菜单「通知中心」角标数据源），仅管理员.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回发送失败记录数量.</returns>
+    [HttpGet("log/failed-count")]
+    public async Task<QueryNotificationFailedCountCommandResponse> LogFailedCount(CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryNotificationFailedCountCommand(), ct);
+    }
+
     private async Task EnsureAdminAsync(CancellationToken ct)
     {
         var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);

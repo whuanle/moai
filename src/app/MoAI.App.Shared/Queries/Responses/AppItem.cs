@@ -83,6 +83,11 @@ public class AppItem
     public int UseCount { get; set; }
 
     /// <summary>
+    /// 当前用户是否已收藏（仅公开列表填充，团队/外部列表恒为 false）.
+    /// </summary>
+    public bool IsFavorite { get; set; }
+
+    /// <summary>
     /// 应用开通的外部渠道列表（如飞书机器人单聊入口），未开通为空列表.
     /// </summary>
     public IReadOnlyList<AppExternalChannelItem> ExternalChannels { get; set; } = [];

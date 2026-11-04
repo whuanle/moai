@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
 using MoAI.Database;
+using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Team.Services;
@@ -57,6 +58,7 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             AppType = (AppType)app.AppType,
             Prompt = config?.Prompt ?? string.Empty,
             ModelId = config?.ModelId ?? Guid.Empty,
+            ModelIds = ResolveModelIds(config),
             WikiIds = AppAgentConfigJson.ParseLongList(config?.WikiIds),
             GraphIds = AppAgentConfigJson.ParseLongList(config?.GraphIds),
             Plugins = AppAgentConfigJson.ParseGuidList(config?.Plugins),
@@ -70,5 +72,26 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
             Status = config?.Status ?? 0,
             MyRole = (int)myRole.Value
         };
+    }
+
+    /// <summary>
+    /// 解析可选模型列表回显：未配置时仅含默认模型；存量行 model_ids 为空时归一为 [model_id].
+    /// </summary>
+    /// <param name="config">配置行，可能为 null.</param>
+    /// <returns>可选模型 id 列表.</returns>
+    private static IReadOnlyList<Guid> ResolveModelIds(AppAgentConfigEntity? config)
+    {
+        if (config == null)
+        {
+            return new List<Guid>();
+        }
+
+        var ids = AppAgentConfigJson.ParseGuidList(config.ModelIds);
+        if (ids.Count == 0)
+        {
+            ids = new List<Guid> { config.ModelId };
+        }
+
+        return ids;
     }
 }

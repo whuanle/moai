@@ -19,17 +19,17 @@ namespace MoAI.Notification.Handlers;
 public class TestNotificationChannelCommandHandler : IRequestHandler<TestNotificationChannelCommand, TestNotificationChannelCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly NotificationChannelDispatcher _dispatcher;
+    private readonly NotificationService _notificationService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TestNotificationChannelCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="dispatcher">渠道发送调度器.</param>
-    public TestNotificationChannelCommandHandler(DatabaseContext databaseContext, NotificationChannelDispatcher dispatcher)
+    /// <param name="notificationService">通知中心领域服务（试发走领域服务：落发送记录 + 站内信托底，试发人收到站内信副本）.</param>
+    public TestNotificationChannelCommandHandler(DatabaseContext databaseContext, NotificationService notificationService)
     {
         _databaseContext = databaseContext;
-        _dispatcher = dispatcher;
+        _notificationService = notificationService;
     }
 
     /// <inheritdoc/>
@@ -67,12 +67,12 @@ public class TestNotificationChannelCommandHandler : IRequestHandler<TestNotific
             PhoneNumbers = channel.Type is (int)NotificationChannelType.AliyunSms or (int)NotificationChannelType.TencentSms ? request.Recipients : null
         };
 
-        var (success, error, durationMs) = await _dispatcher.SendAsync(channel, message, cancellationToken);
+        var result = await _notificationService.SendToChannelAsync(channel, message, cancellationToken);
         return new TestNotificationChannelCommandResponse
         {
-            Success = success,
-            Error = error,
-            DurationMs = durationMs
+            Success = result.Success,
+            Error = result.Error,
+            DurationMs = result.DurationMs
         };
     }
 }

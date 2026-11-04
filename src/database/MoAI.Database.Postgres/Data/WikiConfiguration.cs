@@ -64,6 +64,10 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.IsLock)
             .HasComment("是否已被锁定配置")
             .HasColumnName("is_lock");
+        entity.Property(e => e.IsMcpEnabled)
+            .HasDefaultValue(false)
+            .HasComment("是否开启 MCP 接入（开启时自动生成/复用该库的团队资源 key）")
+            .HasColumnName("is_mcp_enabled");
         entity.Property(e => e.Name)
             .HasMaxLength(20)
             .HasComment("知识库名称")

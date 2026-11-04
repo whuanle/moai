@@ -17,6 +17,9 @@ public class QueryAppSecurityEventsCommand : PagedParamter, IRequest<QueryAppSec
     /// <summary>按作用域过滤（input/toolResult/toolArgs/modelOutput）；为空不过滤.</summary>
     public string? Scope { get; init; }
 
+    /// <summary>按规则名称模糊过滤（内置规则名为空时按规则类型名匹配）；为空不过滤.</summary>
+    public string? Keyword { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }

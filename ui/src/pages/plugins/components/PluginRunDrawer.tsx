@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Button, Drawer, Space } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { Button, Drawer, Select, Space } from 'antd'
 import Editor, { loader } from '@monaco-editor/react'
 import { useTranslation } from 'react-i18next'
-import { pluginApi } from '@/api/plugin'
+import { pluginApi, type PluginToolItem } from '@/api/plugin'
 
 // 使用本地打包的 Monaco 资源，避免从 CDN 加载导致抽屉长时间 loading。
 // Vite 会把 public/monaco/vs 静态输出到 /monaco/vs。
@@ -31,29 +31,53 @@ export interface PluginRunDrawerProps {
   onClose: () => void
   pluginKey?: string | null
   paramsExample?: string | null
+  /** 工具清单（多工具插件传入后可在抽屉内选择工具，参数示例随工具切换）；单工具插件不传. */
+  tools?: PluginToolItem[] | null
   /** 运行器，默认走管理员接口；团队场景注入团队接口. */
-  runPlugin?: (payload: { key: string; requestJson: string }) => Promise<PluginRunResultLike | null>
+  runPlugin?: (payload: { key: string; requestJson: string; toolKey?: string | null }) => Promise<PluginRunResultLike | null>
 }
 
-export function PluginRunDrawer({ open, onClose, pluginKey, paramsExample, runPlugin }: PluginRunDrawerProps) {
+export function PluginRunDrawer({ open, onClose, pluginKey, paramsExample, tools, runPlugin }: PluginRunDrawerProps) {
   const { t } = useTranslation()
   const [value, setValue] = useState<string>(() => formatJson(paramsExample))
   const [result, setResult] = useState<string>('')
   const [running, setRunning] = useState(false)
+  const [toolKey, setToolKey] = useState<string>('')
   const runner = runPlugin ?? pluginApi.runPlugin
+
+  const toolOptions = useMemo(() => (tools && tools.length > 1 ? tools : null), [tools])
+  const selectedTool = useMemo(
+    () => toolOptions?.find((x) => x.key === toolKey) ?? toolOptions?.[0],
+    [toolOptions, toolKey],
+  )
 
   useEffect(() => {
     if (open) {
-      setValue(formatJson(paramsExample))
+      setToolKey(toolOptions?.[0]?.key ?? '')
+      setValue(formatJson(selectedTool?.paramsExample ?? paramsExample))
       setResult('')
     }
-  }, [open, paramsExample])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, paramsExample, tools])
+
+  const handleToolChange = (key: string) => {
+    setToolKey(key)
+    const tool = toolOptions?.find((x) => x.key === key)
+    if (tool) {
+      setValue(formatJson(tool.paramsExample))
+    }
+  }
 
   const handleRun = async () => {
     if (!pluginKey) return
     setRunning(true)
     try {
-      const res = await runner({ key: pluginKey, requestJson: value })
+      const res = await runner({
+        key: pluginKey,
+        requestJson: value,
+        // 单工具插件（run）不传 toolKey，保持旧行为
+        toolKey: selectedTool && selectedTool.key !== 'run' ? selectedTool.key : undefined,
+      })
       if (res?.success) {
         setResult(formatJson(res.dataJson))
       } else {
@@ -86,6 +110,17 @@ export function PluginRunDrawer({ open, onClose, pluginKey, paramsExample, runPl
       footerStyle={{ textAlign: 'right' }}
     >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {toolOptions && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600 }}>{t('plugins.toolLabel')}</div>
+            <Select
+              style={{ width: 320 }}
+              value={selectedTool?.key}
+              onChange={handleToolChange}
+              options={toolOptions.map((x) => ({ value: x.key, label: x.title ? `${x.title} (${x.key})` : x.key }))}
+            />
+          </div>
+        )}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div style={{ marginBottom: 8, fontWeight: 600 }}>{t('plugins.paramsLabel')}</div>
           <Editor

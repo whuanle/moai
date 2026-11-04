@@ -59,8 +59,9 @@ public class CreateSubsysAppCommandHandler : IRequestHandler<CreateSubsysAppComm
         }
 
         var teamIds = await SubsystemTeamsGuard.NormalizeAsync(request.TeamScope, request.TeamIds, _databaseContext, cancellationToken);
+        var avatarPath = await SubsysAvatarGuard.NormalizeAsync(request.AvatarPath, _databaseContext, cancellationToken);
 
-        // 密钥以 AES 可逆密文落库（v2: 前缀，可随时回显），列表只回显掩码；系统级接入不设资源范围（scopes=0，全量访问协作面）
+        // 密钥以 AES 可逆密文落库（v2: 前缀，可随时回显），列表只回显掩码；系统级接入全量访问协作面
         var secret = _secretCipher.NewSecret();
 
         var entity = new AccessAppEntity
@@ -76,9 +77,9 @@ public class CreateSubsysAppCommandHandler : IRequestHandler<CreateSubsysAppComm
             Secret = _secretCipher.EncryptForStorage(secret),
             SecretSalt = string.Empty,
             SecretMask = _secretCipher.Mask(secret),
-            Scopes = 0,
             Status = AccessAppStatus.Enabled,
             CallbackUrls = isSubsystem ? SubsystemCallbacks.Serialize(request.CallbackUrls) : "[]",
+            AvatarPath = avatarPath,
         };
         await _databaseContext.AccessApps.AddAsync(entity, cancellationToken);
 
@@ -138,6 +139,12 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
         app.Name = request.Name;
         app.Description = request.Description ?? string.Empty;
         app.Status = request.Status;
+
+        // 头像 null=不修改（状态切换等调用不带该字段不受影响），非空=校验文件后替换
+        if (!string.IsNullOrEmpty(request.AvatarPath))
+        {
+            app.AvatarPath = await SubsysAvatarGuard.NormalizeAsync(request.AvatarPath, _databaseContext, cancellationToken);
+        }
 
         if (app.AppType == AccessAppType.Subsystem)
         {

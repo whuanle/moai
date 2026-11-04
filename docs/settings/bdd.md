@@ -160,7 +160,30 @@ Feature: 沙箱资源上限设置（每个应用）
     Then 逐项提交三个 key
     When 填入非法数量格式保存
     Then 前端拦截且不发起保存请求
-```
+
+  @SET-S93 @auto:e2e
+  Scenario: 沙箱出站网络管控设置
+    Given root 已登录
+    When 保存 SANDBOX_NETWORK_MODE="allow_all"（非法值）或含非法网段的 SANDBOX_INTRANET_CIDRS
+    Then 返回请求错误（400）提示取值或网段格式无效
+    When 保存 SANDBOX_NETWORK_MODE="intranet" 与 SANDBOX_INTRANET_CIDRS="10.0.0.0/8,172.16.0.0/12"
+    Then 保存成功，沙箱上限查询返回管控模式与网段（应用侧据此禁用「默认允许」）
+    And 业务读取（GetLimitsAsync）同样返回管控模式与解析后的网段列表
+    When 脚本结束时还原
+    Then 两项设置回到默认 app 与三类私有网段
+
+  @SET-S94 @auto:e2e
+  Scenario: 沙箱平台级禁用命令清单
+    Given root 已登录
+    When 保存含不可编译 regex: 模式的 SANDBOX_DENIED_COMMANDS 或超过 100 条
+    Then 返回请求错误（400）提示模式无效或数量上限
+    When 保存合法清单（含 regex: 原生正则模式）
+    Then 保存成功，沙箱上限查询回显清单原文（换行分隔）
+    And 业务读取（GetLimitsAsync）返回归一后的禁用模式列表（运行时与应用级黑名单取并集拦截）
+    When 保存空清单
+    Then 表示平台级禁用清单关闭（不再回退内置默认清单）
+    When 脚本结束时还原
+    Then 清单回到内置默认危险命令集
 
 ```gherkin
 Feature: 网站 Logo（全局品牌）
@@ -458,5 +481,13 @@ Feature: 邮箱验证码设置（注册 / 找回密码；旧 SET-S57/S58 随验�
   Scenario: 登录邮箱验证码策略保存校验
     When 保存 LOGIN_EMAIL_CODE_MODE 为 off/always/after_fail 之外的值
     Then 返回请求错误（400）提示必须为 off、always 或 after_fail
-    And 策略语义见 [@AUTH-S42](../auth/bdd.md#auth-s42)；登录验证码邮件模板同 [@SET-S69](./bdd.md#set-s69) 绑定校验
+    And 策略语义见 [@AUTH-S43](../auth/bdd.md#auth-s43)；登录验证码邮件模板同 [@SET-S69](./bdd.md#set-s69) 绑定校验
+
+  @SET-S92 @auto:e2e
+  Scenario: 图形验证码策略与邮箱码阈值保存校验（2026-11-03）
+    When 保存 LOGIN_CAPTCHA_MODE 为 off/always/after_fail 之外的值
+    Then 返回请求错误（400）提示必须为 off、always 或 after_fail
+    When 保存 LOGIN_EMAIL_CODE_FAIL_THRESHOLD 为 0/11/非数字
+    Then 返回请求错误（400）提示必须是 1~10 之间的整数
+    And 策略语义见 [@AUTH-S48](../auth/bdd.md#auth-s48)/[@AUTH-S51](../auth/bdd.md#auth-s51)
 ```

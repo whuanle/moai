@@ -90,6 +90,35 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new UpdateKnowledgeGraphCommand { KnowledgeGraphId = id, Name = req.Name, Description = req.Description }, ct);
 
     /// <summary>
+    /// 查询知识图谱 MCP 接入配置（开关 + 该图的团队资源 key），需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="KnowledgeGraphMcpConfigResponse"/>.</returns>
+    [HttpGet("{id}/mcp-config")]
+    public Task<KnowledgeGraphMcpConfigResponse> QueryKnowledgeGraphMcpConfig(long id, CancellationToken ct)
+    {
+        var cmd = new QueryKnowledgeGraphMcpConfigCommand { KnowledgeGraphId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 更新知识图谱 MCP 接入开关（仅托管图），开启时自动生成/复用该图的团队资源 key；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">开关请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="KnowledgeGraphMcpConfigResponse"/>.</returns>
+    [HttpPut("{id}/mcp-config")]
+    public Task<KnowledgeGraphMcpConfigResponse> UpdateKnowledgeGraphMcpConfig(long id, [FromBody] UpdateKnowledgeGraphMcpConfigCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateKnowledgeGraphMcpConfigCommand { KnowledgeGraphId = id, IsMcpEnabled = req.IsMcpEnabled };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 配置知识图谱向量化模型，仅托管图 Owner/Admin 可操作.
     /// </summary>
     /// <param name="id">图谱 id.</param>

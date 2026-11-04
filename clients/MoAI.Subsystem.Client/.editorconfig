@@ -1,0 +1,4 @@
+# Kiota 生成目录按“生成代码”处理：分析器（含 StyleCop）跳过其风格规则。
+# 本文件在项目根、不受再生成脚本影响；脚本只清空 Generated/ 目录。
+[Generated/**/*.cs]
+generated_code = true

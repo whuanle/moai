@@ -16,6 +16,10 @@ import { RunRequestBuilderRequestsMetadata, type RunRequestBuilder } from './run
 // @ts-ignore
 import { StaticRequestBuilderNavigationMetadata, type StaticRequestBuilder } from './static/index.js';
 // @ts-ignore
+import { ToolRequestBuilderNavigationMetadata, type ToolRequestBuilder } from './tool/index.js';
+// @ts-ignore
+import { ToolsRequestBuilderRequestsMetadata, type ToolsRequestBuilder } from './tools/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -42,6 +46,14 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The static property
      */
     get static(): StaticRequestBuilder;
+    /**
+     * The tool property
+     */
+    get tool(): ToolRequestBuilder;
+    /**
+     * The tools property
+     */
+    get tools(): ToolsRequestBuilder;
     /**
      * Gets an item from the ApiTypes.api.ai.plugin.item collection
      * @param pluginId 插件记录 id.
@@ -94,6 +106,12 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     static: {
         navigationMetadata: StaticRequestBuilderNavigationMetadata,
+    },
+    tool: {
+        navigationMetadata: ToolRequestBuilderNavigationMetadata,
+    },
+    tools: {
+        requestsMetadata: ToolsRequestBuilderRequestsMetadata,
     },
 };
 /**

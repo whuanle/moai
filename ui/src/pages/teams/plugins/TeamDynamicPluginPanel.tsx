@@ -7,13 +7,14 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { Button, Input, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { classifyLabel, type PluginClassify } from '@/api/classify'
-import type { DynamicPluginTemplate } from '@/api/plugin'
+import type { DynamicPluginTemplate, PluginToolItem } from '@/api/plugin'
 import {
   deleteTeamPlugin,
   getTeamDynamicTemplates,
@@ -24,6 +25,7 @@ import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { DynamicPluginInstanceModal } from '@/pages/plugins/components/DynamicPluginInstanceModal'
 import { PluginRunDrawer } from '@/pages/plugins/components/PluginRunDrawer'
+import { PluginSemanticModal } from '@/pages/plugins/components/PluginSemanticModal'
 import { PluginAvatar } from '@/pages/plugins/components/PluginAvatarUpload'
 import {
   PluginCard,
@@ -68,6 +70,8 @@ export function TeamDynamicPluginPanel({
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<TeamDynamicPluginItem | null>(null)
   const [drawerTarget, setDrawerTarget] = useState<TeamDynamicPluginItem | null>(null)
+  const [runTools, setRunTools] = useState<PluginToolItem[] | null>(null)
+  const [semanticTarget, setSemanticTarget] = useState<TeamDynamicPluginItem | null>(null)
   const [filter, setFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
   const [view, setView] = useState<PluginView>('card')
@@ -134,6 +138,24 @@ export function TeamDynamicPluginPanel({
     [templates],
   )
 
+  /** 打开运行抽屉：从已加载的团队模板清单取工具清单（团队门禁端点，含 tools 字段），多工具插件可在抽屉内切换. */
+  const openRun = (record: TeamDynamicPluginItem) => {
+    setDrawerTarget(record)
+    const templateKey = record.templeteKey
+    const template = templateKey ? templates.find((tpl) => tpl.key === templateKey) : null
+    // 主客户端生成的 QueryPluginToolItem 字段可空，归一为运行抽屉的形态
+    setRunTools(
+      template?.tools?.length
+        ? template.tools.map((x) => ({
+            key: String(x.key ?? 'run'),
+            title: String(x.title ?? ''),
+            description: String(x.description ?? ''),
+            paramsExample: x.paramsExample ?? null,
+          }))
+        : null,
+    )
+  }
+
   /** 编辑/删除仅限团队自有插件且具备管理权限，系统授权插件只读；运行对所有成员可用. */
   const canOperate = (record: TeamDynamicPluginItem) => canManage && Boolean(record.isTeamOwned)
 
@@ -162,8 +184,9 @@ export function TeamDynamicPluginPanel({
       )
     return (
       <Space size={0} wrap={false}>
-        {btn('run', <PlayCircleOutlined />, t('plugins.run'), () => setDrawerTarget(record), missing)}
+        {btn('run', <PlayCircleOutlined />, t('plugins.run'), () => void openRun(record), missing)}
         {manageable && btn('edit', <EditOutlined />, t('plugins.editPlugin'), () => openEdit(record), missing)}
+        {manageable && btn('semantic', <TagsOutlined />, t('plugins.semanticConfig'), () => setSemanticTarget(record))}
         {manageable && (
           <Popconfirm
             title={t('plugins.deletePluginConfirm')}
@@ -352,6 +375,7 @@ export function TeamDynamicPluginPanel({
           onClose={() => setDrawerTarget(null)}
           pluginKey={drawerTarget.pluginName ?? drawerTarget.instanceKey}
           paramsExample={drawerTarget.paramsExample}
+          tools={runTools}
           runPlugin={(payload) => runTeamPlugin({ teamId, ...payload })}
         />
       )}
@@ -366,6 +390,15 @@ export function TeamDynamicPluginPanel({
         editing={editing}
         onSaved={reload}
         onClose={closeModal}
+      />
+
+      <PluginSemanticModal
+        open={Boolean(semanticTarget)}
+        pluginId={semanticTarget?.pluginId ?? null}
+        pluginTitle={semanticTarget?.title ?? null}
+        teamId={teamId}
+        onClose={() => setSemanticTarget(null)}
+        onSaved={reload}
       />
     </>
   )

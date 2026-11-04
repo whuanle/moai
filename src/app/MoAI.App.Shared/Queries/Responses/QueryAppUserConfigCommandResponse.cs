@@ -11,6 +11,17 @@ public class QueryAppUserConfigCommandResponse
     public int PromptId { get; init; }
 
     /// <summary>
+    /// 默认对话模型 id（uuid，与正式对话同一生效口径：已发布取快照）；未配置模型时为空 Guid.
+    /// </summary>
+    public Guid DefaultModelId { get; init; }
+
+    /// <summary>
+    /// 开放给用户选择的对话模型 id 列表（含默认模型，uuid）；仅默认模型或未配置时为单元素/空列表，
+    /// 前端据此决定是否展示模型切换器.
+    /// </summary>
+    public IReadOnlyList<Guid> ModelIds { get; init; } = Array.Empty<Guid>();
+
+    /// <summary>
     /// 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用.
     /// </summary>
     public int MemoryMode { get; init; }

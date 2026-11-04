@@ -1047,27 +1047,29 @@ function ChannelsPanel() {
           <Form.Item name="description" label={t('notification.form.description')}>
             <Input maxLength={500} />
           </Form.Item>
-        </Form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {(formType === 'smtp' || formType === 'aliyunSms' || formType === 'tencentSms') && (
-            <Form.Item label={formType === 'smtp' ? t('notification.form.testRecipients') : t('notification.form.testPhoneNumbers')} required style={{ marginBottom: 0, flex: 1 }} help={t(formType === 'smtp' ? 'notification.form.testRecipientsExtra' : 'notification.form.testPhoneNumbersExtra')}>
-              <Select
-                mode="tags"
-                open={false}
-                tokenSeparators={[',', '，', ' ']}
-                value={testRecipients}
-                onChange={(value) => setTestRecipients(value)}
-                placeholder={formType === 'smtp' ? 'a@example.com' : '13800138000'}
-              />
+            // 试发收件人与试发按钮同处一个 Form.Item 控制区，保证按钮与输入框垂直对齐（位于 Form 内才能继承 vertical 布局）
+            <Form.Item label={formType === 'smtp' ? t('notification.form.testRecipients') : t('notification.form.testPhoneNumbers')} required style={{ marginBottom: 0 }} help={t(formType === 'smtp' ? 'notification.form.testRecipientsExtra' : 'notification.form.testPhoneNumbersExtra')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Select
+                  mode="tags"
+                  open={false}
+                  tokenSeparators={[',', '，', ' ']}
+                  value={testRecipients}
+                  onChange={(value) => setTestRecipients(value)}
+                  placeholder={formType === 'smtp' ? 'a@example.com' : '13800138000'}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <Tooltip title={t('notification.testFormTip')}>
+                  <Button icon={<SendOutlined />} loading={testing} onClick={() => void handleTestForm()}>
+                    {t('notification.testForm')}
+                  </Button>
+                </Tooltip>
+              </div>
             </Form.Item>
           )}
-          <Tooltip title={t('notification.testFormTip')}>
-            <Button icon={<SendOutlined />} loading={testing} onClick={() => void handleTestForm()}>
-              {t('notification.testForm')}
-            </Button>
-          </Tooltip>
-        </div>
+        </Form>
       </Modal>
 
       <Modal

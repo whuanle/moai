@@ -16,6 +16,11 @@ public class QueryAgentMemoryDefaultsResponse
     public bool PlatformEnabled { get; init; }
 
     /// <summary>
+    /// 平台是否已开启跨应用记忆（MEMORY_GLOBAL_ENABLED；关闭时应用不可开启用户跨应用共享记忆）.
+    /// </summary>
+    public bool GlobalEnabled { get; init; }
+
+    /// <summary>
     /// 平台统一向量化模型名称（应用记忆与全局记忆共用；未配置时为空串）.
     /// </summary>
     public string EmbeddingModelName { get; init; } = string.Empty;

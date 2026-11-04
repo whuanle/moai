@@ -12,7 +12,7 @@ using MoAI.Subsystem.Services;
 namespace MoAI.Subsystem.Controllers;
 
 /// <summary>
-/// 系统级接入协作面接口（/api/subsys/*，与外部接口 /api/external 平行的独立 API 面）：
+/// 系统级接入协作面接口（/api/subsys/*，与外部接口 /api/teamres 平行的独立 API 面）：
 /// 子系统与应用接入共用同一套接口。token 换取为匿名端点，其余端点由 SubsysAccessMiddleware 以接入凭据鉴权
 /// （[AllowAnonymous] 仅用于跳过内部 JWT 与用户状态拦截）。
 /// </summary>

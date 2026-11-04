@@ -1,6 +1,6 @@
 # 系统级接入（子系统+应用接入合并模型，SUB）设计规格（SDD）
 
-> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md)（@SUB-Sxx / @SAA-Sxx） ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md)（存量库升级与对接指引） ｜ 上游：[../auth/sdd.md](../auth/sdd.md)（内部 JWT）、[../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)（团队级 scope 位表） ｜ 证据：[local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)、[local-dev/system-access-app-e2e.mjs](../../local-dev/system-access-app-e2e.mjs)
+> 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md)（@SUB-Sxx / @SAA-Sxx） ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md)（存量库升级与对接指引） ｜ 上游：[../auth/sdd.md](../auth/sdd.md)（内部 JWT）、[../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)（团队外部接口凭证体系） ｜ 证据：[local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)、[local-dev/system-access-app-e2e.mjs](../../local-dev/system-access-app-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。行为场景见 BDD，本文不重复。
 
 ## 目标
@@ -25,7 +25,7 @@
 
 ## 数据模型（应用接入统一表 access_app，Level+AppType 分域分型）
 
-- `access_app`：Id(Guid v7)/Name/Description/TeamId（系统级固定 0）/**Level**（team=0 团队级 moai-ac- / system=1 系统级）/**AppType**（系统级分型：0=不适用 1=subsystem 子系统 2=app 应用接入）/Key（appid 明文等值命中）/KeyPrefix（展示前缀）/Secret（系统级：`v2:` 前缀 AES 密文=可回显，无前缀=存量 PBKDF2 哈希；团队级：PBKDF2 哈希）/**SecretMask**（密钥展示掩码，仅系统级可逆行）+SecretSalt（存量哈希行用）/Status（停用即时拒绝）/**TeamScope**（仅子系统行，SSO 门禁）/**CallbackUrls**（仅子系统行，JSON 地址数组=登录回调白名单，空=未开放登录）/Scopes（**系统级不再使用**恒 0=全量；团队级沿用低位 2=wiki_read…1024=app_a2a）。
+- `access_app`：Id(Guid v7)/Name/Description/TeamId（系统级固定 0）/**Level**（team=0 团队级 moai-ac- / system=1 系统级）/**AppType**（系统级分型：0=不适用 1=subsystem 子系统 2=app 应用接入）/Key（appid 明文等值命中）/KeyPrefix（展示前缀）/Secret（系统级：`v2:` 前缀 AES 密文=可回显，无前缀=存量 PBKDF2 哈希；团队级：PBKDF2 哈希）/**SecretMask**（密钥展示掩码，仅系统级可逆行）+SecretSalt（存量哈希行用）/Status（停用即时拒绝）/**TeamScope**（仅子系统行，SSO 门禁）/**CallbackUrls**（仅子系统行，JSON 地址数组=登录回调白名单，空=未开放登录）/Scopes（**已退役**：2026-11-04 团队级去范围化后整列 DROP（[asserts/team-resource-key.sql](../../asserts/team-resource-key.sql)），系统级/团队级均不再有范围概念、全等级全量，实体字段已删）/**AvatarPath**（接入头像 objectKey，空串=未设置；列表回显、前端拼 `/static` 地址展示）。
 - `subsystem_team_auth`：SubsystemId（=接入 id）+TeamId，指定团队授权清单，更新整体覆盖。
 - 组织授权复用统一组织授权表 `org_grant`（见 [../org/sdd.md](../org/sdd.md)），资源类型 `OrgGrantResourceType.Subsystem`（主键 Guid=接入 id），经 `IOrgGrantService` 读写。
 - 存量库升级：[asserts/access_app_merge_subsystem.sql](../../asserts/access_app_merge_subsystem.sql)（补 app_type/team_scope/callback_url 列 + name 加宽 50 + subsystem 行迁入（id 原样迁移，团队/组织授权引用不断）+ 系统级 scopes 归 0 + 删 subsystem 表，幂等），见 [SOP](./sop.md)。
@@ -76,6 +76,7 @@ ui/src/pages/sso/SsoAuthorize.tsx（/sso/authorize 公开跳转页）
 7. **三面路由隔离**：协作面 `/api/subsys/*` 独立 openapi（/openapi/subsys.json 全环境暴露）；管理面与用户面走内部 v1 JWT。
 8. **委托 SSO**：MoAI 当简化 IdP——登录用户 `POST /api/subsystem/sso/code` 换一次性委托码（Redis 60s 原子消费）；机器面 `POST /api/subsys/sso/exchange` 兑换用户委托 token（access 2h/refresh 7d，typ=subsystem_user_*）；签发前置校验「团队∪组织授权并集」，兑换/刷新不复查授权。**仅子系统行可参与**（应用接入行 appType 过滤 404，且 CallbackUrls 恒空）。**多回调地址白名单**：子系统可注册多个入口（测试/生产等，≤10 个），引导跳转 `/sso/authorize?client=<appid>&redirect_uri=<可选>` 指定本次入口——传入须精确命中注册列表（否则 403），缺省取列表第一个。
 9. **前端单列表**：`/admin/integrations` 一个列表承载两类接入（类型列区分），新建时类型 Radio（编辑锁定）；应用接入新建即用，子系统展开回调与授权配置。
+10. **接入头像**（子系统与应用接入通用，[@SUB-S67](./bdd.md#sub-s67)~[@SUB-S70](./bdd.md#sub-s70)）：照插件/应用头像同款模式——前端 `AvatarUpload` 选图即压缩直传存储（pre_upload_image→PUT→complate_url），弹窗内暂存 objectKey，**随 Create/Update 命令一并登记**（无独立 avatar 端点，取消弹窗即放弃）；Handler 经 `SubsysAvatarGuard` 校验 objectKey 已完成上传登记（伪造/未完成 404）；Update 语义 null=不修改（停用切换等调用不受影响）、非空=校验后替换。列表名称列 36px 头像展示，`SubsysAppItem.avatarPath` 回显。存量库补列：[asserts/access_app_avatar.sql](../../asserts/access_app_avatar.sql) + 启动幂等 DDL。
 
 ## 后续规划（本期不做）
 

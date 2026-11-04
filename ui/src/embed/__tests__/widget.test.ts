@@ -50,7 +50,7 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
     await widget.init()
 
     expect(provider).toHaveBeenCalledTimes(1)
-    const tokenUrls = fetchMock.mock.calls.map((call) => call[0] as string).filter((url) => url.includes('/external/token'))
+    const tokenUrls = fetchMock.mock.calls.map((call) => call[0] as string).filter((url) => url.includes('/teamres/token'))
     expect(tokenUrls).toEqual([])
 
     const widgetRoot = document.querySelector('.moai-widget-root')!
@@ -81,7 +81,7 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
   it('access token 临近过期时用 refresh_token 换新，新 token 生效期内不重复刷新', async () => {
     const newAccess = fakeJwt(Math.floor(Date.now() / 1000) + 3600)
     const fetchMock = installFetch(async (url) => {
-      if (url.includes('/external/token/refresh')) return jsonResponse({ accessToken: newAccess, refreshToken: 'refresh-2', expiresIn: 3600, tokenType: 'user' })
+      if (url.includes('/teamres/token/refresh')) return jsonResponse({ accessToken: newAccess, refreshToken: 'refresh-2', expiresIn: 3600, tokenType: 'user' })
       throw new Error(`unexpected fetch: ${url}`)
     })
 
@@ -91,7 +91,7 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
     internals.refreshCredential = 'refresh-1'
 
     await expect(internals.getToken()).resolves.toBe(newAccess)
-    const refreshCalls = fetchMock.mock.calls.filter((call) => (call[0] as string).includes('/external/token/refresh'))
+    const refreshCalls = fetchMock.mock.calls.filter((call) => (call[0] as string).includes('/teamres/token/refresh'))
     expect(refreshCalls).toHaveLength(1)
 
     await expect(internals.getToken()).resolves.toBe(newAccess)
@@ -118,7 +118,7 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
   it('需授权应用无 key 且无 tokenProvider 时换 token 失败并提示接入方式', async () => {
     installFetch(async (url) => {
       if (url.includes('/access-point')) return jsonResponse(accessPoint({ isAuth: true, defaultOpen: true }))
-      if (url.includes('/external/token')) return jsonResponse({ message: '该应用需要通过应用接入 key 授权访问.' }, 403)
+      if (url.includes('/teamres/token')) return jsonResponse({ message: '该应用需要通过应用接入 key 授权访问.' }, 403)
       throw new Error(`unexpected fetch: ${url}`)
     })
 

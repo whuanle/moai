@@ -89,6 +89,19 @@ public class LoginRiskService : ILoginRiskService
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<int> GetIpFailCountAsync(string ip, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(ip))
+        {
+            return 0;
+        }
+
+        // 写入方为 StringIncrementAsync 原始整数，读取必须用原始 StringGetAsync（同 CheckIpBanAsync 的 JSON 反序列化规避）
+        var cached = await _redisDatabase.Database.StringGetAsync($"ls:ipfail:{ip}");
+        return cached.HasValue && int.TryParse(cached.ToString(), out var count) ? count : 0;
+    }
+
     /// <summary>
     /// 失败登录评估：R1（IP 爆破）/ R2（撞库喷洒）计数与自动封禁.
     /// </summary>

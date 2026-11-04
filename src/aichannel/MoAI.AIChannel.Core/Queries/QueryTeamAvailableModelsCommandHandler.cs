@@ -52,7 +52,12 @@ public class QueryTeamAvailableModelsCommandHandler : IRequestHandler<QueryTeamA
                 ModelId = x.m.ModelId,
                 ChannelName = x.c.Name,
                 ProviderKey = x.c.ProviderKey,
+                ModelKind = x.m.ModelKind,
                 SupportsVision = x.m.SupportsVision,
+                SupportsToolCall = x.m.SupportsToolCall,
+                SupportsReasoning = x.m.SupportsReasoning,
+                ContextWindow = x.m.ContextWindow,
+                MaxOutput = x.m.MaxOutput,
                 IsTeamChannel = x.c.TeamId == teamId,
             })
             .ToList();

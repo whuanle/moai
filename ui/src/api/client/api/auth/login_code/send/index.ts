@@ -11,8 +11,8 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface SendRequestBuilder extends BaseRequestBuilder<SendRequestBuilder> {
     /**
-     * 重发登录邮箱验证码（凭一次性登录票据；60 秒发送冷却）.
-     * @param body 重发登录邮箱验证码（凭一次性登录票据，票据在密码校验通过后签发）.
+     * 发送登录邮箱验证码（登录页一体化表单按用户名预发码；60 秒冷却 + IP 限流，图形验证码策略命中时需先过码）.
+     * @param body 发送登录邮箱验证码（登录页一体化表单预先发码，按用户名定位账号邮箱；60 秒冷却 + IP 限流，图形验证码策略命中时需先过码）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -23,8 +23,8 @@ export interface SendRequestBuilder extends BaseRequestBuilder<SendRequestBuilde
      */
      post(body: SendLoginCodeCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 重发登录邮箱验证码（凭一次性登录票据；60 秒发送冷却）.
-     * @param body 重发登录邮箱验证码（凭一次性登录票据，票据在密码校验通过后签发）.
+     * 发送登录邮箱验证码（登录页一体化表单按用户名预发码；60 秒冷却 + IP 限流，图形验证码策略命中时需先过码）.
+     * @param body 发送登录邮箱验证码（登录页一体化表单预先发码，按用户名定位账号邮箱；60 秒冷却 + IP 限流，图形验证码策略命中时需先过码）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

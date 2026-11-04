@@ -78,9 +78,9 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
             Name = SearchToolName,
             Title = "记忆检索",
             Description = "检索当前用户的跨会话长期记忆（偏好/事实、事件经历、方法经验），适合回答「我之前说过什么/我们上次聊到哪」类问题；" +
-                "每轮对话开头系统已自动注入相关记忆，只有当自动记忆不够时才需要主动调用。topK 可选（1-20，默认 5）。" + promptSuffix,
+                "每轮对话开头系统已自动注入相关记忆，只有当自动记忆不够时才需要主动调用。topK 可选（1-30，默认 10）。" + promptSuffix,
             Kind = "memory",
-            ParametersExample = "{\"query\":\"要检索的记忆关键词或问题\",\"topK\":5}",
+            ParametersExample = "{\"query\":\"要检索的记忆关键词或问题\",\"topK\":10}",
             InvokeAsync = (argsJson, ct) => SearchAsync(appId, userId, settings, argsJson, ct),
         };
 
@@ -154,12 +154,12 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
             return AppToolResult.Fail("缺少参数 content（要记住的内容）.");
         }
 
-        // scope=global：写入个人全局记忆（应用允许接入且用户未关闭时可用），在用户所有允许全局的应用中生效
+        // scope=global：写入个人全局记忆（平台开启跨应用记忆、应用允许接入且用户未关闭时可用），在用户所有允许全局的应用中生效
         if (string.Equals(scope, "global", StringComparison.OrdinalIgnoreCase))
         {
             if (!resolution.GlobalAllowed)
             {
-                return AppToolResult.Fail("当前应用未开放全局记忆接入（管理员未允许或用户已关闭），请改用默认应用内记忆.");
+                return AppToolResult.Fail("当前不可写入全局记忆（平台未开启跨应用记忆、应用未开放接入或用户已关闭），请改用默认应用内记忆.");
             }
 
             try
@@ -224,7 +224,7 @@ public sealed class MemoryAppToolProvider : IAppToolProvider
                 ? q.GetString()
                 : null;
             var topK = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("topK", out var k) && k.ValueKind == JsonValueKind.Number && k.TryGetInt32(out var parsed)
-                ? Math.Clamp(parsed, 1, 20)
+                ? Math.Clamp(parsed, 1, AgentMemorySettings.MaxRetrievalTopK)
                 : AgentMemorySettings.DefaultRetrievalTopK;
             return (query, topK);
         }

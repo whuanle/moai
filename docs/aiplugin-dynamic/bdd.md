@@ -1126,3 +1126,148 @@
     And 近 30 天趋势逐日补 0（items 长度 30）
     And 团队统计口径的插件总数不超过本端点（全团队汇总 ⊇ 单团队）
 ```
+
+## Feature: 多工具动态插件（2026-11-04）
+
+```gherkin
+  @DYN-S127 @auto:e2e
+  Scenario: 多工具模板经工具清单字段暴露工具与参数示例
+    Given 内置多工具模板 text_toolkit（slugify/word_count/reverse）
+    When 管理员查询模板清单 GET /api/ai/plugin
+    Then text_toolkit 项带 3 个工具（key/title/description/paramsExample）且 toolCount=3
+    And 每个工具的参数运行示例（带注释原文）随清单返回
+
+  @DYN-S128 @auto:e2e
+  Scenario: 实例工具清单接口按实例 key 返回全部工具
+    Given 已创建 text_toolkit 模板的实例
+    When 管理员访问 GET /api/ai/plugin/tools?key=实例key
+    Then 返回 3 个工具且每个工具带参数示例
+
+  @DYN-S129 @auto:e2e
+  Scenario: 实例配置注释原文透传保留
+    Given 实例配置 JSON 含注释与换行（Monaco 原文）
+    When 保存实例后回读管理列表
+    Then 配置原文与保存内容一致（注释未剥离、换行保留）
+
+  @DYN-S130 @auto:e2e
+  Scenario: 存量单工具模板兼容（tools 固定 run 项）
+    Given 单工具模板（如 dynamic_greet）
+    When 查询模板清单
+    Then 该模板 tools 固定一个 key=run 的项且 toolCount=1
+
+  @DYN-S131 @auto:e2e
+  Scenario: 单工具参数示例接口
+    When 管理员访问 GET /api/ai/plugin/tool/example?key=实例key&toolKey=reverse
+    Then 返回该工具的参数运行示例
+    When toolKey 不存在
+    Then 返回 404
+
+  @DYN-S132 @auto:e2e
+  Scenario: 按 toolKey 运行工具（独立调试）
+    When 运行实例并指定 function=slugify 与参数
+    Then 仅执行 slugify 工具并返回其结果（slug 化文本）
+
+  @DYN-S133 @auto:e2e
+  Scenario: 按 toolKey 运行另一工具互不干扰
+    When 运行实例并指定 function=word_count
+    Then 仅执行 word_count 并返回字符/词/行统计
+
+  @DYN-S134 @auto:e2e
+  Scenario: 未知 toolKey 运行被拒
+    When 运行实例指定不存在的 toolKey
+    Then 运行结果失败且错误信息包含「工具不存在」与可用工具清单
+    When 不带 toolKey 运行多工具插件
+    Then 同样失败并提示可用工具
+
+  @DYN-S135 @auto:e2e
+  Scenario: 存量单工具实例运行行为不变
+    Given dynamic_greet 模板的实例
+    When 不带 toolKey 运行
+    Then 运行成功返回问候结果
+
+  @DYN-S136 @auto:e2e
+  Scenario: 存量实例工具清单固定 run 项
+    Given dynamic_greet 实例
+    When 查询实例工具清单
+    Then 固定返回一个 key=run 的项
+```
+
+## Feature: 插件语义配置（使用须知/语义条目/工具元数据，2026-11-04）
+
+```gherkin
+  Background:
+    Given 已创建的插件（系统动态插件实例）与其 plugin.id
+
+  @DYN-S137 @auto:e2e
+  Scenario: 语义配置保存与回显
+    When 管理员保存插件语义配置（使用须知 + 插件级常驻条目 + 工具级按需条目 + 工具元数据含补充说明/调用策略/只读注解）
+    Then 保存成功
+    When 查询语义配置
+    Then 使用须知、条目（标题/内容/注入方式/关联工具）、工具元数据与策略 JSON、工具清单全部回显一致
+
+  @DYN-S138 @auto:e2e
+  Scenario: 保存为整体覆盖语义
+    Given 已保存 2 条语义条目
+    When 提交仅含其中 1 条的新列表
+    Then 不在提交列表内的旧条目被删除
+
+  @DYN-S139 @auto:e2e
+  Scenario: 调用策略 action 非法被拒
+    When 提交工具元数据 callPolicy.action 不在 block/confirm/audit 内
+    Then 返回 400
+
+  @DYN-S140 @auto:e2e
+  Scenario: 调用策略正则不合法被拒
+    When 提交 denyPatterns 含无法编译的正则
+    Then 返回 400
+
+  @DYN-S141 @auto:e2e
+  Scenario: 使用须知超限被拒
+    When 提交超过 2000 字符的使用须知
+    Then 返回 400
+
+  @DYN-S142 @auto:e2e
+  Scenario: 条目内容超限被拒
+    When 提交常驻条目内容超过 4000 字符
+    Then 返回 400
+
+  @DYN-S143 @auto:e2e
+  Scenario: 非管理员无语义配置与工具清单访问权
+    When 普通用户访问 GET /api/ai/plugin/manage/{id}/semantic 与 GET /api/ai/plugin/tools
+    Then 均返回 403
+
+  @DYN-S144 @auto:e2e
+  Scenario: 插件不存在返回 404
+    When 管理员访问不存在的插件 id 语义配置
+    Then 返回 404
+```
+
+## Feature: 团队插件语义配置（2026-11-04）
+
+```gherkin
+  @DYN-S154 @auto:e2e
+  Scenario: 非团队成员无法访问团队插件语义配置
+    Given 团队自有插件与其 plugin.id
+    When 非团队成员访问 GET /api/team/{teamId}/plugin/{id}/semantic
+    Then 返回 404（团队维度隔离）
+
+  @DYN-S155 @auto:e2e
+  Scenario: 团队成员可读语义配置
+    When 团队成员访问语义配置
+    Then 返回 200 且工具清单可见（单工具固定 run 项）
+
+  @DYN-S156 @auto:e2e
+  Scenario: 团队成员不可保存语义配置
+    When 团队成员（Member）提交 PUT 语义配置
+    Then 返回 403（只有团队管理员可以管理插件）
+
+  @DYN-S157 @auto:e2e
+  Scenario: 团队 Owner/Admin 保存并回显
+    When 团队 Owner 保存语义配置（使用须知 + 按需条目 + 工具元数据含调用策略与只读注解）
+    Then 保存成功且回显一致（语义数据仅落在团队自有插件上）
+
+  @DYN-S158 @auto:e2e
+  Scenario: 团队侧保存与系统侧同一校验
+    When 提交调用策略 action 非法的工具元数据
+    Then 返回 400
+```

@@ -73,7 +73,7 @@ describe('WikiDetail', () => {
     renderDetail('/team/3/wiki/7/mcp')
 
     expect(await screen.findByText('MCP 地址')).toBeInTheDocument()
-    expect(await screen.findByDisplayValue('http://demo:8080/api/external/wiki/7/mcp')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('http://demo:8080/api/teamres/wiki/7/mcp')).toBeInTheDocument()
   })
 
   it('文件列表 tab 展示文档表格与上传按钮', async () => {

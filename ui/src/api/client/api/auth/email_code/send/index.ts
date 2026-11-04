@@ -11,8 +11,8 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface SendRequestBuilder extends BaseRequestBuilder<SendRequestBuilder> {
     /**
-     * 发送邮箱验证码（注册 / 找回密码；注册验证码需系统开启，找回密码需 SMTP 邮件服务已启用）.
-     * @param body 发送邮箱验证码（注册 / 找回密码）.
+     * 发送邮箱验证码（注册 / 找回密码；注册验证码需系统开启，找回密码需 SMTP 邮件服务已启用；图形验证码策略命中时需先过码）.
+     * @param body 发送邮箱验证码（注册 / 找回密码）；图形验证码策略命中时需先过码.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -23,8 +23,8 @@ export interface SendRequestBuilder extends BaseRequestBuilder<SendRequestBuilde
      */
      post(body: SendEmailCodeCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
-     * 发送邮箱验证码（注册 / 找回密码；注册验证码需系统开启，找回密码需 SMTP 邮件服务已启用）.
-     * @param body 发送邮箱验证码（注册 / 找回密码）.
+     * 发送邮箱验证码（注册 / 找回密码；注册验证码需系统开启，找回密码需 SMTP 邮件服务已启用；图形验证码策略命中时需先过码）.
+     * @param body 发送邮箱验证码（注册 / 找回密码）；图形验证码策略命中时需先过码.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

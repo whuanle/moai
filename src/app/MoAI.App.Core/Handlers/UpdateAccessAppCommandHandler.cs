@@ -55,24 +55,7 @@ public class UpdateAccessAppCommandHandler : IRequestHandler<UpdateAccessAppComm
         entity.Name = request.Name;
         entity.Description = request.Description ?? string.Empty;
 
-        // scopes=null 不修改；显式列表（可为空=纯对话接入）整体覆盖，代码合法性同创建口径（wiki_read/wiki_write/wiki_mcp、kg_read/kg_write/kg_mcp、app_chat/app_acp/app_a2a）
-        if (request.Scopes != null)
-        {
-            var scopes = TeamApiKeyScopes.None;
-            if (request.Scopes.Count > 0
-                && request.Scopes.Count == request.Scopes.Distinct().Count()
-                && TeamApiKeyScopeCodes.TryParseAccessAppCodes(request.Scopes.Distinct(), out var parsed))
-            {
-                scopes = parsed;
-            }
-            else if (request.Scopes.Count > 0)
-            {
-                throw new BusinessException("功能范围代码不合法.") { StatusCode = 400 };
-            }
-
-            entity.Scopes = (int)scopes;
-        }
-
+        // 团队接入已去范围化：无 scopes 可改，仅名称/描述/启停状态
         if (request.Status.HasValue)
         {
             entity.Status = request.Status.Value;

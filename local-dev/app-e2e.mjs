@@ -54,6 +54,28 @@ async function main() {
   // 0=Member 1=Admin 2=Owner（TeamRole 枚举）
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
 
+  // 对话模型/系统提示词为必填（保存强校验）后，所有 Agent 配置保存都须携带团队可用模型；
+  // 这里提前造一个私有模型授权本团队，专供配置保存 200 用（无对话流量，baseUrl 指向未监听端口即可）。
+  // 对话链路用的真实桩模型在 AP-59/AP-97 等分区内自建。
+  const CFG_PROMPT = '你是售前客服助手'
+  const adminLoginEarly = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+  const adminTokenEarly = adminLoginEarly.json?.accessToken ?? ''
+  let CFG_CH_ID = ''
+  let CFG_MODEL_ID = ''
+  if (adminTokenEarly) {
+    const cfgChName = `cfg-stub渠道-${TS}`
+    await api('POST', '/api/ai/channel', { token: adminTokenEarly, body: { providerKey: 'openai', name: cfgChName, protocolFamily: 'openaiChatCompletions', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'cfg-stub-key', enabled: true, description: 'app-e2e 配置保存桩渠道' } })
+    const cfgChannels = await api('GET', '/api/ai/channel', { token: adminTokenEarly })
+    CFG_CH_ID = String((cfgChannels.json?.items ?? []).find((c) => c.name === cfgChName)?.id ?? '')
+    const cfgModelName = `cfg-stub-chat-${TS}`
+    await api('POST', '/api/ai/model', { token: adminTokenEarly, body: { channelId: CFG_CH_ID, meta: { modelId: cfgModelName, name: cfgModelName, modelKind: 'conversation', description: 'app-e2e 配置保存桩模型' }, enabled: true, isPublic: false } })
+    const cfgModels = await api('GET', `/api/ai/model?channelId=${CFG_CH_ID}`, { token: adminTokenEarly })
+    CFG_MODEL_ID = String((cfgModels.json?.items ?? []).find((m) => m.name === cfgModelName)?.id ?? '')
+    const cfgCur = await api('GET', `/api/ai/model/${CFG_MODEL_ID}/authorization`, { token: adminTokenEarly })
+    const cfgTeamIds = [...new Set([...(cfgCur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+    await api('PUT', `/api/ai/model/${CFG_MODEL_ID}/authorization`, { token: adminTokenEarly, body: { teamIds: cfgTeamIds } })
+  }
+
   // AP-01 未登录
   check('AP-01 未登录查应用列表 401', (await api('GET', `/api/app/list?teamId=${TID}`)).status === 401)
 
@@ -384,7 +406,7 @@ async function main() {
     check('AP-16b Member 保存配置 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: 'x', wikiIds: [], plugins: [] } })).status === 403)
 
     const plugins = bindable ? [String(bindable.pluginId)] : []
-    const save = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '你是售前客服助手', wikiIds: [WID], plugins } })
+    const save = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [WID], plugins } })
     check('AP-16c Owner 保存配置 200', save.status === 200, `${save.status} ${save.text.slice(0, 140)}`)
 
     const back = await api('GET', cfgUrl, { token: owner.token })
@@ -396,8 +418,8 @@ async function main() {
     }
 
     // 越权/非法绑定一律 400
-    check('AP-17a 绑定非本团队知识库 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [999999999], plugins: [] } })).status === 400)
-    check('AP-17b 绑定无权限插件 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: ['01924f5e-0000-7000-8000-00000000aaaa'] } })).status === 400)
+    check('AP-17a 绑定非本团队知识库 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [999999999], plugins: [] } })).status === 400)
+    check('AP-17b 绑定无权限插件 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: ['01924f5e-0000-7000-8000-00000000aaaa'] } })).status === 400)
     check('AP-17c 提示词超 4000 字 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'x'.repeat(4001), wikiIds: [], plugins: [] } })).status === 400)
 
     const after = await api('GET', cfgUrl, { token: owner.token })
@@ -407,6 +429,49 @@ async function main() {
     check('AP-18 流程应用保存配置 200（只写开场白字段）', (await api('PUT', `/api/app/${WORKFLOW_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 200)
     check('AP-19a 不存在的应用查配置 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff/agent-config', { token: owner.token })).status === 404)
     check('AP-19b 不存在的应用存配置 404', (await api('PUT', '/api/app/01924f5e-0000-7000-8000-00000000ffff/agent-config', { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 404)
+
+    // AP-100 ~ AP-104 上下文压缩配置（@AP-S115~S118）：auto=按模型窗口比例推导（缺省），custom=绝对值；
+    // 模式枚举与 custom 数值范围校验；auto 模式不校验历史绝对值字段（存量兼容）
+    {
+      const d = await api('GET', '/api/app/agent/compaction-defaults', { token: owner.token })
+      check('AP-100a 未登录查压缩默认值 401', (await api('GET', '/api/app/agent/compaction-defaults')).status === 401)
+      check('AP-100b 压缩默认值回显 auto 模式与比例常量',
+        d.status === 200 && d.json?.compactionMode === 'auto'
+        && d.json?.toolEvictionRatio === 0.5 && d.json?.summarizeTriggerRatio === 0.8
+        && d.json?.summarizeTargetRatio === 0.5 && d.json?.truncationRatio === 0.95
+        && d.json?.toolResultTriggerMessages === 16 && d.json?.summarizeTriggerTokens === 16000 && d.json?.hardTokenLimit === 64000,
+        `${d.status} ${d.text.slice(0, 200)}`)
+      check('AP-100c 压缩默认值不再携带 preserveTurns（滑动窗口已退役）', d.json != null && !('preserveTurns' in d.json), d.text.slice(0, 200))
+
+      const saveAuto = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], executionSettings: { compactionMode: 'auto' } } })
+      const backAuto = await api('GET', cfgUrl, { token: owner.token })
+      check('AP-101 auto 模式保存并回读 executionSettings.compactionMode=auto',
+        saveAuto.status === 200 && backAuto.json?.executionSettings?.compactionMode === 'auto',
+        `${saveAuto.status} ${backAuto.text.slice(0, 160)}`)
+
+      const saveCustom = await api('PUT', cfgUrl, {
+        token: owner.token,
+        body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], executionSettings: { compactionMode: 'custom', toolResultTriggerMessages: 8, summarizeTriggerTokens: 10000, hardTokenLimit: 50000 } },
+      })
+      const backCustom = await api('GET', cfgUrl, { token: owner.token })
+      check('AP-102 custom 模式保存绝对值并回读一致',
+        saveCustom.status === 200 && backCustom.json?.executionSettings?.compactionMode === 'custom'
+        && backCustom.json?.executionSettings?.toolResultTriggerMessages === 8
+        && backCustom.json?.executionSettings?.summarizeTriggerTokens === 10000
+        && backCustom.json?.executionSettings?.hardTokenLimit === 50000,
+        `${saveCustom.status} ${backCustom.text.slice(0, 160)}`)
+
+      check('AP-103a 压缩模式枚举非法 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], executionSettings: { compactionMode: 'aggressive' } } })).status === 400)
+      check('AP-103b custom 摘要触发低于下限 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], executionSettings: { compactionMode: 'custom', summarizeTriggerTokens: 100 } } })).status === 400)
+      check('AP-103c custom 截断上限不大于摘要触发 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], executionSettings: { compactionMode: 'custom', summarizeTriggerTokens: 10000, hardTokenLimit: 10000 } } })).status === 400)
+      const afterInvalid = await api('GET', cfgUrl, { token: owner.token })
+      check('AP-103d 校验失败不覆盖已存压缩配置',
+        afterInvalid.json?.executionSettings?.compactionMode === 'custom' && afterInvalid.json?.executionSettings?.hardTokenLimit === 50000,
+        afterInvalid.text.slice(0, 160))
+
+      check('AP-104 auto 模式忽略历史绝对值参数（存量兼容不校验）',
+        (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], executionSettings: { compactionMode: 'auto', summarizeTriggerTokens: 1, hardTokenLimit: 1 } } })).status === 200)
+    }
 
     // AP-20 对话模型：取值必须落在该团队可用的模型列表内（= 公开模型 + 已授权给该团队的私有模型）
     // 本地开发库不一定有公开模型，这里用 root 管理员把一个私有模型授权给本次 E2E 团队，制造可用取值；
@@ -529,7 +594,7 @@ async function main() {
 
     check('AP-45a Member 保存开场白 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'x', openingStatementEnabled: true } })).status === 403)
 
-    const saveOs = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: OS_TEXT, openingStatementEnabled: true } })
+    const saveOs = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], openingStatement: OS_TEXT, openingStatementEnabled: true } })
     check('AP-45b Owner 保存开场白（启用+内容）200', saveOs.status === 200, `${saveOs.status} ${saveOs.text.slice(0, 140)}`)
 
     const backOs = await api('GET', cfgUrl, { token: owner.token })
@@ -542,7 +607,7 @@ async function main() {
       detailMember.text.slice(0, 200))
 
     // 关闭开关：内容保留但不再启用
-    const disableOs = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: OS_TEXT, openingStatementEnabled: false } })
+    const disableOs = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], openingStatement: OS_TEXT, openingStatementEnabled: false } })
     const detailOff = await api('GET', `/api/app/${AGENT_ID}`, { token: member.token })
     check('AP-45e 关闭开关后详情 enabled=false 且内容保留',
       disableOs.status === 200 && detailOff.json?.openingStatementEnabled === false && detailOff.json?.openingStatement === OS_TEXT,
@@ -567,7 +632,7 @@ async function main() {
 
     check('AP-57a Member 保存快捷输入 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: QI } })).status === 403)
 
-    const saveQi = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: QI } })
+    const saveQi = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], quickInputs: QI } })
     check('AP-57b Owner 保存快捷输入（3 条）200', saveQi.status === 200, `${saveQi.status} ${saveQi.text.slice(0, 140)}`)
 
     const backQi = await api('GET', cfgUrl, { token: owner.token })
@@ -580,7 +645,7 @@ async function main() {
       detailQi.text.slice(0, 200))
 
     // 规范化：去首尾空白、丢弃空串、去重
-    const norm = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['  第一条  ', '', '第一条', '第二条'] } })
+    const norm = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], quickInputs: ['  第一条  ', '', '第一条', '第二条'] } })
     const backNorm = await api('GET', cfgUrl, { token: owner.token })
     check('AP-57e 空白与重复项被清理', norm.status === 200 && JSON.stringify(backNorm.json?.quickInputs) === JSON.stringify(['第一条', '第二条']),
       backNorm.text.slice(0, 200))
@@ -592,12 +657,12 @@ async function main() {
       afterBad.text.slice(0, 200))
 
     // 旧前端兼容：请求不携带 quickInputs 字段保存其他字段时，已保存的快捷输入保持不变
-    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', wikiIds: [], plugins: [] } })
+    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [] } })
     const keep = await api('GET', cfgUrl, { token: owner.token })
     check('AP-57i 不携带字段保存时保持原值', JSON.stringify(keep.json?.quickInputs) === JSON.stringify(['第一条', '第二条']),
       keep.text.slice(0, 200))
 
-    const clear = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', wikiIds: [], plugins: [], quickInputs: [] } })
+    const clear = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], quickInputs: [] } })
     const backClear = await api('GET', cfgUrl, { token: owner.token })
     check('AP-57j 空数组清空快捷输入', clear.status === 200 && JSON.stringify(backClear.json?.quickInputs) === '[]',
       backClear.text.slice(0, 200))
@@ -605,9 +670,9 @@ async function main() {
     // 发布快照：发布后改草稿，线上详情仍按发布快照下发快捷输入
     const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '快捷输入快照' + TS, appType: 'agent' } })
     const SNAP_ID = String(c.json?.value ?? '')
-    await api('PUT', `/api/app/${SNAP_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['快照版问题'] } })
+    await api('PUT', `/api/app/${SNAP_ID}/agent-config`, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], quickInputs: ['快照版问题'] } })
     await api('POST', `/api/app/${SNAP_ID}/publish`, { token: owner.token })
-    await api('PUT', `/api/app/${SNAP_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], quickInputs: ['草稿版问题'] } })
+    await api('PUT', `/api/app/${SNAP_ID}/agent-config`, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], quickInputs: ['草稿版问题'] } })
     const snapDetail = await api('GET', `/api/app/${SNAP_ID}`, { token: member.token })
     check('AP-57k 已发布应用详情按快照下发快捷输入', snapDetail.status === 200 && JSON.stringify(snapDetail.json?.quickInputs) === JSON.stringify(['快照版问题']),
       snapDetail.text.slice(0, 200))
@@ -618,14 +683,14 @@ async function main() {
     const c = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '快照双轨' + TS, appType: 'agent' } })
     const SNAP_ID = String(c.json?.value ?? '')
     const snapUrl = `/api/app/${SNAP_ID}/agent-config`
-    const saveA = await api('PUT', snapUrl, { token: owner.token, body: { prompt: 'PROMPT_A', wikiIds: [], plugins: [], openingStatement: 'OS_A', openingStatementEnabled: true } })
+    const saveA = await api('PUT', snapUrl, { token: owner.token, body: { prompt: 'PROMPT_A', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], openingStatement: 'OS_A', openingStatementEnabled: true } })
     check('AP-54a 发布前保存配置 200', c.status === 200 && saveA.status === 200, `${saveA.status} ${saveA.text.slice(0, 120)}`)
     check('AP-54b 发布应用 200', (await api('POST', `/api/app/${SNAP_ID}/publish`, { token: owner.token })).status === 200)
     const cfg1 = await api('GET', snapUrl, { token: owner.token })
     check('AP-54c 发布后配置状态=草稿与发布一致', cfg1.status === 200 && cfg1.json?.status === 1, cfg1.text.slice(0, 160))
 
     // 管理员继续改配置（草稿）：配置回读为草稿值，线上详情仍下发发布快照开场白
-    const saveB = await api('PUT', snapUrl, { token: owner.token, body: { prompt: 'PROMPT_B', wikiIds: [], plugins: [], openingStatement: 'OS_B', openingStatementEnabled: true } })
+    const saveB = await api('PUT', snapUrl, { token: owner.token, body: { prompt: 'PROMPT_B', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], openingStatement: 'OS_B', openingStatementEnabled: true } })
     const cfg2 = await api('GET', snapUrl, { token: owner.token })
     const detail1 = await api('GET', `/api/app/${SNAP_ID}`, { token: member.token })
     check('AP-54d 草稿保存后回读草稿值且状态=未发布变更', saveB.status === 200 && cfg2.json?.prompt === 'PROMPT_B' && cfg2.json?.status === 0,
@@ -643,7 +708,7 @@ async function main() {
     // 未发布应用不进入双轨：详情按实时草稿下发
     const c2 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '未发布双轨' + TS, appType: 'agent' } })
     const UNP_ID = String(c2.json?.value ?? '')
-    await api('PUT', `/api/app/${UNP_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], openingStatement: 'OS_U', openingStatementEnabled: true } })
+    await api('PUT', `/api/app/${UNP_ID}/agent-config`, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], openingStatement: 'OS_U', openingStatementEnabled: true } })
     const detailU = await api('GET', `/api/app/${UNP_ID}`, { token: owner.token })
     check('AP-54h 未发布应用详情按实时开场白', detailU.status === 200 && detailU.json?.openingStatement === 'OS_U' && detailU.json?.openingStatementEnabled === true,
       detailU.text.slice(0, 160))
@@ -684,17 +749,17 @@ async function main() {
     const WF_DRAFT = String(cDraft.json?.value ?? '')
 
     check('AP-58c Member 绑定流程应用 403', (await api('PUT', cfgUrl, { token: member.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: [WF_PUB] } })).status === 403)
-    check('AP-58d 绑定 Agent 应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: [AGENT_ID] } })).status === 400)
-    check('AP-58e 绑定未发布流程应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: [WF_DRAFT] } })).status === 400)
-    check('AP-58f 绑定不存在的流程应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [], workflowApps: ['01924f5e-0000-7000-8000-00000000cccc'] } })).status === 400)
+    check('AP-58d 绑定 Agent 应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], workflowApps: [AGENT_ID] } })).status === 400)
+    check('AP-58e 绑定未发布流程应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], workflowApps: [WF_DRAFT] } })).status === 400)
+    check('AP-58f 绑定不存在的流程应用 400', (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: CFG_PROMPT, modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], workflowApps: ['01924f5e-0000-7000-8000-00000000cccc'] } })).status === 400)
 
-    const saveWf = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', wikiIds: [], plugins: [], workflowApps: [WF_PUB] } })
+    const saveWf = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], workflowApps: [WF_PUB] } })
     check('AP-58g Owner 绑定已发布流程应用 200', saveWf.status === 200, `${saveWf.status} ${saveWf.text.slice(0, 140)}`)
     const backWf = await api('GET', cfgUrl, { token: owner.token })
     check('AP-58h 回读绑定一致', (backWf.json?.workflowApps ?? []).map(String).includes(WF_PUB), backWf.text.slice(0, 200))
 
     // 旧前端兼容：不携带 workflowApps 字段保存其他字段时，绑定保持不变
-    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P2', wikiIds: [], plugins: [] } })
+    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P2', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [] } })
     const keep = await api('GET', cfgUrl, { token: owner.token })
     check('AP-58i 不携带字段保存时保持绑定', (keep.json?.workflowApps ?? []).map(String).includes(WF_PUB) && keep.json?.prompt === 'P2', keep.text.slice(0, 200))
 
@@ -702,7 +767,7 @@ async function main() {
     await api('POST', `/api/app/${AGENT_ID}/publish`, { token: owner.token })
     const st1 = await api('GET', cfgUrl, { token: owner.token })
     check('AP-58j 发布后配置状态=1', st1.json?.status === 1, st1.text.slice(0, 120))
-    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P3', wikiIds: [], plugins: [], workflowApps: [] } })
+    await api('PUT', cfgUrl, { token: owner.token, body: { prompt: 'P3', modelId: CFG_MODEL_ID, wikiIds: [], plugins: [], workflowApps: [] } })
     const st2 = await api('GET', cfgUrl, { token: owner.token })
     check('AP-58k 草稿清空绑定后状态=0 且草稿回读为空', st2.json?.status === 0 && (st2.json?.workflowApps ?? []).length === 0, st2.text.slice(0, 160))
     check('AP-58l 重新发布 200', (await api('POST', `/api/app/${AGENT_ID}/publish`, { token: owner.token })).status === 200)
@@ -1366,20 +1431,200 @@ async function main() {
         cuChat.status === 200 && Number(cuChat.json?.contextTokens) > 0,
         cuChat.text.slice(0, 200))
 
-      // AP-99d 使用分析聚合缓存命中（审计经计数器批量落库，约 1 分钟滞后，轮询等待）
+      // AP-99d 使用分析聚合缓存命中（审计经计数器批量落库，约 1 分钟滞后，轮询等待）+ 消息条数经统计模块增量落库
       let usageCached = 0
-      for (let i = 0; i < 24 && usageCached <= 0; i++) {
+      let usageMessages = 0
+      for (let i = 0; i < 24 && (usageCached <= 0 || usageMessages <= 0); i++) {
         await new Promise((r) => setTimeout(r, 5000))
         const u = await api('GET', `/api/app/${APP_ID}/usage`, { token: owner.token })
         usageCached = Number(u.json?.summary?.cachedTokens ?? 0)
+        usageMessages = Number(u.json?.stats?.messageCount ?? 0)
       }
       check('AP-99d 使用分析 summary/byModel 聚合缓存命中 token', usageCached > 0, `summary.cachedTokens=${usageCached}`)
+      check('AP-99e 使用分析消息总数经统计模块落库（会话落库推送增量）', usageMessages > 0, `stats.messageCount=${usageMessages}`)
 
       // 清理桩模型/渠道（应用与知识库留给台账）
       await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [EMB_ID, MODEL_ID] } })
       await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
       stub.close()
     }
+  }
+
+  // AP-105 多模型绑定与对话端模型切换（@AP-S138~S140）：可选模型列表保存校验与归一 +
+  // X-Moai-Model-Id 请求头切换生效/回退 + 发布快照携带 modelIds 与生效口径回显。
+  // 桩模型按请求 payload.model 区分实际使用的模型（seenModels 数组），验证装配链路真实走向。
+  {
+    const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const adminToken = adminLogin.json?.accessToken
+    if (!adminToken) {
+      console.log('SKIP | AP-105 无 admin 账号（admin/abcd123456），跳过多模型切换验证')
+    } else {
+      const seenModels = []
+      const stub = http.createServer((req, res) => {
+        let body = ''
+        req.on('data', (chunk) => { body += chunk })
+        req.on('end', () => {
+          let payload = {}
+          try { payload = JSON.parse(body || '{}') } catch { /* 按无指令处理 */ }
+          seenModels.push(String(payload.model ?? ''))
+          const base = { id: 'chatcmpl-stub105', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: payload.model ?? 'stub105' }
+          const usage = { prompt_tokens: 12, completion_tokens: 3, total_tokens: 15 }
+          res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+          res.write('data: ' + JSON.stringify({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content: 'ok-' + String(payload.model ?? '') }, finish_reason: null }] }) + '\n\n')
+          res.write('data: ' + JSON.stringify({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage }) + '\n\n')
+          res.write('data: [DONE]\n\n')
+          res.end()
+        })
+      })
+      await new Promise((resolve) => stub.listen(0, '127.0.0.1', resolve))
+      stub.unref()
+      const stubPort = stub.address().port
+
+      // 桩渠道 + 两个 conversation 模型（A 默认 / B 备用）与快照外模型 C，授权团队
+      const chName = `ap105-mock渠道-${TS}`
+      const nameA = `ap105-chat-a-${TS}`
+      const nameB = `ap105-chat-b-${TS}`
+      const nameC = `ap105-chat-c-${TS}`
+      const crc = await api('POST', '/api/ai/channel', { token: adminToken, body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: `http://127.0.0.1:${stubPort}/v1`, apiKey: 'ap105-mock-key', enabled: true, description: 'app-e2e AP-105 桩渠道' } })
+      const channels = await api('GET', '/api/ai/channel', { token: adminToken })
+      const CH_ID = (channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? ''
+      for (const name of [nameA, nameB, nameC]) {
+        await api('POST', '/api/ai/model', { token: adminToken, body: { channelId: CH_ID, meta: { modelId: name, name, modelKind: 'conversation', description: 'app-e2e AP-105 桩对话模型' }, enabled: true, isPublic: false } })
+      }
+      const models = await api('GET', `/api/ai/model?channelId=${CH_ID}`, { token: adminToken })
+      const MODEL_A = String((models.json?.items ?? []).find((m) => m.name === nameA)?.id ?? '')
+      const MODEL_B = String((models.json?.items ?? []).find((m) => m.name === nameB)?.id ?? '')
+      const MODEL_C = String((models.json?.items ?? []).find((m) => m.name === nameC)?.id ?? '')
+      const authOk = await [MODEL_A, MODEL_B, MODEL_C].reduce(async (prev, modelId) => {
+        await prev
+        const cur = await api('GET', `/api/ai/model/${modelId}/authorization`, { token: adminToken })
+        const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+        return (await api('PUT', `/api/ai/model/${modelId}/authorization`, { token: adminToken, body: { teamIds } })).status === 200
+      }, Promise.resolve(true))
+      check('AP-105a 前置：桩渠道/三模型创建并授权 200', crc.status === 200 && MODEL_A !== '' && MODEL_B !== '' && MODEL_C !== '' && authOk,
+        `${crc.status} a=${MODEL_A} b=${MODEL_B} c=${MODEL_C}`)
+
+      const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '多模型切换' + TS, appType: 'agent' } })
+      const MM_ID = String(ca.json?.value ?? '')
+      const cfgUrl = `/api/app/${MM_ID}/agent-config`
+
+      // 可选模型列表保存与回显
+      const saveOk = await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, modelIds: [MODEL_A, MODEL_B, MODEL_A], wikiIds: [], plugins: [] } })
+      const backOk = await api('GET', cfgUrl, { token: owner.token })
+      const backIds = (backOk.json?.modelIds ?? []).map(String)
+      check('AP-105b 保存携带 modelIds 200 且回显去重一致',
+        saveOk.status === 200 && backIds.length === 2 && backIds.includes(MODEL_A) && backIds.includes(MODEL_B) && backOk.json?.modelId === MODEL_A,
+        `${saveOk.status} ids=${JSON.stringify(backIds)}`)
+
+      // 校验失败路径
+      check('AP-105c modelIds 不含默认模型 400',
+        (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, modelIds: [MODEL_B], wikiIds: [], plugins: [] } })).status === 400)
+      check('AP-105d modelIds 含不可用模型 400',
+        (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, modelIds: [MODEL_A, '01924f5e-0000-7000-8000-00000000ffff'], wikiIds: [], plugins: [] } })).status === 400)
+      check('AP-105e modelIds 超 20 个 400',
+        (await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, modelIds: Array.from({ length: 21 }, () => MODEL_B), wikiIds: [], plugins: [] } })).status === 400)
+
+      // 存量客户端形态：不携带 modelIds 归一为仅默认模型
+      await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, wikiIds: [], plugins: [] } })
+      const backLegacy = await api('GET', cfgUrl, { token: owner.token })
+      check('AP-105f 老格式保存归一为仅默认模型',
+        backLegacy.status === 200 && (backLegacy.json?.modelIds ?? []).map(String).join(',') === MODEL_A,
+        JSON.stringify(backLegacy.json?.modelIds))
+
+      // 恢复可选列表并发布：快照含 modelIds
+      await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, modelIds: [MODEL_A, MODEL_B], wikiIds: [], plugins: [] } })
+      check('AP-105g 发布 200', (await api('POST', `/api/app/${MM_ID}/publish`, { token: owner.token })).status === 200)
+
+      // userconfig 生效口径回显（切换器数据源）
+      const uc = await api('GET', `/api/app/${MM_ID}/userconfig`, { token: owner.token })
+      const ucIds = (uc.json?.modelIds ?? []).map(String)
+      check('AP-105h userconfig 回显 defaultModelId 与 modelIds（快照口径）',
+        uc.status === 200 && uc.json?.defaultModelId === MODEL_A && ucIds.length === 2 && ucIds.includes(MODEL_A) && ucIds.includes(MODEL_B),
+        `${uc.status} default=${uc.json?.defaultModelId} ids=${JSON.stringify(ucIds)}`)
+
+      // 草稿改为 [A,C] 不重新发布：userconfig 仍按快照 [A,B]
+      await api('PUT', cfgUrl, { token: owner.token, body: { prompt: '多模型助手', modelId: MODEL_A, modelIds: [MODEL_A, MODEL_C], wikiIds: [], plugins: [] } })
+      const uc2 = await api('GET', `/api/app/${MM_ID}/userconfig`, { token: owner.token })
+      const uc2Ids = (uc2.json?.modelIds ?? []).map(String)
+      check('AP-105i 草稿改动不影响快照口径回显',
+        uc2.status === 200 && uc2Ids.length === 2 && uc2Ids.includes(MODEL_A) && uc2Ids.includes(MODEL_B),
+        JSON.stringify(uc2Ids))
+
+      const chatSse = async (sessionId, text, modelId) => {
+        const res = await fetch(`${BASE}/api/agent/${MM_ID}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${owner.token}`,
+            ...(modelId !== undefined ? { 'X-Moai-Model-Id': modelId } : {}),
+          },
+          body: JSON.stringify({
+            threadId: sessionId,
+            runId: crypto.randomUUID(),
+            state: {},
+            messages: [{ id: crypto.randomUUID(), role: 'user', content: text }],
+            tools: [],
+            context: [],
+            forwardedProps: {},
+          }),
+        })
+        const raw = await res.text()
+        const events = raw.split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => { try { return JSON.parse(l.slice(5).trim()) } catch { return null } })
+          .filter(Boolean)
+        const reply = events
+          .filter((e) => e.type === 'TEXT_MESSAGE_CONTENT' && typeof e.delta === 'string')
+          .map((e) => e.delta)
+          .join('')
+        return { status: res.status, reply }
+      }
+
+      // 正式会话按快照 [A,B]：切到 B 生效；指向 C（快照外）回退 A；非法值回退 A；不携带用 A
+      const mkSess = async (title) => String((await api('POST', `/api/app/${MM_ID}/session`, { token: owner.token, body: { title } })).json?.value ?? '')
+
+      seenModels.length = 0
+      const sidB = await mkSess('ap105-b')
+      const chatB = await chatSse(sidB, '你好', MODEL_B)
+      const cuB = await api('GET', `/api/app/session/${sidB}/context-usage`, { token: owner.token })
+      check('AP-105j 携带 X-Moai-Model-Id=B 对话按 B 装配且回显 modelName=B',
+        chatB.status === 200 && chatB.reply.includes('ok-' + nameB) && seenModels.includes(nameB) && cuB.json?.modelName === nameB,
+        `${chatB.status} reply=${chatB.reply.slice(0, 80)} seen=${JSON.stringify(seenModels)} cu=${cuB.json?.modelName}`)
+
+      seenModels.length = 0
+      const sidC = await mkSess('ap105-c')
+      const chatC = await chatSse(sidC, '你好', MODEL_C)
+      const cuC = await api('GET', `/api/app/session/${sidC}/context-usage`, { token: owner.token })
+      check('AP-105k 指向快照外模型静默回退默认 A',
+        chatC.status === 200 && chatC.reply.includes('ok-' + nameA) && seenModels.includes(nameA) && !seenModels.includes(nameC) && cuC.json?.modelName === nameA,
+        `${chatC.status} reply=${chatC.reply.slice(0, 80)} seen=${JSON.stringify(seenModels)} cu=${cuC.json?.modelName}`)
+
+      seenModels.length = 0
+      const sidX = await mkSess('ap105-x')
+      const chatX = await chatSse(sidX, '你好', '01924f5e-0000-7000-8000-00000000ffff')
+      const cuX = await api('GET', `/api/app/session/${sidX}/context-usage`, { token: owner.token })
+      check('AP-105l 非法模型 id 回退默认 A 对话成功',
+        chatX.status === 200 && chatX.reply.includes('ok-' + nameA) && cuX.json?.modelName === nameA,
+        `${chatX.status} cu=${cuX.json?.modelName}`)
+
+      seenModels.length = 0
+      const sid0 = await mkSess('ap105-none')
+      const chat0 = await chatSse(sid0, '你好')
+      check('AP-105m 不携带请求头按默认 A 对话（存量行为不变）',
+        chat0.status === 200 && chat0.reply.includes('ok-' + nameA) && seenModels.includes(nameA) && !seenModels.includes(nameB),
+        `${chat0.status} seen=${JSON.stringify(seenModels)}`)
+
+      // 清理桩模型/渠道（应用留给台账）
+      await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [MODEL_A, MODEL_B, MODEL_C] } })
+      await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
+      stub.close()
+    }
+  }
+
+  // 清理配置保存桩渠道/模型（应用与知识库留给台账）
+  if (adminTokenEarly && CFG_CH_ID && CFG_MODEL_ID) {
+    await api('POST', '/api/ai/model/batch-delete', { token: adminTokenEarly, body: { modelIds: [CFG_MODEL_ID] } })
+    await api('DELETE', `/api/ai/channel/${CFG_CH_ID}`, { token: adminTokenEarly })
   }
 
   console.log(`\n===== 应用管理 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

@@ -7,6 +7,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
   SyncOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { Button, Dropdown, Input, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
@@ -29,6 +30,7 @@ import { uploadOpenApiFileWith } from '@/utils/pluginFile'
 import { McpPluginModal, type McpFormValues } from '@/pages/plugins/components/McpPluginModal'
 import { OpenApiModal, type OpenApiFormValues } from '@/pages/plugins/components/OpenApiModal'
 import { FunctionListModal } from '@/pages/plugins/components/FunctionListModal'
+import { PluginSemanticModal } from '@/pages/plugins/components/PluginSemanticModal'
 import { PluginAvatar } from '@/pages/plugins/components/PluginAvatarUpload'
 import {
   PluginCard,
@@ -128,6 +130,7 @@ export function TeamCustomPluginPanel({
   const [editing, setEditing] = useState<TeamCustomPluginItem | null>(null)
   const [editMode, setEditMode] = useState<'mcp' | 'openApi' | null>(null)
   const [functionPlugin, setFunctionPlugin] = useState<TeamCustomPluginItem | null>(null)
+  const [semanticTarget, setSemanticTarget] = useState<TeamCustomPluginItem | null>(null)
 
   const loadDetail = (pluginId: string): Promise<CustomPluginDetail | null> => getTeamPluginDetail(teamId, pluginId)
   const loadFunctions = (pluginId: string): Promise<CustomPluginFunction[]> => getTeamPluginFunctions(teamId, pluginId)
@@ -280,6 +283,7 @@ export function TeamCustomPluginPanel({
       <Space size={0} wrap={false}>
         {btn('view', <EyeOutlined />, t('plugins.viewFunctions'), () => setFunctionPlugin(record))}
         {manageable && btn('edit', <EditOutlined />, t('plugins.editPlugin'), () => openEdit(record))}
+        {manageable && btn('semantic', <TagsOutlined />, t('plugins.semanticConfig'), () => setSemanticTarget(record))}
         {moreItems.length > 0 && (
           <Dropdown
             key="more"
@@ -530,6 +534,15 @@ export function TeamCustomPluginPanel({
         plugin={functionPlugin ? toCustomPlugin(functionPlugin) : null}
         loadFunctions={loadFunctions}
         onCancel={() => setFunctionPlugin(null)}
+      />
+
+      <PluginSemanticModal
+        open={Boolean(semanticTarget)}
+        pluginId={semanticTarget?.pluginId ?? null}
+        pluginTitle={semanticTarget?.title ?? null}
+        teamId={teamId}
+        onClose={() => setSemanticTarget(null)}
+        onSaved={reload}
       />
     </>
   )

@@ -5,14 +5,14 @@ using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Memory.Commands;
-using MoAI.Memory.Models;
 using MoAI.Memory.Queries;
 using MoAI.Memory.Queries.Responses;
 
 namespace MoAI.Memory.Controllers;
 
 /// <summary>
-/// 个人记忆管理接口：跨应用记忆总览、全局记忆（个人跨应用记忆）维护与平台全局记忆管理（root）.
+/// 个人记忆管理接口：跨应用记忆总览、全局记忆（个人跨应用记忆）删除/清空与平台全局记忆管理（root）.
+/// 记忆内容由 AI 自动维护（memory_save 工具与会话结束自动提取），不提供人工新建/编辑.
 /// </summary>
 [ApiController]
 [Route("/memory")]
@@ -49,64 +49,19 @@ public class MemoryController : ControllerBase
     }
 
     /// <summary>
-    /// 分页查询本人的全局记忆（按创建时间倒序）.
+    /// 分页查询本人的全局记忆（按创建时间倒序，可按内容关键字过滤）.
     /// </summary>
     /// <param name="page">页码（1 起）.</param>
     /// <param name="pageSize">页大小（1~100）.</param>
+    /// <param name="keyword">内容关键字（不区分大小写包含匹配，留空返回全部）.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QueryMyGlobalMemoriesCommandResponse"/>.</returns>
     [HttpGet("global/mine")]
-    public Task<QueryMyGlobalMemoriesCommandResponse> QueryMyGlobalMemories([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    public Task<QueryMyGlobalMemoriesCommandResponse> QueryMyGlobalMemories([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? keyword = null, CancellationToken ct = default)
     {
-        var cmd = new QueryMyGlobalMemoriesCommand { Page = page, PageSize = pageSize };
+        var cmd = new QueryMyGlobalMemoriesCommand { Page = page, PageSize = pageSize, Keywords = keyword };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 新增本人的一条全局记忆（平台未开启时返回 400）.
-    /// </summary>
-    /// <param name="req">新增请求体.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回保存后的记忆条目.</returns>
-    [HttpPost("global/mine")]
-    public Task<MemoryItem> SaveMyGlobalMemory([FromBody] SaveMyGlobalMemoryCommand req, CancellationToken ct)
-    {
-        _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 把本人的一条应用内记忆存为全局记忆（原应用记忆保留）.
-    /// </summary>
-    /// <param name="req">存为全局请求体.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回保存后的全局记忆条目.</returns>
-    [HttpPost("global/promote")]
-    public Task<MemoryItem> PromoteMemoryToGlobal([FromBody] PromoteMemoryToGlobalCommand req, CancellationToken ct)
-    {
-        _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
-    }
-
-    /// <summary>
-    /// 编辑本人的一条全局记忆.
-    /// </summary>
-    /// <param name="memoryId">记忆 id.</param>
-    /// <param name="req">编辑请求体.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPut("global/mine/{memoryId:guid}")]
-    public async Task<EmptyCommandResponse> UpdateMyGlobalMemory([FromRoute] Guid memoryId, [FromBody] UpdateMyGlobalMemoryCommand req, CancellationToken ct)
-    {
-        var cmd = new UpdateMyGlobalMemoryCommand
-        {
-            MemoryId = memoryId,
-            Content = req.Content,
-            MemoryType = req.MemoryType,
-        };
-        _userContextProvider.SetUserContext(cmd);
-        return await _mediator.Send(cmd, ct);
     }
 
     /// <summary>

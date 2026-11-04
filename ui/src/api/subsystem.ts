@@ -1,5 +1,6 @@
 import { getApiClient } from '@/api/kiota'
 import { revealSubsysAppSecret as revealSubsysAppSecretEnvelope } from '@/api/secretEnvelope'
+import type { GrantScopeDirection } from '@/utils/orgScopeTree'
 
 /** 接入状态：enabled=启用 disabled=停用 */
 export type SubsystemStatus = 'enabled' | 'disabled'
@@ -10,8 +11,8 @@ export type AccessAppTypeValue = 'subsystem' | 'app' | 'none'
 /** 团队授权范围：allTeams=全员可用 specifiedTeams=指定团队 */
 export type SubsystemTeamScopeType = 'allTeams' | 'specifiedTeams'
 
-/** 组织授权方向：self=仅该组织 up=该组织及以上 down=该组织及以下 */
-export type OrgGrantScopeType = 'self' | 'up' | 'down'
+/** 组织授权方向：self=仅该组织 up=该组织及以上 down=该组织及以下（规范类型收敛在 utils/orgScopeTree） */
+export type OrgGrantScopeType = GrantScopeDirection
 
 /** 已授权团队项（指定团队范围，列表展示用） */
 export interface AuthorizedTeamItem {
@@ -37,6 +38,8 @@ export interface SubsysAppItem {
   /** 密钥展示掩码（前 4 + **** + 后 4，便于核对；原文可随时信封解密查看） */
   secretMask?: string | null
   name?: string | null
+  /** 接入头像 ObjectKey，空串=未设置（拼装 /static 地址展示） */
+  avatarPath?: string | null
   description?: string | null
   status?: SubsystemStatus | null
   teamScope?: SubsystemTeamScopeType | null
@@ -63,6 +66,8 @@ export interface CreateSubsysAppPayload {
   key?: string
   name: string
   description?: string
+  /** 接入头像 ObjectKey（已完成上传登记的文件），缺省=未设置 */
+  avatarPath?: string
   teamScope?: SubsystemTeamScopeType
   teamIds?: number[]
   /** 委托 SSO 登录回调地址列表（仅子系统，最多 10 个） */
@@ -74,6 +79,8 @@ export interface UpdateSubsysAppPayload {
   name: string
   description?: string
   status: SubsystemStatus
+  /** 接入头像 ObjectKey（已完成上传登记的文件），缺省=不修改 */
+  avatarPath?: string
   teamScope?: SubsystemTeamScopeType
   teamIds?: number[]
   callbackUrls?: string[]
@@ -112,6 +119,7 @@ export async function createSubsysApp(payload: CreateSubsysAppPayload): Promise<
     key: payload.key,
     name: payload.name,
     description: payload.description,
+    avatarPath: payload.avatarPath,
     teamScope: payload.appType === 'subsystem' ? payload.teamScope : undefined,
     teamIds: payload.appType === 'subsystem' ? payload.teamIds : undefined,
     callbackUrls: payload.appType === 'subsystem' ? payload.callbackUrls : undefined,
@@ -126,6 +134,7 @@ export async function updateSubsysApp(id: string, payload: UpdateSubsysAppPayloa
     name: payload.name,
     description: payload.description,
     status: payload.status,
+    avatarPath: payload.avatarPath,
     teamScope: payload.teamScope,
     teamIds: payload.teamIds,
     callbackUrls: payload.callbackUrls,

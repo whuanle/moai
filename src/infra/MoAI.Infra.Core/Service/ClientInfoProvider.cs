@@ -36,7 +36,15 @@ public class ClientInfoProvider : IClientInfoProvider
             throw new BusinessException("HttpContext is not available.");
         }
 
-        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        // Kestrel 双栈监听下 IPv4 连接表现为 IPv4-mapped IPv6（::ffff:a.b.c.d），统一映射回 IPv4，
+        // 保证登录日志/风控比对/IP 封禁/限流的 IP 字符串单一形态（::1 等纯 IPv6 保持原样）
+        var remoteIp = context.Connection.RemoteIpAddress;
+        if (remoteIp != null && remoteIp.IsIPv4MappedToIPv6)
+        {
+            remoteIp = remoteIp.MapToIPv4();
+        }
+
+        var ip = remoteIp?.ToString() ?? "Unknown";
         var userAgent = context.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";
 
         return new ClientInfo

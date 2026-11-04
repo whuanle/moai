@@ -9,6 +9,7 @@ vi.mock('@/api/app', () => ({
   getMemoryDefaults: vi.fn().mockResolvedValue({
     prompt: '平台默认记忆提示词：如何管理与使用记忆',
     platformEnabled: true,
+    globalEnabled: true,
     embeddingModelName: '平台统一向量模型',
     embeddingDimensions: 1024,
   }),
@@ -95,9 +96,10 @@ describe('AppMemorySettingsPanel（长期记忆设置面板，「配置」分区
     const enabledSettings = state.getSettings!()
     expect(enabledSettings).toMatchObject({
       enabled: true,
-      retrievalTopK: 5,
       autoExtract: true,
     })
+    // 检索条数已退役（由 AI 经 memory_search 工具自行决定，默认 10 上限 30）：回显不读取、产出不携带
+    expect('retrievalTopK' in enabledSettings).toBe(false)
     expect('embeddingModelId' in enabledSettings).toBe(false)
     expect('embeddingDimensions' in enabledSettings).toBe(false)
     // 记忆类型完全由 AI 自行判定：配置不再下发类型限制字段
@@ -107,7 +109,7 @@ describe('AppMemorySettingsPanel（长期记忆设置面板，「配置」分区
 
     // 嵌入态不渲染自己的保存按钮（宿主「保存设置」统一提交），也不再有发布动作
     expect(screen.queryByRole('button', { name: /appManage.saveConfig/ })).toBeFalsy()
-    expect(screen.queryByRole('button', { name: /appManage.republish/ })).toBeFalsy()
+    expect(screen.queryByRole('button', { name: /appManage.publish/ })).toBeFalsy()
     expect(saveAppAgentConfig).not.toHaveBeenCalled()
   })
 
@@ -126,6 +128,7 @@ describe('AppMemorySettingsPanel（长期记忆设置面板，「配置」分区
     vi.mocked(getMemoryDefaults).mockResolvedValue({
       prompt: '平台默认记忆提示词：如何管理与使用记忆',
       platformEnabled: false,
+      globalEnabled: false,
       embeddingModelName: '',
       embeddingDimensions: 1024,
     })
@@ -188,6 +191,14 @@ describe('AppMemorySettingsPanel（长期记忆设置面板，「配置」分区
   })
 
   it('允许用户接入全局记忆：开关随开启态展示并产出 allowGlobalMemory 节点', async () => {
+    // 显式指定平台跨应用记忆已开启（前面用例覆盖过该 mock，避免实现泄漏）
+    vi.mocked(getMemoryDefaults).mockResolvedValue({
+      prompt: '平台默认记忆提示词：如何管理与使用记忆',
+      platformEnabled: true,
+      globalEnabled: true,
+      embeddingModelName: '平台统一向量模型',
+      embeddingDimensions: 1024,
+    })
     mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', embeddingDimensions: 1024 } })
     const state = renderPanel()
     await screen.findByText('appMemory.autoExtract')
@@ -197,5 +208,23 @@ describe('AppMemorySettingsPanel（长期记忆设置面板，「配置」分区
     expect(state.getSettings!()).toMatchObject({ enabled: true, allowGlobalMemory: false })
     fireEvent.click(screen.getAllByRole('switch')[2])
     expect(state.getSettings!()).toMatchObject({ enabled: true, allowGlobalMemory: true })
+  })
+
+  it('平台未开启跨应用记忆时全局接入开关禁用，存量开启值随保存收敛为关闭', async () => {
+    mockConfig({ memory: { enabled: true, embeddingModelId: 'emb-1', allowGlobalMemory: true } })
+    vi.mocked(getMemoryDefaults).mockResolvedValue({
+      prompt: '平台默认记忆提示词：如何管理与使用记忆',
+      platformEnabled: true,
+      globalEnabled: false,
+      embeddingModelName: '平台统一向量模型',
+      embeddingDimensions: 1024,
+    })
+    const state = renderPanel()
+    await screen.findByText('appMemory.platformGlobalOffHint')
+    const globalSwitch = screen.getAllByRole('switch')[2] as HTMLButtonElement
+    expect(globalSwitch.disabled).toBe(true)
+    expect(globalSwitch.getAttribute('aria-checked')).toBe('false')
+    await waitFor(() => expect(state.getSettings).toBeTruthy())
+    expect(state.getSettings!()).toMatchObject({ enabled: true, allowGlobalMemory: false })
   })
 })

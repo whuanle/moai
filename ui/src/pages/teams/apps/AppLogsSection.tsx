@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { EyeOutlined } from '@ant-design/icons'
+import { DownloadOutlined, EyeOutlined } from '@ant-design/icons'
 import { Button, DatePicker, Drawer, Form, Input, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
 import type { TableColumnsType } from 'antd'
 import type { Dayjs } from 'dayjs'
@@ -132,6 +132,37 @@ export function AppLogsSection({ appId, canManage, defaultTab }: AppLogsSectionP
     }
   }, [detailOpen, detailSession?.sessionId, appId])
 
+  /**
+   * 导出会话 JSON：拉取消息全量（含 tool/reasoning 原始字段）后生成文件下载，
+   * 便于管理员离线细看完整对话现场（比抽屉里的会话式视图多出 system/tool 行与思维链）。
+   */
+  const downloadJson = useCallback(
+    async (record: AppLogItem) => {
+      if (!record.sessionId) return
+      try {
+        const messages = await getAppLogMessages(appId, record.sessionId)
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          appId,
+          session: { ...record },
+          messages,
+        }
+        // 文件名直接用会话 id（Guid，天然文件名安全），便于与日志列表/库内记录对号
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = `${record.sessionId}.json`
+        anchor.click()
+        URL.revokeObjectURL(url)
+        feedback.success(t('appLogs.downloadSuccess'))
+      } catch {
+        // 错误已由全局请求中间件统一提示
+      }
+    },
+    [appId, t],
+  )
+
   const handleSearch = (values: Record<string, unknown>) => {
     const kw = typeof values.keyword === 'string' ? values.keyword.trim() || undefined : undefined
     const ut = typeof values.userType === 'string' ? values.userType || undefined : undefined
@@ -162,12 +193,26 @@ export function AppLogsSection({ appId, canManage, defaultTab }: AppLogsSectionP
       {
         title: t('appLogs.columnUser'),
         key: 'user',
-        width: 180,
+        width: 200,
         render: (_, record) => {
-          // 按用户类型精确归属：normal 显示用户名，external/externalApp 带类型前缀；
+          // 按用户类型精确归属：normal 双行显示昵称+登录用户名（createUserName 经填充服务为昵称），
+          // 两者相同或缺失时降级单行；external/externalApp 带类型前缀；
           // none（识别不到）只显示 id，不误标为外部用户
           if (record.userType === 'normal') {
-            return record.createUserName || `#${record.ownerId ?? '-'}`
+            const nick = record.createUserName || ''
+            const name = record.ownerUserName || ''
+            const fallback = `#${record.ownerId ?? '-'}`
+            if (nick && name && nick !== name) {
+              return (
+                <div>
+                  <div>{nick}</div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {name}
+                  </Text>
+                </div>
+              )
+            }
+            return nick || name || fallback
           }
           if (record.userType === 'external' || record.userType === 'externalApp') {
             return `${t(userTypeLabelKey(record.userType))} #${record.ownerId ?? '-'}`
@@ -202,16 +247,21 @@ export function AppLogsSection({ appId, canManage, defaultTab }: AppLogsSectionP
       {
         title: t('appLogs.columnActions'),
         key: 'actions',
-        width: 90,
+        width: 150,
         fixed: 'right',
         render: (_, record) => (
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(record)}>
-            {t('appLogs.view')}
-          </Button>
+          <Space size={0}>
+            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(record)}>
+              {t('appLogs.view')}
+            </Button>
+            <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => void downloadJson(record)}>
+              {t('appLogs.download')}
+            </Button>
+          </Space>
         ),
       },
     ],
-    [t],
+    [t, downloadJson],
   )
 
   // 与正式对话页同口径还原会话现场：仅保留 user 与 assistant（有正文或工具调用）消息，
@@ -321,6 +371,17 @@ export function AppLogsSection({ appId, canManage, defaultTab }: AppLogsSectionP
         maskClosable={false}
         destroyOnClose
         title={detailSession?.title || t('appLogs.detailTitle')}
+        extra={
+          detailSession && (
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => void downloadJson(detailSession)}
+            >
+              {t('appLogs.downloadJson')}
+            </Button>
+          )
+        }
       >
         {detailLoading ? (
           <div style={{ padding: spacing.lg, textAlign: 'center' }}>

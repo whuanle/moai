@@ -18,12 +18,11 @@ import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/t
 import {
   GrantScopeEditor,
   type GrantScopeOrgGrant,
-  type GrantScopeRoleNode,
   type GrantScopeTeamOption,
   type GrantScopeValue,
 } from '@/components/GrantScopeEditor';
 import { getAdminTeams } from '@/api/team';
-import { getOrgRoles, type OrgRoleItem } from '@/api/org';
+import { AccessAppAvatar, AccessAppAvatarUpload } from '@/pages/admin/AccessAppAvatarUpload';
 import {
   createSubsysApp,
   deleteSubsysApp,
@@ -59,29 +58,6 @@ interface AccessAppFormValues {
   callbackUrls?: string[];
 }
 
-/** 组织平铺列表（按 path 层级序）组树 */
-function buildRoleTree(roles: OrgRoleItem[]): GrantScopeRoleNode[] {
-  const nodes = new Map<number, GrantScopeRoleNode>();
-  for (const role of roles) {
-    nodes.set(Number(role.orgRoleId), {
-      title: role.name || `#${role.orgRoleId}`,
-      value: Number(role.orgRoleId),
-    });
-  }
-  const roots: GrantScopeRoleNode[] = [];
-  for (const role of roles) {
-    const node = nodes.get(Number(role.orgRoleId))!;
-    const parentId = role.parentId == null ? null : Number(role.parentId);
-    const parent = parentId == null ? null : nodes.get(parentId);
-    if (parent) {
-      parent.children = [...(parent.children ?? []), node];
-    } else {
-      roots.push(node);
-    }
-  }
-  return roots;
-}
-
 /** 表单授权范围初值（全员可用） */
 function defaultScope(): GrantScopeValue {
   return { allUsers: true, teamIds: [], orgGrants: [] };
@@ -105,13 +81,16 @@ export function AccessAppsPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [teamOptions, setTeamOptions] = useState<GrantScopeTeamOption[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
-  const [roleTree, setRoleTree] = useState<GrantScopeRoleNode[]>([]);
   const [revealTarget, setRevealTarget] = useState<SubsysAppItem | null>(null);
   const [revealing, setRevealing] = useState(false);
   const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
+  // 弹窗内头像暂存 ObjectKey：选图即直传存储，保存时随命令登记（取消弹窗即放弃）
+  const [avatarKey, setAvatarKey] = useState<string | null>(null);
+  const [avatarDirty, setAvatarDirty] = useState(false);
   const [form] = Form.useForm<AccessAppFormValues>();
 
   const formAppType = Form.useWatch('appType', form);
+  const formName = Form.useWatch('name', form);
   const isSubsystemForm = formAppType !== 'app';
 
   const load = useCallback(
@@ -148,20 +127,10 @@ export function AccessAppsPanel() {
     }
   }, []);
 
-  const loadRoleTree = useCallback(async () => {
-    try {
-      const roles = await getOrgRoles();
-      setRoleTree(buildRoleTree(roles));
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }, []);
-
   useEffect(() => {
     void load('');
     void loadTeams();
-    void loadRoleTree();
-    // 首次进入拉取，后续由交互触发
+    // 首次进入拉取，后续由交互触发（组织树由 GrantScopeEditor 自加载）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -192,6 +161,8 @@ export function AccessAppsPanel() {
 
   const openCreate = () => {
     setEditing(null);
+    setAvatarKey(null);
+    setAvatarDirty(false);
     form.resetFields();
     form.setFieldsValue({ appType: 'subsystem', callbackUrls: [], scope: defaultScope() });
     setModalOpen(true);
@@ -199,6 +170,8 @@ export function AccessAppsPanel() {
 
   const openEdit = async (record: SubsysAppItem) => {
     setEditing(record);
+    setAvatarKey(record.avatarPath || null);
+    setAvatarDirty(false);
     const isSubsystem = record.appType !== 'app';
     form.setFieldsValue({
       appType: isSubsystem ? 'subsystem' : 'app',
@@ -250,6 +223,8 @@ export function AccessAppsPanel() {
           name: values.name,
           description: values.description,
           status: editing.status === 'disabled' ? 'disabled' : 'enabled',
+          // 头像仅在弹窗内重新选图时携带（后端 null=不修改）
+          avatarPath: avatarDirty && avatarKey ? avatarKey : undefined,
           // 应用接入行后端忽略子系统专属字段，仅子系统行携带
           teamScope: isSubsystem ? teamScope : undefined,
           teamIds: isSubsystem ? teamIds : undefined,
@@ -270,6 +245,7 @@ export function AccessAppsPanel() {
           key: values.key,
           name: values.name,
           description: values.description,
+          avatarPath: avatarKey ?? undefined,
           teamScope,
           teamIds,
           callbackUrls: values.callbackUrls ?? [],
@@ -356,16 +332,19 @@ export function AccessAppsPanel() {
       {
         title: t('adminAccessApps.colName'),
         dataIndex: 'name',
-        width: 180,
+        width: 200,
         render: (value: string | null, record) => (
-          <div style={{ lineHeight: 1.4, minWidth: 0 }}>
-            <div>{value || '-'}</div>
-            {record.description?.trim() && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.description}
-              </Text>
-            )}
-          </div>
+          <Space>
+            <AccessAppAvatar objectKey={record.avatarPath} name={record.name} />
+            <div style={{ lineHeight: 1.4, minWidth: 0 }}>
+              <div>{value || '-'}</div>
+              {record.description?.trim() && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {record.description}
+                </Text>
+              )}
+            </div>
+          </Space>
         ),
       },
       {
@@ -653,6 +632,17 @@ export function AccessAppsPanel() {
           layout="vertical"
           initialValues={{ appType: 'subsystem', scope: defaultScope() }}
         >
+          <Form.Item label={t('adminAccessApps.formAvatar')} extra={t('adminAccessApps.formAvatarHint')}>
+            {/* 头像不入 Form 值：选图即直传存储暂存 ObjectKey，保存时随命令提交 */}
+            <AccessAppAvatarUpload
+              objectKey={avatarKey}
+              name={formName}
+              onObjectKeyChange={(key) => {
+                setAvatarKey(key);
+                setAvatarDirty(true);
+              }}
+            />
+          </Form.Item>
           <Form.Item name="appType" label={t('adminAccessApps.formType')}>
             <Radio.Group disabled={!!editing}>
               <Radio value="subsystem">{t('adminAccessApps.typeSubsystem')}</Radio>
@@ -790,7 +780,7 @@ export function AccessAppsPanel() {
                   },
                 ]}
               >
-                <GrantScopeEditor teamOptions={teamOptions} teamLoading={teamLoading} roleTree={roleTree} />
+                <GrantScopeEditor teamOptions={teamOptions} teamLoading={teamLoading} />
               </Form.Item>
             </>
           )}

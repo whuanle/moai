@@ -100,12 +100,6 @@ export function UsersPanel() {
     void load(1, pageSize, keyword || undefined)
   }
 
-  const handleReset = () => {
-    setSearchText(undefined)
-    setPageNo(1)
-    void load(1, pageSize, undefined)
-  }
-
   const openDetail = async (record: UserListItem) => {
     setDetail(null)
     setDetailLoading(true)
@@ -355,7 +349,8 @@ export function UsersPanel() {
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', height: usersPanelHeight, minHeight: 0 }}>
-        <QueryBar onSearch={handleSearch} onReset={handleReset} loading={loading}>
+        {/* 仅一个搜索框，无需重置按钮（onReset 不传则 QueryBar 不渲染重置） */}
+        <QueryBar onSearch={handleSearch} loading={loading}>
           <Form.Item name="searchText">
             <Input
               placeholder={t('users.searchPlaceholder')}

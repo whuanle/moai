@@ -8,24 +8,30 @@ namespace MoAI.AI.Models;
 public sealed class AppAgentExecutionSettings
 {
     /// <summary>
-    /// 工具结果压缩触发：消息数超过该值时折叠旧工具结果.
+    /// 上下文压缩策略：<see cref="AppCompactionPolicy.ModeAuto"/>（缺省，按模型上下文窗口比例推导阈值）或
+    /// <see cref="AppCompactionPolicy.ModeCustom"/>（按下方绝对值运行）；非法值按 auto 处理.
     /// </summary>
-    public int ToolResultTriggerMessages { get; set; } = 16;
+    public string? CompactionMode { get; set; }
 
     /// <summary>
-    /// 摘要压缩触发：token 超过该值时对旧对话做摘要.
+    /// 工具结果压缩触发（custom 模式）：消息数超过该值时折叠旧工具结果.
     /// </summary>
-    public int SummarizeTriggerTokens { get; set; } = 16000;
+    public int ToolResultTriggerMessages { get; set; } = AppCompactionPolicy.FallbackToolResultTriggerMessages;
 
     /// <summary>
-    /// 滑动窗口保留的用户轮数.
+    /// 摘要压缩触发（custom 模式）：token 超过该值时对旧对话做摘要.
+    /// </summary>
+    public int SummarizeTriggerTokens { get; set; } = AppCompactionPolicy.FallbackSummarizeTriggerTokens;
+
+    /// <summary>
+    /// [已退役] 滑动窗口保留的用户轮数：滑动窗口策略已从压缩管线移除，字段仅为兼容历史 JSON 保留、不再使用.
     /// </summary>
     public int PreserveTurns { get; set; } = 8;
 
     /// <summary>
-    /// 紧急截断的 token 上限.
+    /// 紧急截断的 token 上限（custom 模式）.
     /// </summary>
-    public int HardTokenLimit { get; set; } = 64000;
+    public int HardTokenLimit { get; set; } = AppCompactionPolicy.FallbackHardTokenLimit;
 
     /// <summary>
     /// 是否启用 LLM 摘要压缩（默认关闭，仅做无损压缩）.

@@ -167,6 +167,24 @@ public class DatabasPostgresModule : IModule
                 WHERE o.id = d.id AND o.sort_order = 0;
                 """);
 
+            // app_favorite（应用收藏）为后加表：EnsureCreated 只在建库时建表，
+            // 存量库用幂等 DDL 补齐（与 asserts/app_favorite.sql 等价，免手工执行）
+            dbContext.Database.ExecuteSqlRaw(
+                """
+                CREATE TABLE IF NOT EXISTS app_favorite (
+                    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                    app_id uuid NOT NULL,
+                    user_id bigint NOT NULL,
+                    create_user_id bigint NOT NULL DEFAULT 0,
+                    create_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    update_user_id bigint NOT NULL DEFAULT 0,
+                    update_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    is_deleted bigint NOT NULL DEFAULT 0,
+                    CONSTRAINT app_favorite_pkey PRIMARY KEY (id)
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_app_favorite_app_user_live_uindex ON app_favorite (app_id, user_id) WHERE is_deleted = 0;
+                """);
+
             // wiki_document_image（知识库文档内嵌图片附件）为后加表：EnsureCreated 只在建库时建表，
             // 存量库用幂等 DDL 补齐（与 asserts/wiki_document_image.sql 等价，免手工执行）
             dbContext.Database.ExecuteSqlRaw(
@@ -385,6 +403,65 @@ public class DatabasPostgresModule : IModule
                 );
                 CREATE INDEX IF NOT EXISTS idx_login_ip_ban_ip ON login_ip_ban (ip);
                 """);
+
+            // access_app.avatar_path（子系统/应用接入头像）为后加列：存量库幂等补列（与 asserts/access_app_avatar.sql 等价）
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE access_app ADD COLUMN IF NOT EXISTS avatar_path varchar(255) NOT NULL DEFAULT ''");
+
+            // teamres_key（团队资源 key）为后加表：EnsureCreated 只在建库时建表，
+            // 存量库用幂等 DDL 补齐（与 asserts/team-resource-key.sql 等价，免手工执行）。
+            // resource_id 存资源实例 id（app 行=应用 Guid、wiki 行=wikiId、kg 行=kgId，一资源一把 key）；
+            // 早期草稿版 resource_id 为 bigint（app 行=0 团队级），仅存在于本分支开发库，按列类型判断整体重建；
+            // 同时为三资源补功能开关列（app.is_acp_enabled/is_a2a_enabled、wiki/knowledge_graph.is_mcp_enabled）
+            dbContext.Database.ExecuteSqlRaw(
+                """
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'teamres_key' AND column_name = 'resource_id' AND data_type = 'bigint'
+                    ) THEN
+                        DROP TABLE teamres_key;
+                    END IF;
+                END $$;
+                CREATE TABLE IF NOT EXISTS teamres_key (
+                    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                    team_id int NOT NULL DEFAULT 0,
+                    resource_type int NOT NULL DEFAULT 1,
+                    resource_id varchar(64) NOT NULL DEFAULT ''::character varying,
+                    key varchar(255) NOT NULL,
+                    key_prefix varchar(16) NOT NULL DEFAULT ''::character varying,
+                    status int NOT NULL DEFAULT 0,
+                    create_user_id bigint NOT NULL DEFAULT 0,
+                    create_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    update_user_id bigint NOT NULL DEFAULT 0,
+                    update_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    is_deleted bigint NOT NULL DEFAULT 0,
+                    CONSTRAINT idx_teamres_key_primary PRIMARY KEY (id)
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_teamres_key_key_uindex ON teamres_key (key, is_deleted);
+                CREATE INDEX IF NOT EXISTS idx_teamres_key_team_id ON teamres_key (team_id);
+                CREATE INDEX IF NOT EXISTS idx_teamres_key_resource ON teamres_key (team_id, resource_type, resource_id, is_deleted);
+                ALTER TABLE app ADD COLUMN IF NOT EXISTS is_acp_enabled boolean NOT NULL DEFAULT false;
+                ALTER TABLE app ADD COLUMN IF NOT EXISTS is_a2a_enabled boolean NOT NULL DEFAULT false;
+                ALTER TABLE app ADD COLUMN IF NOT EXISTS message_count bigint NOT NULL DEFAULT 0;
+                ALTER TABLE wiki ADD COLUMN IF NOT EXISTS is_mcp_enabled boolean NOT NULL DEFAULT false;
+                ALTER TABLE knowledge_graph ADD COLUMN IF NOT EXISTS is_mcp_enabled boolean NOT NULL DEFAULT false;
+                ALTER TABLE access_app DROP COLUMN IF EXISTS scopes;
+                """);
+
+            // publication_review.visible_scope / visible_org_grants（应用上架可视范围）为后加列：存量库幂等补列
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE publication_review ADD COLUMN IF NOT EXISTS visible_scope smallint NOT NULL DEFAULT 0");
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE publication_review ADD COLUMN IF NOT EXISTS visible_org_grants character varying(2000) NOT NULL DEFAULT ''");
+
+            // app_agent_config.model_ids（对话端多模型选择）与 app_agent_session.last_model_id（本轮实际模型回显）为后加列：存量库幂等补列
+            //（与 asserts/app_agent_config_model_ids.sql、asserts/app_agent_session_last_model.sql 等价，免手工执行）
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE app_agent_config ADD COLUMN IF NOT EXISTS model_ids text NOT NULL DEFAULT '[]'");
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE app_agent_session ADD COLUMN IF NOT EXISTS last_model_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'");
 
             // 种子数据(如 user/setting/classify)使用显式 Id 插入，不会推进 serial/identity 序列，
             // 会导致后续自增时主键冲突。此处将所有序列同步到对应表当前最大 Id，保证后续插入不冲突。

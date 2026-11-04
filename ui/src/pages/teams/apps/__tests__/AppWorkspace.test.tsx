@@ -14,9 +14,13 @@ vi.mock('@/api/app', () => ({
   getAppAgentConfig: vi.fn().mockResolvedValue({ appId: 'a1', appType: 'agent', prompt: '', modelId: null, wikiIds: [], plugins: [] }),
   getSandboxLimits: vi.fn().mockResolvedValue({ maxTtlSeconds: 86400, maxCpu: '4', maxMemory: '8Gi' }),
   getCompactionDefaults: vi.fn().mockResolvedValue({
+    compactionMode: 'auto',
+    toolEvictionRatio: 0.5,
+    summarizeTriggerRatio: 0.8,
+    summarizeTargetRatio: 0.5,
+    truncationRatio: 0.95,
     toolResultTriggerMessages: 16,
     summarizeTriggerTokens: 16000,
-    preserveTurns: 8,
     hardTokenLimit: 64000,
     enableSummarization: false,
     summarizerModelId: '',
@@ -29,6 +33,7 @@ vi.mock('@/api/app', () => ({
     byModel: [],
     stats: { sessionCount: 0, userCount: 0, messageCount: 0, lastActiveTime: null },
   }),
+  getAppUsageTrend: vi.fn().mockResolvedValue({ items: [] }),
   saveAppSecurity: vi.fn(),
   getMemoryDefaults: vi.fn().mockResolvedValue({ prompt: '平台默认记忆提示词' }),
   SECURITY_RULE_TYPES: ['phone', 'idCard', 'email', 'bankCard', 'custom'],
@@ -140,7 +145,7 @@ describe('AppWorkspace（应用工作台）', () => {
     expect(screen.getByText(/调试需要团队管理员权限/)).toBeTruthy()
   })
 
-  it('已发布且有未发布配置变更：仅配置区警告条提供「重新发布」（头部不提供发布入口），一键重发后警告消失', async () => {
+  it('已发布且有未发布配置变更：仅配置区警告条提供「发布」（头部不提供发布入口），一键发布后警告消失', async () => {
     vi.mocked(getAppDetail).mockResolvedValue({
       appId: 'a1',
       teamId: '3',
@@ -165,20 +170,19 @@ describe('AppWorkspace（应用工作台）', () => {
 
     renderPage()
 
-    // 详情与配置加载完成后：仅配置区警告条 action 一个「重新发布」；头部不再提供发布/重新发布（收敛到「上架管理」分区）
-    await waitFor(() => expect(screen.getAllByRole('button', { name: '重新发布' }).length).toBe(1))
+    // 详情与配置加载完成后：仅配置区警告条 action 一个「发布」；头部不再提供发布入口（收敛到「上架管理」分区）
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^发\s*布$/ }).length).toBe(1))
     expect(screen.getByText(/已有未发布的配置修改/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^发\s*布$/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /撤回发布/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /停\s*用/ })).toBeNull()
 
-    // 配置区警告条一键重发：不携带版本号（版本保持原值），警告条消失
-    fireEvent.click(screen.getByRole('button', { name: '重新发布' }))
+    // 配置区警告条一键发布：不携带版本号（版本保持原值），警告条消失
+    fireEvent.click(screen.getByRole('button', { name: /^发\s*布$/ }))
 
     await waitFor(() => expect(publishApp).toHaveBeenCalledWith('a1'))
     await waitFor(() => expect(screen.queryByText(/已有未发布的配置修改/)).toBeNull())
   })
 
-  it('未发布：头部不提供发布/重新发布入口（发布收敛在「上架管理」分区），已发布后露出「进入对话」', async () => {
+  it('未发布：头部不提供发布入口（发布收敛在「上架管理」分区），侧边栏顶部为「返回团队」、状态收敛在底部', async () => {
     vi.mocked(getAppDetail).mockResolvedValue({
       appId: 'a1',
       teamId: '3',
@@ -192,11 +196,11 @@ describe('AppWorkspace（应用工作台）', () => {
 
     renderPage()
 
-    // 头部只有发布状态 Tag、「进入对话」（未发布时不出现）与「返回列表」
+    // 侧边栏顶部只有应用身份（头像/名称）与「返回团队」；「进入对话」已移至配置分区调试面板标题右侧
     expect(await screen.findByText('未发布')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /^发\s*布$/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /重新发布/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: '进入对话' })).toBeNull()
-    expect(screen.getByRole('button', { name: '返回应用列表' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /停\s*用/ })).toBeNull()
+    expect(screen.getByRole('button', { name: /返回团队/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /返回应用列表/ })).toBeNull()
   })
 })

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Spin, Switch, theme } from 'antd'
+import { DeleteOutlined, MessageOutlined, PlusOutlined } from '@ant-design/icons'
+import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tag, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card as DSCard, feedback } from '@/design-system'
@@ -17,13 +17,15 @@ import {
   type AppItem,
   type SandboxLimits,
 } from '@/api/app'
-import { getTeamAvailableModels } from '@/api/aichannel'
+import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
 import { getSkillOptions, type SkillOption } from '@/api/skills'
 import { getWikis, type WikiItem } from '@/api/wiki'
 import { getKnowledgeGraphs, type KnowledgeGraphItem } from '@/api/knowledgeGraph'
 import { resolveStorageUrl } from '@/utils/storage'
 import { parseCpuMillicores, parseMemoryBytes } from '@/utils/sandboxQuantity'
+import { MAX_RULES_PER_POLICY, isValidRulePorts, parseNetworkTarget } from '@/utils/sandboxNetwork'
+import { isValidCommandPatternList, parseCommandPatterns } from '@/utils/sandboxCommand'
 import { AppDebugChat } from './chat/AppDebugChat'
 import { AppSecuritySettingsPanel } from './AppSecuritySection'
 import { AppMemorySettingsPanel } from './AppMemoryPanel'
@@ -46,7 +48,14 @@ interface AutoPassState {
 
 const EMPTY_AUTO_PASS: AutoPassState = { plugins: [], workflowApps: [], agentApps: [], skills: [], wikis: [], graphs: [] }
 
-/** 自动放通列表行：绑定资源 id、展示名与应用类头像 */
+/** 沙箱出站规则编辑行：portsText 为逗号分隔端口文本，保存时解析校验（与后端 per-rule 模型一致） */
+interface SandboxNetworkRuleRow {
+  action: 'allow' | 'deny'
+  target: string
+  portsText: string
+}
+
+/** 自动放通列表行：绑定资源 id、展示名与头像（无头像回退首字母） */
 interface AutoPassItem {
   id: string | number
   name: string
@@ -57,44 +66,84 @@ interface AutoPassListProps {
   items: AutoPassItem[]
   checkedIds: Array<string | number>
   onToggle: (id: string | number, checked: boolean) => void
+  /** 「全部放通」总开关：勾选=列表内全部资源自动放通，取消=全部恢复人工批准 */
+  onToggleAll: (checked: boolean) => void
 }
 
+/** 自动放通列表折叠阈值：超过该条数默认只展示前 N 条，可展开全部；展开后容器限高滚动 */
+const AUTO_PASS_COLLAPSE_COUNT = 6
+/** 自动放通列表展开后的最大高度（px），超出内部滚动 */
+const AUTO_PASS_MAX_HEIGHT = 280
+
 /**
- * 绑定资源自动放通列表：选择器选中资源后逐行展示（应用类带头像），右侧勾选「自动放通」——
- * 审批模式下勾选资源的工具调用直接执行，未勾选的每次调用需人工批准（保存时收敛为当前绑定资源的子集）.
+ * 绑定资源自动放通列表：选择器选中资源后以紧凑列表逐行展示（头像 + 名称左对齐、右侧「自动放通」勾选），
+ * 表头「全部放通」总开关一键全选/全清（部分勾选时呈半选态）；绑定资源多时默认收起、可展开全部，
+ * 展开后限高内部滚动——审批模式下勾选资源的工具调用直接执行，未勾选的每次调用需人工批准
+ * （保存时收敛为当前绑定资源的子集）.
  */
-function AutoPassList({ items, checkedIds, onToggle }: AutoPassListProps) {
+function AutoPassList({ items, checkedIds, onToggle, onToggleAll }: AutoPassListProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const [expanded, setExpanded] = useState(false)
   if (items.length === 0) return null
+  const collapsible = items.length > AUTO_PASS_COLLAPSE_COUNT
+  const visibleItems = collapsible && !expanded ? items.slice(0, AUTO_PASS_COLLAPSE_COUNT) : items
+  const allChecked = items.every((item) => checkedIds.includes(item.id))
+  const someChecked = items.some((item) => checkedIds.includes(item.id))
   return (
-    <div style={{ marginTop: spacing.sm, borderRadius: token.borderRadius, border: `1px solid ${token.colorBorderSecondary}`, overflow: 'hidden' }}>
-      {items.map((item, index) => (
-        <div
-          key={String(item.id)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: spacing.sm,
-            padding: `${spacing.xs}px ${spacing.sm}px`,
-            background: index % 2 === 1 ? token.colorFillQuaternary : undefined,
-            borderTop: index === 0 ? undefined : `1px solid ${token.colorBorderSecondary}`,
-          }}
+    <div style={{ margin: `${spacing.xs}px 0 ${spacing.md}px` }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          padding: `${spacing.xs}px 0`,
+          borderBottom: `1px solid ${token.colorSplit}`,
+        }}
+      >
+        <Checkbox
+          checked={allChecked}
+          indeterminate={!allChecked && someChecked}
+          onChange={(e) => onToggleAll(e.target.checked)}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
-            {item.avatarPath !== undefined && (
-              <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath) || undefined} alt={item.name}>
+          {t('appManage.autoPassToggleAll')}
+        </Checkbox>
+      </div>
+      <div style={{ maxHeight: collapsible ? AUTO_PASS_MAX_HEIGHT : undefined, overflowY: 'auto' }}>
+        {visibleItems.map((item) => (
+          <div
+            key={String(item.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.sm,
+              padding: `${spacing.xs}px 0`,
+              borderBottom: `1px solid ${token.colorSplit}`,
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+              <Avatar shape="square" size={20} src={resolveStorageUrl(item.avatarPath) || undefined} alt={item.name}>
                 {item.name.slice(0, 1).toUpperCase()}
               </Avatar>
-            )}
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
-          </span>
-          <Checkbox checked={checkedIds.includes(item.id)} onChange={(e) => onToggle(item.id, e.target.checked)}>
-            {t('appManage.autoPassToggle')}
-          </Checkbox>
-        </div>
-      ))}
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+            </span>
+            <Checkbox checked={checkedIds.includes(item.id)} onChange={(e) => onToggle(item.id, e.target.checked)}>
+              {t('appManage.autoPassToggle')}
+            </Checkbox>
+          </div>
+        ))}
+      </div>
+      {collapsible && (
+        <Button
+          type="link"
+          size="small"
+          style={{ padding: 0, marginTop: spacing.xs }}
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          {expanded ? t('appManage.autoPassCollapse') : t('appManage.autoPassExpand', { count: items.length })}
+        </Button>
+      )}
     </div>
   )
 }
@@ -126,14 +175,14 @@ export interface AppConfigSectionProps {
   detail: AppDetail | null
   loading: boolean
   canManage: boolean
-  /** 配置状态（工作台持有的真值，头部「重新发布」与本地警告条共用）：0=草稿有未发布变更 1=一致；null/缺省回退本地加载值 */
+  /** 配置状态（工作台持有的真值，头部「发布」与本地警告条共用）：0=草稿有未发布变更 1=一致；null/缺省回退本地加载值 */
   configStatus?: number | null
-  /** 配置状态变化上报（加载/保存/重新发布时） */
+  /** 配置状态变化上报（加载/保存/发布时） */
   onConfigStatusChange?: (status: number) => void
 }
 
 /**
- * 应用「配置」分区：左栏把 Agent 配置拆为收缩卡片（基础配置/用户提示/能力扩展/沙箱，默认全部展开；
+ * 应用「配置」分区：左栏把 Agent 配置拆为收缩卡片（基础配置/提示词/能力扩展/沙箱，默认全部展开；
  * 「内容脱敏」由原独立「安全」分区并入、默认收起；「长期记忆」由原独立「记忆」分区并入、默认收起，
  * 两者均仅管理员可见，长期记忆仅内部应用），右栏调试对话面板。能力扩展各选择器选中资源后，
  * 下方逐项列出绑定资源并按行勾选「自动放通」（审批模式策略，随执行参数 toolApproval 节保存）。
@@ -154,7 +203,17 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     </div>
   )
 
+  /** 必填标记：标题前红 *（与「信息」分区应用名称的 antd 内建必填标记同款式）；保存与后端双重强校验 */
+  const requiredLabel = (label: string) => (
+    <span>
+      <span aria-hidden style={{ color: token.colorError, marginInlineEnd: 4, userSelect: 'none' }}>*</span>
+      {label}
+    </span>
+  )
+
   const [modelId, setModelId] = useState<string>()
+  // 可选模型列表（开放给用户在对话端切换，须含默认模型；后端保存强校验与上限 20）
+  const [modelIds, setModelIds] = useState<string[]>([])
   const [prompt, setPrompt] = useState('')
   const [openingEnabled, setOpeningEnabled] = useState(false)
   const [openingStatement, setOpeningStatement] = useState('')
@@ -173,16 +232,20 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [sandboxCpu, setSandboxCpu] = useState('')
   const [sandboxMemory, setSandboxMemory] = useState('')
   const [sandboxNetworkAction, setSandboxNetworkAction] = useState<string>()
-  const [sandboxEgress, setSandboxEgress] = useState('')
+  // 出站规则行列表（保存时写入 sandbox.network.rules；旧格式 egress 只读兼容转换后回显）
+  const [sandboxNetworkRules, setSandboxNetworkRules] = useState<SandboxNetworkRuleRow[]>([])
+  // 命令过滤（应用级黑名单，运行时与平台级禁用清单取并集；写入 sandbox.commandFilter）
+  const [sandboxCommandFilterEnabled, setSandboxCommandFilterEnabled] = useState(false)
+  const [sandboxCommandDeny, setSandboxCommandDeny] = useState('')
   const [sandboxLimits, setSandboxLimits] = useState<SandboxLimits | null>(null)
   const [executionSettings, setExecutionSettings] = useState<Record<string, unknown>>({})
   // 审批策略：六类绑定资源的自动放通白名单与沙箱开关（存于 executionSettings.toolApproval）
   const [autoPass, setAutoPass] = useState<AutoPassState>(EMPTY_AUTO_PASS)
   const [sandboxAutoApproved, setSandboxAutoApproved] = useState(false)
-  // 上下文压缩参数（存于 executionSettings 顶层字段；null=未配置，按平台系统默认执行）
+  // 上下文压缩（存于 executionSettings 顶层字段）：auto=按模型窗口比例推导阈值（推荐），custom=按绝对值运行
+  const [compactionMode, setCompactionMode] = useState<'auto' | 'custom'>('auto')
   const [compactionToolResult, setCompactionToolResult] = useState<number | null>(null)
   const [compactionSummarizeTokens, setCompactionSummarizeTokens] = useState<number | null>(null)
-  const [compactionPreserveTurns, setCompactionPreserveTurns] = useState<number | null>(null)
   const [compactionHardLimit, setCompactionHardLimit] = useState<number | null>(null)
   const [compactionSummarization, setCompactionSummarization] = useState(false)
   const [compactionSummarizerModelId, setCompactionSummarizerModelId] = useState<string>()
@@ -195,10 +258,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
   const [graphOptions, setGraphOptions] = useState<KnowledgeGraphItem[]>([])
-  const [modelOptions, setModelOptions] = useState<{ value: string; label: string }[]>([])
+  const [availableModels, setAvailableModels] = useState<TeamAvailableModelItem[]>([])
   const [optionsLoading, setOptionsLoading] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
-  const [republishing, setRepublishing] = useState(false)
+  const [publishing, setPublishing] = useState(false)
   // 0=草稿有未发布变更 1=草稿与已发布一致（已发布应用 0 时线上仍按发布快照执行）
   const [localConfigStatus, setLocalConfigStatus] = useState(0)
   // 内容脱敏面板注册的保存回调（展开「内容脱敏」卡片并加载完成后才有值）：随「保存设置」一并提交
@@ -209,8 +272,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const isAgent = detail?.appType !== 'workflow'
   // 外部应用面向外部用户/匿名开放，不支持沙箱与技能（后端保存强校验 + 对话装配兜底强制关闭）
   const isExternal = detail?.isExternal === true
+  // 平台已强制默认拒绝（deny/intranet 管控模式）：应用不能配置默认允许，只能追加放行规则
+  const sandboxNetworkGoverned =
+    sandboxLimits?.networkMode === 'deny' || sandboxLimits?.networkMode === 'intranet'
 
-  // 警告条/发布入口使用的状态：工作台传入的真值优先（头部重新发布后同步清除），否则用本地加载值
+  // 警告条/发布入口使用的状态：工作台传入的真值优先（头部发布后同步清除），否则用本地加载值
   const effectiveConfigStatus = configStatus ?? localConfigStatus
 
   useEffect(() => {
@@ -224,6 +290,15 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         onConfigStatusChange?.(config.status ?? 0)
         // 后端未选择模型时返回全零 Guid，归一为未选择以显示占位符而非裸串
         setModelId(config.modelId && config.modelId !== EMPTY_GUID ? config.modelId : undefined)
+        // 可选模型回显：存量行 model_ids 为空时归一为仅默认模型（与后端运行时口径一致）
+        const loadedModelIds = (config.modelIds ?? []).filter((id) => id && id !== EMPTY_GUID)
+        setModelIds(
+          loadedModelIds.length > 0
+            ? loadedModelIds
+            : config.modelId && config.modelId !== EMPTY_GUID
+              ? [config.modelId]
+              : [],
+        )
         setPrompt(config.prompt ?? '')
         setOpeningEnabled(Boolean(config.openingStatementEnabled))
         setOpeningStatement(config.openingStatement ?? '')
@@ -236,14 +311,14 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setSkillIds(config.skills ?? [])
         const settings = config.executionSettings ?? {}
         setExecutionSettings(settings)
+        setCompactionMode(settings.compactionMode === 'custom' ? 'custom' : 'auto')
         const sandbox = (settings.sandbox ?? {}) as Record<string, unknown>
         setSandboxEnabled(Boolean(sandbox.enabled))
         setSandboxTimeout(typeof sandbox.timeoutSeconds === 'number' ? (sandbox.timeoutSeconds as number) : null)
         setSandboxRenew(sandbox.renewOnAccess !== false)
-        // 输入框预填生效值：应用显式配置优先，未配置的字段写平台默认值（可继续调整）
+        // 输入框预填生效值（custom 模式生效；auto 模式由运行时按模型窗口推导）：应用显式配置优先，未配置的字段写平台默认值
         setCompactionToolResult(typeof settings.toolResultTriggerMessages === 'number' ? (settings.toolResultTriggerMessages as number) : defaults.toolResultTriggerMessages)
         setCompactionSummarizeTokens(typeof settings.summarizeTriggerTokens === 'number' ? (settings.summarizeTriggerTokens as number) : defaults.summarizeTriggerTokens)
-        setCompactionPreserveTurns(typeof settings.preserveTurns === 'number' ? (settings.preserveTurns as number) : defaults.preserveTurns)
         setCompactionHardLimit(typeof settings.hardTokenLimit === 'number' ? (settings.hardTokenLimit as number) : defaults.hardTokenLimit)
         setCompactionSummarization(typeof settings.enableSummarization === 'boolean' ? (settings.enableSummarization as boolean) : defaults.enableSummarization)
         setCompactionSummarizerModelId(typeof settings.summarizerModelId === 'string' && settings.summarizerModelId ? settings.summarizerModelId : undefined)
@@ -270,9 +345,30 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setSandboxMemory(typeof resource.memory === 'string' ? (resource.memory as string) : '')
         const network = (sandbox.network ?? {}) as Record<string, unknown>
         setSandboxNetworkAction(typeof network.defaultAction === 'string' ? (network.defaultAction as string) : undefined)
-        setSandboxEgress(
-          Array.isArray(network.egress) ? (network.egress as unknown[]).map((x) => String(x)).join('\n') : '',
-        )
+        // 新格式 rules 优先；旧格式 egress（字符串数组）按旧语义转换回显：默认 deny 时为放行名单，否则为拒绝名单
+        const toRuleRows = (): SandboxNetworkRuleRow[] => {
+          if (Array.isArray(network.rules)) {
+            return (network.rules as unknown[])
+              .filter((x): x is Record<string, unknown> => typeof x === 'object' && x !== null)
+              .map((x) => ({
+                action: x.action === 'deny' ? 'deny' : 'allow',
+                target: typeof x.target === 'string' ? x.target : '',
+                portsText: Array.isArray(x.ports) ? (x.ports as unknown[]).map((p) => String(p)).join(',') : '',
+              }))
+          }
+          if (Array.isArray(network.egress)) {
+            const legacyAction = network.defaultAction === 'deny' ? 'allow' : 'deny'
+            return (network.egress as unknown[])
+              .map((x) => String(x).trim())
+              .filter(Boolean)
+              .map((target) => ({ action: legacyAction, target, portsText: '' }))
+          }
+          return []
+        }
+        setSandboxNetworkRules(toRuleRows())
+        const commandFilter = (sandbox.commandFilter ?? {}) as Record<string, unknown>
+        setSandboxCommandFilterEnabled(commandFilter.enabled === true)
+        setSandboxCommandDeny(Array.isArray(commandFilter.deny) ? (commandFilter.deny as unknown[]).map((x) => String(x)).join('\n') : '')
       } catch {
         // 错误已由全局请求中间件统一提示
       }
@@ -296,14 +392,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         // 图谱绑定候选：仅托管图（接入图不参与应用侧向量检索，不开放绑定）
         getKnowledgeGraphs(teamId),
       ])
-      setModelOptions(
-        models
-          .filter((item) => item.aiModelId)
-          .map((item) => ({
-            value: String(item.aiModelId),
-            label: item.name || item.modelId || '-',
-          })),
-      )
+      setAvailableModels(models.filter((item) => item.aiModelId))
       setPluginOptions(
         (plugins.items ?? []).filter((item) => item.pluginId && String(item.pluginId) !== EMPTY_GUID),
       )
@@ -364,8 +453,76 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         return false
       }
     }
+    return validateSandboxNetwork()
+  }
+
+  /** 解析逗号分隔端口文本为端口数组；空文本返回空数组，非法（非整数 / 越界 / 重复 / 超量）返回 null */
+  const parsePortsText = (text: string): number[] | null => {
+    const trimmed = text.trim()
+    if (!trimmed) return []
+    const ports: number[] = []
+    for (const part of trimmed.split(',')) {
+      const value = part.trim()
+      if (!value) continue
+      const n = Number(value)
+      if (!Number.isInteger(n) || n < 1 || n > 65535) return null
+      ports.push(n)
+    }
+    return isValidRulePorts(ports) ? ports : null
+  }
+
+  /** 启用沙箱时校验出站规则（后端保存时再次强校验；与后端 SandboxNetworkTarget 语义一致） */
+  const validateSandboxNetwork = (): boolean => {
+    if (!sandboxEnabled) return true
+    if (sandboxNetworkRules.length > MAX_RULES_PER_POLICY) {
+      feedback.error(t('appManage.sandboxNetworkRuleCountExceeded', { max: MAX_RULES_PER_POLICY }))
+      return false
+    }
+    for (const rule of sandboxNetworkRules) {
+      const target = rule.target.trim()
+      const ports = parsePortsText(rule.portsText)
+      if (ports == null) {
+        feedback.error(t('appManage.sandboxNetworkRulePortsInvalid'))
+        return false
+      }
+      const { valid, isIpOrCidr } = parseNetworkTarget(target)
+      if (!target && ports.length === 0) {
+        feedback.error(t('appManage.sandboxNetworkRuleTargetRequired'))
+        return false
+      }
+      if (target && !valid) {
+        feedback.error(t('appManage.sandboxNetworkRuleTargetInvalid', { target }))
+        return false
+      }
+      // 与服务端对齐：域名目标在 DNS 层评估，不支持端口限制
+      if (ports.length > 0 && !isIpOrCidr) {
+        feedback.error(t('appManage.sandboxNetworkRulePortsIpOnly', { target }))
+        return false
+      }
+    }
+    return validateSandboxCommandFilter()
+  }
+
+  /** 启用沙箱时校验命令过滤黑名单（后端保存时再次强校验；与后端 SandboxCommandPatterns 语义一致） */
+  const validateSandboxCommandFilter = (): boolean => {
+    if (!sandboxEnabled) return true
+    if (!sandboxCommandFilterEnabled) return true
+    const lines = sandboxCommandDeny.split('\n').map((x) => x.trim()).filter(Boolean)
+    if (lines.length === 0) {
+      feedback.error(t('appManage.sandboxCommandDenyRequired'))
+      return false
+    }
+    if (!isValidCommandPatternList(sandboxCommandDeny)) {
+      feedback.error(t('appManage.sandboxCommandPatternInvalid'))
+      return false
+    }
     return true
   }
+
+  const addNetworkRule = () => setSandboxNetworkRules((prev) => [...prev, { action: 'allow', target: '', portsText: '' }])
+  const updateNetworkRule = (index: number, patch: Partial<SandboxNetworkRuleRow>) =>
+    setSandboxNetworkRules((prev) => prev.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)))
+  const removeNetworkRule = (index: number) => setSandboxNetworkRules((prev) => prev.filter((_, i) => i !== index))
 
   /** 内容脱敏面板保存回调注册（须稳定引用，面板以之为 effect 依赖） */
   const registerSecuritySave = useCallback((save: (() => Promise<void>) | null) => {
@@ -379,6 +536,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
 
   const handleSaveConfig = async () => {
     if (!appId) return
+    // 对话模型与系统提示词必填（与后端保存强校验同语义；不存在「默认模型」回退）
+    if (!modelId) {
+      feedback.error(t('appManage.modelRequired'))
+      return
+    }
+    // 默认模型必须落在可选列表内（后端保存强校验同语义；勾选联动已保证，此处兜底）
+    const submitModelIds = modelIds.length > 0 ? modelIds : [modelId]
+    if (!submitModelIds.includes(modelId)) {
+      feedback.error(t('appManage.defaultModelRequired'))
+      return
+    }
+    if (!prompt.trim()) {
+      feedback.error(t('appManage.promptRequired'))
+      return
+    }
     if (!isExternal && !validateSandboxLimits()) return
     setSavingConfig(true)
     try {
@@ -397,14 +569,28 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
             ...(sandboxMemory.trim() ? { memory: sandboxMemory.trim() } : {}),
           }
         }
-        const egress = sandboxEgress
-          .split('\n')
-          .map((x) => x.trim())
-          .filter(Boolean)
-        if (sandboxNetworkAction || egress.length) {
+        const networkRules = sandboxNetworkRules
+          .map((rule) => {
+            const target = rule.target.trim()
+            const ports = parsePortsText(rule.portsText) ?? []
+            return {
+              action: rule.action === 'deny' ? 'deny' : 'allow',
+              ...(target ? { target } : {}),
+              ...(ports.length ? { ports } : {}),
+            }
+          })
+          .filter((rule) => rule.target || (rule.ports?.length ?? 0) > 0)
+        if (sandboxNetworkAction || networkRules.length) {
           sandbox.network = {
             ...(sandboxNetworkAction ? { defaultAction: sandboxNetworkAction } : {}),
-            egress,
+            rules: networkRules,
+          }
+        }
+        const commandDenyLines = parseCommandPatterns(sandboxCommandDeny)
+        if (sandboxCommandFilterEnabled || commandDenyLines.length) {
+          sandbox.commandFilter = {
+            enabled: sandboxCommandFilterEnabled,
+            deny: commandDenyLines,
           }
         }
       }
@@ -421,11 +607,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         sandboxAutoApproved: isExternal ? false : sandboxAutoApproved,
       }
 
-      // 压缩参数：表单预填生效值，保存即写入显式配置（随发布快照生效）
+      // 压缩参数：模式 + 表单预填生效值（custom 模式生效；auto 模式运行时按模型窗口推导、忽略绝对值），随发布快照生效
       const mergedSettings: Record<string, unknown> = { ...executionSettings }
+      mergedSettings.compactionMode = compactionMode
       mergedSettings.toolResultTriggerMessages = compactionToolResult ?? compactionDefaults?.toolResultTriggerMessages ?? 16
       mergedSettings.summarizeTriggerTokens = compactionSummarizeTokens ?? compactionDefaults?.summarizeTriggerTokens ?? 16000
-      mergedSettings.preserveTurns = compactionPreserveTurns ?? compactionDefaults?.preserveTurns ?? 8
       mergedSettings.hardTokenLimit = compactionHardLimit ?? compactionDefaults?.hardTokenLimit ?? 64000
       mergedSettings.enableSummarization = compactionSummarization
       mergedSettings.summarizerModelId = compactionSummarization ? (compactionSummarizerModelId ?? '') : ''
@@ -445,6 +631,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
 
       await saveAppAgentConfig(appId, {
         modelId: modelId ?? null,
+        modelIds: submitModelIds,
         prompt,
         wikiIds,
         graphIds,
@@ -469,19 +656,19 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     }
   }
 
-  /** 重新发布：把当前草稿配置推入发布快照，线上对话立即生效（发布接口本身即重发语义） */
-  const handleRepublish = async () => {
+  /** 发布：把当前草稿配置推入发布快照，线上对话立即生效（发布接口本身即重发语义） */
+  const handlePublish = async () => {
     if (!appId) return
-    setRepublishing(true)
+    setPublishing(true)
     try {
       await publishApp(appId)
-      feedback.success(t('appManage.republishSuccess'))
+      feedback.success(t('appManage.publishSuccess'))
       setLocalConfigStatus(1)
       onConfigStatusChange?.(1)
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
-      setRepublishing(false)
+      setPublishing(false)
     }
   }
 
@@ -502,7 +689,19 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     }
   }
 
-  const pluginSelectOptions = pluginOptions.map(renderPluginOption)
+  // 插件下拉按来源分组：团队自有插件在前、系统插件（公开或已授权）在后（与模型下拉的团队/系统分组同款式），空组不展示
+  const pluginSelectOptions = [
+    {
+      label: t('appManage.pluginGroupTeam'),
+      title: t('appManage.pluginGroupTeam'),
+      options: pluginOptions.filter((item) => item.isTeamOwned).map(renderPluginOption),
+    },
+    {
+      label: t('appManage.pluginGroupSystem'),
+      title: t('appManage.pluginGroupSystem'),
+      options: pluginOptions.filter((item) => !item.isTeamOwned).map(renderPluginOption),
+    },
+  ].filter((group) => group.options.length > 0)
 
   /** 技能选项统一渲染：头像（存储路径解析，无头像回退首字母）+ 名称；title 字符串供搜索过滤 */
   const renderSkillOption = (item: SkillOption): { value: string; label: ReactNode; title: string } => {
@@ -547,16 +746,122 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     .filter((item) => String(item.appId) !== appId)
     .map(renderAppOption)
 
-  const wikiSelectOptions = wikiOptions
-    .filter((item) => item.wikiId != null)
-    .map((item) => ({ value: Number(item.wikiId), label: item.name || '-' }))
+  /** 知识库选项统一渲染：头像（存储路径解析，无头像回退首字母）+ 名称；title 字符串供搜索过滤 */
+  const renderWikiOption = (item: WikiItem): { value: number; label: ReactNode; title: string } => {
+    const name = item.name || '-'
+    return {
+      value: Number(item.wikiId),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath ?? null) || undefined} alt={name}>
+            {name.slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span>{name}</span>
+        </span>
+      ),
+    }
+  }
 
-  const graphSelectOptions = graphOptions.map((item) => ({
-    value: Number(item.kgId),
-    label: item.name || '-',
-  }))
+  const wikiSelectOptions = wikiOptions.filter((item) => item.wikiId != null).map(renderWikiOption)
 
-  // 自动放通列表行：按当前选中 id 从选项派生（应用类带头像，与下拉选项同一取名列）
+  /** 知识图谱选项统一渲染：头像（存储路径解析，无头像回退首字母）+ 名称；title 字符串供搜索过滤 */
+  const renderGraphOption = (item: KnowledgeGraphItem): { value: number; label: ReactNode; title: string } => {
+    const name = item.name || '-'
+    return {
+      value: Number(item.kgId),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath ?? null) || undefined} alt={name}>
+            {name.slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span>{name}</span>
+        </span>
+      ),
+    }
+  }
+
+  const graphSelectOptions = graphOptions.map(renderGraphOption)
+
+  /** 「进入对话」入口（原侧边栏移入调试面板标题右侧）：仅已发布应用展示 */
+  const enterChatExtra =
+    detail?.publishStatus === 1 ? (
+      <Button size="small" type="text" icon={<MessageOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)}>
+        {t('appManage.enterChat')}
+      </Button>
+    ) : null
+
+  // 对话类模型：对话模型与 LLM 摘要压缩模型下拉只列 conversation 类型（embedding/图像等模型不适用对话场景）
+  const conversationModels = availableModels.filter((item) => item.modelKind === 'conversation')
+
+  /** 模型下拉分组选项：按来源分「团队渠道模型/系统渠道模型」两组（与聚合接口团队自有优先排序一致），子项 title 附渠道名供搜索 */
+  const conversationModelOptions = [
+    {
+      label: t('appManage.modelGroupTeam'),
+      title: t('appManage.modelGroupTeam'),
+      options: conversationModels
+        .filter((item) => item.isTeamChannel)
+        .map((item) => ({ value: String(item.aiModelId), label: item.name || item.modelId || '-', title: `${item.name || '-'}（${item.channelName || '-'}）` })),
+    },
+    {
+      label: t('appManage.modelGroupSystem'),
+      title: t('appManage.modelGroupSystem'),
+      options: conversationModels
+        .filter((item) => !item.isTeamChannel)
+        .map((item) => ({ value: String(item.aiModelId), label: item.name || item.modelId || '-', title: `${item.name || '-'}（${item.channelName || '-'}）` })),
+    },
+  ].filter((group) => group.options.length > 0)
+
+  // 当前选中的对话模型（用于右侧参数 Tag 与压缩预算换算展示）
+  const selectedModel = availableModels.find((item) => String(item.aiModelId) === modelId)
+
+  /** 可选模型变更：去重并保持默认模型落在列表内（不在时自动落到第一个，保存强校验同语义） */
+  const handleModelIdsChange = (ids: string[]) => {
+    const deduped = Array.from(new Set(ids))
+    setModelIds(deduped)
+    if (deduped.length > 0 && (!modelId || !deduped.includes(modelId))) {
+      setModelId(deduped[0])
+    }
+    if (deduped.length === 0) {
+      setModelId(undefined)
+    }
+  }
+
+  /** 默认模型下拉：仅在已选模型范围内选择（保持团队/系统分组） */
+  const defaultModelOptions = conversationModelOptions
+    .map((group) => ({ ...group, options: group.options.filter((option) => modelIds.includes(option.value)) }))
+    .filter((group) => group.options.length > 0)
+
+  /** token 数格式化：128000 → 128K、1050000 → 1.1M */
+  const formatModelTokens = (tokens: number) => {
+    if (tokens >= 1_000_000) {
+      const m = tokens / 1_000_000
+      return `${Number.isInteger(m) ? m : m.toFixed(1)}M`
+    }
+    return `${Math.round(tokens / 1000)}K`
+  }
+
+  /** 选中模型的参数 Tag 文案：上下文/最大输出按 K/M 缩写，能力按布尔展示；元数据缺失的项不展示 */
+  const modelParamTags = (item: TeamAvailableModelItem): string[] => {
+    const tags: string[] = []
+    if ((item.contextWindow ?? 0) > 0) tags.push(t('appManage.modelParamContext', { size: formatModelTokens(item.contextWindow ?? 0) }))
+    if ((item.maxOutput ?? 0) > 0) tags.push(t('appManage.modelParamOutput', { size: formatModelTokens(item.maxOutput ?? 0) }))
+    if (item.supportsVision) tags.push(t('appManage.modelParamVision'))
+    if (item.supportsToolCall) tags.push(t('appManage.modelParamTool'))
+    if (item.supportsReasoning) tags.push(t('appManage.modelParamReasoning'))
+    return tags
+  }
+
+  /** 自动模式压缩预算：ContextWindow − MaxOutput（与后端运行时同口径）；窗口元数据缺失返回 null（走固定值兜底） */
+  const compactionBudget = (() => {
+    const window = selectedModel?.contextWindow ?? 0
+    if (!window || window <= 0) return null
+    const budget = window - Math.max(selectedModel?.maxOutput ?? 0, 0)
+    return budget > 0 ? budget : window
+  })()
+
+  // 自动放通列表行：按当前选中 id 从选项派生（带头像，与下拉选项同一取名列与头像）
   const appAutoPassItems = (ids: string[], options: AppItem[]): AutoPassItem[] =>
     ids
       .map((id) => options.find((item) => String(item.appId) === id))
@@ -566,21 +871,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const pluginAutoPassItems: AutoPassItem[] = pluginIds
     .map((id) => pluginOptions.find((item) => String(item.pluginId) === id))
     .filter((item): item is TeamPluginItemType => Boolean(item))
-    .map((item) => ({ id: String(item.pluginId), name: item.title || item.pluginName || '-' }))
+    .map((item) => ({ id: String(item.pluginId), name: item.title || item.pluginName || '-', avatarPath: item.avatarPath ?? null }))
   const workflowAutoPassItems = appAutoPassItems(workflowAppIds, workflowAppOptions)
   const agentAutoPassItems = appAutoPassItems(agentAppIds, agentAppOptions)
   const skillAutoPassItems: AutoPassItem[] = skillIds
     .map((id) => skillOptions.find((item) => String(item.id) === id))
     .filter((item): item is SkillOption => Boolean(item))
-    .map((item) => ({ id: String(item.id), name: item.name || item.key || '-' }))
+    .map((item) => ({ id: String(item.id), name: item.name || item.key || '-', avatarPath: item.avatarPath ?? null }))
   const wikiAutoPassItems: AutoPassItem[] = wikiIds
     .map((id) => wikiOptions.find((item) => Number(item.wikiId) === id))
     .filter((item): item is WikiItem => Boolean(item))
-    .map((item) => ({ id: Number(item.wikiId), name: item.name || '-' }))
+    .map((item) => ({ id: Number(item.wikiId), name: item.name || '-', avatarPath: item.avatarPath ?? null }))
   const graphAutoPassItems: AutoPassItem[] = graphIds
     .map((id) => graphOptions.find((item) => Number(item.kgId) === id))
     .filter((item): item is KnowledgeGraphItem => Boolean(item))
-    .map((item) => ({ id: Number(item.kgId), name: item.name || '-' }))
+    .map((item) => ({ id: Number(item.kgId), name: item.name || '-', avatarPath: item.avatarPath ?? null }))
 
   const toggleAutoPassId = (key: 'plugins' | 'workflowApps' | 'agentApps' | 'skills', id: string, checked: boolean) => {
     setAutoPass((prev) => ({
@@ -594,6 +899,19 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
       [key]: checked ? [...prev[key], id] : prev[key].filter((x) => x !== id),
     }))
   }
+  // 六类绑定资源当前 id 列表（全部放通按它取全量/清空）
+  const allBoundIds: Record<'plugins' | 'workflowApps' | 'agentApps' | 'skills' | 'wikis' | 'graphs', Array<string | number>> = {
+    plugins: [...pluginIds],
+    workflowApps: [...workflowAppIds],
+    agentApps: [...agentAppIds],
+    skills: [...skillIds],
+    wikis: [...wikiIds],
+    graphs: [...graphIds],
+  }
+  /** 「全部放通」总开关：勾选=该类全部绑定资源自动放通，取消=全部清空（恢复人工批准） */
+  const toggleAutoPassAll = (key: 'plugins' | 'workflowApps' | 'agentApps' | 'skills' | 'wikis' | 'graphs', checked: boolean) => {
+    setAutoPass((prev) => ({ ...prev, [key]: checked ? [...allBoundIds[key]] : [] }) as AutoPassState)
+  }
 
   return (
     <Row gutter={[spacing.md, spacing.md]} align="top">
@@ -602,7 +920,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         xs={24}
         lg={11}
         xxl={11}
-        style={{ maxHeight: 'calc(100vh - 160px)', minHeight: 480, overflowY: 'auto', paddingRight: spacing.xs }}
+        style={{ height: 'calc(100vh - 48px)', minHeight: 480, overflowY: 'auto', paddingRight: spacing.xs }}
       >
         {!canManage && (
           <Alert
@@ -618,8 +936,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
             showIcon
             message={t('appManage.draftPendingHint')}
             action={
-              <Button size="small" type="primary" loading={republishing} onClick={() => void handleRepublish()}>
-                {t('appManage.republish')}
+              <Button size="small" type="primary" loading={publishing} onClick={() => void handlePublish()}>
+                {t('appManage.publish')}
               </Button>
             }
             style={{ marginBottom: spacing.md }}
@@ -660,72 +978,117 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     label: groupHeader(t('appManage.groupBasic'), t('appManage.groupBasicDesc')),
                     children: (
                       <Form layout="vertical" disabled={!canManage}>
-                        <Form.Item label={t('appManage.model')} extra={t('appManage.modelHint')}>
+                        <Form.Item label={requiredLabel(t('appManage.selectableModels'))} extra={t('appManage.selectableModelsHint')}>
                           <Select
+                            mode="multiple"
                             allowClear
                             showSearch
-                            optionFilterProp="label"
-                            style={{ width: '100%', maxWidth: 360 }}
+                            optionFilterProp="title"
+                            style={{ width: '100%', maxWidth: 640 }}
+                            maxTagCount="responsive"
                             placeholder={t('appManage.modelPlaceholder')}
                             loading={optionsLoading}
-                            value={modelId}
-                            onChange={setModelId}
-                            options={modelOptions}
+                            value={modelIds}
+                            onChange={handleModelIdsChange}
+                            options={conversationModelOptions}
                             notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.modelEmpty')}
                           />
                         </Form.Item>
+                        <Form.Item label={requiredLabel(t('appManage.defaultModel'))}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}>
+                            <Select
+                              showSearch
+                              optionFilterProp="title"
+                              style={{ width: 320, flexShrink: 0 }}
+                              placeholder={t('appManage.defaultModelPlaceholder')}
+                              loading={optionsLoading}
+                              value={modelId}
+                              onChange={(value) => setModelId(value)}
+                              options={defaultModelOptions}
+                              notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.defaultModelPlaceholder')}
+                            />
+                            {selectedModel && modelParamTags(selectedModel).length > 0 && (
+                              <Space size={[4, 4]} wrap>
+                                {modelParamTags(selectedModel).map((label) => (
+                                  <Tag key={label} style={{ marginInlineEnd: 0 }}>
+                                    {label}
+                                  </Tag>
+                                ))}
+                              </Space>
+                            )}
+                          </div>
+                        </Form.Item>
                         <Divider style={{ margin: `${spacing.md}px 0` }} />
                         <Form.Item label={t('appManage.compactionSection')} extra={t('appManage.compactionHint')} style={{ marginBottom: spacing.sm }}>
-                          <Row gutter={spacing.md}>
-                            <Col xs={24} md={12}>
-                              <Form.Item label={t('appManage.compactionToolResult')} style={{ marginBottom: spacing.sm }}>
-                                <InputNumber
-                                  min={1}
-                                  max={500}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={compactionToolResult ?? undefined}
-                                  onChange={(value) => setCompactionToolResult(typeof value === 'number' ? value : null)}
-                                />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12}>
-                              <Form.Item label={t('appManage.compactionPreserveTurns')} style={{ marginBottom: spacing.sm }}>
-                                <InputNumber
-                                  min={1}
-                                  max={10000}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={compactionPreserveTurns ?? undefined}
-                                  onChange={(value) => setCompactionPreserveTurns(typeof value === 'number' ? value : null)}
-                                />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12}>
-                              <Form.Item label={t('appManage.compactionSummarizeTokens')} style={{ marginBottom: spacing.sm }}>
-                                <InputNumber
-                                  min={200}
-                                  max={2000000}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={compactionSummarizeTokens ?? undefined}
-                                  onChange={(value) => setCompactionSummarizeTokens(typeof value === 'number' ? value : null)}
-                                />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12}>
-                              <Form.Item label={t('appManage.compactionHardLimit')} style={{ marginBottom: spacing.sm }}>
-                                <InputNumber
-                                  min={500}
-                                  max={4000000}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={compactionHardLimit ?? undefined}
-                                  onChange={(value) => setCompactionHardLimit(typeof value === 'number' ? value : null)}
-                                />
-                              </Form.Item>
-                            </Col>
-                          </Row>
+                          <Form.Item label={t('appManage.compactionMode')} style={{ marginBottom: spacing.sm }}>
+                            <Select
+                              style={{ width: '100%', maxWidth: 360 }}
+                              value={compactionMode}
+                              onChange={(value) => setCompactionMode(value === 'custom' ? 'custom' : 'auto')}
+                              options={[
+                                { value: 'auto', label: t('appManage.compactionModeAuto') },
+                                { value: 'custom', label: t('appManage.compactionModeCustom') },
+                              ]}
+                            />
+                          </Form.Item>
+                          {compactionMode === 'auto' ? (
+                            <Alert
+                              type="info"
+                              showIcon
+                              message={
+                                compactionBudget
+                                  ? t('appManage.compactionAutoComputed', {
+                                      budget: formatModelTokens(compactionBudget),
+                                      tool: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.toolEvictionRatio ?? 0.5))),
+                                      trigger: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.summarizeTriggerRatio ?? 0.8))),
+                                      target: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.summarizeTargetRatio ?? 0.5))),
+                                      hard: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.truncationRatio ?? 0.95))),
+                                    })
+                                  : t('appManage.compactionAutoFallback')
+                              }
+                              description={t('appManage.compactionAutoHint')}
+                              style={{ marginBottom: spacing.sm }}
+                            />
+                          ) : (
+                            <Row gutter={spacing.md} style={{ marginBottom: spacing.sm }}>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.compactionToolResult')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={1}
+                                    max={500}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={compactionToolResult ?? undefined}
+                                    onChange={(value) => setCompactionToolResult(typeof value === 'number' ? value : null)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.compactionSummarizeTokens')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={200}
+                                    max={2000000}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={compactionSummarizeTokens ?? undefined}
+                                    onChange={(value) => setCompactionSummarizeTokens(typeof value === 'number' ? value : null)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.compactionHardLimit')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={200}
+                                    max={4000000}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={compactionHardLimit ?? undefined}
+                                    onChange={(value) => setCompactionHardLimit(typeof value === 'number' ? value : null)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+                          )}
                         </Form.Item>
                         <Form.Item
                           label={t('appManage.compactionSummarization')}
@@ -735,16 +1098,18 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           <Switch checked={compactionSummarization} onChange={setCompactionSummarization} />
                         </Form.Item>
                         {compactionSummarization && (
-                          <Form.Item label={t('appManage.compactionSummarizerModel')} extra={t('appManage.compactionSummarizerModelHint')}>
+                          // 摘要模型默认自动绑定上方对话模型（显示即跟随）；可手动指定，清空后恢复跟随。
+                          // 存储语义不变：空串=跟随对话模型，运行时回退到 config.ModelId（AppCompactionStrategyFactory）
+                          <Form.Item label={t('appManage.compactionSummarizerModel')}>
                             <Select
                               allowClear
                               showSearch
-                              optionFilterProp="label"
+                              optionFilterProp="title"
                               style={{ width: '100%', maxWidth: 360 }}
                               placeholder={t('appManage.compactionSummarizerModelPlaceholder')}
-                              value={compactionSummarizerModelId}
+                              value={compactionSummarizerModelId || modelId}
                               onChange={(value) => setCompactionSummarizerModelId(value)}
-                              options={modelOptions}
+                              options={conversationModelOptions}
                             />
                           </Form.Item>
                         )}
@@ -793,7 +1158,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                   },
                 ]}
               />
-              {/* 二、用户提示：提示词 + 对话开场白 + 快捷输入 */}
+              {/* 二、提示词：系统提示词 + 对话开场白 + 快捷输入 */}
               <Collapse
                 defaultActiveKey="prompts"
                 items={[
@@ -802,7 +1167,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     label: groupHeader(t('appManage.groupPrompts'), t('appManage.groupPromptsDesc')),
                     children: (
                       <Form layout="vertical" disabled={!canManage}>
-                        <Form.Item label={t('appManage.sectionPrompt')} extra={t('appManage.promptHint')}>
+                        <Form.Item label={requiredLabel(t('appManage.sectionPrompt'))} extra={t('appManage.promptHint')}>
                           <Input.TextArea
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
@@ -874,7 +1239,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                     key: 'capabilities',
                     label: groupHeader(t('appManage.groupCapabilities'), t('appManage.groupCapabilitiesDesc')),
                     children: (
-                      <>
+                      // 顶部留白：避免卡片标题与首个组件粘连；各资源区间距由 AutoPassList 的下边距撑开
+                      <div style={{ paddingTop: spacing.xs }}>
                         <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: spacing.md }}>
                           {t('appManage.capabilitiesAutoPassHint')}
                         </div>
@@ -884,7 +1250,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             mode="multiple"
                             allowClear
                             showSearch
-                            optionFilterProp="label"
+                            optionFilterProp="title"
                             style={{ width: '100%' }}
                             placeholder={t('appManage.pluginsPlaceholder')}
                             loading={optionsLoading}
@@ -898,6 +1264,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           items={pluginAutoPassItems}
                           checkedIds={autoPass.plugins}
                           onToggle={(id, checked) => toggleAutoPassId('plugins', String(id), checked)}
+                          onToggleAll={(checked) => toggleAutoPassAll('plugins', checked)}
                         />
                         <Form.Item label={t('appManage.sectionWorkflowApps')} extra={t('appManage.workflowAppsHint')}>
                           <Select
@@ -918,6 +1285,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           items={workflowAutoPassItems}
                           checkedIds={autoPass.workflowApps}
                           onToggle={(id, checked) => toggleAutoPassId('workflowApps', String(id), checked)}
+                          onToggleAll={(checked) => toggleAutoPassAll('workflowApps', checked)}
                         />
                         <Form.Item label={t('appManage.sectionAgentApps')} extra={t('appManage.agentAppsHint')}>
                           <Select
@@ -938,6 +1306,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           items={agentAutoPassItems}
                           checkedIds={autoPass.agentApps}
                           onToggle={(id, checked) => toggleAutoPassId('agentApps', String(id), checked)}
+                          onToggleAll={(checked) => toggleAutoPassAll('agentApps', checked)}
                         />
                         {!isExternal && (
                           <>
@@ -960,6 +1329,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                               items={skillAutoPassItems}
                               checkedIds={autoPass.skills}
                               onToggle={(id, checked) => toggleAutoPassId('skills', String(id), checked)}
+                              onToggleAll={(checked) => toggleAutoPassAll('skills', checked)}
                             />
                           </>
                         )}
@@ -968,7 +1338,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             mode="multiple"
                             allowClear
                             showSearch
-                            optionFilterProp="label"
+                            optionFilterProp="title"
                             style={{ width: '100%' }}
                             placeholder={t('appManage.knowledgePlaceholder')}
                             loading={optionsLoading}
@@ -982,13 +1352,14 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           items={wikiAutoPassItems}
                           checkedIds={autoPass.wikis}
                           onToggle={(id, checked) => toggleAutoPassLong('wikis', Number(id), checked)}
+                          onToggleAll={(checked) => toggleAutoPassAll('wikis', checked)}
                         />
                         <Form.Item label={t('appManage.sectionGraphs')} extra={t('appManage.graphsHint')}>
                           <Select
                             mode="multiple"
                             allowClear
                             showSearch
-                            optionFilterProp="label"
+                            optionFilterProp="title"
                             style={{ width: '100%' }}
                             placeholder={t('appManage.graphsPlaceholder')}
                             loading={optionsLoading}
@@ -1002,9 +1373,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           items={graphAutoPassItems}
                           checkedIds={autoPass.graphs}
                           onToggle={(id, checked) => toggleAutoPassLong('graphs', Number(id), checked)}
+                          onToggleAll={(checked) => toggleAutoPassAll('graphs', checked)}
                         />
                         </Form>
-                      </>
+                      </div>
                     ),
                   },
                 ]}
@@ -1079,7 +1451,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                   </Form.Item>
                                 </Col>
                               </Row>
-                              <Form.Item label={t('appManage.sandboxNetwork')} extra={t('appManage.sandboxNetworkHint')}>
+                              <Form.Item
+                                label={t('appManage.sandboxNetwork')}
+                                extra={sandboxNetworkGoverned ? t('appManage.sandboxNetworkGovernedHint') : t('appManage.sandboxNetworkHint')}
+                              >
                                 <Select
                                   allowClear
                                   style={{ width: '100%', maxWidth: 360 }}
@@ -1087,18 +1462,62 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                   value={sandboxNetworkAction}
                                   onChange={setSandboxNetworkAction}
                                   options={[
-                                    { value: 'allow', label: t('appManage.sandboxNetworkAllow') },
+                                    { value: 'allow', label: t('appManage.sandboxNetworkAllow'), disabled: sandboxNetworkGoverned },
                                     { value: 'deny', label: t('appManage.sandboxNetworkDeny') },
                                   ]}
                                 />
                               </Form.Item>
-                              {sandboxNetworkAction && (
-                                <Form.Item label={t('appManage.sandboxEgress')} extra={t('appManage.sandboxEgressHint')}>
+                              {(sandboxNetworkAction || sandboxNetworkRules.length > 0) && (
+                                <Form.Item label={t('appManage.sandboxNetworkRules')} extra={t('appManage.sandboxNetworkRulesHint')}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, alignItems: 'flex-start' }}>
+                                    {sandboxNetworkRules.map((rule, index) => (
+                                      <Space key={index} style={{ display: 'flex' }} align="center">
+                                        <Select
+                                          style={{ width: 96 }}
+                                          value={rule.action}
+                                          onChange={(value) => updateNetworkRule(index, { action: value })}
+                                          options={[
+                                            { value: 'allow', label: t('appManage.sandboxNetworkRuleAllow') },
+                                            { value: 'deny', label: t('appManage.sandboxNetworkRuleDeny') },
+                                          ]}
+                                        />
+                                        <Input
+                                          style={{ width: 240 }}
+                                          value={rule.target}
+                                          onChange={(e) => updateNetworkRule(index, { target: e.target.value })}
+                                          placeholder="pypi.org / 10.0.0.0/8"
+                                        />
+                                        <Input
+                                          style={{ width: 150 }}
+                                          value={rule.portsText}
+                                          onChange={(e) => updateNetworkRule(index, { portsText: e.target.value })}
+                                          placeholder="443,80（可选）"
+                                        />
+                                        <Button
+                                          type="text"
+                                          size="small"
+                                          icon={<DeleteOutlined />}
+                                          onClick={() => removeNetworkRule(index)}
+                                        />
+                                      </Space>
+                                    ))}
+                                    <Button type="dashed" icon={<PlusOutlined />} onClick={addNetworkRule}>
+                                      {t('appManage.sandboxNetworkRuleAdd')}
+                                    </Button>
+                                  </div>
+                                </Form.Item>
+                              )}
+                              <Form.Item label={t('appManage.sandboxCommandFilter')} valuePropName="checked" extra={t('appManage.sandboxCommandFilterHint')} style={{ marginTop: spacing.md }}>
+                                <Switch checked={sandboxCommandFilterEnabled} onChange={setSandboxCommandFilterEnabled} />
+                              </Form.Item>
+                              {sandboxCommandFilterEnabled && (
+                                <Form.Item label={t('appManage.sandboxCommandDeny')} extra={t('appManage.sandboxCommandDenyHint')}>
                                   <Input.TextArea
-                                    value={sandboxEgress}
-                                    onChange={(e) => setSandboxEgress(e.target.value)}
-                                    placeholder={'pypi.org\n*.github.com'}
-                                    autoSize={{ minRows: 2, maxRows: 6 }}
+                                    aria-label={t('appManage.sandboxCommandDeny')}
+                                    value={sandboxCommandDeny}
+                                    onChange={(e) => setSandboxCommandDeny(e.target.value)}
+                                    placeholder={'shutdown\nmkfs\nregex:\\b(wget|curl)\\b'}
+                                    autoSize={{ minRows: 3, maxRows: 8 }}
                                   />
                                 </Form.Item>
                               )}
@@ -1167,8 +1586,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
           </>
         )}
       </Col>
-      {/* 右栏调试对话与左栏同一高度基准（视口 - 页头），卡片内部弹性布局：消息区滚动、输入区停靠底部 */}
-      <Col xs={24} lg={13} xxl={13} style={{ height: 'calc(100vh - 160px)', minHeight: 480 }}>
+      {/* 右栏调试对话与左栏同一高度基准（视口 - 全局壳 24px×2 内边距），卡片内部弹性布局：消息区滚动、输入区停靠底部 */}
+      <Col xs={24} lg={13} xxl={13} style={{ height: 'calc(100vh - 48px)', minHeight: 480 }}>
         {isAgent && canManage ? (
           <DSCard
             style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
@@ -1178,10 +1597,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
               appId={appId}
               appAvatar={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
               openingStatement={openingEnabled ? openingStatement.trim() : ''}
+              headerExtra={enterChatExtra}
             />
           </DSCard>
         ) : (
-          <DSCard title={t('appDebug.title')}>
+          <DSCard title={t('appDebug.title')} extra={enterChatExtra}>
             <Alert type="info" showIcon message={t('appDebug.adminOnly')} />
           </DSCard>
         )}

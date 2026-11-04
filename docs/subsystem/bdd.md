@@ -422,6 +422,32 @@ Feature: 合并模型：子系统与应用接入同一接入（同表/同列表/
     Then 返回 400 提示重置
 ```
 
+```gherkin
+Feature: 接入头像（子系统与应用接入通用，同表同字段）
+  @SUB-S67 @auto:e2e
+  Scenario: 创建接入携带头像
+    Given root 已直传一张头像图片并完成登记（objectKey）
+    When 创建子系统/应用接入时携带 avatarPath
+    Then 创建成功且列表回显该 objectKey（前端拼装 /static 地址展示）
+
+  @SUB-S68 @auto:e2e
+  Scenario: 头像 objectKey 防伪校验
+    When 创建或更新携带未登记/未完成上传的 avatarPath
+    Then 返回 404（头像文件不存在或未完成上传，防止任意伪造 objectKey）
+
+  @SUB-S69 @auto:e2e
+  Scenario: 更新替换与保持
+    Given 接入已设置头像
+    When 更新携带新的合法 avatarPath
+    Then 更新成功且列表回显新 objectKey
+    When 更新不携带 avatarPath（如停用切换等调用）
+    Then 头像保持不变（null=不修改）
+
+  @SUB-S70 @auto:e2e
+  Scenario: 不带头像默认为空
+    When 创建接入不携带 avatarPath
+    Then 列表回显头像为空串（前端显示名称首字符兜底）；子系统与应用接入同表同结构均回显
+
 Feature: 系统应用接入（系统级接入 key）
   @SAA-S1 @auto:e2e
   Scenario: 管理面仅 root 可用

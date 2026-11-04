@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using MoAI.App.Models;
 using MoAI.App.Services;
 using MoAI.Database.Entities;
+using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Wiki.External;
 using MoAI.Wiki.Queries;
@@ -229,7 +230,7 @@ public class WikiMcpTools
     }
 
     /// <summary>
-    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成 key/token 鉴权并写入 HttpContext）.
+    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成 key/token 鉴权与资源 key 包围圈判定）.
     /// </summary>
     private ExternalWikiCaller RequireCaller()
     {
@@ -237,10 +238,15 @@ public class WikiMcpTools
         var tokenContext = httpContext.Items.TryGetValue(ExternalAuthDefaults.TokenContextItemKey, out var value) ? value as ExternalTokenContext : null;
         if (tokenContext == null)
         {
-            throw new McpException("接入凭证无效，请在请求头携带团队/应用接入 key.");
+            throw new McpException("接入凭证无效，请在请求头携带接入 key（moai-ac-/moai-tr-）.");
         }
 
-        return new ExternalWikiCaller { TeamId = tokenContext.TeamId, AccessAppId = tokenContext.AccessAppId };
+        return new ExternalWikiCaller
+        {
+            TeamId = tokenContext.TeamId,
+            AccessAppId = tokenContext.AccessAppId,
+            OnlyWikiId = tokenContext.IsResourceKey && tokenContext.ResourceKeyType == TeamResourceType.Wiki && long.TryParse(tokenContext.ResourceKeyId, out var onlyWikiId) ? onlyWikiId : null,
+        };
     }
 
     /// <summary>

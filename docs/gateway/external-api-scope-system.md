@@ -1,136 +1,132 @@
-# 团队资源外部接口与范围体系（深度细节）
+# 团队资源外部接口与凭证体系（深度细节）
 
-> 关联：[SDD](./sdd.md)（设计决策 D-GW1~D-GW9）｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../app/sdd.md](../app/sdd.md)（外部 token 体系）、[../knowledgegraph/bdd.md](../knowledgegraph/bdd.md)（@KX-*）、[../wiki/bdd.md](../wiki/bdd.md)（@WX-*）
+> 关联：[SDD](./sdd.md)（设计决策 D-GW1~D-GW9，scope 体系已退役）｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../app/sdd.md](../app/sdd.md)（外部 token 体系与 teamres_key 设计）、[../knowledgegraph/bdd.md](../knowledgegraph/bdd.md)（@KX-*）、[../wiki/bdd.md](../wiki/bdd.md)（@WX-*）｜ 证据：[local-dev/teamres-key-e2e.mjs](../../local-dev/teamres-key-e2e.mjs)（TR-*）
 >
-> 本文是「团队资源外部接口」的唯一细节总账：接入 key、scope 位、两条认证路径、中间件门禁规则、兼容口径、**新增资源组的操作清单**与踩坑。改这块代码前先通读本文。
-> 团队接入 key（`team_api_key`，`moai-` 前缀）已于 2026-09-27 下线删除，本文均以应用接入 key 为唯一 key 凭证。
-> **团队模型网关（`/api/aigateway/*`、`model` scope 位）已于 2026-10-29 整体下线删除**：模型仅供建模应用内部调用，后续由独立子系统承接；`ExternalKeyCache` 缓存随之移除（读路径仅网关使用）。
+> 本文是「团队资源外部接口」的唯一细节总账：凭证体系、资源 key 包围圈、中间件门禁规则、兼容口径、**新增资源组的操作清单**与踩坑。改这块代码前先通读本文。
+> 团队接入 key（`team_api_key`，`moai-` 前缀）已于 2026-09-27 下线删除；团队模型网关（`/api/aigateway/*`）已于 2026-10-29 整体下线删除。
+> **scope 范围体系已于 2026-11-04 整体退役**（`access_app.scopes` 列 DROP、`TeamApiKeyScopes` 枚举删除）：moai-ac- 接入 key 不再勾选范围、**全量访问** `/api/teamres`；细粒度授权由**团队资源 key（`teamres_key`，`moai-tr-`）的包围圈**承接。原 §2 scope 位表/掩码与 §3 读/写分档口径随之退役，TA-* 场景编号永久不复用（TR-* 接任）。
 
-## 1. 凭证体系总览
+## 1. 凭证体系总览（moai-ac- 全量 + moai-tr- 包围圈双轨）
 
 | 凭证 | 表 / 前缀 | 签发者 | 可用性语义 |
 |---|---|---|---|
-| 应用接入 appid | `access_app`（统一表，Level=team），`moai-ac-` + 随机 | 团队管理员（`/api/access-app`） | **存在即有效**（软删除自动过滤），appid 明文可回显；配套密钥 PBKDF2 落库（原文仅创建/重置返回一次） |
-| 外部 token（JWT） | 换取签发，不落库 | `POST /api/external/token` | access 2h（Debug 7d）+ refresh 7d；刷新按来源接入**当前**勾选重验；**接入已设密钥则兑换必须携带 secret 并校验**（存量无密钥接入 key-only 兼容） |
-| 匿名临时身份 | 无 key | `POST /api/external/token` 只传 appId（应用须 `is_auth=false`） | 刷新要求应用仍无需授权 |
-| 系统级接入 appid（参照） | 同一张 `access_app`（Level=system，AppType 分型 subsystem/app），`moai-sa-` + Base64Url(Guid+HMAC) 结构化自校验 35 字符（应用接入，新建）/存量 40 字符随机（兼容）或自填（子系统） | root（`/api/subsystem/*`，合并管理面） | 与团队级同表分域：不能访问 /api/external、只能访问 /api/subsys/**（见 [../subsystem/sdd.md](../subsystem/sdd.md)）；**资源范围分档已下线（§2b 退役）**，全量访问协作面资源 |
+| 应用接入 key | `access_app`（统一表，Level=team），`moai-ac-` + 随机 | 团队管理员（`/api/access-app`） | **存在即有效**（软删除自动过滤），**团队级全量访问 /api/teamres**（wiki 读写、KG 读写、agent 对话、ACP/A2A、wiki/KG MCP），无任何范围勾选；appid 明文可回显；配套密钥 PBKDF2 落库（原文仅创建/重置返回一次），已设密钥则兑换 token 必须携带 secret |
+| 团队资源 key | `teamres_key`，`moai-tr-` + 32 位随机（前 12 位展示前缀） | **资源对外功能开启时自动生成/复用**（应用开 ACP/A2A `PUT /api/app/{id}/feature`、知识库/知识图谱开 MCP `PUT {id}/mcp-config`——查库无则写、有则复用；未开启功能手动 `POST /api/team-resource-key` 400）；管理面 `/api/team-resource-key`（get-or-create/重置/停用/删除，团队 Admin+） | **包围圈凭证**：仅能访问绑定资源实例的端点（§2b），无 secret、**不可换 token**（`POST /api/teamres/token` 仅认 moai-ac-，携带 moai-tr- 400/401）；须 `status=enabled`，停用/删除/重置下一请求即 401；**一资源一把**（app 行 resource_id=应用 Guid、wiki 行=wikiId、kg 行=kgId，`varchar(64)`），get-or-create 幂等；key 明文回显仅团队 Admin+（`ITeamService.GetMyRoleAsync` 门禁） |
+| 外部 token（JWT） | 换取签发，不落库 | `POST /api/teamres/token`（仅认 moai-ac- key） | access 2h（Debug 7d）+ refresh 7d；**不再携带 scope claim**（`ClaimScope` 已删），授权语义= 团队归属 + app_ids + 外部用户身份；刷新按来源接入**当前**存在性重验；**已设密钥则兑换必须携带 secret** |
+| 匿名临时身份 | 无 key | `POST /api/teamres/token` 只传 appId（应用须 `is_auth=false`） | 刷新要求应用仍无需授权 |
+| 系统级接入 appid（参照） | 同一张 `access_app`（Level=system，AppType 分型 subsystem/app），`moai-sa-` + Base64Url(Guid+HMAC) 结构化自校验 appid | root（`/api/subsystem/*`，合并管理面） | 与团队级同表分域：不能访问 /api/teamres、只能访问 /api/subsys/**（见 [../subsystem/sdd.md](../subsystem/sdd.md)），全量访问协作面资源 |
 
-两条认证路径（对 `/api/external/*` 等价）：
-1. **换 token**：接入 key → 外部 token → Bearer JWT。token 的 `scope` claim = 来源勾选 ∩ 外部资源维度。
-2. **key 直连**：Bearer / `x-api-key` 直接带 key 打资源接口，中间件经 `ExternalAccessKeyService.ResolveContextAsync` 构建直连上下文（带 `IsKeyDirect=true`）。直连发起会话走 `EnsurePrincipalUserAsync` 的固定直连身份承载会话归属。
+三条认证路径（对 `/api/teamres/*`）：
+1. **换 token**：moai-ac- 接入 key → 外部 token → Bearer JWT（应用/用户/匿名三类，见 [../app/sdd.md](../app/sdd.md) §2.2）。
+2. **moai-ac- key 直连**：Bearer / `x-api-key` 直接带 key，`ExternalAccessKeyService.ResolveContextAsync` 按前缀构建直连上下文（`IsKeyDirect=true`，`Scopes` 字段已删）；直连发起会话走 `EnsurePrincipalUserAsync` 的固定直连身份（`__key_direct__`）承载归属。
+3. **moai-tr- 资源 key 直连**：同上解析，上下文带 `IsResourceKey/ResourceKeyType/ResourceKeyId`，中间件前置**包围圈**判定（§2b）；直连身份标识按 key 行 Guid 派生（`__key_direct_{行id}__`，重置 key 值行 id 不变、身份延续），`external_user.access_app_id=null`。
 
-## 2. scope 位表（`TeamApiKeyScopes`，`access_app.scopes` int 位或）
+## 2. scope 位表（已整体退役，2026-11-04 去范围化）
 
-| 代码 | 位 | 资源组 | 应用接入 key | 进 token/直连上下文？ |
-|---|---|---|---|---|
-| `wiki_read` | 2 | 知识库读 | ✅ | ✅ |
-| `wiki_write` | 4 | 知识库写 | ✅ | ✅ |
-| `wiki_mcp` | 16 | 知识库 MCP（见 wiki sdd D35） | ✅ | ✅ |
-| `app_chat` | 32 | 应用对话（换用户 token 资格） | ✅ | ❌ 换 token/刷新时校验 |
-| `kg_read` | 64 | 知识图谱读 | ✅ | ✅ |
-| `kg_write` | 128 | 知识图谱写 | ✅ | ✅ |
-| `kg_mcp` | 256 | 知识图谱 MCP（/api/external/knowledge-graph/{kgId}/mcp 四只读工具） | ✅ | ✅ |
-| `app_acp` | 512 | 应用 ACP（/api/external/app/{appId}/acp，agent-to-agent 对话） | ✅ | ✅ |
-| `app_a2a` | 1024 | 应用 A2A（/api/external/app/{appId}/a2a，Google Agent2Agent JSON-RPC） | ✅ | ✅ |
+> **⚠️ 本节已退役**：`TeamApiKeyScopes` 枚举（wiki_read 2 / wiki_write 4 / wiki_mcp 16 / app_chat 32 / kg_read 64 / kg_write 128 / kg_mcp 256 / app_acp 512 / app_a2a 1024 位表）与全部掩码常量（`ExternalDimensions`/`AccessAppAllowed`/`AccessAppDefault`）已删除，`access_app.scopes` 列 DROP（[asserts/team-resource-key.sql](../../asserts/team-resource-key.sql) + `DatabasPostgresModule` 幂等 DDL）。创建/更新接入不再接收 scopes（请求携带——含非法代码——被忽略返回 200），列表项不再回显 scopes。token 不再写 scope claim，旧 token 的 scope claim 不再解析（`ExternalTokenContext.Scopes/DefaultScopes` 字段已删）。历史证据脚本 `team-apikey-scope-e2e.mjs`（TA 系列）删除，编号永久不复用。原「位 1=model / external_token=8 / 系统资源位表」各次退役说明仍见 git 历史与 [../subsystem/sdd.md](../subsystem/sdd.md)。
 
-> 位 1（`model`，模型网关 `/api/aigateway/{teamId}/v1/*`）已随 2026-10-29 网关下线保留不用：枚举成员与代码表项已删，勾选一律 400，存量行该位为无效残留。
-> `external_token` (8) 随团队接入 key 下线一并移除（枚举与代码表已删）。
+### 2b. 团队资源 key 包围圈（`IsResourceKeyAllowedAsync`，中间件前置拦截，越圈 403 insufficient_scope）与资源功能开关（403 feature_disabled）
 
-### 2b. 系统资源 scope 位表（已退役，2026-11-01 合并模型）
+**资源功能开关**（一资源一把 key 的生成时机与端点总闸）：
 
-> **⚠️ 本节已退役**：子系统与应用接入合并为同一接入模型后，系统级资源范围分档整体下线——`SystemApiKeyScopes` 枚举与代码表已删除，`access_app.scopes` 系统级行归 0，任一系统级接入**全量访问** `/api/subsys/**` 资源面，不再按位分档。历史位表（1<<16 org_read … 1<<21 team_write）仅作存量数据考古；存量库迁移见 [asserts/access_app_merge_subsystem.sql](../../asserts/access_app_merge_subsystem.sql)（scopes 归 0 + subsystem 表并入）。现行设计见 [../subsystem/sdd.md](../subsystem/sdd.md)。
+| 开关 | 字段 | 管理接口 | 未开启行为 |
+|---|---|---|---|
+| 应用 ACP | `app.is_acp_enabled` | `GET/PUT /api/app/{id}/feature`（body `{isAcpEnabled,isA2aEnabled}`，团队 Admin+） | ACP 端点对**一切凭证**（moai-ac- / 资源 key / 用户 token）403 `feature_disabled`；开启时自动生成/复用该应用一把 key（响应与 GET 均回显） |
+| 应用 A2A | `app.is_a2a_enabled` | 同上 | A2A 端点同上；与 ACP **共用该应用一把 key** |
+| 知识库 MCP | `wiki.is_mcp_enabled` | `GET/PUT /api/wiki/{id}/mcp-config`（团队 Admin+） | 该库 MCP 端点 403 `feature_disabled`；**其资源 key 对该库任何端点（含 REST）403 feature_disabled**（key 的有效性绑定开关） |
+| 知识图谱 MCP | `knowledge_graph.is_mcp_enabled`（仅托管图，接入图 400） | `GET/PUT /api/knowledge-graph/{id}/mcp-config` | 同知识库口径 |
 
-关键掩码（都在 `TeamApiKeyScopeCodes`，改动位表必须同步）：
-- `ExternalDimensions`（外部资源维度 = 2|4|16|64|128|256|512|1024）：token/直连上下文能携带的范围；**换 token 与直连的掩码都由它裁剪**。
-- `AccessAppAllowed`（应用接入可勾选 = 2|4|16|32|64|128|256|512|1024）：接入 key 全集。
-- `AccessAppDefault`（接入未传 scopes 的默认 = ExternalDimensions|AppChat = 2038）：「不传=存量全量」口径。
-- `ExternalTokenContext.DefaultScopes`（无 scope claim 的旧 token 兼容 = ExternalDimensions 全量）。
+**包围圈**（`teamres_key.resource_id` 存资源实例 id 字符串）：
 
-## 3. 资源组 → 端点清单与分档规则
+| ResourceKeyType | 放行端点 |
+|---|---|
+| `app`（resourceId=应用 Guid） | 仅 `/api/teamres/app/{绑定appId}/acp` 与 `/api/teamres/app/{绑定appId}/a2a[.json]`（路由 appId 须等于绑定应用，打其它应用 403）；端点另受 `is_acp_enabled`/`is_a2a_enabled` 门禁（403 feature_disabled）；wiki/agent 等其余端点一律 403 |
+| `wiki`（resourceId=wikiId） | `/api/teamres/wiki/{绑定wikiId}/**`（含 `/mcp`）+ 团队级 `POST /api/teamres/wiki/list`（放行但结果经 `OnlyWikiId` 过滤只见绑定库）；其它库 403、越 KG/agent 端点 403；绑定库 MCP 关闭时一律 403 `feature_disabled` |
+| `knowledgeGraph`（resourceId=kgId） | `/api/teamres/knowledge-graph/{绑定kgId}/**`（含 `/mcp`）+ 团队级 `POST /api/teamres/knowledge-graph/list`（`OnlyGraphId` 过滤）；同构 wiki |
 
-分档统一口径：**GET 与 `*/list` 结尾 = 读档，其余 = 写档**；同口径在中间件（前置拦截）与控制器（兜底）各实现一次。
+- 包围圈在中间件按**路由资源 id 精确等值**判定（`TryGetRouteId`，id ≠ 绑定 id 即 403），团队级 list 端点精确路径匹配放行、由 handler 过滤结果（`QueryExternalWikisCommandHandler` / `QueryExternalGraphsCommandHandler`）。
+- MCP 端点（`/api/teamres/wiki/{wikiId}/mcp`、`/api/teamres/knowledge-graph/{kgId}/mcp`）：接受 moai-ac-（团队隔离照旧 404）与**该资源自己的 moai-tr- key**；原 `wiki_mcp`/`kg_mcp` scope 概念删除。wiki/KG 控制器与 MCP tools 的 `RequireCaller` 已删 `requireWrite` 读写分档参数（签名简化），caller 模型新增 `OnlyWikiId/OnlyGraphId`。
+- moai-ac- key 无包围圈（全量）；用户 token / 匿名 token 语义不变（受 app_ids 与 is_auth 门禁）。
 
-### 知识库 `/api/external/wiki/*`（读 `wiki_read` / 写 `wiki_write`）
-- 读（7）：`POST /list`、`GET /{wikiId}`、`POST /{wikiId}/documents/list`、`GET /{wikiId}/documents/{documentId}/content`、`GET /{wikiId}/documents/{documentId}/embedding`、`GET /{wikiId}/documents/{documentId}/download`、`POST /{wikiId}/recall/list`（向量召回，复用 wiki_mcp 的召回命令；`/list` 后缀即读档口径，勿改名去掉后缀）
-- 写（10）：`PUT /{wikiId}/embedding-config`、`POST /{wikiId}/documents/preupload|complete`、`DELETE /{wikiId}/documents`、`PUT /{wikiId}/documents/{documentId}/rename`、`POST /{wikiId}/documents/{documentId}/extract|partition|ai-partition|embedding`、`POST /{wikiId}/documents/{documentId}/chunks/metadata/generate`
-- MCP 端点（已上线）：`/external/wiki/{wikiId}/mcp`（要求 `wiki_mcp`，不叠加读写档；三只读工具=知识库列表/文件搜索/向量召回，见 wiki sdd D35）
+## 3. 资源组 → 端点清单（授权 = 团队归属，无读/写分档）
 
-### 知识图谱 `/api/external/knowledge-graph/*`（读 `kg_read` / 写 `kg_write`）
-- 读（9）：`POST /list`、`GET /{kgId}/schema`、`POST /{kgId}/nodes/list`、`GET /{kgId}/nodes/{nodeId}`、`GET /{kgId}/nodes/by-key/{key}`、`POST /{kgId}/nodes/keys/list`、`GET /{kgId}/nodes/{nodeId}/neighbors`、`POST /{kgId}/edges/list`、`GET /{kgId}/edges/{edgeId}`
-- 写（17）：`POST/PUT/DELETE /{kgId}/nodes[/{nodeId}]`、`POST /{kgId}/nodes/batch`、`POST /{kgId}/nodes/batch-delete`、`POST/PUT/DELETE /{kgId}/edges[/{edgeId}]`、`POST /{kgId}/edges/batch`、`POST /{kgId}/edges/batch-delete`、`POST/PUT/DELETE /{kgId}/entity-types[/{typeId}]`、`POST/PUT/DELETE /{kgId}/relation-types[/{typeId}]`、`POST /{kgId}/import`（批量导入 + validateOnly 预检，面向 CSV/JSON 解析后的结构化写入与按 key 同步，语义见 [../knowledgegraph/sdd.md](../knowledgegraph/sdd.md) §5.1）
-- MCP 端点：`/external/knowledge-graph/{kgId}/mcp`（要求 `kg_mcp`，不叠加读写档；四只读工具=list_knowledge_graphs/get_knowledge_graph_schema/search_knowledge_graph_nodes/search_knowledge_graph_recall；与知识库 MCP 共享 McpServerOptions，工具域由 KnowledgeGraphMcpToolGate 按请求路径过滤，未知工具保持 SDK 原生 -32602）
+原「GET 与 `*/list` = 读档，其余 = 写档」分档口径随 scope 退役删除（中间件 `GetRequiredResourceScope` 与控制器 `RequireCaller(requireWrite)` 兜底均已移除）；moai-ac- 对下列全部端点按**团队归属**放行。端点清单本身保留备查：
 
-### 应用对话面（`app_chat` 在换 token 时校验，端点层无 scope 门禁）
-`POST /external/token`（用户 token）、`/external/agent/{appId}/session*`、`/external/session/{sessionId}/messages` 等——仅外部用户 token；`app_chat` 撤销后用户 token 刷新即 403。
-
-### 应用 ACP（`app_acp`，agent-to-agent）
-`POST /external/app/{appId}/acp`：把团队应用（Agent 应用与流程应用，内部/外部均可）以 ACP 协议（Agent Client Protocol，JSON-RPC 2.0）暴露给外部 agent。门禁在中间件 ACP 专属分支：外部用户语义（用户 token 或 key 直连解析出的直连会话身份）+ `app_acp` + appId 归属团队（跨团队 404）+ 已发布未禁用（不要求 `IsExternal`，不叠加 `app_chat`）；GET 405。方法面：`initialize`/`session/new`/`session/load`/`session/prompt`（SSE 流式下发 `session/update` 通知，stopReason 收口）/`session/cancel`；会话即应用会话（`app_agent_session`，归属外部用户 id），执行管线与对话面同源（见 app sdd 增量设计）。
-
-### 应用 A2A（`app_a2a`，Google Agent2Agent）
-`POST /external/app/{appId}/a2a`：把团队应用（Agent 应用与流程应用）以 A2A 协议（JSON-RPC 2.0）暴露给外部 agent，门禁与 ACP 同口径（外部用户语义 + `app_a2a` + appId 归属团队 + 已发布）。方法面：`message/send`（同步一轮对话，返回 Task，artifacts 携带回复文本）、`message/stream`（SSE：Task working → artifact-update 文本增量 → status-update completed/failed/canceled final → 最终 Task）、`tasks/get`、`tasks/cancel`（进程内任务注册表，尽力而为）；`contextId` 承载 MoAI 会话 id（缺省自动建会话，携带即续聊，归属外部用户）。Agent Card 发现：`GET /external/app/{appId}/a2a/agent.json`（protocolVersion 0.3.0、streaming 能力、skills）。执行管线与对话面/ACP 同源。
-
-### 其他
-`/external/app/list`（任意外部 token）、`/external/app/{appId}/access-point`（匿名）。
+- 知识库 `/api/teamres/wiki/*`：`POST /list`、`GET /{wikiId}`、文档列表/正文/embedding/下载/召回（`POST /{wikiId}/recall/list`）等读面（7）+ embedding-config/上传/提取/切割/向量化/元数据生成/删除/重命名等写面（10）+ MCP `/api/teamres/wiki/{wikiId}/mcp`（三只读工具，见 wiki sdd D35）。
+- 知识图谱 `/api/teamres/knowledge-graph/*`：列表/schema/节点/边查询读面（9）+ 节点/边/实体类型/关系类型增删改与批量导入写面（17）+ MCP `/api/teamres/knowledge-graph/{kgId}/mcp`（四只读工具，工具域由 `KnowledgeGraphMcpToolGate` 过滤）。
+- 应用对话面：`POST /api/teamres/token`（用户 token）、`/api/teamres/agent/{appId}/session*`、`/api/teamres/session/{sessionId}/messages` 等——仅外部用户 token（原 `app_chat` 资格门禁已随 scope 退役删除，兑换用户 token 不再要求任何范围）。
+- 应用 ACP：`POST /api/teamres/app/{appId}/acp`（Agent Client Protocol JSON-RPC 2.0；外部用户语义 + appId 归属团队 + 已发布未禁用 + **应用已开启 ACP 功能**（未开启 403 feature_disabled），不要求 `IsExternal`；GET 405）。
+- 应用 A2A：`POST /api/teamres/app/{appId}/a2a` 与 Agent Card `GET /a2a/agent.json`（Google Agent2Agent，门禁与 ACP 同口径，要求开启 A2A 功能）。
+- 其他：`/api/teamres/app/list`（任意外部 token）、`/api/teamres/app/{appId}/access-point`（匿名）。
 
 ## 4. 中间件管道与门禁顺序（`ExternalAuthenticationMiddleware`）
 
 ```
-/api/external/* → 匿名白名单？（token、token/refresh、app/*/access-point）
-  → 凭证解析：moai-ac- 前缀 → key 直连（ExternalAccessKeyService）
+/api/teamres/* → 匿名白名单？（token、token/refresh、app/*/access-point）
+  → 凭证解析：moai-ac- / moai-tr- 前缀 → key 直连（ExternalAccessKeyService.ResolveContextAsync，每请求直查 DB）
+             （moai-tr- 须 Status=Enabled，否则 null → 401）
              否则 Bearer → 外部 JWT（ExternalJwtBearerAuthenticationHandler → Items[TokenContextItemKey]）
-  → ①资源范围门禁：GetRequiredResourceScope(path, method)（§3 口径，未勾选 403 insufficient_scope）
-  → ②appId 门禁：路由含 appId 时校验应用属 token 团队且可用（is_auth 应用仅外部用户 token）
-  → ③wiki/KG MCP 门禁：IsWikiMcpPath/IsKgMcpPath 要求对应 scope + 路由 id 属团队
-  → Controller：控制器内保留同口径 scope 兜底校验（RequireCaller(requireWrite)）
+  → ①资源 key 包围圈：IsResourceKeyPathAllowed（§2b，前置拦截，越圈 403 insufficient_scope；moai-ac-/token 不经过此步）
+  → ②appId 门禁：路由含 appId 时校验应用属凭证团队且可用（ACP/A2A 路径跳过走各自专属门禁；
+     is_auth 应用会话面仅外部用户 token，key 直连/应用 token 403 external_user_token_required）
+  → ③wiki/KG MCP 门禁：IsWikiMcpPath/IsKgMcpPath 主体须接入 key/应用 token/资源 key（外部用户 token 拒绝）
+     + 路由 id 归属凭证团队（404 不泄露）；非 POST 按协议 405
+  → ④ACP/A2A 门禁：key 直连先 EnsurePrincipalUserAsync 解析直连会话身份 → 外部用户语义（ExternalId>0）
+     + appId 归属团队（404）+ 已发布未禁用（403）
+  → ⑤会话面直连身份：IsConversationPath 且 IsKeyDirect → EnsurePrincipalUserAsync（moai-tr- 到不了会话面，已被①拦截）
+  → Controller：无 scope 兜底校验（RequireCaller 仅组上下文；wiki/KG caller 带 OnlyWikiId/OnlyGraphId）
 ```
 
-## 5. key 直连的即时性（原 Redis 缓存已移除）
+## 5. key 直连的即时性（每请求直查数据库）
 
-- ~~`ExternalKeyCache`（`externalkey:ac:{sha256}`，TTL 10 分钟）~~：读路径仅模型网关认证使用，已随 2026-10-29 网关下线删除，`UpdateAccessAppCommandHandler`/`DeleteAccessAppCommandHandler` 的失效钩子一并移除。
-- 现口径：`/api/external` 的 key 直连每请求经 `ExternalAccessKeyService.ResolveContextAsync` **直查数据库**（应用接入 key「存在即有效」，软删除由查询自动过滤），改范围/删除天然下一请求即生效（TA-36 验证），无 TTL 等待。
-- 性能账：key 直连每请求 = 1 次数据库查询 + 常数次字符串比较（中间件分档）。
+- 现口径：`/api/teamres` 的两类 key 直连每请求经 `ExternalAccessKeyService.ResolveContextAsync` **直查数据库**——moai-ac- 「存在即有效」（软删除由查询自动过滤），moai-tr- 另校验 `Status=Enabled`；删除/停用/重置/改授权天然**下一请求即生效**（TR-S24~S28、ACP-S16~S17、A2A-S13 验证），无 TTL 等待。
+- 原 `ExternalKeyCache`（TTL 10 分钟）已随 2026-10-29 模型网关下线删除。
+- 性能账：key 直连每请求 = 1 次数据库查询 + 常数次字符串比较（包围圈前缀/路由 id 判定）。
 
 ## 6. 兼容口径（改默认值/回填前必读）
 
-- **存量回填历史**（开发库 192.168.50.199/moai_v2 已执行，脚本在 `asserts/`）：`access_app` 6=读写 → `|=32` 补对话 → `|=192` 补知识图谱 → `|=256` 补 KG MCP → `|=512` 补应用 ACP 且列 DEFAULT 对齐 1014（app_acp.sql）→ `|=1024` 补应用 A2A 且列 DEFAULT 对齐 2038（app_a2a.sql）；`team_api_key` 已随下线删表（asserts/team_api_key_drop.sql）。
-- **「未传 scopes」默认**：应用接入 = `AccessAppDefault`(2038)。两处必须一致：DB 列 DEFAULT、handler 默认（`CreateAccessAppCommandHandler`），E2E 断言同口径（KX 曾因 38/230 不一致全红）。
-- **旧格式 token**（无 `scope` claim）：解析侧按 `DefaultScopes` 全量处理，行为不变。
+- **scopes 退役迁移**：`access_app.scopes` 列已 DROP（[asserts/team-resource-key.sql](../../asserts/team-resource-key.sql)，与 `DatabasPostgresModule` 幂等 DDL 等价，存量库重启即生效或手工执行）；`teamres_key` 建表同文件。创建/更新接入传入 `scopes`（含非法代码）被忽略返回 200（TC-S5 验证）。
+- **「不传 scopes 默认全量」口径已消亡**：不再存在 DB DEFAULT / handler 默认 / E2E 断言三方一致性坑；旧坑（KG 上线时 38 vs 230 不一致 KX 全红）成历史。
+- **旧格式 token**（曾携带 `scope` claim）：claim 不再解析，上下文无 scope 字段，行为=全量（团队门禁不变）；无需换签。
 - **已下线团队 key 的存量 token**：携带 `keyid` claim 的在途 token claims 不再解析 keyid，access 有效期内仍可用；refresh 按匿名/接入语义重验（来源 key 已随表删除，通常 401）。
-- **存量 model 位残留**：`access_app.scopes` 含位 1 的行不产生任何授权效果；创建/更新接入传 `model` 代码一律 400（TA-32a/i 验证）。
-- `app_chat` 是接入层概念，**永不写入 token/直连上下文**；新资源维度默认加进 `ExternalDimensions`。
+- **资源 key 纯直连**：无 secret 列、不可换 token；`POST /api/teamres/token` 仅认 moai-ac- 前缀（携带 moai-tr- key 400/401，TR-S27）。伪造 moai-tr-/moai-ac- 与旧 `moai-` 前缀 key 均 401（TR-S29）。
+- **管理端 secret 语义不变**：应用接入已设密钥则兑换 token 必须携带 secret 并校验（存量无密钥接入 key-only 兼容）。
 
-## 7. 新增外部资源组操作清单（按序执行）
+## 7. 新增外部资源组操作清单（无 scope 版，按序执行）
 
-1. `TeamApiKeyScopes` 加位（2 的幂依次递增）+ `Codes` 字典加代码；`ExternalDimensions` 扩位；加 `AccessAppAllowed`；适用「不传默认全量」则加 `AccessAppDefault`。
-2. EF 位表注释同步：`AccessAppConfiguration` 的 `Scopes.HasComment`。
-3. 存量兼容迁移：新建 `asserts/<feature>.sql`（`alter default` + `update ... |= 位`，接入表通常回填）→ **psycopg2 直连 192.168.50.199/moai_v2 执行**（`DatabasPostgresModule` 是 EnsureCreated，无迁移体系）。
-4. 控制器：`RequireCaller(requireWrite)` 分档（读 `Resources{Read}`、写 `{Write}`），`Caller.AccessAppId` 保持可空。
-5. 中间件：`GetRequiredResourceScope` 加路径分支（沿用 GET/`*/list`=读 口径；特例路径先于分档短路）。
-6. UI：`TeamAccessApps.tsx` 分组编辑器加组（三档 Radio 复用 `levelOf/setLevel`）+ i18n `gateway.scope.*`（zh/en，`gateway` 组内扁平键；组名 `gateway` 为历史命名，模型网关已下线，仅 scope 标签仍在使用）。
-7. 换 token/直连掩码自动生效，无需额外改码；若属「key 层资格」类（如 app_chat）则去 `ExternalTokenCommandHandler`/`RefreshExternalTokenCommandHandler` 加门禁。
-8. E2E：范围脚本加用例（读放行/写 403/跨资源组隔离/直连分档/改范围刷新重验/缓存立即性）。
-9. 文档：gateway sdd 分组表加行 + bdd 场景（`@GW-S*` 顺延）+ tdd 映射 + 模块 bdd（对应资源组）+ rounds-log。
+1. 若需资源 key 包围圈：`TeamResourceType` 枚举加成员（`JsonPropertyName` camelCase wire 值）+ 中间件 `IsResourceKeyAllowedAsync` 加分支（路由 id 等值 + 团队级 list 放行）+ `CreateTeamResourceKeyCommandHandler` 加归属与**功能开启校验**（未开启 400）+ caller 模型加 `OnlyXxxId` 并在团队级 list Handler 过滤。
+2. 控制器/MCP tools：`RequireCaller()` 简化签名组 caller（无 requireWrite 参数）；新端点无需任何范围校验。
+3. 中间件：资源型端点按 §4 管道复用既有门禁；团队归属校验在中间件或 Handler（跨团队 404 不泄露存在性）；**功能开关**：资源实体加 `is_xxx_enabled` 列（幂等 DDL 补列）+ 专属 GET/PUT 配置接口（PUT 开启时调 `TeamResourceKeyEnsurer.EnsureAsync` 自动生成/复用 key）+ 中间件端点门禁校验开关（未开启 403 `feature_disabled`，资源 key 在 `EnsureResourceFeatureAsync` 一并校验）。
+4. 存量兼容：新表/新列走 `asserts/<feature>.sql`（幂等 DDL）+ `DatabasPostgresModule` 同步（`EnsureCreated` 无迁移体系）。
+5. UI：对应资源的功能页挂开关（调 PUT 配置接口）+ `ResourceKeyCard`（`ui/src/pages/teams/apps/ResourceKeyCard.tsx` 公共组件，props `featureEnabled/canManage/keyInfo/onChanged`——key 由父页配置接口取回，无手动生成按钮）+ i18n `teamresKey.*`（zh-CN/en-US 同步）。
+6. E2E：`teamres-key-e2e.mjs` 加用例（未开功能建 key 400/开功能自动生成并 GET 回显/get-or-create 幂等/包围圈放行与越圈 403/关功能 feature_disabled/list 过滤/重置停用删除生命周期/伪造 401）+ 模块脚本回归（读放行/跨团队隔离/直连）。
+7. 文档：模块 bdd 场景（编号顺延、永不复用）+ tdd 映射 + sdd 同步 + 本总账端点清单加行 + rounds-log。
 
 ## 8. 踩坑清单（全部实踩）
 
-- **手动重建的 Command 不走 MVC 校验**（SharpGrip 只校验绑定参数）：范围代码合法性必须在 handler 里把关（`BusinessException 400`）。
-- **i18n 扁平键**：`common.json` 的 `gateway.scope.*` 是 `gateway` 组内的带点扁平键，脚本加键**禁止** `setdefault` 同名嵌套父对象（空对象会让 i18next 深查找不回退，t() 返回裸 key，页面标签全坏且无报错）。
-- **默认口径多处一致性**（DB DEFAULT / handler 默认 / E2E 断言）——KG 上线时 38 vs 230 不一致导致 KX 全红 403。
-- **缓存失效钩子挂在管理端 handler**：删除/改范围后下一请求即生效（TA-36 验证）。原 `ExternalKeyCache` 钩子已随网关下线移除，现即时性由「直连每请求直查 DB」天然保证。
-- **Scalar 2.17 单文档绑定**：`AddDocument` 是覆盖语义，双文档用双页面 `/scalar`（v1）+ `/scalar/external`（external），原始 JSON 为 `/openapi/v1.json`、`/openapi/external.json`；均为 Development 专属，部署后仅 `/openapi/external.json` 可用（v1 与 Scalar 不注册，其余 openapi/scalar 路径明确 404）。
-- **双前缀判定顺序**（历史）：`moai-ac-` 以 `moai-` 开头，前缀分流时接入 key 判定必须在前；团队 key 下线后仅剩 `moai-ac-` 单前缀，中间件 key 直连提取同样只认 `moai-ac-`。
-- **统一表后按 Level 过滤**：团队侧查询（ExternalTokenCommandHandler 等）一律 `Level == Team`，系统侧一律 `Level == System`——漏加 Level 过滤时系统行 TeamId=0 不会被团队查询命中，但显式过滤防 future 面新增。已设密钥的接入兑换 token 必须携带 secret（TA-40/41）；存量行 secret 为空继续 key-only。
+- **手动重建的 Command 不走 MVC 校验**（SharpGrip 只校验绑定参数）：`TeamResourceKeyController` 的 reset/update/delete 由 Controller 手动重建命令、`TeamResourceKeyId` 从路由回填——字段合法性须在命令 `Validate`（非空校验）与 Handler（行存在 404）把关。
+- **枚举 wire 值 = `JsonPropertyName` 成员名**：`TeamResourceType.KnowledgeGraph` 对外是 `"knowledgeGraph"`（非成员名或数字），E2E/前端请求体必须按 camelCase json 名传；漏配注解时会以数字或 PascalCase 落请求，`IsInEnum` 校验 400 且难以肉眼定位。
+- **资源 key 明文回显是 Admin+ 敏感面**：list/create/reset 均经 `ITeamService.GetMyRoleAsync` 门禁（Member 403、非成员 404），且 get-or-create 对 wiki/kg 校验**资源归属团队**（越团队 404 不泄露存在性）——新增消费入口不得绕过这层门禁直接暴露 key。
+- **i18n 扁平键**：模块 i18n 键（如 `teamresKey.*`）是组内带点扁平键，脚本加键**禁止** `setdefault` 同名嵌套父对象（空对象会让 i18next 深查找不回退，t() 返回裸 key）；原 `gateway.scope.*` 键组已随 scope 退役删除。
+- **缓存失效钩子已成历史**：删除/停用/重置后下一请求即生效由「直连每请求直查 DB」天然保证（TR-S25/S26、ACP-S17a/b、A2A-S13b/c 验证），无需任何失效钩子。
+- **Scalar 2.17 单文档绑定**：`AddDocument` 是覆盖语义，双文档用双页面 `/scalar`（v1）+ `/scalar/external`（external），原始 JSON 为 `/openapi/v1.json`、`/openapi/teamres.json`；均为 Development 专属，部署后仅 `/openapi/teamres.json` 可用（v1 与 Scalar 不注册，其余 openapi/scalar 路径明确 404）。
+- **多前缀判定顺序**：`moai-ac-`/`moai-tr-` 均以 `moai-` 开头，key 直连提取按**完整前缀**（`AccessAppKeyPrefix`/`ResourceKeyPrefix`）逐一 `StartsWith` 判定（`ExtractKeyCredential`），旧 `moai-` 前缀 key 不命中任何分支按外部 JWT 解析失败 401；新增凭证前缀时接入 key 判定必须在前（历史坑：`moai-ac-` 曾淹没于 `moai-`）。
+- **统一表后按 Level 过滤**：团队侧查询（ExternalTokenCommandHandler 等）一律 `Level == Team`，系统侧一律 `Level == System`。已设密钥的接入兑换 token 必须携带 secret；存量行 secret 为空继续 key-only。
 - **PBKDF2 哈希/盐 Base64 后 172 字符**：access_app.secret/secret_salt 列宽必须 ≥255（曾配 128 导致插入 500，已改 255 并同步迁移脚本）。
+- **teamres_key 唯一性靠 (key, is_deleted) 部分唯一索引**：key 明文等值命中（无哈希），软删后同 key 值可被新行复用；get-or-create 按 (team, type, resource) 查活跃行，重置=同表行改 key 值（行 id 不变——直连身份 `__key_direct_{行id}__` 因此延续，勿改用「删旧建新」实现重置）。
 
 ## 9. 证据索引
 
 | 面 | 脚本 | 现状 |
 |---|---|---|
-| 范围体系总账户 | `local-dev/team-apikey-scope-e2e.mjs`（TA-25~28/32/33/34/36/38~42；TA-40~42 密钥兑换语义） | 24/24 |
-| 知识库外部接口 | `local-dev/wiki-external-e2e.mjs`（WX-01~10） | 52/52 |
-| 知识图谱外部接口 | `local-dev/kg-external-e2e.mjs`（KX-01~14） | 101/101 |
-| 知识图谱 MCP | `local-dev/kg-mcp-e2e.mjs`（KGM-S1~S7） | 35/35 |
-| 应用 ACP | `local-dev/app-acp-e2e.mjs`（@ACP-S1~S19） | 21/21 |
-| 外部应用对话（token 体系） | `local-dev/external-app-e2e.mjs`（EA-*；EA-34 网关下线断言） | 75/75 |
-| 团队可用模型（原网关 models 迁移） | `local-dev/team-aichannel-e2e.mjs`（TC-S5）、`ai-channel-auth-e2e.mjs`（AC-S4~S6）、`app-e2e.mjs`（AP-20a） | 35/35、23/23、210/210 |
-| 前端范围 UI | `ui/src/pages/teams/apps/__tests__/TeamAccessApps.test.tsx` | 3/3 |
+| 凭证体系总账户（去范围化 + 资源 key） | `local-dev/teamres-key-e2e.mjs`（@TR-S1~S31） | 31/31 |
+| 知识库外部接口 | `local-dev/wiki-external-e2e.mjs`（WX-01~12；WX-09e 去范围化正向、WX-12 资源 key 包围圈） | 57/57 |
+| 知识图谱外部接口 | `local-dev/kg-external-e2e.mjs`（KX-01~15；KX-15 资源 key 包围圈） | 110/110 |
+| 知识库 MCP | `local-dev/wiki-mcp-e2e.mjs`（@WM-S1~S8；S1e 越库资源 key 403、S8 本库资源 key 放行） | 34/34 |
+| 知识图谱 MCP | `local-dev/kg-mcp-e2e.mjs`（@KGM-S1~S8；S1e 越域资源 key 403、S8 本图资源 key 放行） | 36/36 |
+| 应用 ACP | `local-dev/app-acp-e2e.mjs`（@ACP-S01~S19；S02a/b 包围圈、S16~S17 资源 key 停用吊销即时性、S19 列表无 scopes） | 25/25 |
+| 应用 A2A | `local-dev/app-a2a-e2e.mjs`（@A2A-S01~S14；S02a/b 包围圈、S13a~c 资源 key 吊销即时性、S14 列表无 scopes） | 24/24 |
+| 外部应用对话（token 体系） | `local-dev/external-app-e2e.mjs`（EA-*；EA-30a/b 去范围化） | 75/75 |
+| 团队可用模型（原网关 models 迁移） | `local-dev/team-aichannel-e2e.mjs`（TC-S5 含 scopes 字段退役被忽略断言）、`ai-channel-auth-e2e.mjs`（AC-S4~S6）、`app-e2e.mjs`（AP-20a） | 38/38、23/23、227/227 |
+| 前端资源 key UI | `ui/src/pages/teams/apps/__tests__/TeamAccessApps.test.tsx` | 6/6 |
+| 已退役 | ~~`local-dev/team-apikey-scope-e2e.mjs`（TA 系列，scope 体系总账户）~~ | 已删除，编号不复用 |

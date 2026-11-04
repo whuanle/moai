@@ -53,8 +53,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
             accessApp.Id,
             appId: null,
             externalUserId: null,
-            nickname: null,
-            scopes: ToAccessAppScopes(accessApp));
+            nickname: null);
     }
 
     /// <inheritdoc/>
@@ -68,16 +67,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
             external.AccessAppId,
             appId: external.AppId,
             externalUserId: external.ExternalUserId,
-            nickname: external.Nickname,
-            scopes: accessApp == null ? Models.ExternalTokenContext.DefaultScopes : ToAccessAppScopes(accessApp));
-    }
-
-    /// <summary>
-    /// 应用接入签发的 token 范围取接入勾选的知识库维度（存量接入默认读写，行为不变）.
-    /// </summary>
-    private static TeamApiKeyScopes ToAccessAppScopes(AccessAppEntity accessApp)
-    {
-        return (TeamApiKeyScopes)accessApp.Scopes & TeamApiKeyScopeCodes.ExternalDimensions;
+            nickname: external.Nickname);
     }
 
     /// <inheritdoc/>
@@ -134,11 +124,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
         long teamId = claimMap.TryGetValue(ExternalAuthDefaults.ClaimTeamId, out var teamIdValue) && long.TryParse(teamIdValue, out var teamIdParsed) ? teamIdParsed : 0;
         long externalId = subjectType == UserType.External && long.TryParse(subjectId, out var externalIdParsed) ? externalIdParsed : 0;
 
-        // 旧格式 token 无 scope 声明，按全量知识库范围处理保持兼容
-        var scopes = claimMap.TryGetValue(ExternalAuthDefaults.ClaimScope, out var scopeValue)
-            ? TeamApiKeyScopeCodes.ParseClaimValue(scopeValue)
-            : Models.ExternalTokenContext.DefaultScopes;
-
         return new ExternalTokenContext
         {
             SubjectType = subjectType,
@@ -146,7 +131,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
             ExternalId = externalId,
             TeamId = teamId,
             AccessAppId = accessAppId,
-            Scopes = scopes,
             AppId = appId,
             ExternalUserId = claimMap.GetValueOrDefault(ExternalAuthDefaults.ClaimExternalUserId),
             Nickname = claimMap.GetValueOrDefault(JwtRegisteredClaimNames.Nickname),
@@ -192,8 +176,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
         Guid? accessAppId,
         Guid? appId,
         string? externalUserId,
-        string? nickname,
-        TeamApiKeyScopes scopes)
+        string? nickname)
     {
         var signingCredentials = new SigningCredentials(new RsaSecurityKey(_rsaProvider.GetPrivateRsa()), SecurityAlgorithms.RsaSha256);
         var audience = ExternalAuthDefaults.BuildAudience(_systemOptions.Server);
@@ -211,8 +194,6 @@ public class ExternalTokenProvider : IExternalTokenProvider
         {
             accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimAccessAppId, accessAppId.Value.ToString()));
         }
-
-        accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimScope, TeamApiKeyScopeCodes.ToClaimValue(scopes)));
 
         if (appId != null)
         {

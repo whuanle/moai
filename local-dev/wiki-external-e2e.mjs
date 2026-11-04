@@ -1,8 +1,11 @@
 // 知识库外部接口 E2E（真实 HTTP；复用 kg-external-e2e / wiki-embedding-e2e 同款 helper；后端默认 127.0.0.1:5210）
-// 场景编号 WX-01..WX-11（新编号，不复用 WK-S* / KX-*）：/api/external/wiki 仅接受应用 token（团队级授权）
-//   WX-08 原文件下载（预签名 URL 直下字节一致）；WX-09 向量召回（recall/list 读档分档）；
+// 场景编号 WX-01..WX-12（新编号，不复用 WK-S* / KX-*）：/api/teamres/wiki 仅接受应用 token（团队级授权）
+//   接入 scopes 字段（wiki_read/wiki_write 分档）已退役：moai-ac- 全量 key 读写均放行（WX-09e 正向断言）；
+//   WX-08 原文件下载（预签名 URL 直下字节一致）；WX-09 向量召回（recall/list）；
 //   WX-10 切片元数据生成（对话桩模型，全量/策略/追加/指定切片）；
-//   WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES：默认回显/保存格式校验/收窄门禁/放开 .sh 纯文本兜底提取）
+//   WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES：默认回显/保存格式校验/收窄门禁/放开 .sh 纯文本兜底提取）；
+//   WX-12 团队资源 key（moai-tr-）包围圈：本库 REST 读写放行/越圈它库 403 insufficient_scope/
+//     团队级 wiki/list 只含绑定库/越 KG 端点 403（原 WX-09f 只读分档语义由资源 key 包围圈承接）
 // 用法：node local-dev/wiki-external-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5210）
 // 前置：后端 + MinIO + RabbitMQ 可达。
 // 向量化模型：脚本自带本地 embedding 桩服务（同 bocha/paddleocr e2e 的自建桩口径），经管理接口临时登记
@@ -48,6 +51,7 @@ async function retryApi(method, path, body, token, tries = 4) {
   return last
 }
 const sha256Hex = (content) => crypto.createHash('sha256').update(content).digest('hex')
+const isGuidStr = (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 const EMBEDDING_DIMENSIONS = 1024
 
 // 本地桩服务：/v1/embeddings 返回确定性的 dims 维伪向量，每次延迟 DELAY_MS（保证 WX-05 有确定的「进行中」
@@ -97,7 +101,7 @@ function startEmbeddingStub() {
 }
 
 const TS = Date.now().toString().slice(-8)
-const xw = (wikiId, suffix = '') => `/api/external/wiki/${wikiId}${suffix}`
+const xw = (wikiId, suffix = '') => `/api/teamres/wiki/${wikiId}${suffix}`
 
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
@@ -114,9 +118,11 @@ async function main() {
   const T2 = Number((await retryApi('POST', '/api/team', { name: 'wx-team2-' + TS }, token)).json?.value)
   if (!Number.isFinite(T1) || !Number.isFinite(T2)) throw new Error('创建团队失败')
   const w1res = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'wx-wiki1-' + TS, description: 'wiki external e2e' }, token)
+  const w1bres = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'wx-wiki1b-' + TS, description: 'wiki external e2e 资源 key 越圈用' }, token)
   const w2res = await retryApi('POST', '/api/wiki', { teamId: T2, name: 'wx-wiki2-' + TS, description: 'wiki external e2e' }, token)
-  if (w1res.status !== 200 || w2res.status !== 200) throw new Error(`建知识库失败: ${w1res.status}/${w2res.status} ${w1res.text.slice(0, 120)}`)
+  if (w1res.status !== 200 || w1bres.status !== 200 || w2res.status !== 200) throw new Error(`建知识库失败: ${w1res.status}/${w1bres.status}/${w2res.status} ${w1res.text.slice(0, 120)}`)
   const W1 = Number(w1res.json?.value)
+  const W1B = Number(w1bres.json?.value)
   const W2 = Number(w2res.json?.value)
 
   const acc1 = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入1-' + TS, description: 'wiki external e2e' }, token)
@@ -127,21 +133,13 @@ async function main() {
   const ACC1 = acc1.json?.accessAppId
   const ACC2 = acc2.json?.accessAppId
 
-  const tok1 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY1, secret: acc1.json?.secret } })
-  const tok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
+  const tok1 = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY1, secret: acc1.json?.secret } })
+  const tok2 = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
   const AT1 = tok1.json?.accessToken
   const AT2 = tok2.json?.accessToken
 
-  // WX-09f 读档分档证明：只读 key（仅 wiki_read）与只写 key（仅 wiki_write）
-  let ACC_RO = 0, ACC_WO = 0, AT1_RO = '', AT1_WO = ''
-  {
-    const accRO = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入只读-' + TS, description: 'wiki external e2e', scopes: ['wiki_read'] }, token)
-    const accWO = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入只写-' + TS, description: 'wiki external e2e', scopes: ['wiki_write'] }, token)
-    ACC_RO = accRO.json?.accessAppId ?? 0
-    ACC_WO = accWO.json?.accessAppId ?? 0
-    AT1_RO = (await api('POST', '/api/external/token', { body: { accessAppKey: accRO.json?.key, secret: accRO.json?.secret } })).json?.accessToken
-    AT1_WO = (await api('POST', '/api/external/token', { body: { accessAppKey: accWO.json?.key, secret: accWO.json?.secret } })).json?.accessToken
-  }
+  // 原 WX-09f 读档分档（只读 key 仅 wiki_read / 只写 key 仅 wiki_write）已随接入 scopes 字段退役：
+  // moai-ac- 全量 key 读写均放行（正向断言见 WX-09e），资源 key 包围圈见 WX-12。
 
   // ===== 向量化模型准备：本地桩渠道 + embedding 模型，临时授权给 T1（清理删除）=====
   let stubServer = null
@@ -217,11 +215,11 @@ async function main() {
     {
       check('WX-01a accessAppKey 换应用 token 200 tokenType=app', tok1.status === 200 && tok1.json?.tokenType === 'app' && typeof AT1 === 'string', `${tok1.status} ${tok1.text.slice(0, 120)}`)
 
-      const l1 = await api('POST', '/api/external/wiki/list', { token: AT1, body: {} })
+      const l1 = await api('POST', '/api/teamres/wiki/list', { token: AT1, body: {} })
       const items1 = l1.json?.items ?? []
       check('WX-01b T1 列表 200 只含 T1 知识库', l1.status === 200 && items1.some((x) => Number(x.wikiId) === W1) && !items1.some((x) => Number(x.wikiId) === W2) && items1.every((x) => Number(x.teamId) === T1), `${l1.status} ${JSON.stringify(items1).slice(0, 200)}`)
 
-      const l2 = await api('POST', '/api/external/wiki/list', { token: AT2, body: {} })
+      const l2 = await api('POST', '/api/teamres/wiki/list', { token: AT2, body: {} })
       const items2 = l2.json?.items ?? []
       check('WX-01c T2 列表仅含 T2 知识库', l2.status === 200 && items2.some((x) => Number(x.wikiId) === W2) && !items2.some((x) => Number(x.wikiId) === W1), JSON.stringify(items2).slice(0, 200))
 
@@ -401,10 +399,10 @@ async function main() {
       const badTop = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '外部接口', top: 0 } })
       const badQuery = await api('POST', xw(W1, '/recall/list'), { token: AT1, body: { query: '', top: 5 } })
       check('WX-09d 非法参数 400（top=0 / 空 query）', badTop.status === 400 && badQuery.status === 400, `top=${badTop.status} query=${badQuery.status}`)
-      // 读档分档：recall/list 走 GET/*/list=读口径，只读 key 放行、只写 key 403（若分档退化为写档会在此暴露）
-      const roRecall = await api('POST', xw(W1, '/recall/list'), { token: AT1_RO, body: { query: '外部接口', top: 5 } })
-      const woRecall = await api('POST', xw(W1, '/recall/list'), { token: AT1_WO, body: { query: '外部接口', top: 5 } })
-      check('WX-09e 读档分档：只读 key 可召回、只写 key 403', roRecall.status === 200 && woRecall.status === 403, `ro=${roRecall.status} wo=${woRecall.status}`)
+      // 读档分档已随 scopes 字段退役：moai-ac- 全量 key 直连读（recall/list）+ 写（preupload）均放行
+      const acRecall = await api('POST', xw(W1, '/recall/list'), { token: KEY1, body: { query: '外部接口', top: 5 } })
+      const acWrite = await api('POST', xw(W1, '/documents/preupload'), { token: KEY1, body: { fileName: `wx-ac-${TS}.md`, contentType: 'text/markdown', fileSize: 8, sha256: sha256Hex(`wx-ac-${TS}`) } })
+      check('WX-09e moai-ac- 全量 key 读写均放行（scopes 分档退役）', acRecall.status === 200 && acWrite.status === 200, `recall=${acRecall.status} write=${acWrite.status}`)
     }
 
     // ===== WX-10 切片元数据生成 =====
@@ -448,8 +446,8 @@ async function main() {
 
     // ===== WX-06 越权与认证 =====
     {
-      check('WX-06a 无 token 调外部接口 401', (await api('POST', '/api/external/wiki/list', { body: {} })).status === 401)
-      check('WX-06b 伪造 token 401', (await api('POST', '/api/external/wiki/list', { token: 'wx-invalid-token', body: {} })).status === 401)
+      check('WX-06a 无 token 调外部接口 401', (await api('POST', '/api/teamres/wiki/list', { body: {} })).status === 401)
+      check('WX-06b 伪造 token 401', (await api('POST', '/api/teamres/wiki/list', { token: 'wx-invalid-token', body: {} })).status === 401)
 
       // T2 应用 token 访问 T1 库任意端点 → 404（授权器先行，写端点也不会产生变更）
       const cross = []
@@ -464,8 +462,43 @@ async function main() {
       cross.push(['POST chunks/metadata/generate', await api('POST', xw(W1, `/documents/${DID}/chunks/metadata/generate`), { token: AT2, body: { metadataModelId: CONV_MODEL_ID } })])
       check('WX-06c T2 token 访问 T1 库各端点一律 404', cross.every(([, r]) => r.status === 404), cross.map(([n, r]) => `${n}=${r.status}`).join(' '))
 
-      const internal = await api('POST', '/api/external/wiki/list', { token, body: {} })
+      const internal = await api('POST', '/api/teamres/wiki/list', { token, body: {} })
       check('WX-06d 内部用户 JWT 调外部接口 401/403', internal.status === 401 || internal.status === 403, `${internal.status}`)
+    }
+
+    // ===== WX-12 团队资源 key（moai-tr-）包围圈（原 WX-09f 只读分档语义的等价新承接）=====
+    {
+      // wiki 资源 key 唯一生成时机=开启该库 MCP（W1B 作为越库反例保持关闭）
+      const cfgOn = await api('PUT', `/api/wiki/${W1}/mcp-config`, { token, body: { isMcpEnabled: true } })
+      const AUTO_KEY = String(cfgOn.json?.key ?? '')
+      const kW1 = await api('POST', '/api/team-resource-key', { token, body: { teamId: T1, resourceType: 'wiki', resourceId: String(W1) } })
+      const KEY_W1 = String(kW1.json?.key ?? '')
+      const TR_ID = String(kW1.json?.teamResourceKeyId ?? '')
+      check('WX-12a 开启 MCP 自动生成 key（moai-tr-）且显式建 key 复用（created=false 同值）',
+        cfgOn.status === 200 && AUTO_KEY.startsWith('moai-tr-') && kW1.status === 200 && kW1.json?.created === false && KEY_W1 === AUTO_KEY && kW1.json?.resourceId === String(W1) && isGuidStr(TR_ID), `${kW1.status} ${kW1.text.slice(0, 160)}`)
+
+      const wRead = await api('POST', xw(W1, '/documents/list'), { token: KEY_W1, body: { pageNo: 1, pageSize: 10 } })
+      const wWrite = await api('POST', xw(W1, '/documents/preupload'), { token: KEY_W1, body: { fileName: `wx-tr-${TS}.md`, contentType: 'text/markdown', fileSize: 8, sha256: sha256Hex(`wx-tr-${TS}`) } })
+      check('WX-12b 资源 key 本库 REST 读写放行', wRead.status === 200 && wWrite.status === 200, `read=${wRead.status} write=${wWrite.status}`)
+
+      const wCross = await api('POST', xw(W1B, '/documents/list'), { token: KEY_W1, body: { pageNo: 1, pageSize: 10 } })
+      check('WX-12c 资源 key 越圈同团队其它库 403 insufficient_scope', wCross.status === 403 && wCross.json?.error?.code === 'insufficient_scope', `${wCross.status} ${wCross.text.slice(0, 140)}`)
+
+      const wList = await api('POST', '/api/teamres/wiki/list', { token: KEY_W1, body: {} })
+      const wListIds = (wList.json?.items ?? []).map((x) => Number(x.wikiId))
+      check('WX-12d 资源 key 团队级 wiki/list 200 只含绑定库 W1', wList.status === 200 && wListIds.includes(W1) && !wListIds.includes(W1B) && !wListIds.includes(W2), `${wList.status} ids=${JSON.stringify(wListIds)}`)
+
+      const kgList = await api('POST', '/api/teamres/knowledge-graph/list', { token: KEY_W1, body: {} })
+      check('WX-12e 资源 key 越 KG 端点 403 insufficient_scope', kgList.status === 403 && kgList.json?.error?.code === 'insufficient_scope', `${kgList.status} ${kgList.text.slice(0, 140)}`)
+
+      const resetK = TR_ID ? await api('POST', `/api/team-resource-key/${TR_ID}/reset`, { token }) : { status: 0 }
+      const oldHit = await api('POST', xw(W1, '/documents/list'), { token: KEY_W1, body: { pageNo: 1, pageSize: 10 } })
+      check('WX-12f 资源 key 重置后旧 key 401', resetK.status === 200 && resetK.json?.teamResourceKeyId === TR_ID && oldHit.status === 401, `reset=${resetK.status} old=${oldHit.status}`)
+
+      if (TR_ID) {
+        const delK = await api('DELETE', `/api/team-resource-key/${TR_ID}`, { token })
+        if (delK.status !== 200) console.warn(`WARN | 清理资源 key 未成功: ${delK.status}`)
+      }
     }
   } finally {
     // ===== WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES，root 写，网页端与外部接口共用）=====
@@ -526,6 +559,7 @@ async function main() {
       if (!del || del.status !== 200) console.warn('WARN | 清理文档未成功（知识库删除会连带）')
     }
     await api('DELETE', `/api/wiki/${W1}`, { token })
+    await api('DELETE', `/api/wiki/${W1B}`, { token })
     await api('DELETE', `/api/wiki/${W2}`, { token })
     if (STUB_MODEL_ID || CONV_MODEL_ID) {
       const dm = await api('POST', '/api/ai/model/batch-delete', { token, body: { modelIds: [STUB_MODEL_ID, CONV_MODEL_ID].filter(Boolean) } })
@@ -537,8 +571,6 @@ async function main() {
     }
     if (ACC1) await api('DELETE', `/api/access-app/${ACC1}`, { token })
     if (ACC2) await api('DELETE', `/api/access-app/${ACC2}`, { token })
-    if (ACC_RO) await api('DELETE', `/api/access-app/${ACC_RO}`, { token })
-    if (ACC_WO) await api('DELETE', `/api/access-app/${ACC_WO}`, { token })
     // 团队不可解散：清理改为管理员禁用归档
     await api('PUT', `/api/admin/team/${T1}/disable`, { token, body: { isDisable: true } })
     await api('PUT', `/api/admin/team/${T2}/disable`, { token, body: { isDisable: true } })

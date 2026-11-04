@@ -52,6 +52,85 @@ public class SandboxSettingsTests
     }
 
     [Fact]
+    public void Parse_NetworkRules_ReadsFields()
+    {
+        var settings = AppAgentExecutionSettings.Parse("""
+            {"sandbox":{"enabled":true,"network":{"defaultAction":"deny","rules":[
+                {"action":"allow","target":"pypi.org"},
+                {"action":"deny","target":"10.0.0.0/8","ports":[443,80]}
+            ]}}}
+            """);
+
+        var network = settings.Sandbox!.Network!;
+        Assert.Equal(2, network.Rules.Count);
+        Assert.Equal("allow", network.Rules[0].Action);
+        Assert.Equal("pypi.org", network.Rules[0].Target);
+        Assert.Null(network.Rules[0].Ports);
+        Assert.Equal("deny", network.Rules[1].Action);
+        Assert.Equal([443, 80], network.Rules[1].Ports);
+    }
+
+    [Fact]
+    public void GetEffectiveRules_LegacyEgress_DefaultDeny_ConvertsToAllowList()
+    {
+        var network = new SandboxNetworkSettings
+        {
+            DefaultAction = "deny",
+            Egress = ["pypi.org", "*.github.com"]
+        };
+
+        var rules = network.GetEffectiveRules();
+
+        Assert.Equal(2, rules.Count);
+        Assert.All(rules, x => Assert.Equal("allow", x.Action));
+        Assert.Equal("pypi.org", rules[0].Target);
+    }
+
+    [Fact]
+    public void GetEffectiveRules_LegacyEgress_DefaultAllow_ConvertsToDenyList()
+    {
+        var network = new SandboxNetworkSettings
+        {
+            DefaultAction = "allow",
+            Egress = ["evil.example.com"]
+        };
+
+        var rules = network.GetEffectiveRules();
+
+        Assert.All(rules, x => Assert.Equal("deny", x.Action));
+    }
+
+    [Fact]
+    public void GetEffectiveDefaultAction_BlankWithRules_ReturnsAllow()
+    {
+        // 修复黑名单语义：默认动作留空且有规则时显式按 allow 下发（服务端缺省为 deny）
+        var network = new SandboxNetworkSettings
+        {
+            Rules = [new SandboxNetworkRule { Action = "deny", Target = "evil.example.com" }]
+        };
+
+        Assert.Equal("allow", network.GetEffectiveDefaultAction());
+        Assert.Null(new SandboxNetworkSettings().GetEffectiveDefaultAction());
+        Assert.Equal("deny", new SandboxNetworkSettings { DefaultAction = "deny" }.GetEffectiveDefaultAction());
+    }
+
+    [Fact]
+    public void GetEffectiveRules_RulesPriorityOverLegacyEgress()
+    {
+        var network = new SandboxNetworkSettings
+        {
+            DefaultAction = "deny",
+            Egress = ["legacy.example.com"],
+            Rules = [new SandboxNetworkRule { Action = "allow", Target = "new.example.com" }]
+        };
+
+        var rules = network.GetEffectiveRules();
+
+        Assert.Single(rules);
+        Assert.Equal("new.example.com", rules[0].Target);
+    }
+
+    [Fact]
     public void Parse_InvalidJson_ReturnsDefault()
     {
         var settings = AppAgentExecutionSettings.Parse("{ not json");

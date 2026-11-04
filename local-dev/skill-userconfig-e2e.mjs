@@ -54,6 +54,23 @@ async function main() {
   const TID = Number((await api('POST', '/api/team', { token: tOwner.token, body: { name: 'skill-team-' + TS } })).json.value)
   await api('POST', `/api/team/${TID}/users`, { token: tOwner.token, body: { userId: tMember.userId, role: 0 } })
 
+  // 对话模型必填（保存强校验）：造一个私有模型授权本团队，供应用配置保存用（无对话流量）
+  const eaAdminToken = (await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })).json?.accessToken ?? ''
+  let SKL_MODEL_ID = ''
+  if (eaAdminToken) {
+    const chName = `skl-cfg渠道-${TS}`
+    await api('POST', '/api/ai/channel', { token: eaAdminToken, body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'skl-cfg-key', enabled: true, description: 'skill-userconfig 配置保存桩渠道' } })
+    const channels = await api('GET', '/api/ai/channel', { token: eaAdminToken })
+    const chId = String((channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? '')
+    const modelName = `skl-cfg-chat-${TS}`
+    await api('POST', '/api/ai/model', { token: eaAdminToken, body: { channelId: chId, meta: { modelId: modelName, name: modelName, modelKind: 'conversation', description: 'skill-userconfig 配置保存桩模型' }, enabled: true, isPublic: false } })
+    const models = await api('GET', `/api/ai/model?channelId=${chId}`, { token: eaAdminToken })
+    SKL_MODEL_ID = String((models.json?.items ?? []).find((m) => m.name === modelName)?.id ?? '')
+    const cur = await api('GET', `/api/ai/model/${SKL_MODEL_ID}/authorization`, { token: eaAdminToken })
+    const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
+    await api('PUT', `/api/ai/model/${SKL_MODEL_ID}/authorization`, { token: eaAdminToken, body: { teamIds } })
+  }
+
   const APP_ID = String((await api('POST', '/api/app', { token: tOwner.token, body: { teamId: TID, name: '技能应用', appType: 'agent' } })).json.value)
 
   console.log('\n== 个人技能（TeamId=0，归属创建人）==')
@@ -101,7 +118,7 @@ async function main() {
 
   const ac1 = await api('PUT', `/api/app/${APP_ID}/agent-config`, {
     token: tOwner.token,
-    body: { modelId: null, prompt: '系统提示词', wikiIds: [], plugins: [], skills: [TEAM_SKILL], openingStatement: '', openingStatementEnabled: false },
+    body: { modelId: SKL_MODEL_ID, prompt: '系统提示词', wikiIds: [], plugins: [], skills: [TEAM_SKILL], openingStatement: '', openingStatementEnabled: false },
   })
   check('UC-03 管理员保存默认技能 200', ac1.status === 200)
   const acq = await api('GET', `/api/app/${APP_ID}/agent-config`, { token: tOwner.token })

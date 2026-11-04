@@ -29,9 +29,14 @@ public class QueryAppAgentConfigCommandResponse
     public string Prompt { get; set; } = string.Empty;
 
     /// <summary>
-    /// 对话使用的模型 id（uuid）；模型选择未开放时为空 Guid.
+    /// 默认对话模型 id（uuid）；模型选择未开放时为空 Guid.
     /// </summary>
     public Guid ModelId { get; set; }
+
+    /// <summary>
+    /// 开放给用户选择的对话模型 id 列表（含默认模型，uuid）；未配置时仅含默认模型（单模型应用）.
+    /// </summary>
+    public IReadOnlyList<Guid> ModelIds { get; set; } = new List<Guid>();
 
     /// <summary>
     /// 绑定的知识库 id 列表（元素为 wiki.id）.

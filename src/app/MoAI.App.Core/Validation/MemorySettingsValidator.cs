@@ -6,20 +6,16 @@ namespace MoAI.App.Validation;
 
 /// <summary>
 /// 应用执行参数（execution_settings）中长期记忆配置的形状与取值范围校验；
-/// 向量化模型/维度统一由系统设置（MEMORY_*）决定，应用配置不接收这两个字段，
-/// 平台总开关门禁需要数据库访问，由保存 Handler 在 R3 管线中补充执行.
+/// 向量化模型/维度统一由系统设置（MEMORY_*）决定，应用配置不接收这两个字段；
+/// 检索条数（retrievalTopK）已退役，由 AI 经 memory_search 工具自行决定（默认 10，上限 30），
+/// 携带时由保存 Handler 剥离；平台总开关/跨应用开关门禁需要数据库访问，由保存 Handler 在 R3 管线中补充执行.
 /// </summary>
 public static class MemorySettingsValidator
 {
     /// <summary>
-    /// 检索条数上限.
+    /// 单用户记忆条数上限（系统层面限制）.
     /// </summary>
-    public const int MaxRetrievalTopK = 50;
-
-    /// <summary>
-    /// 单用户记忆条数上限.
-    /// </summary>
-    public const int MaxPerUser = 10000;
+    public const int MaxPerUser = AgentMemorySettings.MaxPerUserLimit;
 
     /// <summary>
     /// 判断本次保存是否开启长期记忆（memory.enabled=true）；未携带或未启用返回 false.
@@ -49,14 +45,6 @@ public static class MemorySettingsValidator
             || memory.ValueKind != JsonValueKind.Object)
         {
             return;
-        }
-
-        if (memory.TryGetProperty("retrievalTopK", out var topK) && topK.ValueKind == JsonValueKind.Number)
-        {
-            if (!topK.TryGetInt32(out var value) || value < 1 || value > MaxRetrievalTopK)
-            {
-                throw new BusinessException($"记忆检索条数必须是 1~{MaxRetrievalTopK} 之间的整数.") { StatusCode = 400 };
-            }
         }
 
         if (memory.TryGetProperty("minScore", out var minScore) && minScore.ValueKind == JsonValueKind.Number)
