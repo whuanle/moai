@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DeleteOutlined, EditOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Pagination, Popconfirm, Row, Space, Spin, Tag } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Pagination, Popconfirm, Row, Space, Spin, Switch, Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, QueryBar, feedback, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
-import { deleteTeamAgent, getTeamAgent, getTeamAgents, type TeamAgentDetail, type TeamAgentListItem } from '@/api/team-agent'
+import { deleteTeamAgent, getTeamAgent, getTeamAgents, setTeamAgentEnabled, type TeamAgentDetail, type TeamAgentListItem } from '@/api/team-agent'
 import { TeamAgentDetailModal } from './TeamAgentDetailModal'
 
 const CARD_PAGE_DEFAULT_SIZE = 12
@@ -68,6 +68,17 @@ export function TeamAgents({ teamId, canManage }: { teamId: number; canManage: b
       void load()
     } catch {
       // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  /** 卡片直切启停：乐观更新本地状态，失败回滚（错误由全局中间件提示） */
+  const handleEnabledChange = async (record: TeamAgentListItem, enabled: boolean) => {
+    const previous = items
+    setItems((list) => list.map((x) => (x.id === record.id ? { ...x, enabled } : x)))
+    try {
+      await setTeamAgentEnabled(record.id ?? '', enabled)
+    } catch {
+      setItems(previous)
     }
   }
 
@@ -162,7 +173,19 @@ export function TeamAgents({ teamId, canManage }: { teamId: number; canManage: b
                             {name}
                           </div>
                           <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            {record.enabled ? <Tag color="success">{t('teamAgents.statusEnabled')}</Tag> : <Tag>{t('teamAgents.statusDisabled')}</Tag>}
+                            {canManage ? (
+                              <Switch
+                                size="small"
+                                checked={record.enabled ?? false}
+                                checkedChildren={t('teamAgents.statusEnabled')}
+                                unCheckedChildren={t('teamAgents.statusDisabled')}
+                                onChange={(checked) => void handleEnabledChange(record, checked)}
+                              />
+                            ) : record.enabled ? (
+                              <Tag color="success">{t('teamAgents.statusEnabled')}</Tag>
+                            ) : (
+                              <Tag>{t('teamAgents.statusDisabled')}</Tag>
+                            )}
                             {record.isSystem && <Tag color="purple">{t('teamAgents.builtin')}</Tag>}
                           </div>
                         </div>

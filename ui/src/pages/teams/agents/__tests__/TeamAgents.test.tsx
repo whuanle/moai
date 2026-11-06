@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import { TeamAgents } from '../TeamAgents'
-import { deleteTeamAgent, getTeamAgent, getTeamAgents } from '@/api/team-agent'
+import { deleteTeamAgent, getTeamAgent, getTeamAgents, setTeamAgentEnabled } from '@/api/team-agent'
 
 vi.mock('@/api/team-agent', () => ({
   getTeamAgents: vi.fn().mockResolvedValue({ myRole: 2, items: [] }),
@@ -13,6 +13,7 @@ vi.mock('@/api/team-agent', () => ({
   createTeamAgent: vi.fn().mockResolvedValue('agent-id'),
   updateTeamAgent: vi.fn().mockResolvedValue(undefined),
   setTeamAgentAvatar: vi.fn().mockResolvedValue(undefined),
+  setTeamAgentEnabled: vi.fn().mockResolvedValue(undefined),
   seedBuiltinTeamAgents: vi.fn().mockResolvedValue(0),
 }))
 
@@ -96,14 +97,13 @@ describe('TeamAgents', () => {
     })
   })
 
-  it('卡片列表展示名称/启停/内置标记/子智能体数，不使用表格', async () => {
+  it('卡片列表展示名称/启停开关/内置标记/子智能体数，不使用表格', async () => {
     renderTeamAgents()
 
     expect(await screen.findByText('研究助手')).toBeInTheDocument()
     expect(screen.getByText('写作助手')).toBeInTheDocument()
-    // 规划师与写作助手启用、写作助手停用（停用仅一个）
-    expect(screen.getAllByText('启用').length).toBeGreaterThanOrEqual(2)
-    expect(screen.getByText('停用')).toBeInTheDocument()
+    // 管理员：每张卡一个启停开关（三张卡）
+    expect(screen.getAllByRole('switch')).toHaveLength(3)
     // 内置智能体带「内置」标记
     expect(screen.getByText('内置')).toBeInTheDocument()
     // 子智能体数徽标
@@ -113,6 +113,27 @@ describe('TeamAgents', () => {
     expect(screen.queryByText('共 3 条')).not.toBeInTheDocument()
     // 列表接口带团队 id 调用
     expect(getTeamAgents).toHaveBeenCalledWith(9, { searchText: undefined })
+  })
+
+  it('成员视图启停展示为 Tag，不提供开关', async () => {
+    renderTeamAgents(false)
+
+    await screen.findByText('研究助手')
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    // 两个启用（规划师/研究助手）+ 一个停用（写作助手）
+    expect(screen.getAllByText('启用').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('停用')).toBeInTheDocument()
+  })
+
+  it('卡片启停开关直切调用启停接口', async () => {
+    renderTeamAgents(true)
+
+    await screen.findByText('研究助手')
+    // 第一张卡是「规划师 Plan」(a0)，当前启用，切到停用
+    fireEvent.click(screen.getAllByRole('switch')[0])
+    await waitFor(() => {
+      expect(setTeamAgentEnabled).toHaveBeenCalledWith('a0', false)
+    })
   })
 
   it('canManage=false 时隐藏新建/编辑/删除入口', async () => {

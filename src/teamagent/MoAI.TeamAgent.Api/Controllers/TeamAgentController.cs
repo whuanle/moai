@@ -125,6 +125,21 @@ public class TeamAgentController : ControllerBase
     }
 
     /// <summary>
+    /// 启用/停用团队智能体，需要团队 Admin 及以上角色（内置智能体同样可启停）.
+    /// </summary>
+    /// <param name="id">智能体 id.</param>
+    /// <param name="req">启停请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("{id}/enabled")]
+    public Task<EmptyCommandResponse> SetTeamAgentEnabled(Guid id, [FromBody] SetTeamAgentEnabledCommand req, CancellationToken ct)
+    {
+        var cmd = new SetTeamAgentEnabledCommand { AgentId = id, Enabled = req.Enabled };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 删除团队智能体（软删除），需要团队 Admin 及以上角色.
     /// </summary>
     /// <param name="id">智能体 id.</param>

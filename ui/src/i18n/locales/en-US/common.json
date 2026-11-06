@@ -3772,7 +3772,6 @@
     "keyImmutable": "Key is immutable after creation",
     "graphs": "Knowledge graph dependencies",
     "graphsPlaceholder": "Select team managed graphs",
-    "depsHint": "Weak dependency: capability declaration only; missing items are prompted for one-click add when binding an app",
     "subKeyRule": "Lowercase letters first; lowercase letters/digits/underscores only, max 30",
     "subKeyPlaceholder": "Identifier, e.g. researcher",
     "subKeyRequired": "Please enter the sub-agent key",

@@ -152,6 +152,13 @@ async function main() {
     const mine = (r.json?.items ?? []).find((x) => x.id === AGID)
     check('AG-15 列表回显停用状态', mine?.enabled === false, JSON.stringify(mine))
   }
+  check('AG-15a Member 调启停端点 403', (await api('PUT', `/api/team-agent/${AGID}/enabled`, { token: member.token, body: { enabled: true } })).status === 403)
+  {
+    const up = await api('PUT', `/api/team-agent/${AGID}/enabled`, { token: owner.token, body: { enabled: true } })
+    const r = await api('GET', `/api/team-agent/list?teamId=${TID}`, { token: owner.token })
+    const mine = (r.json?.items ?? []).find((x) => x.id === AGID)
+    check('AG-15b 启停端点直切生效（停用→启用）', up.status === 200 && mine?.enabled === true, `up=${up.status} enabled=${mine?.enabled}`)
+  }
 
   // @AG-S8 头像
   check('AG-16 Member 设置头像 403', (await api('POST', `/api/team-agent/${AGID}/avatar`, { token: member.token, body: { objectKey: 'fake/x.png' } })).status === 403)

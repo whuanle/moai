@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { ArrowLeftOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Form, Input, Row, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Form, Input, Row, Select, Space, Spin, Tooltip, Typography, theme } from 'antd'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { AvatarUpload, Page, feedback } from '@/design-system'
@@ -66,6 +66,8 @@ export function TeamAgentEditor() {
   const [avatarObjectKey, setAvatarObjectKey] = useState('')
   const [initialAvatarKey, setInitialAvatarKey] = useState('')
   const [avatarUploading, setAvatarUploading] = useState(false)
+  // 启停不走编辑页（列表卡片直切），保存时保留原值（更新为整文档替换）
+  const [enabledValue, setEnabledValue] = useState(true)
 
   const loadOptions = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
@@ -93,7 +95,6 @@ export function TeamAgentEditor() {
         key: detail.key ?? '',
         name: detail.name ?? '',
         description: detail.description ?? undefined,
-        enabled: detail.enabled ?? true,
         mainPluginIds: (detail.mainPluginIds ?? []).map(String),
         mainWikiIds: (detail.mainWikiIds ?? []).map(String),
         mainGraphIds: (detail.mainGraphIds ?? []).map(String),
@@ -107,6 +108,7 @@ export function TeamAgentEditor() {
           graphIds: (sub.graphIds ?? []).map(String),
         })),
       })
+      setEnabledValue(detail.enabled ?? true)
       setMainPrompt(detail.mainPrompt ?? '')
       const avatar = detail.avatarObjectKey ?? ''
       setAvatarObjectKey(avatar)
@@ -217,7 +219,7 @@ export function TeamAgentEditor() {
       key: String(values.key ?? ''),
       name: values.name,
       description: values.description ?? '',
-      enabled: values.enabled ?? true,
+      enabled: enabledValue,
       mainPrompt,
       mainPluginIds: (values.mainPluginIds as string[] | undefined) ?? [],
       mainWikiIds: (values.mainWikiIds as string[] | undefined) ?? [],
@@ -262,15 +264,9 @@ export function TeamAgentEditor() {
     </Space>
   )
 
-  const depsHint = t('teamAgents.depsHint')
-
   return (
     <Page
-      breadcrumb={[
-        { title: <Link to="/team">{t('team.title')}</Link> },
-        { title: <Link to={`/team/${teamId}/agents`}>{t('team.teamAgents')}</Link> },
-        { title: isEdit ? t('teamAgents.editorEdit') : t('teamAgents.editorCreate') },
-      ]}
+      breadcrumb={[{ title: <Link to={`/team/${teamId}/agents`}>{t('teamAgents.back')}</Link> }]}
     >
       <Form form={form} layout="vertical" component={false}>
         <Spin spinning={loading}>
@@ -279,14 +275,9 @@ export function TeamAgentEditor() {
           {sectionHeader(
             t('teamAgents.mainSectionTitle'),
             undefined,
-            <>
-              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/team/${teamId}/agents`)}>
-                {t('teamAgents.back')}
-              </Button>
-              <Button type="primary" loading={saving} onClick={() => void handleSave()}>
-                {t('teamAgents.save')}
-              </Button>
-            </>,
+            <Button type="primary" loading={saving} onClick={() => void handleSave()}>
+              {t('teamAgents.save')}
+            </Button>,
           )}
           <Row gutter={spacing.md}>
             <Col xs={24} lg={7}>
@@ -319,22 +310,16 @@ export function TeamAgentEditor() {
                       { required: true, message: t('teamAgents.nameRequired') },
                       { max: 50, message: t('teamAgents.nameMax') },
                     ]}
-                    style={{ marginBottom: spacing.sm }}
+                    style={{ marginBottom: 0 }}
                   >
                     <Input placeholder={t('teamAgents.namePlaceholder')} maxLength={50} />
                   </Form.Item>
-                  <Space size={spacing.sm} align="center">
-                    <Form.Item name="enabled" valuePropName="checked" initialValue noStyle>
-                      <Switch checkedChildren={t('teamAgents.statusEnabled')} unCheckedChildren={t('teamAgents.statusDisabled')} />
-                    </Form.Item>
-                    <Text type="secondary" style={{ fontSize: 12 }}>{t('teamAgents.status')}</Text>
-                  </Space>
                 </div>
               </Space>
               <Form.Item name="description" rules={[{ max: 500, message: t('teamAgents.descMax') }]} style={{ marginTop: spacing.md }}>
                 <Input.TextArea placeholder={t('teamAgents.descPlaceholder')} rows={3} maxLength={500} />
               </Form.Item>
-              <Form.Item name="mainPluginIds" label={t('teamAgents.plugins')} extra={depsHint}>
+              <Form.Item name="mainPluginIds" label={t('teamAgents.plugins')}>
                 <Select mode="multiple" options={pluginSelectOptions} allowClear showSearch optionFilterProp="title" maxTagCount="responsive" placeholder={t('teamAgents.pluginsPlaceholder')} />
               </Form.Item>
               <Form.Item name="mainWikiIds" label={t('teamAgents.wikis')}>
@@ -397,7 +382,7 @@ export function TeamAgentEditor() {
                         >
                           <Input placeholder={t('teamAgents.subNamePlaceholder')} maxLength={50} />
                         </Form.Item>
-                        <Form.Item name={[field.name, 'pluginIds']} extra={depsHint}>
+                        <Form.Item name={[field.name, 'pluginIds']}>
                           <Select mode="multiple" options={pluginSelectOptions} allowClear showSearch optionFilterProp="title" maxTagCount="responsive" placeholder={t('teamAgents.pluginsPlaceholder')} />
                         </Form.Item>
                         <Form.Item name={[field.name, 'wikiIds']}>

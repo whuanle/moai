@@ -899,12 +899,22 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     setDefaultTeamAgentId((prev) => (prev && deduped.includes(prev) ? prev : deduped[0]))
   }
 
-  const renderTeamAgentOption = (item: TeamAgentListItem): { value: string; label: ReactNode; title: string } => {
+  const renderTeamAgentOption = (item: TeamAgentListItem): { value: string; label: ReactNode; title: string; tagLabel: ReactNode } => {
     const disabled = item.enabled === false
     const name = `${item.name || '-'}${disabled ? `（${t('appManage.teamAgentDisabledSuffix')}）` : ''}`
+    // tagLabel 为已选标签形态：带头像+名称（含停用后缀），不带内置 Tag（标签内不嵌套徽标）
+    const tagLabel = (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <Avatar shape="square" size={14} src={resolveStorageUrl(item.avatarObjectKey ?? null) || undefined} alt={name}>
+          {(item.name || '-').slice(0, 1).toUpperCase()}
+        </Avatar>
+        <span>{name}</span>
+      </span>
+    )
     return {
       value: String(item.id),
       title: name,
+      tagLabel,
       label: (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
           <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarObjectKey ?? null) || undefined} alt={name}>
@@ -1299,7 +1309,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                 value={teamAgentIds}
                                 onChange={handleTeamAgentIdsChange}
                                 options={teamAgentSelectOptions}
-                                optionLabelProp="title"
+                                // 已选标签带头像（tagLabel：头像+名称），下拉行展示完整 label（头像+内置标记）
+                                optionLabelProp="tagLabel"
                                 disabled={optionsLoading}
                               />
                             </Form.Item>
@@ -1330,7 +1341,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                   value={defaultTeamAgentId ?? undefined}
                                   onChange={(value) => setDefaultTeamAgentId(typeof value === 'string' ? value : undefined)}
                                   options={defaultTeamAgentSelectOptions}
-                                  optionLabelProp="title"
+                                  // 关闭态/选中值带头像（tagLabel：头像+名称）
+                                  optionLabelProp="tagLabel"
                                   disabled={optionsLoading}
                                 />
                               </Form.Item>

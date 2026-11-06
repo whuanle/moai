@@ -227,12 +227,20 @@ export function ChatComposer({
                 value={selectedTeamAgentId ?? undefined}
                 onChange={(v) => onTeamAgentChange?.(v)}
                 options={teamAgentOptions.map((a) => {
-                  // 下拉行带智能体头像（无头像回退首字）与描述次要文本，关闭态显示纯名称
+                  // 下拉行带智能体头像（无头像回退首字）与描述次要文本；关闭态/当前值用 tagLabel（头像+名称）
                   const name = a.name || a.key || '-'
                   const desc = (a.description || '').trim()
+                  const agentTagLabel = (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Avatar shape="square" size={14} src={resolveStorageUrl(a.avatarObjectKey || '') || undefined}>
+                        {name.slice(0, 1)}
+                      </Avatar>
+                      <span>{name}</span>
+                    </span>
+                  )
                   return {
                     value: a.id,
-                    agentName: name,
+                    agentTagLabel,
                     label: (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                         <Avatar shape="square" size={18} src={resolveStorageUrl(a.avatarObjectKey || '') || undefined}>
@@ -249,7 +257,7 @@ export function ChatComposer({
                     title: name,
                   }
                 })}
-                optionLabelProp="agentName"
+                optionLabelProp="agentTagLabel"
                 optionFilterProp="title"
                 disabled={sending}
               />

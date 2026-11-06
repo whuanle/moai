@@ -6,6 +6,8 @@ import { createBusinessValidationResultFromDiscriminatorValue, createEmptyComman
 // @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
 // @ts-ignore
+import { EnabledRequestBuilderRequestsMetadata, type EnabledRequestBuilder } from './enabled/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -16,6 +18,10 @@ export interface TeamAgentItemRequestBuilder extends BaseRequestBuilder<TeamAgen
      * The avatar property
      */
     get avatar(): AvatarRequestBuilder;
+    /**
+     * The enabled property
+     */
+    get enabled(): EnabledRequestBuilder;
     /**
      * 删除团队智能体（软删除），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -80,6 +86,9 @@ export const TeamAgentItemRequestBuilderUriTemplate = "{+baseurl}/api/team-agent
 export const TeamAgentItemRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamAgentItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
+    },
+    enabled: {
+        requestsMetadata: EnabledRequestBuilderRequestsMetadata,
     },
 };
 /**

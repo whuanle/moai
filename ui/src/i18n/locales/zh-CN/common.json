@@ -3772,7 +3772,6 @@
     "keyImmutable": "标识创建后不可变更",
     "graphs": "知识图谱依赖",
     "graphsPlaceholder": "选择本团队托管图谱",
-    "depsHint": "弱依赖：仅作能力声明，应用绑定缺失时提示一键补齐",
     "subKeyRule": "小写字母开头，仅小写字母/数字/下划线，最长 30",
     "subKeyPlaceholder": "标识，如 researcher",
     "subKeyRequired": "请输入子智能体标识",

@@ -136,6 +136,12 @@ export async function deleteTeamAgent(id: string): Promise<void> {
   await client.api.teamAgent.byId(id).delete()
 }
 
+/** 启用/停用智能体（卡片直切，需团队 Admin 及以上；内置智能体同样可启停） */
+export async function setTeamAgentEnabled(id: string, enabled: boolean): Promise<void> {
+  const client = getApiClient()
+  await client.api.teamAgent.byId(id).enabled.put({ enabled })
+}
+
 /** 为全部存量团队补种内置智能体（规划师/构建师，按名称幂等），仅平台管理员；返回本次种入数量 */
 export async function seedBuiltinTeamAgents(): Promise<number> {
   const client = getApiClient()

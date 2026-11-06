@@ -5455,6 +5455,15 @@ export function createSetSubsystemOrgGrantsCommandFromDiscriminatorValue(parseNo
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetTeamAgentEnabledCommand}
+ */
+// @ts-ignore
+export function createSetTeamAgentEnabledCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetTeamAgentEnabledCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SettingItemResponse}
  */
 // @ts-ignore
@@ -12653,6 +12662,17 @@ export function deserializeIntoSetSubsystemOrgGrantsCommand(setSubsystemOrgGrant
     return {
         "grants": n => { setSubsystemOrgGrantsCommand.grants = n.getCollectionOfObjectValues<SubsystemOrgGrantItem>(createSubsystemOrgGrantItemFromDiscriminatorValue); },
         "subsystemId": n => { setSubsystemOrgGrantsCommand.subsystemId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoSetTeamAgentEnabledCommand(setTeamAgentEnabledCommand: Partial<SetTeamAgentEnabledCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "agentId": n => { setTeamAgentEnabledCommand.agentId = n.getGuidValue(); },
+        "enabled": n => { setTeamAgentEnabledCommand.enabled = n.getBooleanValue(); },
     }
 }
 /**
@@ -26972,6 +26992,17 @@ export function serializeSetSubsystemOrgGrantsCommand(writer: SerializationWrite
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSetTeamAgentEnabledCommand(writer: SerializationWriter, setTeamAgentEnabledCommand: Partial<SetTeamAgentEnabledCommand> | undefined | null = {}) : void {
+    if (setTeamAgentEnabledCommand) {
+        writer.writeGuidValue("agentId", setTeamAgentEnabledCommand.agentId);
+        writer.writeBooleanValue("enabled", setTeamAgentEnabledCommand.enabled);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSettingItemResponse(writer: SerializationWriter, settingItemResponse: Partial<SettingItemResponse> | undefined | null = {}) : void {
     if (settingItemResponse) {
         writer.writeStringValue("description", settingItemResponse.description);
@@ -28864,6 +28895,19 @@ export interface SetSubsystemOrgGrantsCommand extends Parsable {
      * 子系统 id（由路由回填）.
      */
     subsystemId?: Guid | null;
+}
+/**
+ * 启用/停用团队智能体，需要团队 Admin 及以上角色（内置智能体同样可启停）.
+ */
+export interface SetTeamAgentEnabledCommand extends Parsable {
+    /**
+     * 智能体 id，由 Controller 从路由参数回填.
+     */
+    agentId?: Guid | null;
+    /**
+     * 是否启用.
+     */
+    enabled?: boolean | null;
 }
 /**
  * 设置项.
