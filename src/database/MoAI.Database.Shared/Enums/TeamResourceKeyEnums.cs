@@ -25,21 +25,3 @@ public enum TeamResourceType
     [JsonPropertyName("knowledgeGraph")]
     KnowledgeGraph = 3,
 }
-
-/// <summary>
-/// 团队资源 key 状态.
-/// </summary>
-public enum TeamResourceKeyStatus
-{
-    /// <summary>
-    /// 启用.
-    /// </summary>
-    [JsonPropertyName("enabled")]
-    Enabled = 0,
-
-    /// <summary>
-    /// 停用（直连调用立即拒绝）.
-    /// </summary>
-    [JsonPropertyName("disabled")]
-    Disabled = 1,
-}

@@ -33,6 +33,7 @@ using MoAI.Statistics;
 using MoAI.Storage;
 using MoAI.Subsystem;
 using MoAI.Team;
+using MoAI.TeamAgent;
 using MoAI.TeamPlugin;
 using MoAI.Timer;
 using MoAI.Variable;
@@ -65,6 +66,7 @@ namespace MoAI;
 [InjectModule<MemoryCoreModule>]
 [InjectModule<VariableCoreModule>]
 [InjectModule<SkillCoreModule>]
+[InjectModule<TeamAgentCoreModule>]
 [InjectModule<TimerCoreModule>]
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]

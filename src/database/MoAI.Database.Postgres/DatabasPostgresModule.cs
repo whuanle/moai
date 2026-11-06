@@ -411,8 +411,8 @@ public class DatabasPostgresModule : IModule
             // teamres_key（团队资源 key）为后加表：EnsureCreated 只在建库时建表，
             // 存量库用幂等 DDL 补齐（与 asserts/team-resource-key.sql 等价，免手工执行）。
             // resource_id 存资源实例 id（app 行=应用 Guid、wiki 行=wikiId、kg 行=kgId，一资源一把 key）；
-            // 早期草稿版 resource_id 为 bigint（app 行=0 团队级），仅存在于本分支开发库，按列类型判断整体重建；
-            // 同时为三资源补功能开关列（app.is_acp_enabled/is_a2a_enabled、wiki/knowledge_graph.is_mcp_enabled）
+            // 早期草稿版（resource_id bigint / 含 status 列）仅存在于本分支开发库，按结构判断整体重建/回收列；
+            // key 自身不保存启停状态——启停只由资源功能入口开关控制
             dbContext.Database.ExecuteSqlRaw(
                 """
                 DO $$
@@ -431,7 +431,6 @@ public class DatabasPostgresModule : IModule
                     resource_id varchar(64) NOT NULL DEFAULT ''::character varying,
                     key varchar(255) NOT NULL,
                     key_prefix varchar(16) NOT NULL DEFAULT ''::character varying,
-                    status int NOT NULL DEFAULT 0,
                     create_user_id bigint NOT NULL DEFAULT 0,
                     create_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
                     update_user_id bigint NOT NULL DEFAULT 0,
@@ -442,12 +441,59 @@ public class DatabasPostgresModule : IModule
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_teamres_key_key_uindex ON teamres_key (key, is_deleted);
                 CREATE INDEX IF NOT EXISTS idx_teamres_key_team_id ON teamres_key (team_id);
                 CREATE INDEX IF NOT EXISTS idx_teamres_key_resource ON teamres_key (team_id, resource_type, resource_id, is_deleted);
-                ALTER TABLE app ADD COLUMN IF NOT EXISTS is_acp_enabled boolean NOT NULL DEFAULT false;
-                ALTER TABLE app ADD COLUMN IF NOT EXISTS is_a2a_enabled boolean NOT NULL DEFAULT false;
+                ALTER TABLE teamres_key DROP COLUMN IF EXISTS status;
+                ALTER TABLE app ADD COLUMN IF NOT EXISTS is_acp_a2a_enabled boolean NOT NULL DEFAULT false;
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app' AND column_name = 'is_acp_enabled') THEN
+                        UPDATE app SET is_acp_a2a_enabled = true WHERE is_acp_enabled OR is_a2a_enabled;
+                    END IF;
+                END $$;
+                ALTER TABLE app DROP COLUMN IF EXISTS is_acp_enabled;
+                ALTER TABLE app DROP COLUMN IF EXISTS is_a2a_enabled;
                 ALTER TABLE app ADD COLUMN IF NOT EXISTS message_count bigint NOT NULL DEFAULT 0;
                 ALTER TABLE wiki ADD COLUMN IF NOT EXISTS is_mcp_enabled boolean NOT NULL DEFAULT false;
                 ALTER TABLE knowledge_graph ADD COLUMN IF NOT EXISTS is_mcp_enabled boolean NOT NULL DEFAULT false;
                 ALTER TABLE access_app DROP COLUMN IF EXISTS scopes;
+                """);
+
+            // team_agent（团队智能体，主智能体 + 多个子智能体编排定义）为后加表：存量库幂等补表
+            //（与 asserts/team-agent.sql 等价，免手工执行）
+            dbContext.Database.ExecuteSqlRaw(
+                """
+                CREATE TABLE IF NOT EXISTS team_agent (
+                    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                    team_id bigint NOT NULL DEFAULT 0,
+                    key character varying(30) NOT NULL DEFAULT ''::character varying,
+                    name character varying(50) NOT NULL,
+                    description character varying(500) NOT NULL DEFAULT ''::character varying,
+                    avatar_object_key character varying(255) NOT NULL DEFAULT ''::character varying,
+                    enabled boolean NOT NULL DEFAULT true,
+                    is_system boolean NOT NULL DEFAULT false,
+                    main_prompt text NOT NULL DEFAULT ''::text,
+                    main_plugin_ids text NOT NULL DEFAULT '[]'::text,
+                    main_wiki_ids text NOT NULL DEFAULT '[]'::text,
+                    main_graph_ids text NOT NULL DEFAULT '[]'::text,
+                    subs text NOT NULL DEFAULT '[]'::text,
+                    create_user_id bigint NOT NULL DEFAULT 0,
+                    create_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    update_user_id bigint NOT NULL DEFAULT 0,
+                    update_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    is_deleted bigint NOT NULL DEFAULT 0,
+                    CONSTRAINT team_agent_pkey PRIMARY KEY (id)
+                );
+                COMMENT ON TABLE team_agent IS '团队智能体，主智能体 + 多个子智能体的编排定义资产';
+                -- 存量库补列（先补列再建索引/注释，避免列不存在时报错）
+                ALTER TABLE team_agent ADD COLUMN IF NOT EXISTS is_system boolean NOT NULL DEFAULT false;
+                ALTER TABLE team_agent ADD COLUMN IF NOT EXISTS key character varying(30) NOT NULL DEFAULT ''::character varying;
+                ALTER TABLE team_agent ADD COLUMN IF NOT EXISTS main_graph_ids text NOT NULL DEFAULT '[]'::text;
+                -- 偏好模型已收敛到 agents 应用对话模型配置，智能体不再自带（回收列）
+                ALTER TABLE team_agent DROP COLUMN IF EXISTS main_model_id;
+                COMMENT ON COLUMN team_agent.key IS '智能体标识 key，团队内唯一（小写字母开头的字母/数字/下划线），创建后不可变更；Phase 2 将作为工具名暴露';
+                COMMENT ON COLUMN team_agent.is_system IS '是否系统内置智能体：团队创建时自动种入（如规划/构建），不可删除、可编辑定制';
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_team_agent_team_name_live_uindex ON team_agent (team_id, name) WHERE (is_deleted = 0);
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_team_agent_team_key_live_uindex ON team_agent (team_id, key) WHERE (is_deleted = 0) AND (key <> '');
+                CREATE INDEX IF NOT EXISTS idx_team_agent_team_id ON team_agent (team_id);
                 """);
 
             // publication_review.visible_scope / visible_org_grants（应用上架可视范围）为后加列：存量库幂等补列

@@ -470,7 +470,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         var databaseContext = context.RequestServices.GetRequiredService<DatabaseContext>();
         var app = await databaseContext.Apps
             .Where(x => x.Id == appId.Value)
-            .Select(x => new { x.TeamId, x.IsDisable, x.PublishStatus, x.IsAcpEnabled })
+            .Select(x => new { x.TeamId, x.IsDisable, x.PublishStatus, x.IsAcpA2aEnabled })
             .FirstOrDefaultAsync(context.RequestAborted);
 
         if (app == null || (long)app.TeamId != tokenContext.TeamId)
@@ -485,10 +485,10 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             return false;
         }
 
-        if (!app.IsAcpEnabled)
+        if (!app.IsAcpA2aEnabled)
         {
             await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "feature_disabled",
-                "Application ACP is not enabled; enable it on the app to use this endpoint.");
+                "Application ACP/A2A is not enabled; enable it on the app to use this endpoint.");
             return false;
         }
 
@@ -497,7 +497,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
 
     /// <summary>
     /// 应用 A2A 端点授权：凭证须带外部用户语义（用户 token 或已解析的 key 直连身份，承载会话归属），
-    /// 路由 appId 存在、归属凭证团队（跨团队一律 404，不泄露存在性）、已发布可用且应用已开启 A2A 功能.
+    /// 路由 appId 存在、归属凭证团队（跨团队一律 404，不泄露存在性）、已发布可用且应用已开启对外协议接入（与 ACP 同一开关）.
     /// </summary>
     private static async Task<bool> IsAppA2aAllowedAsync(HttpContext context, Guid? appId, ExternalTokenContext tokenContext)
     {
@@ -517,7 +517,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         var databaseContext = context.RequestServices.GetRequiredService<DatabaseContext>();
         var app = await databaseContext.Apps
             .Where(x => x.Id == appId.Value)
-            .Select(x => new { x.TeamId, x.IsDisable, x.PublishStatus, x.IsA2aEnabled })
+            .Select(x => new { x.TeamId, x.IsDisable, x.PublishStatus, x.IsAcpA2aEnabled })
             .FirstOrDefaultAsync(context.RequestAborted);
 
         if (app == null || (long)app.TeamId != tokenContext.TeamId)
@@ -532,10 +532,10 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             return false;
         }
 
-        if (!app.IsA2aEnabled)
+        if (!app.IsAcpA2aEnabled)
         {
             await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "feature_disabled",
-                "Application A2A is not enabled; enable it on the app to use this endpoint.");
+                "Application ACP/A2A is not enabled; enable it on the app to use this endpoint.");
             return false;
         }
 

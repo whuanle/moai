@@ -6,8 +6,8 @@ namespace MoAI.Database.Aggregates;
 
 /// <summary>
 /// app_agent_config.published_config 发布配置快照契约：
-/// Agent 应用（全字段）与流程应用（仅开场白有意义）发布时整行写入，正式会话按此快照执行；
-/// 列表类字段沿用行内 JSON 文本原样透传，由消费方按现有方式解析.
+/// Agent 应用（全字段）与流程应用（系统提示词经 sys.prompt 供节点引用、开场白与快捷输入随详情下发）发布时整行写入，
+/// 正式会话按此快照执行；列表类字段沿用行内 JSON 文本原样透传，由消费方按现有方式解析.
 /// </summary>
 public sealed class AppAgentConfigSnapshot
 {
@@ -79,6 +79,22 @@ public sealed class AppAgentConfigSnapshot
     public string QuickInputs { get; set; } = "[]";
 
     /// <summary>
+    /// 绑定的团队智能体ID列表，JSON 数组文本；空视为未绑定（存量快照兼容）.
+    /// </summary>
+    public string TeamAgentIds { get; set; } = "[]";
+
+    /// <summary>
+    /// 默认团队智能体ID；空=取列表第一个.
+    /// </summary>
+    public Guid? DefaultTeamAgentId { get; set; }
+
+    /// <summary>
+    /// 团队智能体内嵌定义 JSON（<see cref="SnapshotTeamAgent"/> 数组），发布时由发布命令组装写入；
+    /// 正式会话运行时按此解析智能体定义，不回查 team_agent 表.
+    /// </summary>
+    public string TeamAgentDefs { get; set; } = "";
+
+    /// <summary>
     /// 把配置行整行序列化为快照 JSON（发布时写入 published_config）.
     /// </summary>
     /// <param name="config">配置行.</param>
@@ -100,6 +116,9 @@ public sealed class AppAgentConfigSnapshot
             OpeningStatement = config.OpeningStatement ?? string.Empty,
             OpeningStatementEnabled = config.OpeningStatementEnabled,
             QuickInputs = string.IsNullOrWhiteSpace(config.QuickInputs) ? "[]" : config.QuickInputs,
+            TeamAgentIds = string.IsNullOrWhiteSpace(config.TeamAgentIds) ? "[]" : config.TeamAgentIds,
+            DefaultTeamAgentId = config.DefaultTeamAgentId,
+            TeamAgentDefs = config.TeamAgentDefs ?? string.Empty,
         };
         return JsonSerializer.Serialize(snapshot, SerializerOptions);
     }
@@ -165,6 +184,9 @@ public sealed class AppAgentConfigSnapshot
             OpeningStatement = snapshot.OpeningStatement,
             OpeningStatementEnabled = snapshot.OpeningStatementEnabled,
             QuickInputs = snapshot.QuickInputs,
+            TeamAgentIds = snapshot.TeamAgentIds ?? "[]",
+            DefaultTeamAgentId = snapshot.DefaultTeamAgentId,
+            TeamAgentDefs = snapshot.TeamAgentDefs ?? string.Empty,
             PublishedConfig = config.PublishedConfig,
             Status = config.Status,
         };

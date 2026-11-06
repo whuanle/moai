@@ -58,6 +58,7 @@ public class TeamResourceKeyController : ControllerBase
 
     /// <summary>
     /// 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效；需要团队 Admin 及以上角色.
+    /// key 不支持删除——生命周期只有「开启功能时自动生成/复用 + 重置」，吊销手段=重置或关闭资源功能开关.
     /// </summary>
     /// <param name="id">资源 key 行 id.</param>
     /// <param name="ct">取消令牌.</param>
@@ -68,34 +69,5 @@ public class TeamResourceKeyController : ControllerBase
         var cmd = new ResetTeamResourceKeyCommand { TeamResourceKeyId = id };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 更新资源 key 启停状态；停用后直连调用立即拒绝；需要团队 Admin 及以上角色.
-    /// </summary>
-    /// <param name="id">资源 key 行 id.</param>
-    /// <param name="req">更新请求.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpPut("{id:guid}")]
-    public Task<EmptyCommandResponse> UpdateTeamResourceKey([FromRoute] Guid id, [FromBody] UpdateTeamResourceKeyCommand req, CancellationToken ct)
-    {
-        var cmd = new UpdateTeamResourceKeyCommand { TeamResourceKeyId = id, Status = req.Status };
-        _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
-    }
-
-    /// <summary>
-    /// 删除资源 key（软删除），需要团队 Admin 及以上角色.
-    /// </summary>
-    /// <param name="id">资源 key 行 id.</param>
-    /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
-    [HttpDelete("{id:guid}")]
-    public async Task<EmptyCommandResponse> DeleteTeamResourceKey([FromRoute] Guid id, CancellationToken ct)
-    {
-        var cmd = new DeleteTeamResourceKeyCommand { TeamResourceKeyId = id };
-        _userContextProvider.SetUserContext(cmd);
-        return await _mediator.Send(cmd, ct);
     }
 }

@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createCreateTeamResourceKeyCommandResponseFromDiscriminatorValue, serializeCreateTeamResourceKeyCommand, serializeCreateTeamResourceKeyCommandResponse, type BusinessValidationResult, type CreateTeamResourceKeyCommand, type CreateTeamResourceKeyCommandResponse } from '../../models/index.js';
 // @ts-ignore
-import { TeamResourceKeyItemRequestBuilderNavigationMetadata, TeamResourceKeyItemRequestBuilderRequestsMetadata, type TeamResourceKeyItemRequestBuilder } from './item/index.js';
+import { TeamResourceKeyItemRequestBuilderNavigationMetadata, type TeamResourceKeyItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -53,7 +53,6 @@ export const TeamResourceKeyRequestBuilderUriTemplate = "{+baseurl}/api/team-res
  */
 export const TeamResourceKeyRequestBuilderNavigationMetadata: Record<Exclude<keyof TeamResourceKeyRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
-        requestsMetadata: TeamResourceKeyItemRequestBuilderRequestsMetadata,
         navigationMetadata: TeamResourceKeyItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },

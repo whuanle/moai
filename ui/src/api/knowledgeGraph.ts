@@ -178,7 +178,6 @@ export interface KnowledgeGraphMcpConfig {
   teamResourceKeyId?: string | null
   key?: string | null
   keyPrefix?: string | null
-  status?: 'enabled' | 'disabled' | null
 }
 
 /** 查询知识图谱 MCP 接入配置（仅团队 Admin+） */
@@ -190,7 +189,6 @@ export async function getKnowledgeGraphMcpConfig(kgId: number): Promise<Knowledg
     teamResourceKeyId: res?.teamResourceKeyId,
     key: res?.key,
     keyPrefix: res?.keyPrefix,
-    status: res?.status ?? null,
   }
 }
 
@@ -203,7 +201,6 @@ export async function updateKnowledgeGraphMcpConfig(kgId: number, isMcpEnabled: 
     teamResourceKeyId: res?.teamResourceKeyId,
     key: res?.key,
     keyPrefix: res?.keyPrefix,
-    status: res?.status ?? null,
   }
 }
 

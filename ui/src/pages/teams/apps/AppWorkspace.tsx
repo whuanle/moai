@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, ArrowLeftOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
+import { ApiOutlined, ArrowLeftOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, MessageOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
 import { Avatar, Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -11,8 +11,7 @@ import { useShellStore } from '@/store/shell'
 import { getAppDetail } from '@/api/app'
 import { resolveStorageUrl } from '@/utils/storage'
 import { AppAccessSection } from './AppAccessSection'
-import { AppAcpSection } from './AppAcpSection'
-import { AppA2aSection } from './AppA2aSection'
+import { AppProtocolSection } from './AppProtocolSection'
 import { AppChannelsSection } from './AppChannelsSection'
 import { AppDingTalkChannelsSection } from './AppDingTalkChannelsSection'
 import { AppWeixinWorkChannelsSection } from './AppWeixinWorkChannelsSection'
@@ -104,10 +103,8 @@ export function AppWorkspace() {
       menuItems.push(
         // 安全（内容脱敏）与长期记忆不再单独成菜单：Agent 应用并入「配置」分区收缩卡片（流程应用仍保留安全二级页）
         { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
-        // ACP：agent-to-agent 接入（Agent 与流程应用均支持）
-        { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
-        // A2A：Google Agent2Agent 协议接入（Agent 与流程应用均支持）
-        { key: 'a2a', icon: <ApiOutlined />, label: t('appWorkspace.menuA2a') },
+        // ACP/A2A：对外协议接入单一分区（同开同关，共用一把资源 key；Agent 与流程应用均支持）
+        { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcpA2a') },
       )
       // 外部渠道（飞书接入等）：仅内部应用（外部应用走访问点）
       if (!isExternal) {
@@ -161,8 +158,7 @@ export function AppWorkspace() {
     configGroupItems.push(
       { key: 'security', icon: <SafetyCertificateOutlined />, label: t('appWorkspace.menuSecurity') },
       { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
-      { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
-      { key: 'a2a', icon: <ApiOutlined />, label: t('appWorkspace.menuA2a') },
+      { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcpA2a') },
     )
   }
   if (!isExternal) {
@@ -261,14 +257,14 @@ export function AppWorkspace() {
     // 旧 /monitor 深链：同一 Tab 容器落到「使用分析」
     if (validSection === 'monitor') return <AppLogsSection appId={appId} canManage={canManage} defaultTab="usage" />
     if (validSection === 'security') return <AppSecuritySection appId={appId} canManage={canManage} />
-    if (validSection === 'acp') return <AppAcpSection appId={appId} teamId={teamId} canManage={canManage} />
-    if (validSection === 'a2a') return <AppA2aSection appId={appId} teamId={teamId} canManage={canManage} />
+    // ACP 与 A2A 合并为单一「协议接入」分区（同开同关，共用一把资源 key）；旧 /a2a 路由同页
+    if (validSection === 'acp' || validSection === 'a2a') return <AppProtocolSection appId={appId} teamId={teamId} canManage={canManage} />
     if (validSection === 'channels') {
       return (
         <Space direction="vertical" style={{ width: '100%' }}>
-          <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
-          <AppDingTalkChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
-          <AppWeixinWorkChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
+          <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} />
+          <AppDingTalkChannelsSection teamId={teamId} appId={appId} canManage={canManage} />
+          <AppWeixinWorkChannelsSection teamId={teamId} appId={appId} canManage={canManage} />
         </Space>
       )
     }
@@ -294,11 +290,18 @@ export function AppWorkspace() {
             </>
           }
           right={
-            canManage && (
-              <Tooltip title={t('workflowDesigner.runsTip')}>
-                <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
-              </Tooltip>
-            )
+            <>
+              {canManage && isPublished && (
+                <Tooltip title={t('appManage.enterChat')}>
+                  <Button icon={<MessageOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)} />
+                </Tooltip>
+              )}
+              {canManage && (
+                <Tooltip title={t('workflowDesigner.runsTip')}>
+                  <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
+                </Tooltip>
+              )}
+            </>
           }
         />
         <div className="wf-app-body">
@@ -326,7 +329,19 @@ export function AppWorkspace() {
         </div>
       ) : detail?.appId ? (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
-          <Sider width={200} style={{ background: 'transparent' }}>
+          {/* 侧栏钉在视口内（48 = AppLayout 全局上下内边距 24×2）：高度恒为视口内容区高度，
+              不随右侧内容拉伸——发布状态/版本信息始终吸底；右侧内容照常随页面滚动，侧栏 sticky 吸顶 */}
+          <Sider
+            width={200}
+            style={{
+              background: 'transparent',
+              position: 'sticky',
+              top: 24,
+              height: 'calc(100vh - 48px)',
+              alignSelf: 'flex-start',
+              overflowY: 'auto',
+            }}
+          >
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* 应用身份收敛在菜单栏顶部（与团队工作台一致）：头像/名称 + 返回团队；「进入对话」移至「配置」分区调试面板标题右侧 */}
               <div style={{ padding: `0 ${spacing.xs}px ${spacing.sm}px` }}>

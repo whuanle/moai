@@ -15,6 +15,7 @@ import {
   getAppUsageTrend,
   type AppUsageActivityStats,
   type AppUsageModelItem,
+  type AppUsageModelTokenSeries,
   type AppUsageSummary,
   type AppUsageTrendItem,
 } from '@/api/app'
@@ -89,6 +90,7 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
   })
   const [memoryCount, setMemoryCount] = useState(0)
   const [trend, setTrend] = useState<AppUsageTrendItem[]>([])
+  const [modelTokenSeries, setModelTokenSeries] = useState<AppUsageModelTokenSeries[]>([])
 
   useEffect(() => {
     if (!appId) return
@@ -119,10 +121,16 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
     // 趋势来自统计日表，失败降级为空态展示
     getAppUsageTrend(appId, 30)
       .then((res) => {
-        if (!cancelled) setTrend(res.items ?? [])
+        if (!cancelled) {
+          setTrend(res.items ?? [])
+          setModelTokenSeries(res.modelTokenSeries ?? [])
+        }
       })
       .catch(() => {
-        if (!cancelled) setTrend([])
+        if (!cancelled) {
+          setTrend([])
+          setModelTokenSeries([])
+        }
       })
     return () => {
       cancelled = true
@@ -140,6 +148,15 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
     [byModel],
   )
   const hasTrendData = useMemo(() => trend.some((x) => (x.useCount ?? 0) > 0 || (x.messageCount ?? 0) > 0), [trend])
+  // 模型 token 序列按芯片卡顺序排列，折线调色板与芯片色点一一对应
+  const orderedModelTokenSeries = useMemo(() => {
+    const chipIndex = new Map(byModel.map((m, i) => [String(m.modelId ?? ''), i]))
+    return [...modelTokenSeries].sort(
+      (a, b) =>
+        (chipIndex.get(String(a.modelId ?? '')) ?? Number.MAX_SAFE_INTEGER) -
+        (chipIndex.get(String(b.modelId ?? '')) ?? Number.MAX_SAFE_INTEGER),
+    )
+  }, [byModel, modelTokenSeries])
 
   const tileValues: Record<(typeof ACTIVITY_TILES)[number]['key'], number> = {
     useCount: stats.useCount,
@@ -237,6 +254,7 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
             {byModel.map((item, index) => {
               const accent = chartColors[index % chartColors.length]
               const tokens = item.totalTokens ?? 0
+              const hasUsage = tokens > 0 || (item.callCount ?? 0) > 0
               const share = modelTotalTokens > 0 ? Math.round((tokens / modelTotalTokens) * 100) : 0
               return (
                 <div
@@ -247,8 +265,8 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
                     maxWidth: '100%',
                     padding: spacing.md,
                     borderRadius: token.borderRadiusLG,
-                    border: `1px solid ${token.colorBorderSecondary}`,
-                    background: token.colorBgContainer,
+                    border: `1px ${hasUsage ? 'solid' : 'dashed'} ${hasUsage ? token.colorBorderSecondary : token.colorBorderSecondary}`,
+                    background: hasUsage ? token.colorBgContainer : token.colorFillQuaternary,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
@@ -265,18 +283,34 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
                     <Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>
                       {item.modelName || item.modelId || '-'}
                     </Text>
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: 12,
-                        whiteSpace: 'nowrap',
-                        padding: `0 ${spacing.xs}px`,
-                        borderRadius: token.borderRadiusSM,
-                        background: withAlpha(accent, 0.1),
-                      }}
-                    >
-                      {share}%
-                    </Text>
+                    {item.isDefault && (
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          whiteSpace: 'nowrap',
+                          padding: `0 ${spacing.xs}px`,
+                          borderRadius: token.borderRadiusSM,
+                          background: token.colorPrimaryBg,
+                          color: token.colorPrimary,
+                        }}
+                      >
+                        {t('appMonitor.modelDefaultBadge')}
+                      </Text>
+                    )}
+                    {hasUsage && (
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: 12,
+                          whiteSpace: 'nowrap',
+                          padding: `0 ${spacing.xs}px`,
+                          borderRadius: token.borderRadiusSM,
+                          background: withAlpha(accent, 0.1),
+                        }}
+                      >
+                        {share}%
+                      </Text>
+                    )}
                   </div>
                   <div style={{ marginTop: spacing.sm, fontSize: 22, fontWeight: 600, lineHeight: 1.3 }}>
                     {formatInt(tokens)}
@@ -285,12 +319,14 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
                     </span>
                   </div>
                   <Text type="secondary" style={{ display: 'block', marginTop: spacing.xs, fontSize: 12 }}>
-                    {t('appMonitor.modelMeta', {
-                      calls: formatInt(item.callCount),
-                      prompt: formatInt(item.promptTokens),
-                      completion: formatInt(item.completionTokens),
-                      cached: formatInt(item.cachedTokens),
-                    })}
+                    {hasUsage
+                      ? t('appMonitor.modelMeta', {
+                          calls: formatInt(item.callCount),
+                          prompt: formatInt(item.promptTokens),
+                          completion: formatInt(item.completionTokens),
+                          cached: formatInt(item.cachedTokens),
+                        })
+                      : t('appMonitor.modelNoUsage')}
                   </Text>
                 </div>
               )
@@ -299,7 +335,7 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
         )}
       </Card>
 
-      {/* 近 30 天趋势：使用次数（柱）+ 消息条数（线），来自统计日表 */}
+      {/* 近 30 天趋势：使用次数（柱）+ 消息条数（线）+ 各模型 token 多折线，来自统计日表 */}
       <Card title={t('appMonitor.trendTitle')} loading={loading}>
         {trend.length === 0 || !hasTrendData ? (
           <div style={{ padding: `${spacing.lg}px 0`, textAlign: 'center' }}>
@@ -307,6 +343,16 @@ export function AppMonitorSection({ appId }: AppMonitorSectionProps) {
           </div>
         ) : (
           <UsageTrendChart items={trend} />
+        )}
+        {modelTokenSeries.length > 0 && hasTrendData && (
+          <>
+            <div style={{ marginTop: trend.length > 0 && hasTrendData ? spacing.lg : 0 }}>
+              <Text type="secondary" strong style={{ fontSize: 13 }}>
+                {t('appMonitor.trendModelTitle')}
+              </Text>
+            </div>
+            <ModelTokenTrendChart series={orderedModelTokenSeries} />
+          </>
         )}
       </Card>
     </div>
@@ -348,6 +394,17 @@ function CachedRateRing({ rate, loading }: { rate: number; loading: boolean }) {
 }
 
 /**
+ * gpt-vis 动态加载（单飞）：页内两张趋势图共享同一 in-flight import —— 其 CJS 构建
+ * （type:module）无法被测试环境静态解析，且并发重复动态 import 会绕过测试 mock；
+ * 单飞同时拆出首屏外 chunk。加载失败由各图表自行降级.
+ */
+let gptVisModules: Promise<typeof import('@antv/gpt-vis')> | null = null
+function loadGptVis(): Promise<typeof import('@antv/gpt-vis')> {
+  gptVisModules ??= import('@antv/gpt-vis')
+  return gptVisModules
+}
+
+/**
  * 近 30 天趋势双轴图（gpt-vis DualAxes）：使用次数柱 + 消息条数线，实例与容器同生命周期，
  * 数据变化整体重渲染。gpt-vis 经动态 import 引入（其 CJS 构建无法被测试环境静态解析，
  * 且可拆出首屏外 chunk）；加载/渲染失败降级为空态文案，不阻塞页面.
@@ -366,7 +423,7 @@ function UsageTrendChart({ items }: { items: AppUsageTrendItem[] }) {
     let instance: { render: (config: never) => void; destroy: () => void } | null = null
     void (async () => {
       try {
-        const { DualAxes } = await import('@antv/gpt-vis')
+        const { DualAxes } = await loadGptVis()
         if (disposed || !containerRef.current) {
           return
         }
@@ -407,4 +464,70 @@ function UsageTrendChart({ items }: { items: AppUsageTrendItem[] }) {
     )
   }
   return <div ref={containerRef} style={{ width: '100%', height: 280 }} />
+}
+
+/**
+ * 各模型 Token 消耗趋势分组折线（gpt-vis Line）：每模型一条线（server 已按区间合计降序取 top 8），
+ * 调色板传设计系统图表色板并与芯片卡色点对齐（series 已按芯片顺序排列）；
+ * 经动态 import 引入（同 DualAxes：CJS 构建无法被测试环境静态解析），加载/渲染失败降级为空态文案.
+ */
+function ModelTokenTrendChart({ series }: { series: AppUsageModelTokenSeries[] }) {
+  const { t, i18n } = useTranslation()
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || series.length === 0) {
+      return undefined
+    }
+    let disposed = false
+    let instance: { render: (config: never) => void; destroy: () => void } | null = null
+    void (async () => {
+      try {
+        const { Line } = await loadGptVis()
+        if (disposed || !containerRef.current) {
+          return
+        }
+        instance = Line({
+          container: containerRef.current,
+          height: 240,
+          theme: 'light',
+          locale: i18n.language,
+        })
+        instance.render({
+          data: series.flatMap((s) =>
+            s.points.map((p) => ({
+              time: (p.date ?? '').slice(5),
+              value: p.tokens,
+              group: s.modelName || s.modelId || '-',
+            })),
+          ),
+          axisYTitle: t('appMonitor.totalTokens'),
+          style: { palette: [...chartColors] },
+        } as never)
+        if (!disposed) {
+          setFailed(false)
+        }
+      } catch {
+        if (!disposed) {
+          setFailed(true)
+        }
+      }
+    })()
+    return () => {
+      disposed = true
+      instance?.destroy()
+      instance = null
+    }
+  }, [series, t, i18n.language])
+
+  if (failed) {
+    return (
+      <div style={{ padding: `${spacing.lg}px 0`, textAlign: 'center' }}>
+        <Typography.Text type="secondary">{t('appMonitor.trendModelEmpty')}</Typography.Text>
+      </div>
+    )
+  }
+  return <div ref={containerRef} style={{ width: '100%', height: 240 }} />
 }

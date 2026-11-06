@@ -16,6 +16,7 @@ import {
   updateAppSessionPrompt,
 } from '@/api/app'
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts } from '@/api/prompt'
+import { getTeamAvailableModels } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type AgentChatHandlers } from '@/api/agentChat'
 import { uploadChatFile } from '@/utils/storage'
 
@@ -37,6 +38,10 @@ vi.mock('@/api/prompt', () => ({
   getMyPrompts: vi.fn(),
   getTeamPrompts: vi.fn(),
   getTopUsedPrompts: vi.fn(),
+}))
+
+vi.mock('@/api/aichannel', () => ({
+  getTeamAvailableModels: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('@/api/agentChat', () => ({
@@ -94,6 +99,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       promptId: 0,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'auto',
@@ -140,6 +147,37 @@ describe('AppChat（Agent 应用对话页）', () => {
     expect(screen.queryByText('应用对话')).not.toBeInTheDocument()
     expect(document.querySelector('.ant-breadcrumb')).toBeNull()
     expect(document.querySelector('.moai-chat__main.is-landing')).not.toBeNull()
+  })
+
+  it('模型切换器初始选中应用默认模型：defaultModelId 优先于可用列表第一项（@AP-S146）', async () => {
+    // 可用列表第一项是模型A，应用默认模型是模型B：初始应选中 B 而非回落第一项
+    vi.mocked(getAppUserConfig).mockResolvedValue({
+      promptId: 0,
+      defaultModelId: 'm-b',
+      modelIds: ['m-a', 'm-b'],
+      teamAgents: [],
+      defaultTeamAgentId: '',
+      skills: [],
+      defaultSkills: [],
+      toolApprovalMode: 'auto',
+      toolApprovalExemptNames: [],
+      toolApprovalExemptPrefixes: [],
+      toolApprovalAutoApprovedNames: [],
+      toolApprovalAutoApprovedPrefixes: [],
+      memoryMode: 0,
+      memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
+    } as never)
+    vi.mocked(getTeamAvailableModels).mockResolvedValue([
+      { aiModelId: 'm-a', name: '模型A', modelKind: 'conversation', channelName: '渠道A' },
+      { aiModelId: 'm-b', name: '模型B', modelKind: 'conversation', channelName: '渠道B' },
+    ] as never)
+
+    renderPage()
+    // 切换器关闭态显示纯模型名（triggerLabel 承载），默认选中=模型B
+    await waitFor(() => expect(screen.getByText('模型B')).toBeInTheDocument())
+    expect(screen.queryByText('模型A')).not.toBeInTheDocument()
   })
 
   it('删除会话：悬浮显示删除入口，确认后删除当前会话并回到欢迎态', async () => {
@@ -369,6 +407,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       promptId: 0,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'approval',
@@ -425,6 +465,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       promptId: 0,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'approval',
@@ -469,6 +511,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       promptId: 0,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'approval',

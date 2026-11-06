@@ -13,7 +13,7 @@ using MoAI.Team.Services;
 namespace MoAI.App.Handlers;
 
 /// <summary>
-/// 应用对外功能响应组装：开关 + 该应用的团队资源 key（ACP/A2A 共用一把；开启过功能才有 key）.
+/// 应用对外协议接入响应组装：单一开关（ACP/A2A 同开同关）+ 该应用的团队资源 key（一把，两者共用；开启过功能才有 key）.
 /// </summary>
 internal static class AppFeatureResponseMapper
 {
@@ -28,22 +28,20 @@ internal static class AppFeatureResponseMapper
     {
         var response = new AppFeatureResponse
         {
-            IsAcpEnabled = app.IsAcpEnabled,
-            IsA2aEnabled = app.IsA2aEnabled,
+            IsAcpA2aEnabled = app.IsAcpA2aEnabled,
         };
 
-        if (app.IsAcpEnabled || app.IsA2aEnabled)
+        if (app.IsAcpA2aEnabled)
         {
             var key = await databaseContext.TeamResourceKeys
                 .Where(x => x.TeamId == app.TeamId && x.ResourceType == TeamResourceType.App && x.ResourceId == app.Id.ToString())
-                .Select(x => new { x.Id, x.Key, x.KeyPrefix, x.Status })
+                .Select(x => new { x.Id, x.Key, x.KeyPrefix })
                 .FirstOrDefaultAsync(cancellationToken);
             if (key != null)
             {
                 response.TeamResourceKeyId = key.Id;
                 response.Key = key.Key;
                 response.KeyPrefix = key.KeyPrefix;
-                response.Status = key.Status;
             }
         }
 
@@ -90,12 +88,11 @@ public class UpdateAppFeatureCommandHandler : IRequestHandler<UpdateAppFeatureCo
             throw new BusinessException("只有团队管理员可以管理应用.") { StatusCode = 403 };
         }
 
-        app.IsAcpEnabled = request.IsAcpEnabled;
-        app.IsA2aEnabled = request.IsA2aEnabled;
+        app.IsAcpA2aEnabled = request.IsAcpA2aEnabled;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        // 开启任一功能即自动生成/复用该应用的团队资源 key（查库无则写、有则复用；一个应用一把，ACP/A2A 共用）
-        if (app.IsAcpEnabled || app.IsA2aEnabled)
+        // 开启即自动生成/复用该应用的团队资源 key（查库无则写、有则复用；一个应用一把，ACP/A2A 共用）
+        if (app.IsAcpA2aEnabled)
         {
             await TeamResourceKeyEnsurer.EnsureAsync(_databaseContext, app.TeamId, TeamResourceType.App, app.Id.ToString(), cancellationToken);
         }

@@ -1,7 +1,7 @@
 import { getApiClient } from '@/api/kiota'
-import type { TeamResourceType, TeamResourceKeyStatus } from '@/api/client/models'
+import type { TeamResourceType } from '@/api/client/models'
 
-/** 团队资源 key 项（key 明文回显，仅团队 Admin+ 可见；一个资源一把 key） */
+/** 团队资源 key 项（key 明文回显，仅团队 Admin+ 可见；一个资源一把 key，key 无启停状态） */
 export interface TeamResourceKey {
   teamResourceKeyId?: string | null
   teamId?: string | number | null
@@ -11,7 +11,6 @@ export interface TeamResourceKey {
   /** key 原文（moai-tr- 前缀） */
   key?: string | null
   keyPrefix?: string | null
-  status?: TeamResourceKeyStatus | null
   createTime?: string | null
   updateTime?: string | null
 }
@@ -66,24 +65,9 @@ export async function createTeamResourceKey(
   }
 }
 
-/** 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效 */
+/** 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效；key 不可删除（吊销=重置或关闭资源功能开关） */
 export async function resetTeamResourceKey(teamResourceKeyId: string): Promise<string | null | undefined> {
   const client = getApiClient()
   const res = await client.api.teamResourceKey.byId(teamResourceKeyId).reset.post()
   return res?.key
-}
-
-/** 更新资源 key 启停状态；停用后直连调用立即拒绝 */
-export async function updateTeamResourceKeyStatus(
-  teamResourceKeyId: string,
-  status: TeamResourceKeyStatus,
-): Promise<void> {
-  const client = getApiClient()
-  await client.api.teamResourceKey.byId(teamResourceKeyId).put({ status })
-}
-
-/** 删除资源 key（软删除） */
-export async function deleteTeamResourceKey(teamResourceKeyId: string): Promise<void> {
-  const client = getApiClient()
-  await client.api.teamResourceKey.byId(teamResourceKeyId).delete()
 }

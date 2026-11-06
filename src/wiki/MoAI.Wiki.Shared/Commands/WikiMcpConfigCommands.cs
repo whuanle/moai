@@ -1,7 +1,6 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
-using MoAI.Database.Enums;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -31,11 +30,6 @@ public class WikiMcpConfigResponse
     /// key 展示前缀（未生成时 null）.
     /// </summary>
     public string? KeyPrefix { get; set; }
-
-    /// <summary>
-    /// key 状态：enabled/disabled（未生成时 null）.
-    /// </summary>
-    public TeamResourceKeyStatus? Status { get; set; }
 }
 
 /// <summary>

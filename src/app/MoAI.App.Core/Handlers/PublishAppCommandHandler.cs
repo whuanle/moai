@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
@@ -8,6 +9,7 @@ using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Services;
+using MoAI.TeamAgent.Models;
 
 namespace MoAI.App.Handlers;
 
@@ -16,6 +18,8 @@ namespace MoAI.App.Handlers;
 /// </summary>
 public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, EmptyCommandResponse>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
 
@@ -101,6 +105,10 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
             _databaseContext.AppAgentConfigs.Add(config);
         }
 
+        // 团队智能体内嵌定义：按当前绑定把智能体定义（主提示词/偏好模型/子智能体）冻结进快照，
+        // 发布后编辑或删除团队智能体不影响已发布应用；停用/删除的绑定在发布时兜底拒绝
+        await FreezeTeamAgentDefsAsync(app, config, cancellationToken);
+
         config.PublishedConfig = AppAgentConfigSnapshot.Serialize(config);
         config.Status = 1;
 
@@ -110,5 +118,83 @@ public class PublishAppCommandHandler : IRequestHandler<PublishAppCommand, Empty
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;
+    }
+
+    /// <summary>
+    /// 发布前冻结团队智能体定义到 <c>team_agent_defs</c>（随快照序列化）：
+    /// 绑定列表为空时清空；存在已删除/停用/非本团队的绑定时拒绝发布.
+    /// </summary>
+    private async Task FreezeTeamAgentDefsAsync(AppEntity app, AppAgentConfigEntity config, CancellationToken cancellationToken)
+    {
+        var ids = AppAgentConfigJson.ParseGuidList(config.TeamAgentIds);
+        if (ids.Count == 0)
+        {
+            config.TeamAgentDefs = string.Empty;
+            return;
+        }
+
+        var rows = await _databaseContext.TeamAgents
+            .Where(x => ids.Contains(x.Id))
+            .ToListAsync(cancellationToken);
+
+        if (rows.Count != ids.Count || rows.Any(x => !x.Enabled || x.TeamId != app.TeamId))
+        {
+            throw new BusinessException("绑定的团队智能体已被删除或停用，无法发布，请先调整应用配置.") { StatusCode = 400 };
+        }
+
+        var rowMap = rows.ToDictionary(x => x.Id);
+        var defs = new List<SnapshotTeamAgent>();
+        foreach (var id in ids)
+        {
+            if (!rowMap.TryGetValue(id, out var row))
+            {
+                continue;
+            }
+
+            defs.Add(new SnapshotTeamAgent
+            {
+                Id = row.Id,
+                Key = row.Key ?? string.Empty,
+                Name = row.Name,
+                Description = row.Description ?? string.Empty,
+                AvatarObjectKey = row.AvatarObjectKey ?? string.Empty,
+                MainPrompt = row.MainPrompt ?? string.Empty,
+                MainPluginIds = AppAgentConfigJson.ParseGuidList(row.MainPluginIds),
+                MainWikiIds = AppAgentConfigJson.ParseLongList(row.MainWikiIds),
+                MainGraphIds = AppAgentConfigJson.ParseLongList(row.MainGraphIds),
+                Subs = ParseSubs(row.Subs),
+            });
+        }
+
+        config.TeamAgentDefs = SnapshotTeamAgent.SerializeDefs(defs);
+    }
+
+    /// <summary>解析 team_agent.subs JSON（TeamAgentSubItem 数组，camelCase 写入）并映射为快照子智能体定义；非法内容按空列表兜底.</summary>
+    private static List<SnapshotTeamAgentSub> ParseSubs(string? subsJson)
+    {
+        if (string.IsNullOrWhiteSpace(subsJson))
+        {
+            return [];
+        }
+
+        try
+        {
+            // team_agent.subs 由 TeamAgentJson 按 camelCase（Web 默认）序列化，反序列化须同口径
+            var subs = JsonSerializer.Deserialize<List<TeamAgentSubItem>>(subsJson, JsonOptions) ?? [];
+            return subs.Select(x => new SnapshotTeamAgentSub
+            {
+                Key = x.Key ?? string.Empty,
+                Name = x.Name ?? string.Empty,
+                Description = x.Description ?? string.Empty,
+                Prompt = x.Prompt ?? string.Empty,
+                PluginIds = x.PluginIds?.ToList() ?? [],
+                WikiIds = x.WikiIds?.ToList() ?? [],
+                GraphIds = x.GraphIds?.ToList() ?? [],
+            }).ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 }

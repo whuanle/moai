@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { DeleteOutlined, MessageOutlined, PlusOutlined } from '@ant-design/icons'
 import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tag, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -13,12 +13,14 @@ import {
   publishApp,
   saveAppAgentConfig,
   type AgentCompactionDefaults,
+  type AppAgentConfig,
   type AppKind,
   type AppItem,
   type SandboxLimits,
 } from '@/api/app'
 import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
+import { getTeamAgents, type TeamAgentListItem } from '@/api/team-agent'
 import { getSkillOptions, type SkillOption } from '@/api/skills'
 import { getWikis, type WikiItem } from '@/api/wiki'
 import { getKnowledgeGraphs, type KnowledgeGraphItem } from '@/api/knowledgeGraph'
@@ -166,6 +168,10 @@ export interface AppDetail {
   publishVersion?: number | null
   /** 应用版本号（int 编码 aaa*10000+bb*100+cc，显示 aaa.bb.cc） */
   version?: number | null
+  /** 对话开场白与启用开关、快捷输入（详情按发布快照下发，调试面板草稿预览） */
+  openingStatement?: string | null
+  openingStatementEnabled?: boolean | null
+  quickInputs?: string[] | null
   myRole?: number | null
 }
 
@@ -254,6 +260,12 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [subAgentEnabled, setSubAgentEnabled] = useState(false)
   const [subAgentTimeout, setSubAgentTimeout] = useState<number | null>(null)
   const [subAgentResultMaxChars, setSubAgentResultMaxChars] = useState<number | null>(null)
+  // 团队智能体绑定（team_agent，子代理协作下方）：多选 ≤20，多选时对话端可切换生效者；绑定须开启子代理协作
+  const [teamAgentIds, setTeamAgentIds] = useState<string[]>([])
+  const [defaultTeamAgentId, setDefaultTeamAgentId] = useState<string>()
+  const [teamAgentOptions, setTeamAgentOptions] = useState<TeamAgentListItem[]>([])
+  // 配置回显的智能体选项（含弱依赖声明）：绑定缺失提示「一键添加」的数据源
+  const [teamAgentEchoOptions, setTeamAgentEchoOptions] = useState<AppAgentConfig['teamAgents']>([])
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
   const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
@@ -305,6 +317,9 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setQuickInputs(config.quickInputs ?? [])
         setWikiIds(config.wikiIds ?? [])
         setGraphIds(config.graphIds ?? [])
+        setTeamAgentIds(config.teamAgentIds ?? [])
+        setDefaultTeamAgentId(config.defaultTeamAgentId || undefined)
+        setTeamAgentEchoOptions(config.teamAgents ?? [])
         setPluginIds(config.plugins ?? [])
         setWorkflowAppIds(config.workflowApps ?? [])
         setAgentAppIds(config.agentApps ?? [])
@@ -381,7 +396,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setOptionsLoading(true)
     try {
-      const [models, plugins, wikis, skills, apps, graphs] = await Promise.all([
+      const [models, plugins, wikis, skills, apps, graphs, teamAgents] = await Promise.all([
         getTeamAvailableModels(teamId),
         getTeamPlugins(teamId),
         getWikis(teamId),
@@ -391,6 +406,8 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         getApps(teamId),
         // 图谱绑定候选：仅托管图（接入图不参与应用侧向量检索，不开放绑定）
         getKnowledgeGraphs(teamId),
+        // 团队智能体绑定候选：本团队启用中的智能体（含系统内置规划师/构建师）
+        getTeamAgents(teamId),
       ])
       setAvailableModels(models.filter((item) => item.aiModelId))
       setPluginOptions(
@@ -408,6 +425,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
       setAgentAppOptions(
         (apps.items ?? []).filter((item) => item.appType === 'agent' && item.publishStatus === 1 && item.appId),
       )
+      setTeamAgentOptions((teamAgents.items ?? []).filter((item) => item.id && item.enabled !== false))
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
@@ -552,6 +570,11 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
       return
     }
     if (!isExternal && !validateSandboxLimits()) return
+    // 团队智能体绑定依赖子代理协作派发链路（后端保存强校验同语义），保存前本地提示
+    if (teamAgentIds.length > 0 && !subAgentEnabled) {
+      feedback.error(t('appManage.teamAgentRequireSubAgent'))
+      return
+    }
     setSavingConfig(true)
     try {
       // 内容脱敏随「保存设置」一并提交：security 接口即时生效（校验/提交失败抛错，中断整体保存）
@@ -635,6 +658,9 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         prompt,
         wikiIds,
         graphIds,
+        teamAgentIds,
+        // 多选时默认智能体随表单（未选落第一个，后端同语义）；单选/未绑定时传空由后端归一
+        defaultTeamAgentId: teamAgentIds.length > 1 ? (defaultTeamAgentId ?? null) : null,
         plugins: pluginIds,
         workflowApps: workflowAppIds,
         agentApps: agentAppIds,
@@ -795,21 +821,54 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   // 对话类模型：对话模型与 LLM 摘要压缩模型下拉只列 conversation 类型（embedding/图像等模型不适用对话场景）
   const conversationModels = availableModels.filter((item) => item.modelKind === 'conversation')
 
-  /** 模型下拉分组选项：按来源分「团队渠道模型/系统渠道模型」两组（与聚合接口团队自有优先排序一致），子项 title 附渠道名供搜索 */
+  /** 模型下拉分组选项：按来源分「团队渠道模型/系统渠道模型」两组（与聚合接口团队自有优先排序一致）；
+   * 下拉行内附渠道名次要文本（不同渠道可能存在同名模型，仅凭名称无法区分），关闭态/多选标签仍显示纯模型名（optionLabelProp="name"），title 附渠道名供搜索 */
   const conversationModelOptions = [
     {
       label: t('appManage.modelGroupTeam'),
       title: t('appManage.modelGroupTeam'),
       options: conversationModels
         .filter((item) => item.isTeamChannel)
-        .map((item) => ({ value: String(item.aiModelId), label: item.name || item.modelId || '-', title: `${item.name || '-'}（${item.channelName || '-'}）` })),
+        .map((item) => {
+          const name = item.name || item.modelId || '-'
+          const channel = item.channelName || '-'
+          return {
+            value: String(item.aiModelId),
+            name,
+            label: (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                <span style={{ flexShrink: 0 }}>{name}</span>
+                <span style={{ fontSize: 12, color: token.colorTextTertiary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {channel}
+                </span>
+              </div>
+            ),
+            title: `${name}（${channel}）`,
+          }
+        }),
     },
     {
       label: t('appManage.modelGroupSystem'),
       title: t('appManage.modelGroupSystem'),
       options: conversationModels
         .filter((item) => !item.isTeamChannel)
-        .map((item) => ({ value: String(item.aiModelId), label: item.name || item.modelId || '-', title: `${item.name || '-'}（${item.channelName || '-'}）` })),
+        .map((item) => {
+          const name = item.name || item.modelId || '-'
+          const channel = item.channelName || '-'
+          return {
+            value: String(item.aiModelId),
+            name,
+            label: (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                <span style={{ flexShrink: 0 }}>{name}</span>
+                <span style={{ fontSize: 12, color: token.colorTextTertiary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {channel}
+                </span>
+              </div>
+            ),
+            title: `${name}（${channel}）`,
+          }
+        }),
     },
   ].filter((group) => group.options.length > 0)
 
@@ -832,6 +891,64 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const defaultModelOptions = conversationModelOptions
     .map((group) => ({ ...group, options: group.options.filter((option) => modelIds.includes(option.value)) }))
     .filter((group) => group.options.length > 0)
+
+  /** 团队智能体多选变更：去重；默认智能体不在列表内时自动落到第一个（保存强校验同语义） */
+  const handleTeamAgentIdsChange = (ids: string[]) => {
+    const deduped = Array.from(new Set(ids))
+    setTeamAgentIds(deduped)
+    setDefaultTeamAgentId((prev) => (prev && deduped.includes(prev) ? prev : deduped[0]))
+  }
+
+  const renderTeamAgentOption = (item: TeamAgentListItem): { value: string; label: ReactNode; title: string } => {
+    const disabled = item.enabled === false
+    const name = `${item.name || '-'}${disabled ? `（${t('appManage.teamAgentDisabledSuffix')}）` : ''}`
+    return {
+      value: String(item.id),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarObjectKey ?? null) || undefined} alt={name}>
+            {(item.name || '-').slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span style={disabled ? { opacity: 0.55 } : undefined}>{name}</span>
+          {item.isSystem && !disabled && <Tag style={{ marginInlineEnd: 0 }} color="purple">{t('teamAgents.builtin')}</Tag>}
+        </span>
+      ),
+    }
+  }
+
+  // 绑定候选 = 启用中智能体；已绑定后被停用的项也要出现（带「已停用」标记，避免回显成裸 id，提示移除）
+  const teamAgentSelectOptions = [
+    ...teamAgentOptions,
+    ...(teamAgentEchoOptions ?? []).filter(
+      (item) => item && item.enabled === false && item.id && teamAgentIds.includes(String(item.id)),
+    ).map((item) => ({
+      id: item.id,
+      key: item.key,
+      name: item.name,
+      description: item.description,
+      avatarObjectKey: item.avatarObjectKey,
+      enabled: false,
+      isSystem: false,
+    } as TeamAgentListItem)),
+  ].map(renderTeamAgentOption)
+  /** 默认团队智能体下拉：仅在已选智能体范围内选择（多选 ≥2 时展示，单选默认即唯一项无需配置） */
+  const defaultTeamAgentSelectOptions = teamAgentSelectOptions.filter((option) => teamAgentIds.includes(option.value))
+
+  // 弱依赖提示（team-agent sdd D3）：已选智能体声明的主依赖未绑定到应用时提示一键补齐（不阻断绑定）
+  const missingDeps = useMemo(() => {
+    const agents = (teamAgentEchoOptions ?? []).filter((a) => teamAgentIds.includes(String(a?.id ?? '')))
+    const missingPlugins = agents.flatMap((a) => (a.mainPluginIds ?? []).map(String).filter((id) => !pluginIds.includes(id)))
+    const missingWikis = agents.flatMap((a) => (a.mainWikiIds ?? []).map(Number).filter((id) => !wikiIds.includes(id)))
+    const missingGraphs = agents.flatMap((a) => (a.mainGraphIds ?? []).map(Number).filter((id) => !graphIds.includes(id)))
+    const agentNames = agents
+      .filter((a) => (a.mainPluginIds ?? []).map(String).some((id) => !pluginIds.includes(id))
+        || (a.mainWikiIds ?? []).map(Number).some((id) => !wikiIds.includes(id))
+        || (a.mainGraphIds ?? []).map(Number).some((id) => !graphIds.includes(id)))
+      .map((a) => a.name || a.key || '')
+      .filter(Boolean)
+    return { missingPlugins, missingWikis, missingGraphs, agentNames: Array.from(new Set(agentNames)) }
+  }, [teamAgentIds, teamAgentEchoOptions, pluginIds, wikiIds, graphIds])
 
   /** token 数格式化：128000 → 128K、1050000 → 1.1M */
   const formatModelTokens = (tokens: number) => {
@@ -991,6 +1108,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             value={modelIds}
                             onChange={handleModelIdsChange}
                             options={conversationModelOptions}
+                            optionLabelProp="name"
                             notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.modelEmpty')}
                           />
                         </Form.Item>
@@ -1005,6 +1123,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                               value={modelId}
                               onChange={(value) => setModelId(value)}
                               options={defaultModelOptions}
+                              optionLabelProp="name"
                               notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.defaultModelPlaceholder')}
                             />
                             {selectedModel && modelParamTags(selectedModel).length > 0 && (
@@ -1110,6 +1229,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                               value={compactionSummarizerModelId || modelId}
                               onChange={(value) => setCompactionSummarizerModelId(value)}
                               options={conversationModelOptions}
+                              optionLabelProp="name"
                             />
                           </Form.Item>
                         )}
@@ -1120,38 +1240,102 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           extra={t('appManage.subAgentHint')}
                           style={{ marginBottom: spacing.sm }}
                         >
-                          <Switch checked={subAgentEnabled} onChange={setSubAgentEnabled} disabled={isExternal} />
+                          <Switch
+                            checked={subAgentEnabled}
+                            onChange={(checked) => {
+                              setSubAgentEnabled(checked)
+                              // 关闭协作时同步清空团队智能体绑定（绑定依赖协作派发链路，后端强校验同语义）
+                              if (!checked) {
+                                setTeamAgentIds([])
+                                setDefaultTeamAgentId(undefined)
+                              }
+                            }}
+                            disabled={isExternal}
+                          />
                         </Form.Item>
                         {subAgentEnabled && !isExternal && (
-                          <Row gutter={spacing.md}>
-                            <Col xs={24} md={12}>
-                              <Form.Item label={t('appManage.subAgentTimeout')} style={{ marginBottom: spacing.sm }}>
-                                <InputNumber
-                                  min={30}
-                                  max={1800}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={subAgentTimeout ?? undefined}
-                                  onChange={(value) => setSubAgentTimeout(typeof value === 'number' ? value : null)}
-                                  placeholder="180"
-                                  addonAfter={t('appManage.sandboxSeconds')}
+                          <>
+                            <Row gutter={spacing.md}>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.subAgentTimeout')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={30}
+                                    max={1800}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={subAgentTimeout ?? undefined}
+                                    onChange={(value) => setSubAgentTimeout(typeof value === 'number' ? value : null)}
+                                    placeholder="180"
+                                    addonAfter={t('appManage.sandboxSeconds')}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.subAgentResultMaxChars')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={500}
+                                    max={100000}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={subAgentResultMaxChars ?? undefined}
+                                    onChange={(value) => setSubAgentResultMaxChars(typeof value === 'number' ? value : null)}
+                                    placeholder="8000"
+                                  />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+                            <Form.Item
+                              label={t('appManage.teamAgentSection')}
+                              extra={t('appManage.teamAgentHint')}
+                              style={{ marginBottom: spacing.sm }}
+                            >
+                              <Select
+                                mode="multiple"
+                                allowClear
+                                showSearch
+                                optionFilterProp="title"
+                                maxTagCount="responsive"
+                                placeholder={t('appManage.teamAgentPlaceholder')}
+                                value={teamAgentIds}
+                                onChange={handleTeamAgentIdsChange}
+                                options={teamAgentSelectOptions}
+                                optionLabelProp="title"
+                                disabled={optionsLoading}
+                              />
+                            </Form.Item>
+                            {missingDeps.agentNames.length > 0 && (
+                              <Alert
+                                type="warning"
+                                showIcon
+                                style={{ marginBottom: spacing.sm }}
+                                message={t('appManage.teamAgentMissingDeps', { names: missingDeps.agentNames.join('、') })}
+                                action={
+                                  <Button size="small" danger type="text" onClick={() => {
+                                    setPluginIds((prev) => Array.from(new Set([...prev, ...missingDeps.missingPlugins])))
+                                    setWikiIds((prev) => Array.from(new Set([...prev, ...missingDeps.missingWikis])))
+                                    setGraphIds((prev) => Array.from(new Set([...prev, ...missingDeps.missingGraphs])))
+                                  }}>
+                                    {t('appManage.teamAgentAddDeps')}
+                                  </Button>
+                                }
+                              />
+                            )}
+                            {teamAgentIds.length > 1 && (
+                              <Form.Item label={t('appManage.teamAgentDefault')} style={{ marginBottom: spacing.sm }}>
+                                <Select
+                                  allowClear
+                                  showSearch
+                                  optionFilterProp="title"
+                                  placeholder={t('appManage.teamAgentDefaultPlaceholder')}
+                                  value={defaultTeamAgentId ?? undefined}
+                                  onChange={(value) => setDefaultTeamAgentId(typeof value === 'string' ? value : undefined)}
+                                  options={defaultTeamAgentSelectOptions}
+                                  optionLabelProp="title"
+                                  disabled={optionsLoading}
                                 />
                               </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12}>
-                              <Form.Item label={t('appManage.subAgentResultMaxChars')} style={{ marginBottom: spacing.sm }}>
-                                <InputNumber
-                                  min={500}
-                                  max={100000}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={subAgentResultMaxChars ?? undefined}
-                                  onChange={(value) => setSubAgentResultMaxChars(typeof value === 'number' ? value : null)}
-                                  placeholder="8000"
-                                />
-                              </Form.Item>
-                            </Col>
-                          </Row>
+                            )}
+                          </>
                         )}
                       </Form>
                     ),
@@ -1595,8 +1779,10 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
           >
             <AppDebugChat
               appId={appId}
+              appName={detail?.name ?? undefined}
               appAvatar={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
               openingStatement={openingEnabled ? openingStatement.trim() : ''}
+              quickInputs={quickInputs}
               headerExtra={enterChatExtra}
             />
           </DSCard>

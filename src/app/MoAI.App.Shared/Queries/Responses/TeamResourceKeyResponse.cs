@@ -38,11 +38,6 @@ public class TeamResourceKeyItem
     public string KeyPrefix { get; set; } = default!;
 
     /// <summary>
-    /// 状态：enabled/disabled.
-    /// </summary>
-    public TeamResourceKeyStatus Status { get; set; }
-
-    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; set; }
@@ -132,20 +127,15 @@ public class ResetTeamResourceKeyCommandResponse
 }
 
 /// <summary>
-/// 应用对外功能（ACP/A2A）与团队资源 key 响应：一个应用一把 key（ACP/A2A 共用），
-/// 未开启任一功能时 key 相关字段为 null.
+/// 应用对外协议接入（ACP/A2A）与团队资源 key 响应：一个应用一把 key（ACP/A2A 共用），
+/// 未开启时 key 相关字段为 null.
 /// </summary>
 public class AppFeatureResponse
 {
     /// <summary>
-    /// 是否开启 ACP 接入.
+    /// 是否开启对外协议接入（ACP/A2A，单一开关同开同关）.
     /// </summary>
-    public bool IsAcpEnabled { get; set; }
-
-    /// <summary>
-    /// 是否开启 A2A 接入.
-    /// </summary>
-    public bool IsA2aEnabled { get; set; }
+    public bool IsAcpA2aEnabled { get; set; }
 
     /// <summary>
     /// 资源 key 行 id（未生成时 null）.
@@ -161,9 +151,4 @@ public class AppFeatureResponse
     /// key 展示前缀（未生成时 null）.
     /// </summary>
     public string? KeyPrefix { get; set; }
-
-    /// <summary>
-    /// key 状态：enabled/disabled（未生成时 null）.
-    /// </summary>
-    public TeamResourceKeyStatus? Status { get; set; }
 }

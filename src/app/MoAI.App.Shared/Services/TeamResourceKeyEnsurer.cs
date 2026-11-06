@@ -40,7 +40,6 @@ public static class TeamResourceKeyEnsurer
             ResourceId = resourceId,
             Key = key,
             KeyPrefix = keyPrefix,
-            Status = TeamResourceKeyStatus.Enabled,
         };
 
         databaseContext.TeamResourceKeys.Add(entity);

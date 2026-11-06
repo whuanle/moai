@@ -55,10 +55,6 @@ internal partial class TeamResourceKeyConfiguration : IEntityTypeConfiguration<T
             .HasDefaultValue(TeamResourceType.App)
             .HasComment("资源类型：1=app 团队应用（ACP/A2A）2=wiki 知识库 3=knowledge_graph 知识图谱")
             .HasColumnName("resource_type");
-        entity.Property(e => e.Status)
-            .HasDefaultValue(TeamResourceKeyStatus.Enabled)
-            .HasComment("状态：0=enabled 1=disabled")
-            .HasColumnName("status");
         entity.Property(e => e.TeamId)
             .HasComment("归属团队 id")
             .HasColumnName("team_id");

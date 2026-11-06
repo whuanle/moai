@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Input, Space, Switch, Typography } from 'antd'
+import { Button, Divider, Input, Space, Switch, Tag, Typography } from 'antd'
 import { CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getServerInfo } from '@/api/auth'
 import { getWikiMcpConfig, updateWikiMcpConfig, type WikiMcpConfig } from '@/api/wiki'
+import { createTeamResourceKey } from '@/api/teamres-key'
 import { ResourceKeyCard } from '@/pages/teams/apps/ResourceKeyCard'
 
 const { Text } = Typography
@@ -23,7 +23,7 @@ interface WikiMcpProps {
  * 展示该知识库的 MCP 服务器地址（streamable HTTP，无状态）与资源 key，供外部 MCP 客户端复制接入。
  * 地址取 serverinfo 的 serviceUrl（对外完整 URL），未取到时回退当前页面 origin。
  */
-export function WikiMcp({ wikiId, canManage }: WikiMcpProps) {
+export function WikiMcp({ wikiId, teamId, canManage }: WikiMcpProps) {
   const { t } = useTranslation()
   const [address, setAddress] = useState('')
   const [config, setConfig] = useState<WikiMcpConfig | null>(null)
@@ -31,11 +31,17 @@ export function WikiMcp({ wikiId, canManage }: WikiMcpProps) {
   const load = useCallback(async () => {
     if (!canManage) return
     try {
-      setConfig(await getWikiMcpConfig(wikiId))
+      let cfg = await getWikiMcpConfig(wikiId)
+      // 功能已开启但 key 缺失（历史异常场景）：自动 get-or-create 补齐后重取
+      if (cfg.isMcpEnabled && !cfg.key && teamId != null && teamId > 0) {
+        await createTeamResourceKey({ teamId, resourceType: 'wiki', resourceId: wikiId })
+        cfg = await getWikiMcpConfig(wikiId)
+      }
+      setConfig(cfg)
     } catch {
       // 错误已由全局请求中间件统一提示
     }
-  }, [wikiId, canManage])
+  }, [wikiId, teamId, canManage])
 
   useEffect(() => {
     if (canManage) void load()
@@ -62,7 +68,6 @@ export function WikiMcp({ wikiId, canManage }: WikiMcpProps) {
   const handleToggle = async (checked: boolean) => {
     try {
       setConfig(await updateWikiMcpConfig(wikiId, checked))
-      feedback.success(checked ? t('wiki.mcpEnabled') : t('wiki.mcpDisabled'))
     } catch {
       // 错误已由全局请求中间件统一提示
     }
@@ -71,18 +76,27 @@ export function WikiMcp({ wikiId, canManage }: WikiMcpProps) {
   const copyAddress = async () => {
     try {
       await navigator.clipboard.writeText(address)
-      feedback.success(t('common.copySuccess'))
     } catch {
-      feedback.error(t('common.copyFailed'))
+      // 剪贴板失败静默（地址只读可见可手选）
     }
   }
 
+  const mcpOn = config?.isMcpEnabled ?? false
+
   return (
-    <Space direction="vertical" size={spacing.md} style={{ display: 'flex' }}>
-      <div>
-        <Text strong style={{ fontSize: 13 }}>{t('wiki.mcpEnable')}</Text>
-        <Switch checked={config?.isMcpEnabled ?? false} onChange={(v) => void handleToggle(v)} style={{ marginLeft: spacing.sm }} />
-      </div>
+    <Space direction="vertical" size={spacing.md} style={{ display: 'flex', maxWidth: 880 }}>
+      {/* 功能开关行 */}
+      <Space size={spacing.sm} align="center">
+        <Switch checked={mcpOn} onChange={(v) => void handleToggle(v)} />
+        <Text strong>{t('wiki.mcpEnable')}</Text>
+        <Tag color={mcpOn ? 'success' : 'default'} style={{ marginRight: 0 }}>
+          {mcpOn ? t('teamresKey.stateOn') : t('teamresKey.stateOff')}
+        </Tag>
+      </Space>
+
+      <Divider style={{ margin: 0 }} />
+
+      {/* MCP 地址 */}
       <div>
         <Text strong style={{ fontSize: 13 }}>{t('wiki.mcpAddress')}</Text>
         <Space.Compact style={{ width: '100%', marginTop: spacing.xs }}>
@@ -90,13 +104,19 @@ export function WikiMcp({ wikiId, canManage }: WikiMcpProps) {
           <Button icon={<CopyOutlined />} disabled={!address} onClick={() => void copyAddress()} aria-label={t('common.copy')} />
         </Space.Compact>
       </div>
+
+      <Divider style={{ margin: 0 }} />
+
+      {/* 资源 Key 盒子 */}
       <ResourceKeyCard
-        featureEnabled={config?.isMcpEnabled ?? false}
+        featureEnabled={mcpOn}
         canManage={canManage ?? false}
-        keyInfo={config ? { teamResourceKeyId: config.teamResourceKeyId, key: config.key, keyPrefix: config.keyPrefix, status: config.status } : null}
+        keyInfo={config ? { teamResourceKeyId: config.teamResourceKeyId, key: config.key, keyPrefix: config.keyPrefix } : null}
         onChanged={() => void load()}
         hintKey="teamresKey.hintWiki"
+        titleKey="teamresKey.boxTitleWiki"
       />
+
       <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.mcpAuthHint')}</Text>
     </Space>
   )

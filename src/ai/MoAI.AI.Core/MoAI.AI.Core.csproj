@@ -23,6 +23,7 @@
 		<ProjectReference Include="..\..\dingtalk\MoAI.DingTalk.Shared\MoAI.DingTalk.Shared.csproj" />
 		<ProjectReference Include="..\..\weixinwork\MoAI.WeixinWork.Shared\MoAI.WeixinWork.Shared.csproj" />
 		<ProjectReference Include="..\..\app\MoAI.App.Shared\MoAI.App.Shared.csproj" />
+		<ProjectReference Include="..\..\teamagent\MoAI.TeamAgent.Shared\MoAI.TeamAgent.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
 	</ItemGroup>
 

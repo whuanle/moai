@@ -74,7 +74,7 @@ Agent 运行时(src/ai)                 ▼
 - **列表三入口**：`my_list`（本人个人技能）/`team_list`（团队成员）/`market_list`（is_public 全员）+ 保留 `list`（管理员全量分页）。列表项扩展 `teamId/isPublic/pendingPublicationId` 并继承 `AuditsInfo` 填充人名（`QuerySkillListHelper`）。
 - **详情/下载可见性**：`SkillAccessGuard.EnsureCanViewAsync`——系统内置 ∪ 公开 ∪ 本团队 ∪ 本人 ∪ 平台管理员；下载端点 `{id}/download` 返回逐文件 MinIO 预签名地址（1 小时），内置技能 400（脚本随平台分发无对象存储文件）。
 - **删除联动**：删技能同步删待审核上架申请（对齐提示词，防僵尸审核记录）。
-- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心（xl/xxl 一行 6 张，不展示条数统计，头部固定分类 chip 按 `classifyId` 过滤、`classifyLabel` 展示 emoji）；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定，分类下拉同款 classifyLabel）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。
+- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心（xl/xxl 一行 6 张，不展示条数统计，头部固定分类 chip 按 `classifyId` 过滤、`classifyLabel` 展示 emoji）；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理，**2026-11-05 改版为卡片列表**：同智能体/提示词卡款——头像+名称+状态 Tag+文件数/使用次数徽标+key 代码字+两行省略描述+底栏纯图标操作与更新时间，工具栏单行 `QueryBar`（搜索→查询→|→新建，去重置/刷新，规范 §7），删除/上架/撤回/详情/编辑/下载语义不变）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定，分类下拉同款 classifyLabel）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。
 
 ## 8. 增量设计（2026-09-18：技能分类）
 

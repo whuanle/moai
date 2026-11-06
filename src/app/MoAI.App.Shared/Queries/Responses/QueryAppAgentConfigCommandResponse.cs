@@ -49,6 +49,21 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<long> GraphIds { get; set; } = new List<long>();
 
     /// <summary>
+    /// 绑定的团队智能体 id 列表（元素为 team_agent.id，uuid，须为本团队启用中智能体）.
+    /// </summary>
+    public IReadOnlyList<Guid> TeamAgentIds { get; set; } = new List<Guid>();
+
+    /// <summary>
+    /// 默认团队智能体 id（uuid）；空=取列表第一个.
+    /// </summary>
+    public Guid? DefaultTeamAgentId { get; set; }
+
+    /// <summary>
+    /// 绑定的团队智能体选项（按绑定顺序，含实时启用状态；供配置回显与调试面板）.
+    /// </summary>
+    public IReadOnlyList<AppTeamAgentOption> TeamAgents { get; set; } = new List<AppTeamAgentOption>();
+
+    /// <summary>
     /// 绑定的插件 id 列表（元素为 plugin.id，uuid）.
     /// </summary>
     public IReadOnlyList<Guid> Plugins { get; set; } = new List<Guid>();

@@ -47,11 +47,6 @@ public partial class TeamResourceKeyEntity : IFullAudited
     public string KeyPrefix { get; set; } = string.Empty;
 
     /// <summary>
-    /// 状态：停用后直连调用立即拒绝.
-    /// </summary>
-    public TeamResourceKeyStatus Status { get; set; }
-
-    /// <summary>
     /// 创建人.
     /// </summary>
     public long CreateUserId { get; set; }

@@ -13,7 +13,7 @@
 | @FS-S15 | 代码走查 + 启动日志（假凭证连接终态退出不阻断宿主，见 sop.md 第 4 节） | PASS（2026-09-14） |
 | @FS-S16~S18 | @manual（需真实飞书应用，走查 FeishuEventForwarder） | PASS 走查（2026-09-14） |
 | @FS-S19~S23 | @manual（需真实飞书应用 + 已配置模型的应用，验收步骤见 sop.md 第 3 节） | 待真实环境验收 |
-| @FS-S24~S25、S27~S28 | ui/src/pages/teams/apps/__tests__/AppChannelsSection.test.tsx、__tests__/AppWorkspace.test.tsx（`cd ui && npm run test`） | PASS 498/498（2026-10-08；@FS-S26 已随绑定/解绑下线退役） |
+| @FS-S24~S25、S27 | ui/src/pages/teams/apps/__tests__/AppChannelsSection.test.tsx、__tests__/AppWorkspace.test.tsx（`cd ui && npm run test`） | PASS 498/498（2026-10-08；@FS-S26 已随绑定/解绑下线退役、@FS-S28 已随未发布提示去除退役） |
 | @FS-S32~S36 | @manual（渠道用户识别：需真实飞书应用 + 已绑定第三方登录的用户，改动与识别规则见 2026-10-28 证据摘要） | 待验收 |
 
 ## 证据摘要（2026-09-14）
@@ -62,3 +62,8 @@
 - 后端（三渠道 Handler 同构，飞书侧）：`FeishuReceivedMessage` 增解析 `sender.sender_id`（open_id/union_id）；`ChannelUserMatchService`（AI.Core 新增）按 open_id+union_id 双键反查 `user_oauth_connection`（命中唯一且用户可用才归属，歧义/停用/未命中降级匿名）；归属会话 `CreateUserId=用户id、UserType=Normal`、Redis 键带 `:u{userId}` 后缀（群聊中各绑定成员独立会话）；应用门禁放宽为 Agent/Workflow 双类型。`dotnet build src/MoAI/MoAI.csproj -o .builds/cum` → 0 error。
 - 配套：`user_oauth_connection` 增 `union_id` 列（幂等 DDL，启动自动补列，见 [../oauthconnect/tdd.md](../oauthconnect/tdd.md)）；飞书第三方登录绑定时同时记录 union_id。
 - 验收：@FS-S32~S36 需真实飞书应用与已绑定用户，留待人工验收（识别规则与降级矩阵见 [sdd](./sdd.md) 关键决策 7、[bdd](./bdd.md#fs-s32)）。
+
+## 证据摘要（2026-11-05，去除「应用尚未发布」提示文案）
+
+- 用户反馈未发布提示多余（发布门禁仍在消费侧，未发布应用的消息本就不处理）：`AppChannelsSection` 移除卡片上方 `!isPublished` 警告 Alert 与 `isPublished` prop（AppWorkspace 调用同步），i18n zh/en 删 `unpublishedHint` 键；`AppChannelsSection.test.tsx` 删「应用未发布时提示」用例与默认态断言（9 用例）。@FS-S28 编号退役（见 bdd）。
+- 验证：`npm run typecheck` / `npm run lint` 0 error；三渠道分区测试合计 23/23（飞书 9 / 钉钉 7 / 企微 7）。

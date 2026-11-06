@@ -58,7 +58,7 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
                 if (dynamic != null)
                 {
                     await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
-                    return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, context, cancellationToken).ConfigureAwait(false);
+                    return await _executor.ExecuteAsync(dynamic.Template, request.RequestJson, dynamic.ConfigJson, context, cancellationToken, request.Function).ConfigureAwait(false);
                 }
 
                 // 数据库中的自定义插件（团队 MCP/OpenAPI 与系统导入的 MCP/OpenAPI）
@@ -73,7 +73,7 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
             }
 
             await RecordUsageAsync(request.Key, cancellationToken).ConfigureAwait(false);
-            return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken).ConfigureAwait(false);
+            return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken, request.Function).ConfigureAwait(false);
     }
 
     private Task RecordUsageAsync(string key, CancellationToken cancellationToken)

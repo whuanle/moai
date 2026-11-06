@@ -495,10 +495,7 @@ async function main() {
       const oldHit = await api('POST', xw(W1, '/documents/list'), { token: KEY_W1, body: { pageNo: 1, pageSize: 10 } })
       check('WX-12f 资源 key 重置后旧 key 401', resetK.status === 200 && resetK.json?.teamResourceKeyId === TR_ID && oldHit.status === 401, `reset=${resetK.status} old=${oldHit.status}`)
 
-      if (TR_ID) {
-        const delK = await api('DELETE', `/api/team-resource-key/${TR_ID}`, { token })
-        if (delK.status !== 200) console.warn(`WARN | 清理资源 key 未成功: ${delK.status}`)
-      }
+      // key 不支持删除：清理不再删 key 行（随资源保留）
     }
   } finally {
     // ===== WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES，root 写，网页端与外部接口共用）=====

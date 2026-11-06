@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
 using Microsoft.Agents.AI;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 
 namespace MoAI.AI.Services;
@@ -94,6 +95,12 @@ public sealed class AppAgentBuildContext
     /// 也不注入长期记忆（保持独立干净上下文）.
     /// </summary>
     public bool IsSubAgent { get; init; }
+
+    /// <summary>
+    /// 本轮生效的团队智能体（team-agent Phase 2，用户切换或配置默认；未绑定为 null）：
+    /// 子代理工具提供者按 <see cref="SnapshotTeamAgent.Subs"/> 逐个注册 subagent_{key} 具名派发工具替代通用 spawn_subagent.
+    /// </summary>
+    public SnapshotTeamAgent? ActiveTeamAgent { get; init; }
 }
 
 /// <summary>

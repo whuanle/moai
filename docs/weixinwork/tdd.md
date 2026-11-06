@@ -18,7 +18,7 @@
 | @WX-S21 | local-dev/weixinwork-e2e.mjs（WX-20；image 推送受理不回复） | PASS 54/54（2026-10-27） |
 | @WX-S22~S24 | local-dev/weixinwork-e2e.mjs（WX-21a~c；Token 签名 400/receiveid 400/连接 404） | PASS 54/54（2026-10-27） |
 | @WX-S25~S26 | local-dev/weixinwork-e2e.mjs（WX-22a~b；禁用连接/未发布应用不回复） | PASS 54/54（2026-10-27） |
-| @WX-S27~S30 | ui/src/pages/teams/apps/__tests__/AppWeixinWorkChannelsSection.test.tsx（8 用例：过滤/未发布提示/接入/编辑回显+回调地址/密钥留空保持/停用确认/删除确认/只读；编号 2026-10-28 顺延拆分，原四场景曾重号 @WX-S27） | PASS 8/8（2026-10-27） |
+| @WX-S27~S30 | ui/src/pages/teams/apps/__tests__/AppWeixinWorkChannelsSection.test.tsx（7 用例：过滤/接入/编辑回显+回调地址/密钥留空保持/停用确认/删除确认/只读；编号 2026-10-28 顺延拆分，原四场景曾重号 @WX-S27） | PASS 7/7（2026-11-05） |
 | @WX-S31~S34 | @manual（渠道用户识别：需真实企业微信应用 + 已绑定第三方登录的用户，改动与识别规则见 2026-10-28 证据摘要） | 待验收 |
 | 真实企业微信验收 | @manual（需企业自建应用与公网地址，验收步骤见 sop.md 第 3 节） | 待真实环境验收 |
 
@@ -44,3 +44,8 @@
 - 配套：企业微信连接器第三方登录补原生路由（原走 custom OIDC 恒不可用，见 [../oauthconnect/tdd.md](../oauthconnect/tdd.md)）。
 - 顺带修正：bdd 应用工作台分区四场景原重号 @WX-S27，顺延拆分为 @WX-S27~S30；文件尾部游离代码围栏移除。
 - 验收：@WX-S31~S34 需真实企业微信应用与已绑定用户，留待人工验收（识别规则见 [sdd](./sdd.md) 关键决策 7、[bdd](./bdd.md#wx-s31)）。
+
+## 证据摘要（2026-11-05，去除「应用尚未发布」提示文案）
+
+- 同飞书/钉钉分区（用户反馈未发布提示多余）：`AppWeixinWorkChannelsSection` 移除卡片上方 `!isPublished` 警告 Alert 与 `isPublished` prop（AppWorkspace 调用同步），i18n zh/en 删 `unpublishedHint` 键；`AppWeixinWorkChannelsSection.test.tsx` 删「应用未发布时提示」用例与默认态断言（7 用例）。bdd @WX-S27 场景措辞同步。
+- 验证：`npm run typecheck` / `npm run lint` 0 error；三渠道分区测试合计 23/23（飞书 9 / 钉钉 7 / 企微 7）。

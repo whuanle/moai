@@ -8,6 +8,7 @@ import {
   BookOutlined,
   CloudServerOutlined,
   ClusterOutlined,
+  DeploymentUnitOutlined,
   GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
@@ -31,6 +32,7 @@ import { Variables } from '@/pages/variables/Variables'
 import { TeamTimers } from '@/pages/teams/timers/TeamTimers'
 import { TeamPrompts } from '@/pages/teams/prompts/TeamPrompts'
 import { TeamSkills } from '@/pages/teams/skills/TeamSkills'
+import { TeamAgents } from '@/pages/teams/agents/TeamAgents'
 import { TeamApps } from '@/pages/teams/apps/TeamApps'
 import { TeamExternalApps } from '@/pages/teams/apps/TeamExternalApps'
 import { TeamAccessApps } from '@/pages/teams/apps/TeamAccessApps'
@@ -60,7 +62,7 @@ const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
 /** 分区顺序：成员可见的使用分区在前，Owner/Admin 管理分区在后 */
-const SECTION_KEYS = ['apps', 'prompts', 'skills', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'channels', 'plugins', 'variables', 'timers', 'settings'] as const
+const SECTION_KEYS = ['apps', 'prompts', 'skills', 'agents', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'channels', 'plugins', 'variables', 'timers', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /** 进入团队默认落在内部应用 */
@@ -353,6 +355,7 @@ export function TeamManage() {
     { key: 'apps', icon: <AppstoreOutlined />, label: t('team.apps') },
     { key: 'prompts', icon: <ProfileOutlined />, label: t('team.prompts') },
     { key: 'skills', icon: <ThunderboltOutlined />, label: t('team.skills') },
+    { key: 'agents', icon: <DeploymentUnitOutlined />, label: t('team.teamAgents') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
     { key: 'knowledgegraph', icon: <ClusterOutlined />, label: t('team.knowledgeGraph') },
   ].filter((item) => visibleSections.includes(item.key as SectionKey))
@@ -412,9 +415,8 @@ export function TeamManage() {
         </Sider>
         <Content>
           {loading ? null : activeSection === 'apps' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamApps teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 内部应用同属使用分区：Dify 式分层（工具栏裸排 + 应用卡自带白色表面）
+            <TeamApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'externalApps' ? (
 <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamExternalApps teamId={teamId} canManage={isAdminPlus} />
@@ -455,21 +457,17 @@ export function TeamManage() {
               />
             </DSCard>
           ) : activeSection === 'prompts' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamPrompts teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 使用分区（应用/提示词/技能/智能体/知识库/知识图谱）不走外层白卡容器（Dify 式）：
+            // 工具栏/分页裸排在页面底色上，列表内容自带白色表面（卡片或 DataTable 容器），与列表内容天然分层
+            <TeamPrompts teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'skills' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamSkills teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            <TeamSkills teamId={teamId} canManage={isAdminPlus} />
+          ) : activeSection === 'agents' ? (
+            <TeamAgents teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'knowledge' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamWikis teamId={teamId} />
-            </DSCard>
+            <TeamWikis teamId={teamId} />
           ) : activeSection === 'knowledgegraph' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamKnowledgeGraphs teamId={teamId} />
-            </DSCard>
+            <TeamKnowledgeGraphs teamId={teamId} />
           ) : activeSection === 'channels' ? (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <TeamChannels teamId={teamId} />

@@ -134,4 +134,20 @@ public partial class AppAgentConfigEntity : IFullAudited
     /// 绑定的知识图谱ID列表，JSON 数组文本，元素为 knowledge_graph.id（整数），如 &apos;[1,2]&apos;.
     /// </summary>
     public string GraphIds { get; set; } = default!;
+
+    /// <summary>
+    /// 绑定的团队智能体ID列表，JSON 数组文本，元素为 team_agent.id（uuid 字符串），须为本团队已启用智能体，空为&apos;[]&apos;.
+    /// </summary>
+    public string TeamAgentIds { get; set; } = default!;
+
+    /// <summary>
+    /// 默认团队智能体ID，逻辑关联 team_agent.id（uuid）；空=取列表第一个；列表为空时忽略.
+    /// </summary>
+    public Guid? DefaultTeamAgentId { get; set; }
+
+    /// <summary>
+    /// 团队智能体内嵌定义 JSON（SnapshotTeamAgent 数组），发布应用时随快照写入，草稿行恒为&apos;&apos;；
+    /// 已发布会话运行时按此解析智能体定义（发布后改团队智能体不影响线上）.
+    /// </summary>
+    public string TeamAgentDefs { get; set; } = default!;
 }

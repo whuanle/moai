@@ -394,7 +394,7 @@ async function main() {
       if (String(item.name ?? '').startsWith('kgm接入-')) await api('DELETE', `/api/access-app/${item.id}`, { token: admin })
     }
     for (const rowId of [TR_KEY_WIKI_ROW, TR_KEY_G1_ROW]) {
-      if (rowId) await api('DELETE', `/api/team-resource-key/${rowId}`, { token: admin })
+      // key 不支持删除：清理不再删 key 行（随资源保留）
     }
     await api('PUT', `/api/admin/team/${T1}/disable`, { token: admin, body: { isDisable: true } })
     await api('PUT', `/api/admin/team/${T2}/disable`, { token: admin, body: { isDisable: true } })

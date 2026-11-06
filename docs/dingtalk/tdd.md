@@ -74,3 +74,8 @@
 
 - 后端（钉钉侧）：`DingTalkReceivedMessage` 增解析 `senderId`（即 unionId，跨应用一致）与 `senderStaffId`；`ChannelUserMatchService`（AI.Core 新增）反查 `user_oauth_connection`（钉钉 OAuth 绑定 `sub` 即 unionId，命中唯一且用户可用才归属，歧义/停用/未命中降级匿名）；归属会话 `CreateUserId=用户id、UserType=Normal`、Redis 键带 `:u{userId}` 后缀；应用门禁放宽为 Agent/Workflow 双类型。`dotnet build src/MoAI/MoAI.csproj -o .builds/cum` → 0 error。
 - 验收：@DT-S31~S34 需真实钉钉应用与已绑定用户，留待人工验收（识别规则见 [sdd](./sdd.md) 关键决策 6、[bdd](./bdd.md#dt-s31)）。
+
+## 证据摘要（2026-11-05，去除「应用尚未发布」提示文案）
+
+- 用户反馈未发布提示多余（发布门禁仍在消费侧，未发布应用的消息本就不处理）：`AppDingTalkChannelsSection` 移除卡片上方 `!isPublished` 警告 Alert 与 `isPublished` prop（AppWorkspace 调用同步），i18n zh/en 删 `unpublishedHint` 键；`AppDingTalkChannelsSection.test.tsx` 删「应用未发布时提示」用例与默认态断言（7 用例）。bdd @DT-S24 场景措辞同步。
+- 验证：`npm run typecheck` / `npm run lint` 0 error；三渠道分区测试合计 23/23（飞书 9 / 钉钉 7 / 企微 7）。

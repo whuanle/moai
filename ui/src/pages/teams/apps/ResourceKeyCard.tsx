@@ -1,23 +1,18 @@
 import { useState } from 'react'
-import { Button, Popconfirm, Space, Switch, Typography } from 'antd'
-import { CopyOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined } from '@ant-design/icons'
+import { Button, Popconfirm, Space, Typography, theme } from 'antd'
+import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import {
-  deleteTeamResourceKey,
-  resetTeamResourceKey,
-  updateTeamResourceKeyStatus,
-} from '@/api/teamres-key'
+import { resetTeamResourceKey } from '@/api/teamres-key'
 
 const { Text } = Typography
 
-/** 资源 key 展示信息（由父级功能配置接口取回：开启功能时后端自动生成/复用） */
+/** 资源 key 展示信息（由父级功能配置接口取回：开启功能时后端自动生成/复用；key 无启停状态、不可删除，吊销=重置或关闭功能开关） */
 export interface ResourceKeyInfo {
   teamResourceKeyId?: string | null
   key?: string | null
   keyPrefix?: string | null
-  status?: 'enabled' | 'disabled' | null
 }
 
 interface ResourceKeyCardProps {
@@ -25,20 +20,24 @@ interface ResourceKeyCardProps {
   featureEnabled: boolean
   /** 团队 Admin+ 才能管理 key */
   canManage: boolean
-  /** 当前 key 信息（null=尚未生成） */
+  /** 当前 key 信息（null=尚未生成；父页会在功能开启后自动补齐） */
   keyInfo: ResourceKeyInfo | null
-  /** key 变化（重置/启停/删除）后由父组件重新拉取配置 */
+  /** key 变化（补齐/重置）后由父组件重新拉取配置 */
   onChanged: () => void
-  /** 提示文案 i18n key（说明该 key 能访问哪些端点） */
-  hintKey: string
+  /** 提示文案 i18n key（可选；不传不渲染说明行） */
+  hintKey?: string
+  /** 盒子标题 i18n key（可选；不传则无标题行） */
+  titleKey?: string
 }
 
 /**
- * 团队资源 key 卡片：一个资源一把 key（应用 ACP/A2A 共用其应用的 key、知识库/知识图谱各一把）。
- * key 由资源开启对外功能时后端自动生成/复用，此处仅展示（掩码/复制）、重置、启停与删除。
+ * 团队资源 key 盒子：一个资源一把 key（应用 ACP/A2A 共用其应用的 key、知识库/知识图谱各一把），
+ * key 之间不可混用（绑定资源实例，越资源访问被拒绝）。
+ * key 由资源开启对外功能时后端自动生成/复用，此处仅展示（掩码/复制）与重置；不支持删除。
  */
-export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged, hintKey }: ResourceKeyCardProps) {
+export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged, hintKey, titleKey }: ResourceKeyCardProps) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [revealed, setRevealed] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -57,28 +56,6 @@ export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged,
     }
   }
 
-  const handleToggle = async (checked: boolean) => {
-    if (!keyInfo?.teamResourceKeyId) return
-    try {
-      await updateTeamResourceKeyStatus(String(keyInfo.teamResourceKeyId), checked ? 'enabled' : 'disabled')
-      onChanged()
-      feedback.success(checked ? t('teamresKey.enableSuccess') : t('teamresKey.disableSuccess'))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!keyInfo?.teamResourceKeyId) return
-    try {
-      await deleteTeamResourceKey(String(keyInfo.teamResourceKeyId))
-      onChanged()
-      feedback.success(t('teamresKey.deleteSuccess'))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
-  }
-
   const copyKey = async () => {
     if (!keyInfo?.key) return
     try {
@@ -89,61 +66,62 @@ export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged,
     }
   }
 
-  if (!canManage) {
-    return <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.adminOnly')}</Text>
-  }
-
-  if (!featureEnabled) {
-    return (
-      <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.featureOffHint')}</Text>
-    )
-  }
-
-  if (!keyInfo?.key) {
-    return (
-      <Space direction="vertical" size={spacing.sm} style={{ display: 'flex' }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.generatingHint')}</Text>
-        <Text type="secondary" style={{ fontSize: 12 }}>{t(hintKey)}</Text>
-      </Space>
-    )
-  }
-
-  const masked = keyItemMask(keyInfo)
-  const enabled = keyInfo.status !== 'disabled'
+  const hasTitle = Boolean(titleKey)
 
   return (
-    <Space direction="vertical" size={spacing.sm} style={{ display: 'flex' }}>
-      <Space size={0} wrap>
-        <Text code style={{ cursor: 'pointer' }} title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')} onClick={() => setRevealed((v) => !v)}>
-          {revealed ? keyInfo.key : masked}
-        </Text>
-        <Button
-          type="text"
-          size="small"
-          icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-          aria-label={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}
-          onClick={() => setRevealed((v) => !v)}
-        />
-        <Button type="text" size="small" icon={<CopyOutlined />} aria-label={t('common.copy')} onClick={() => void copyKey()} />
-        <Switch checked={enabled} onChange={(v) => void handleToggle(v)} size="small" />
-        <Popconfirm title={t('teamresKey.resetConfirm')} onConfirm={() => void handleReset()}>
-          <Button type="link" size="small" icon={<KeyOutlined />} disabled={busy}>
-            {t('teamresKey.reset')}
-          </Button>
-        </Popconfirm>
-        <Popconfirm title={t('teamresKey.deleteConfirm')} onConfirm={() => void handleDelete()}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-            {t('teamresKey.delete')}
-          </Button>
-        </Popconfirm>
-      </Space>
-      <Text type="secondary" style={{ fontSize: 12 }}>{t(hintKey)}</Text>
-    </Space>
+    <div
+      style={{
+        background: token.colorFillQuaternary,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        borderRadius: token.borderRadiusLG,
+        padding: `${spacing.md}px ${spacing.lg}px`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: spacing.sm,
+      }}
+    >
+      {hasTitle && (
+        <Space size={spacing.sm}>
+          <KeyOutlined style={{ color: token.colorPrimary }} />
+          <Text strong style={{ fontSize: 13 }}>{t(titleKey!)}</Text>
+        </Space>
+      )}
+
+      {!canManage ? (
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.adminOnly')}</Text>
+      ) : !featureEnabled ? (
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.featureOffHint')}</Text>
+      ) : !keyInfo?.key ? (
+        // 功能开启后 key 由父页自动补齐，此为瞬态
+        <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.fetchingHint')}</Text>
+      ) : (
+        <Space size={0} wrap align="center">
+          <Text code style={{ cursor: 'pointer', fontSize: 13 }} title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')} onClick={() => setRevealed((v) => !v)}>
+            {revealed ? keyInfo.key : keyMask(keyInfo)}
+          </Text>
+          <Button
+            type="text"
+            size="small"
+            icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+            aria-label={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}
+            onClick={() => setRevealed((v) => !v)}
+          />
+          <Button type="text" size="small" icon={<CopyOutlined />} aria-label={t('common.copy')} onClick={() => void copyKey()} />
+          <Popconfirm title={t('teamresKey.resetConfirm')} onConfirm={() => void handleReset()}>
+            <Button type="link" size="small" icon={<KeyOutlined />} disabled={busy}>
+              {t('teamresKey.reset')}
+            </Button>
+          </Popconfirm>
+        </Space>
+      )}
+
+      {hintKey && <Text type="secondary" style={{ fontSize: 12 }}>{t(hintKey)}</Text>}
+    </div>
   )
 }
 
 /** key 默认掩码：前缀 + ****（前缀为 moai-tr- + 4 位随机） */
-function keyItemMask(keyInfo: ResourceKeyInfo): string {
+function keyMask(keyInfo: ResourceKeyInfo): string {
   if (!keyInfo.key) return '****'
   return keyInfo.key.length <= 12 ? keyInfo.key : `${keyInfo.keyPrefix ?? keyInfo.key.slice(0, 12)}****`
 }

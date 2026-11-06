@@ -77,43 +77,34 @@ export async function deleteAccessApp(accessAppId: string): Promise<void> {
   await client.api.accessApp.byId(accessAppId).delete()
 }
 
-/** 应用对外功能（ACP/A2A）与该应用的团队资源 key（一个应用一把，ACP/A2A 共用） */
+/** 应用对外协议接入（ACP/A2A 单一开关）与该应用的团队资源 key（一个应用一把，ACP/A2A 共用） */
 export interface AppFeature {
-  isAcpEnabled?: boolean | null
-  isA2aEnabled?: boolean | null
+  isAcpA2aEnabled?: boolean | null
   teamResourceKeyId?: string | null
   key?: string | null
   keyPrefix?: string | null
-  status?: 'enabled' | 'disabled' | null
 }
 
-/** 查询应用对外功能开关与团队资源 key（仅团队 Admin+） */
+/** 查询应用对外协议接入开关与团队资源 key（仅团队 Admin+） */
 export async function getAppFeature(appId: string): Promise<AppFeature> {
   const client = getApiClient()
   const res = await client.api.app.byId(appId).feature.get()
   return {
-    isAcpEnabled: res?.isAcpEnabled,
-    isA2aEnabled: res?.isA2aEnabled,
+    isAcpA2aEnabled: res?.isAcpA2aEnabled,
     teamResourceKeyId: res?.teamResourceKeyId,
     key: res?.key,
     keyPrefix: res?.keyPrefix,
-    status: res?.status ?? null,
   }
 }
 
-/** 更新应用对外功能开关（ACP/A2A）；开启时后端自动生成/复用该应用的团队资源 key */
-export async function updateAppFeature(appId: string, payload: { isAcpEnabled: boolean; isA2aEnabled: boolean }): Promise<AppFeature> {
+/** 更新应用对外协议接入开关（ACP/A2A 同开同关）；开启时后端自动生成/复用该应用的团队资源 key */
+export async function updateAppFeature(appId: string, isAcpA2aEnabled: boolean): Promise<AppFeature> {
   const client = getApiClient()
-  const res = await client.api.app.byId(appId).feature.put({
-    isAcpEnabled: payload.isAcpEnabled,
-    isA2aEnabled: payload.isA2aEnabled,
-  })
+  const res = await client.api.app.byId(appId).feature.put({ isAcpA2aEnabled })
   return {
-    isAcpEnabled: res?.isAcpEnabled,
-    isA2aEnabled: res?.isA2aEnabled,
+    isAcpA2aEnabled: res?.isAcpA2aEnabled,
     teamResourceKeyId: res?.teamResourceKeyId,
     key: res?.key,
     keyPrefix: res?.keyPrefix,
-    status: res?.status ?? null,
   }
 }

@@ -52,7 +52,7 @@ public class WorkflowEngine
     /// <param name="definitionId">工作流定义 ID.</param>
     /// <param name="input">启动参数（开始节点的 run 输入）.</param>
     /// <param name="systemVariables">全局变量实际值（键为变量名，经 system.* 引用）.</param>
-    /// <param name="systemContext">调用方注入的 sys.* 附加变量（对话上下文：userId/appId/conversationId/messageId/history）.</param>
+    /// <param name="systemContext">调用方注入的 sys.* 附加变量（对话上下文：userId/appId/conversationId/messageId/history/prompt）.</param>
     /// <param name="instanceId">实例 ID（不传自动生成）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>终态实例.</returns>

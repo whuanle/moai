@@ -8,7 +8,7 @@ using MoAI.Infra.Services;
 namespace MoAI.App.Queries;
 
 /// <summary>
-/// 查询应用对外功能开关与团队资源 key（应用 ACP/A2A 共用一把；未开启时 key 为空），需要团队 Admin 及以上角色.
+/// 查询应用对外协议接入开关（ACP/A2A）与团队资源 key（一个应用一把，ACP/A2A 共用；未开启时 key 为空），需要团队 Admin 及以上角色.
 /// </summary>
 public class QueryAppFeatureCommand : IRequest<AppFeatureResponse>, IUserIdContext, IModelValidator<QueryAppFeatureCommand>
 {

@@ -108,4 +108,9 @@ public partial class AppAgentSessionEntity : IFullAudited
     /// 最近一轮对话实际使用的模型ID（ai_model.id），用户在对话端切换模型后随轮更新；空=从未对话.
     /// </summary>
     public Guid LastModelId { get; set; }
+
+    /// <summary>
+    /// 最近一轮对话生效的团队智能体ID（team_agent.id），用户在对话端切换后随轮更新；空=应用未绑定团队智能体.
+    /// </summary>
+    public Guid? LastTeamAgentId { get; set; }
 }

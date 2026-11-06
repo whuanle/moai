@@ -31,6 +31,7 @@ import { Skills } from '@/pages/skills/Skills'
 import { ClassifyPage } from '@/pages/classify/Classify'
 import { PromptCenter } from '@/pages/prompts/PromptCenter'
 import { PromptEditor } from '@/pages/prompts/PromptEditor'
+import { TeamAgentEditor } from '@/pages/teams/agents/TeamAgentEditor'
 import { SsoAuthorize } from '@/pages/sso/SsoAuthorize'
 
 export const router = createBrowserRouter([
@@ -71,6 +72,9 @@ export const router = createBrowserRouter([
       { path: 'team/:id/:section?', element: <TeamManage /> },
       { path: 'team/:teamId/prompt/new', element: <PromptEditor /> },
       { path: 'team/:teamId/prompt/:promptId/edit', element: <PromptEditor /> },
+      // 团队智能体编辑页：主智能体 + N 个子智能体内容较大，独立页编辑
+      { path: 'team/:teamId/agent/new', element: <TeamAgentEditor /> },
+      { path: 'team/:teamId/agent/:agentId/edit', element: <TeamAgentEditor /> },
       { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
       { path: 'team/:teamId/app/:appId/chat/:sessionId?', element: <AppChat /> },
       // 我的记忆管理页（当前用户在本应用下的长期记忆，仅删除/清空）

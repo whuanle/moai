@@ -88,6 +88,17 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     /// </summary>
     public JsonElement? ExecutionSettings { get; init; }
 
+    /// <summary>
+    /// 绑定的团队智能体 id 列表（元素为 team_agent.id 的 uuid），须为本团队已启用智能体，最多 20 个；
+    /// 绑定后须开启子代理协作（executionSettings.subAgent.enabled）；null 表示保持已保存的绑定不变.
+    /// </summary>
+    public IReadOnlyCollection<Guid>? TeamAgentIds { get; init; }
+
+    /// <summary>
+    /// 默认团队智能体 id，须在 TeamAgentIds 内；空=取列表第一个；列表为空时忽略.
+    /// </summary>
+    public Guid? DefaultTeamAgentId { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -109,5 +120,9 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
             .WithMessage("快捷输入最多 10 条.");
         validate.RuleFor(x => x.QuickInputs).Must(list => list?.All(x => x.Length <= 200) ?? true)
             .WithMessage("快捷输入每条最长 200 个字符.");
+        validate.RuleFor(x => x.TeamAgentIds).Must(list => list == null || list.Count <= 20)
+            .WithMessage("绑定的团队智能体最多 20 个.");
+        validate.RuleFor(x => x.TeamAgentIds).Must(list => list == null || list.Select(x => x).Distinct().Count() == list.Count)
+            .WithMessage("绑定的团队智能体不能重复.");
     }
 }

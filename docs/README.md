@@ -8,7 +8,7 @@
 |---|---|---|
 | L0 导航 | 本页 | — |
 | L1 全局规范 | 后端 CQRS / 文档标准 / 前端约定 / 设计系统 | 见下「全局规范」 |
-| L2 领域四件套 | 28 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
+| L2 领域四件套 | 38 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
 | L3 证据 | 可执行验收脚本 / 单测 / 回归命令 | 见下「回归入口」 |
 
 ## 全局规范（L1）
@@ -22,7 +22,7 @@
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
 - [ui/docs/design-system/](../ui/docs/design-system/README.md) — 设计系统规范
 
-## 模块地图（L2，27 个四件套）
+## 模块地图（L2，38 个四件套）
 
 缩写列 = BDD 场景编号前缀（见各模块 bdd.md）。
 
@@ -67,6 +67,7 @@
 | [weixinwork](./weixinwork/) | WX | 企业微信渠道基座（自建应用 HTTP 回调模式：一个 CorpId+AgentId 一条连接；Token 签名 + AES 加解密 + receiveid 比对，受理即应答、MsgId 去重后转发 `IWeixinWorkEventHandler`，应用渠道已落地**单聊 message/send / 群聊 appchat/send 回复**；与 dingtalk/feishu 模块同构） |
 | [publication](./publication/) | PB | 上架审核（应用/提示词公开改审批制：团队申请上架 → `publication_review` 审核表 → 系统管理员「审批上架」菜单审批；**通过后系统才将目标资源 is_public 置为 true**；撤回/驳回/重新申请、pending 唯一约束） |
 | [prompt](./prompt/) | PT | 提示词库（个人提示词仅本人可用；团队提示词 Admin 创建、成员可用；独立编辑器页所见即所得 Markdown 编辑（Vditor IR）+ 头像上传；申请上架走 publication 审批，通过后进入「提示词市场」对所有用户开放；市场查看计数） |
+| [team-agent](./team-agent/) | AG | 团队智能体（**Phase 1 管理面**：主智能体 + ≤20 个命名子智能体的编排定义资产，各带提示词/偏好模型/插件与知识库依赖声明（绑定预检清单 + 运行时白名单双角色，本期仅落清单校验）；**系统内置规划师/构建师**团队创建时自动种入（不可删除可编辑、seed-builtin 补种）；团队页「智能体」分区，成员只读 Admin+ 管理；应用绑定与 `subagent_{name}` 运行时派发为 Phase 2） |
 
 ### 前端（ui/docs/）
 
@@ -97,6 +98,7 @@ node local-dev/auth-lockout-check.mjs         # AUTH 锁定 8 场景
 node local-dev/loginsafety-e2e.mjs            # LS 26 场景（需 ForwardedHeaders 开启的后端，见脚本头部）
 node local-dev/prompt-e2e.mjs                # PT 40 场景
 node local-dev/skill-userconfig-e2e.mjs      # SKL 20 场景
+node local-dev/team-agent-e2e.mjs            # AG 52 场景
 node local-dev/message-e2e.mjs               # MSG 9 场景（MQ 场景管理口不可达时 SKIP；发送链路见 tests/MoAI.Message.Tests）
 # 前端
 cd ui && npm run typecheck && npm run lint && npm run test

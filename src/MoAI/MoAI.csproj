@@ -56,6 +56,7 @@
 		<ProjectReference Include="..\notification\MoAI.Notification.Core\MoAI.Notification.Core.csproj" />
 		<ProjectReference Include="..\variable\MoAI.Variable.Core\MoAI.Variable.Core.csproj" />
 		<ProjectReference Include="..\skill\MoAI.Skill.Core\MoAI.Skill.Core.csproj" />
+		<ProjectReference Include="..\teamagent\MoAI.TeamAgent.Core\MoAI.TeamAgent.Core.csproj" />
 		<ProjectReference Include="..\statistics\MoAI.Statistics.Core\MoAI.Statistics.Core.csproj" />
 		<ProjectReference Include="..\loginsafety\MoAI.LoginSafety.Core\MoAI.LoginSafety.Core.csproj" />
 		<ProjectReference Include="..\timer\MoAI.Timer.Core\MoAI.Timer.Core.csproj" />

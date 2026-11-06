@@ -48,6 +48,7 @@ public class CreateTeamResourceKeyCommand : IRequest<CreateTeamResourceKeyComman
 
 /// <summary>
 /// 重置团队资源 key：同表行重新生成 key 值（行 id 不变，直连身份延续），旧 key 立即失效；原文仅此一次返回；需要团队 Admin 及以上角色.
+/// key 生命周期只有「开启功能时自动生成/复用 + 重置」，不支持删除（吊销手段=重置或关闭资源功能开关）.
 /// </summary>
 public class ResetTeamResourceKeyCommand : IRequest<ResetTeamResourceKeyCommandResponse>, IUserIdContext, IModelValidator<ResetTeamResourceKeyCommand>
 {
@@ -66,62 +67,6 @@ public class ResetTeamResourceKeyCommand : IRequest<ResetTeamResourceKeyCommandR
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<ResetTeamResourceKeyCommand> validate)
-    {
-        validate.RuleFor(x => x.TeamResourceKeyId).NotEmpty().WithMessage("资源 key id 不正确.");
-    }
-}
-
-/// <summary>
-/// 更新团队资源 key 启停状态；停用后直连调用立即拒绝；需要团队 Admin 及以上角色.
-/// </summary>
-public class UpdateTeamResourceKeyCommand : IRequest<EmptyCommandResponse>, IUserIdContext, IModelValidator<UpdateTeamResourceKeyCommand>
-{
-    /// <summary>
-    /// 资源 key 行 id，由 Controller 从路由参数回填.
-    /// </summary>
-    public Guid TeamResourceKeyId { get; init; }
-
-    /// <summary>
-    /// 状态（enabled/disabled）.
-    /// </summary>
-    public TeamResourceKeyStatus Status { get; init; }
-
-    /// <inheritdoc/>
-    [JsonIgnore]
-    public long ContextUserId { get; init; }
-
-    /// <inheritdoc/>
-    [JsonIgnore]
-    public UserType ContextUserType { get; init; }
-
-    /// <inheritdoc/>
-    public static void Validate(AbstractValidator<UpdateTeamResourceKeyCommand> validate)
-    {
-        // TeamResourceKeyId 由 Controller 从路由参数回填（与 UpdateAccessAppCommand 同口径，不做校验）
-        validate.RuleFor(x => x.Status).IsInEnum().WithMessage("状态不正确.");
-    }
-}
-
-/// <summary>
-/// 删除团队资源 key（软删除），需要团队 Admin 及以上角色.
-/// </summary>
-public class DeleteTeamResourceKeyCommand : IRequest<EmptyCommandResponse>, IUserIdContext, IModelValidator<DeleteTeamResourceKeyCommand>
-{
-    /// <summary>
-    /// 资源 key 行 id，由 Controller 从路由参数回填.
-    /// </summary>
-    public Guid TeamResourceKeyId { get; init; }
-
-    /// <inheritdoc/>
-    [JsonIgnore]
-    public long ContextUserId { get; init; }
-
-    /// <inheritdoc/>
-    [JsonIgnore]
-    public UserType ContextUserType { get; init; }
-
-    /// <inheritdoc/>
-    public static void Validate(AbstractValidator<DeleteTeamResourceKeyCommand> validate)
     {
         validate.RuleFor(x => x.TeamResourceKeyId).NotEmpty().WithMessage("资源 key id 不正确.");
     }

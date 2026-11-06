@@ -49,6 +49,33 @@ public class PluginController : ControllerBase
     }
 
     /// <summary>
+    /// 查询插件的工具清单（仅管理员）。多工具动态插件返回全部工具，单工具插件固定一个 key=run 的项.
+    /// </summary>
+    /// <param name="key">插件 key（模板 key 或动态插件实例 key）.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginToolsCommandResponse"/>.</returns>
+    [HttpGet("tools")]
+    public async Task<QueryPluginToolsCommandResponse> QueryTools([FromQuery] string key, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryPluginToolsCommand { Key = key }, ct);
+    }
+
+    /// <summary>
+    /// 查询单个工具的参数运行示例 JSON（仅管理员）.
+    /// </summary>
+    /// <param name="key">插件 key（模板 key 或动态插件实例 key）.</param>
+    /// <param name="toolKey">工具 key（单工具插件传 run）.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryPluginToolExampleCommandResponse"/>.</returns>
+    [HttpGet("tool/example")]
+    public async Task<QueryPluginToolExampleCommandResponse> QueryToolExample([FromQuery] string key, [FromQuery] string toolKey, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryPluginToolExampleCommand { Key = key, ToolKey = toolKey }, ct);
+    }
+
+    /// <summary>
     /// 执行插件（仅管理员）.
     /// </summary>
     /// <param name="req">执行请求体.</param>

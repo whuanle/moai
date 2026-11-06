@@ -69,10 +69,11 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             throw new BusinessException("只有 Agent 应用支持配置插件、知识库与提示词.") { StatusCode = 400 };
         }
 
-        // 流程应用无模型/知识库/插件/技能编排，仅经此入口维护对话开场白；其余字段不适用、不校验不落库
+        // 流程应用无模型/知识库/插件/技能编排，仅经此入口维护对话人设：系统提示词（可选，经 sys.prompt
+        // 供节点引用）、开场白与快捷输入；其余字段不适用、不校验不落库
         if (app.AppType == (int)AppType.Workflow)
         {
-            await UpsertOpeningStatementAsync(app, request, cancellationToken);
+            await UpsertChatPersonaAsync(app, request, cancellationToken);
             return EmptyCommandResponse.Default;
         }
 
@@ -135,6 +136,16 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
 
+        // 团队智能体绑定：存在/启用/归属校验，null 表示请求未携带（保持原值）；
+        // 绑定后必须开启子代理协作（派发工具由子代理协作链路注册）。
+        // 依赖为弱依赖（team-agent sdd D3）：主依赖缺失不阻断绑定，由 agent-config 回显声明项供前端提示「一键添加」；
+        // 子依赖是运行时白名单（声明即边界），均不做保存强校验
+        var teamAgentIds = await ValidateTeamAgentIdsAsync(app, request.TeamAgentIds, request.DefaultTeamAgentId, cancellationToken);
+        if (teamAgentIds is { Count: > 0 })
+        {
+            EnsureSubAgentEnabledForTeamAgents(request.ExecutionSettings, config?.ExecutionSettings);
+        }
+
         // 循环嵌套防护：本次保存携带 Agent 应用绑定时，以保存后的草稿全量（请求值 ?? 库中现值）
         // 仅沿 Agent→Agent 工具边做闭包检测（流程工具相关的环由流程侧守卫负责，Agent 侧保存不拒绝）
         if (request.AgentApps != null)
@@ -187,6 +198,8 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 WikiIds = wikiJson,
                 GraphIds = graphJson,
                 Plugins = pluginJson,
+                TeamAgentIds = AppAgentConfigJson.SerializePluginIds(teamAgentIds ?? []),
+                DefaultTeamAgentId = ResolveDefaultTeamAgentId(teamAgentIds, request.DefaultTeamAgentId),
                 WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds ?? []),
                 AgentApps = AppAgentConfigJson.SerializePluginIds(agentAppIds ?? []),
                 Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
@@ -231,6 +244,13 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 config.Skills = AppAgentConfigJson.SerializePluginIds(skillIds);
             }
 
+            // 仅在请求显式携带团队智能体列表时覆盖；默认智能体随列表归一（空列表清空，未指定取第一个）
+            if (teamAgentIds != null)
+            {
+                config.TeamAgentIds = AppAgentConfigJson.SerializePluginIds(teamAgentIds);
+                config.DefaultTeamAgentId = ResolveDefaultTeamAgentId(teamAgentIds, request.DefaultTeamAgentId);
+            }
+
             // 外部应用不允许技能：请求未携带时也强制清空，历史存量配置随保存收敛
             if (app.IsExternal)
             {
@@ -253,10 +273,13 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
     }
 
     /// <summary>
-    /// 流程应用只保存对话开场白（配置行不存在时创建，其余字段留默认值）.
+    /// 流程应用只保存对话人设三件套（系统提示词/开场白/快捷输入；配置行不存在时创建，其余字段留默认值）.
+    /// 系统提示词可选：流程节点各有静态提示词，本字段经 sys.prompt 系统变量按需引用，为空不注入.
     /// </summary>
-    private async Task UpsertOpeningStatementAsync(AppEntity app, SaveAppAgentConfigCommand request, CancellationToken cancellationToken)
+    private async Task UpsertChatPersonaAsync(AppEntity app, SaveAppAgentConfigCommand request, CancellationToken cancellationToken)
     {
+        var quickInputs = NormalizeQuickInputs(request.QuickInputs);
+
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
 
@@ -267,17 +290,25 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 Id = Guid.CreateVersion7(),
                 TeamId = app.TeamId,
                 AppId = app.Id,
+                Prompt = request.Prompt ?? string.Empty,
                 OpeningStatement = request.OpeningStatement ?? string.Empty,
                 OpeningStatementEnabled = request.OpeningStatementEnabled,
+                QuickInputs = AppAgentConfigJson.SerializeStrings(quickInputs ?? []),
             };
             _databaseContext.AppAgentConfigs.Add(config);
         }
         else
         {
+            config.Prompt = request.Prompt ?? string.Empty;
             config.OpeningStatement = request.OpeningStatement ?? string.Empty;
             config.OpeningStatementEnabled = request.OpeningStatementEnabled;
 
-            // 开场白草稿变更：与已发布快照不一致，重新发布后生效
+            if (quickInputs != null)
+            {
+                config.QuickInputs = AppAgentConfigJson.SerializeStrings(quickInputs);
+            }
+
+            // 对话人设草稿变更：与已发布快照不一致，重新发布后生效
             config.Status = 0;
         }
 
@@ -354,6 +385,109 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         }
 
         return ids;
+    }
+
+    /// <summary>
+    /// 校验团队智能体绑定：仅允许绑定本团队启用中的智能体，去重后返回；
+    /// null 表示请求未携带该字段（保持原值）；默认智能体必须在列表内.
+    /// </summary>
+    private async Task<List<Guid>?> ValidateTeamAgentIdsAsync(AppEntity app, IReadOnlyCollection<Guid>? teamAgentIds, Guid? defaultTeamAgentId, CancellationToken cancellationToken)
+    {
+        if (teamAgentIds == null)
+        {
+            return null;
+        }
+
+        var ids = teamAgentIds.Where(x => x != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        if (app.IsExternal)
+        {
+            throw new BusinessException("外部应用不能绑定团队智能体.") { StatusCode = 400 };
+        }
+
+        var validCount = await _databaseContext.TeamAgents
+            .CountAsync(x => ids.Contains(x.Id) && x.TeamId == app.TeamId && x.Enabled, cancellationToken);
+
+        if (validCount != ids.Count)
+        {
+            throw new BusinessException("包含不存在、已停用或无权使用的团队智能体，请重新选择.") { StatusCode = 400 };
+        }
+
+        if (defaultTeamAgentId is { } defaultId && defaultId != Guid.Empty && !ids.Contains(defaultId))
+        {
+            throw new BusinessException("默认团队智能体必须在绑定的团队智能体列表中.") { StatusCode = 400 };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 绑定团队智能体时要求子代理协作已开启：生效口径 = 请求携带的 subAgent 优先，未携带时看库中现值
+    /// （派发工具由子代理协作链路注册，关闭协作的团队智能体无法派发子智能体）.
+    /// </summary>
+    private static void EnsureSubAgentEnabledForTeamAgents(JsonElement? requestSettings, string? storedSettings)
+    {
+        bool enabled;
+        if (requestSettings is { } settings
+            && settings.ValueKind == JsonValueKind.Object
+            && settings.TryGetProperty("subAgent", out _))
+        {
+            enabled = SubAgentSettingsValidator.IsSubAgentEnabled(requestSettings);
+        }
+        else
+        {
+            enabled = IsStoredSubAgentEnabled(storedSettings);
+        }
+
+        if (!enabled)
+        {
+            throw new BusinessException("绑定团队智能体后需开启子代理协作.") { StatusCode = 400 };
+        }
+    }
+
+    /// <summary>解析已保存执行参数中子代理协作是否开启（subAgent.enabled=true）；未携带或非法 JSON 返回 false.</summary>
+    private static bool IsStoredSubAgentEnabled(string? executionSettings)
+    {
+        if (string.IsNullOrWhiteSpace(executionSettings))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(executionSettings);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("subAgent", out var subAgent)
+                && subAgent.ValueKind == JsonValueKind.Object
+                && subAgent.TryGetProperty("enabled", out var enabled)
+                && enabled.ValueKind == JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 归一默认团队智能体：列表为空返回 null；请求未指定或为空值取列表第一个；已指定则请求值已在列表内（前置校验保证）.
+    /// </summary>
+    private static Guid? ResolveDefaultTeamAgentId(List<Guid>? teamAgentIds, Guid? requestedDefaultTeamAgentId)
+    {
+        if (teamAgentIds == null || teamAgentIds.Count == 0)
+        {
+            return null;
+        }
+
+        if (requestedDefaultTeamAgentId is { } requested && requested != Guid.Empty && teamAgentIds.Contains(requested))
+        {
+            return requested;
+        }
+
+        return teamAgentIds[0];
     }
 
     /// <summary>

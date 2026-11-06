@@ -65,7 +65,7 @@ public class ExternalAccessKeyService : IExternalAccessKeyService
             var resourceKey = await _databaseContext.TeamResourceKeys
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Key == apiKey, cancellationToken);
-            if (resourceKey == null || resourceKey.Status != TeamResourceKeyStatus.Enabled)
+            if (resourceKey == null)
             {
                 return null;
             }

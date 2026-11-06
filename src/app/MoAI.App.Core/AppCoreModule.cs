@@ -29,5 +29,6 @@ public class AppCoreModule : IModule
 
         // 使用分析聚合缓存：tokens/调用次数/按模型分布 1 分钟 cache-aside
         context.Services.AddScoped<AppUsageAggregateCache>();
+        context.Services.AddScoped<AppUsageTrendCache>();
     }
 }

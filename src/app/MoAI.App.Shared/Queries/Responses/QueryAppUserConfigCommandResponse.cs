@@ -22,6 +22,17 @@ public class QueryAppUserConfigCommandResponse
     public IReadOnlyList<Guid> ModelIds { get; init; } = Array.Empty<Guid>();
 
     /// <summary>
+    /// 应用绑定的团队智能体切换器选项（与正式对话同一生效口径：已发布取快照内嵌定义，否则实时行）；
+    /// 仅 1 个或为空时前端不展示智能体切换器.
+    /// </summary>
+    public IReadOnlyList<AppTeamAgentOption> TeamAgents { get; init; } = Array.Empty<AppTeamAgentOption>();
+
+    /// <summary>
+    /// 默认团队智能体 id（uuid）；空=取列表第一个，前端初始选中项.
+    /// </summary>
+    public Guid? DefaultTeamAgentId { get; init; }
+
+    /// <summary>
     /// 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用.
     /// </summary>
     public int MemoryMode { get; init; }

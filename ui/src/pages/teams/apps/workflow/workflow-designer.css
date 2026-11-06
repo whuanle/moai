@@ -277,6 +277,19 @@
   font-size: 11px;
 }
 
+/* 快捷输入编辑列表（系统设置面板）：每行输入框 + 删除，尾部虚线添加按钮 */
+.wf-quick-inputs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-quick-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* 画布 */
 .wf-canvas {
   position: relative;

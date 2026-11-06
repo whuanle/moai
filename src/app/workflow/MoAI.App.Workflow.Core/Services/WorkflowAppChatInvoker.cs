@@ -8,6 +8,7 @@ using MoAI.AI.Services;
 using MoAI.App.Workflow.Definition;
 using MoAI.App.Workflow.Instance;
 using MoAI.Database;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
@@ -20,8 +21,8 @@ namespace MoAI.App.Workflow.Services;
 /// 1. 校验应用为流程应用（禁用/类型）；
 /// 2. 定义选择：工作台「调试」Tab（UseDraft）按最新草稿执行（免发布，仅团队管理员，实例记为调试）；正式对话按已发布快照；
 /// 3. 用户消息作为启动参数 <c>question</c> 驱动流程（开始节点固定 question 字段；同时镜像 <c>query</c> 兼容旧发布流程）；
-/// 4. 注入 sys.* 对话上下文（userId/appId/conversationId/messageId/history），
-///    history 单独走 MAF 压缩组件（CompactionProvider + 应用 execution_settings 策略），不依赖 Agent 管线；
+/// 4. 注入 sys.* 对话上下文（userId/appId/conversationId/messageId/history/prompt——prompt 为应用系统提示词，
+///    正式对话按发布快照、调试按草稿），history 单独走 MAF 压缩组件（CompactionProvider + 应用 execution_settings 策略），不依赖 Agent 管线；
 /// 5. 从结束节点输出提取回复文本（reply/answer/output/text/result 优先，单一字符串属性次之，否则整体序列化）.
 /// </summary>
 [InjectOnScoped]
@@ -88,6 +89,13 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
 
         var config = await _definitionStore.FindConfigEntityAsync(app.Id, cancellationToken).ConfigureAwait(false);
 
+        // 对话人设（系统提示词）：正式对话按发布快照、草稿调试按草稿行；经 sys.prompt 供 AI 等节点按需引用，空串不注入
+        var agentConfigRow = await _databaseContext.AppAgentConfigs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken).ConfigureAwait(false);
+        var effectiveAgentConfig = agentConfigRow == null
+            ? null
+            : AppAgentConfigSnapshot.ResolveEffectiveConfig(app, agentConfigRow, preferPublished: !request.UseDraft);
+
         // 定义选择：工作台「调试」Tab（UseDraft）按最新草稿执行（免发布，仅团队管理员）；正式对话按已发布快照
         string definitionJson;
         if (request.UseDraft)
@@ -132,6 +140,7 @@ public class WorkflowAppChatInvoker : IWorkflowAppChatInvoker
             ["conversationId"] = request.SessionId.ToString(),
             ["messageId"] = Guid.CreateVersion7().ToString("N"),
             ["history"] = await LoadHistoryAsync(request.AppId, request.SessionId, cancellationToken).ConfigureAwait(false),
+            ["prompt"] = effectiveAgentConfig?.Prompt ?? string.Empty,
         };
 
         var input = new JsonObject

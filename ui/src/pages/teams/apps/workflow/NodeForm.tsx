@@ -363,7 +363,7 @@ function ModelSelectSection({
 }) {
   const { t } = useTranslation()
   const teamId = useWorkflowDesignerStore((s) => s.teamId)
-  const [models, setModels] = useState<{ value: string; label: string }[]>([])
+  const [models, setModels] = useState<{ value: string; label: ReactNode; triggerLabel: string; title: string }[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -377,7 +377,26 @@ function ModelSelectSection({
           res
             // 节点对话/图片理解均为对话类场景：只列 conversation 类型模型（embedding/图像生成等不适用）
             .filter((m) => m.aiModelId && m.modelKind === 'conversation' && (!visionOnly || m.supportsVision === true))
-            .map((m) => ({ value: String(m.aiModelId), label: m.name || m.modelId || '-' })),
+            .map((m) => {
+              const name = m.name || m.modelId || '-'
+              const channel = m.channelName || ''
+              return {
+                value: String(m.aiModelId),
+                // 关闭态显示纯模型名，下拉行内附渠道名（不同渠道可能存在同名模型）
+                triggerLabel: name,
+                label: (
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                    <span style={{ flexShrink: 0 }}>{name}</span>
+                    {channel && (
+                      <span style={{ fontSize: 12, opacity: 0.65, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {channel}
+                      </span>
+                    )}
+                  </div>
+                ),
+                title: `${name}${channel ? `（${channel}）` : ''}`,
+              }
+            }),
         )
       })
       .catch(() => {
@@ -399,7 +418,8 @@ function ModelSelectSection({
         style={{ width: '100%' }}
         loading={loading}
         showSearch
-        optionFilterProp="label"
+        optionLabelProp="triggerLabel"
+        optionFilterProp="title"
         value={data.settings?.aiModelId && data.settings.aiModelId !== EMPTY_GUID ? data.settings.aiModelId : undefined}
         placeholder={t(placeholderKey)}
         notFoundContent={t(visionOnly ? 'workflowDesigner.visionModelEmpty' : 'workflowDesigner.aiModelEmpty')}

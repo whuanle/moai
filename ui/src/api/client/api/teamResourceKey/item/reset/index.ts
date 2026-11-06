@@ -11,7 +11,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
  */
 export interface ResetRequestBuilder extends BaseRequestBuilder<ResetRequestBuilder> {
     /**
-     * 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效；需要团队 Admin 及以上角色.
+     * 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效；需要团队 Admin 及以上角色.key 不支持删除——生命周期只有「开启功能时自动生成/复用 + 重置」，吊销手段=重置或关闭资源功能开关.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<ResetTeamResourceKeyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -22,7 +22,7 @@ export interface ResetRequestBuilder extends BaseRequestBuilder<ResetRequestBuil
      */
      post(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<ResetTeamResourceKeyCommandResponse | undefined>;
     /**
-     * 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效；需要团队 Admin 及以上角色.
+     * 重置资源 key：同表行重新生成 key 值（行 id 不变），旧 key 立即失效；需要团队 Admin 及以上角色.key 不支持删除——生命周期只有「开启功能时自动生成/复用 + 重置」，吊销手段=重置或关闭资源功能开关.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

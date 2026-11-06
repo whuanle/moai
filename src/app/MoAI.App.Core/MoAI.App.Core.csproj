@@ -23,6 +23,7 @@
 		<ProjectReference Include="..\..\prompt\MoAI.Prompt.Shared\MoAI.Prompt.Shared.csproj" />
 		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
+		<ProjectReference Include="..\..\teamagent\MoAI.TeamAgent.Shared\MoAI.TeamAgent.Shared.csproj" />
 		<ProjectReference Include="..\..\knowledgegraph\MoAI.KnowledgeGraph.Shared\MoAI.KnowledgeGraph.Shared.csproj" />
 		<ProjectReference Include="..\..\ai\MoAI.AI.Shared\MoAI.AI.Shared.csproj" />
 		<ProjectReference Include="..\..\aiplugin\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />

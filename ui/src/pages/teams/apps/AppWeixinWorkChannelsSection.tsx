@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircleOutlined, CopyOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
@@ -18,7 +18,6 @@ interface AppWeixinWorkChannelsSectionProps {
   teamId: number
   appId: string
   canManage: boolean
-  isPublished: boolean
 }
 
 interface FormValues {
@@ -43,7 +42,7 @@ function buildCallbackUrl(weixinWorkAppId: string): string {
  * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、编辑（名称/企业 ID/AgentId/Secret/回调配置，密钥留空保持不变）、
  * 停用/启用、删除；删除即彻底移除连接，不保留可复用的连接。
  */
-export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPublished }: AppWeixinWorkChannelsSectionProps) {
+export function AppWeixinWorkChannelsSection({ teamId, appId, canManage }: AppWeixinWorkChannelsSectionProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(true)
@@ -257,7 +256,6 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      {!isPublished && <Alert type="warning" showIcon message={t('appWeixinWorkChannels.unpublishedHint')} />}
       <DSCard
         title={t('appWeixinWorkChannels.cardTitle')}
         extra={

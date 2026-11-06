@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI;
+using MoAI.AI.Services;
 using MoAI.App.Commands;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -16,16 +17,22 @@ public class DecideAppSessionToolApprovalCommandHandler : IRequestHandler<Decide
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IRedisDatabase _redisDatabase;
+    private readonly IDebugSessionRegistry _debugSessionRegistry;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DecideAppSessionToolApprovalCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="redisDatabase">Redis 数据库.</param>
-    public DecideAppSessionToolApprovalCommandHandler(DatabaseContext databaseContext, IRedisDatabase redisDatabase)
+    /// <param name="debugSessionRegistry">调试会话注册表（Redis）.</param>
+    public DecideAppSessionToolApprovalCommandHandler(
+        DatabaseContext databaseContext,
+        IRedisDatabase redisDatabase,
+        IDebugSessionRegistry debugSessionRegistry)
     {
         _databaseContext = databaseContext;
         _redisDatabase = redisDatabase;
+        _debugSessionRegistry = debugSessionRegistry;
     }
 
     /// <inheritdoc/>
@@ -38,7 +45,12 @@ public class DecideAppSessionToolApprovalCommandHandler : IRequestHandler<Decide
 
         if (ownerId == null || ownerId != request.ContextUserId)
         {
-            throw new BusinessException("会话不存在.") { StatusCode = 404 };
+            // 无正式会话行：回落调试会话注册表（Redis）校验归属，配置页调试面板的审批卡同样可批准/拒绝
+            var debug = await _debugSessionRegistry.GetAsync(request.SessionId, cancellationToken);
+            if (debug == null || debug.UserId != request.ContextUserId)
+            {
+                throw new BusinessException("会话不存在.") { StatusCode = 404 };
+            }
         }
 
         var target = request.Approved

@@ -32,6 +32,10 @@ public class AppUsageModelItem
     public long TotalTokens { get; set; }
     /// <summary>缓存命中的输入 token（模型响应 usage 上报，未上报为 0）.</summary>
     public long CachedTokens { get; set; }
+    /// <summary>是否当前生效配置的默认对话模型（已发布取快照，否则草稿）.</summary>
+    public bool IsDefault { get; set; }
+    /// <summary>是否在当前生效配置的可选模型列表中（配置但未调用的模型以零用量项补全）.</summary>
+    public bool IsConfigured { get; set; }
 }
 
 /// <summary>应用使用活动统计（会话/用户/消息维度）.</summary>

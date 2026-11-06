@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tag } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
@@ -18,7 +18,6 @@ interface AppChannelsSectionProps {
   teamId: number
   appId: string
   canManage: boolean
-  isPublished: boolean
 }
 
 interface FormValues {
@@ -34,7 +33,7 @@ interface FormValues {
  * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、编辑（名称/AppID/密钥/域名/描述，密钥留空保持不变）、停用/启用、删除；
  * 删除即彻底移除连接，不保留可复用的连接。
  */
-export function AppChannelsSection({ teamId, appId, canManage, isPublished }: AppChannelsSectionProps) {
+export function AppChannelsSection({ teamId, appId, canManage }: AppChannelsSectionProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(true)
@@ -228,7 +227,6 @@ export function AppChannelsSection({ teamId, appId, canManage, isPublished }: Ap
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      {!isPublished && <Alert type="warning" showIcon message={t('appChannels.unpublishedHint')} />}
       <DSCard
         title={t('appChannels.cardTitle')}
         extra={

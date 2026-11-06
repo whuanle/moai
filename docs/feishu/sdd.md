@@ -36,7 +36,7 @@ src/ai/MoAI.AI.Core/              应用渠道消费者
 
 ### 前端入口：应用工作台「外部渠道」分区
 
-`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部应用（Agent/流程）的 Admin+ 可见（外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；**只提供「接入飞书应用」（创建连接即绑定到当前应用，`channelType=app` + `channelId=appId` 随创建命令单次调用、连接与绑定同一事务落库）、停用/启用、删除三种操作**——不提供「绑定已有连接」与「解绑」，删除即彻底移除连接（级联解绑，不保留可复用连接，删除后同 AppID 可重新接入）；应用未发布时提示消息不会被处理（对应消费侧发布门禁）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
+`ui/src/pages/teams/apps/AppChannelsSection.tsx`（`ui/src/api/feishuApp.ts` 封装 Kiota），仅内部应用（Agent/流程）的 Admin+ 可见（外部应用走访问点）。页面复用团队连接列表接口，按 `bindChannelId == appId` 前端过滤出本应用渠道；**只提供「接入飞书应用」（创建连接即绑定到当前应用，`channelType=app` + `channelId=appId` 随创建命令单次调用、连接与绑定同一事务落库）、停用/启用、删除三种操作**——不提供「绑定已有连接」与「解绑」，删除即彻底移除连接（级联解绑，不保留可复用连接，删除后同 AppID 可重新接入）。长连接模式无 EncryptKey/Verification Token，表单仅 AppID/AppSecret/域名。
 
 ## 应用渠道回复链路（AppFeishuMessageHandler）
 

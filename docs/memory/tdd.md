@@ -16,7 +16,7 @@
 | @MEM-S10 | local-dev/agent-memory-e2e.mjs#AM-12/14/16 | PASS 44/44（2026-11-04） |
 | @MEM-S11 | local-dev/agent-memory-e2e.mjs#AM-16 | PASS 44/44（2026-11-04） |
 | @MEM-S11 | ui/src/pages/teams/apps/MyMemoryPage.tsx（走查，接口 @MEM-S13/S14 自动化） | PASS（2026-10-12） |
-| @MEM-S12 | @manual（面板结构走查） | PASS（2026-10-12） |
+| @MEM-S12 | @manual（面板结构走查） | PASS（2026-10-12）；2026-11-05 面板重做后走查：记忆区两态分段选择、无「管理记忆」入口 |
 | @MEM-S13 | local-dev/agent-memory-e2e.mjs#AM-19~20 | PASS 44/44（2026-11-04） |
 | @MEM-S14 | local-dev/agent-memory-e2e.mjs#AM-21~22 | PASS 44/44（2026-11-04） |
 | @MEM-S15 | local-dev/agent-memory-e2e.mjs#AM-23~24 | PASS 44/44（2026-11-04） |

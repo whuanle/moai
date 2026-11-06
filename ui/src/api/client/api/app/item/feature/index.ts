@@ -22,8 +22,8 @@ export interface FeatureRequestBuilder extends BaseRequestBuilder<FeatureRequest
      */
      get(requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<AppFeatureResponse | undefined>;
     /**
-     * 更新应用对外功能开关（ACP/A2A），开启时自动生成/复用该应用的团队资源 key；需要团队 Admin 及以上角色.
-     * @param body 更新应用对外功能开关（ACP/A2A）：开启时自动生成/复用该应用唯一的团队资源 key（ACP/A2A 共用一把），关闭不影响已有 key（端点按开关拒绝）；需要团队 Admin 及以上角色.
+     * 更新应用对外协议接入开关（ACP/A2A 单一开关），开启时自动生成/复用该应用的团队资源 key；需要团队 Admin 及以上角色.
+     * @param body 更新应用对外协议接入开关（ACP 与 A2A 单一开关，同开同关）：开启时自动生成/复用该应用唯一的团队资源 key（ACP/A2A 共用一把）；需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<AppFeatureResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -40,8 +40,8 @@ export interface FeatureRequestBuilder extends BaseRequestBuilder<FeatureRequest
      */
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<object> | undefined) : RequestInformation;
     /**
-     * 更新应用对外功能开关（ACP/A2A），开启时自动生成/复用该应用的团队资源 key；需要团队 Admin 及以上角色.
-     * @param body 更新应用对外功能开关（ACP/A2A）：开启时自动生成/复用该应用唯一的团队资源 key（ACP/A2A 共用一把），关闭不影响已有 key（端点按开关拒绝）；需要团队 Admin 及以上角色.
+     * 更新应用对外协议接入开关（ACP/A2A 单一开关），开启时自动生成/复用该应用的团队资源 key；需要团队 Admin 及以上角色.
+     * @param body 更新应用对外协议接入开关（ACP 与 A2A 单一开关，同开同关）：开启时自动生成/复用该应用唯一的团队资源 key（ACP/A2A 共用一把）；需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

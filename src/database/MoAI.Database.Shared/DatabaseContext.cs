@@ -296,6 +296,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<TeamVariableEntity> TeamVariables { get; set; }
 
     /// <summary>
+    /// 团队智能体，主智能体 + 多个子智能体的编排定义资产.
+    /// </summary>
+    public virtual DbSet<TeamAgentEntity> TeamAgents { get; set; }
+
+    /// <summary>
     /// 用户.
     /// </summary>
     public virtual DbSet<UserEntity> Users { get; set; }

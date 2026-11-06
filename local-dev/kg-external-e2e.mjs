@@ -534,10 +534,7 @@ async function main() {
         console.warn('WARN | KX-15e 跳过：connected 图谱不可用（无第二张图可作越圈反例）')
       }
 
-      if (TRG_ROW) {
-        const delK = await api('DELETE', `/api/team-resource-key/${TRG_ROW}`, { token })
-        if (delK.status !== 200) console.warn(`WARN | 清理 KG 资源 key 未成功: ${delK.status}`)
-      }
+      // key 不支持删除：清理不再删 key 行（随资源保留）
     }
 
   } finally {

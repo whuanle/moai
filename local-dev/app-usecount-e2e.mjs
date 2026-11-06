@@ -113,6 +113,7 @@ async function main() {
   check('AU-07g days=91 超上限 400', (await api('GET', `/api/app/${APP_ID}/usage/trend?days=91`, { token: owner.token })).status === 400)
   check('AU-07h 未登录 401', (await api('GET', `/api/app/${APP_ID}/usage/trend`)).status === 401)
   check('AU-07i 不存在应用 404', (await api('GET', `/api/app/01924f5e-0000-7000-8000-00000000ffff/usage/trend`, { token: owner.token })).status === 404)
+  check('AU-07j 趋势含 modelTokenSeries 字段（未对话应用为空数组）', Array.isArray(trend.json?.modelTokenSeries) && trend.json.modelTokenSeries.length === 0, JSON.stringify(trend.json?.modelTokenSeries ?? null))
 
   console.log(`\n结果：PASS=${PASS} FAIL=${FAIL}`)
   process.exit(FAIL > 0 ? 1 : 0)

@@ -45,10 +45,18 @@ export interface WorkflowDesignerState {
   variables: GlobalVariableDef[]
   setVariables: (variables: GlobalVariableDef[]) => void
 
-  /** 对话开场白（存于应用 agent 配置，仅流程应用只写开场白字段；随草稿一并保存） */
+  /** 对话开场白（存于应用 agent 配置，仅流程应用只写人设字段；随草稿一并保存） */
   openingStatement: string
   openingStatementEnabled: boolean
   setOpeningStatement: (statement: string, enabled: boolean) => void
+
+  /** 应用系统提示词（可选，经 sys.prompt 供 AI 等节点按需引用；存于应用 agent 配置，随草稿一并保存） */
+  prompt: string
+  setPrompt: (prompt: string) => void
+
+  /** 快捷输入（欢迎态胶囊，点击即发送；存于应用 agent 配置，随草稿一并保存） */
+  quickInputs: string[]
+  setQuickInputs: (inputs: string[]) => void
 
   load: (appId: string, teamId: number) => Promise<void>
   setEditorJSON: (json: EditorWorkflowJSON) => void
@@ -79,6 +87,8 @@ const INITIAL = {
   variables: [] as GlobalVariableDef[],
   openingStatement: '',
   openingStatementEnabled: false,
+  prompt: '',
+  quickInputs: [] as string[],
 }
 
 export const useWorkflowDesignerStore = create<WorkflowDesignerState>((set, get) => ({
@@ -126,6 +136,8 @@ export const useWorkflowDesignerStore = create<WorkflowDesignerState>((set, get)
         variables,
         openingStatement: agentConfig?.openingStatement ?? '',
         openingStatementEnabled: agentConfig?.openingStatementEnabled ?? false,
+        prompt: agentConfig?.prompt ?? '',
+        quickInputs: agentConfig?.quickInputs ?? [],
         version: config.version ?? 0,
         status: config.status ?? 0,
         publishTime: config.publishTime ?? null,
@@ -146,7 +158,7 @@ export const useWorkflowDesignerStore = create<WorkflowDesignerState>((set, get)
   },
 
   save: async () => {
-    const { appId, teamId, editorJSON, initialData, openingStatement, openingStatementEnabled } = get()
+    const { appId, teamId, editorJSON, initialData, openingStatement, openingStatementEnabled, prompt, quickInputs } = get()
     const json = editorJSON ?? initialData
     if (!json) throw new Error('画布尚未初始化')
     set({ saving: true })
@@ -157,13 +169,15 @@ export const useWorkflowDesignerStore = create<WorkflowDesignerState>((set, get)
         definition: JSON.stringify(definition),
         editorData: JSON.stringify(json),
       })
-      // 开场白随保存一并落库（后端对流程应用只写开场白字段）；草稿已保存，此步失败则整体报错由用户重试
+      // 对话人设（系统提示词/开场白/快捷输入）随保存一并落库（后端对流程应用只写人设字段）；
+      // 草稿已保存，此步失败则整体报错由用户重试
       await saveAppAgentConfig(appId, {
-        prompt: '',
+        prompt,
         wikiIds: [],
         plugins: [],
         openingStatement,
         openingStatementEnabled,
+        quickInputs: quickInputs.map((x) => x.trim()).filter(Boolean),
       })
       set({ saving: false, dirty: false })
       return definition
@@ -215,6 +229,10 @@ export const useWorkflowDesignerStore = create<WorkflowDesignerState>((set, get)
 
   setOpeningStatement: (statement, enabled) =>
     set({ openingStatement: statement, openingStatementEnabled: enabled, dirty: true }),
+
+  setPrompt: (prompt) => set({ prompt, dirty: true }),
+
+  setQuickInputs: (quickInputs) => set({ quickInputs, dirty: true }),
 
   clearRun: () => set({ runResult: null, nodeRunStates: {} }),
 

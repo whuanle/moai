@@ -199,6 +199,12 @@ export interface AppAgentConfig {
   wikiIds?: number[] | null
   /** 允许检索的知识图谱 id 列表（元素为 kg.id，仅托管图） */
   graphIds?: number[] | null
+  /** 绑定的团队智能体 id 列表（元素为 team_agent.id，uuid，本团队启用中智能体） */
+  teamAgentIds?: string[] | null
+  /** 默认团队智能体 id（uuid）；空=取列表第一个 */
+  defaultTeamAgentId?: string | null
+  /** 绑定的团队智能体选项（按绑定顺序，含实时启用状态与弱依赖声明） */
+  teamAgents?: Array<{ id?: string | null; key?: string | null; name?: string | null; description?: string | null; avatarObjectKey?: string | null; enabled?: boolean | null; mainPluginIds?: string[] | null; mainWikiIds?: Array<string | number> | null; mainGraphIds?: Array<string | number> | null }> | null
   /** 允许使用的插件 id 列表（元素为 plugin.id，uuid 字符串） */
   plugins?: string[] | null
   /** 绑定为工具的流程应用 id 列表（元素为 app.id，uuid 字符串，本团队已发布流程应用） */
@@ -235,6 +241,20 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     // Kiota 把后端 long 生成为 string，前端统一收敛为 number 便于与 wikiId 比较
     wikiIds: (res?.wikiIds ?? []).map((id) => Number(id)),
     graphIds: (res?.graphIds ?? []).map((id) => Number(id)),
+    teamAgentIds: (res?.teamAgentIds ?? []).map((id) => String(id)),
+    defaultTeamAgentId: res?.defaultTeamAgentId ?? null,
+    teamAgents: (res?.teamAgents ?? []).map((item) => ({
+      id: String(item?.id ?? ''),
+      key: item?.key ?? '',
+      name: item?.name ?? '',
+      description: item?.description ?? '',
+      avatarObjectKey: item?.avatarObjectKey ?? '',
+      enabled: item?.enabled !== false,
+      // 弱依赖声明（Kiota 把 long 生成为 string，统一收敛为 number 便于比较）
+      mainPluginIds: (item?.mainPluginIds ?? []).map((id) => String(id)),
+      mainWikiIds: (item?.mainWikiIds ?? []).map((id) => Number(id)),
+      mainGraphIds: (item?.mainGraphIds ?? []).map((id) => Number(id)),
+    })),
     plugins: (res?.plugins ?? []).map((id) => String(id)),
     workflowApps: (res?.workflowApps ?? []).map((id) => String(id)),
     agentApps: (res?.agentApps ?? []).map((id) => String(id)),
@@ -263,6 +283,10 @@ export async function saveAppAgentConfig(
     wikiIds: number[]
     /** 允许检索的知识图谱 id 列表（仅托管图，后端校验归属与模式） */
     graphIds?: number[]
+    /** 绑定的团队智能体 id 列表（本团队启用中智能体）；绑定后须开启子代理协作，后端强校验 */
+    teamAgentIds?: string[] | null
+    /** 默认团队智能体 id，须在 teamAgentIds 内；null=取列表第一个 */
+    defaultTeamAgentId?: string | null
     plugins: string[]
     /** 绑定为工具的流程应用 id 列表；null / 缺省表示保持已保存的流程应用绑定不变 */
     workflowApps?: string[] | null
@@ -285,6 +309,8 @@ export async function saveAppAgentConfig(
     wikiIds: payload.wikiIds.map((id) => String(id)),
     // 后端 graph_ids 为 long（仅托管图），同样按生成类型传字符串
     graphIds: (payload.graphIds ?? []).map((id) => String(id)),
+    teamAgentIds: ((payload.teamAgentIds ?? []).filter(Boolean)) as Guid[],
+    defaultTeamAgentId: (payload.defaultTeamAgentId || null) as Guid | null,
     plugins: payload.plugins as Guid[],
     workflowApps: (payload.workflowApps ?? null) as Guid[] | null,
     agentApps: (payload.agentApps ?? null) as Guid[] | null,
@@ -574,6 +600,18 @@ const toFiniteNumber = (value: unknown): number => {
   return Number.isFinite(num) ? num : 0
 }
 
+/** 归一化 Kiota DateOnly（{year,month,day} 对象或 ISO 字符串）为 YYYY-MM-DD 文本 */
+const toDateText = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value
+  }
+  const d = value as { year?: number; month?: number; day?: number } | null | undefined
+  if (d && typeof d.year === 'number' && typeof d.month === 'number' && typeof d.day === 'number') {
+    return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+  }
+  return ''
+}
+
 export interface AppUsageSummary {
   callCount: number
   promptTokens: number
@@ -592,6 +630,10 @@ export interface AppUsageModelItem {
   totalTokens: number
   /** 缓存命中的输入 token（模型响应 usage 上报，未上报为 0） */
   cachedTokens: number
+  /** 是否当前生效配置的默认对话模型（已发布取快照，否则草稿） */
+  isDefault?: boolean
+  /** 是否在当前生效配置的可选模型列表中（配置但未调用的模型以零用量项补全） */
+  isConfigured?: boolean
 }
 
 /** 应用使用活动统计（会话/用户/消息维度） */
@@ -639,6 +681,8 @@ export async function getAppUsage(appId: string): Promise<AppUsageResult> {
       completionTokens: toFiniteNumber(item.completionTokens),
       totalTokens: toFiniteNumber(item.totalTokens),
       cachedTokens: toFiniteNumber(item.cachedTokens),
+      isDefault: item.isDefault ?? false,
+      isConfigured: item.isConfigured ?? false,
     })),
   }
 }
@@ -653,26 +697,50 @@ export interface AppUsageTrendItem {
   messageCount: number
 }
 
+/** 各模型 Token 消耗趋势单点 */
+export interface AppUsageModelTokenPoint {
+  /** 统计日期（YYYY-MM-DD） */
+  date?: string | null
+  /** 当日合计 token */
+  tokens: number
+}
+
+/** 单模型 Token 消耗趋势序列（覆盖完整区间，无数据日补 0） */
+export interface AppUsageModelTokenSeries {
+  modelId?: string | null
+  modelName?: string | null
+  points: AppUsageModelTokenPoint[]
+}
+
 /** 应用使用趋势（按日聚合）结果 */
 export interface AppUsageTrendResult {
   items: AppUsageTrendItem[]
+  /** 各模型 Token 序列（按区间合计降序，最多 8 条；无数据为空） */
+  modelTokenSeries: AppUsageModelTokenSeries[]
   startDate?: string | null
   endDate?: string | null
 }
 
-/** 查询应用使用趋势（近 N 天使用次数与消息条数按日聚合）；后端 long 以字符串下发，此处归一化为 number */
+/** 查询应用使用趋势（近 N 天使用次数/消息条数按日聚合 + 各模型 token 序列）；后端 long 以字符串下发，此处归一化为 number */
 export async function getAppUsageTrend(appId: string, days = 30): Promise<AppUsageTrendResult> {
   const client = getApiClient()
   const res = await client.api.app.byId(appId).usage.trend.get({ queryParameters: { days } })
   return {
     items: (res?.items ?? []).map((item) => ({
-      // syncapi 生成物把日期字段生成为 Kiota DateOnly，统一收敛为字符串（YYYY-MM-DD）
-      date: item.date == null ? null : String(item.date),
+      date: toDateText(item.date),
       useCount: toFiniteNumber(item.useCount),
       messageCount: toFiniteNumber(item.messageCount),
     })),
-    startDate: res?.startDate == null ? null : String(res.startDate),
-    endDate: res?.endDate == null ? null : String(res.endDate),
+    modelTokenSeries: (res?.modelTokenSeries ?? []).map((series) => ({
+      modelId: series.modelId,
+      modelName: series.modelName,
+      points: (series.points ?? []).map((point) => ({
+        date: toDateText(point.date),
+        tokens: toFiniteNumber(point.tokens),
+      })),
+    })),
+    startDate: toDateText(res?.startDate),
+    endDate: toDateText(res?.endDate),
   }
 }
 
@@ -692,6 +760,20 @@ export interface AppUserSkillOption {
   useCount?: number | null
 }
 
+/** 应用绑定的团队智能体切换器选项（对话端，多选时展示切换下拉） */
+export interface AppUserTeamAgentOption {
+  /** 团队智能体 id（uuid 字符串） */
+  id: string
+  /** 智能体标识 key（团队内唯一，如 plan/build） */
+  key?: string | null
+  /** 智能体名称（展示名） */
+  name: string
+  /** 智能体描述 */
+  description?: string | null
+  /** 头像文件 objectKey，空串=未设置（经 resolveStorageUrl 转可访问地址） */
+  avatarObjectKey?: string | null
+}
+
 export interface AppUserConfig {
   /** 用户当前选择的专家提示词 id，0=未选择 */
   promptId: number
@@ -699,6 +781,10 @@ export interface AppUserConfig {
   defaultModelId: string
   /** 开放给用户选择的对话模型 id 列表（含默认模型）；仅默认模型或未配置时为单元素/空列表 */
   modelIds: string[]
+  /** 应用绑定的团队智能体切换器选项（与正式对话同一生效口径）；仅 1 个或为空时前端不展示切换器 */
+  teamAgents: AppUserTeamAgentOption[]
+  /** 默认团队智能体 id（uuid）；空=取列表第一个 */
+  defaultTeamAgentId: string
   /** 用户当前勾选的技能 id 列表（应用默认技能的子集；未配置过时为默认技能全集） */
   skills: string[]
   /** 应用默认技能目录（管理员配置） */
@@ -728,6 +814,8 @@ interface RawAppUserConfigResponse {
   promptId?: number | null
   defaultModelId?: string | null
   modelIds?: string[] | null
+  teamAgents?: Array<{ id?: string | null; key?: string | null; name?: string | null; description?: string | null; avatarObjectKey?: string | null }> | null
+  defaultTeamAgentId?: string | null
   skills?: string[] | null
   defaultSkills?: AppUserSkillOption[] | null
   toolApprovalMode?: string | null
@@ -752,6 +840,16 @@ export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
     defaultModelId: res?.defaultModelId ? String(res.defaultModelId) : '',
     // 存量应用未配置多模型时后端已归一为 [默认模型]；空 Guid 视为未配置
     modelIds: (res?.modelIds ?? []).map((id) => String(id)).filter((id) => id && id !== EMPTY_GUID),
+    teamAgents: (res?.teamAgents ?? [])
+      .filter((item) => item?.id && item.name)
+      .map((item) => ({
+        id: String(item.id),
+        key: item.key ?? '',
+        name: String(item.name),
+        description: item.description ?? '',
+        avatarObjectKey: item.avatarObjectKey ?? '',
+      })),
+    defaultTeamAgentId: res?.defaultTeamAgentId ? String(res.defaultTeamAgentId) : '',
     skills: (res?.skills ?? []).map((id) => String(id)),
     defaultSkills: res?.defaultSkills ?? [],
     toolApprovalMode: res?.toolApprovalMode === 'approval' ? 'approval' : 'auto',

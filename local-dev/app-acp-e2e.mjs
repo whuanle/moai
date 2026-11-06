@@ -242,7 +242,7 @@ async function main() {
   await api('PUT', `/api/app/${A1}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A1}/publish`, { token: owner.token })
   // 开启 A1 的 ACP 功能（key 唯一生成时机=开启功能；未开启的 ACP 端点一律 403 feature_disabled）
-  await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpEnabled: true, isA2aEnabled: false } })
+  await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
   const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-draft-${TS}`, appType: 'agent' } })).json.value)
 
@@ -250,14 +250,14 @@ async function main() {
   await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: W1, teamId: TID, definition: JSON.stringify(buildDefinition()), editorData: JSON.stringify({ nodes: POS }) } })
   await api('POST', '/api/app/workflow/publish', { token: owner.token, body: { appId: W1, teamId: TID } })
   // workflow 应用同样开启 ACP（ACP-S14 workflow prompt 场景）
-  await api('PUT', `/api/app/${W1}/feature`, { token: owner.token, body: { isAcpEnabled: true, isA2aEnabled: false } })
+  await api('PUT', `/api/app/${W1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
   // A3：外部应用（is_auth=false，用户 token 换取要求 IsExternal）
   const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-ext-${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
   await api('PUT', `/api/app/${A3}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A3}/publish`, { token: owner.token })
   // A3 开启 ACP（ACP-S11 用户 token 会话场景）
-  await api('PUT', `/api/app/${A3}/feature`, { token: owner.token, body: { isAcpEnabled: true, isA2aEnabled: false } })
+  await api('PUT', `/api/app/${A3}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
   // 接入 key：scopes 字段已退役，moai-ac- 一律全量（K1/K2/K3 同构，仅命名区分用途）；K4（跨团队）
   const mkKey = async (name) => {
@@ -381,20 +381,23 @@ async function main() {
     })
   check('ACP-S15 session/cancel 中断（stopReason=cancelled）', pC.final?.result?.stopReason === 'cancelled', JSON.stringify(pC.final).slice(0, 140))
 
-  // ===== ACP-S16/S17 资源 key 吊销即时性（停用即 401、启用恢复 200，失效钩子无 TTL 等待） =====
-  // app 资源 key 绑定具体应用（resourceId=应用 Guid），A1 已开 ACP，get-or-create 幂等复用
+  // ===== ACP-S16 资源 key 直连（key 无启停状态、不可删除，吊销只由重置/功能开关控制，见 ACP-S17） =====
+  // app 资源 key 绑定具体应用（resourceId=应用 Guid），A1 已开协议接入，get-or-create 幂等复用
   const kAppRes = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'app', resourceId: A1 } })
   const APP_RES_KEY = String(kAppRes.json?.key ?? '')
   const APP_RES_ROW = String(kAppRes.json?.teamResourceKeyId ?? '')
   const acpRes = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 18, method: 'initialize', params: {} })
   check('ACP-S16 app 资源 key（moai-tr-）ACP initialize 200', acpRes.status === 200 && acpRes.json?.result?.protocolVersion === 1, JSON.stringify(acpRes.json).slice(0, 120))
 
-  const dis = await api('PUT', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token, body: { status: 'disabled' } })
-  const disHit = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
-  check('ACP-S17a 资源 key 停用后 ACP 立即 401', dis.status === 200 && disHit.status === 401, `dis=${dis.status} hit=${disHit.status}`)
-  await api('PUT', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token, body: { status: 'enabled' } })
-  const reHit = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
-  check('ACP-S17b 资源 key 重新启用后 ACP 恢复 200', reHit.status === 200 && reHit.json?.result?.protocolVersion === 1, JSON.stringify(reHit.json).slice(0, 120))
+  // ===== ACP-S17 资源 key 重置即时吊销（key 不可删除：旧 key 立即 401、新 key 200，行 id 不变） =====
+  const resetRes = APP_RES_ROW ? await api('POST', `/api/team-resource-key/${APP_RES_ROW}/reset`, { token: owner.token }) : { status: 0 }
+  const resetHit = await acp({ key: APP_RES_KEY }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
+  const APP_RES_KEY_NEW = String(resetRes.json?.key ?? '')
+  const reHit = await acp({ key: APP_RES_KEY_NEW }, A1, { jsonrpc: '2.0', id: 19, method: 'initialize', params: {} })
+  check('ACP-S17 资源 key 重置后 ACP 立即 401、新 key 恢复 200',
+    resetRes.status === 200 && resetRes.json?.teamResourceKeyId === kAppRes.json?.teamResourceKeyId
+    && resetHit.status === 401 && APP_RES_KEY_NEW.startsWith('moai-tr-') && reHit.status === 200,
+    `reset=${resetRes.status} hit=${resetHit.status} re=${reHit.status}`)
 
   // ===== ACP-S18 app token（无外部用户语义）403 =====
   const appTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: K1.key, secret: K1.secret } })
@@ -409,8 +412,7 @@ async function main() {
 
   // ===== 清理 =====
   if (CH_ID) await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
-  if (WIKI_RES_ROW) await api('DELETE', `/api/team-resource-key/${WIKI_RES_ROW}`, { token: owner.token })
-  if (APP_RES_ROW) await api('DELETE', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token })
+  // key 不支持删除（吊销=重置或关闭功能开关）：清理段不再删 key 行，随资源保留
   for (const k of [K1, K2, K3, K4]) {
     if (k.id) await api('DELETE', `/api/access-app/${k.id}`, { token: owner.token })
   }

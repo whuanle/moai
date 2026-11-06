@@ -53,7 +53,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 
         var config = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
-            .Select(x => new AppApprovalConfigRow(x.Skills, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps, x.ModelId, x.ModelIds))
+            .Select(x => new AppApprovalConfigRow(x.Skills, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps, x.ModelId, x.ModelIds, x.TeamAgentIds, x.DefaultTeamAgentId, x.TeamAgentDefs))
             .FirstOrDefaultAsync(cancellationToken);
 
         // 对话模型切换器数据源（与正式对话同一生效口径：已发布取快照，否则草稿）；
@@ -65,6 +65,11 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         {
             modelIds = new List<Guid> { defaultModelId };
         }
+
+        // 团队智能体切换器数据源（同一生效口径）：已发布取快照内嵌定义，否则查实时行（仅启用项）
+        var teamAgentIds = ParseGuidList(modelSnapshot?.TeamAgentIds ?? config?.TeamAgentIds);
+        var defaultTeamAgentId = modelSnapshot?.DefaultTeamAgentId ?? config?.DefaultTeamAgentId;
+        var teamAgents = await ResolveTeamAgentOptionsAsync(app, modelSnapshot, teamAgentIds, cancellationToken);
 
         var defaultSkillIds = ParseGuidList(config?.Skills);
 
@@ -142,6 +147,8 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             PromptId = userConfig?.PromptId ?? 0,
             DefaultModelId = defaultModelId,
             ModelIds = modelIds,
+            TeamAgents = teamAgents,
+            DefaultTeamAgentId = defaultTeamAgentId,
             MemoryMode = memoryMode,
             MemoryEnabled = memoryEnabled,
             MemoryGlobalMode = memoryGlobalMode,
@@ -170,7 +177,63 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         string? WorkflowApps,
         string? AgentApps,
         Guid ModelId,
-        string? ModelIds);
+        string? ModelIds,
+        string? TeamAgentIds,
+        Guid? DefaultTeamAgentId,
+        string? TeamAgentDefs);
+
+    /// <summary>
+    /// 解析团队智能体切换器选项：已发布且快照携带内嵌定义时按定义回显（Enabled 恒 true，发布后编辑不影响线上），
+    /// 否则按绑定 id 查实时行（仅启用项，顺序与绑定一致）.
+    /// </summary>
+    private async Task<IReadOnlyList<AppTeamAgentOption>> ResolveTeamAgentOptionsAsync(
+        AppEntity app,
+        AppAgentConfigSnapshot? snapshot,
+        IReadOnlyList<Guid> teamAgentIds,
+        CancellationToken cancellationToken)
+    {
+        if (teamAgentIds.Count == 0)
+        {
+            return new List<AppTeamAgentOption>();
+        }
+
+        var defs = SnapshotTeamAgent.TryParseDefs(snapshot?.TeamAgentDefs);
+        if (defs.Count > 0)
+        {
+            var defMap = defs.ToDictionary(x => x.Id);
+            return teamAgentIds
+                .Where(defMap.ContainsKey)
+                .Select(id => new AppTeamAgentOption
+                {
+                    Id = defMap[id].Id,
+                    Key = defMap[id].Key,
+                    Name = defMap[id].Name,
+                    Description = defMap[id].Description,
+                    AvatarObjectKey = defMap[id].AvatarObjectKey,
+                    Enabled = true,
+                })
+                .ToList();
+        }
+
+        var rows = await _databaseContext.TeamAgents.AsNoTracking()
+            .Where(x => teamAgentIds.Contains(x.Id) && x.Enabled && x.TeamId == app.TeamId)
+            .Select(x => new { x.Id, x.Key, x.Name, x.Description, x.AvatarObjectKey })
+            .ToListAsync(cancellationToken);
+
+        var rowMap = rows.ToDictionary(x => x.Id);
+        return teamAgentIds
+            .Where(rowMap.ContainsKey)
+            .Select(id => new AppTeamAgentOption
+            {
+                Id = rowMap[id].Id,
+                Key = rowMap[id].Key,
+                Name = rowMap[id].Name,
+                Description = rowMap[id].Description ?? string.Empty,
+                AvatarObjectKey = rowMap[id].AvatarObjectKey ?? string.Empty,
+                Enabled = true,
+            })
+            .ToList();
+    }
 
     /// <summary>
     /// 解析审批策略自动放行的工具名/前缀：已发布应用按发布快照的执行参数（与闸口一致），未发布按实时草稿；

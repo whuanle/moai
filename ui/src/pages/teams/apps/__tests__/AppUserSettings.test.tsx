@@ -14,7 +14,6 @@ function renderPanel(onSaved = vi.fn(), onClose = vi.fn(), currentPromptId = 11)
     <MemoryRouter>
       <AppUserSettings
         open
-        teamId={3}
         appId="a1"
       experts={[
         { promptId: 11, name: '写作专家', description: '文案润色', teamId: 3 },
@@ -34,6 +33,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       promptId: 11,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: ['sk-2'],
       defaultSkills: [
         { id: 'sk-1', key: 'docx_writer', name: '系统技能', description: '', isSystem: true, teamId: 0 },
@@ -63,9 +64,9 @@ describe('AppUserSettings（应用设置面板）', () => {
     // 专家按当前生效值回显（currentPromptId=11，即配置中的写作专家），选中卡带 is-active
     expect(screen.getByText('写作专家')).toBeInTheDocument()
     expect(screen.getByText('写作专家').closest('.moai-chat__opt-card')).toHaveClass('is-active')
-    // 左缘拖拽手柄存在，默认宽度 460
+    // 左缘拖拽手柄存在，默认宽度 520
     expect(screen.getByRole('separator', { name: '拖动调整面板宽度' })).toBeInTheDocument()
-    expect(document.querySelector('.moai-chat__settings')).toHaveStyle({ width: '460px' })
+    expect(document.querySelector('.moai-chat__settings')).toHaveStyle({ width: '520px' })
   })
 
   it('专家草稿以当前生效值为准：与持久化默认不同时按当前值提交', async () => {
@@ -114,6 +115,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       promptId: 11,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'auto',
@@ -130,7 +133,6 @@ describe('AppUserSettings（应用设置面板）', () => {
       <MemoryRouter>
         <AppUserSettings
           open
-          teamId={3}
           appId="a1"
           experts={[...pool, { promptId: 11, name: '写作专家', description: '文案', teamId: 3, useCount: 2 }]}
           currentPromptId={105}
@@ -170,6 +172,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       promptId: 0,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: skills,
       toolApprovalMode: 'auto',
@@ -186,7 +190,6 @@ describe('AppUserSettings（应用设置面板）', () => {
       <MemoryRouter>
         <AppUserSettings
           open
-          teamId={3}
           appId="a1"
           experts={[]}
           currentPromptId={0}
@@ -222,6 +225,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       promptId: 11,
       defaultModelId: '',
       modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
       toolApprovalMode: 'auto',

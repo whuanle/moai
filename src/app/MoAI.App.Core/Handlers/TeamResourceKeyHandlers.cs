@@ -49,16 +49,16 @@ public class CreateTeamResourceKeyCommandHandler : IRequestHandler<CreateTeamRes
 
                 var app = await _databaseContext.Apps
                     .Where(x => x.Id == appId)
-                    .Select(x => new { x.TeamId, x.IsAcpEnabled, x.IsA2aEnabled })
+                    .Select(x => new { x.TeamId, x.IsAcpA2aEnabled })
                     .FirstOrDefaultAsync(cancellationToken);
                 if (app == null || app.TeamId != teamId)
                 {
                     throw new BusinessException("应用不存在.") { StatusCode = 404 };
                 }
 
-                if (!app.IsAcpEnabled && !app.IsA2aEnabled)
+                if (!app.IsAcpA2aEnabled)
                 {
-                    throw new BusinessException("应用未开启 ACP/A2A 功能，无需生成资源 key.") { StatusCode = 400 };
+                    throw new BusinessException("应用未开启对外协议接入（ACP/A2A），无需生成资源 key.") { StatusCode = 400 };
                 }
 
                 break;
@@ -169,7 +169,6 @@ public class QueryTeamResourceKeysCommandHandler : IRequestHandler<QueryTeamReso
                 ResourceId = x.ResourceId,
                 Key = x.Key,
                 KeyPrefix = x.KeyPrefix,
-                Status = x.Status,
                 CreateTime = x.CreateTime,
                 UpdateTime = x.UpdateTime,
             })
@@ -236,97 +235,5 @@ public class ResetTeamResourceKeyCommandHandler : IRequestHandler<ResetTeamResou
             Key = key,
             KeyPrefix = keyPrefix,
         };
-    }
-}
-
-/// <summary>
-/// <inheritdoc cref="UpdateTeamResourceKeyCommand"/>
-/// </summary>
-public class UpdateTeamResourceKeyCommandHandler : IRequestHandler<UpdateTeamResourceKeyCommand, EmptyCommandResponse>
-{
-    private readonly DatabaseContext _databaseContext;
-    private readonly ITeamService _teamService;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="UpdateTeamResourceKeyCommandHandler"/> class.
-    /// </summary>
-    /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="teamService">团队领域服务.</param>
-    public UpdateTeamResourceKeyCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
-    {
-        _databaseContext = databaseContext;
-        _teamService = teamService;
-    }
-
-    /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateTeamResourceKeyCommand request, CancellationToken cancellationToken)
-    {
-        var entity = await _databaseContext.TeamResourceKeys
-            .FirstOrDefaultAsync(x => x.Id == request.TeamResourceKeyId, cancellationToken);
-        if (entity == null)
-        {
-            throw new BusinessException("资源 key 不存在.") { StatusCode = 404 };
-        }
-
-        var myRole = await _teamService.GetMyRoleAsync(entity.TeamId, request.ContextUserId, cancellationToken);
-        if (myRole == null)
-        {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
-        }
-
-        if (myRole == TeamRole.Member)
-        {
-            throw new BusinessException("只有团队管理员可以管理资源 key.") { StatusCode = 403 };
-        }
-
-        entity.Status = request.Status;
-        await _databaseContext.SaveChangesAsync(cancellationToken);
-
-        return EmptyCommandResponse.Default;
-    }
-}
-
-/// <summary>
-/// <inheritdoc cref="DeleteTeamResourceKeyCommand"/>
-/// </summary>
-public class DeleteTeamResourceKeyCommandHandler : IRequestHandler<DeleteTeamResourceKeyCommand, EmptyCommandResponse>
-{
-    private readonly DatabaseContext _databaseContext;
-    private readonly ITeamService _teamService;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DeleteTeamResourceKeyCommandHandler"/> class.
-    /// </summary>
-    /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="teamService">团队领域服务.</param>
-    public DeleteTeamResourceKeyCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
-    {
-        _databaseContext = databaseContext;
-        _teamService = teamService;
-    }
-
-    /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteTeamResourceKeyCommand request, CancellationToken cancellationToken)
-    {
-        var entity = await _databaseContext.TeamResourceKeys
-            .FirstOrDefaultAsync(x => x.Id == request.TeamResourceKeyId, cancellationToken);
-        if (entity == null)
-        {
-            throw new BusinessException("资源 key 不存在.") { StatusCode = 404 };
-        }
-
-        var myRole = await _teamService.GetMyRoleAsync(entity.TeamId, request.ContextUserId, cancellationToken);
-        if (myRole == null)
-        {
-            throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
-        }
-
-        if (myRole == TeamRole.Member)
-        {
-            throw new BusinessException("只有团队管理员可以管理资源 key.") { StatusCode = 403 };
-        }
-
-        await _databaseContext.SoftDeleteAsync(_databaseContext.TeamResourceKeys.Where(x => x.Id == entity.Id));
-        return EmptyCommandResponse.Default;
     }
 }

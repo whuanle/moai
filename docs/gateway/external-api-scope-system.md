@@ -11,7 +11,7 @@
 | 凭证 | 表 / 前缀 | 签发者 | 可用性语义 |
 |---|---|---|---|
 | 应用接入 key | `access_app`（统一表，Level=team），`moai-ac-` + 随机 | 团队管理员（`/api/access-app`） | **存在即有效**（软删除自动过滤），**团队级全量访问 /api/teamres**（wiki 读写、KG 读写、agent 对话、ACP/A2A、wiki/KG MCP），无任何范围勾选；appid 明文可回显；配套密钥 PBKDF2 落库（原文仅创建/重置返回一次），已设密钥则兑换 token 必须携带 secret |
-| 团队资源 key | `teamres_key`，`moai-tr-` + 32 位随机（前 12 位展示前缀） | **资源对外功能开启时自动生成/复用**（应用开 ACP/A2A `PUT /api/app/{id}/feature`、知识库/知识图谱开 MCP `PUT {id}/mcp-config`——查库无则写、有则复用；未开启功能手动 `POST /api/team-resource-key` 400）；管理面 `/api/team-resource-key`（get-or-create/重置/停用/删除，团队 Admin+） | **包围圈凭证**：仅能访问绑定资源实例的端点（§2b），无 secret、**不可换 token**（`POST /api/teamres/token` 仅认 moai-ac-，携带 moai-tr- 400/401）；须 `status=enabled`，停用/删除/重置下一请求即 401；**一资源一把**（app 行 resource_id=应用 Guid、wiki 行=wikiId、kg 行=kgId，`varchar(64)`），get-or-create 幂等；key 明文回显仅团队 Admin+（`ITeamService.GetMyRoleAsync` 门禁） |
+| 团队资源 key | `teamres_key`，`moai-tr-` + 32 位随机（前 12 位展示前缀） | **资源对外功能开启时自动生成/复用**（应用开 ACP/A2A `PUT /api/app/{id}/feature`、知识库/知识图谱开 MCP `PUT {id}/mcp-config`——查库无则写、有则复用；未开启功能手动 `POST /api/team-resource-key` 400）；管理面 `/api/team-resource-key`（get-or-create/重置；**key 无启停状态且不可删除**，团队 Admin+） | **包围圈凭证**：仅能访问绑定资源实例的端点（§2b），无 secret、**不可换 token**（`POST /api/teamres/token` 仅认 moai-ac-，携带 moai-tr- 400/401）；无启停状态（status 列已删），重置下一请求旧 key 即 401；**一资源一把**（app 行 resource_id=应用 Guid、wiki 行=wikiId、kg 行=kgId，`varchar(64)`），get-or-create 幂等；key 明文回显仅团队 Admin+（`ITeamService.GetMyRoleAsync` 门禁） |
 | 外部 token（JWT） | 换取签发，不落库 | `POST /api/teamres/token`（仅认 moai-ac- key） | access 2h（Debug 7d）+ refresh 7d；**不再携带 scope claim**（`ClaimScope` 已删），授权语义= 团队归属 + app_ids + 外部用户身份；刷新按来源接入**当前**存在性重验；**已设密钥则兑换必须携带 secret** |
 | 匿名临时身份 | 无 key | `POST /api/teamres/token` 只传 appId（应用须 `is_auth=false`） | 刷新要求应用仍无需授权 |
 | 系统级接入 appid（参照） | 同一张 `access_app`（Level=system，AppType 分型 subsystem/app），`moai-sa-` + Base64Url(Guid+HMAC) 结构化自校验 appid | root（`/api/subsystem/*`，合并管理面） | 与团队级同表分域：不能访问 /api/teamres、只能访问 /api/subsys/**（见 [../subsystem/sdd.md](../subsystem/sdd.md)），全量访问协作面资源 |
@@ -27,12 +27,11 @@
 
 ### 2b. 团队资源 key 包围圈（`IsResourceKeyAllowedAsync`，中间件前置拦截，越圈 403 insufficient_scope）与资源功能开关（403 feature_disabled）
 
-**资源功能开关**（一资源一把 key 的生成时机与端点总闸）：
+**资源功能开关**（一资源一把 key 的生成时机与端点总闸；**key 自身无启停状态**——`teamres_key` 无 status 列、`PUT /api/team-resource-key/{id}` 启停端点已删除，启停只由功能入口开关控制，关闭即 403 `feature_disabled`、重开复用原 key，吊销手段=删除 key 或关闭开关）：
 
 | 开关 | 字段 | 管理接口 | 未开启行为 |
 |---|---|---|---|
-| 应用 ACP | `app.is_acp_enabled` | `GET/PUT /api/app/{id}/feature`（body `{isAcpEnabled,isA2aEnabled}`，团队 Admin+） | ACP 端点对**一切凭证**（moai-ac- / 资源 key / 用户 token）403 `feature_disabled`；开启时自动生成/复用该应用一把 key（响应与 GET 均回显） |
-| 应用 A2A | `app.is_a2a_enabled` | 同上 | A2A 端点同上；与 ACP **共用该应用一把 key** |
+| 应用对外协议接入（ACP 与 A2A 同开同关） | `app.is_acp_a2a_enabled` | `GET/PUT /api/app/{id}/feature`（body `{isAcpA2aEnabled}`，团队 Admin+；前端应用工作台单一「ACP/A2A」分区） | ACP 与 A2A 端点对**一切凭证**（moai-ac- / 资源 key / 用户 token）403 `feature_disabled`；开启时自动生成/复用该应用一把 key（响应与 GET 均回显，ACP/A2A 共用） |
 | 知识库 MCP | `wiki.is_mcp_enabled` | `GET/PUT /api/wiki/{id}/mcp-config`（团队 Admin+） | 该库 MCP 端点 403 `feature_disabled`；**其资源 key 对该库任何端点（含 REST）403 feature_disabled**（key 的有效性绑定开关） |
 | 知识图谱 MCP | `knowledge_graph.is_mcp_enabled`（仅托管图，接入图 400） | `GET/PUT /api/knowledge-graph/{id}/mcp-config` | 同知识库口径 |
 
@@ -40,7 +39,7 @@
 
 | ResourceKeyType | 放行端点 |
 |---|---|
-| `app`（resourceId=应用 Guid） | 仅 `/api/teamres/app/{绑定appId}/acp` 与 `/api/teamres/app/{绑定appId}/a2a[.json]`（路由 appId 须等于绑定应用，打其它应用 403）；端点另受 `is_acp_enabled`/`is_a2a_enabled` 门禁（403 feature_disabled）；wiki/agent 等其余端点一律 403 |
+| `app`（resourceId=应用 Guid） | 仅 `/api/teamres/app/{绑定appId}/acp` 与 `/api/teamres/app/{绑定appId}/a2a[.json]`（路由 appId 须等于绑定应用，打其它应用 403）；端点另受 `is_acp_a2a_enabled` 单开关门禁（403 feature_disabled）；wiki/agent 等其余端点一律 403 |
 | `wiki`（resourceId=wikiId） | `/api/teamres/wiki/{绑定wikiId}/**`（含 `/mcp`）+ 团队级 `POST /api/teamres/wiki/list`（放行但结果经 `OnlyWikiId` 过滤只见绑定库）；其它库 403、越 KG/agent 端点 403；绑定库 MCP 关闭时一律 403 `feature_disabled` |
 | `knowledgeGraph`（resourceId=kgId） | `/api/teamres/knowledge-graph/{绑定kgId}/**`（含 `/mcp`）+ 团队级 `POST /api/teamres/knowledge-graph/list`（`OnlyGraphId` 过滤）；同构 wiki |
 
@@ -55,7 +54,7 @@
 - 知识库 `/api/teamres/wiki/*`：`POST /list`、`GET /{wikiId}`、文档列表/正文/embedding/下载/召回（`POST /{wikiId}/recall/list`）等读面（7）+ embedding-config/上传/提取/切割/向量化/元数据生成/删除/重命名等写面（10）+ MCP `/api/teamres/wiki/{wikiId}/mcp`（三只读工具，见 wiki sdd D35）。
 - 知识图谱 `/api/teamres/knowledge-graph/*`：列表/schema/节点/边查询读面（9）+ 节点/边/实体类型/关系类型增删改与批量导入写面（17）+ MCP `/api/teamres/knowledge-graph/{kgId}/mcp`（四只读工具，工具域由 `KnowledgeGraphMcpToolGate` 过滤）。
 - 应用对话面：`POST /api/teamres/token`（用户 token）、`/api/teamres/agent/{appId}/session*`、`/api/teamres/session/{sessionId}/messages` 等——仅外部用户 token（原 `app_chat` 资格门禁已随 scope 退役删除，兑换用户 token 不再要求任何范围）。
-- 应用 ACP：`POST /api/teamres/app/{appId}/acp`（Agent Client Protocol JSON-RPC 2.0；外部用户语义 + appId 归属团队 + 已发布未禁用 + **应用已开启 ACP 功能**（未开启 403 feature_disabled），不要求 `IsExternal`；GET 405）。
+- 应用 ACP：`POST /api/teamres/app/{appId}/acp`（Agent Client Protocol JSON-RPC 2.0；外部用户语义 + appId 归属团队 + 已发布未禁用 + **应用已开启对外协议接入**（未开启 403 feature_disabled），不要求 `IsExternal`；GET 405）。
 - 应用 A2A：`POST /api/teamres/app/{appId}/a2a` 与 Agent Card `GET /a2a/agent.json`（Google Agent2Agent，门禁与 ACP 同口径，要求开启 A2A 功能）。
 - 其他：`/api/teamres/app/list`（任意外部 token）、`/api/teamres/app/{appId}/access-point`（匿名）。
 

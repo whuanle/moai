@@ -7,6 +7,7 @@
 //       启动参数校验、运行历史与详情、角色门禁、核心节点不变量（无开始/双开始/无结束草稿 400）。
 //       开始节点固定 question 契约（对话注入 + 对话/调试 query 镜像兼容旧编排）、对话历史 MAF 压缩有界、
 //       调试 Tab 按最新草稿执行（免发布，仅管理员，X-Moai-Workflow-Draft 头）、
+//       系统提示词与快捷输入（agent-config 保存/回读/去空白去重、发布快照双轨、sys.prompt 对话注入：发布快照口径 + 草稿调试口径）、
 //       Agent 应用节点（agentApp）调用已发布 Agent + 流程↔Agent 循环嵌套防护、
 //       图片理解节点（imageUnderstanding）：桩视觉模型多模态全链路/非视觉模型拒绝/来源防护。
 import crypto from 'node:crypto'
@@ -251,6 +252,20 @@ async function main() {
   check('WF-15f 重新发布后开场白生效且状态回 1', osPublish.status === 200 && cfg3b.version === 2 && cfg3b.status === 1
     && detailRepublished.json?.openingStatement === '你好，我是流程助手' && detailRepublished.json?.openingStatementEnabled === true,
     `${osPublish.status} ${JSON.stringify({ v: cfg3b.version, s: cfg3b.status })} ${detailRepublished.text.slice(0, 120)}`)
+
+  // WF-15g~i 系统提示词 + 快捷输入：流程应用经 agent-config 一并保存（提示词经 sys.prompt 供节点引用、
+  // 快捷输入为对话欢迎态胶囊）；快捷输入保存时去空白去重；发布快照双轨与开场白一致
+  const spSave = await api('PUT', `/api/app/${APP}/agent-config`, { token: owner.token, body: {
+    modelId: null, prompt: '你是流程人设E2E', wikiIds: [], plugins: [],
+    openingStatement: '你好，我是流程助手', openingStatementEnabled: true,
+    quickInputs: ['问A', ' 问A ', '问B', '  '],
+  } })
+  check('WF-15g 流程应用保存系统提示词与快捷输入 200', spSave.status === 200, `${spSave.status} ${spSave.text.slice(0, 160)}`)
+  const spGet = await api('GET', `/api/app/${APP}/agent-config`, { token: owner.token })
+  check('WF-15h 系统提示词与快捷输入回读（去空白去重）', spGet.status === 200 && spGet.json?.prompt === '你是流程人设E2E'
+    && JSON.stringify(spGet.json?.quickInputs) === JSON.stringify(['问A', '问B']), spGet.text.slice(0, 220))
+  const detailPersona = await api('GET', `/api/app/${APP}`, { token: owner.token })
+  check('WF-15i 详情仍下发旧发布快照快捷输入（未重新发布，故为空）', detailPersona.status === 200 && JSON.stringify(detailPersona.json?.quickInputs) === JSON.stringify([]), detailPersona.text.slice(0, 160))
 
   // WF-16 条件脚本模式：check 节点 config.conditionScript（Jint），按脚本返回值路由分支
   await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP, teamId: TID, definition: JSON.stringify(buildScriptConditionDefinition()), editorData: JSON.stringify(buildEditorData(buildScriptConditionDefinition())) } })
@@ -693,7 +708,7 @@ async function main() {
       { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户消息' }] },
       {
         key: 'echo', name: '回显系统变量', type: 'javaScript',
-        config: { code: 'function run(inputs, sys) {\n  return { userId: sys.userId || "", appId: sys.appId || "", conversationId: sys.conversationId || "", messageId: sys.messageId || "", historyCount: (sys.history || []).length, currentTime: sys.currentTime || "" };\n}' },
+        config: { code: 'function run(inputs, sys) {\n  return { userId: sys.userId || "", appId: sys.appId || "", conversationId: sys.conversationId || "", messageId: sys.messageId || "", historyCount: (sys.history || []).length, currentTime: sys.currentTime || "", prompt: sys.prompt || "" };\n}' },
         inputs: {},
         outputs: [
           { name: 'userId', fieldType: 'string' },
@@ -702,11 +717,12 @@ async function main() {
           { name: 'messageId', fieldType: 'string' },
           { name: 'historyCount', fieldType: 'number' },
           { name: 'currentTime', fieldType: 'string' },
+          { name: 'prompt', fieldType: 'string' },
         ],
       },
       {
         key: 'end', name: '结束', type: 'end',
-        inputs: { reply: { expressionType: 'interpolation', value: 'uid={echo.userId}|app={echo.appId}|conv={echo.conversationId}|msg={echo.messageId}|h={echo.historyCount}|t={echo.currentTime}|q={start.question}', required: true } },
+        inputs: { reply: { expressionType: 'interpolation', value: 'uid={echo.userId}|app={echo.appId}|conv={echo.conversationId}|msg={echo.messageId}|h={echo.historyCount}|t={echo.currentTime}|p={echo.prompt}|q={start.question}', required: true } },
         outputs: [{ name: 'reply', fieldType: 'string' }],
       },
     ],
@@ -733,12 +749,18 @@ async function main() {
   const chatPublish = await api('POST', `/api/app/workflow/publish`, { token: owner.token, body: { appId: APP, teamId: TID } })
   check('WF-22e 对话回显发布 200', chatPublish.status === 200, `${chatPublish.status} ${chatPublish.text.slice(0, 160)}`)
 
-  // WF-22f~h 第一轮：sys.userId/appId/conversationId/messageId/currentTime 注入，history 为空
+  // WF-22f~h 第一轮：sys.userId/appId/conversationId/messageId/currentTime 注入，history 为空；
+  // sys.prompt 为应用系统提示词（WF-15g 草稿保存，WF-22e 发布进入快照，对话按发布快照注入）
   const chat1 = await chatSse(APP, member.token, WSESSION, '你好一')
   const reply1 = chat1.reply
   check('WF-22f 第一轮对话完成', chat1.status === 200 && chat1.runError === null && reply1.includes(`uid=${member.userId}`) && reply1.includes(`app=${APP}`), `status=${chat1.status} reply=${reply1.slice(0, 200)} err=${chat1.runError}`)
   check('WF-22g 会话 id 注入 conversationId', reply1.includes(`conv=${WSESSION}`), reply1.slice(0, 200))
   check('WF-22h messageId/currentTime 注入且 history 为空', /msg=[0-9a-f]{32}/.test(reply1) && /t=\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(reply1) && reply1.includes('h=0'), reply1.slice(0, 200))
+  check('WF-22m 发布快照系统提示词注入 sys.prompt', reply1.includes('p=你是流程人设E2E'), reply1.slice(0, 220))
+
+  // WF-22n 详情下发发布快照快捷输入（WF-15g 保存的草稿值随本次发布进入快照，去空白去重后两条）
+  const detailQuick = await api('GET', `/api/app/${APP}`, { token: owner.token })
+  check('WF-22n 详情下发发布快照快捷输入', detailQuick.status === 200 && JSON.stringify(detailQuick.json?.quickInputs) === JSON.stringify(['问A', '问B']), detailQuick.text.slice(0, 200))
 
   // WF-22i 第二轮：sys.history 含第一轮 user+assistant 两条
   const chat2 = await chatSse(APP, member.token, WSESSION, '你好二')
@@ -768,13 +790,13 @@ async function main() {
       { key: 'start', name: '开始', type: 'start', inputs: {}, outputs: [{ name: 'question', fieldType: 'string', isRequired: true, description: '用户问题' }] },
       {
         key: 'qjs', name: '读取问题', type: 'javaScript',
-        config: { code: 'function run(inputs, sys, nodes) {\n  return { q: nodes.start.question || "", legacy: nodes.start.query || "" };\n}' },
+        config: { code: 'function run(inputs, sys, nodes) {\n  return { q: nodes.start.question || "", legacy: nodes.start.query || "", prompt: sys.prompt || "" };\n}' },
         inputs: {},
-        outputs: [{ name: 'q', fieldType: 'string' }, { name: 'legacy', fieldType: 'string' }],
+        outputs: [{ name: 'q', fieldType: 'string' }, { name: 'legacy', fieldType: 'string' }, { name: 'prompt', fieldType: 'string' }],
       },
       {
         key: 'end', name: '结束', type: 'end',
-        inputs: { reply: { expressionType: 'interpolation', value: 'q={qjs.q}|legacy={qjs.legacy}', required: true } },
+        inputs: { reply: { expressionType: 'interpolation', value: 'q={qjs.q}|legacy={qjs.legacy}|p={qjs.prompt}', required: true } },
         outputs: [{ name: 'reply', fieldType: 'string' }],
       },
     ],
@@ -839,11 +861,14 @@ async function main() {
   check('WF-25a 新建未发布流程应用', w2.status === 200 && isGuid(APP2), `${w2.status} ${w2.text.slice(0, 120)}`)
   const draftSave = await api('POST', `/api/app/workflow/draft`, { token: owner.token, body: { appId: APP2, teamId: TID, definition: JSON.stringify(buildQuestionDefinition()), editorData: '{}' } })
   check('WF-25b 保存草稿不发布', draftSave.status === 200, `${draftSave.status} ${draftSave.text.slice(0, 120)}`)
+  // 草稿人设：调试对话按草稿配置注入 sys.prompt（正式快照为空也能对话，仅人设不同）
+  const draftPersona = await api('PUT', `/api/app/${APP2}/agent-config`, { token: owner.token, body: { modelId: null, prompt: '你是草稿调试人设E2E', wikiIds: [], plugins: [], openingStatement: '', openingStatementEnabled: false } })
+  check('WF-25b2 草稿应用保存系统提示词 200', draftPersona.status === 200, `${draftPersona.status} ${draftPersona.text.slice(0, 120)}`)
   const dSession = await api('POST', `/api/app/${APP2}/session`, { token: owner.token, body: { title: '草稿调试会话', promptId: 0 } })
   const DSESSION = String(dSession.json?.value ?? '')
   check('WF-25c 管理员对未发布应用建会话', dSession.status === 200 && isGuid(DSESSION), `${dSession.status} ${dSession.text.slice(0, 120)}`)
   const draftChat = await chatSse(APP2, owner.token, DSESSION, '草稿模式问题', draftHeaders)
-  check('WF-25d 未发布草稿调试对话成功', draftChat.status === 200 && draftChat.runError === null && draftChat.reply.includes('q=草稿模式问题'), `status=${draftChat.status} reply=${draftChat.reply.slice(0, 160)} err=${draftChat.runError}`)
+  check('WF-25d 未发布草稿调试对话成功且按草稿注入 sys.prompt', draftChat.status === 200 && draftChat.runError === null && draftChat.reply.includes('q=草稿模式问题') && draftChat.reply.includes('p=你是草稿调试人设E2E'), `status=${draftChat.status} reply=${draftChat.reply.slice(0, 200)} err=${draftChat.runError}`)
   const formalChat = await chatSse(APP2, owner.token, DSESSION, '正式对话')
   check('WF-25e 未发布正式对话仍被拒', formalChat.status === 200 && formalChat.reply.includes('尚未发布'), `reply=${formalChat.reply.slice(0, 160)}`)
   const memberDraft = await chatSse(APP, member.token, WSESSION, '越权草稿调试', draftHeaders)

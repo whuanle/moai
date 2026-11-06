@@ -34,14 +34,13 @@ internal static class WikiMcpConfigResponseMapper
         {
             var key = await databaseContext.TeamResourceKeys
                 .Where(x => x.TeamId == wiki.TeamId && x.ResourceType == TeamResourceType.Wiki && x.ResourceId == wiki.Id.ToString())
-                .Select(x => new { x.Id, x.Key, x.KeyPrefix, x.Status })
+                .Select(x => new { x.Id, x.Key, x.KeyPrefix })
                 .FirstOrDefaultAsync(cancellationToken);
             if (key != null)
             {
                 response.TeamResourceKeyId = key.Id;
                 response.Key = key.Key;
                 response.KeyPrefix = key.KeyPrefix;
-                response.Status = key.Status;
             }
         }
 

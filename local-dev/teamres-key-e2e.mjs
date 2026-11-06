@@ -183,15 +183,14 @@ async function main() {
   const mcpOnGet = await api('GET', `/api/wiki/${W1}/mcp-config`, { token })
   check('TR-S34 开启 W1 MCP 200 且自动生成 key、GET mcp-config 回显 key/status',
     mcpOn.status === 200 && mcpOn.json?.isMcpEnabled === true && String(mcpOn.json?.key ?? '').startsWith('moai-tr-')
-    && mcpOnGet.status === 200 && mcpOnGet.json?.isMcpEnabled === true && mcpOnGet.json?.key === mcpOn.json?.key && mcpOnGet.json?.status === 'enabled',
+    && mcpOnGet.status === 200 && mcpOnGet.json?.isMcpEnabled === true && mcpOnGet.json?.key === mcpOn.json?.key,
     `${mcpOn.status} ${mcpOn.text.slice(0, 200)} get=${mcpOnGet.text.slice(0, 200)}`)
   const W1_AUTO_ROW = String(mcpOn.json?.teamResourceKeyId ?? '')
 
-  // ===== TR-S10~S11 手动建 key（删除自动 key 后 get-or-create / 幂等）=====
-  if (W1_AUTO_ROW) await api('DELETE', `/api/team-resource-key/${W1_AUTO_ROW}`, { token })
+  // ===== TR-S10~S11 手动建 key（get-or-create / 幂等；key 不支持删除，W1 沿用开启时自动生成的行）=====
   const kW1a = await createKey({ teamId: T, resourceType: 'wiki', resourceId: String(W1) })
-  check('TR-S10 生成 wiki key created=true 且 moai-tr- 前缀、resourceId=W1（字符串）',
-    kW1a.status === 200 && kW1a.json?.created === true && String(kW1a.json?.key ?? '').startsWith('moai-tr-') && String(kW1a.json?.resourceId) === String(W1), `${kW1a.status} ${kW1a.text.slice(0, 160)}`)
+  check('TR-S10 手动建 key 复用开启时自动生成的行（created=false 同 key）、resourceId=W1（字符串）',
+    kW1a.status === 200 && kW1a.json?.created === false && kW1a.json?.key === mcpOn.json?.key && String(kW1a.json?.resourceId) === String(W1), `${kW1a.status} ${kW1a.text.slice(0, 160)}`)
   const kW1b = await createKey({ teamId: T, resourceType: 'wiki', resourceId: String(W1) })
   check('TR-S11 get-or-create 幂等：同资源再生成 created=false 同 key',
     kW1b.status === 200 && kW1b.json?.created === false && kW1b.json?.key === kW1a.json?.key && kW1b.json?.teamResourceKeyId === kW1a.json?.teamResourceKeyId, `${kW1b.text.slice(0, 160)}`)
@@ -203,12 +202,12 @@ async function main() {
     mcpOnB.status === 200 && kW2B.status === 200 && kW2B.json?.created === false && kW2B.json?.key === mcpOnB.json?.key && kW2B.json?.key !== kW1a.json?.key, `${mcpOnB.status}/${kW2B.status} ${kW2B.text.slice(0, 160)}`)
 
   // ===== TR-S12~S13 应用功能开关与 app key（resourceId=应用 Guid，一应用一把，ACP/A2A 共用）=====
-  const featOn = await api('PUT', `/api/app/${A}/feature`, { token, body: { isAcpEnabled: true, isA2aEnabled: true } })
+  const featOn = await api('PUT', `/api/app/${A}/feature`, { token, body: { isAcpA2aEnabled: true } })
   const featGet = await api('GET', `/api/app/${A}/feature`, { token })
   const kApp = await createKey({ teamId: T, resourceType: 'app', resourceId: A })
-  check('TR-S12 应用开启 ACP/A2A 自动生成 key，GET feature 与 POST 建 key 回显 resourceId=A（不再为 0）',
-    featOn.status === 200 && featOn.json?.isAcpEnabled === true && featOn.json?.isA2aEnabled === true && String(featOn.json?.key ?? '').startsWith('moai-tr-')
-    && featGet.status === 200 && featGet.json?.isAcpEnabled === true && featGet.json?.key === featOn.json?.key
+  check('TR-S12 应用开启 ACP/A2A 自动生成 key，GET feature 与 POST 建 key 回显 resourceId=A',
+    featOn.status === 200 && featOn.json?.isAcpA2aEnabled === true && String(featOn.json?.key ?? '').startsWith('moai-tr-')
+    && featGet.status === 200 && featGet.json?.isAcpA2aEnabled === true && featGet.json?.key === featOn.json?.key
     && kApp.status === 200 && String(kApp.json?.resourceId) === A && kApp.json?.created === false && kApp.json?.key === featOn.json?.key,
     `put=${featOn.status} get=${featGet.status} key=${kApp.status} ${kApp.text.slice(0, 160)}`)
   const kApp2 = await createKey({ teamId: T, resourceType: 'app', resourceId: A })
@@ -297,20 +296,10 @@ async function main() {
   const newKeyOk = await api('GET', xw(W1), { token: KEY_W1_NEW })
   check('TR-S25 重置后旧 key 401、新 key 200', oldKeyAfter.status === 401 && newKeyOk.status === 200, `old=${oldKeyAfter.status} new=${newKeyOk.status}`)
 
-  const dis = await api('PUT', `/api/team-resource-key/${kW1a.json?.teamResourceKeyId}`, { token, body: { status: 'disabled' } })
-  const disHit = await api('GET', xw(W1), { token: KEY_W1_NEW })
-  await api('PUT', `/api/team-resource-key/${kW1a.json?.teamResourceKeyId}`, { token, body: { status: 'enabled' } })
-  const reHit = await api('GET', xw(W1), { token: KEY_W1_NEW })
-  check('TR-S26 停用 401、启用恢复 200', dis.status === 200 && disHit.status === 401 && reHit.status === 200, `dis=${dis.status} hit=${disHit.status} re=${reHit.status}`)
-
+  // TR-S26（key 停用）与 TR-S28（key 删除）已随「key 无启停状态、不可删除」退役，编号永久不复用：
+  // 吊销手段=重置（TR-S25）或关闭资源功能开关（TR-S37/S38）
   const tokByResKey = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY_W1_NEW } })
   check('TR-S27 资源 key 不可换 token（moai-ac- 专属）', tokByResKey.status === 400 || tokByResKey.status === 401, `${tokByResKey.status}`)
-
-  const del = await api('DELETE', `/api/team-resource-key/${kW2B.json?.teamResourceKeyId}`, { token })
-  const delHit = await api('GET', xw(W2B), { token: KEY_W2B })
-  const reCreate = await createKey({ teamId: T, resourceType: 'wiki', resourceId: String(W2B) })
-  check('TR-S28 删除后直连 401、重新生成 created=true 新 key',
-    del.status === 200 && delHit.status === 401 && reCreate.status === 200 && reCreate.json?.created === true && reCreate.json?.key !== KEY_W2B, `del=${del.status} hit=${delHit.status} re=${reCreate.status}`)
 
   // ===== TR-S37 关闭 W1 MCP：其资源 key REST+MCP 一律 403 feature_disabled，重开恢复 =====
   const mcpOff = await api('PUT', `/api/wiki/${W1}/mcp-config`, { token, body: { isMcpEnabled: false } })
@@ -328,32 +317,29 @@ async function main() {
   check('TR-S37b 重新开启 MCP 后 W1 key REST 恢复 200 且 key 复用不变',
     mcpReOn.status === 200 && mcpReOn.json?.key === KEY_W1_NEW && restReOn.status === 200, `put=${mcpReOn.status} rest=${restReOn.status}`)
 
-  // ===== TR-S38 关闭应用 ACP（A2A 保持开）：app key 与 moai-ac- 打 ACP 均 403 feature_disabled，A2A 仍 200 =====
-  const featAcpOff = await api('PUT', `/api/app/${A}/feature`, { token, body: { isAcpEnabled: false, isA2aEnabled: true } })
+  // ===== TR-S38 关闭应用协议接入（ACP/A2A 单开关整体关闭）：app key 与 moai-ac- 打两类端点均 403 feature_disabled；重开恢复且 key 复用 =====
+  const featOff = await api('PUT', `/api/app/${A}/feature`, { token, body: { isAcpA2aEnabled: false } })
   const acpKeyOff = await fetch(`${BASE}/api/teamres/app/${A}/acp`, {
     method: 'POST', headers: keyHeadersX(KEY_APP), body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
   })
   const acpKeyOffBody = await acpKeyOff.json().catch(() => null)
-  const acpAcOff = await fetch(`${BASE}/api/teamres/app/${A}/acp`, {
-    method: 'POST', headers: keyHeadersX(ACCESS_KEY), body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
-  })
-  const acpAcOffBody = await acpAcOff.json().catch(() => null)
-  const a2aStill = await fetch(`${BASE}/api/teamres/app/${A}/a2a/agent.json`, { headers: keyHeaders(KEY_APP) })
-  check('TR-S38a 关闭 ACP 后 app key 与 moai-ac- 打 ACP 均 403 feature_disabled、A2A agent.json 仍 200',
-    featAcpOff.status === 200 && featAcpOff.json?.isAcpEnabled === false && featAcpOff.json?.isA2aEnabled === true
+  const a2aAcOff = await fetch(`${BASE}/api/teamres/app/${A}/a2a/agent.json`, { headers: keyHeadersX(ACCESS_KEY) })
+  const a2aKeyOff = await fetch(`${BASE}/api/teamres/app/${A}/a2a/agent.json`, { headers: keyHeadersX(KEY_APP) })
+  check('TR-S38a 关闭协议接入后 app key 与 moai-ac- 打 ACP/A2A 均 403 feature_disabled',
+    featOff.status === 200 && featOff.json?.isAcpA2aEnabled === false && featOff.json?.key === undefined
     && acpKeyOff.status === 403 && acpKeyOffBody?.error?.code === 'feature_disabled'
-    && acpAcOff.status === 403 && acpAcOffBody?.error?.code === 'feature_disabled'
-    && a2aStill.status === 200,
-    `put=${featAcpOff.status} keyAcp=${acpKeyOff.status}/${acpKeyOffBody?.error?.code} acAcp=${acpAcOff.status}/${acpAcOffBody?.error?.code} a2a=${a2aStill.status}`)
-  const featAcpReOn = await api('PUT', `/api/app/${A}/feature`, { token, body: { isAcpEnabled: true, isA2aEnabled: true } })
+    && a2aAcOff.status === 403 && a2aKeyOff.status === 403,
+    `put=${featOff.status} keyAcp=${acpKeyOff.status}/${acpKeyOffBody?.error?.code} acA2a=${a2aAcOff.status} keyA2a=${a2aKeyOff.status}`)
+  const featReOn = await api('PUT', `/api/app/${A}/feature`, { token, body: { isAcpA2aEnabled: true } })
   const acpKeyReOn = await fetch(`${BASE}/api/teamres/app/${A}/acp`, {
     method: 'POST', headers: keyHeadersX(KEY_APP), body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
   })
-  check('TR-S38b 重新开启 ACP 后 app key ACP 恢复 200（key 复用不变）',
-    featAcpReOn.status === 200 && featAcpReOn.json?.key === KEY_APP && acpKeyReOn.status === 200, `put=${featAcpReOn.status} acp=${acpKeyReOn.status}`)
+  const a2aKeyReOn = await fetch(`${BASE}/api/teamres/app/${A}/a2a/agent.json`, { headers: keyHeadersX(KEY_APP) })
+  check('TR-S38b 重新开启后 ACP/A2A 恢复 200 且 key 复用不变',
+    featReOn.status === 200 && featReOn.json?.key === KEY_APP && acpKeyReOn.status === 200 && a2aKeyReOn.status === 200, `put=${featReOn.status} acp=${acpKeyReOn.status} a2a=${a2aKeyReOn.status}`)
 
-  // ===== TR-S39 每应用一把：开启第二个应用的 ACP → 其 key 与 A 的 key 不同且仅作用于自己 =====
-  const featA2 = await api('PUT', `/api/app/${A2}/feature`, { token, body: { isAcpEnabled: true, isA2aEnabled: false } })
+  // ===== TR-S39 每应用一把：开启第二个应用的协议接入 → 其 key 与 A 的 key 不同且仅作用于自己 =====
+  const featA2 = await api('PUT', `/api/app/${A2}/feature`, { token, body: { isAcpA2aEnabled: true } })
   const kAppA2 = await createKey({ teamId: T, resourceType: 'app', resourceId: A2 })
   const acpA2Self = await fetch(`${BASE}/api/teamres/app/${A2}/acp`, {
     method: 'POST', headers: keyHeadersX(String(kAppA2.json?.key ?? '')), body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),

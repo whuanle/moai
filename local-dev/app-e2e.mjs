@@ -166,6 +166,7 @@ async function main() {
     check('AP-43c Member 查用量 403', (await api('GET', `/api/app/${AGENT_ID}/usage`, { token: member.token })).status === 403)
     check('AP-43d 非成员查用量 404', (await api('GET', `/api/app/${AGENT_ID}/usage`, { token: outsider.token })).status === 404)
     check('AP-43e 不存在应用用量 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff/usage', { token: owner.token })).status === 404)
+    check('AP-43f byModel 项含 isDefault/isConfigured 多模型标记字段', (usage.json?.byModel ?? []).every((m) => m.isDefault !== undefined && m.isConfigured !== undefined), JSON.stringify(usage.json?.byModel?.[0] ?? {}).slice(0, 160))
   }
 
   // AP-07 列表（Member 可见 + myRole）
@@ -425,8 +426,8 @@ async function main() {
     const after = await api('GET', cfgUrl, { token: owner.token })
     check('AP-17d 校验失败不写入配置', after.json?.prompt === '你是售前客服助手', String(after.json?.prompt))
 
-    // 流程应用仅经此入口维护对话开场白（模型/知识库/插件不适用不落库，见 workflow-e2e WF-15）
-    check('AP-18 流程应用保存配置 200（只写开场白字段）', (await api('PUT', `/api/app/${WORKFLOW_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 200)
+    // 流程应用仅经此入口维护对话人设三件套（系统提示词/开场白/快捷输入，模型/知识库/插件不适用不落库，见 workflow-e2e WF-15）
+    check('AP-18 流程应用保存配置 200（只写人设字段）', (await api('PUT', `/api/app/${WORKFLOW_ID}/agent-config`, { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 200)
     check('AP-19a 不存在的应用查配置 404', (await api('GET', '/api/app/01924f5e-0000-7000-8000-00000000ffff/agent-config', { token: owner.token })).status === 404)
     check('AP-19b 不存在的应用存配置 404', (await api('PUT', '/api/app/01924f5e-0000-7000-8000-00000000ffff/agent-config', { token: owner.token, body: { prompt: '', wikiIds: [], plugins: [] } })).status === 404)
 
@@ -1442,6 +1443,18 @@ async function main() {
       }
       check('AP-99d 使用分析 summary/byModel 聚合缓存命中 token', usageCached > 0, `summary.cachedTokens=${usageCached}`)
       check('AP-99e 使用分析消息总数经统计模块落库（会话落库推送增量）', usageMessages > 0, `stats.messageCount=${usageMessages}`)
+
+      // AP-99f 多模型：byModel 标记生效默认模型 + 趋势各模型 token 序列（统计日表 ai-model-usage 复合 key 聚合）
+      const usageFinal = await api('GET', `/api/app/${APP_ID}/usage`, { token: owner.token })
+      const defaultItem = (usageFinal.json?.byModel ?? []).find((m) => m.isDefault === true)
+      check('AP-99f1 byModel 含生效默认模型标记（isDefault=true）', defaultItem != null && Number(defaultItem.callCount) > 0, JSON.stringify(usageFinal.json?.byModel?.map((m) => ({ n: m.modelName, d: m.isDefault, c: m.isConfigured, calls: m.callCount })) ?? []).slice(0, 200))
+      let seriesSum = -1
+      for (let i = 0; i < 24 && seriesSum <= 0; i++) {
+        await new Promise((r) => setTimeout(r, 5000))
+        const tr = await api('GET', `/api/app/${APP_ID}/usage/trend?days=7`, { token: owner.token })
+        seriesSum = (tr.json?.modelTokenSeries ?? []).reduce((acc, s) => acc + (s.points ?? []).reduce((a, p) => a + Number(p.tokens ?? 0), 0), 0)
+      }
+      check('AP-99f2 趋势各模型 token 序列经统计日表聚合落库', seriesSum > 0, `modelTokenSeries tokens 合计=${seriesSum}`)
 
       // 清理桩模型/渠道（应用与知识库留给台账）
       await api('POST', '/api/ai/model/batch-delete', { token: adminToken, body: { modelIds: [EMB_ID, MODEL_ID] } })

@@ -106,7 +106,7 @@ public class AppController : ControllerBase
     }
 
     /// <summary>
-    /// 更新应用对外功能开关（ACP/A2A），开启时自动生成/复用该应用的团队资源 key；需要团队 Admin 及以上角色.
+    /// 更新应用对外协议接入开关（ACP/A2A 单一开关），开启时自动生成/复用该应用的团队资源 key；需要团队 Admin 及以上角色.
     /// </summary>
     /// <param name="id">应用 id.</param>
     /// <param name="req">开关请求.</param>
@@ -115,7 +115,7 @@ public class AppController : ControllerBase
     [HttpPut("{id:guid}/feature")]
     public Task<AppFeatureResponse> UpdateAppFeature([FromRoute] Guid id, [FromBody] UpdateAppFeatureCommand req, CancellationToken ct)
     {
-        var cmd = new UpdateAppFeatureCommand { AppId = id, IsAcpEnabled = req.IsAcpEnabled, IsA2aEnabled = req.IsA2aEnabled };
+        var cmd = new UpdateAppFeatureCommand { AppId = id, IsAcpA2aEnabled = req.IsAcpA2aEnabled };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }
@@ -198,6 +198,8 @@ public class AppController : ControllerBase
             Prompt = req.Prompt,
             WikiIds = req.WikiIds,
             GraphIds = req.GraphIds,
+            TeamAgentIds = req.TeamAgentIds,
+            DefaultTeamAgentId = req.DefaultTeamAgentId,
             Plugins = req.Plugins,
             WorkflowApps = req.WorkflowApps,
             AgentApps = req.AgentApps,

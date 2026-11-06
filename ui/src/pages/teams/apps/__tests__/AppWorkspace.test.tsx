@@ -42,6 +42,25 @@ vi.mock('@/api/app', () => ({
   publishApp: vi.fn(),
   unpublishApp: vi.fn(),
   createDebugSession: vi.fn().mockResolvedValue('0198f2c1-1111-7000-8000-000000000001'),
+  // 调试对话面板经 userconfig 取草稿可选模型（rounds 299~324 起）
+  getAppUserConfig: vi.fn().mockResolvedValue({
+    promptId: 0,
+    defaultModelId: '',
+    modelIds: [],
+    teamAgents: [],
+    defaultTeamAgentId: '',
+    skills: [],
+    defaultSkills: [],
+    toolApprovalMode: 'auto',
+    toolApprovalExemptNames: [],
+    toolApprovalExemptPrefixes: [],
+    toolApprovalAutoApprovedNames: [],
+    toolApprovalAutoApprovedPrefixes: [],
+    memoryMode: 0,
+    memoryEnabled: false,
+    memoryGlobalMode: 0,
+    memoryGlobalAllowed: false,
+  }),
 }))
 vi.mock('@/api/aichannel', () => ({ getTeamAvailableModels: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/team-plugin', () => ({ getTeamPlugins: vi.fn().mockResolvedValue({ items: [] }) }))

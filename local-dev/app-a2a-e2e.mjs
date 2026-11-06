@@ -205,7 +205,7 @@ async function main() {
   await api('PUT', `/api/app/${A1}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A1}/publish`, { token: owner.token })
   // 开启 A1 的 A2A 功能（key 唯一生成时机=开启功能；未开启的 A2A 端点一律 403 feature_disabled）
-  await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpEnabled: false, isA2aEnabled: true } })
+  await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
   const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-draft-${TS}`, appType: 'agent' } })).json.value)
 
@@ -213,7 +213,7 @@ async function main() {
   await api('PUT', `/api/app/${A3}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A3}/publish`, { token: owner.token })
   // A3 开启 A2A（用户 token 会话场景）
-  await api('PUT', `/api/app/${A3}/feature`, { token: owner.token, body: { isAcpEnabled: false, isA2aEnabled: true } })
+  await api('PUT', `/api/app/${A3}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
   // 接入 key：scopes 字段已退役，moai-ac- 一律全量（K1/K2/K3 同构，仅命名区分用途）；K4（跨团队）
   const mkKey = async (name) => {
@@ -350,19 +350,21 @@ async function main() {
   check('A2A-S12 用户 token message/send completed',
     tok.status === 200 && sendU.json?.result?.status?.state === 'completed', JSON.stringify(sendU.json?.result).slice(0, 160))
 
-  // ===== A2A-S13 资源 key 吊销即时性（停用即 401、启用恢复 200，失效钩子无 TTL 等待） =====
+  // ===== A2A-S13 资源 key 重置即时吊销（key 无启停状态、不可删除：旧 key 立即 401、新 key 200，行 id 不变） =====
   const kAppRes = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'app', resourceId: A1 } })
   const APP_RES_KEY = String(kAppRes.json?.key ?? '')
   const APP_RES_ROW = String(kAppRes.json?.teamResourceKeyId ?? '')
   const acpRes = await agentCard({ key: APP_RES_KEY }, A1)
   check('A2A-S13a app 资源 key（moai-tr-）agent.json 200', acpRes.status === 200, `${acpRes.status} ${acpRes.text.slice(0, 120)}`)
 
-  const dis = await api('PUT', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token, body: { status: 'disabled' } })
-  const disHit = await agentCard({ key: APP_RES_KEY }, A1)
-  check('A2A-S13b 资源 key 停用后 A2A 立即 401', dis.status === 200 && disHit.status === 401, `dis=${dis.status} hit=${disHit.status}`)
-  await api('PUT', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token, body: { status: 'enabled' } })
-  const reHit = await agentCard({ key: APP_RES_KEY }, A1)
-  check('A2A-S13c 资源 key 重新启用后 A2A 恢复 200', reHit.status === 200, `${reHit.status}`)
+  const resetRes = APP_RES_ROW ? await api('POST', `/api/team-resource-key/${APP_RES_ROW}/reset`, { token: owner.token }) : { status: 0 }
+  const resetHit = await agentCard({ key: APP_RES_KEY }, A1)
+  const APP_RES_KEY_NEW = String(resetRes.json?.key ?? '')
+  const reHit = await agentCard({ key: APP_RES_KEY_NEW }, A1)
+  check('A2A-S13b 资源 key 重置后 A2A 立即 401、新 key 恢复 200',
+    resetRes.status === 200 && resetRes.json?.teamResourceKeyId === APP_RES_ROW
+    && resetHit.status === 401 && APP_RES_KEY_NEW.startsWith('moai-tr-') && reHit.status === 200,
+    `reset=${resetRes.status} hit=${resetHit.status} re=${reHit.status}`)
 
   // ===== A2A-S14 scopes 字段退役：接入列表项不再回显 scopes =====
   const accList = await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })
@@ -371,8 +373,7 @@ async function main() {
 
   // ===== 清理 =====
   if (CH_ID) await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
-  if (WIKI_RES_ROW) await api('DELETE', `/api/team-resource-key/${WIKI_RES_ROW}`, { token: owner.token })
-  if (APP_RES_ROW) await api('DELETE', `/api/team-resource-key/${APP_RES_ROW}`, { token: owner.token })
+  // key 不支持删除（吊销=重置或关闭功能开关）：清理段不再删 key 行，随资源保留
   for (const k of [K1, K2, K3, K4]) {
     if (k.id) await api('DELETE', `/api/access-app/${k.id}`, { token: owner.token })
   }

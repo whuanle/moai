@@ -1,37 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeftOutlined,
-  ArrowUpOutlined,
+  ArrowRightOutlined,
+  BulbOutlined,
   CheckOutlined,
   CloseOutlined,
   ControlOutlined,
   DeleteOutlined,
+  EditOutlined,
   FireFilled,
-  LoadingOutlined,
   MenuOutlined,
-  PaperClipOutlined,
+  MessageOutlined,
   PlusOutlined,
   RobotFilled,
-  SafetyCertificateOutlined,
-  StopOutlined,
-  ThunderboltFilled,
   UserSwitchOutlined,
 } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Select, Tag, Tooltip, theme } from 'antd'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Button, Popconfirm, Tag, Tooltip, theme } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import type { HttpAgent } from '@ag-ui/client'
 import { feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
-import { resolveStorageUrl, uploadChatFile } from '@/utils/storage'
+import { resolveStorageUrl } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
 import { formatTokenCount } from '@/utils/format'
 import {
   createAppSession,
   decideAppSessionToolApproval,
   deleteAppSession,
-  extractChatAttachment,
   getAppDetail,
   getAppSessionContextUsage,
   getAppSessionMessages,
@@ -41,11 +40,14 @@ import {
   updateAppSessionPrompt,
   type AppSessionContextUsage,
   type AppSessionItem,
+  type AppUserTeamAgentOption,
 } from '@/api/app'
 import { getMyPrompts, getTeamPrompts, getTopUsedPrompts, type PromptItem } from '@/api/prompt'
 import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type ToolApprovalMode } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage, type ToolCallDisplay } from './chat/ChatMessageList'
+import { ChatComposer } from './chat/ChatComposer'
+import { useChatAttachments } from './chat/useChatAttachments'
 import { parseHistoryToolCalls } from './chat/historyToolCalls'
 import {
   applyWorkflowEvent,
@@ -58,17 +60,7 @@ import { AppUserSettings } from './chat/AppUserSettings'
 import { ChatSidePanel } from './chat/ChatSidePanel'
 import { isUiToolName, parseUiToolPayload, toUiPanelItem, type UiPanelItem } from './chat/uiTools'
 import { chatCssVars } from './chat/chatCssVars'
-import {
-  buildOutgoingText,
-  formatAttachmentSize,
-  getAttachmentFileIcon,
-  hasPendingAttachment,
-  isImageAttachment,
-  isSupportedAttachment,
-  MAX_ATTACHMENTS,
-  MAX_ATTACHMENT_SIZE,
-  type ChatAttachmentDraft,
-} from './chat/attachment'
+import { buildOutgoingText, hasPendingAttachment } from './chat/attachment'
 import './app-chat.css'
 
 interface AppDetailLite {
@@ -134,7 +126,6 @@ export function AppChat() {
   const agentsRef = useRef(new Map<string, HttpAgent>())
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<TextAreaRef | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [detail, setDetail] = useState<AppDetailLite | null>(null)
@@ -148,10 +139,12 @@ export function AppChat() {
   // 会话上下文用量（累计 token + 模型上下文窗口）：输入卡左下角环形指示，随会话分桶
   const [contextUsageBySession, setContextUsageBySession] = useState<Record<string, AppSessionContextUsage>>({})
   const [input, setInput] = useState('')
-  // 对话端模型切换：应用配置的可选模型（经团队可用性过滤，仅多模型时展示切换器）与当前选择（null=未选择）
+  // 对话端模型切换：应用配置的可选模型（经团队可用性过滤）与当前选择（null=未选择）
   const [chatModelOptions, setChatModelOptions] = useState<TeamAvailableModelItem[]>([])
-  const [chatDefaultModelId, setChatDefaultModelId] = useState('')
   const [selectedChatModelId, setSelectedChatModelId] = useState<string | null>(null)
+  // 对话端团队智能体切换：应用绑定多选（≥2）时展示切换器，单选由后端直接生效（null=无切换）
+  const [chatTeamAgents, setChatTeamAgents] = useState<AppUserTeamAgentOption[]>([])
+  const [selectedChatTeamAgentId, setSelectedChatTeamAgentId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // 前端展示工具（ui_ 前缀）产出内容的右侧侧边栏：多项标签集合 + 当前项 + 展开状态；
   // 收起只置 open=false（标签保留，点击消息卡片可再展开），切换会话时清空
@@ -160,8 +153,8 @@ export function AppChat() {
     activeKey: null,
     open: false,
   })
-  // 输入卡附件：上传 → 提取（文档）→ ready，随下一条消息一起发送
-  const [attachments, setAttachments] = useState<ChatAttachmentDraft[]>([])
+  // 输入卡附件：上传 → 提取（文档）→ ready，随下一条消息一起发送（状态机见 useChatAttachments）
+  const { attachments, handleFiles, removeAttachment, reset: resetAttachments } = useChatAttachments()
 
   const [experts, setExperts] = useState<PromptItem[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState(0)
@@ -283,7 +276,6 @@ export function AppChat() {
         // 模型切换器数据源：应用可选模型 ∩ 团队可用 conversation 模型（已停用/取消授权的模型不出现）；
         // 默认选择=应用默认模型，不在可用集合时落回第一项（后端运行时同样回退默认模型）
         const selectableIds = new Set(cfg.modelIds ?? [])
-        setChatDefaultModelId(cfg.defaultModelId)
         if (selectableIds.size > 0) {
           getTeamAvailableModels(teamId)
             .then((models) => {
@@ -291,6 +283,9 @@ export function AppChat() {
               setChatModelOptions(options)
               setSelectedChatModelId((prev) => {
                 if (prev && options.some((m) => String(m.aiModelId) === prev)) return prev
+                // 默认选择=应用默认模型（userconfig.defaultModelId），不在可用集合时落回第一项
+                const preferred = cfg.defaultModelId || cfg.modelIds?.[0] || ''
+                if (preferred && options.some((m) => String(m.aiModelId) === preferred)) return preferred
                 return options[0] ? String(options[0].aiModelId) : null
               })
             })
@@ -299,6 +294,15 @@ export function AppChat() {
           setChatModelOptions([])
           setSelectedChatModelId(null)
         }
+        // 团队智能体切换器：多选（≥2）才启用，单选由后端直接生效；初始选中=配置默认，缺省落回第一项
+        const teamAgents = cfg.teamAgents ?? []
+        setChatTeamAgents(teamAgents)
+        setSelectedChatTeamAgentId((prev) => {
+          if (teamAgents.length < 2) return null
+          if (prev && teamAgents.some((a) => a.id === prev)) return prev
+          const preferred = cfg.defaultTeamAgentId || teamAgents[0]?.id || ''
+          return teamAgents.some((a) => a.id === preferred) ? preferred : (teamAgents[0]?.id ?? null)
+        })
         exemptRef.current = {
           names: cfg.toolApprovalExemptNames,
           prefixes: cfg.toolApprovalExemptPrefixes,
@@ -378,7 +382,7 @@ export function AppChat() {
   const selectSession = useCallback(async (sessionId: string, promptId?: number) => {
     setActiveSessionId(sessionId)
     setSelectedPromptId(promptId ?? 0)
-    setAttachments([])
+    resetAttachments()
     setSidebarOpen(false)
     setUiPanel({ items: [], activeKey: null, open: false })
     if (urlSessionId !== sessionId) {
@@ -405,7 +409,7 @@ export function AppChat() {
     } catch {
       // 错误已由全局请求中间件统一提示
     }
-  }, [navigateSession, refreshContextUsage, urlSessionId])
+  }, [navigateSession, refreshContextUsage, resetAttachments, urlSessionId])
 
   // 当前会话 ref（渲染期同步）：供 URL 会话段副作用比较，避免依赖 activeSessionId 状态造成
   // 「新对话清空 active 但 URL 尚未更新」的一帧误判而把旧会话又选回来
@@ -444,7 +448,7 @@ export function AppChat() {
   // 新对话只切换当前视图：其他会话的进行中流不受影响（多会话并行）
   const newSession = useCallback(async () => {
     setActiveSessionId('')
-    setAttachments([])
+    resetAttachments()
     // 新会话默认使用用户配置的专家（应用设置中保存的偏好）
     setSelectedPromptId(savedPromptId)
     setSidebarOpen(false)
@@ -453,7 +457,7 @@ export function AppChat() {
       navigateSession('')
     }
     inputRef.current?.focus()
-  }, [navigateSession, savedPromptId, urlSessionId])
+  }, [navigateSession, resetAttachments, savedPromptId, urlSessionId])
 
   // 选择/取消专家：已有会话即时绑定，未发送过消息时先记在本地，首轮发送时随会话一并创建
   const toggleExpert = useCallback(
@@ -619,14 +623,15 @@ export function AppChat() {
       { id: assistantId, role: 'assistant', content: '' },
     ])
     setInput('')
-    setAttachments([])
+    resetAttachments()
     setSendingBySession((prev) => ({ ...prev, [sessionId]: true }))
     setRunStates((prev) => ({ ...prev, [sessionId]: createWorkflowRunState(true) }))
 
-    // 用户所选对话模型随每轮下发（后端校验须在可选列表内，否则回退默认模型）；未切换时不携带
+    // 用户所选对话模型/团队智能体随每轮下发（后端校验须在可选/绑定列表内，否则回退默认）；未切换时不携带
     const agent = createAppChatAgent(appId, sessionId, {
       toolApprovalMode: approvalMode,
       modelId: selectedChatModelId ?? undefined,
+      teamAgentId: selectedChatTeamAgentId ?? undefined,
     })
     agentsRef.current.set(sessionId, agent)
 
@@ -699,73 +704,7 @@ export function AppChat() {
       void refreshContextUsage(sessionId)
       void loadSessions()
     }
-  }, [activeSending, activeSessionId, appId, approvalMode, attachments, input, isExemptTool, loadSessions, navigateSession, openingMessage, openUiPanelItem, refreshContextUsage, selectedChatModelId, selectedPromptId, t, urlSessionId])
-
-  // 选择附件：直传存储 →（文档）文本提取 → 就绪；失败标记在 chip 上由用户移除
-  const handleFiles = useCallback(
-    async (files: FileList | null) => {
-      if (!files || files.length === 0) return
-      const list = Array.from(files)
-      const accepted = list.filter((f) => {
-        if (!isSupportedAttachment(f.name)) {
-          feedback.error(t('appChat.attachmentUnsupportedType', { name: f.name }))
-          return false
-        }
-        if (f.size > MAX_ATTACHMENT_SIZE) {
-          feedback.error(t('appChat.attachmentTooLarge', { name: f.name }))
-          return false
-        }
-        return true
-      })
-      if (accepted.length === 0) return
-
-      const slots = MAX_ATTACHMENTS - attachments.length
-      if (slots <= 0) {
-        feedback.warning(t('appChat.attachmentTooMany', { count: MAX_ATTACHMENTS }))
-        return
-      }
-      const drafts: ChatAttachmentDraft[] = accepted.slice(0, slots).map((f) => ({
-        id: crypto.randomUUID(),
-        name: f.name,
-        size: f.size,
-        objectKey: '',
-        url: '',
-        isImage: isImageAttachment(f.name),
-        status: 'uploading',
-        markdown: '',
-        truncated: false,
-      }))
-      const overflow = accepted.length - drafts.length
-      if (overflow > 0) feedback.warning(t('appChat.attachmentTooMany', { count: MAX_ATTACHMENTS }))
-      setAttachments((prev) => [...prev, ...drafts])
-
-      await Promise.all(
-        drafts.map(async (draft, index) => {
-          const patch = (updater: (a: ChatAttachmentDraft) => ChatAttachmentDraft) => {
-            setAttachments((prev) => prev.map((a) => (a.id === draft.id ? updater(a) : a)))
-          }
-          const file = accepted[index]
-          try {
-            const uploaded = await uploadChatFile(file)
-            if (draft.isImage) {
-              patch((a) => ({ ...a, ...uploaded, status: 'ready' }))
-              return
-            }
-            patch((a) => ({ ...a, ...uploaded, status: 'extracting' }))
-            const extracted = await extractChatAttachment(uploaded.objectKey, file.name)
-            patch((a) => ({ ...a, status: 'ready', markdown: extracted.markdown, truncated: extracted.truncated }))
-          } catch {
-            patch((a) => ({ ...a, status: 'failed' }))
-          }
-        }),
-      )
-    },
-    [attachments.length, t],
-  )
-
-  const removeAttachment = useCallback((id: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id))
-  }, [])
+  }, [activeSending, activeSessionId, appId, approvalMode, attachments, input, isExemptTool, loadSessions, navigateSession, openingMessage, openUiPanelItem, refreshContextUsage, resetAttachments, selectedChatModelId, selectedChatTeamAgentId, selectedPromptId, t, urlSessionId])
 
   // 停止仅作用于当前会话的流（后台并行会话不受影响）；流收尾与现场清理由 send 的 finally 兜底
   const stop = useCallback(() => {
@@ -863,9 +802,6 @@ export function AppChat() {
     </div>
   )
 
-  // 附件中是否有未就绪项：发送按钮置灰并提示
-  const attachmentsBlocking = hasPendingAttachment(attachments) || attachments.some((a) => a.status === 'failed')
-
   // 上下文占用环形指示：当前会话最近一轮输入 token（当前上下文占用，压缩后随下一轮回落）/ 模型上下文窗口；上限未知（0）只展示 token 数
   const activeContextUsage = activeSessionId ? contextUsageBySession[activeSessionId] : undefined
   const contextTokens = activeContextUsage?.contextTokens || activeContextUsage?.totalTokens || 0
@@ -912,189 +848,76 @@ export function AppChat() {
       ''
     )
 
-  // 输入卡（欢迎态居中 / 对话态停靠底部共用）：文本域 + 附件 chips + 底部左侧附件/模式、右侧发送/停止
-  const composerNode = (
-    <div className="moai-chat__composer">
-      <Input.TextArea
-        ref={inputRef}
-        variant="borderless"
-        autoSize={{ minRows: 3, maxRows: 10 }}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onPressEnter={(e) => {
-          if (!e.shiftKey) {
-            e.preventDefault()
-            void send()
-          }
-        }}
-        placeholder={placeholder}
-      />
-      {attachments.length > 0 && (
-        <div className="moai-chat__attachments">
-          {attachments.map((att) => {
-            // 图片附件就绪后展示缩略图（上传中/失败无地址时回退图片图标）；文档按扩展名取类型图标
-            const FileIcon = getAttachmentFileIcon(att.name)
-            return (
-            <div key={att.id} className={`moai-chat__attachment${att.status === 'failed' ? ' is-failed' : ''}`}>
-              {att.isImage && att.url ? (
-                <img src={att.url} alt="" className="moai-chat__attachment-thumb" />
-              ) : (
-                <span className="moai-chat__attachment-icon">
-                  <FileIcon />
-                </span>
-              )}
-              <span className="moai-chat__attachment-name" title={att.name}>
-                {att.name}
-              </span>
-              <span className="moai-chat__attachment-meta">
-                {att.status === 'uploading' || att.status === 'extracting' ? (
-                  <>
-                    <LoadingOutlined spin />
-                    <span>{t(att.status === 'uploading' ? 'appChat.attachmentUploading' : 'appChat.attachmentExtracting')}</span>
-                  </>
-                ) : att.status === 'failed' ? (
-                  <span>{t('appChat.attachmentFailed')}</span>
-                ) : (
-                  <>
-                    <span>{formatAttachmentSize(att.size)}</span>
-                    {att.truncated && <span>{t('appChat.attachmentTruncated')}</span>}
-                  </>
-                )}
-              </span>
-              <button
-                type="button"
-                className="moai-chat__attachment-remove"
-                onClick={() => removeAttachment(att.id)}
-                aria-label={t('appChat.attachmentRemove')}
-              >
-                <CloseOutlined />
-              </button>
-            </div>
-            )
-          })}
-        </div>
-      )}
-      <div className="moai-chat__composer-footer">
-        <div className="moai-chat__composer-tools">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="moai-chat__file-input"
-            accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.md,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.csv,.json,.xml,.html,.htm,.epub,.mobi,.eml,.msg,.tex"
-            onChange={(e) => {
-              void handleFiles(e.target.files)
-              e.target.value = ''
-            }}
+  // 上下文占用环形指示（传入 ChatComposer 底部右侧）：当前会话有用量才展示；调试面板无落库用量不传即隐藏
+  const contextUsageNode = activeContextUsage && activeContextUsage.totalTokens > 0 ? (
+    <Tooltip title={contextTip}>
+      <div
+        className={`moai-chat__context-usage is-${contextPhase}`}
+        aria-label={t('appChat.contextUsageTitle')}
+      >
+        <svg
+          className="moai-chat__context-ring"
+          width={CONTEXT_RING_SIZE}
+          height={CONTEXT_RING_SIZE}
+          viewBox={`0 0 ${CONTEXT_RING_SIZE} ${CONTEXT_RING_SIZE}`}
+        >
+          <circle
+            className="moai-chat__context-ring-track"
+            cx={CONTEXT_RING_SIZE / 2}
+            cy={CONTEXT_RING_SIZE / 2}
+            r={contextRingRadius}
+            fill="none"
+            strokeWidth={CONTEXT_RING_STROKE}
           />
-          <Tooltip title={t('appChat.attach')}>
-            <button
-              type="button"
-              className="moai-chat__attach"
-              disabled={activeSending || attachments.length >= MAX_ATTACHMENTS}
-              onClick={() => fileInputRef.current?.click()}
-              aria-label={t('appChat.attach')}
-            >
-              <PaperClipOutlined />
-            </button>
-          </Tooltip>
-          {!isWorkflow && (
-            <Tooltip title={approvalMode === 'approval' ? t('appChat.modeApprovalHint') : t('appChat.modeAutoHint')}>
-              <button
-                type="button"
-                className={`moai-chat__mode${approvalMode === 'approval' ? ' is-approval' : ''}`}
-                onClick={toggleApprovalMode}
-              >
-                {approvalMode === 'approval' ? <SafetyCertificateOutlined /> : <ThunderboltFilled />}
-                <span>{approvalMode === 'approval' ? t('appChat.modeApproval') : t('appChat.modeAuto')}</span>
-              </button>
-            </Tooltip>
+          {contextPercent > 0 && (
+            <circle
+              className="moai-chat__context-ring-bar"
+              cx={CONTEXT_RING_SIZE / 2}
+              cy={CONTEXT_RING_SIZE / 2}
+              r={contextRingRadius}
+              fill="none"
+              strokeWidth={CONTEXT_RING_STROKE}
+              strokeLinecap="round"
+              strokeDasharray={`${(contextPercent / 100) * contextRingCircumference} ${contextRingCircumference}`}
+              transform={`rotate(-90 ${CONTEXT_RING_SIZE / 2} ${CONTEXT_RING_SIZE / 2})`}
+            />
           )}
-          {!isWorkflow && chatModelOptions.length > 1 && (
-            <Tooltip title={t('appChat.chatModel')}>
-              <Select
-                size="small"
-                variant="borderless"
-                showSearch
-                optionFilterProp="label"
-                style={{ minWidth: 130, maxWidth: 220 }}
-                value={selectedChatModelId ?? undefined}
-                onChange={(value) => setSelectedChatModelId(value)}
-                options={chatModelOptions.map((m) => {
-                  const name = m.name || m.modelId || '-'
-                  return {
-                    value: String(m.aiModelId),
-                    label: String(m.aiModelId) === chatDefaultModelId ? `${name}（${t('appChat.modelDefaultTag')}）` : name,
-                  }
-                })}
-                disabled={activeSending}
-              />
-            </Tooltip>
-          )}
-        </div>
-        <div className="moai-chat__composer-actions">
-          {activeContextUsage && activeContextUsage.totalTokens > 0 && (
-            <Tooltip title={contextTip}>
-              <div
-                className={`moai-chat__context-usage is-${contextPhase}`}
-                aria-label={t('appChat.contextUsageTitle')}
-              >
-                <svg
-                  className="moai-chat__context-ring"
-                  width={CONTEXT_RING_SIZE}
-                  height={CONTEXT_RING_SIZE}
-                  viewBox={`0 0 ${CONTEXT_RING_SIZE} ${CONTEXT_RING_SIZE}`}
-                >
-                  <circle
-                    className="moai-chat__context-ring-track"
-                    cx={CONTEXT_RING_SIZE / 2}
-                    cy={CONTEXT_RING_SIZE / 2}
-                    r={contextRingRadius}
-                    fill="none"
-                    strokeWidth={CONTEXT_RING_STROKE}
-                  />
-                  {contextPercent > 0 && (
-                    <circle
-                      className="moai-chat__context-ring-bar"
-                      cx={CONTEXT_RING_SIZE / 2}
-                      cy={CONTEXT_RING_SIZE / 2}
-                      r={contextRingRadius}
-                      fill="none"
-                      strokeWidth={CONTEXT_RING_STROKE}
-                      strokeLinecap="round"
-                      strokeDasharray={`${(contextPercent / 100) * contextRingCircumference} ${contextRingCircumference}`}
-                      transform={`rotate(-90 ${CONTEXT_RING_SIZE / 2} ${CONTEXT_RING_SIZE / 2})`}
-                    />
-                  )}
-                </svg>
-                <span className="moai-chat__context-usage-text">
-                  {activeContextUsage.contextWindow > 0
-                    ? `${formatTokenCount(contextTokens)} / ${formatTokenCount(activeContextUsage.contextWindow)}`
-                    : formatTokenCount(contextTokens)}
-                </span>
-              </div>
-            </Tooltip>
-          )}
-          {activeSending ? (
-            <button type="button" className="moai-chat__send" onClick={stop} aria-label={t('appChat.stop')}>
-              <StopOutlined />
-            </button>
-          ) : (
-            <Tooltip title={attachmentsBlocking ? t('appChat.sendPendingAttachment') : ''}>
-              <button
-                type="button"
-                className="moai-chat__send"
-                onClick={() => void send()}
-                disabled={(!input.trim() && attachments.length === 0) || attachmentsBlocking}
-                aria-label={t('appChat.send')}
-              >
-                <ArrowUpOutlined />
-              </button>
-            </Tooltip>
-          )}
-        </div>
+        </svg>
+        <span className="moai-chat__context-usage-text">
+          {activeContextUsage.contextWindow > 0
+            ? `${formatTokenCount(contextTokens)} / ${formatTokenCount(activeContextUsage.contextWindow)}`
+            : formatTokenCount(contextTokens)}
+        </span>
       </div>
-    </div>
+    </Tooltip>
+  ) : (
+    ''
+  )
+
+  // 输入卡（欢迎态居中 / 对话态停靠底部共用）：文本域 + 附件 chips + 底部附件/审批模式/模型切换器、右侧发送/停止
+  // （共享组件 ChatComposer，配置页调试面板同构复用；流程应用无 Agent 能力时隐藏审批切换与模型选择器）
+  const composerNode = (
+    <ChatComposer
+      value={input}
+      onValueChange={setInput}
+      onSubmit={() => void send()}
+      sending={activeSending}
+      onStop={stop}
+      placeholder={placeholder}
+      inputRef={inputRef}
+      attachments={attachments}
+      onPickFiles={(files) => void handleFiles(files)}
+      onRemoveAttachment={removeAttachment}
+      approvalMode={agentFeatures ? approvalMode : undefined}
+      onToggleApprovalMode={agentFeatures ? toggleApprovalMode : undefined}
+      modelOptions={chatModelOptions}
+      selectedModelId={selectedChatModelId}
+      onModelChange={setSelectedChatModelId}
+      teamAgentOptions={chatTeamAgents}
+      selectedTeamAgentId={selectedChatTeamAgentId}
+      onTeamAgentChange={setSelectedChatTeamAgentId}
+      contextUsageNode={contextUsageNode}
+    />
   )
 
   const hotExpertsNode = isLanding && !isWorkflow && topExperts.length > 0 && (
@@ -1157,7 +980,10 @@ export function AppChat() {
         </div>
         <div className="moai-chat__sessions">
           {!sessionsLoading && sessions.length === 0 ? (
-            <div className="moai-chat__sessions-empty">{t('appChat.sessionsEmpty')}</div>
+            <div className="moai-chat__sessions-empty">
+              <MessageOutlined className="moai-chat__sessions-empty-icon" />
+              <span>{t('appChat.sessionsEmpty')}</span>
+            </div>
           ) : (
             sessions.map((session) => {
               const id = String(session.sessionId ?? '')
@@ -1200,7 +1026,6 @@ export function AppChat() {
       {!isWorkflow && (
         <AppUserSettings
           open={settingsOpen}
-          teamId={teamId}
           appId={appId}
           experts={experts}
           currentPromptId={selectedPromptId}
@@ -1295,19 +1120,34 @@ export function AppChat() {
                 )}
               </div>
               <h1 className="moai-chat__landing-title">{appName || t('appChat.title')}</h1>
+              {!openingMessage && <p className="moai-chat__landing-subtitle">{t('appChat.landingSubtitle')}</p>}
             </div>
-            {openingMessage && <div className="moai-chat__landing-opening">{openingMessage.content}</div>}
+            {openingMessage && (
+              <div className="moai-chat__landing-briefing">
+                <div className="moai-chat__markdown moai-chat__landing-briefing-body">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{openingMessage.content}</ReactMarkdown>
+                </div>
+              </div>
+            )}
             <div className="moai-chat__landing-composer">
               {expertChip}
               {composerNode}
               {hotExpertsNode}
               {suggestions.length > 0 && (
                 <div className="moai-chat__suggestions">
-                  {suggestions.map((text) => (
-                    <button key={text} type="button" className="moai-chat__suggestion" onClick={() => applySuggestion(text)}>
-                      {text}
-                    </button>
-                  ))}
+                  <span className="moai-chat__suggestions-label">
+                    <BulbOutlined />
+                    {t('appChat.quickAsk')}
+                  </span>
+                  <div className="moai-chat__suggestions-grid">
+                    {suggestions.map((text) => (
+                      <button key={text} type="button" className="moai-chat__suggestion" onClick={() => applySuggestion(text)}>
+                        <EditOutlined className="moai-chat__suggestion-icon" />
+                        <span className="moai-chat__suggestion-text">{text}</span>
+                        <ArrowRightOutlined className="moai-chat__suggestion-arrow" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { CheckOutlined, CloseOutlined, SafetyCertificateOutlined, ThunderboltFilled } from '@ant-design/icons'
 import { Button, Input, Spin, Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router'
 import { feedback } from '@/design-system'
 import { getAppUserConfig, saveAppUserConfig, type AppUserSkillOption } from '@/api/app'
 import type { ToolApprovalMode } from '@/api/agentChat'
@@ -19,7 +18,7 @@ const MEMORY_GLOBAL_OFF = 1
 
 /** 面板宽度持久化键与取值范围 */
 const PANEL_WIDTH_KEY = 'moai:chat:settings-width'
-const DEFAULT_PANEL_WIDTH = 460
+const DEFAULT_PANEL_WIDTH = 520
 const MIN_PANEL_WIDTH = 360
 const clampPanelWidth = (width: number) => {
   const max = Math.max(MIN_PANEL_WIDTH, Math.min(760, Math.round(window.innerWidth * 0.7)))
@@ -28,8 +27,6 @@ const clampPanelWidth = (width: number) => {
 
 interface AppUserSettingsProps {
   open: boolean
-  /** 团队 id（「管理记忆」跳转用） */
-  teamId: number
   appId: string
   experts: PromptItem[]
   /** 当前生效的专家提示词 id（无会话为新会话默认，有会话为会话绑定值），作为面板草稿初始值 */
@@ -44,11 +41,10 @@ interface AppUserSettingsProps {
  * 专家=提示词（本人个人 + 本团队），保存后作为新会话默认并在会话中即时切换；
  * 技能只能从管理员配置的默认技能目录中勾选/取消（默认全部启用），范围外内容不展示也不可提交；
  * 工具审批模式控制重要工具是否需人工批准；
- * 长期记忆偏好（应用开启记忆时展示）：模式选择 + 本人记忆管理（单条删除/清空本应用/清空全部）。
+ * 长期记忆偏好（应用开启记忆时展示）：开启/关闭 两态分段选择。
  */
-export function AppUserSettings({ open, teamId, appId, experts, currentPromptId, onClose, onSaved }: AppUserSettingsProps) {
+export function AppUserSettings({ open, appId, experts, currentPromptId, onClose, onSaved }: AppUserSettingsProps) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
@@ -244,6 +240,7 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
             <div className="moai-chat__settings-search">
               <Input
                 allowClear
+                variant="filled"
                 size="small"
                 value={expertSearch}
                 onChange={(e) => setExpertSearch(e.target.value)}
@@ -299,6 +296,7 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
             <div className="moai-chat__settings-search">
               <Input
                 allowClear
+                variant="filled"
                 size="small"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -401,18 +399,6 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
                     </div>
                   </>
                 )}
-                <div style={{ padding: '4px 12px 12px' }}>
-                  <Button
-                    size="small"
-                    block
-                    onClick={() => {
-                      onClose()
-                      navigate(`/team/${teamId}/app/${appId}/memory/mine`)
-                    }}
-                  >
-                    {t('myMemory.manage')}
-                  </Button>
-                </div>
               </>
             )}
           </div>

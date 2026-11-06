@@ -67,14 +67,10 @@ internal partial class AppConfiguration : IEntityTypeConfiguration<AppEntity>
         entity.Property(e => e.IsExternal)
             .HasComment("是否外部应用")
             .HasColumnName("is_external");
-        entity.Property(e => e.IsAcpEnabled)
+        entity.Property(e => e.IsAcpA2aEnabled)
             .HasDefaultValue(false)
-            .HasComment("是否开启 ACP 接入（开启时自动生成/复用该应用的团队资源 key，ACP/A2A 共用）")
-            .HasColumnName("is_acp_enabled");
-        entity.Property(e => e.IsA2aEnabled)
-            .HasDefaultValue(false)
-            .HasComment("是否开启 A2A 接入（开启时自动生成/复用该应用的团队资源 key，与 ACP 共用）")
-            .HasColumnName("is_a2a_enabled");
+            .HasComment("是否开启对外协议接入（ACP 与 A2A 单一开关同开同关；开启时自动生成/复用该应用的团队资源 key）")
+            .HasColumnName("is_acp_a2a_enabled");
         entity.Property(e => e.IsPublic)
             .HasComment("公开到团队外使用")
             .HasColumnName("is_public");

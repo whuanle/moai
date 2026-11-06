@@ -78,7 +78,6 @@ export interface WikiMcpConfig {
   teamResourceKeyId?: string | null
   key?: string | null
   keyPrefix?: string | null
-  status?: 'enabled' | 'disabled' | null
 }
 
 /** 查询知识库 MCP 接入配置（仅团队 Admin+） */
@@ -90,7 +89,6 @@ export async function getWikiMcpConfig(wikiId: number): Promise<WikiMcpConfig> {
     teamResourceKeyId: res?.teamResourceKeyId,
     key: res?.key,
     keyPrefix: res?.keyPrefix,
-    status: res?.status ?? null,
   }
 }
 
@@ -103,7 +101,6 @@ export async function updateWikiMcpConfig(wikiId: number, isMcpEnabled: boolean)
     teamResourceKeyId: res?.teamResourceKeyId,
     key: res?.key,
     keyPrefix: res?.keyPrefix,
-    status: res?.status ?? null,
   }
 }
 
