@@ -883,6 +883,39 @@ export interface AppUsageTrendItem extends Parsable {
     useCount?: string | null;
 }
 /**
+ * 应用设置中展示的可选专家（提示词）项.
+ */
+export interface AppUserPromptOption extends Parsable {
+    /**
+     * 头像存储路径（objectKey，空串=未设置）.
+     */
+    avatarPath?: string | null;
+    /**
+     * 专家描述.
+     */
+    description?: string | null;
+    /**
+     * 是否已上架市场公开.
+     */
+    isPublic?: boolean | null;
+    /**
+     * 专家名称.
+     */
+    name?: string | null;
+    /**
+     * 提示词 id.
+     */
+    promptId?: number | null;
+    /**
+     * 所属团队 id，0=个人提示词.
+     */
+    teamId?: number | null;
+    /**
+     * 被选用次数（选用专家时自增），面板专家卡片热门排序依据.
+     */
+    useCount?: number | null;
+}
+/**
  * 应用设置中展示的默认技能项.
  */
 export interface AppUserSkillOption extends Parsable {
@@ -894,6 +927,10 @@ export interface AppUserSkillOption extends Parsable {
      * 技能 id.
      */
     id?: Guid | null;
+    /**
+     * 是否已上架市场公开.
+     */
+    isPublic?: boolean | null;
     /**
      * 是否平台内置技能.
      */
@@ -907,7 +944,7 @@ export interface AppUserSkillOption extends Parsable {
      */
     name?: string | null;
     /**
-     * 所属团队 id，0=系统内置或市场公开.
+     * 所属团队 id，0=系统内置/市场公开/个人技能.
      */
     teamId?: number | null;
     /**
@@ -1809,6 +1846,15 @@ export function createAppUsageSummaryFromDiscriminatorValue(parseNode: ParseNode
 // @ts-ignore
 export function createAppUsageTrendItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoAppUsageTrendItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AppUserPromptOption}
+ */
+// @ts-ignore
+export function createAppUserPromptOptionFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAppUserPromptOption;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -7675,10 +7721,27 @@ export function deserializeIntoAppUsageTrendItem(appUsageTrendItem: Partial<AppU
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoAppUserPromptOption(appUserPromptOption: Partial<AppUserPromptOption> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { appUserPromptOption.avatarPath = n.getStringValue(); },
+        "description": n => { appUserPromptOption.description = n.getStringValue(); },
+        "isPublic": n => { appUserPromptOption.isPublic = n.getBooleanValue(); },
+        "name": n => { appUserPromptOption.name = n.getStringValue(); },
+        "promptId": n => { appUserPromptOption.promptId = n.getNumberValue(); },
+        "teamId": n => { appUserPromptOption.teamId = n.getNumberValue(); },
+        "useCount": n => { appUserPromptOption.useCount = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoAppUserSkillOption(appUserSkillOption: Partial<AppUserSkillOption> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { appUserSkillOption.description = n.getStringValue(); },
         "id": n => { appUserSkillOption.id = n.getGuidValue(); },
+        "isPublic": n => { appUserSkillOption.isPublic = n.getBooleanValue(); },
         "isSystem": n => { appUserSkillOption.isSystem = n.getBooleanValue(); },
         "key": n => { appUserSkillOption.key = n.getStringValue(); },
         "name": n => { appUserSkillOption.name = n.getStringValue(); },
@@ -10033,6 +10096,7 @@ export function deserializeIntoQueryAppAgentConfigCommandResponse(queryAppAgentC
         "openingStatementEnabled": n => { queryAppAgentConfigCommandResponse.openingStatementEnabled = n.getBooleanValue(); },
         "plugins": n => { queryAppAgentConfigCommandResponse.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { queryAppAgentConfigCommandResponse.prompt = n.getStringValue(); },
+        "prompts": n => { queryAppAgentConfigCommandResponse.prompts = n.getCollectionOfPrimitiveValues<number>(); },
         "quickInputs": n => { queryAppAgentConfigCommandResponse.quickInputs = n.getCollectionOfPrimitiveValues<string>(); },
         "skills": n => { queryAppAgentConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "status": n => { queryAppAgentConfigCommandResponse.status = n.getNumberValue(); },
@@ -10243,6 +10307,8 @@ export function deserializeIntoQueryAppUserConfigCommandResponse(queryAppUserCon
         "memoryMode": n => { queryAppUserConfigCommandResponse.memoryMode = n.getNumberValue(); },
         "modelIds": n => { queryAppUserConfigCommandResponse.modelIds = n.getCollectionOfPrimitiveValues<Guid>(); },
         "promptId": n => { queryAppUserConfigCommandResponse.promptId = n.getNumberValue(); },
+        "promptOptions": n => { queryAppUserConfigCommandResponse.promptOptions = n.getCollectionOfObjectValues<AppUserPromptOption>(createAppUserPromptOptionFromDiscriminatorValue); },
+        "skillOptions": n => { queryAppUserConfigCommandResponse.skillOptions = n.getCollectionOfObjectValues<AppUserSkillOption>(createAppUserSkillOptionFromDiscriminatorValue); },
         "skills": n => { queryAppUserConfigCommandResponse.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "teamAgents": n => { queryAppUserConfigCommandResponse.teamAgents = n.getCollectionOfObjectValues<AppTeamAgentOption>(createAppTeamAgentOptionFromDiscriminatorValue); },
         "toolApprovalAutoApprovedNames": n => { queryAppUserConfigCommandResponse.toolApprovalAutoApprovedNames = n.getCollectionOfPrimitiveValues<string>(); },
@@ -12388,6 +12454,7 @@ export function deserializeIntoSaveAppAgentConfigCommand(saveAppAgentConfigComma
         "openingStatementEnabled": n => { saveAppAgentConfigCommand.openingStatementEnabled = n.getBooleanValue(); },
         "plugins": n => { saveAppAgentConfigCommand.plugins = n.getCollectionOfPrimitiveValues<Guid>(); },
         "prompt": n => { saveAppAgentConfigCommand.prompt = n.getStringValue(); },
+        "prompts": n => { saveAppAgentConfigCommand.prompts = n.getCollectionOfPrimitiveValues<number>(); },
         "quickInputs": n => { saveAppAgentConfigCommand.quickInputs = n.getCollectionOfPrimitiveValues<string>(); },
         "skills": n => { saveAppAgentConfigCommand.skills = n.getCollectionOfPrimitiveValues<Guid>(); },
         "teamAgentIds": n => { saveAppAgentConfigCommand.teamAgentIds = n.getCollectionOfPrimitiveValues<Guid>(); },
@@ -17137,6 +17204,10 @@ export interface QueryAppAgentConfigCommandResponse extends Parsable {
      */
     prompt?: string | null;
     /**
+     * 开放给用户选择的可选专家提示词 id 列表（元素为 prompt.id，整数；市场公开或本团队提示词），用户在应用设置中与市场公开、本人个人提示词一起选用.
+     */
+    prompts?: number[] | null;
+    /**
      * 快捷输入列表（管理员配置，用户在对话欢迎态点击即发送），未配置为空列表.
      */
     quickInputs?: string[] | null;
@@ -17511,7 +17582,7 @@ export interface QueryAppUserConfigCommandResponse extends Parsable {
      */
     defaultModelId?: Guid | null;
     /**
-     * 应用默认使用的团队技能目录（管理员配置，按配置顺序），用户可取消勾选.
+     * 应用默认技能目录（管理员配置，按配置顺序），无用户配置行时默认全部启用.
      */
     defaultSkills?: AppUserSkillOption[] | null;
     /**
@@ -17543,7 +17614,15 @@ export interface QueryAppUserConfigCommandResponse extends Parsable {
      */
     promptId?: number | null;
     /**
-     * 用户当前勾选的技能 id 列表（应用默认技能的子集）；无用户配置行时返回应用默认技能全集（默认全部启用）.
+     * 可选专家候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（按 绑定→市场→个人 排序去重），不含团队提示词（团队资源经管理员绑定才会进入候选）.
+     */
+    promptOptions?: AppUserPromptOption[] | null;
+    /**
+     * 可选技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人（排除禁用；按 默认→市场→个人 排序去重），用户勾选只能落在该池内.
+     */
+    skillOptions?: AppUserSkillOption[] | null;
+    /**
+     * 用户当前勾选的技能 id 列表（可选技能池的子集）；无用户配置行时返回应用默认技能（绑定目录，默认全部启用）.
      */
     skills?: Guid[] | null;
     /**
@@ -21084,6 +21163,10 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      */
     prompt?: string | null;
     /**
+     * 开放给用户选择的可选专家提示词 id 列表（元素为 prompt.id，整数），须为市场公开或本团队提示词；用户进入对话后可在应用设置中与市场公开、本人个人提示词一起选用；null 表示保持已保存的绑定不变.
+     */
+    prompts?: number[] | null;
+    /**
      * 快捷输入列表（管理员配置，用户在对话欢迎态点击即发送），最多 10 条、每条最长 200 字符；null 表示保持已保存的快捷输入不变.
      */
     quickInputs?: string[] | null;
@@ -21092,7 +21175,7 @@ export interface SaveAppAgentConfigCommand extends Parsable {
      */
     skills?: Guid[] | null;
     /**
-     * 绑定的团队智能体 id 列表（元素为 team_agent.id 的 uuid），须为本团队已启用智能体，最多 20 个；绑定后须开启子代理协作（executionSettings.subAgent.enabled）；null 表示保持已保存的绑定不变.
+     * 绑定的团队智能体 id 列表（元素为 team_agent.id 的 uuid），须为本团队已启用智能体，最多 20 个；绑定独立于子代理协作（app sdd D53）：主智能体提示词始终生效，子智能体派发由 executionSettings.subAgent.enabled 独立控制；null 表示保持已保存的绑定不变.
      */
     teamAgentIds?: Guid[] | null;
     /**
@@ -21997,10 +22080,27 @@ export function serializeAppUsageTrendItem(writer: SerializationWriter, appUsage
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeAppUserPromptOption(writer: SerializationWriter, appUserPromptOption: Partial<AppUserPromptOption> | undefined | null = {}) : void {
+    if (appUserPromptOption) {
+        writer.writeStringValue("avatarPath", appUserPromptOption.avatarPath);
+        writer.writeStringValue("description", appUserPromptOption.description);
+        writer.writeBooleanValue("isPublic", appUserPromptOption.isPublic);
+        writer.writeStringValue("name", appUserPromptOption.name);
+        writer.writeNumberValue("promptId", appUserPromptOption.promptId);
+        writer.writeNumberValue("teamId", appUserPromptOption.teamId);
+        writer.writeNumberValue("useCount", appUserPromptOption.useCount);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeAppUserSkillOption(writer: SerializationWriter, appUserSkillOption: Partial<AppUserSkillOption> | undefined | null = {}) : void {
     if (appUserSkillOption) {
         writer.writeStringValue("description", appUserSkillOption.description);
         writer.writeGuidValue("id", appUserSkillOption.id);
+        writer.writeBooleanValue("isPublic", appUserSkillOption.isPublic);
         writer.writeBooleanValue("isSystem", appUserSkillOption.isSystem);
         writer.writeStringValue("key", appUserSkillOption.key);
         writer.writeStringValue("name", appUserSkillOption.name);
@@ -24356,6 +24456,7 @@ export function serializeQueryAppAgentConfigCommandResponse(writer: Serializatio
         writer.writeBooleanValue("openingStatementEnabled", queryAppAgentConfigCommandResponse.openingStatementEnabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", queryAppAgentConfigCommandResponse.plugins);
         writer.writeStringValue("prompt", queryAppAgentConfigCommandResponse.prompt);
+        writer.writeCollectionOfPrimitiveValues<number>("prompts", queryAppAgentConfigCommandResponse.prompts);
         writer.writeCollectionOfPrimitiveValues<string>("quickInputs", queryAppAgentConfigCommandResponse.quickInputs);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppAgentConfigCommandResponse.skills);
         writer.writeNumberValue("status", queryAppAgentConfigCommandResponse.status);
@@ -24566,6 +24667,8 @@ export function serializeQueryAppUserConfigCommandResponse(writer: Serialization
         writer.writeNumberValue("memoryMode", queryAppUserConfigCommandResponse.memoryMode);
         writer.writeCollectionOfPrimitiveValues<Guid>("modelIds", queryAppUserConfigCommandResponse.modelIds);
         writer.writeNumberValue("promptId", queryAppUserConfigCommandResponse.promptId);
+        writer.writeCollectionOfObjectValues<AppUserPromptOption>("promptOptions", queryAppUserConfigCommandResponse.promptOptions, serializeAppUserPromptOption);
+        writer.writeCollectionOfObjectValues<AppUserSkillOption>("skillOptions", queryAppUserConfigCommandResponse.skillOptions, serializeAppUserSkillOption);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", queryAppUserConfigCommandResponse.skills);
         writer.writeCollectionOfObjectValues<AppTeamAgentOption>("teamAgents", queryAppUserConfigCommandResponse.teamAgents, serializeAppTeamAgentOption);
         writer.writeCollectionOfPrimitiveValues<string>("toolApprovalAutoApprovedNames", queryAppUserConfigCommandResponse.toolApprovalAutoApprovedNames);
@@ -26711,6 +26814,7 @@ export function serializeSaveAppAgentConfigCommand(writer: SerializationWriter, 
         writer.writeBooleanValue("openingStatementEnabled", saveAppAgentConfigCommand.openingStatementEnabled);
         writer.writeCollectionOfPrimitiveValues<Guid>("plugins", saveAppAgentConfigCommand.plugins);
         writer.writeStringValue("prompt", saveAppAgentConfigCommand.prompt);
+        writer.writeCollectionOfPrimitiveValues<number>("prompts", saveAppAgentConfigCommand.prompts);
         writer.writeCollectionOfPrimitiveValues<string>("quickInputs", saveAppAgentConfigCommand.quickInputs);
         writer.writeCollectionOfPrimitiveValues<Guid>("skills", saveAppAgentConfigCommand.skills);
         writer.writeCollectionOfPrimitiveValues<Guid>("teamAgentIds", saveAppAgentConfigCommand.teamAgentIds);

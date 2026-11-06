@@ -121,6 +121,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         var graphIds = await ValidateGraphIdsAsync(app.TeamId, request.GraphIds, cancellationToken);
         var pluginIds = await ValidatePluginIdsAsync(app.TeamId, request.Plugins, cancellationToken);
         var skillIds = await ValidateSkillIdsAsync(app.TeamId, request.Skills, cancellationToken);
+        var promptIds = await ValidatePromptIdsAsync(app.TeamId, request.Prompts, cancellationToken);
         var workflowAppIds = await ValidateWorkflowAppIdsAsync(app.TeamId, request.WorkflowApps, cancellationToken);
         var agentAppIds = await ValidateAgentAppIdsAsync(app, request.AgentApps, cancellationToken);
 
@@ -136,15 +137,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         var config = await _databaseContext.AppAgentConfigs
             .FirstOrDefaultAsync(x => x.AppId == app.Id, cancellationToken);
 
-        // 团队智能体绑定：存在/启用/归属校验，null 表示请求未携带（保持原值）；
-        // 绑定后必须开启子代理协作（派发工具由子代理协作链路注册）。
+        // 团队智能体绑定：存在/启用/归属校验，null 表示请求未携带（保持原值）。
+        // 绑定与子代理协作解耦（D53）：绑定只意味着主智能体提示词注入主会话，不要求开启子代理协作；
+        // 子智能体派发工具由子代理协作链路独立注册，关闭协作的绑定仅主智能体生效。
         // 依赖为弱依赖（team-agent sdd D3）：主依赖缺失不阻断绑定，由 agent-config 回显声明项供前端提示「一键添加」；
         // 子依赖是运行时白名单（声明即边界），均不做保存强校验
         var teamAgentIds = await ValidateTeamAgentIdsAsync(app, request.TeamAgentIds, request.DefaultTeamAgentId, cancellationToken);
-        if (teamAgentIds is { Count: > 0 })
-        {
-            EnsureSubAgentEnabledForTeamAgents(request.ExecutionSettings, config?.ExecutionSettings);
-        }
 
         // 循环嵌套防护：本次保存携带 Agent 应用绑定时，以保存后的草稿全量（请求值 ?? 库中现值）
         // 仅沿 Agent→Agent 工具边做闭包检测（流程工具相关的环由流程侧守卫负责，Agent 侧保存不拒绝）
@@ -203,6 +201,7 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
                 WorkflowApps = AppAgentConfigJson.SerializePluginIds(workflowAppIds ?? []),
                 AgentApps = AppAgentConfigJson.SerializePluginIds(agentAppIds ?? []),
                 Skills = AppAgentConfigJson.SerializePluginIds(skillIds ?? []),
+                Prompts = AppAgentConfigJson.SerializeInts(promptIds ?? []),
                 ExecutionSettings = executionJson ?? "{}",
                 OpeningStatement = request.OpeningStatement ?? string.Empty,
                 OpeningStatementEnabled = request.OpeningStatementEnabled,
@@ -242,6 +241,12 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
             if (skillIds != null)
             {
                 config.Skills = AppAgentConfigJson.SerializePluginIds(skillIds);
+            }
+
+            // 仅在请求显式携带绑定专家列表时覆盖，避免旧前端保存时清空可选专家绑定
+            if (promptIds != null)
+            {
+                config.Prompts = AppAgentConfigJson.SerializeInts(promptIds);
             }
 
             // 仅在请求显式携带团队智能体列表时覆盖；默认智能体随列表归一（空列表清空，未指定取第一个）
@@ -423,53 +428,6 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         }
 
         return ids;
-    }
-
-    /// <summary>
-    /// 绑定团队智能体时要求子代理协作已开启：生效口径 = 请求携带的 subAgent 优先，未携带时看库中现值
-    /// （派发工具由子代理协作链路注册，关闭协作的团队智能体无法派发子智能体）.
-    /// </summary>
-    private static void EnsureSubAgentEnabledForTeamAgents(JsonElement? requestSettings, string? storedSettings)
-    {
-        bool enabled;
-        if (requestSettings is { } settings
-            && settings.ValueKind == JsonValueKind.Object
-            && settings.TryGetProperty("subAgent", out _))
-        {
-            enabled = SubAgentSettingsValidator.IsSubAgentEnabled(requestSettings);
-        }
-        else
-        {
-            enabled = IsStoredSubAgentEnabled(storedSettings);
-        }
-
-        if (!enabled)
-        {
-            throw new BusinessException("绑定团队智能体后需开启子代理协作.") { StatusCode = 400 };
-        }
-    }
-
-    /// <summary>解析已保存执行参数中子代理协作是否开启（subAgent.enabled=true）；未携带或非法 JSON 返回 false.</summary>
-    private static bool IsStoredSubAgentEnabled(string? executionSettings)
-    {
-        if (string.IsNullOrWhiteSpace(executionSettings))
-        {
-            return false;
-        }
-
-        try
-        {
-            using var document = JsonDocument.Parse(executionSettings);
-            return document.RootElement.ValueKind == JsonValueKind.Object
-                && document.RootElement.TryGetProperty("subAgent", out var subAgent)
-                && subAgent.ValueKind == JsonValueKind.Object
-                && subAgent.TryGetProperty("enabled", out var enabled)
-                && enabled.ValueKind == JsonValueKind.True;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
     }
 
     /// <summary>
@@ -665,6 +623,34 @@ public class SaveAppAgentConfigCommandHandler : IRequestHandler<SaveAppAgentConf
         if (validCount != ids.Count)
         {
             throw new BusinessException("包含不存在、未发布或无权使用的 Agent 应用，请重新选择.") { StatusCode = 400 };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 校验绑定专家提示词：仅允许配置市场公开或本团队提示词（与用户侧候选池的绑定/市场来源一致），去重后返回；
+    /// null 表示请求未携带提示词字段（保持原值）.
+    /// </summary>
+    private async Task<List<int>?> ValidatePromptIdsAsync(int teamId, IReadOnlyCollection<int>? promptIds, CancellationToken cancellationToken)
+    {
+        if (promptIds == null)
+        {
+            return null;
+        }
+
+        var ids = promptIds.Where(x => x > 0).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return ids;
+        }
+
+        var validCount = await _databaseContext.Prompts
+            .CountAsync(x => ids.Contains(x.Id) && (x.IsPublic || x.TeamId == teamId), cancellationToken);
+
+        if (validCount != ids.Count)
+        {
+            throw new BusinessException("包含不存在或无权使用的提示词，请重新选择.") { StatusCode = 400 };
         }
 
         return ids;

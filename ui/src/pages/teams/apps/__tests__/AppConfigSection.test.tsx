@@ -9,6 +9,7 @@ import { getSkillOptions } from '@/api/skills'
 import { getWikis } from '@/api/wiki'
 import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
 import { getTeamAgents } from '@/api/team-agent'
+import { getTeamPrompts, getPromptMarketList } from '@/api/prompt'
 
 vi.mock('@/api/team-agent', () => ({
   // 团队智能体绑定候选（team-agent Phase 2）：默认空列表，绑定链路用例按需覆盖
@@ -103,6 +104,11 @@ vi.mock('@/api/knowledgeGraph', () => ({
 
 vi.mock('@/api/skills', () => ({
   getSkillOptions: vi.fn(),
+}))
+
+vi.mock('@/api/prompt', () => ({
+  getTeamPrompts: vi.fn().mockResolvedValue([]),
+  getPromptMarketList: vi.fn().mockResolvedValue([]),
 }))
 
 const MODEL_ID = '1c6780ce-2ce5-425f-899e-1d76135cfd81'
@@ -602,6 +608,7 @@ describe('AppConfigSection（应用配置分区）', () => {
         workflowApps: [],
         agentApps: [],
         skills: [],
+        prompts: [],
         openingStatement: '',
         openingStatementEnabled: false,
         quickInputs: [],
@@ -919,8 +926,8 @@ describe('AppConfigSection（应用配置分区）', () => {
     renderSection()
     await screen.findAllByText('天气查询')
 
-    // 九个下拉依次为 可选模型 / 默认模型 / 压缩策略 / 插件 / 流程应用 / Agent 应用 / 默认技能 / 知识库 / 知识图谱（rounds 299~324 起顶部插入可选模型多选）
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[3])
+    // 十一个下拉依次为 可选模型 / 默认模型 / 压缩策略 / 团队智能体（D53 起固定渲染，不再收在子代理协作内）/ 可选专家（提示词分组）/ 插件 / 流程应用 / Agent 应用 / 默认技能 / 知识库 / 知识图谱（rounds 299~324 起顶部插入可选模型多选）
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[5])
 
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
@@ -957,7 +964,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     // 已绑定托管图回显为选中标签与自动放通行
     expect((await screen.findAllByText('支付域图谱')).length).toBeGreaterThanOrEqual(1)
 
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[8])
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[10])
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
       const texts = Array.from(options).map((node) => node.textContent ?? '')
@@ -973,6 +980,47 @@ describe('AppConfigSection（应用配置分区）', () => {
         expect.objectContaining({ graphIds: [11] }),
       ),
     )
+  })
+
+  it('可选专家绑定：候选含团队/市场来源后缀、回显已绑定项并随保存提交', async () => {
+    vi.mocked(getTeamPrompts).mockResolvedValue([
+      { promptId: 21, name: '售前专家', description: '', teamId: 3 },
+    ] as never)
+    vi.mocked(getPromptMarketList).mockResolvedValue([
+      { promptId: 22, name: '行业分析专家', description: '', teamId: 0, isPublic: true },
+    ] as never)
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      prompts: [21],
+      myRole: 2,
+    })
+    renderSection()
+
+    // 回显已绑定专家（选中项 chip 以「名称（来源）」展示）
+    await waitFor(() => expect(screen.getByText(/售前专家/)).toBeInTheDocument())
+
+    // 可选专家下拉（提示词分组，第 5 个 combobox：可选模型/默认模型/压缩策略/团队智能体/可选专家）：
+    // 团队提示词带（团队）后缀、市场公开带（市场）后缀
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[4])
+    await waitFor(() => {
+      const texts = Array.from(document.querySelectorAll('.ant-select-item-option')).map((node) => node.textContent ?? '')
+      expect(texts.some((text) => text.includes('售前专家（团队）'))).toBe(true)
+      expect(texts.some((text) => text.includes('行业分析专家（市场）'))).toBe(true)
+    })
+
+    // 勾选市场专家后保存，prompts=[21, 22] 随保存提交
+    const marketOption = Array.from(document.querySelectorAll('.ant-select-item-option'))
+      .find((node) => (node.textContent ?? '').includes('行业分析专家')) as HTMLElement
+    fireEvent.click(marketOption)
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => {
+      const payload = vi.mocked(saveAppAgentConfig).mock.calls[0][1]
+      expect(payload.prompts).toEqual([21, 22])
+    })
   })
 
   it('流程应用选项只取本团队已发布流程应用，回显已绑定项并随保存提交', async () => {
@@ -992,7 +1040,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     // 已绑定项回显为选中标签与自动放通行
     expect((await screen.findAllByText('工单分派流程')).length).toBeGreaterThanOrEqual(1)
 
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[4])
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[6])
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
       const texts = Array.from(options).map((node) => node.textContent ?? '')
@@ -1028,8 +1076,8 @@ describe('AppConfigSection（应用配置分区）', () => {
     // 已绑定项回显为选中标签（带头像）与自动放通行
     expect((await screen.findAllByText('数据分析助手')).length).toBeGreaterThanOrEqual(1)
 
-    // 九个下拉依次为 可选模型 / 默认模型 / 压缩策略 / 插件 / 流程应用 / Agent 应用 / 默认技能 / 知识库 / 知识图谱
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[5])
+    // 十个下拉依次为 可选模型 / 默认模型 / 压缩策略 / 团队智能体 / 插件 / 流程应用 / Agent 应用 / 默认技能 / 知识库 / 知识图谱
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[7])
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
       const texts = Array.from(options).map((node) => node.textContent ?? '')
@@ -1046,8 +1094,8 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect(document.querySelectorAll('.ant-select-item-option .ant-avatar img').length).toBeGreaterThan(0)
     expect(document.querySelectorAll('.ant-select-selection-item .ant-avatar').length).toBeGreaterThan(0)
 
-    // 技能多选（第六个下拉）同款头像渲染
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[6])
+    // 技能多选（第七个下拉）同款头像渲染
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[8])
     await waitFor(() => {
       expect(document.querySelectorAll('.ant-select-item-option .ant-avatar img').length).toBeGreaterThan(0)
     })
@@ -1057,6 +1105,62 @@ describe('AppConfigSection（应用配置分区）', () => {
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
         expect.objectContaining({ agentApps: ['a2'] }),
+      ),
+    )
+  })
+
+  it('团队智能体绑定独立于子代理协作（D53）：协作关闭时绑定区照常渲染与保存，切换协作不清空绑定', async () => {
+    vi.mocked(getTeamAgents).mockResolvedValue({
+      myRole: 2,
+      items: [
+        { id: 'ta-1', teamId: 3, key: 'plan', name: '规划师 Plan', description: '任务规划', enabled: true, isSystem: true },
+      ],
+    } as never)
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      teamAgentIds: [],
+      // 子代理协作关闭（D53：绑定不再要求开启协作）
+      executionSettings: { subAgent: { enabled: false } },
+      myRole: 2,
+    })
+
+    renderSection()
+
+    // 绑定区不再收在子代理协作开关内：协作关闭时照常展示
+    expect(await screen.findByText('团队智能体')).toBeTruthy()
+
+    // 选择规划师 Plan 作为绑定项
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[3])
+    const option = (await screen.findAllByText('规划师 Plan'))[0]
+    fireEvent.click(option)
+
+    // 开启再关闭子代理协作：绑定保留（旧版关闭即清空绑定）
+    const subAgentItem = screen.getByText('子代理协作').closest('.ant-form-item')
+    const subAgentSwitch = subAgentItem?.querySelector('.ant-switch')
+    expect(subAgentSwitch).toBeTruthy()
+    fireEvent.click(subAgentSwitch!)
+    await waitFor(() => expect(subAgentSwitch).toHaveClass('ant-switch-checked'))
+    fireEvent.click(subAgentSwitch!)
+    await waitFor(() => expect(subAgentSwitch).not.toHaveClass('ant-switch-checked'))
+    expect(screen.getAllByText('规划师 Plan').length).toBeGreaterThan(0)
+
+    // 协作关闭的绑定照常保存（旧版本地拦截+后端 400）
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          teamAgentIds: ['ta-1'],
+          executionSettings: expect.objectContaining({
+            subAgent: expect.objectContaining({ enabled: false }),
+          }),
+        }),
       ),
     )
   })

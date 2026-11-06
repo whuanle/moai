@@ -53,7 +53,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 
         var config = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
-            .Select(x => new AppApprovalConfigRow(x.Skills, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps, x.ModelId, x.ModelIds, x.TeamAgentIds, x.DefaultTeamAgentId, x.TeamAgentDefs))
+            .Select(x => new AppApprovalConfigRow(x.Skills, x.Prompts, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps, x.ModelId, x.ModelIds, x.TeamAgentIds, x.DefaultTeamAgentId, x.TeamAgentDefs))
             .FirstOrDefaultAsync(cancellationToken);
 
         // 对话模型切换器数据源（与正式对话同一生效口径：已发布取快照，否则草稿）；
@@ -73,35 +73,53 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 
         var defaultSkillIds = ParseGuidList(config?.Skills);
 
-        // 应用默认技能目录（按配置顺序）；技能被删除/禁用时目录静默缺失，用户勾选随之失效
-        var defaultSkills = new List<AppUserSkillOption>();
-        if (defaultSkillIds.Count > 0)
-        {
-            var rows = await _databaseContext.Skills.AsNoTracking()
-                .Where(x => defaultSkillIds.Contains(x.Id) && !x.IsDisable)
-                .Select(x => new { x.Id, x.Key, x.Name, x.Description, x.IsSystem, x.TeamId, x.UseCount })
-                .ToDictionaryAsync(x => x.Id, cancellationToken);
-            defaultSkills = defaultSkillIds
-                .Where(rows.ContainsKey)
-                .Select(id => new AppUserSkillOption
-                {
-                    Id = rows[id].Id,
-                    Key = rows[id].Key,
-                    Name = rows[id].Name,
-                    Description = rows[id].Description,
-                    IsSystem = rows[id].IsSystem,
-                    TeamId = rows[id].TeamId,
-                    UseCount = rows[id].UseCount,
-                })
-                .ToList();
-        }
+        // 可选技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人（排除禁用；系统内置技能仅经绑定/市场入选），
+        // 排序：默认（配置顺序）→ 市场公开（使用次数倒序）→ 个人（使用次数倒序），按 id 去重
+        var skillRows = await _databaseContext.Skills.AsNoTracking()
+            .Where(x => !x.IsDisable
+                && (defaultSkillIds.Contains(x.Id)
+                    || x.IsPublic
+                    || (x.TeamId == 0 && !x.IsSystem && x.CreateUserId == request.ContextUserId)))
+            .Select(x => new AppUserSkillOption
+            {
+                Id = x.Id,
+                Key = x.Key,
+                Name = x.Name,
+                Description = x.Description,
+                IsSystem = x.IsSystem,
+                TeamId = x.TeamId,
+                IsPublic = x.IsPublic,
+                UseCount = x.UseCount,
+            })
+            .ToListAsync(cancellationToken);
+        var (skillOptions, defaultSkills) = OrderSkillPool(defaultSkillIds, skillRows);
 
-        var availableSkillIds = defaultSkills.Select(x => x.Id).ToHashSet();
+        // 可选专家候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（不含团队提示词：团队资源经管理员绑定才会进入候选），
+        // 排序同上（按被选用次数倒序）
+        var boundPromptIds = AppAgentConfigJson.ParseIntList(config?.Prompts);
+        var promptRows = await _databaseContext.Prompts.AsNoTracking()
+            .Where(x => boundPromptIds.Contains(x.Id)
+                || x.IsPublic
+                || (x.TeamId == 0 && x.CreateUserId == request.ContextUserId))
+            .Select(x => new AppUserPromptOption
+            {
+                PromptId = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                AvatarPath = x.AvatarPath,
+                TeamId = x.TeamId,
+                IsPublic = x.IsPublic,
+                UseCount = x.UseCount,
+            })
+            .ToListAsync(cancellationToken);
+        var promptOptions = OrderPromptPool(boundPromptIds, promptRows);
+
+        var availableSkillIds = skillOptions.Select(x => x.Id).ToHashSet();
 
         var userConfig = await _databaseContext.AppUserConfigs.AsNoTracking()
             .FirstOrDefaultAsync(x => x.AppId == request.AppId && x.UserId == request.ContextUserId, cancellationToken);
 
-        // 无用户配置行时默认技能全部启用；有配置行时勾选为默认技能与用户选择的交集（按默认技能顺序）
+        // 无用户配置行时默认技能（绑定目录）全部启用；有配置行时勾选=用户选择 ∩ 候选池（按池顺序）
         IReadOnlyList<Guid> selectedSkills;
         if (userConfig == null)
         {
@@ -110,7 +128,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         else
         {
             var userSkillSet = ParseGuidList(userConfig.Skills).ToHashSet();
-            selectedSkills = defaultSkillIds.Where(id => availableSkillIds.Contains(id) && userSkillSet.Contains(id)).ToList();
+            selectedSkills = skillOptions.Select(x => x.Id).Where(userSkillSet.Contains).ToList();
         }
 
         // 审批策略按发布快照解析（与对话闸口一致）：白名单资源与沙箱在审批模式下自动放行，前端据此免展示审批卡
@@ -155,6 +173,8 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             MemoryGlobalAllowed = memoryGlobalAllowed,
             Skills = selectedSkills,
             DefaultSkills = defaultSkills,
+            SkillOptions = skillOptions,
+            PromptOptions = promptOptions,
             ToolApprovalMode = string.IsNullOrWhiteSpace(userConfig?.ToolApprovalMode)
                 ? MoAI.AI.AppToolApprovalContract.ModeAuto
                 : userConfig!.ToolApprovalMode,
@@ -170,6 +190,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
     /// </summary>
     private sealed record AppApprovalConfigRow(
         string? Skills,
+        string? Prompts,
         string? ExecutionSettings,
         string? PublishedConfig,
         string? WikiIds,
@@ -181,6 +202,75 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         string? TeamAgentIds,
         Guid? DefaultTeamAgentId,
         string? TeamAgentDefs);
+
+    /// <summary>
+    /// 组装可选技能候选池与默认技能目录：默认（配置顺序）→ 市场公开（使用次数倒序）→ 个人（使用次数倒序），按 id 去重；
+    /// 默认目录按配置 id 顺序返回（已删除/停用项静默缺失）.
+    /// </summary>
+    private static (List<AppUserSkillOption> Pool, List<AppUserSkillOption> DefaultSkills) OrderSkillPool(
+        IReadOnlyList<Guid> defaultSkillIds, List<AppUserSkillOption> rows)
+    {
+        var rowMap = rows.ToDictionary(x => x.Id);
+        var defaultSkills = defaultSkillIds.Where(rowMap.ContainsKey).Select(id => rowMap[id]).ToList();
+        var defaultIds = defaultSkills.Select(x => x.Id).ToHashSet();
+
+        var pool = new List<AppUserSkillOption>(defaultSkills);
+        var seen = defaultIds;
+        foreach (var item in rows.Where(x => x.IsPublic && !defaultIds.Contains(x.Id)).OrderByDescending(x => x.UseCount ?? 0))
+        {
+            if (seen.Add(item.Id))
+            {
+                pool.Add(item);
+            }
+        }
+
+        foreach (var item in rows.Where(x => !x.IsPublic && !defaultIds.Contains(x.Id)).OrderByDescending(x => x.UseCount ?? 0))
+        {
+            if (seen.Add(item.Id))
+            {
+                pool.Add(item);
+            }
+        }
+
+        return (pool, defaultSkills);
+    }
+
+    /// <summary>
+    /// 组装可选专家候选池：绑定（配置顺序）→ 市场公开（使用次数倒序）→ 个人（使用次数倒序），按 id 去重.
+    /// </summary>
+    private static List<AppUserPromptOption> OrderPromptPool(IReadOnlyList<int> boundPromptIds, List<AppUserPromptOption> rows)
+    {
+        var rowMap = rows.ToDictionary(x => x.PromptId);
+        var boundIds = boundPromptIds.ToHashSet();
+
+        var pool = new List<AppUserPromptOption>();
+        var seen = new HashSet<int>();
+        foreach (var id in boundPromptIds)
+        {
+            if (rowMap.TryGetValue(id, out var item) && seen.Add(id))
+            {
+                pool.Add(item);
+            }
+        }
+
+        foreach (var item in rows.Where(x => x.IsPublic && !boundIds.Contains(x.PromptId)).OrderByDescending(x => x.UseCount))
+        {
+            if (seen.Add(item.PromptId))
+            {
+                pool.Add(item);
+            }
+        }
+
+        foreach (var item in rows.Where(x => !x.IsPublic && !boundIds.Contains(x.PromptId)).OrderByDescending(x => x.UseCount))
+        {
+            if (seen.Add(item.PromptId))
+            {
+                pool.Add(item);
+            }
+        }
+
+        return pool;
+    }
 
     /// <summary>
     /// 解析团队智能体切换器选项：已发布且快照携带内嵌定义时按定义回显（Enabled 恒 true，发布后编辑不影响线上），

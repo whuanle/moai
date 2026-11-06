@@ -37,6 +37,8 @@ export interface ChatMessageListProps {
   onOpenUiTool?: (messageId: string, toolCall: ToolCallDisplay) => void
   /** 当前侧边栏展示的 ui 工具调用 id（对应卡片高亮） */
   activeUiToolId?: string
+  /** 子智能体档案（key → 展示名/头像）：子智能体嵌套活动卡渲染用，页面层从 userconfig 构建 */
+  subAgentProfiles?: Record<string, { name?: string; avatar?: string }>
   style?: CSSProperties
 }
 
@@ -99,11 +101,17 @@ function AttachmentChips({ attachments }: { attachments: ParsedAttachment[] }) {
 /**
  * 已完成工具调用的折叠列表：单条直接展示明细，多条默认收缩为一行摘要（点击展开/收起）.
  */
-function ToolCallGroup({ calls }: { calls: ToolCallDisplay[] }) {
+function ToolCallGroup({
+  calls,
+  subAgentProfiles,
+}: {
+  calls: ToolCallDisplay[]
+  subAgentProfiles?: Record<string, { name?: string; avatar?: string }>
+}) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   if (calls.length === 1) {
-    return <ToolCallCard toolCall={calls[0]} />
+    return <ToolCallCard toolCall={calls[0]} subAgentProfiles={subAgentProfiles} />
   }
   return (
     <div className="moai-chat__tool-group">
@@ -115,7 +123,7 @@ function ToolCallGroup({ calls }: { calls: ToolCallDisplay[] }) {
       {open && (
         <div className="moai-chat__tool-group-body">
           {calls.map((toolCall) => (
-            <ToolCallCard key={toolCall.id} toolCall={toolCall} />
+            <ToolCallCard key={toolCall.id} toolCall={toolCall} subAgentProfiles={subAgentProfiles} />
           ))}
         </div>
       )}
@@ -140,6 +148,7 @@ export function ChatMessageList({
   onToolReject,
   onOpenUiTool,
   activeUiToolId,
+  subAgentProfiles,
   style,
 }: ChatMessageListProps) {
   const { t } = useTranslation()
@@ -201,7 +210,7 @@ export function ChatMessageList({
                   const active = toolCalls.filter((tc) => ACTIVE_TOOL_STATUSES.has(tc.status))
                   return (
                     <div key={m.id} className="moai-chat__turn">
-                      {completed.length > 0 && <ToolCallGroup calls={completed} />}
+                      {completed.length > 0 && <ToolCallGroup calls={completed} subAgentProfiles={subAgentProfiles} />}
                       {uiCalls.length > 0 && (
                         <div className="moai-chat__ui-tools">
                           {uiCalls.map((toolCall) => (
@@ -234,6 +243,7 @@ export function ChatMessageList({
                             <ToolCallCard
                               key={toolCall.id}
                               toolCall={toolCall}
+                              subAgentProfiles={subAgentProfiles}
                               onApprove={onToolApprove ? () => onToolApprove(m.id, toolCall) : undefined}
                               onReject={onToolReject ? () => onToolReject(m.id, toolCall) : undefined}
                             />

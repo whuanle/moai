@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { DeleteOutlined, MessageOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tag, theme } from 'antd'
+import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tag, theme, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card as DSCard, feedback } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { radius, spacing } from '@/design-system/theme'
 import {
   getAppAgentConfig,
   getApps,
@@ -22,6 +22,7 @@ import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aicha
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
 import { getTeamAgents, type TeamAgentListItem } from '@/api/team-agent'
 import { getSkillOptions, type SkillOption } from '@/api/skills'
+import { getPromptMarketList, getTeamPrompts, type PromptItem } from '@/api/prompt'
 import { getWikis, type WikiItem } from '@/api/wiki'
 import { getKnowledgeGraphs, type KnowledgeGraphItem } from '@/api/knowledgeGraph'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -232,6 +233,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [agentAppIds, setAgentAppIds] = useState<string[]>([])
   const [agentAppOptions, setAgentAppOptions] = useState<AppItem[]>([])
   const [skillIds, setSkillIds] = useState<string[]>([])
+  const [promptIds, setPromptIds] = useState<number[]>([])
   const [sandboxEnabled, setSandboxEnabled] = useState(false)
   const [sandboxTimeout, setSandboxTimeout] = useState<number | null>(null)
   const [sandboxRenew, setSandboxRenew] = useState(true)
@@ -260,7 +262,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [subAgentEnabled, setSubAgentEnabled] = useState(false)
   const [subAgentTimeout, setSubAgentTimeout] = useState<number | null>(null)
   const [subAgentResultMaxChars, setSubAgentResultMaxChars] = useState<number | null>(null)
-  // 团队智能体绑定（team_agent，子代理协作下方）：多选 ≤20，多选时对话端可切换生效者；绑定须开启子代理协作
+  // 团队智能体绑定（team_agent，独立分区）：多选 ≤20，多选时对话端可切换生效者；绑定独立于子代理协作（app sdd D53）
   const [teamAgentIds, setTeamAgentIds] = useState<string[]>([])
   const [defaultTeamAgentId, setDefaultTeamAgentId] = useState<string>()
   const [teamAgentOptions, setTeamAgentOptions] = useState<TeamAgentListItem[]>([])
@@ -268,6 +270,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   const [teamAgentEchoOptions, setTeamAgentEchoOptions] = useState<AppAgentConfig['teamAgents']>([])
   const [pluginOptions, setPluginOptions] = useState<TeamPluginItemType[]>([])
   const [skillOptions, setSkillOptions] = useState<SkillOption[]>([])
+  const [promptOptions, setPromptOptions] = useState<PromptItem[]>([])
   const [wikiOptions, setWikiOptions] = useState<WikiItem[]>([])
   const [graphOptions, setGraphOptions] = useState<KnowledgeGraphItem[]>([])
   const [availableModels, setAvailableModels] = useState<TeamAvailableModelItem[]>([])
@@ -324,6 +327,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         setWorkflowAppIds(config.workflowApps ?? [])
         setAgentAppIds(config.agentApps ?? [])
         setSkillIds(config.skills ?? [])
+        setPromptIds(config.prompts ?? [])
         const settings = config.executionSettings ?? {}
         setExecutionSettings(settings)
         setCompactionMode(settings.compactionMode === 'custom' ? 'custom' : 'auto')
@@ -396,7 +400,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
     if (!Number.isFinite(teamId) || teamId <= 0) return
     setOptionsLoading(true)
     try {
-      const [models, plugins, wikis, skills, apps, graphs, teamAgents] = await Promise.all([
+      const [models, plugins, wikis, skills, apps, graphs, teamAgents, teamPrompts, marketPrompts] = await Promise.all([
         getTeamAvailableModels(teamId),
         getTeamPlugins(teamId),
         getWikis(teamId),
@@ -408,12 +412,23 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         getKnowledgeGraphs(teamId),
         // 团队智能体绑定候选：本团队启用中的智能体（含系统内置规划师/构建师）
         getTeamAgents(teamId),
+        // 可选专家绑定候选：本团队提示词 ∪ 市场公开提示词（与用户侧候选池的绑定/市场来源一致）
+        getTeamPrompts(teamId),
+        getPromptMarketList(),
       ])
       setAvailableModels(models.filter((item) => item.aiModelId))
       setPluginOptions(
         (plugins.items ?? []).filter((item) => item.pluginId && String(item.pluginId) !== EMPTY_GUID),
       )
       setSkillOptions(skills)
+      // 绑定候选去重：团队在前、市场公开在后（同 id 只保留一次）
+      const seenPromptIds = new Set<number>()
+      setPromptOptions([...(teamPrompts ?? []), ...(marketPrompts ?? [])].filter((p) => {
+        const id = Number(p.promptId ?? 0)
+        if (!id || seenPromptIds.has(id)) return false
+        seenPromptIds.add(id)
+        return true
+      }))
       setWikiOptions(wikis.items ?? [])
       setGraphOptions((graphs.items ?? []).filter((item) => item.mode === 'managed' && item.kgId != null))
       setWorkflowAppOptions(
@@ -570,11 +585,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
       return
     }
     if (!isExternal && !validateSandboxLimits()) return
-    // 团队智能体绑定依赖子代理协作派发链路（后端保存强校验同语义），保存前本地提示
-    if (teamAgentIds.length > 0 && !subAgentEnabled) {
-      feedback.error(t('appManage.teamAgentRequireSubAgent'))
-      return
-    }
+    // 团队智能体绑定与子代理协作解耦（app sdd D53）：绑定只代表主智能体提示词生效，不再要求开启协作
     setSavingConfig(true)
     try {
       // 内容脱敏随「保存设置」一并提交：security 接口即时生效（校验/提交失败抛错，中断整体保存）
@@ -666,6 +677,7 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
         agentApps: agentAppIds,
         // 外部应用不支持技能：固定空列表（后端强校验拒绝非空）
         skills: isExternal ? [] : skillIds,
+        prompts: promptIds,
         openingStatement,
         openingStatementEnabled: openingEnabled,
         quickInputs: quickInputs.map((x) => x.trim()).filter(Boolean),
@@ -747,6 +759,30 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
   }
 
   const skillSelectOptions = skillOptions.map(renderSkillOption)
+
+  /** 专家提示词选项统一渲染：头像 + 名称 + 来源后缀（市场公开/本团队）；title 字符串供搜索过滤 */
+  const renderPromptOption = (item: PromptItem): { value: number; label: ReactNode; title: string } => {
+    const name = item.name || '-'
+    const suffix = item.isPublic
+      ? t('appManage.promptSourceMarket')
+      : (item.teamId ?? 0) > 0
+        ? t('appManage.promptSourceTeam')
+        : ''
+    return {
+      value: Number(item.promptId),
+      title: name,
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
+          <Avatar shape="square" size={18} src={resolveStorageUrl(item.avatarPath ?? null) || undefined} alt={name}>
+            {name.slice(0, 1).toUpperCase()}
+          </Avatar>
+          <span>{suffix ? `${name}（${suffix}）` : name}</span>
+        </span>
+      ),
+    }
+  }
+
+  const promptSelectOptions = promptOptions.map(renderPromptOption)
 
   /** 应用类选项统一渲染：头像（存储路径解析，无头像回退首字母）+ 名称；title 字符串供搜索过滤 */
   const renderAppOption = (item: AppItem): { value: string; label: ReactNode; title: string } => {
@@ -1161,23 +1197,52 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             />
                           </Form.Item>
                           {compactionMode === 'auto' ? (
-                            <Alert
-                              type="info"
-                              showIcon
-                              message={
-                                compactionBudget
-                                  ? t('appManage.compactionAutoComputed', {
-                                      budget: formatModelTokens(compactionBudget),
-                                      tool: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.toolEvictionRatio ?? 0.5))),
-                                      trigger: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.summarizeTriggerRatio ?? 0.8))),
-                                      target: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.summarizeTargetRatio ?? 0.5))),
-                                      hard: formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.truncationRatio ?? 0.95))),
-                                    })
-                                  : t('appManage.compactionAutoFallback')
-                              }
-                              description={t('appManage.compactionAutoHint')}
-                              style={{ marginBottom: spacing.sm }}
-                            />
+                            compactionBudget ? (
+                              // 自动模式预算面板：指标带替代整段文字 Alert，标签+数值横向排布、预算项强调，一眼可读
+                              <div
+                                style={{
+                                  marginBottom: spacing.sm,
+                                  padding: `${spacing.xs}px ${spacing.md}px`,
+                                  border: `1px solid ${token.colorBorderSecondary}`,
+                                  borderRadius: radius.default,
+                                  background: token.colorFillQuaternary,
+                                }}
+                              >
+                                <Space size={[spacing.lg, spacing.xs]} wrap>
+                                  {(
+                                    [
+                                      { key: 'budget', label: t('appManage.compactionBudgetLabel'), value: formatModelTokens(compactionBudget), strong: true },
+                                      { key: 'tool', label: t('appManage.compactionToolFoldLabel'), value: `~${formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.toolEvictionRatio ?? 0.5)))}` },
+                                      { key: 'trigger', label: t('appManage.compactionTriggerLabel'), value: `~${formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.summarizeTriggerRatio ?? 0.8)))}` },
+                                      { key: 'target', label: t('appManage.compactionCompactLabel'), value: `~${formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.summarizeTargetRatio ?? 0.5)))}` },
+                                      { key: 'hard', label: t('appManage.compactionHardLabel'), value: `~${formatModelTokens(Math.floor(compactionBudget * (compactionDefaults?.truncationRatio ?? 0.95)))}` },
+                                    ] as { key: string; label: string; value: string; strong?: boolean }[]
+                                  ).map((item) => (
+                                    <div key={item.key} style={{ display: 'inline-flex', alignItems: 'baseline', gap: spacing.xs }}>
+                                      <span style={{ fontSize: 12, color: token.colorTextTertiary, whiteSpace: 'nowrap' }}>{item.label}</span>
+                                      <span
+                                        style={{
+                                          fontSize: item.strong ? 16 : 14,
+                                          fontWeight: item.strong ? 600 : 500,
+                                          color: item.strong ? token.colorPrimary : token.colorText,
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {item.value}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </Space>
+                                <div style={{ marginTop: spacing.xs, fontSize: 12, color: token.colorTextTertiary, lineHeight: 1.6 }}>
+                                  {t('appManage.compactionAutoHint')}
+                                </div>
+                              </div>
+                            ) : (
+                              // 无窗口元数据兜底：一行次要文本说明固定值
+                              <div style={{ marginBottom: spacing.sm, fontSize: 12, color: token.colorTextTertiary, lineHeight: 1.6 }}>
+                                {t('appManage.compactionAutoFallback')}
+                              </div>
+                            )
                           ) : (
                             <Row gutter={spacing.md} style={{ marginBottom: spacing.sm }}>
                               <Col xs={24} md={12}>
@@ -1244,56 +1309,9 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                           </Form.Item>
                         )}
                         <Divider style={{ margin: `${spacing.md}px 0` }} />
-                        <Form.Item
-                          label={t('appManage.subAgentSection')}
-                          valuePropName="checked"
-                          extra={t('appManage.subAgentHint')}
-                          style={{ marginBottom: spacing.sm }}
-                        >
-                          <Switch
-                            checked={subAgentEnabled}
-                            onChange={(checked) => {
-                              setSubAgentEnabled(checked)
-                              // 关闭协作时同步清空团队智能体绑定（绑定依赖协作派发链路，后端强校验同语义）
-                              if (!checked) {
-                                setTeamAgentIds([])
-                                setDefaultTeamAgentId(undefined)
-                              }
-                            }}
-                            disabled={isExternal}
-                          />
-                        </Form.Item>
-                        {subAgentEnabled && !isExternal && (
+                        {/* 团队智能体绑定独立于子代理协作（app sdd D53）：绑定即主智能体提示词注入主会话并可在对话端切换；子智能体派发另需开启协作 */}
+                        {!isExternal && (
                           <>
-                            <Row gutter={spacing.md}>
-                              <Col xs={24} md={12}>
-                                <Form.Item label={t('appManage.subAgentTimeout')} style={{ marginBottom: spacing.sm }}>
-                                  <InputNumber
-                                    min={30}
-                                    max={1800}
-                                    precision={0}
-                                    style={{ width: '100%' }}
-                                    value={subAgentTimeout ?? undefined}
-                                    onChange={(value) => setSubAgentTimeout(typeof value === 'number' ? value : null)}
-                                    placeholder="180"
-                                    addonAfter={t('appManage.sandboxSeconds')}
-                                  />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12}>
-                                <Form.Item label={t('appManage.subAgentResultMaxChars')} style={{ marginBottom: spacing.sm }}>
-                                  <InputNumber
-                                    min={500}
-                                    max={100000}
-                                    precision={0}
-                                    style={{ width: '100%' }}
-                                    value={subAgentResultMaxChars ?? undefined}
-                                    onChange={(value) => setSubAgentResultMaxChars(typeof value === 'number' ? value : null)}
-                                    placeholder="8000"
-                                  />
-                                </Form.Item>
-                              </Col>
-                            </Row>
                             <Form.Item
                               label={t('appManage.teamAgentSection')}
                               extra={t('appManage.teamAgentHint')}
@@ -1347,6 +1365,60 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                 />
                               </Form.Item>
                             )}
+                            <Divider style={{ margin: `${spacing.md}px 0` }} />
+                          </>
+                        )}
+                        <Form.Item
+                          label={t('appManage.subAgentSection')}
+                          valuePropName="checked"
+                          extra={t('appManage.subAgentHint')}
+                          style={{ marginBottom: spacing.sm }}
+                        >
+                          <Switch
+                            checked={subAgentEnabled}
+                            onChange={(checked) => setSubAgentEnabled(checked)}
+                            disabled={isExternal}
+                          />
+                        </Form.Item>
+                        {subAgentEnabled && !isExternal && (
+                          <>
+                            <Row gutter={spacing.md}>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.subAgentTimeout')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={30}
+                                    max={1800}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={subAgentTimeout ?? undefined}
+                                    onChange={(value) => setSubAgentTimeout(typeof value === 'number' ? value : null)}
+                                    placeholder="180"
+                                    addonAfter={t('appManage.sandboxSeconds')}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Form.Item label={t('appManage.subAgentResultMaxChars')} style={{ marginBottom: spacing.sm }}>
+                                  <InputNumber
+                                    min={500}
+                                    max={100000}
+                                    precision={0}
+                                    style={{ width: '100%' }}
+                                    value={subAgentResultMaxChars ?? undefined}
+                                    onChange={(value) => setSubAgentResultMaxChars(typeof value === 'number' ? value : null)}
+                                    placeholder="8000"
+                                  />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+                            {teamAgentIds.length > 0 && (
+                              <Typography.Paragraph
+                                type="secondary"
+                                style={{ marginBottom: spacing.sm }}
+                              >
+                                {t('appManage.subAgentDispatchHint')}
+                              </Typography.Paragraph>
+                            )}
                           </>
                         )}
                       </Form>
@@ -1371,6 +1443,21 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                             maxLength={4000}
                             showCount
                             rows={8}
+                          />
+                        </Form.Item>
+                        <Form.Item label={t('appManage.boundPrompts')} extra={t('appManage.boundPromptsHint')}>
+                          <Select
+                            mode="multiple"
+                            allowClear
+                            showSearch
+                            optionFilterProp="title"
+                            style={{ width: '100%' }}
+                            placeholder={t('appManage.boundPromptsPlaceholder')}
+                            loading={optionsLoading}
+                            value={promptIds}
+                            onChange={setPromptIds}
+                            options={promptSelectOptions}
+                            notFoundContent={optionsLoading ? <Spin size="small" /> : t('appManage.boundPromptsEmpty')}
                           />
                         </Form.Item>
                         <Form.Item label={t('appManage.openingStatement')} valuePropName="checked" extra={t('appManage.openingStatementHint')}>

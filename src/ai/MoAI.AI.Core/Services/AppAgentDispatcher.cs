@@ -95,23 +95,55 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
         var enumerator = inner!.RunStreamingAsync(messages, session, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
         await using (enumerator.ConfigureAwait(false))
         {
+            // 子代理过程旁路通道（app sdd D53）：子代理工具执行期间内层流挂起，合并循环竞争读出进度事件，
+            // 以合成更新注入同一 SSE 流（实时嵌套活动卡的来源）；无子代理派发时通道恒空，行为与直通一致
+            var progressChannel = SubAgentProgressChannel.CreateChannel();
+            Task<bool>? moveNextTask = null;
             while (true)
             {
                 AgentResponseUpdate? update = null;
                 string? runError = null;
+                var runFinished = false;
                 try
                 {
-                    if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    if (moveNextTask == null)
                     {
-                        break;
+                        // 每次内层 MoveNextAsync 前登记发布通道（异步迭代器的 EC 修改不跨段保留）：
+                        // 该次等待子树（MAF 函数调用循环 → 工具执行 → SubAgentInvoker.Publish）由此看到通道
+                        SubAgentProgressChannel.SetPublisher(progressChannel);
+                        moveNextTask = enumerator.MoveNextAsync().AsTask();
                     }
 
-                    update = enumerator.Current;
+                    var readTask = progressChannel.Reader.WaitToReadAsync(cancellationToken).AsTask();
+                    var completed = await Task.WhenAny(moveNextTask, readTask).ConfigureAwait(false);
+                    if (completed == moveNextTask)
+                    {
+                        if (!await moveNextTask.ConfigureAwait(false))
+                        {
+                            runFinished = true;
+                        }
+                        else
+                        {
+                            update = enumerator.Current;
+                            moveNextTask = null;
+                        }
+                    }
+                    else if (cancellationToken.IsCancellationRequested)
+                    {
+                        // 通道等待被取消（请求断开）：走统一失败文案收尾，避免空转
+                        runError = Describe(new OperationCanceledException(cancellationToken));
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Agent 运行失败（run 阶段）.");
                     runError = Describe(ex);
+                }
+
+                // 冲刷窗口期写入的进度事件（先于本轮内层块产出，保持时间顺序）；yield 不可位于带 catch 的 try 内，故置于循环体
+                while (progressChannel.Reader.TryRead(out var evt))
+                {
+                    yield return SubAgentProgressChannel.ToUpdate(evt);
                 }
 
                 if (runError != null)
@@ -120,7 +152,15 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                     yield break;
                 }
 
-                yield return update!;
+                if (runFinished)
+                {
+                    break;
+                }
+
+                if (update != null)
+                {
+                    yield return update;
+                }
             }
         }
     }

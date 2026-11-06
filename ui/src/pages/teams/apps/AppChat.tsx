@@ -42,11 +42,12 @@ import {
   type AppSessionItem,
   type AppUserTeamAgentOption,
 } from '@/api/app'
-import { getMyPrompts, getTeamPrompts, getTopUsedPrompts, type PromptItem } from '@/api/prompt'
+import type { PromptItem } from '@/api/prompt'
 import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type ToolApprovalMode } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage, type ToolCallDisplay } from './chat/ChatMessageList'
 import { ChatComposer } from './chat/ChatComposer'
+import { applySubAgentEvent } from './chat/subAgentTrace'
 import { useChatAttachments } from './chat/useChatAttachments'
 import { parseHistoryToolCalls } from './chat/historyToolCalls'
 import {
@@ -183,6 +184,15 @@ export function AppChat() {
   const appAvatar = resolveStorageUrl(detail?.avatarPath ?? null)
   const userName = userInfo?.nickName || userInfo?.userName || 'U'
   const userAvatar = resolveStorageUrl(userInfo?.avatar ?? null)
+  // 子智能体嵌套活动卡档案：key → 展示名/头像（userconfig 绑定列表；未绑定 key 回退 key 显示）
+  const subAgentProfiles = useMemo(() => {
+    const profiles: Record<string, { name?: string; avatar?: string }> = {}
+    for (const agent of chatTeamAgents) {
+      if (!agent.key) continue
+      profiles[agent.key] = { name: agent.name, avatar: resolveStorageUrl(agent.avatarObjectKey ?? null) ?? undefined }
+    }
+    return profiles
+  }, [chatTeamAgents])
 
   // 流程应用分支：一轮对话 = 一次流程执行，无专家提示词/技能/工具（后端不装配），相关请求与 UI 一并裁剪
   const isWorkflow = detail?.appType === 'workflow'
@@ -251,6 +261,8 @@ export function AppChat() {
     setSendingBySession({})
     setRunStates({})
     setContextUsageBySession({})
+    setExperts([])
+    setTopExperts([])
     setLoading(true)
     getAppDetail(appId)
       .then((res) => setDetail(res as unknown as AppDetailLite))
@@ -273,6 +285,21 @@ export function AppChat() {
         savedSkillsRef.current = cfg.skills
         setSelectedPromptId((prev) => (prev === 0 ? cfg.promptId : prev))
         setApprovalMode(cfg.toolApprovalMode)
+        // 可选专家候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（后端聚合，不含团队提示词）；
+        // 热门专家 = 池内被选用次数最多的前 10 个，仅在欢迎态输入框下方展示
+        const promptPool = (cfg.promptOptions ?? []).map(
+          (p): PromptItem => ({
+            promptId: p.promptId,
+            name: p.name,
+            description: p.description,
+            avatarPath: p.avatarPath,
+            teamId: p.teamId,
+            isPublic: p.isPublic,
+            useCount: p.useCount,
+          }),
+        )
+        setExperts(promptPool)
+        setTopExperts([...promptPool].sort((a, b) => (b.useCount ?? 0) - (a.useCount ?? 0)).slice(0, 10))
         // 模型切换器数据源：应用可选模型 ∩ 团队可用 conversation 模型（已停用/取消授权的模型不出现）；
         // 默认选择=应用默认模型，不在可用集合时落回第一项（后端运行时同样回退默认模型）
         const selectableIds = new Set(cfg.modelIds ?? [])
@@ -312,18 +339,6 @@ export function AppChat() {
       })
       .catch(() => undefined)
   }, [agentFeatures, appId, teamId])
-
-  useEffect(() => {
-    if (!teamId || !agentFeatures) return
-    // 可用专家 = 本人个人提示词 + 当前团队提示词；加载失败静默，应用设置面板展示空态
-    Promise.all([getMyPrompts(), getTeamPrompts(teamId).catch(() => [])])
-      .then(([mine, team]) => setExperts([...mine, ...team]))
-      .catch(() => undefined)
-    // 热门专家 = 范围内使用次数最多的前 10 个提示词，仅在欢迎态输入框下方展示
-    getTopUsedPrompts(teamId, 10)
-      .then((items) => setTopExperts(items))
-      .catch(() => undefined)
-  }, [teamId, agentFeatures])
 
   useEffect(() => {
     const node = scrollRef.current
@@ -395,6 +410,11 @@ export function AppChat() {
       const items = await getAppSessionMessages(sessionId)
       // 历史返回前该会话已开始新一轮流式（用户切走又快速发消息）：以流式现场为准
       if (agentsRef.current.has(sessionId)) return
+      // 结论级回放：role=tool 行按 toolCallId 携带工具结果，回填到对应调用卡（子智能体卡展示为最终结论）
+      const toolResults = new Map<string, string>()
+      for (const m of items) {
+        if (m.role === 'tool' && m.toolCallId && m.content) toolResults.set(m.toolCallId, m.content)
+      }
       setMessagesBySession((prev) => ({
         ...prev,
         [sessionId]: items
@@ -403,7 +423,10 @@ export function AppChat() {
             id: String(m.messageId ?? crypto.randomUUID()),
             role: m.role === 'user' ? 'user' : 'assistant',
             content: m.content ?? '',
-            toolCalls: parseHistoryToolCalls(m.toolCalls),
+            toolCalls: parseHistoryToolCalls(m.toolCalls)?.map((tc) => {
+              const result = toolResults.get(tc.id)
+              return result ? { ...tc, result } : tc
+            }),
           })),
       }))
     } catch {
@@ -643,6 +666,10 @@ export function AppChat() {
         },
         onWorkflowEvent: (evt) => {
           setRunStates((prev) => (prev[sessionId] ? { ...prev, [sessionId]: applyWorkflowEvent(prev[sessionId], evt) } : prev))
+        },
+        onSubAgentEvent: (evt) => {
+          // 子智能体派发过程：started 绑定到同名运行中派发卡，后续事件按 traceId 归并进该卡 trace
+          patchMessages((prev) => applySubAgentEvent(prev, assistantId, evt))
         },
         onToolCall: (info) => {
           // 前端展示工具：流式开始即建占位卡（生成中），参数流结束回填内容
@@ -1161,6 +1188,7 @@ export function AppChat() {
                 appAvatar={appAvatar}
                 userName={userName}
                 userAvatar={userAvatar}
+                subAgentProfiles={subAgentProfiles}
                 onCopy={(text) => void copyMessage(text)}
                 onToolApprove={(messageId, toolCall) => void decideTool(messageId, toolCall, true)}
                 onToolReject={(messageId, toolCall) => void decideTool(messageId, toolCall, false)}

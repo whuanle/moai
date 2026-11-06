@@ -82,7 +82,7 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
 
         if (request.PromptId != 0)
         {
-            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, app.TeamId, request.ContextUserId, cancellationToken);
+            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, request.PromptId, app.Id, request.ContextUserId, cancellationToken);
 
             // 选用专家 +1 使用次数（Redis 计数，统计模块批量落库；top_used 推荐依据）；可用性已在上面校验
             await _promptUsageCounter.IncrementAsync(request.PromptId, cancellationToken);

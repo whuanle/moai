@@ -2034,8 +2034,8 @@ Scenario: 配置页多选与默认模型、对话端切换器（前端）
 @AP-S150 @auto:e2e
 Scenario: 绑定保存校验
   Given 团队管理员配置 Agent 应用绑定团队智能体（team_agent_ids 去重 ≤20，须为本团队启用中智能体）
-  When 绑定任一智能体但子代理协作未开启（生效口径=请求携带的 subAgent 优先，未携带看库中现值）
-  Then 400「绑定团队智能体后需开启子代理协作」
+  When 绑定任一智能体而子代理协作未开启
+  Then 保存 200（D53 解耦：绑定只代表主智能体提示词注入主会话，不再要求开启子代理协作；前端关闭协作亦不再清空绑定）
   When defaultTeamAgentId 不在列表内 / 智能体 id 伪造或跨团队 / 智能体已停用 / 应用为外部应用
   Then 分别 400（默认必须在列表 / 包含不存在已停用或无权使用 / 外部应用不能绑定团队智能体）
   When 智能体主智能体声明的插件/知识库/知识图谱依赖未绑定到应用
@@ -2091,6 +2091,72 @@ Scenario: 配置页绑定 UI
 ```gherkin
 @AP-S156 @auto:vitest
 Scenario: 对话端智能体切换器
-  Then 仅绑定智能体 ≥2 个时展示切换器（输入区工具栏、模型切换器旁、方形头像 option、关闭态显示当前生效者名称）；单选/未绑定不展示（后端直接生效）
-  And 每轮对话请求携带 X-Moai-Team-Agent-Id；调试面板同构复用
+  Then 仅绑定智能体 ≥2 个时展示切换器（输入区工具栏、模型切换器右侧、方形头像 option、关闭态显示当前生效者名称）；单选/未绑定不展示（后端直接生效）
+  And 每轮对话请求携带 X-Moai-Team-Agent-Id；调试面板同构复用，且切换器选项按应用草稿绑定的启用中智能体（D53 修正：调试对话按草稿装配，快照口径会出现草稿生效但不入切换器的不一致）；正式对话页按发布快照口径（userconfig，发布后生效）
+```
+
+```gherkin
+@AP-S157 @auto:e2e
+Scenario: 绑定不开协作的运行时语义与派发名册（D53）
+  Given 应用绑定团队智能体且 executionSettings.subAgent.enabled=false（保存 200，AP-S150）
+  When 对话（正式/调试）
+  Then 系统提示词含「[团队智能体：{名称}]」主提示词块，并注明未开启协作、无子智能体可派发、禁止虚构委派
+  And list_tools 不披露任何 subagent_ 前缀派发工具（协作关闭=仅主智能体生效）
+  And X-Moai-Team-Agent-Id 切换与 last_team_agent_id 落库同 D52 口径（不依赖协作开关）
+  When 开启协作重新保存并对话
+  Then 系统提示词追加「[可派发子智能体]」名册（名称/工具名 subagent_{key}/职责+派发说明），具名派发工具注册（list_tools 可见）
+```
+
+```gherkin
+@AP-S158 @auto:e2e
+Scenario: 子智能体过程实时事件 moai.subagent（D53）
+  Given 开启子代理协作且绑定含子智能体的团队智能体
+  When 主代理派发任一子智能体（SSE 对话轮）
+  Then 流内出现 name=moai.subagent 的 CustomEvent（媒体类型 vnd.moai.subagent+json），序列含 started →（text / tool_call / tool_result 若干）→ completed
+  And started 携带 traceId/agentKey/agentName；text 为子会话正文增量（2 万字符转发预算内）；tool_call 的 toolName 已解析 call_tool 内层真实名；tool_result 携带截断结果摘要；completed 携带最终结论（截 2000 字）与耗时
+  And 事件由派发器合并循环注入同一 SSE（窗口期事件先于内层块冲刷，顺序保持）；无派发轮不产生该事件
+  And 子任务超时以 timeout 终态收敛（带部分结果），执行异常以 failed 终态收敛
+  And 非流式管线（ACP/A2A/IM 渠道）不产生该事件（通道未登记，发布静默丢弃）
+```
+
+```gherkin
+@AP-S159 @auto:vitest
+Scenario: 子智能体嵌套活动卡与结论级回放（D53）
+  Then 派发卡（subagent_*/spawn_subagent）渲染 SubAgentTraceCard：头像/名称/子智能体徽标/状态（执行中/已完成/超时/失败）/耗时
+  And 运行中默认展开：任务（args.task）+ 嵌套工具步骤（名称+结果摘要）+ 流式正文；完成折叠为一行结论摘要可展开回看
+  And 审批模式下派发卡挂起时保留批准/拒绝操作
+  And 历史回放无实时 trace（事件不持久化）：role=tool 行按 toolCallId 回填结果，buildHistoryTrace 合成 trace 仅任务+最终结论折叠展示；普通工具卡渲染不变
+  And 配置页团队智能体绑定区独立分区固定渲染（协作关闭仍展示、外部应用隐藏），子代理协作区仅开关+超时+结果上限（D53 布局，vitest 覆盖绑定不清空与协作关闭保存）
+```
+
+
+```gherkin
+@AP-S160 @auto:e2e
+Scenario: 应用设置候选池=应用绑定∪市场公开∪本人个人（不含团队全量）
+  Given 应用配置已绑定技能目录与可选专家（app_agent_config.skills/prompts），市场上另有公开技能与提示词，团队成员自有个人技能与提示词
+  When 用户打开对话端「应用设置」面板（userconfig 查询）
+  Then 专家候选=绑定专家 ∪ 市场公开提示词 ∪ 本人个人提示词；技能候选=绑定技能 ∪ 市场公开技能（未禁用）∪ 本人个人技能（非系统内置）
+  And 团队技能/团队提示词不因团队成员身份自动进入候选（未绑定的团队资源不在池内，接口不按团队维度读全量）
+  And 池排序：绑定（配置顺序）→ 市场公开（useCount 倒序）→ 个人（useCount 倒序），按 id 去重；来源标签 市场/团队/个人
+  And 无用户配置行时勾选=绑定技能全集；有配置行时勾选=用户选择 ∩ 候选池；市场/个人候选默认不勾选
+  And 热门专家=池内 useCount 前 10（对话端欢迎态），前端不再单独拉团队提示词/top_used 团队口径
+```
+
+```gherkin
+@AP-S161 @auto:e2e
+Scenario: 管理员绑定可选专家（agent-config prompts）
+  When 团队 Admin+ 保存 agent-config 携带 prompts（int 数组，prompt.id）
+  Then 保存校验：须为市场公开或本团队提示词（他人个人提示词 400「包含不存在或无权使用的提示词」），去重；null/缺省保持原值（旧前端兼容）
+  And agent-config 回显 prompts；配置页「提示词」分组提供可选专家多选（候选=本团队 ∪ 市场公开，团队/市场来源后缀，按 title 过滤）
+  And 用户侧 userconfig 的 promptOptions 即含绑定专家（与技能目录同口径随配置行下发，发布前后均按草稿行回显，弱依赖不阻断）
+```
+
+```gherkin
+@AP-S162 @auto:e2e
+Scenario: 用户侧专家/技能选择与运行时校验同口径收敛
+  When 用户保存 userconfig（promptId/skills）或创建会话绑定专家、会话切换专家
+  Then 可用口径=应用绑定 ∪ 市场公开 ∪ 本人个人：绑定/市场/个人均放行，未绑定团队提示词 404、未绑定团队技能 400、他人个人提示词 404、他人个人技能 400
+  And 技能校验容忍存量：绑定 id 按配置 JSON 原样放行（已删除/停用由读取与运行时静默收敛）
+  And 运行时技能装配（AppAgentFactory）=用户勾选 ∩（绑定 ∪ 市场公开 ∪ 本人个人，排除禁用），绑定在前保持配置顺序、其余按勾选顺序追加；调试会话仍按绑定全集（应用默认视角）
+  And 会话绑定专家走同一口径（SessionPromptHelper，个人/市场/绑定放行），选用专家 +1 useCount 不变
 ```

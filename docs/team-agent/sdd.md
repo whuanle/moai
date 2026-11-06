@@ -2,8 +2,8 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../team/sdd.md](../team/sdd.md) ｜ 证据：[local-dev/team-agent-e2e.mjs](../../local-dev/team-agent-e2e.mjs)
 
-- 日期：2026-11-05（同日更新：系统内置智能体——规划师/构建师自动种入；**Phase 2 应用绑定与运行时派发落地**，见 [../app/sdd.md](../app/sdd.md) D52）
-- 状态：**Phase 1 管理面已实现**（数据库 + API + 前端团队菜单 + 内置 plan/build 种子）；**Phase 2 应用绑定与运行时派发已实现**（Agent 应用配置绑定 `team_agent_ids/default_team_agent_id`、发布快照内嵌定义 `team_agent_defs`、`X-Moai-Team-Agent-Id` 切换、具名 `subagent_{key}` 派发与声明即边界白名单——设计以 [../app/sdd.md](../app/sdd.md) D52 为真源，行为 [@AP-S150](../app/bdd.md#ap-s150)~[@AP-S156](../app/bdd.md#ap-s156)，E2E `local-dev/team-agent-app-e2e.mjs`）
+- 日期：2026-11-05（同日更新：系统内置智能体——规划师/构建师自动种入；**Phase 2 应用绑定与运行时派发落地**，见 [../app/sdd.md](../app/sdd.md) D52）；2026-11-06（**绑定与子代理协作解耦 + 子智能体过程实时可视化 moai.subagent**，见 [../app/sdd.md](../app/sdd.md) D53）
+- 状态：**Phase 1 管理面已实现**（数据库 + API + 前端团队菜单 + 内置 plan/build 种子）；**Phase 2 应用绑定与运行时派发已实现**（Agent 应用配置绑定 `team_agent_ids/default_team_agent_id`（**绑定独立于子代理协作**：不开协作=仅主智能体提示词生效，开协作=子智能体注册 `subagent_{key}` 派发工具并可自动派发、过程经 `moai.subagent` 事件实时展示）、发布快照内嵌定义 `team_agent_defs`、`X-Moai-Team-Agent-Id` 切换、具名派发与声明即边界白名单——设计以 [../app/sdd.md](../app/sdd.md) D52/D53 为真源，行为 [@AP-S150](../app/bdd.md#ap-s150)~[@AP-S159](../app/bdd.md#ap-s159)，E2E `local-dev/team-agent-app-e2e.mjs`）
 
 ## 1. 目标
 
@@ -39,6 +39,7 @@
 | GET | `/api/team-agent/list?teamId=&searchText=` | 团队内列表（含 myRole、key、subCount、isSystem、审计字段；内置排序在前） |
 | GET | `/api/team-agent/{id}` | 详情（解析 subs 与依赖 JSON） |
 | POST | `/api/team-agent/{id}/avatar` | 设置头像（objectKey 须已上传登记） |
+| PUT | `/api/team-agent/{id}/enabled` | 启用/停用（列表卡片直切，不走整文档替换；内置智能体同样可启停） |
 
 校验（`IModelValidator` + Handler）：key/name 均必填（key 正则 `^[a-z][a-z0-9_]{0,29}$`、name ≤50）、团队内 key/name 双唯一 409、描述 ≤500、主提示词必填 ≤50000、子提示词必填 ≤30000、子智能体 ≤20、`subs[].key` 同正则且组内唯一、`subs[].name` 必填 ≤50、`subs[].description` 必填 ≤500。
 
@@ -55,8 +56,8 @@
 ## 5b. 前端设计（团队页「智能体」分区）
 
 - 菜单：`TeamManage.tsx` SECTION_KEYS 增 `agents`（成员可见，管理按钮 `canManage` 门禁），图标 DeploymentUnitOutlined
-- 列表页 `TeamAgents.tsx`：**卡片列表**（同团队提示词款：头像 + 名称 + 启停/内置 Tag + 子智能体数徽标 + 两行省略描述 + 底栏操作与更新时间，响应式栅格 12/24/48 分页，空态 Empty）；工具栏单行 `QueryBar`（搜索框 → 查询 → | → 新建，仅一个搜索框不传 onReset、不放刷新按钮，规范 frontend-conventions §7）；**Dify 式分层**：`TeamManage` 的 agents 分支不套外层白卡 `DSCard`——工具栏/分页裸排在页面底色上，每张智能体卡自带白色表面，数据量少时不出现"小容器大白板"；删除 Popconfirm（内置智能体无删除入口）；底栏操作为纯图标 + aria-label（卡片紧凑场景），成员底栏仅「详情」文字按钮
-- 编辑页 `TeamAgentEditor.tsx`（独立页路由 `/team/:teamId/agent/new`、`/team/:teamId/agent/:agentId/edit`，内容大不塞弹窗）：**无卡片容器，左右 3:7 分栏**（Col lg 7/17）——「主智能体」区左侧信息列（头像直传 + key（编辑态禁用，addonBefore="key"）/名称/启停同行、描述、插件/知识库/知识图谱三依赖 Select）右侧主提示词 VditorMarkdownEditor（定高 620px 填充容器）；「子智能体」区每项同构 3:7（左=key/名称/依赖/描述，右=与主智能体同款 Vditor 定高 420px，Form.Item 经 value/onChange 注入），分隔线用 token.colorSplit；返回/保存按钮在分区标题行右侧不单独占行；加载态 Spin 包裹；依赖下拉与选中 Tag 均带头像（renderDepOption：Avatar 18 + 名称，label 节点即 Tag 内容）
+- 列表页 `TeamAgents.tsx`：**卡片列表**（同团队提示词款：头像 + 名称 + 启停/内置 Tag + 子智能体数徽标 + 两行省略描述 + 底栏操作与更新时间，响应式栅格 12/24/48 分页，空态 Empty）；**管理员卡片直切启停**（Switch size=small，乐观更新本地状态失败回滚，走专用 `PUT {id}/enabled` 不拉详情整替换），成员视图启停为只读 Tag；工具栏单行 `QueryBar`（搜索框 → 查询 → | → 新建，仅一个搜索框不传 onReset、不放刷新按钮，规范 frontend-conventions §7）；**Dify 式分层**：`TeamManage` 的 agents 分支不套外层白卡 `DSCard`——工具栏/分页裸排在页面底色上，每张智能体卡自带白色表面，数据量少时不出现"小容器大白板"；删除 Popconfirm（内置智能体无删除入口）；底栏操作为纯图标 + aria-label（卡片紧凑场景），成员底栏仅「详情」文字按钮
+- 编辑页 `TeamAgentEditor.tsx`（独立页路由 `/team/:teamId/agent/new`、`/team/:teamId/agent/:agentId/edit`，内容大不塞弹窗）：**无卡片容器，左右 3:7 分栏**（Col lg 7/17）——「主智能体」区左侧信息列（头像直传 + key（编辑态禁用，addonBefore="key"）/名称同行、描述、插件/知识库/知识图谱三依赖 Select）右侧主提示词 VditorMarkdownEditor（定高 620px 填充容器）；**不含启停 Switch**（列表卡片直切，保存时保留原 enabled 值）；依赖为弱依赖不展示提示文案；页面顶行为「← 返回」链接（带图标回列表）+「保存」按钮相邻左对齐（操作集中在视线起点，不甩到页面最右）；「子智能体」区每项同构 3:7（左=key/名称/依赖/描述，右=与主智能体同款 Vditor 定高 420px，Form.Item 经 value/onChange 注入），分隔线用 token.colorSplit；加载态 Spin 包裹；依赖下拉与选中 Tag 均带头像（renderDepOption：Avatar 18 + 名称，label 节点即 Tag 内容）
 - 详情弹窗 `TeamAgentDetailModal.tsx`：只读主信息 + 子智能体定义列表；依赖 id 经团队选项映射为名称 Tag
 - API 封装 `ui/src/api/team-agent.ts`（Kiota 生成物之上，页面只调封装层）；i18n `teamAgents.*` + `team.teamAgents`，zh/en 同步
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Avatar, Button, Col, Form, Input, Row, Select, Space, Spin, Tooltip, Typography, theme } from 'antd'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -246,14 +246,11 @@ export function TeamAgentEditor() {
     }
   }
 
-  /** 分区标题行：左侧标题+提示，右侧动作（返回/保存），不单独占一行 */
-  const sectionHeader = (title: string, hint: string | undefined, actions?: ReactNode) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, marginBottom: spacing.md }}>
-      <Space size={spacing.sm} align="baseline">
-        <Text strong style={{ fontSize: 15 }}>{title}</Text>
-        {hint && <Text type="secondary" style={{ fontSize: 12 }}>{hint}</Text>}
-      </Space>
-      {actions && <Space size={spacing.sm}>{actions}</Space>}
+  /** 分区标题行：左侧标题+提示，动作按钮紧邻返回链接置于页面左上（不在分区行右侧） */
+  const sectionHeader = (title: string, hint?: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+      <Text strong style={{ fontSize: 15 }}>{title}</Text>
+      {hint && <Text type="secondary" style={{ fontSize: 12 }}>{hint}</Text>}
     </div>
   )
 
@@ -265,20 +262,25 @@ export function TeamAgentEditor() {
   )
 
   return (
-    <Page
-      breadcrumb={[{ title: <Link to={`/team/${teamId}/agents`}>{t('teamAgents.back')}</Link> }]}
-    >
+    <Page>
+      {/* 左上角操作行：返回链接（带图标）+ 保存按钮相邻摆放，用户保存时视线不用横跨整页 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
+        <Link
+          to={`/team/${teamId}/agents`}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: token.colorText }}
+        >
+          <ArrowLeftOutlined />
+          {t('teamAgents.back')}
+        </Link>
+        <Button type="primary" size="small" loading={saving} onClick={() => void handleSave()}>
+          {t('teamAgents.save')}
+        </Button>
+      </div>
       <Form form={form} layout="vertical" component={false}>
         <Spin spinning={loading}>
         {/* ===== 主智能体：左 3 信息 / 右 7 主提示词编辑器 ===== */}
         <section>
-          {sectionHeader(
-            t('teamAgents.mainSectionTitle'),
-            undefined,
-            <Button type="primary" loading={saving} onClick={() => void handleSave()}>
-              {t('teamAgents.save')}
-            </Button>,
-          )}
+          {sectionHeader(t('teamAgents.mainSectionTitle'))}
           <Row gutter={spacing.md}>
             <Col xs={24} lg={7}>
               <Space size={spacing.md} align="start" style={{ display: 'flex' }}>

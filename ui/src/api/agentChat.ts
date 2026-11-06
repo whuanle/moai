@@ -15,6 +15,9 @@ export interface AgentToolCallInfo {
 /** AG-UI 自定义事件名：流程应用执行过程（后端 WorkflowProgressContent 映射） */
 export const WORKFLOW_CHAT_EVENT_NAME = 'moai.workflow'
 
+/** AG-UI 自定义事件名：子智能体派发过程（后端 SubAgentChatStreamContract 映射，经派发器旁路合并注入） */
+export const SUBAGENT_CHAT_EVENT_NAME = 'moai.subagent'
+
 /** 流程应用执行过程事件负载（与后端 WorkflowAppChatClient 映射契约一致） */
 export interface WorkflowChatEventPayload {
   event: 'started' | 'node' | 'suspended' | 'completed'
@@ -31,6 +34,25 @@ export interface WorkflowChatEventPayload {
   message?: string
 }
 
+/** 子智能体派发过程事件负载（与后端 SubAgentChatEvent 契约一致，camelCase；kind 为枚举 camelCase 字符串） */
+export interface SubAgentChatEventPayload {
+  kind: 'started' | 'text' | 'toolCall' | 'toolResult' | 'completed' | 'timeout' | 'failed'
+  /** 一次派发的追踪 id（同轮多次派发各自独立） */
+  traceId: string
+  /** 子智能体 key（具名派发为 team_agent.subs 项 key；通用子代理固定 general） */
+  agentKey: string
+  agentName: string
+  /** text 事件：正文增量 */
+  text?: string
+  /** tool_call / tool_result 事件：工具名（call_tool 已解析为内层真实工具名） */
+  toolName?: string
+  /** tool_result 事件：结果摘要（截断） */
+  result?: string
+  /** completed/timeout/failed 事件：结束文本（结论/部分结果/错误） */
+  finalText?: string
+  elapsedMilliseconds?: number
+}
+
 /**
  * AG-UI 对话回调：流式增量、工具调用（含解析后参数）、流程执行过程、结束与错误。
  * 服务端以 threadId 作为会话 id，历史由服务端管理，因此每轮只发送最新用户消息。
@@ -43,6 +65,8 @@ export interface AgentChatHandlers {
   onToolCallEnd?: (info: AgentToolCallInfo) => void
   /** 流程应用执行过程事件（仅流程应用产生；Agent 应用对话不触发） */
   onWorkflowEvent?: (evt: WorkflowChatEventPayload) => void
+  /** 子智能体派发过程事件（开启子代理协作且派发时产生，实时嵌套活动卡数据源） */
+  onSubAgentEvent?: (evt: SubAgentChatEventPayload) => void
   onDone?: () => void
   onError?: (message: string) => void
 }
@@ -109,6 +133,8 @@ export async function runAppChat(
       onCustomEvent: ({ event }) => {
         if (event.name === WORKFLOW_CHAT_EVENT_NAME) {
           handlers.onWorkflowEvent?.(event.value as WorkflowChatEventPayload)
+        } else if (event.name === SUBAGENT_CHAT_EVENT_NAME) {
+          handlers.onSubAgentEvent?.(event.value as SubAgentChatEventPayload)
         }
       },
       onRunErrorEvent: ({ event }) => handlers.onError?.(event.message),

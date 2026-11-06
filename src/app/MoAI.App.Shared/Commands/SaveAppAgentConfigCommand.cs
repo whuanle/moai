@@ -68,6 +68,12 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
     public IReadOnlyCollection<Guid>? Skills { get; init; }
 
     /// <summary>
+    /// 开放给用户选择的可选专家提示词 id 列表（元素为 prompt.id，整数），须为市场公开或本团队提示词；
+    /// 用户进入对话后可在应用设置中与市场公开、本人个人提示词一起选用；null 表示保持已保存的绑定不变.
+    /// </summary>
+    public IReadOnlyCollection<int>? Prompts { get; init; }
+
+    /// <summary>
     /// 对话开场白，最长 4000 字符；新会话开始时展示给用户，不参与模型上下文.
     /// </summary>
     public string OpeningStatement { get; init; } = string.Empty;
@@ -90,7 +96,8 @@ public class SaveAppAgentConfigCommand : IRequest<EmptyCommandResponse>, IUserId
 
     /// <summary>
     /// 绑定的团队智能体 id 列表（元素为 team_agent.id 的 uuid），须为本团队已启用智能体，最多 20 个；
-    /// 绑定后须开启子代理协作（executionSettings.subAgent.enabled）；null 表示保持已保存的绑定不变.
+    /// 绑定独立于子代理协作（app sdd D53）：主智能体提示词始终生效，子智能体派发由 executionSettings.subAgent.enabled 独立控制；
+    /// null 表示保持已保存的绑定不变.
     /// </summary>
     public IReadOnlyCollection<Guid>? TeamAgentIds { get; init; }
 

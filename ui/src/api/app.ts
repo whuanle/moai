@@ -213,6 +213,8 @@ export interface AppAgentConfig {
   agentApps?: string[] | null
   /** 应用默认使用的技能 id 列表（元素为 skill.id，uuid 字符串），用户可在应用设置中取消勾选 */
   skills?: string[] | null
+  /** 开放给用户选择的可选专家提示词 id 列表（元素为 prompt.id，整数；市场公开或本团队提示词） */
+  prompts?: number[] | null
   /** 对话执行参数（自由 JSON，含沙箱等扩展配置） */
   executionSettings?: Record<string, unknown> | null
   /** 对话开场白，未配置时为空串 */
@@ -259,6 +261,7 @@ export async function getAppAgentConfig(appId: string): Promise<AppAgentConfig> 
     workflowApps: (res?.workflowApps ?? []).map((id) => String(id)),
     agentApps: (res?.agentApps ?? []).map((id) => String(id)),
     skills: (res?.skills ?? []).map((id) => String(id)),
+    prompts: (res?.prompts ?? []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0),
     executionSettings: (fromUntypedNode(res?.executionSettings) as Record<string, unknown> | undefined) ?? {},
     openingStatement: res?.openingStatement ?? '',
     openingStatementEnabled: res?.openingStatementEnabled ?? false,
@@ -283,7 +286,7 @@ export async function saveAppAgentConfig(
     wikiIds: number[]
     /** 允许检索的知识图谱 id 列表（仅托管图，后端校验归属与模式） */
     graphIds?: number[]
-    /** 绑定的团队智能体 id 列表（本团队启用中智能体）；绑定后须开启子代理协作，后端强校验 */
+    /** 绑定的团队智能体 id 列表（本团队启用中智能体）；绑定独立于子代理协作，主智能体提示词始终生效 */
     teamAgentIds?: string[] | null
     /** 默认团队智能体 id，须在 teamAgentIds 内；null=取列表第一个 */
     defaultTeamAgentId?: string | null
@@ -293,6 +296,8 @@ export async function saveAppAgentConfig(
     /** 绑定为工具的 Agent 应用 id 列表；null / 缺省表示保持已保存的 Agent 应用绑定不变 */
     agentApps?: string[] | null
     skills?: string[] | null
+    /** 绑定的可选专家提示词 id 列表（市场公开或本团队提示词）；null / 缺省表示保持已保存绑定不变 */
+    prompts?: number[] | null
     openingStatement?: string
     openingStatementEnabled?: boolean
     /** 快捷输入列表；null / 缺省表示保持已保存的快捷输入不变 */
@@ -315,6 +320,7 @@ export async function saveAppAgentConfig(
     workflowApps: (payload.workflowApps ?? null) as Guid[] | null,
     agentApps: (payload.agentApps ?? null) as Guid[] | null,
     skills: (payload.skills ?? null) as Guid[] | null,
+    prompts: (payload.prompts ?? null) as number[] | null,
     openingStatement: payload.openingStatement ?? '',
     openingStatementEnabled: payload.openingStatementEnabled ?? false,
     quickInputs: payload.quickInputs ?? null,
@@ -746,7 +752,7 @@ export async function getAppUsageTrend(appId: string, days = 30): Promise<AppUsa
 
 // ==================== 用户级应用配置 ====================
 
-/** 应用设置中展示的默认技能项（管理员配置） */
+/** 应用设置中展示的可选技能项（候选池=应用默认 ∪ 市场公开 ∪ 本人个人） */
 export interface AppUserSkillOption {
   /** 技能 id（uuid 字符串） */
   id?: string | null
@@ -754,9 +760,27 @@ export interface AppUserSkillOption {
   name?: string | null
   description?: string | null
   isSystem?: boolean | null
-  /** 所属团队 id，0=系统内置或市场公开 */
+  /** 所属团队 id，0=系统内置/市场公开/个人技能 */
   teamId?: number | null
+  /** 是否已上架市场公开 */
+  isPublic?: boolean | null
   /** 使用次数（技能装载工具被模型调用时自增），热门排序依据 */
+  useCount?: number | null
+}
+
+/** 应用设置中展示的可选专家（提示词）项（候选池=应用绑定 ∪ 市场公开 ∪ 本人个人，不含团队） */
+export interface AppUserPromptOption {
+  /** 提示词 id */
+  promptId?: number | null
+  name?: string | null
+  description?: string | null
+  /** 头像存储路径（objectKey，空串=未设置） */
+  avatarPath?: string | null
+  /** 所属团队 id，0=个人提示词 */
+  teamId?: number | null
+  /** 是否已上架市场公开 */
+  isPublic?: boolean | null
+  /** 被选用次数，热门排序依据 */
   useCount?: number | null
 }
 
@@ -785,10 +809,14 @@ export interface AppUserConfig {
   teamAgents: AppUserTeamAgentOption[]
   /** 默认团队智能体 id（uuid）；空=取列表第一个 */
   defaultTeamAgentId: string
-  /** 用户当前勾选的技能 id 列表（应用默认技能的子集；未配置过时为默认技能全集） */
+  /** 用户当前勾选的技能 id 列表（可选技能池的子集；未配置过时为应用默认技能全集） */
   skills: string[]
-  /** 应用默认技能目录（管理员配置） */
+  /** 应用默认技能目录（管理员绑定，按配置顺序），未保存过用户配置时默认全部勾选 */
   defaultSkills: AppUserSkillOption[]
+  /** 可选技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人（排除禁用；默认在前，按 默认→市场→个人 排序去重） */
+  skillOptions: AppUserSkillOption[]
+  /** 可选专家候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（不含团队提示词；按 绑定→市场→个人 排序去重） */
+  promptOptions: AppUserPromptOption[]
   /** 工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准 */
   toolApprovalMode: 'auto' | 'approval'
   /** 无需展示审批卡的工具名（只读检索类），与后端契约同步下发 */
@@ -818,6 +846,8 @@ interface RawAppUserConfigResponse {
   defaultTeamAgentId?: string | null
   skills?: string[] | null
   defaultSkills?: AppUserSkillOption[] | null
+  skillOptions?: AppUserSkillOption[] | null
+  promptOptions?: AppUserPromptOption[] | null
   toolApprovalMode?: string | null
   toolApprovalExemptNames?: string[] | null
   toolApprovalExemptPrefixes?: string[] | null
@@ -852,6 +882,8 @@ export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
     defaultTeamAgentId: res?.defaultTeamAgentId ? String(res.defaultTeamAgentId) : '',
     skills: (res?.skills ?? []).map((id) => String(id)),
     defaultSkills: res?.defaultSkills ?? [],
+    skillOptions: res?.skillOptions ?? [],
+    promptOptions: res?.promptOptions ?? [],
     toolApprovalMode: res?.toolApprovalMode === 'approval' ? 'approval' : 'auto',
     toolApprovalExemptNames: res?.toolApprovalExemptNames ?? [],
     toolApprovalExemptPrefixes: res?.toolApprovalExemptPrefixes ?? [],
@@ -864,7 +896,7 @@ export async function getAppUserConfig(appId: string): Promise<AppUserConfig> {
   }
 }
 
-/** 保存当前用户在某应用下的个性化配置，跨会话复用；技能仅能在应用默认范围内勾选 */
+/** 保存当前用户在某应用下的个性化配置，跨会话复用；技能仅能在可选池（应用默认 ∪ 市场公开 ∪ 本人个人）内勾选 */
 export async function saveAppUserConfig(
   appId: string,
   payload: { promptId: number; skills: string[]; toolApprovalMode?: 'auto' | 'approval'; memoryMode?: number; memoryGlobalMode?: number },

@@ -84,6 +84,12 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<Guid> Skills { get; set; } = new List<Guid>();
 
     /// <summary>
+    /// 开放给用户选择的可选专家提示词 id 列表（元素为 prompt.id，整数；市场公开或本团队提示词），
+    /// 用户在应用设置中与市场公开、本人个人提示词一起选用.
+    /// </summary>
+    public IReadOnlyList<int> Prompts { get; set; } = new List<int>();
+
+    /// <summary>
     /// 对话执行参数（JSON 对象，含沙箱等扩展配置）.
     /// </summary>
     public JsonElement ExecutionSettings { get; set; }

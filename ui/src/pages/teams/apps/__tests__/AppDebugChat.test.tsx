@@ -15,6 +15,8 @@ const DEFAULT_USER_CONFIG = {
   defaultTeamAgentId: '',
   skills: [],
   defaultSkills: [],
+  skillOptions: [],
+  promptOptions: [],
   toolApprovalMode: 'auto' as const,
   toolApprovalExemptNames: [],
   toolApprovalExemptPrefixes: [],
@@ -31,6 +33,20 @@ vi.mock('@/api/app', () => ({
   // 调试会话审批卡走同端点决策（@AP-S149）；审批模式不持久化，saveAppUserConfig 断言未被调用
   decideAppSessionToolApproval: vi.fn(),
   saveAppUserConfig: vi.fn(),
+  // 调试团队智能体切换器经 agentConfig 取草稿绑定（rounds 325~331 起）；默认空绑定不出切换器
+  getAppAgentConfig: vi.fn().mockResolvedValue({
+    appId: 'a1',
+    prompt: '',
+    modelId: null,
+    modelIds: [],
+    wikiIds: [],
+    graphIds: [],
+    plugins: [],
+    skills: [],
+    teamAgentIds: [],
+    defaultTeamAgentId: null,
+    teamAgents: [],
+  }),
   // 调试会话切换器经 userconfig 取草稿可选模型与审批配置（rounds 299~324 起）
   getAppUserConfig: vi.fn().mockResolvedValue({
     promptId: 0,
@@ -40,6 +56,8 @@ vi.mock('@/api/app', () => ({
     defaultTeamAgentId: '',
     skills: [],
     defaultSkills: [],
+    skillOptions: [],
+    promptOptions: [],
     toolApprovalMode: 'auto',
     toolApprovalExemptNames: [],
     toolApprovalExemptPrefixes: [],

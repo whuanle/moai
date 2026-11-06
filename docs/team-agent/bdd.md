@@ -75,6 +75,10 @@ Scenario: 更新生效
   Then 返回成功且详情回读生效
   When Member 查询列表
   Then 列表回显停用状态
+  When Member 调用启停端点（PUT {id}/enabled）
+  Then 返回禁止
+  When Admin 调用启停端点恢复启用
+  Then 返回成功且列表回显启用（卡片直切语义，不走整文档替换）
 ```
 
 ## Feature: 头像

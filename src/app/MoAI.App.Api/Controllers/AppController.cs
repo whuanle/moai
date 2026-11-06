@@ -204,6 +204,7 @@ public class AppController : ControllerBase
             WorkflowApps = req.WorkflowApps,
             AgentApps = req.AgentApps,
             Skills = req.Skills,
+            Prompts = req.Prompts,
             OpeningStatement = req.OpeningStatement,
             OpeningStatementEnabled = req.OpeningStatementEnabled,
             QuickInputs = req.QuickInputs,

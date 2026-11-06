@@ -1,8 +1,10 @@
 // Agent 应用绑定团队智能体 E2E（team-agent Phase 2：应用绑定与运行时派发，后端 127.0.0.1:5000）
-// 覆盖：配置保存校验（未开子代理协作 400 / 默认不在列表 400 / 伪造与停用智能体 400 / 主依赖越界 400 / 外部应用 400）
+// 覆盖：配置保存校验（默认不在列表 400 / 伪造与停用智能体 400 / 主依赖越界 400 / 外部应用 400；绑定不开协作 200——D53 解耦）
 //       → 保存回读与不携带不清空 → 配置回显与 userconfig 切换器数据 → 发布快照内嵌定义（发布后改智能体不影响线上）
-//       → 运行时：默认智能体主提示词注入 + 具名 subagent_{key} 工具披露 + X-Moai-Team-Agent-Id 切换与非法头回退
-//       → 具名派发全链路（子请求注入子智能体提示词、声明即边界工具白名单、深度恒 1、结论回传）。
+//       → 运行时：默认智能体主提示词注入 + 子智能体名册（[可派发子智能体]，D53）+ 具名 subagent_{key} 工具披露 + X-Moai-Team-Agent-Id 切换与非法头回退
+//       → 具名派发全链路（子请求注入子智能体提示词、声明即边界工具白名单、深度恒 1、结论回传）
+//       → 子智能体过程实时事件 moai.subagent（started/text/completed 序列与实时性断言，D53）
+//       → 绑定不开协作的运行时语义（[团队智能体] 标签注入 + 禁止派发文案 + 零派发工具 + 零过程事件，D53）。
 // 模型策略：本地 OpenAI 兼容桩（提示词条件行为），零 SKIP。
 import crypto from 'node:crypto'
 import http from 'node:http'
@@ -168,7 +170,10 @@ async function chatSse(appId, token, sessionId, text, extraHeaders = {}) {
     .filter(Boolean)
   const reply = events.filter((e) => e.type === 'TEXT_MESSAGE_CONTENT' && typeof e.delta === 'string').map((e) => e.delta).join('')
   const runError = events.find((e) => e.type === 'RUN_ERROR')?.message ?? null
-  return { status: res.status, reply, runError }
+  // 子智能体过程自定义事件（moai.subagent，D53）：保留完整事件序列供顺序断言
+  const customEvents = events.filter((e) => e.type === 'CUSTOM' && typeof e.name === 'string' && e.name.startsWith('moai.')).map((e) => ({ name: e.name, value: e.value ?? {} }))
+  const subAgentEvents = customEvents.filter((e) => e.name === 'moai.subagent')
+  return { status: res.status, reply, runError, customEvents, subAgentEvents, eventTypes: events.map((e) => e.type) }
 }
 
 // 桩捕获请求的 system 指令（MAF ChatOptions.Instructions 以 system 消息下发）
@@ -224,12 +229,14 @@ async function main() {
     const APPX = await mkApp('外部应用-' + TS, true)
     const baseSettings = { subAgent: { enabled: true, timeoutSeconds: 120, resultMaxChars: 4000 } }
 
-    // TAA-01 绑定团队智能体但未开子代理协作 → 400
+    // TAA-01 绑定团队智能体但未开子代理协作 → 200（D53 解耦：绑定只代表主智能体提示词生效，不再 400）
     const r01 = await api('PUT', `/api/app/${APP1}/agent-config`, {
       token: owner.token,
       body: { prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.modelId, teamAgentIds: [C1], executionSettings: { subAgent: { enabled: false } } },
     })
-    check('TAA-01 未开子代理协作绑定 400', r01.status === 400 && r01.text.includes('子代理协作'), `${r01.status} ${r01.text.slice(0, 80)}`)
+    check('TAA-01 未开子代理协作绑定 200（D53 解耦）', r01.status === 200, `${r01.status} ${r01.text.slice(0, 80)}`)
+    const back01 = await api('GET', `/api/app/${APP1}/agent-config`, { token: owner.token })
+    check('TAA-01b 解耦绑定回读不清空', Array.isArray(back01.json?.teamAgentIds) && back01.json.teamAgentIds.length === 1, back01.text.slice(0, 160))
 
     // TAA-02 默认智能体不在列表 → 400
     const r02 = await api('PUT', `/api/app/${APP1}/agent-config`, {
@@ -303,6 +310,11 @@ async function main() {
     check('TAA-13 默认智能体主提示词注入', !chat1.runError && chatLog.some((r) => !isSubRequest(r) && sysText(r).includes('BUILDER_MAIN_V1')),
       `err=${chat1.runError}`)
     check('TAA-14 主请求披露具名工具 subagent_scanner 与知识库检索', chatLog.some((r) => !isSubRequest(r) && r.allText.includes('subagent_scanner') && r.allText.includes('search_knowledge_base')))
+    check('TAA-13b 协作开启注入子智能体名册（D53：[可派发子智能体]+工具名+派发说明）',
+      chatLog.some((r) => !isSubRequest(r) && sysText(r).includes('[可派发子智能体]') && sysText(r).includes('subagent_scanner') && sysText(r).includes('派发说明')),
+      sysText(chatLog.find((r) => !isSubRequest(r)) ?? { messages: [] }).slice(0, 200))
+    check('TAA-13c 无派发轮不产生 moai.subagent 事件', (chat1.subAgentEvents ?? []).length === 0 && (chat1.customEvents ?? []).length === 0,
+      JSON.stringify(chat1.customEvents ?? []).slice(0, 120))
 
     chatLog.length = 0
     const s2 = await sess(APP1, 'taa-切换')
@@ -329,6 +341,25 @@ async function main() {
     check('TAA-20 子请求工具白名单（无知识库检索/无主提示词注入的越界工具）', subReqs.every((r) => !r.allText.includes('search_knowledge_base')))
     check('TAA-21 深度恒 1（子请求无任何派发工具）', subReqs.every((r) => !r.allText.includes('spawn_subagent') && !r.allText.includes('subagent_')))
     check('TAA-22 子请求不含元工具（声明即边界：scanner 无声明则零工具）', subReqs.every((r) => !r.allText.includes('list_tools')))
+
+    // ===== 子智能体过程实时事件（moai.subagent，D53） =====
+    const sa = chat4.subAgentEvents ?? []
+    const saStarted = sa.find((e) => e.value.kind === 'started')
+    const saTexts = sa.filter((e) => e.value.kind === 'text')
+    const saCompleted = sa.find((e) => e.value.kind === 'completed')
+    check('TAA-18b 派发轮产生 moai.subagent 事件且序列完整（started→…→completed）',
+      sa.length >= 2 && saStarted != null && saCompleted != null && sa.findIndex((e) => e.value.kind === 'started') < sa.findIndex((e) => e.value.kind === 'completed'),
+      JSON.stringify(sa.map((e) => e.value.kind)).slice(0, 160))
+    check('TAA-18c started 携带子智能体标识（key=scanner/名称=扫描器/traceId）',
+      saStarted != null && saStarted.value.agentKey === 'scanner' && String(saStarted.value.agentName ?? '').includes('扫描器') && !!saStarted.value.traceId,
+      JSON.stringify(saStarted ?? {}).slice(0, 200))
+    check('TAA-18d text 事件携带子会话正文增量', saTexts.some((e) => String(e.value.text ?? '').includes('扫描结论')),
+      JSON.stringify(saTexts).slice(0, 160))
+    check('TAA-18e completed 携带最终结论与耗时', saCompleted != null && String(saCompleted.value.finalText ?? '').includes('扫描结论')
+      && Number(saCompleted.value.elapsedMilliseconds ?? 0) >= 0, JSON.stringify(saCompleted ?? {}).slice(0, 200))
+    check('TAA-18f started 实时于派发结果事件前（合并循环窗口注入）',
+      saStarted != null && chat4.eventTypes.indexOf('CUSTOM') < chat4.eventTypes.indexOf('TOOL_CALL_RESULT'),
+      `types=${chat4.eventTypes.join(',').slice(0, 200)}`)
 
     // ===== 发布快照冻结（发布后改智能体不影响线上） =====
     await api('PUT', `/api/app/${APP2}/agent-config`, {
@@ -368,6 +399,25 @@ async function main() {
     } else {
       check('TAA-27 调试会话按草稿实时定义（V2）', false, `debug-session ${dbg.status}`)
     }
+
+    // ===== 绑定不开子代理协作的运行时语义（D53：仅主智能体生效） =====
+    const APP3 = await mkApp('解耦应用-' + TS)
+    const r28 = await api('PUT', `/api/app/${APP3}/agent-config`, {
+      token: owner.token,
+      body: { prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.modelId, teamAgentIds: [C1], executionSettings: { subAgent: { enabled: false } } },
+    })
+    check('TAA-28 绑定不开协作保存 200 并发布', r28.status === 200 && (await api('POST', `/api/app/${APP3}/publish`, { token: owner.token })).status === 200,
+      `${r28.status} ${r28.text.slice(0, 120)}`)
+
+    chatLog.length = 0
+    const s7 = await sess(APP3, 'taa-仅主智能体')
+    const chat7 = await chatSse(APP3, owner.token, s7, '请派发扫描')
+    check('TAA-29 主智能体提示词注入（含 [团队智能体] 标签与当前定义标记 V2）', !chat7.runError
+      && chatLog.some((r) => !isSubRequest(r) && sysText(r).includes('[团队智能体：') && sysText(r).includes('BUILDER_MAIN_V2')), `err=${chat7.runError}`)
+    check('TAA-30 未开协作注入禁止派发文案且不披露具名派发工具',
+      chatLog.some((r) => !isSubRequest(r) && sysText(r).includes('未开启子代理协作'))
+        && chatLog.every((r) => !r.allText.includes('subagent_scanner') && !r.allText.includes('[可派发子智能体]')))
+    check('TAA-31 不开协作对话无 moai.subagent 事件', (chat7.subAgentEvents ?? []).length === 0, JSON.stringify(chat7.customEvents ?? []).slice(0, 120))
   } finally {
     if (adminToken && models.channelId) await api('DELETE', `/api/ai/channel/${models.channelId}`, { token: adminToken })
     stub.close()

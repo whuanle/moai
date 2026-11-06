@@ -38,8 +38,8 @@ interface AppUserSettingsProps {
 
 /**
  * 应用设置面板（右侧滑出）：用户对该应用的个性化定制，跨会话复用。
- * 专家=提示词（本人个人 + 本团队），保存后作为新会话默认并在会话中即时切换；
- * 技能只能从管理员配置的默认技能目录中勾选/取消（默认全部启用），范围外内容不展示也不可提交；
+ * 专家=提示词，候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（不含团队提示词），保存后作为新会话默认并在会话中即时切换；
+ * 技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人，默认技能（应用绑定）未保存过配置时全部启用，可自由勾选/取消；
  * 工具审批模式控制重要工具是否需人工批准；
  * 长期记忆偏好（应用开启记忆时展示）：开启/关闭 两态分段选择。
  */
@@ -100,7 +100,8 @@ export function AppUserSettings({ open, appId, experts, currentPromptId, onClose
     getAppUserConfig(appId)
       .then((cfg) => {
         setDraftSkills(cfg.skills)
-        setSkillOptions(cfg.defaultSkills)
+        // 可选技能池 = 应用默认 ∪ 市场公开 ∪ 本人个人；存量后端未返回池时回退默认目录
+        setSkillOptions(cfg.skillOptions.length > 0 || cfg.defaultSkills.length === 0 ? cfg.skillOptions : cfg.defaultSkills)
         setDraftApprovalMode(cfg.toolApprovalMode)
         setMemoryEnabled(cfg.memoryEnabled)
         // 未设置（0）按开启生效；面板只呈现 开启/关闭 两态
@@ -274,8 +275,10 @@ export function AppUserSettings({ open, appId, experts, currentPromptId, onClose
                             <span className="moai-chat__opt-card-name" title={item.name ?? ''}>
                               {item.name || t('appChat.untitled')}
                             </span>
-                            <Tag className={`moai-chat__expert-source${(item.teamId ?? 0) > 0 ? ' is-team' : ''}`}>
-                              {t((item.teamId ?? 0) > 0 ? 'appChat.expertTeam' : 'appChat.expertPersonal')}
+                            <Tag
+                              className={`moai-chat__expert-source${item.isPublic ? ' is-market' : (item.teamId ?? 0) > 0 ? ' is-team' : ''}`}
+                            >
+                              {t(item.isPublic ? 'appChat.expertMarket' : (item.teamId ?? 0) > 0 ? 'appChat.expertTeam' : 'appChat.expertPersonal')}
                             </Tag>
                             {active && <CheckOutlined className="moai-chat__opt-card-check" />}
                           </div>
@@ -324,9 +327,11 @@ export function AppUserSettings({ open, appId, experts, currentPromptId, onClose
                         <span className="moai-chat__opt-card-name" title={item.name || item.key || ''}>
                           {item.name || item.key}
                         </span>
-                        {!item.isSystem && (item.teamId ?? 0) > 0 && (
+                        {!item.isSystem && (item.isPublic ? (
+                          <Tag className="moai-chat__expert-source is-market">{t('appChat.skillMarket')}</Tag>
+                        ) : (item.teamId ?? 0) > 0 ? (
                           <Tag className="moai-chat__expert-source is-team">{t('appChat.skillTeam')}</Tag>
-                        )}
+                        ) : null)}
                         {checked && <CheckOutlined className="moai-chat__opt-card-check" />}
                       </div>
                       {item.description && (

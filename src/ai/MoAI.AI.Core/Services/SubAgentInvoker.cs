@@ -91,6 +91,7 @@ public interface ISubAgentInvoker
 /// <inheritdoc cref="ISubAgentInvoker"/>
 /// 子代理与主代理共用一个 DI 作用域：装配时 <see cref="AppAgentBuildContext.IsSubAgent"/> 置 true，
 /// spawn 工具与长期记忆贡献者自动退出，天然保证深度为 1、无递归；子代理不落库、不计审批、不计用量.
+/// 执行过程经 <see cref="SubAgentProgressChannel"/> 发布（moai.subagent），由派发器合并进主对话 SSE 实时展示.
 /// </summary>
 [InjectOnScoped]
 public sealed class SubAgentInvoker : ISubAgentInvoker
@@ -99,6 +100,13 @@ public sealed class SubAgentInvoker : ISubAgentInvoker
         "\n\n[子代理模式] 你是主代理委派的子代理，请在独立上下文中一次性完成下述任务：" +
         "直接执行并输出结构化结论（结论 / 关键依据或数据 / 风险与未决问题）；不要向用户提问，" +
         "任务无法完成时说明原因与已尝试的路径。你的输出将被主代理直接引用。";
+
+    // 过程文本转发预算（字符）：超出后正文只累积进结果，不再向过程流发布文本事件
+    private const int TraceTextBudgetChars = 20000;
+
+    // 嵌套工具结果摘要与过程事件结束文本的截断长度
+    private const int ToolResultSummaryChars = 200;
+    private const int FinalTextSummaryChars = 2000;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -208,36 +216,7 @@ public sealed class SubAgentInvoker : ISubAgentInvoker
             securedAgent = AiObservabilityMiddleware.WrapAgent(securedAgent);
         }
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(request.TimeoutSeconds, 30, 1800)));
-
-        var result = new StringBuilder();
-        try
-        {
-            await foreach (var update in securedAgent.RunStreamingAsync(request.Task, cancellationToken: timeoutCts.Token).ConfigureAwait(false))
-            {
-                var delta = update.Text;
-                if (string.IsNullOrEmpty(delta))
-                {
-                    continue;
-                }
-
-                result.Append(delta);
-            }
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            // 仅子任务超时：带回已产出内容并注明截断原因
-            result.Append($"\n\n[子任务超时：{request.TimeoutSeconds} 秒内未完成，以上为部分结果.]");
-        }
-
-        var text = result.ToString().Trim();
-        if (request.ResultMaxChars > 0 && text.Length > request.ResultMaxChars)
-        {
-            text = text[..request.ResultMaxChars] + "\n…[结果过长已截断]";
-        }
-
-        return text;
+        return await ExecuteSubAgentAsync(securedAgent, request, "general", "子代理", cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -324,30 +303,124 @@ public sealed class SubAgentInvoker : ISubAgentInvoker
             securedAgent = AiObservabilityMiddleware.WrapAgent(securedAgent);
         }
 
+        return await ExecuteSubAgentAsync(securedAgent, request, named.Key, displayName, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 驱动子代理一轮流式执行：超时控制、结果截断，并向 <see cref="SubAgentProgressChannel"/> 发布过程事件
+    /// （started/正文增量/嵌套工具调用与结果/completed|timeout|failed），经派发器合并循环注入主对话 SSE，
+    /// 供前端实时渲染子智能体嵌套活动卡（app sdd D53）.
+    /// </summary>
+    /// <param name="securedAgent">已包安全中间件的子代理.</param>
+    /// <param name="request">调用请求.</param>
+    /// <param name="agentKey">子智能体 key（通用子代理为 general）.</param>
+    /// <param name="agentName">子智能体展示名.</param>
+    /// <param name="cancellationToken">外部取消令牌.</param>
+    /// <returns>子代理最终结论文本.</returns>
+    private async Task<string> ExecuteSubAgentAsync(AIAgent securedAgent, SubAgentInvocationRequest request, string agentKey, string agentName, CancellationToken cancellationToken)
+    {
+        var traceId = Guid.CreateVersion7().ToString("N");
+        var startedAt = DateTimeOffset.Now;
+        SubAgentProgressChannel.Publish(new SubAgentChatEvent
+        {
+            Kind = SubAgentChatEventKind.Started,
+            TraceId = traceId,
+            AgentKey = agentKey,
+            AgentName = agentName,
+        });
+
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(request.TimeoutSeconds, 30, 1800)));
 
         var result = new StringBuilder();
+        var textBudget = TraceTextBudgetChars;
+        var callNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var timedOut = false;
         try
         {
             await foreach (var update in securedAgent.RunStreamingAsync(request.Task, cancellationToken: timeoutCts.Token).ConfigureAwait(false))
             {
                 var delta = update.Text;
-                if (string.IsNullOrEmpty(delta))
+                if (!string.IsNullOrEmpty(delta))
                 {
-                    continue;
+                    result.Append(delta);
+                    if (textBudget > 0)
+                    {
+                        // 过程文本转发有预算上限：超出部分只累积进结果，不再向过程流发布
+                        var slice = delta.Length > textBudget ? delta[..textBudget] : delta;
+                        textBudget -= slice.Length;
+                        SubAgentProgressChannel.Publish(new SubAgentChatEvent
+                        {
+                            Kind = SubAgentChatEventKind.Text,
+                            TraceId = traceId,
+                            AgentKey = agentKey,
+                            AgentName = agentName,
+                            Text = slice,
+                        });
+                    }
                 }
 
-                result.Append(delta);
+                // 嵌套工具步骤：call_tool 元工具的真实工具名在参数 toolName 里，其余工具用自身名
+                foreach (var call in update.Contents.OfType<FunctionCallContent>())
+                {
+                    var toolName = ResolveNestedToolName(call);
+                    callNames[call.CallId ?? string.Empty] = toolName;
+                    SubAgentProgressChannel.Publish(new SubAgentChatEvent
+                    {
+                        Kind = SubAgentChatEventKind.ToolCall,
+                        TraceId = traceId,
+                        AgentKey = agentKey,
+                        AgentName = agentName,
+                        ToolName = toolName,
+                    });
+                }
+
+                foreach (var callResult in update.Contents.OfType<FunctionResultContent>())
+                {
+                    callNames.TryGetValue(callResult.CallId ?? string.Empty, out var toolName);
+                    SubAgentProgressChannel.Publish(new SubAgentChatEvent
+                    {
+                        Kind = SubAgentChatEventKind.ToolResult,
+                        TraceId = traceId,
+                        AgentKey = agentKey,
+                        AgentName = agentName,
+                        ToolName = toolName ?? string.Empty,
+                        Result = TruncateText(DescribeToolResult(callResult.Result), ToolResultSummaryChars),
+                    });
+                }
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             // 仅子任务超时：带回已产出内容并注明截断原因
+            timedOut = true;
             result.Append($"\n\n[子任务超时：{request.TimeoutSeconds} 秒内未完成，以上为部分结果.]");
+        }
+        catch (Exception ex)
+        {
+            SubAgentProgressChannel.Publish(new SubAgentChatEvent
+            {
+                Kind = SubAgentChatEventKind.Failed,
+                TraceId = traceId,
+                AgentKey = agentKey,
+                AgentName = agentName,
+                FinalText = TruncateText(ex.Message, ToolResultSummaryChars),
+                ElapsedMilliseconds = (long)(DateTimeOffset.Now - startedAt).TotalMilliseconds,
+            });
+            throw;
         }
 
         var text = result.ToString().Trim();
+        SubAgentProgressChannel.Publish(new SubAgentChatEvent
+        {
+            Kind = timedOut ? SubAgentChatEventKind.Timeout : SubAgentChatEventKind.Completed,
+            TraceId = traceId,
+            AgentKey = agentKey,
+            AgentName = agentName,
+            FinalText = TruncateText(text, FinalTextSummaryChars),
+            ElapsedMilliseconds = (long)(DateTimeOffset.Now - startedAt).TotalMilliseconds,
+        });
+
         if (request.ResultMaxChars > 0 && text.Length > request.ResultMaxChars)
         {
             text = text[..request.ResultMaxChars] + "\n…[结果过长已截断]";
@@ -355,6 +428,53 @@ public sealed class SubAgentInvoker : ISubAgentInvoker
 
         return text;
     }
+
+    /// <summary>解析嵌套工具调用的事件展示名：call_tool 元工具取参数 toolName，其余工具取自身名.</summary>
+    private static string ResolveNestedToolName(FunctionCallContent call)
+    {
+        if (!string.Equals(call.Name, "call_tool", StringComparison.Ordinal))
+        {
+            return call.Name ?? string.Empty;
+        }
+
+        if (call.Arguments is { } args && args.TryGetValue("toolName", out var value) && value != null)
+        {
+            var toolName = value.ToString();
+            if (!string.IsNullOrWhiteSpace(toolName))
+            {
+                return toolName;
+            }
+        }
+
+        return call.Name ?? string.Empty;
+    }
+
+    /// <summary>把工具结果对象转摘要文本：字符串直接用，其余序列化为 JSON，失败返回空.</summary>
+    private static string DescribeToolResult(object? result)
+    {
+        if (result == null)
+        {
+            return string.Empty;
+        }
+
+        if (result is string text)
+        {
+            return text;
+        }
+
+        try
+        {
+            return JsonSerializer.Serialize(result, JsonOptions);
+        }
+        catch (NotSupportedException)
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>按字符上限截断文本，超长追加省略号.</summary>
+    private static string TruncateText(string text, int maxChars)
+        => maxChars > 0 && text.Length > maxChars ? text[..maxChars] + "…" : text;
 
     /// <summary>克隆配置并剥离沙箱配置（具名子智能体无沙箱）；返回脱管行，仅用于读取.</summary>
     private static AppAgentConfigEntity CloneWithoutSandbox(AppAgentConfigEntity config)

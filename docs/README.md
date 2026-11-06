@@ -97,8 +97,8 @@ node local-dev/audit-storage.mjs              # STO 全链路 7 场景
 node local-dev/auth-lockout-check.mjs         # AUTH 锁定 8 场景
 node local-dev/loginsafety-e2e.mjs            # LS 26 场景（需 ForwardedHeaders 开启的后端，见脚本头部）
 node local-dev/prompt-e2e.mjs                # PT 40 场景
-node local-dev/skill-userconfig-e2e.mjs      # SKL 20 场景
-node local-dev/team-agent-e2e.mjs            # AG 52 场景
+node local-dev/skill-userconfig-e2e.mjs      # SKL 41 用例
+node local-dev/team-agent-e2e.mjs            # AG 54 场景
 node local-dev/message-e2e.mjs               # MSG 9 场景（MQ 场景管理口不可达时 SKIP；发送链路见 tests/MoAI.Message.Tests）
 # 前端
 cd ui && npm run typecheck && npm run lint && npm run test

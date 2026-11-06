@@ -15,7 +15,6 @@ import {
   saveAppUserConfig,
   updateAppSessionPrompt,
 } from '@/api/app'
-import { getMyPrompts, getTeamPrompts, getTopUsedPrompts } from '@/api/prompt'
 import { getTeamAvailableModels } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type AgentChatHandlers } from '@/api/agentChat'
 import { uploadChatFile } from '@/utils/storage'
@@ -32,12 +31,6 @@ vi.mock('@/api/app', () => ({
   saveAppUserConfig: vi.fn().mockResolvedValue(undefined),
   decideAppSessionToolApproval: vi.fn(),
   extractChatAttachment: vi.fn(),
-}))
-
-vi.mock('@/api/prompt', () => ({
-  getMyPrompts: vi.fn(),
-  getTeamPrompts: vi.fn(),
-  getTopUsedPrompts: vi.fn(),
 }))
 
 vi.mock('@/api/aichannel', () => ({
@@ -103,6 +96,12 @@ describe('AppChat（Agent 应用对话页）', () => {
       defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      // 可选专家池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（后端聚合下发；客服专家为绑定的团队提示词）
+      promptOptions: [
+        { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0, useCount: 3 },
+        { promptId: 22, name: '客服专家', description: '售后话术', teamId: 3, useCount: 8 },
+      ],
       toolApprovalMode: 'auto',
       toolApprovalExemptNames: ['search_knowledge_base'],
       toolApprovalExemptPrefixes: ['skill_'],
@@ -113,16 +112,6 @@ describe('AppChat（Agent 应用对话页）', () => {
       memoryGlobalMode: 0,
       memoryGlobalAllowed: false,
     })
-    vi.mocked(getMyPrompts).mockResolvedValue([
-      { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0 },
-    ] as never)
-    vi.mocked(getTeamPrompts).mockResolvedValue([
-      { promptId: 22, name: '客服专家', description: '售后话术', teamId: 3 },
-    ] as never)
-    vi.mocked(getTopUsedPrompts).mockResolvedValue([
-      { promptId: 22, name: '客服专家', description: '售后话术', teamId: 3, useCount: 8 },
-      { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0, useCount: 3 },
-    ] as never)
     vi.mocked(updateAppSessionPrompt).mockResolvedValue(undefined)
     vi.mocked(decideAppSessionToolApproval).mockResolvedValue('approved')
   })
@@ -138,7 +127,7 @@ describe('AppChat（Agent 应用对话页）', () => {
     // 快捷输入来自应用配置（管理员自定义），不再使用写死的默认建议
     expect(screen.getByText('帮我总结一份文档的核心要点')).toBeInTheDocument()
     expect(screen.getByText('根据知识库回答一个业务问题')).toBeInTheDocument()
-    // 输入框下方展示热门专家（含使用次数）；专家列表在应用详情确认非流程应用后加载，异步到达
+    // 输入框下方展示热门专家（可选池内被选用次数最多的前 10，含使用次数）；随 userconfig 异步到达
     await waitFor(() => expect(screen.getByText('热门专家')).toBeInTheDocument())
     expect(screen.getByText('8 次使用')).toBeInTheDocument()
     expect(screen.queryByText(/输入问题开始对话/)).not.toBeInTheDocument()
@@ -159,6 +148,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'auto',
       toolApprovalExemptNames: [],
       toolApprovalExemptPrefixes: [],
@@ -411,6 +402,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'approval',
       toolApprovalAutoApprovedNames: [],
       toolApprovalAutoApprovedPrefixes: [],
@@ -469,6 +462,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'approval',
       toolApprovalAutoApprovedNames: [],
       toolApprovalAutoApprovedPrefixes: [],
@@ -515,6 +510,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'approval',
       toolApprovalAutoApprovedNames: ['weather'],
       toolApprovalAutoApprovedPrefixes: ['sandbox_'],
@@ -725,9 +722,6 @@ describe('AppChat（Agent 应用对话页）', () => {
     // 后端流程分支不装配专家/技能/审批：对应请求不应发起
     await waitFor(() => expect(getAppDetail).toHaveBeenCalled())
     expect(getAppUserConfig).not.toHaveBeenCalled()
-    expect(getMyPrompts).not.toHaveBeenCalled()
-    expect(getTeamPrompts).not.toHaveBeenCalled()
-    expect(getTopUsedPrompts).not.toHaveBeenCalled()
   })
 
   it('流程应用：发送消息创建会话（不绑定专家）并流式接收回复', async () => {

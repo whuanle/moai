@@ -206,10 +206,10 @@ public sealed class AppAgentFactory
         var policy = await _appSecurityService.GetPolicyAsync(appId, cancellationToken).ConfigureAwait(false);
         var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId, policy);
 
-        // 应用默认技能由管理员配置，用户可在应用设置中取消勾选（勾选集为默认集的子集）；
-        // 未保存过用户配置时默认全部启用；调试会话不查用户配置（保持应用默认视角）.
-        var defaultSkillIds = ParsePluginIds(effectiveConfig.Skills);
-        var effectiveSkillIds = defaultSkillIds;
+        // 可选技能池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（排除禁用）；用户勾选与池交集生效，绑定在前（保持配置顺序）；
+        // 未保存过用户配置时默认全部启用（绑定集）；调试会话不查用户配置（保持应用默认视角）.
+        var boundSkillIds = ParsePluginIds(effectiveConfig.Skills);
+        var effectiveSkillIds = boundSkillIds;
         if (!isDebug)
         {
             var userConfig = await _databaseContext.AppUserConfigs.AsNoTracking()
@@ -218,8 +218,41 @@ public sealed class AppAgentFactory
                 .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (userConfig != null)
             {
-                var selected = ParsePluginIds(userConfig.Skills).ToHashSet();
-                effectiveSkillIds = defaultSkillIds.Where(id => selected.Contains(id)).ToList();
+                var selectedOrdered = new List<Guid>();
+                var selectedSet = new HashSet<Guid>();
+                foreach (var id in ParsePluginIds(userConfig.Skills))
+                {
+                    if (selectedSet.Add(id))
+                    {
+                        selectedOrdered.Add(id);
+                    }
+                }
+
+                var poolIds = (await _databaseContext.Skills.AsNoTracking()
+                    .Where(x => selectedSet.Contains(x.Id) && !x.IsDisable
+                        && (boundSkillIds.Contains(x.Id) || x.IsPublic
+                            || (x.TeamId == 0 && !x.IsSystem && x.CreateUserId == userId)))
+                    .Select(x => x.Id)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false))
+                    .ToHashSet();
+                var effective = new List<Guid>();
+                foreach (var id in boundSkillIds)
+                {
+                    if (poolIds.Contains(id))
+                    {
+                        effective.Add(id);
+                    }
+                }
+
+                foreach (var id in selectedOrdered)
+                {
+                    if (!boundSkillIds.Contains(id) && poolIds.Contains(id))
+                    {
+                        effective.Add(id);
+                    }
+                }
+
+                effectiveSkillIds = effective;
             }
         }
 
@@ -258,7 +291,7 @@ public sealed class AppAgentFactory
         var instructions = effectiveConfig.Prompt;
         if (activeTeamAgent != null && !string.IsNullOrWhiteSpace(activeTeamAgent.MainPrompt))
         {
-            var teamAgentBlock = $"[协作模式：{activeTeamAgent.Name}]\n{activeTeamAgent.MainPrompt}";
+            var teamAgentBlock = BuildTeamAgentBlock(activeTeamAgent, effectiveConfig);
             instructions = string.IsNullOrWhiteSpace(instructions)
                 ? teamAgentBlock
                 : $"{instructions}\n\n{teamAgentBlock}";
@@ -302,6 +335,35 @@ public sealed class AppAgentFactory
         }
 
         return ids;
+    }
+
+    /// <summary>
+    /// 构建团队智能体注入块（绑定与子代理协作解耦，app sdd D53）：绑定即主智能体提示词生效.
+    /// 开启子代理协作且有子智能体时附名册（名称/职责 + 派发指引），主代理按描述自主决定派发（opencode 语义）；
+    /// 未开启协作或无子智能体时注明独立完成，避免模型虚构派发行为.
+    /// </summary>
+    /// <param name="teamAgent">本轮生效智能体定义.</param>
+    /// <param name="config">生效配置行（读子代理协作开关）.</param>
+    /// <returns>注入到系统提示词的文本块.</returns>
+    private static string BuildTeamAgentBlock(SnapshotTeamAgent teamAgent, AppAgentConfigEntity config)
+    {
+        var block = $"[团队智能体：{teamAgent.Name}]\n{teamAgent.MainPrompt}";
+        var subAgentEnabled = AppAgentExecutionSettings.Parse(config.ExecutionSettings).SubAgent is { Enabled: true };
+        var namedSubs = teamAgent.Subs.Where(x => !string.IsNullOrWhiteSpace(x.Key)).ToList();
+        if (!subAgentEnabled || namedSubs.Count == 0)
+        {
+            return $"{block}\n\n[派发说明] 当前未开启子代理协作（或该智能体未配置子智能体），没有子智能体可供派发，请独立完成用户任务，不要尝试委派。";
+        }
+
+        var roster = string.Join("\n", namedSubs.Select(x =>
+        {
+            var name = string.IsNullOrWhiteSpace(x.Name) ? x.Key : x.Name;
+            var description = string.IsNullOrWhiteSpace(x.Description) ? "（无职责描述）" : x.Description;
+            return $"- {name}（工具名 subagent_{x.Key}）：{description}";
+        }));
+        return $"{block}\n\n[可派发子智能体]\n{roster}\n" +
+            "派发说明：按子智能体职责自主判断是否委派（经 subagent_ 前缀派发工具），无需用户明示；" +
+            "用一句明确、可独立完成的任务描述委派，复杂任务拆成多次委派；子智能体在独立上下文中执行并仅回传最终结论，由你整合后答复用户。";
     }
 
     /// <summary>

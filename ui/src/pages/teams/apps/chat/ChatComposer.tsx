@@ -224,6 +224,8 @@ export function ChatComposer({
                 variant="borderless"
                 showSearch
                 style={{ minWidth: 130, maxWidth: 220 }}
+                // 弹层按内容自适应宽度（触发器窄，默认同宽会挤压头像与描述）
+                popupMatchSelectWidth={false}
                 value={selectedTeamAgentId ?? undefined}
                 onChange={(v) => onTeamAgentChange?.(v)}
                 options={teamAgentOptions.map((a) => {
@@ -232,7 +234,7 @@ export function ChatComposer({
                   const desc = (a.description || '').trim()
                   const agentTagLabel = (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <Avatar shape="square" size={14} src={resolveStorageUrl(a.avatarObjectKey || '') || undefined}>
+                      <Avatar shape="square" size={14} style={{ flexShrink: 0 }} src={resolveStorageUrl(a.avatarObjectKey || '') || undefined}>
                         {name.slice(0, 1)}
                       </Avatar>
                       <span>{name}</span>
@@ -243,12 +245,15 @@ export function ChatComposer({
                     agentTagLabel,
                     label: (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                        <Avatar shape="square" size={18} src={resolveStorageUrl(a.avatarObjectKey || '') || undefined}>
+                        <Avatar shape="square" size={18} style={{ flexShrink: 0 }} src={resolveStorageUrl(a.avatarObjectKey || '') || undefined}>
                           {name.slice(0, 1)}
                         </Avatar>
-                        <span style={{ flexShrink: 0 }}>{name}</span>
+                        <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{name}</span>
                         {desc && (
-                          <span style={{ fontSize: 12, opacity: 0.65, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span
+                            style={{ fontSize: 12, opacity: 0.65, maxWidth: 280, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                            title={desc}
+                          >
                             {desc}
                           </span>
                         )}

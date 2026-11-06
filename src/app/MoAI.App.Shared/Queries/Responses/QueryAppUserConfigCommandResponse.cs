@@ -54,15 +54,27 @@ public class QueryAppUserConfigCommandResponse
 
 
     /// <summary>
-    /// 用户当前勾选的技能 id 列表（应用默认技能的子集）；
-    /// 无用户配置行时返回应用默认技能全集（默认全部启用）.
+    /// 用户当前勾选的技能 id 列表（可选技能池的子集）；
+    /// 无用户配置行时返回应用默认技能（绑定目录，默认全部启用）.
     /// </summary>
     public IReadOnlyList<Guid> Skills { get; init; } = Array.Empty<Guid>();
 
     /// <summary>
-    /// 应用默认使用的团队技能目录（管理员配置，按配置顺序），用户可取消勾选.
+    /// 应用默认技能目录（管理员配置，按配置顺序），无用户配置行时默认全部启用.
     /// </summary>
     public IReadOnlyList<AppUserSkillOption> DefaultSkills { get; init; } = Array.Empty<AppUserSkillOption>();
+
+    /// <summary>
+    /// 可选技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人（排除禁用；按 默认→市场→个人 排序去重），
+    /// 用户勾选只能落在该池内.
+    /// </summary>
+    public IReadOnlyList<AppUserSkillOption> SkillOptions { get; init; } = Array.Empty<AppUserSkillOption>();
+
+    /// <summary>
+    /// 可选专家候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（按 绑定→市场→个人 排序去重），
+    /// 不含团队提示词（团队资源经管理员绑定才会进入候选）.
+    /// </summary>
+    public IReadOnlyList<AppUserPromptOption> PromptOptions { get; init; } = Array.Empty<AppUserPromptOption>();
 
     /// <summary>
     /// 工具审批模式：auto=自动执行；approval=重要工具调用前需人工批准；无用户配置行时为 auto.
@@ -122,12 +134,58 @@ public class AppUserSkillOption
     public bool IsSystem { get; init; }
 
     /// <summary>
-    /// 所属团队 id，0=系统内置或市场公开.
+    /// 所属团队 id，0=系统内置/市场公开/个人技能.
     /// </summary>
     public int TeamId { get; init; }
+
+    /// <summary>
+    /// 是否已上架市场公开.
+    /// </summary>
+    public bool IsPublic { get; init; }
 
     /// <summary>
     /// 使用次数（技能装载工具被模型调用时自增），面板技能卡片热门排序依据.
     /// </summary>
     public int? UseCount { get; init; }
+}
+
+/// <summary>
+/// 应用设置中展示的可选专家（提示词）项.
+/// </summary>
+public class AppUserPromptOption
+{
+    /// <summary>
+    /// 提示词 id.
+    /// </summary>
+    public int PromptId { get; init; }
+
+    /// <summary>
+    /// 专家名称.
+    /// </summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 专家描述.
+    /// </summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 头像存储路径（objectKey，空串=未设置）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 所属团队 id，0=个人提示词.
+    /// </summary>
+    public int TeamId { get; init; }
+
+    /// <summary>
+    /// 是否已上架市场公开.
+    /// </summary>
+    public bool IsPublic { get; init; }
+
+    /// <summary>
+    /// 被选用次数（选用专家时自增），面板专家卡片热门排序依据.
+    /// </summary>
+    public int UseCount { get; init; }
 }

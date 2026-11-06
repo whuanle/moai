@@ -653,6 +653,11 @@ body.moai-chat-resizing {
   background: var(--mc-primary-bg);
 }
 
+.moai-chat__expert-source.is-market {
+  color: var(--mc-warning);
+  background: var(--mc-warning-bg);
+}
+
 .moai-chat__expert-desc {
   margin-top: 2px;
   font-size: 11.5px;
@@ -1429,6 +1434,159 @@ body.moai-chat-resizing {
   align-items: center;
   gap: 8px;
   padding: 2px 0 6px 22px;
+}
+
+/* 子智能体派发嵌套活动卡：容器化卡片，头部（头像+名称+子智能体徽标+状态+耗时）+ 可展开过程区 */
+.moai-chat__subagent-card {
+  margin: 2px 0 6px;
+  max-width: 720px;
+  padding: 4px 10px;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  background: var(--mc-bg);
+  transition: border-color 0.15s ease;
+}
+
+.moai-chat__subagent-card.is-running {
+  border-color: var(--mc-primary-border);
+}
+
+.moai-chat__subagent-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.moai-chat__subagent-avatar {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.moai-chat__subagent-card .moai-chat__tool-card-name {
+  font-family: inherit;
+}
+
+.moai-chat__subagent-badge {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--mc-primary-bg);
+  color: var(--mc-primary);
+  font-size: 10.5px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.moai-chat__tool-card-status.is-running {
+  color: var(--mc-primary);
+}
+
+.moai-chat__tool-card-status.is-failed {
+  color: var(--mc-danger);
+}
+
+.moai-chat__subagent-elapsed {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--mc-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.moai-chat__subagent-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--mc-border);
+  font-size: 13px;
+}
+
+.moai-chat__subagent-label {
+  flex-shrink: 0;
+  color: var(--mc-text-tertiary);
+  font-size: 11.5px;
+}
+
+.moai-chat__subagent-task {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--mc-text-secondary);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* 嵌套工具步骤：名称行 + 截断结果摘要 */
+.moai-chat__subagent-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.moai-chat__subagent-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moai-chat__subagent-step-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--mc-text-secondary);
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+.moai-chat__subagent-step-result {
+  margin: 2px 0 0 22px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--mc-code-bg);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--mc-text-tertiary);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 96px;
+  overflow: auto;
+}
+
+/* 子代理正文流式输出 */
+.moai-chat__subagent-text {
+  color: var(--mc-text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.moai-chat__subagent-final {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--mc-border);
+  color: var(--mc-text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 完成后折叠态的一行结论摘要 */
+.moai-chat__subagent-summary {
+  margin: 0 0 4px;
+  padding: 2px 0;
+  color: var(--mc-text-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 复制按钮悬浮于回合右上角，不占布局空间（悬停该消息块时浮现） */

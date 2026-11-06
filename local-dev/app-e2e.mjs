@@ -525,12 +525,13 @@ async function main() {
     const TEAM_ID = Number(pTeam.json?.value)
     const OUTSIDER_ID = Number(outsiderPrompt.json?.value)
 
-    // 创建会话时直接绑定团队提示词
-    const withPrompt = await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'ap44-with-prompt', promptId: TEAM_ID } })
-    check('AP-44c 创建会话绑定团队提示词 200', withPrompt.status === 200 && isGuid(withPrompt.json?.value), `${withPrompt.status} ${withPrompt.text.slice(0, 120)}`)
+    // 创建会话时直接绑定本人个人提示词（个人腿）；团队提示词未经应用绑定不可用（候选池=绑定∪市场∪个人）
+    const withPrompt = await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'ap44-with-prompt', promptId: PERSONAL_ID } })
+    check('AP-44c 创建会话绑定本人个人提示词 200', withPrompt.status === 200 && isGuid(withPrompt.json?.value), `${withPrompt.status} ${withPrompt.text.slice(0, 120)}`)
     const EP_SESSION = String(withPrompt.json?.value ?? '')
     const epList = await api('GET', `/api/app/${AGENT_ID}/session/list`, { token: owner.token })
-    check('AP-44d 会话列表回读 promptId', (epList.json?.items ?? []).some((s) => String(s.sessionId) === EP_SESSION && Number(s.promptId) === TEAM_ID), epList.text.slice(0, 160))
+    check('AP-44d 会话列表回读 promptId', (epList.json?.items ?? []).some((s) => String(s.sessionId) === EP_SESSION && Number(s.promptId) === PERSONAL_ID), epList.text.slice(0, 160))
+    check('AP-44d2 绑定未绑定团队提示词 404', (await api('POST', `/api/app/${AGENT_ID}/session`, { token: owner.token, body: { title: 'ap44-unbound-team', promptId: TEAM_ID } })).status === 404)
 
     // 绑定他人个人提示词 404；不存在提示词 404；负数 400
     check('AP-44e 绑定他人个人提示词 404', (await api('PUT', `/api/app/session/${EP_SESSION}/prompt`, { token: owner.token, body: { promptId: OUTSIDER_ID } })).status === 404)
@@ -564,6 +565,8 @@ async function main() {
     // 删除提示词后会话仍保留 promptId，但对话装配时静默降级（不阻塞对话）；此处仅验证软删不回读出可用性错误
     const del = await api('DELETE', `/api/prompt/${PERSONAL_ID}`, { token: owner.token })
     check('AP-44l 清理：删除个人提示词 200', del.status === 200, `${del.status}`)
+    await api('DELETE', `/api/prompt/${TEAM_ID}`, { token: owner.token })
+    await api('DELETE', `/api/prompt/${OUTSIDER_ID}`, { token: outsider.token })
   }
 
   // AP-98 会话上下文用量查询（对话输入区环形指示数据源；门禁与零值回显）

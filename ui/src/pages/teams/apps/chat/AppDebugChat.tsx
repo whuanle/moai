@@ -9,11 +9,12 @@ import type { HttpAgent } from '@ag-ui/client'
 import { feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import { resolveStorageUrl } from '@/utils/storage'
-import { createDebugSession, decideAppSessionToolApproval, getAppUserConfig, type AppUserTeamAgentOption } from '@/api/app'
+import { createDebugSession, decideAppSessionToolApproval, getAppAgentConfig, getAppUserConfig, type AppUserTeamAgentOption } from '@/api/app'
 import { getTeamAvailableModels, type TeamAvailableModelItem } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type ToolApprovalMode } from '@/api/agentChat'
 import { ChatMessageList, type DisplayMessage, type ToolCallDisplay } from './ChatMessageList'
 import { ChatComposer } from './ChatComposer'
+import { applySubAgentEvent } from './subAgentTrace'
 import { useChatAttachments } from './useChatAttachments'
 import { ChatSidePanel } from './ChatSidePanel'
 import { buildOutgoingText, hasPendingAttachment } from './attachment'
@@ -92,6 +93,15 @@ export function AppDebugChat({ appId, appName, appAvatar, openingStatement, quic
 
   const userName = userInfo?.nickName || userInfo?.userName || 'U'
   const userAvatar = resolveStorageUrl(userInfo?.avatar ?? null)
+  // 子智能体嵌套活动卡档案：key → 展示名/头像（userconfig 绑定列表；未绑定 key 回退 key 显示）
+  const subAgentProfiles = useMemo(() => {
+    const profiles: Record<string, { name?: string; avatar?: string }> = {}
+    for (const agent of chatTeamAgents) {
+      if (!agent.key) continue
+      profiles[agent.key] = { name: agent.name, avatar: resolveStorageUrl(agent.avatarObjectKey ?? null) ?? undefined }
+    }
+    return profiles
+  }, [chatTeamAgents])
 
   // 开场白为本地展示消息，不入调试会话历史
   const openingMessage = useMemo<DisplayMessage | null>(() => {
@@ -163,14 +173,29 @@ export function AppDebugChat({ appId, appName, appAvatar, openingStatement, quic
           setChatModelOptions([])
           setSelectedChatModelId(null)
         }
-        // 团队智能体切换器：多选（≥2）才启用，单选由后端直接生效；初始选中=配置默认，缺省落回第一项
-        const teamAgents = cfg.teamAgents ?? []
-        setChatTeamAgents(teamAgents)
+        // 团队智能体切换器不取 userconfig（快照口径）：调试对话按最新草稿装配，选项由下方草稿配置 effect 提供
+      })
+      .catch(() => undefined)
+
+    // 调试团队智能体切换器：调试对话按最新草稿装配（后端同口径），选项与默认取应用草稿绑定的启用中智能体；
+    // 多选（≥2）才出切换器，单选由后端直接生效；正式对话页按发布快照口径（userconfig），与此有意区分
+    getAppAgentConfig(appId)
+      .then((cfg) => {
+        const options: AppUserTeamAgentOption[] = (cfg.teamAgents ?? [])
+          .filter((a) => a.enabled !== false && a.id)
+          .map((a) => ({
+            id: String(a.id),
+            key: a.key ?? null,
+            name: a.name ?? '-',
+            description: a.description ?? null,
+            avatarObjectKey: a.avatarObjectKey ?? null,
+          }))
+        setChatTeamAgents(options)
         setSelectedChatTeamAgentId((prev) => {
-          if (teamAgents.length < 2) return null
-          if (prev && teamAgents.some((a) => a.id === prev)) return prev
-          const preferred = cfg.defaultTeamAgentId || teamAgents[0]?.id || ''
-          return teamAgents.some((a) => a.id === preferred) ? preferred : (teamAgents[0]?.id ?? null)
+          if (options.length < 2) return null
+          if (prev && options.some((a) => a.id === prev)) return prev
+          const preferred = cfg.defaultTeamAgentId || options[0]?.id || ''
+          return options.some((a) => a.id === preferred) ? preferred : (options[0]?.id ?? null)
         })
       })
       .catch(() => undefined)
@@ -294,6 +319,10 @@ export function AppDebugChat({ appId, appName, appAvatar, openingStatement, quic
           } else if (info.name) {
             upsertToolCall({ id: info.id || crypto.randomUUID(), name: info.name, status: 'running' })
           }
+        },
+        onSubAgentEvent: (evt) => {
+          // 子智能体派发过程：started 绑定到同名运行中派发卡，后续事件按 traceId 归并进该卡 trace
+          patchMessages((prev) => applySubAgentEvent(prev, assistantId, evt))
         },
         onError: (message) =>
           patchMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: message || t('appDebug.runError') } : m))),
@@ -506,6 +535,7 @@ export function AppDebugChat({ appId, appName, appAvatar, openingStatement, quic
                   appAvatar={appAvatar}
                   userName={userName}
                   userAvatar={userAvatar}
+                  subAgentProfiles={subAgentProfiles}
                   onCopy={(text) => void copy(text)}
                   onToolApprove={(messageId, toolCall) => void decideTool(messageId, toolCall, true)}
                   onToolReject={(messageId, toolCall) => void decideTool(messageId, toolCall, false)}

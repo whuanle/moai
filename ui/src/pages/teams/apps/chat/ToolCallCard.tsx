@@ -10,6 +10,8 @@ import {
 } from '@ant-design/icons'
 import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { SubAgentTraceCard } from './SubAgentTraceCard'
+import { isSubAgentToolName, buildHistoryTrace, type SubAgentTraceState } from './subAgentTrace'
 
 /** 工具调用在对话流中的展示状态 */
 export type ToolCallStatus = 'running' | 'awaiting' | 'approved' | 'rejected' | 'done' | 'timeout'
@@ -20,10 +22,16 @@ export interface ToolCallDisplay {
   name: string
   argsJson?: string
   status: ToolCallStatus
+  /** 历史回放：工具结果文本（role=tool 行按 toolCallId 回填；子智能体卡展示为最终结论） */
+  result?: string
+  /** 子智能体派发卡的实时过程（moai.subagent 自定义事件累积；历史回放无 trace 由展示层按结果合成） */
+  trace?: SubAgentTraceState
 }
 
 export interface ToolCallCardProps {
   toolCall: ToolCallDisplay
+  /** 子智能体档案（key → 展示名/头像），由页面层从 userconfig 构建；用于子智能体卡头像与历史回放显示名 */
+  subAgentProfiles?: Record<string, { name?: string; avatar?: string }>
   onApprove?: (toolCall: ToolCallDisplay) => void
   onReject?: (toolCall: ToolCallDisplay) => void
 }
@@ -40,8 +48,9 @@ const STATUS_ICON_CLASS: Record<ToolCallStatus, string> = {
 /**
  * 工具调用卡片：展示工具名/参数与执行状态；审批模式下挂起等待时提供「批准/拒绝」操作，
  * 状态随决策与流式进展流转（等待审批 → 已批准·执行中 → 已完成 / 已拒绝 / 超时未执行）。
+ * 子代理派发工具（subagent_* / spawn_subagent）改走 SubAgentTraceCard 渲染嵌套活动卡。
  */
-export function ToolCallCard({ toolCall, onApprove, onReject }: ToolCallCardProps) {
+export function ToolCallCard({ toolCall, subAgentProfiles, onApprove, onReject }: ToolCallCardProps) {
   const { t } = useTranslation()
   const [argsOpen, setArgsOpen] = useState(false)
 
@@ -53,6 +62,11 @@ export function ToolCallCard({ toolCall, onApprove, onReject }: ToolCallCardProp
       return toolCall.argsJson
     }
   }, [toolCall.argsJson])
+
+  if (isSubAgentToolName(toolCall.name)) {
+    const trace = toolCall.trace ?? buildHistoryTrace(toolCall, subAgentProfiles)
+    return <SubAgentTraceCard toolCall={toolCall} trace={trace} avatar={subAgentProfiles?.[trace.agentKey]?.avatar} />
+  }
 
   return (
     <div className={`moai-chat__tool-card is-${toolCall.status}`}>

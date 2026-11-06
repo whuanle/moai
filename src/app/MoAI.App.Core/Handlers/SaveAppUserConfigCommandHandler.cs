@@ -56,10 +56,10 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
 
         if (request.PromptId != 0)
         {
-            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, app.TeamId, request.ContextUserId, cancellationToken);
+            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, request.PromptId, app.Id, request.ContextUserId, cancellationToken);
         }
 
-        // 应用默认技能集合：用户勾选只能落在该集合内
+        // 可选技能池 = 应用默认 ∪ 市场公开 ∪ 本人个人（应用默认按配置 JSON 原样放行，容忍已删除/停用的存量勾选）
         var skillsJson = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
             .Select(x => x.Skills)
@@ -67,9 +67,19 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
         var defaultSkillIds = AppAgentConfigJson.ParseGuidList(skillsJson).ToHashSet();
 
         var skills = request.Skills?.Distinct().ToList() ?? new List<Guid>();
-        if (skills.Count > 0 && skills.Any(x => !defaultSkillIds.Contains(x)))
+        if (skills.Count > 0)
         {
-            throw new BusinessException("存在应用未开放的技能，请在应用设置中重新选择.") { StatusCode = 400 };
+            var rows = await _databaseContext.Skills.AsNoTracking()
+                .Where(x => skills.Contains(x.Id))
+                .Select(x => new { x.Id, x.TeamId, x.IsSystem, x.IsPublic, x.IsDisable, x.CreateUserId })
+                .ToListAsync(cancellationToken);
+            var inPool = skills.All(id => defaultSkillIds.Contains(id)
+                || rows.Any(r => r.Id == id && !r.IsDisable
+                    && (r.IsPublic || (r.TeamId == 0 && !r.IsSystem && r.CreateUserId == request.ContextUserId))));
+            if (!inPool)
+            {
+                throw new BusinessException("存在不可用的技能，请在应用设置中重新选择.") { StatusCode = 400 };
+            }
         }
 
         // 长期记忆模式：应用开启记忆时才允许用户调整；跨应用选项须应用授权（ScopeDefault=crossApp），关闭记忆时仅允许 0/1
