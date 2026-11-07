@@ -6,6 +6,7 @@ import { fontSize, spacing } from '@/design-system/theme'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { updateApp, uploadAppAvatar } from '@/api/app'
 import { resolveStorageUrl } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 import type { AppDetail } from './AppConfigSection'
 
 const { Text } = Typography
@@ -146,6 +147,7 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
               rules={[
                 { required: true, message: t('appManage.namePlaceholder') },
                 { max: 20, message: `${t('appManage.name')} ≤ 20` },
+                { pattern: NAME_PATTERN, message: t('validation.nameChars') },
               ]}
             >
               <Input placeholder={t('appManage.namePlaceholder')} maxLength={20} />

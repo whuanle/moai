@@ -214,6 +214,7 @@ async function main() {
   // WK-02 参数校验
   check('WK-02a 空名称 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: '' } })).status === 400)
   check('WK-02b 超长名称 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'x'.repeat(51) } })).status === 400)
+  check('WK-02d 名称含特殊字符 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wk-name!' } })).status === 400)
   check('WK-02c 非法 teamId 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: 0, name: 'ok1' } })).status === 400)
 
   // WK-03 权限：Member 403 / 非成员 404
@@ -221,7 +222,7 @@ async function main() {
   check('WK-03b 非成员创建 404', (await api('POST', '/api/wiki', { token: outsider.token, body: { teamId: TID, name: 'nope' } })).status === 404)
 
   // WK-04 Admin 创建成功 + 列表
-  const WNAME = 'wk-' + TS
+  const WNAME = 'wk_' + TS
   const cr = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: WNAME, description: 'e2e wiki' } })
   check('WK-04a Admin 创建 200 且返回 id', cr.status === 200 && Number(cr.json?.value) > 0, `${cr.status} ${cr.text.slice(0, 120)}`)
   const WID = Number(cr.json?.value)
@@ -253,23 +254,23 @@ async function main() {
   check('WK-06c 不存在 404', (await api('GET', '/api/wiki/999999', { token: bob.token })).status === 404)
 
   // WK-07 更新
-  check('WK-07a Member 更新 403', (await api('PUT', `/api/wiki/${WID}`, { token: bob.token, body: { name: 'new-' + WNAME } })).status === 403)
-  check('WK-07b Admin 更新 200', (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'new-' + WNAME, description: '改过' } })).status === 200)
-  check('WK-07c 详情回显', (await api('GET', `/api/wiki/${WID}`, { token: alice.token })).json?.name === 'new-' + WNAME)
+  check('WK-07a Member 更新 403', (await api('PUT', `/api/wiki/${WID}`, { token: bob.token, body: { name: 'new_' + WNAME } })).status === 403)
+  check('WK-07b Admin 更新 200', (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'new_' + WNAME, description: '改过' } })).status === 200)
+  check('WK-07c 详情回显', (await api('GET', `/api/wiki/${WID}`, { token: alice.token })).json?.name === 'new_' + WNAME)
   check('WK-07d 更新为已有重名 409', await (async () => {
-    await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'second-' + TS } })
-    return (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'second-' + TS } })).status
+    await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'second_' + TS } })
+    return (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'second_' + TS } })).status
   })() === 409)
 
   // WK-08 删除
   check('WK-08a Member 删除 403', (await api('DELETE', `/api/wiki/${WID}`, { token: bob.token })).status === 403)
   check('WK-08b Admin 删除 200', (await api('DELETE', `/api/wiki/${WID}`, { token: alice.token })).status === 200)
   check('WK-08c 删除后详情 404', (await api('GET', `/api/wiki/${WID}`, { token: alice.token })).status === 404)
-  check('WK-08d 删除后列表不含', !(await api('GET', `/api/wiki/list?teamId=${TID}`, { token: alice.token })).json.items.some(i => i.name === 'new-' + WNAME))
-  check('WK-08e 删除后同名可重建', (await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'new-' + WNAME } })).status === 200)
+  check('WK-08d 删除后列表不含', !(await api('GET', `/api/wiki/list?teamId=${TID}`, { token: alice.token })).json.items.some(i => i.name === 'new_' + WNAME))
+  check('WK-08e 删除后同名可重建', (await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'new_' + WNAME } })).status === 200)
 
   // WK-09 公开字段已移除：团队知识库不存在公开概念，非成员访问一律 404
-  const pubName = 'pub-' + TS
+  const pubName = 'pub_' + TS
   const pub = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: pubName } })
   const PUBID = Number(pub.json?.value)
   check('WK-09a 非成员查详情 404（公开字段已移除）', (await api('GET', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
@@ -277,7 +278,7 @@ async function main() {
   check('WK-09c 非成员删除 404', (await api('DELETE', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
 
   // WK-10 非成员门禁保持
-  const privName = 'priv-' + TS
+  const privName = 'priv_' + TS
   const prv = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: privName } })
   const PRIVID = Number(prv.json?.value)
   check('WK-10 非成员查详情 404', (await api('GET', `/api/wiki/${PRIVID}`, { token: outsider.token })).status === 404)
@@ -291,7 +292,7 @@ async function main() {
 
   // WK-11 知识库最大文件大小（WIKI_MAX_FILE_SIZE_MB，超管设置，网页端与开放接口上传同时受限）
   {
-    const wk11 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk11-' + TS } })
+    const wk11 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk11_' + TS } })
     const WID11 = Number(wk11.json?.value)
     const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
     const rootTk = rootL.json.accessToken
@@ -315,7 +316,7 @@ async function main() {
 
   // WK-12 知识库允许上传文件类型（WIKI_ALLOWED_FILE_TYPES，超管设置，网页端与开放接口上传同时受限）
   {
-    const wk12 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk12-' + TS } })
+    const wk12 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk12_' + TS } })
     const WID12 = Number(wk12.json?.value)
     const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
     const rootTk = rootL.json.accessToken
@@ -341,7 +342,7 @@ async function main() {
 
   // WK-13 文档内嵌图片附件（提取 pdf/word/excel/ppt 落出的图片资产：登记/列表/下载/页码/重提取替换/删除联动与共享保护）
   {
-    const wk13 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk13-' + TS } })
+    const wk13 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk13_' + TS } })
     const WID13 = Number(wk13.json?.value)
 
     const PNG1 = buildPng(10)
@@ -411,6 +412,43 @@ async function main() {
     const d4 = await uploadWikiDoc(WID13, alice.token, `nomedia-${TS}.md`, 'text/markdown', mdBuf)
     const imgList4 = await api('GET', `/api/wiki/${WID13}/documents/${d4.documentId}/images`, { token: alice.token })
     check('WK-13l 无图文档图片列表为空数组', imgList4.status === 200 && Array.isArray(imgList4.json?.items) && imgList4.json.items.length === 0, `${imgList4.status} ${JSON.stringify(imgList4.json).slice(0, 120)}`)
+  }
+
+  // WK-14 跨知识库文件名搜索（GET /api/wiki/files/search：团队门禁 + 相关度排序 + 软删过滤）
+  {
+    const KW = `wkf${TS}`
+    const textMd = (tag) => Buffer.from(`# ${tag}\n\n跨库搜索测试内容。`, 'utf8')
+    const wA = Number((await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: `wka_${TS}` } })).json?.value)
+    const wB = Number((await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: `wkb_${TS}` } })).json?.value)
+    const NAME_A = `wka_${TS}`
+    // 上传顺序（决定更新时间升序）：包含档 → 前缀档1 → 前缀档2；期望排序 = 前缀档按更新时间倒序在前，包含档垫底
+    const fContains = await uploadWikiDoc(wB, alice.token, `zz-${KW}.md`, 'text/markdown', textMd('contains'))
+    const fPrefix1 = await uploadWikiDoc(wA, alice.token, `${KW}.md`, 'text/markdown', textMd('prefix1'))
+    const fPrefix2 = await uploadWikiDoc(wB, alice.token, `${KW}abc.md`, 'text/markdown', textMd('prefix2'))
+    check('WK-14a 两库各上传命中文件成功', wA > 0 && wB > 0 && !!fPrefix1.documentId && !!fPrefix2.documentId && !!fContains.documentId, `wA=${wA} wB=${wB} ${fPrefix1.error ?? ''}${fPrefix2.error ?? ''}${fContains.error ?? ''}`)
+
+    check('WK-14b 无 token 401', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`)).status === 401)
+    check('WK-14c 非成员 404', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: outsider.token })).status === 404)
+    check('WK-14d 空关键字 400', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=`, { token: bob.token })).status === 400)
+    check('WK-14d2 非法 limit 400', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}&limit=0`, { token: bob.token })).status === 400)
+
+    const s = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
+    const hits = s.json?.items ?? []
+    const hitIds = hits.map((x) => Number(x.documentId))
+    check('WK-14e Member 跨库命中 total=3', s.status === 200 && Number(s.json?.total) === 3 && hits.length === 3, `${s.status} total=${s.json?.total} hits=${hits.length}`)
+    check('WK-14f 命中项回显 wikiId/wikiName/fileName/updateTime', hits.every((x) => Number(x.wikiId) > 0 && [NAME_A, `wkb_${TS}`].includes(String(x.wikiName)) && !!x.fileName && !!x.updateTime), JSON.stringify(hits).slice(0, 260))
+    check('WK-14g 排序：前缀命中在前按更新时间倒序、包含命中垫底', hitIds[0] === fPrefix2.documentId && hitIds[1] === fPrefix1.documentId && hitIds[2] === fContains.documentId, `ids=${hitIds.join(',')} 期望=${fPrefix2.documentId},${fPrefix1.documentId},${fContains.documentId}`)
+
+    const sl = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}&limit=2`, { token: bob.token })
+    check('WK-14h limit=2 截断 items=2 且 total=3', sl.status === 200 && Number(sl.json?.total) === 3 && (sl.json?.items ?? []).length === 2, `total=${sl.json?.total} items=${(sl.json?.items ?? []).length}`)
+
+    await api('DELETE', `/api/wiki/${wB}/documents`, { token: alice.token, body: { documentIds: [fPrefix2.documentId] } })
+    const s2 = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
+    check('WK-14i 软删文档不再命中', s2.status === 200 && Number(s2.json?.total) === 2 && !(s2.json?.items ?? []).some((x) => Number(x.documentId) === fPrefix2.documentId), `total=${s2.json?.total}`)
+
+    await api('DELETE', `/api/wiki/${wA}`, { token: alice.token })
+    const s3 = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
+    check('WK-14j 删除知识库后其文档不再命中', s3.status === 200 && Number(s3.json?.total) === 1 && (s3.json?.items ?? []).every((x) => Number(x.wikiId) === wB), `total=${s3.json?.total}`)
   }
 
   console.log(`\n===== 知识库 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

@@ -41,6 +41,36 @@ export async function getWikis(teamId: number): Promise<WikisResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
+/** 跨知识库文件名搜索命中项 */
+export interface WikiTeamFileItem {
+  /** 后端 long 序列化为字符串 */
+  documentId?: string | number | null
+  /** 所属知识库 id */
+  wikiId?: string | number | null
+  /** 所属知识库名称 */
+  wikiName?: string | null
+  /** 文件名 */
+  fileName?: string | null
+  /** 最近更新时间 */
+  updateTime?: string | null
+}
+
+export interface WikiTeamFilesResult {
+  teamId?: string | number | null
+  /** 命中总数（排序截断前的全量匹配数） */
+  total?: number | null
+  items?: WikiTeamFileItem[] | null
+}
+
+/** 跨知识库按文件名搜索团队内的文档（相关度排序：精确 > 前缀 > 包含，同档按更新时间倒序） */
+export async function searchWikiTeamFiles(teamId: number, query: string, limit = 50): Promise<WikiTeamFilesResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.files.search.get({
+    queryParameters: { teamId: String(teamId), query, limit },
+  })
+  return { teamId: res?.teamId, total: Number(res?.total ?? 0), items: res?.items ?? [] }
+}
+
 /** 知识库上传约束：大小上限（MB，0 表示不限制）与允许上传的文件类型（小写扩展名） */
 export interface WikiUploadLimit {
   maxFileSizeMb: number

@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
-import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AppstoreAddOutlined, SearchOutlined, SettingOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { AvatarUpload, Card, feedback, useNeutralColors } from '@/design-system'
+import { AvatarUpload, Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
+import { NAME_PATTERN } from '@/utils/validation'
 import { createApp, getExternalApps, publishApp, unpublishApp, type AppItem, type AppKind } from '@/api/app'
 
 const { Text, Paragraph } = Typography
@@ -45,11 +46,15 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
 
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<AppItem[]>([])
+  const [keyword, setKeyword] = useState('')
+  const [appliedKeyword, setAppliedKeyword] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [createAvatar, setCreateAvatar] = useState<PendingAvatar | null>(null)
   const [uploadingCreateAvatar, setUploadingCreateAvatar] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+  /** 当前展示停用二次确认的应用 id */
+  const [confirmId, setConfirmId] = useState<string | null>(null)
   const [createForm] = Form.useForm<CreateFormValues>()
 
   const load = useCallback(async () => {
@@ -68,6 +73,16 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
   useEffect(() => {
     void load()
   }, [load])
+
+  /** 应用关键字筛选（查询按钮/回车触发） */
+  const applySearch = useCallback(() => setAppliedKeyword(keyword.trim()), [keyword])
+
+  /** 客户端过滤：关键字匹配名称/描述 */
+  const filteredItems = useMemo(() => {
+    const kw = appliedKeyword.toLowerCase()
+    if (!kw) return items
+    return items.filter((item) => `${item.name ?? ''}\n${item.description ?? ''}`.toLowerCase().includes(kw))
+  }, [items, appliedKeyword])
 
   const checkImage = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -152,31 +167,41 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: spacing.sm,
-          marginBottom: spacing.md,
-        }}
-      >
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('appManage.externalHint')}
-        </Text>
-        {canManage && (
-          <Button type="primary" icon={<AppstoreAddOutlined />} onClick={openCreate}>
-            {t('appManage.createExternal')}
+      <PageToolbar
+        filters={
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={applySearch}
+            allowClear
+            maxLength={100}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            placeholder={t('appManage.searchPlaceholder')}
+            style={{ width: 240 }}
+          />
+        }
+        queries={
+          <Button loading={loading} onClick={applySearch}>
+            {t('ds.query.search')}
           </Button>
-        )}
-      </div>
+        }
+        actions={
+          canManage && (
+            <Button type="primary" icon={<AppstoreAddOutlined />} onClick={openCreate}>
+              {t('appManage.createExternal')}
+            </Button>
+          )
+        }
+      />
 
       <Spin spinning={loading}>
         {!loading && items.length === 0 ? (
           <Empty description={t('appManage.externalEmpty')} />
+        ) : !loading && filteredItems.length === 0 ? (
+          <Empty description={t('appManage.filterEmpty')} />
         ) : (
           <Row gutter={[spacing.md, spacing.md]}>
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const name = item.name || '-'
               const published = item.publishStatus === 1
               return (
@@ -209,16 +234,56 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
                             <div style={{ marginTop: 2 }}>{renderKind(item.appType)}</div>
                           </div>
                         </div>
-                        {canManage && (
-                          <Button
-                            type="link"
-                            size="small"
-                            icon={<SettingOutlined />}
-                            style={{ height: 'auto', padding: 0, flexShrink: 0 }}
-                            onClick={() => openManage(item)}
-                          >
-                            {t('appManage.manage')}
-                          </Button>
+                        {canManage && item.appType !== 'workflow' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: spacing.xs, flexShrink: 0 }}>
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<SettingOutlined />}
+                              style={{ height: 'auto', padding: 0 }}
+                              onClick={() => openManage(item)}
+                            >
+                              {t('appManage.manage')}
+                            </Button>
+                            <Popconfirm
+                              title={t('appManage.unpublishConfirm')}
+                              open={confirmId === item.appId}
+                              onConfirm={() => {
+                                setConfirmId(null)
+                                void handleTogglePublish(item)
+                              }}
+                              onCancel={() => setConfirmId(null)}
+                              okText={t('appManage.confirm')}
+                              cancelText={t('appManage.cancel')}
+                            >
+                              <Switch
+                                size="small"
+                                checked={published}
+                                loading={busyId === item.appId}
+                                checkedChildren={t('appManage.unpublish')}
+                                unCheckedChildren={t('appManage.publish')}
+                                onChange={(checked) => {
+                                  if (checked) {
+                                    void handleTogglePublish(item)
+                                  } else {
+                                    setConfirmId(item.appId ?? null)
+                                  }
+                                }}
+                              />
+                            </Popconfirm>
+                          </div>
+                        ) : (
+                          canManage && (
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<SettingOutlined />}
+                              style={{ height: 'auto', padding: 0, flexShrink: 0 }}
+                              onClick={() => openManage(item)}
+                            >
+                              {t('appManage.manage')}
+                            </Button>
+                          )
                         )}
                       </div>
                       <Paragraph
@@ -228,17 +293,6 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
                       >
                         {item.description || '-'}
                       </Paragraph>
-                      {canManage && item.appType !== 'workflow' && (
-                        <Button
-                          size="small"
-                          block
-                          loading={busyId === item.appId}
-                          type={published ? 'default' : 'primary'}
-                          onClick={() => void handleTogglePublish(item)}
-                        >
-                          {published ? t('appManage.unpublish') : t('appManage.publish')}
-                        </Button>
-                      )}
                       <div
                         style={{
                           display: 'flex',
@@ -321,6 +375,7 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
             rules={[
               { required: true, message: t('appManage.namePlaceholder') },
               { max: 20, message: `${t('appManage.name')} ≤ 20` },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('appManage.namePlaceholder')} maxLength={20} />

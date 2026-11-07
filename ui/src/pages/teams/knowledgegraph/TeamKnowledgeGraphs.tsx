@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Avatar, Button, Col, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag } from 'antd'
-import { ClusterOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
-import { AvatarUpload, Card, feedback } from '@/design-system'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { ClusterOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { AvatarUpload, Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   createKnowledgeGraph,
   deleteKnowledgeGraph,
@@ -19,6 +21,8 @@ import {
 
 const ROLE_MEMBER = 0
 
+const { Paragraph } = Typography
+
 interface FormValues {
   name: string
   description?: string
@@ -30,9 +34,13 @@ interface FormValues {
 export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const neutral = useNeutralColors()
   const [items, setItems] = useState<KnowledgeGraphItem[]>([])
   const [myRole, setMyRole] = useState<number | null>(null)
   const [enabled, setEnabled] = useState(true)
+  /** 搜索输入框内容（查询按钮/回车触发后才生效） */
+  const [keyword, setKeyword] = useState('')
+  const [appliedKeyword, setAppliedKeyword] = useState('')
   const [templates, setTemplates] = useState<KnowledgeGraphTemplateItem[]>([])
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<KnowledgeGraphItem | null>(null)
@@ -54,6 +62,16 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   }, [teamId])
 
   useEffect(() => { void load() }, [load])
+
+  /** 应用关键字筛选（查询按钮/回车触发） */
+  const applySearch = useCallback(() => setAppliedKeyword(keyword.trim()), [keyword])
+
+  /** 客户端过滤：关键字匹配名称/描述 */
+  const filteredItems = useMemo(() => {
+    const kw = appliedKeyword.toLowerCase()
+    if (!kw) return items
+    return items.filter((item) => `${item.name ?? ''}\n${item.description ?? ''}`.toLowerCase().includes(kw))
+  }, [items, appliedKeyword])
 
   useEffect(() => {
     if (enabled) void getKnowledgeGraphTemplates().then(setTemplates).catch(() => setTemplates([]))
@@ -151,53 +169,138 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
 
   return (
     <>
-      <Space style={{ marginBottom: spacing.md }}>
-        {isAdminPlus && (
-          <Button type="primary" icon={<PlusOutlined />} disabled={!enabled} onClick={openCreate}>
-            {t('knowledgegraph.create')}
-          </Button>
-        )}
-      </Space>
+      <PageToolbar
+        filters={
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={applySearch}
+            allowClear
+            maxLength={100}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            placeholder={t('knowledgegraph.listSearchPlaceholder')}
+            style={{ width: 240 }}
+          />
+        }
+        queries={<Button onClick={applySearch}>{t('ds.query.search')}</Button>}
+        actions={
+          isAdminPlus && (
+            <Button type="primary" icon={<PlusOutlined />} disabled={!enabled} onClick={openCreate}>
+              {t('knowledgegraph.create')}
+            </Button>
+          )
+        }
+      />
       {!enabled && <div style={{ marginBottom: spacing.md }}>{t('knowledgegraph.disabled')}</div>}
-      <Row gutter={[spacing.md, spacing.md]}>
-        {items.map((item) => (
-          <Col key={String(item.kgId)} xs={24} sm={12} md={8} lg={6}>
+      {items.length === 0 ? (
+        <Empty description={t('knowledgegraph.empty')} />
+      ) : filteredItems.length === 0 ? (
+        <Empty description={t('knowledgegraph.filterEmpty')} />
+      ) : (
+        <Row gutter={[spacing.md, spacing.md]}>
+          {filteredItems.map((item) => (
+          <Col key={String(item.kgId)} xs={24} sm={12} md={8} lg={6} xxl={4}>
             <Card
               hoverable
-              style={{ cursor: 'pointer' }}
+              style={{ height: '100%', cursor: 'pointer' }}
+              styles={{ body: { padding: spacing.md } }}
               onClick={() => navigate(`/team/${teamId}/kg/${item.kgId}/canvas`)}
             >
-              <Space size={spacing.sm} align="start">
-                <Avatar shape="square" size={40} icon={<ClusterOutlined />} src={item.avatarPath?.trim() ? resolveStorageUrl(item.avatarPath) : undefined} />
-                <div style={{ fontWeight: 600 }}>{item.name}</div>
-              </Space>
-              {item.mode === 'connected' && (
-                <div style={{ marginTop: spacing.xs }}>
-                  <Tag color="blue">{t('knowledgegraph.connectedBadge')}</Tag>
-                </div>
-              )}
-              <div style={{ opacity: 0.65, minHeight: 22 }}>{item.description || '-'}</div>
-              {isAdminPlus && (
-                <Space size={0} onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    aria-label={t('knowledgegraph.edit')}
-                    onClick={() => openEdit(item)}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+                  <Avatar
+                    shape="square"
+                    size={44}
+                    icon={<ClusterOutlined />}
+                    src={item.avatarPath?.trim() ? resolveStorageUrl(item.avatarPath) : undefined}
                   />
-                  <Popconfirm
-                    title={item.mode === 'connected' ? t('knowledgegraph.deleteConnectedConfirm') : t('knowledgegraph.deleteConfirm')}
-                    onConfirm={() => void handleDelete(item)}
-                  >
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('knowledgegraph.delete')} />
-                  </Popconfirm>
-                </Space>
-              )}
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 15,
+                        lineHeight: 1.4,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {item.name || '-'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs, marginTop: 2, minWidth: 0 }}>
+                      {(item.entityCount != null || item.relationCount != null) && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            lineHeight: 1.5,
+                            color: neutral.textTertiary,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {`${item.entityCount ?? 0} ${t('knowledgegraph.statEntities')} · ${item.relationCount ?? 0} ${t('knowledgegraph.statRelations')}`}
+                        </span>
+                      )}
+                      {item.mode === 'connected' && (
+                        <Tag color="blue" style={{ marginRight: 0, flexShrink: 0 }}>
+                          {t('knowledgegraph.connectedBadge')}
+                        </Tag>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Paragraph
+                  type="secondary"
+                  style={{ fontSize: 13, marginBottom: 0, minHeight: 38, flex: 1 }}
+                  ellipsis={{ rows: 2 }}
+                >
+                  {item.description || '-'}
+                </Paragraph>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: spacing.sm,
+                    fontSize: 12,
+                    color: neutral.textTertiary,
+                    marginTop: 'auto',
+                    borderTop: `1px solid ${neutral.border}`,
+                    paddingTop: spacing.sm,
+                  }}
+                >
+                  <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {t('knowledgegraph.colCreateTime')}: {formatDateTime(item.createTime)}
+                  </span>
+                  {isAdminPlus && (
+                    <Space size={0} onClick={(e) => e.stopPropagation()}>
+                      <Tooltip title={t('knowledgegraph.edit')}>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<EditOutlined />}
+                          aria-label={t('knowledgegraph.edit')}
+                          onClick={() => openEdit(item)}
+                        />
+                      </Tooltip>
+                      <Popconfirm
+                        title={item.mode === 'connected' ? t('knowledgegraph.deleteConnectedConfirm') : t('knowledgegraph.deleteConfirm')}
+                        onConfirm={() => void handleDelete(item)}
+                      >
+                        <Tooltip title={t('knowledgegraph.delete')}>
+                          <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('knowledgegraph.delete')} />
+                        </Tooltip>
+                      </Popconfirm>
+                    </Space>
+                  )}
+                </div>
+              </div>
             </Card>
           </Col>
         ))}
-      </Row>
+        </Row>
+      )}
 
       <Modal
         open={open}
@@ -226,7 +329,10 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
           <Form.Item
             name="name"
             label={t('knowledgegraph.name')}
-            rules={[{ required: true, message: t('knowledgegraph.namePlaceholder') }]}
+            rules={[
+              { required: true, message: t('knowledgegraph.namePlaceholder') },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
+            ]}
           >
             <Input maxLength={50} placeholder={t('knowledgegraph.namePlaceholder')} />
           </Form.Item>

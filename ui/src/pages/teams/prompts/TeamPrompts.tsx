@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DeleteOutlined, EditOutlined, EyeOutlined, SearchOutlined, SendOutlined, UndoOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tag, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, QueryBar, feedback, useNeutralColors } from '@/design-system'
@@ -147,37 +147,47 @@ export function TeamPrompts({ teamId, canManage }: { teamId: number; canManage: 
       <Tag>{t('prompt.unclassified')}</Tag>
     )
 
-  /** 查看/编辑/上架/撤回/删除操作，卡片底栏使用 */
+  /** 查看/编辑/上架/撤回/删除操作，卡片底栏使用；纯图标按钮必须带 Tooltip 说明用途 */
   const renderActions = (record: PromptItem) => (
     <Space size={0}>
-      <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('prompt.view')} onClick={() => void openDetail(record)} />
+      <Tooltip title={t('prompt.view')}>
+        <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('prompt.view')} onClick={() => void openDetail(record)} />
+      </Tooltip>
       {canManage && (
         <>
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            aria-label={t('prompt.edit')}
-            onClick={() => navigate(`/team/${teamId}/prompt/${record.promptId}/edit`)}
-          />
-          {record.isPublic ? null : record.pendingPublicationId ? (
-            <Popconfirm title={t('prompt.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
-              <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('prompt.withdraw')} />
-            </Popconfirm>
-          ) : (
+          <Tooltip title={t('prompt.edit')}>
             <Button
               type="text"
               size="small"
-              icon={<SendOutlined />}
-              aria-label={t('prompt.apply')}
-              onClick={() => {
-                setApplyRecord(record)
-                applyForm.resetFields()
-              }}
+              icon={<EditOutlined />}
+              aria-label={t('prompt.edit')}
+              onClick={() => navigate(`/team/${teamId}/prompt/${record.promptId}/edit`)}
             />
+          </Tooltip>
+          {record.isPublic ? null : record.pendingPublicationId ? (
+            <Popconfirm title={t('prompt.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
+              <Tooltip title={t('prompt.withdraw')}>
+                <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('prompt.withdraw')} />
+              </Tooltip>
+            </Popconfirm>
+          ) : (
+            <Tooltip title={t('prompt.apply')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<SendOutlined />}
+                aria-label={t('prompt.apply')}
+                onClick={() => {
+                  setApplyRecord(record)
+                  applyForm.resetFields()
+                }}
+              />
+            </Tooltip>
           )}
           <Popconfirm title={t('prompt.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('prompt.delete')} />
+            <Tooltip title={t('prompt.delete')}>
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('prompt.delete')} />
+            </Tooltip>
           </Popconfirm>
         </>
       )}
@@ -203,19 +213,13 @@ export function TeamPrompts({ teamId, canManage }: { teamId: number; canManage: 
       <QueryBar
         form={filterForm}
         onSearch={applyFilters}
-        onReset={applyFilters}
         loading={loading}
         extra={
-          <>
-            {canManage && (
-              <Button type="primary" onClick={() => navigate(`/team/${teamId}/prompt/new`)}>
-                {t('prompt.create')}
-              </Button>
-            )}
-            <Button onClick={() => void load()} loading={loading}>
-              {t('ds.table.refresh')}
+          canManage && (
+            <Button type="primary" onClick={() => navigate(`/team/${teamId}/prompt/new`)}>
+              {t('prompt.create')}
             </Button>
-          </>
+          )
         }
       >
         <Form.Item name="keywords">

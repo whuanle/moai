@@ -195,26 +195,26 @@ async function main() {
   if (!models) { console.log('FAIL | 桩模型创建失败，终止'); process.exit(1) }
 
   // 知识库 W1：App1 绑定后主代理披露知识库检索工具（scanner 未声明 → 白名单收缩对照）
-  const W1 = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'taa-wiki-' + TS } })).json.value)
+  const W1 = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'taa_wiki_' + TS } })).json.value)
 
   // 自定义智能体 C1（主提示词 V1 标记 + 子智能体 scanner）与 C2（主依赖声明 W1）、C3（停用用）
   const C1 = String((await api('POST', '/api/team-agent', {
     token: owner.token,
     body: {
-      teamId: TID, key: 'builder', name: '构建器-' + TS, description: 'E2E 构建智能体',
+      teamId: TID, key: 'builder', name: '构建器_' + TS, description: 'E2E 构建智能体',
       mainPrompt: '你是构建器。BUILDER_MAIN_V1 标记。收到目标后派发子智能体完成。',
       subs: [{ key: 'scanner', name: '扫描器', description: '对目标做逐项扫描核对', prompt: '你是扫描器。SCANNER_SUB_V1 标记。逐项扫描并输出结论。' }],
     },
   })).json.value ?? '')
   const C2 = String((await api('POST', '/api/team-agent', {
     token: owner.token,
-    body: { teamId: TID, key: 'depcheck', name: '依赖检查-' + TS, mainPrompt: '依赖检查主提示词', mainWikiIds: [W1] },
+    body: { teamId: TID, key: 'depcheck', name: '依赖检查_' + TS, mainPrompt: '依赖检查主提示词', mainWikiIds: [W1] },
   })).json.value ?? '')
   const C3 = String((await api('POST', '/api/team-agent', {
     token: owner.token,
-    body: { teamId: TID, key: 'offagent', name: '停用体-' + TS, mainPrompt: '停用主提示词', enabled: true },
+    body: { teamId: TID, key: 'offagent', name: '停用体_' + TS, mainPrompt: '停用主提示词', enabled: true },
   })).json.value ?? '')
-  await api('PUT', `/api/team-agent/${C3}`, { token: owner.token, body: { key: 'offagent', name: '停用体-' + TS, mainPrompt: '停用主提示词', enabled: false, subs: [] } })
+  await api('PUT', `/api/team-agent/${C3}`, { token: owner.token, body: { key: 'offagent', name: '停用体_' + TS, mainPrompt: '停用主提示词', enabled: false, subs: [] } })
 
   const listRes = await api('GET', `/api/team-agent/list?teamId=${TID}`, { token: owner.token })
   const PLAN = String((listRes.json?.items ?? []).find((a) => a.key === 'plan')?.id ?? '')
@@ -224,9 +224,9 @@ async function main() {
     // ===== 应用与配置保存校验 =====
     const mkApp = async (name, isExternal = false) => String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name, appType: 'agent', isExternal } })).json.value ?? '')
 
-    const APP1 = await mkApp('多智能体应用-' + TS)
-    const APP2 = await mkApp('单智能体应用-' + TS)
-    const APPX = await mkApp('外部应用-' + TS, true)
+    const APP1 = await mkApp('多智能体应用_' + TS)
+    const APP2 = await mkApp('单智能体应用_' + TS)
+    const APPX = await mkApp('外部应用_' + TS, true)
     const baseSettings = { subAgent: { enabled: true, timeoutSeconds: 120, resultMaxChars: 4000 } }
 
     // TAA-01 绑定团队智能体但未开子代理协作 → 200（D53 解耦：绑定只代表主智能体提示词生效，不再 400）
@@ -377,7 +377,7 @@ async function main() {
     await api('PUT', `/api/team-agent/${C1}`, {
       token: owner.token,
       body: {
-        key: 'builder', name: '构建器-' + TS, description: 'E2E 构建智能体',
+        key: 'builder', name: '构建器_' + TS, description: 'E2E 构建智能体',
         mainPrompt: '你是构建器。BUILDER_MAIN_V2 标记。收到目标后派发子智能体完成。',
         subs: [{ key: 'scanner', name: '扫描器', description: '对目标做逐项扫描核对', prompt: '你是扫描器。SCANNER_SUB_V2 标记。逐项扫描并输出结论。' }],
       },
@@ -401,7 +401,7 @@ async function main() {
     }
 
     // ===== 绑定不开子代理协作的运行时语义（D53：仅主智能体生效） =====
-    const APP3 = await mkApp('解耦应用-' + TS)
+    const APP3 = await mkApp('解耦应用_' + TS)
     const r28 = await api('PUT', `/api/app/${APP3}/agent-config`, {
       token: owner.token,
       body: { prompt: '你是测试助手', wikiIds: [], plugins: [], modelId: models.modelId, teamAgentIds: [C1], executionSettings: { subAgent: { enabled: false } } },

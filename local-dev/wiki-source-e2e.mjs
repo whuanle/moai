@@ -141,10 +141,10 @@ async function main() {
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: admin.userId, role: 1 } })
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
 
-  const w = await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wsrc-' + TS } })
+  const w = await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wsrc_' + TS } })
   const WID = Number(w.json.value)
   // 第二个知识库：用于「跨知识库同名不冲突」
-  const w2 = await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wsrc2-' + TS } })
+  const w2 = await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wsrc2_' + TS } })
   const WID2 = Number(w2.json.value)
 
   const stub = await startStubSite()
@@ -156,7 +156,7 @@ async function main() {
     // maxDepth=1 只抓索引页，开销最小。正式用例的源另行创建。
     const probe = await api('POST', `/api/wiki/${WID}/sources`, {
       token: owner.token,
-      body: { ...crawlPayload(site, { maxDepth: 1 }), name: 'probe-' + TS },
+      body: { ...crawlPayload(site, { maxDepth: 1 }), name: 'probe_' + TS },
     })
     if (probe.status !== 200) throw new Error(`权限探针源创建失败: ${probe.status} ${probe.text.slice(0, 160)}`)
     const PID = probe.json.value
@@ -174,8 +174,8 @@ async function main() {
     // 注意：模型校验先于鉴权执行，故这里必须提交合法负载，才能验证到 Handler 层的「非成员 404」
     const outsiderRoutes = [
       ['GET', `/api/wiki/${WID}/sources`, undefined],
-      ['POST', `/api/wiki/${WID}/sources`, { ...crawlPayload(site), name: 'outsider-src' }],
-      ['PUT', `/api/wiki/${WID}/sources/${PID}`, { name: 'outsider-rename' }],
+      ['POST', `/api/wiki/${WID}/sources`, { ...crawlPayload(site), name: 'outsider_src' }],
+      ['PUT', `/api/wiki/${WID}/sources/${PID}`, { name: 'outsider_rename' }],
       ['DELETE', `/api/wiki/${WID}/sources/${PID}`, undefined],
       ['POST', `/api/wiki/${WID}/sources/${PID}/sync`, {}],
       ['POST', `/api/wiki/${WID}/sources/${PID}/documents`, {}],
@@ -200,11 +200,11 @@ async function main() {
     )
     check(
       'WS-S03c Member 创建 403',
-      (await api('POST', `/api/wiki/${WID}/sources`, { token: member.token, body: { ...crawlPayload(site), name: 'member-src' } })).status === 403,
+      (await api('POST', `/api/wiki/${WID}/sources`, { token: member.token, body: { ...crawlPayload(site), name: 'member_src' } })).status === 403,
     )
     check(
       'WS-S03d Member 更新 403',
-      (await api('PUT', `/api/wiki/${WID}/sources/${PID}`, { token: member.token, body: { name: 'member-rename' } })).status === 403,
+      (await api('PUT', `/api/wiki/${WID}/sources/${PID}`, { token: member.token, body: { name: 'member_rename' } })).status === 403,
     )
     check('WS-S03e Member 删除 403', (await api('DELETE', `/api/wiki/${WID}/sources/${PID}`, { token: member.token })).status === 403)
     check(
@@ -254,7 +254,7 @@ async function main() {
     )
 
     // ======================= WS-S05 创建爬虫源 + 立即同步 =======================
-    const SNAME = 'src-' + TS
+    const SNAME = 'src_' + TS
     const created = await api('POST', `/api/wiki/${WID}/sources`, {
       token: owner.token,
       body: { ...crawlPayload(site), name: SNAME, description: 'e2e 外部源' },
@@ -347,10 +347,10 @@ async function main() {
     {
       const r = await api('PUT', `/api/wiki/${WID}/sources/${SID}`, {
         token: owner.token,
-        body: { name: SNAME + '-renamed', description: '更新后的描述', cron: '0 2 * * *' },
+        body: { name: SNAME + '_renamed', description: '更新后的描述', cron: '0 2 * * *' },
       })
       check('WS-S12a 更新名称/cron 200', r.status === 200, `${r.status} ${r.text.slice(0, 160)}`)
-      const item = await waitForSync(SID, owner.token, WID, (x) => x.name === SNAME + '-renamed', 5)
+      const item = await waitForSync(SID, owner.token, WID, (x) => x.name === SNAME + '_renamed', 5)
       check('WS-S12b 名称与 cron 回显', item?.cron === '0 2 * * *' && item?.description === '更新后的描述', JSON.stringify(item ?? {}).slice(0, 200))
       check('WS-S12c 未提交的爬虫配置保持不变', item?.crawler?.startUrl === site, JSON.stringify(item?.crawler ?? {}).slice(0, 160))
     }
@@ -389,7 +389,7 @@ async function main() {
       const r = await api('POST', `/api/wiki/${WID}/sources`, {
         token: owner.token,
         body: {
-          name: 'fs-' + TS,
+          name: 'fs_' + TS,
           sourceType: 'feishuDoc',
           nodeToken: 'nodetoken-e2e',
           newAppName: appName,

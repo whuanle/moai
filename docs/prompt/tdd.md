@@ -6,7 +6,7 @@
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
 | @PT-S1 | local-dev/prompt-e2e.mjs#PT-01~03 | PASS 46/46（2026-09-15） |
-| @PT-S2 | local-dev/prompt-e2e.mjs#PT-02 | PASS 46/46（2026-09-15） |
+| @PT-S2 | local-dev/prompt-e2e.mjs#PT-02（PT-02e=名称含特殊字符 400） | PASS 47/47（2026-09-15；2026-11-07 扩 PT-02e） |
 | @PT-S3 | local-dev/prompt-e2e.mjs#PT-04~05 | PASS 46/46（2026-09-15） |
 | @PT-S4 | local-dev/prompt-e2e.mjs#PT-06 | PASS 46/46（2026-09-15） |
 | @PT-S5 | local-dev/prompt-e2e.mjs#PT-15a/b | PASS 46/46（2026-09-15） |

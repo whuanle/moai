@@ -13,7 +13,7 @@ import type { TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { AuditCell, DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatFileSize } from '@/utils/format'
 import { BatchWorkflowModal } from './BatchWorkflowModal'
@@ -124,10 +124,6 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   const handleSearch = () => {
     setPageNo(1)
     void load(1, pageSize, searchText, embeddingFilter)
-  }
-
-  const handleRefresh = () => {
-    void load(pageNo, pageSize, searchText, embeddingFilter)
   }
 
   const handleEmbeddingFilter = (value: boolean | null) => {
@@ -376,15 +372,10 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
 
   return (
     <>
-      <DataTable<WikiDocumentItem>
-        rowKey={(record) => String(record.documentId)}
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        sticky
-        scroll={{ x: 1240 }}
-        toolbar={
-          <Space wrap>
+      {/* 工具行裸排在页面底色上（Dify 模式），排序：搜索框 → 筛选 → 查询 → | → 操作按钮（frontend-conventions 第 7 条） */}
+      <PageToolbar
+        filters={
+          <>
             <Input
               placeholder={t('wiki.doc.searchPlaceholder')}
               allowClear
@@ -408,6 +399,15 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
                 { label: t('wiki.doc.embeddingNone'), value: 'none' },
               ]}
             />
+          </>
+        }
+        queries={
+          <Button loading={loading} onClick={handleSearch}>
+            {t('ds.query.search')}
+          </Button>
+        }
+        actions={
+          <>
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
               {t('wiki.doc.upload')}
             </Button>
@@ -427,15 +427,23 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
                 {t('wiki.doc.batchDelete')}
               </Button>
             </Popconfirm>
-          </Space>
+          </>
         }
-        onRefresh={handleRefresh}
-        refreshLoading={loading}
+      />
+      <DataTable<WikiDocumentItem>
+        rowKey={(record) => String(record.documentId)}
+        columns={columns}
+        dataSource={items}
+        loading={loading}
+        sticky
+        scroll={{ x: 1240 }}
         pagination={{
           current: pageNo,
           pageSize,
           total,
           showSizeChanger: true,
+          // 覆盖 DataTable 默认的「共 N 条」统计文案
+          showTotal: undefined,
           onChange: (page, size) => {
             setPageNo(page)
             setPageSize(size)

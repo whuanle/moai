@@ -201,15 +201,15 @@ async function main() {
   await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { modelId: MODEL_ID, teamIds: [...new Set([...(auth.json?.items ?? []).map((i) => Number(i.teamId)), TID])] } })
 
   // 应用：Agent（已发布 A1 / 未发布 A2）+ 外部应用 A3
-  const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-agent-${TS}`, appType: 'agent' } })).json.value)
+  const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a_agent_${TS}`, appType: 'agent' } })).json.value)
   await api('PUT', `/api/app/${A1}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A1}/publish`, { token: owner.token })
   // 开启 A1 的 A2A 功能（key 唯一生成时机=开启功能；未开启的 A2A 端点一律 403 feature_disabled）
   await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
-  const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-draft-${TS}`, appType: 'agent' } })).json.value)
+  const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a_draft_${TS}`, appType: 'agent' } })).json.value)
 
-  const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-ext-${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
+  const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a_ext_${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
   await api('PUT', `/api/app/${A3}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A3}/publish`, { token: owner.token })
   // A3 开启 A2A（用户 token 会话场景）
@@ -225,12 +225,12 @@ async function main() {
   const K3 = await mkKey(`a2a-k3-${TS}`)
   const owner2 = await mkuser('bo')
   const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `a2a-team2-${TS}` } })).json.value)
-  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `a2a-k4-${TS}` } })
+  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `a2a_k4_${TS}` } })
   const K4 = { id: String(K4r.json?.accessAppId ?? ''), key: String(K4r.json?.key ?? '') }
 
   // 知识库 + 其资源 key（moai-tr-）：A2A 包围圈反例（wiki 资源 key 越圈 403）
   // wiki 资源 key 唯一生成时机=开启该库 MCP（PUT mcp-config 自动生成/复用）
-  const WIKI = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: `a2a-wiki-${TS}`, description: 'a2a e2e' } })).json?.value)
+  const WIKI = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: `a2a_wiki_${TS}`, description: 'a2a e2e' } })).json?.value)
   await api('PUT', `/api/wiki/${WIKI}/mcp-config`, { token: owner.token, body: { isMcpEnabled: true } })
   const kW = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'wiki', resourceId: String(WIKI) } })
   const WIKI_RES_KEY = String(kW.json?.key ?? '')

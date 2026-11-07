@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { ArrowLeftOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Avatar, Button, Col, Form, Input, Row, Select, Space, Spin, Tooltip, Typography, theme } from 'antd'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { AvatarUpload, Page, feedback } from '@/design-system'
+import { AvatarUpload, BackLink, Page, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { VditorMarkdownEditor } from '@/components/VditorMarkdownEditor'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 import { getTeamPlugins, type TeamPluginItemType } from '@/api/team-plugin'
 import { getWikis, type WikiItem } from '@/api/wiki'
 import { getKnowledgeGraphs, type KnowledgeGraphItem } from '@/api/knowledgeGraph'
@@ -265,13 +266,7 @@ export function TeamAgentEditor() {
     <Page>
       {/* 左上角操作行：返回链接（带图标）+ 保存按钮相邻摆放，用户保存时视线不用横跨整页 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
-        <Link
-          to={`/team/${teamId}/agents`}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: token.colorText }}
-        >
-          <ArrowLeftOutlined />
-          {t('teamAgents.back')}
-        </Link>
+        <BackLink to={`/team/${teamId}/agents`}>{t('teamAgents.back')}</BackLink>
         <Button type="primary" size="small" loading={saving} onClick={() => void handleSave()}>
           {t('teamAgents.save')}
         </Button>
@@ -311,6 +306,7 @@ export function TeamAgentEditor() {
                     rules={[
                       { required: true, message: t('teamAgents.nameRequired') },
                       { max: 50, message: t('teamAgents.nameMax') },
+                      { pattern: NAME_PATTERN, message: t('validation.nameChars') },
                     ]}
                     style={{ marginBottom: 0 }}
                   >
@@ -362,7 +358,9 @@ export function TeamAgentEditor() {
                       <Col xs={24} lg={7}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
                           <Text type="secondary" style={{ fontSize: 12 }}>{`${t('teamAgents.subSectionTitle')} ${field.name + 1}`}</Text>
-                          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
+                          <Tooltip title={t('teamAgents.delete')}>
+                            <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('teamAgents.delete')} onClick={() => remove(field.name)} />
+                          </Tooltip>
                         </div>
                         <Tooltip title={t('teamAgents.subKeyRule')} placement="topLeft">
                           <Form.Item
@@ -380,6 +378,7 @@ export function TeamAgentEditor() {
                           rules={[
                             { required: true, message: t('teamAgents.subNameRequired') },
                             { max: 50, message: t('teamAgents.subNameMax') },
+                            { pattern: NAME_PATTERN, message: t('validation.nameChars') },
                           ]}
                         >
                           <Input placeholder={t('teamAgents.subNamePlaceholder')} maxLength={50} />

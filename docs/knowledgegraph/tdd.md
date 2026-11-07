@@ -4,6 +4,9 @@
 
 ## 自检记录
 
+- 2026-11-07（二）详情页返回入口收进左栏顶部：`KnowledgeGraphDetail` 原把「← 返回知识图谱 + 图名」独占一行放在左 Sider + 右 Content 两栏布局之上，右侧内容区头部留大片空白（与 WikiDetail 同构问题，同轮整改）。改收进左 Sider 顶部（BackLink 包 `flexShrink: 0`、图名 `flex: 1`+`ellipsis`），与右侧内容同行；加载分支（graph===null）在顶部单独保留返回入口避免短暂丢导航。design-system components.md BackLink 位置规则同步（三级分区页 → Sider 顶部，禁止位置改「全局侧边栏内」）。vitest `KnowledgeGraphDetail.test.tsx` **5/5**（新增 within(aside) 结构断言：返回链接与图名必须在左侧菜单栏内）；typecheck/lint 0 error。
+- 2026-11-07 列表卡片资源数量与布局同构（@KG-S32）：团队图谱卡片与知识库卡片同构（头像+名称+元信息行 / 两行截断描述 / 分隔线页脚 创建时间+操作），并新增图谱资源数量——后端 `KnowledgeGraphItem` 增 `entityCount/relationCount`（int?，图库不可用/能力未开启/统计失败为 null），`IKnowledgeGraphStore` 增 `CountNodesAsync/CountEdgesAsync`（`MATCH (n:KgNode {kgId}) RETURN count(n)` 同款边计数），`QueryKnowledgeGraphsCommandHandler` 逐图按模式取数（托管直查；接入图经 `IKnowledgeGraphIntrospectionCache`（5 分钟缓存）汇总标签计数；`settings.Enabled=false` 直接置空避免逐图连接超时；单图失败 LogWarning 降级不阻断列表）；syncapi 重生成 Kiota 客户端；前端卡片元信息行「N 实例 · M 关系」（`knowledgegraph.statEntities/statRelations` zh/en），接入徽标同行展示，列宽补 `xxl={4}` 与知识库一致。vitest TeamKnowledgeGraphs 11/11（含 `12 实例 · 34 关系` 断言）；dotnet build 0 error；typecheck/lint 0 error；真机冒烟 admin 登录拉 `/api/knowledge-graph/list` 回显 `ce1=11/15`、`云途业务图谱=9/11`、空图 `0/0`。
+- 2026-11-07 团队图谱列表工具栏搜索（@KG-S31）：`TeamKnowledgeGraphs` 原「新建按钮」孤立工具栏改 `PageToolbar` 三段式（与知识库列表同款）：搜索框（关键字子串匹配名称/描述不区分大小写，回车或「查询」触发）+「查询」+ 共 N 条（按过滤后数量回显）+ 竖分隔线 + 新建知识图谱（Admin+，未开启能力禁用）。客户端过滤不改 `getKnowledgeGraphs` 接口；空态补齐——无数据 Empty（`knowledgegraph.empty`，原列表为空时不渲染任何提示）与无命中 Empty（`knowledgegraph.filterEmpty`）区分；i18n 增 `knowledgegraph.listSearchPlaceholder/filterEmpty`（zh/en；`searchPlaceholder` 已被画布/实例节点搜索占用故另立键）。vitest TeamKnowledgeGraphs 10→11 例（搜索：输入不查询不过滤/查询过滤/筛选空态）；typecheck/lint 0 error；全仓 vitest 因开发机负载偶发超时（失败文件逐轮漂移且均非本次改动，单跑全过——WikiDocumentDetail/AppWorkspace/AppChat/AppConfigSection/AdminAccessApps/Classify 六文件单独复跑 99/99，与 tdd 记录的既有负载噪音模式一致）。
 - 构建：`dotnet build src/MoAI/MoAI.csproj` → **0 错误**（2026-09-15，v2.1）
 - 单测：`dotnet test tests/MoAI.KnowledgeGraph.Tests/MoAI.KnowledgeGraph.Tests.csproj` → **PASS 40/40**（2026-09-15，v2.1 新增接入图 refresh 透传与 changes 映射；存量覆盖模板映射、探活 / 内省、能力门禁、角色判定、只读拦截、类型引用拦截、分页钳制、删图清库分支）
 - E2E：`node local-dev/kg-e2e.mjs http://127.0.0.1:5000` → **PASS 47/47**（2026-09-15，v2.1 新增 S17 接入图画布（entityLabel/relationName/label 过滤）、S18 接入图邻接（elementId、404）、S19 内省缓存/强制刷新）。脚本无图数据库时打印 `SKIP` 并退出码 0（CI 友好）。
@@ -39,7 +42,7 @@
 
 | 场景 | 验证物（单测） | E2E（待跑） | 结果（日期） |
 |---|---|---|---|
-| @KG-S1 | `CreateKnowledgeGraphCommandHandlerTests.Handle_WhenEnabledAndAdmin_CreatesGraph`（mode=managed、database=null） | kg-e2e.mjs#KG-S1a/b | 单测 PASS；E2E 未执行（2026-09-10） |
+| @KG-S1 | `CreateKnowledgeGraphCommandHandlerTests.Handle_WhenEnabledAndAdmin_CreatesGraph`（mode=managed、database=null） | kg-e2e.mjs#KG-S1a/b（b=名称含特殊字符 400，2026-11-07 扩） | 单测 PASS；E2E 66/66（2026-11-07，含 KG-S1b） |
 | @KG-S2 | `CreateKnowledgeGraphCommandHandlerTests.Handle_WithTemplate_MapsRelationTypeIdsToSavedEntityTypes`、`Handle_WithTemplate_SeedsExampleNodesAndEdges`、`Handle_WithTemplate_WhenSeedingFails_PurgesGraphAndRollsBack`；`KnowledgeGraphTemplatesTests` | kg-e2e.mjs#KG-S2a…k | 单测 PASS；E2E 未执行 |
 | @KG-S3 | `CreateKnowledgeGraphCommandHandlerTests.Handle_WhenNameDuplicated_Throws409` | kg-e2e.mjs#KG-S3 | 单测 PASS；E2E 未执行 |
 | @KG-S4 | `KnowledgeGraphSchemaCommandHandlerTests`（Create/UpdateRelationType 校验、Delete 引用拦截、QuerySchema 回显排序） | kg-e2e.mjs#KG-S4a…c | 单测 PASS；E2E 未执行 |
@@ -68,6 +71,8 @@
 | @KG-S28 | `ui/src/pages/knowledgegraph/__tests__/KnowledgeGraphDetail.test.tsx`（维护步骤条渲染、?step= 路由、旧路径重定向后「新建实例」入口） | —（纯前端行为） | vitest PASS（2026-09-27） |
 | @KG-S26 | `KnowledgeGraphImportParserTests`（JSON/fence/snake_case/缺字段/非文本 4 例） | local-dev/kg-import-e2e.mjs#KG-S26a…g（桩模型） | 单测 PASS；**E2E PASS 7/7（2026-09-21）**；真实模型冒烟（Qwen3.5 9B 导入 txt → 6 节点 6 边入图） |
 | @KG-S29 | —（JSON 解析器为容错手写，规则由 payload validator 把关；服务管线复用外部导入既有单测覆盖；疑似重复检测复用向量栈无独立单测，E2E 覆盖） | local-dev/kg-import-e2e.mjs#KG-S29a…m | **E2E PASS 20/20（2026-09-27，含 KG-S26 7 项）** |
+| @KG-S31 | `ui/src/pages/teams/knowledgegraph/__tests__/TeamKnowledgeGraphs.test.tsx`（工具栏搜索：输入不触发不过滤/查询后命中过滤/无命中筛选空态） | —（纯前端行为） | vitest PASS 11/11（2026-11-07） |
+| @KG-S32 | `QueryKnowledgeGraphsCommandHandler`（逐图按模式取数+降级）+ `CypherKnowledgeGraphStore`（CountNodes/Edges）+ `ui/src/pages/teams/knowledgegraph/__tests__/TeamKnowledgeGraphs.test.tsx`（`12 实例 · 34 关系` 元信息行断言） | 真机冒烟：admin 拉 `/api/knowledge-graph/list`（托管图计数回显/空图 0/0） | vitest PASS 11/11、dotnet build 0 error（2026-11-07） |
 
 ## 外部开放接口映射（KX-*，/api/teamres/knowledge-graph）
 

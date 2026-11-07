@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Typography } from 'antd'
+import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { CopyOutlined, DeleteOutlined, EditOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons'
+import { CopyOutlined, DeleteOutlined, EditOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   createAccessApp,
   deleteAccessApp,
@@ -36,26 +37,30 @@ function KeyCell({ value }: { value: string }) {
     <Space size={0}>
       <Text
         code
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: 'pointer', wordBreak: 'break-all' }}
         title={revealed ? t('accessApp.hideKey') : t('accessApp.revealKey')}
         onClick={() => setRevealed((v) => !v)}
       >
         {revealed ? value : masked}
       </Text>
-      <Button
-        type="text"
-        size="small"
-        icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-        aria-label={revealed ? t('accessApp.hideKey') : t('accessApp.revealKey')}
-        onClick={() => setRevealed((v) => !v)}
-      />
-      <Button
-        type="text"
-        size="small"
-        icon={<CopyOutlined />}
-        aria-label={t('common.copy')}
-        onClick={() => void copy()}
-      />
+      <Tooltip title={revealed ? t('accessApp.hideKey') : t('accessApp.revealKey')}>
+        <Button
+          type="text"
+          size="small"
+          icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+          aria-label={revealed ? t('accessApp.hideKey') : t('accessApp.revealKey')}
+          onClick={() => setRevealed((v) => !v)}
+        />
+      </Tooltip>
+      <Tooltip title={t('common.copy')}>
+        <Button
+          type="text"
+          size="small"
+          icon={<CopyOutlined />}
+          aria-label={t('common.copy')}
+          onClick={() => void copy()}
+        />
+      </Tooltip>
     </Space>
   )
 }
@@ -82,6 +87,8 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
   const { t } = useTranslation()
   const [items, setItems] = useState<AccessAppItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [keyword, setKeyword] = useState('')
+  const [appliedKeyword, setAppliedKeyword] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AccessAppItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -105,6 +112,15 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
     if (!canManage) return
     void load()
   }, [canManage, load])
+
+  /** 关键字筛选（查询按钮/回车触发，客户端过滤名称/描述） */
+  const applySearch = useCallback(() => setAppliedKeyword(keyword.trim()), [keyword])
+
+  const filteredItems = useMemo(() => {
+    const kw = appliedKeyword.toLowerCase()
+    if (!kw) return items
+    return items.filter((item) => `${item.name ?? ''}\n${item.description ?? ''}`.toLowerCase().includes(kw))
+  }, [items, appliedKeyword])
 
   const openCreate = () => {
     setEditing(null)
@@ -173,11 +189,22 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
 
   const columns: TableColumnsType<AccessAppItem> = useMemo(
     () => [
-      { title: t('accessApp.colName'), dataIndex: 'name' },
+      {
+        title: t('accessApp.colName'),
+        dataIndex: 'name',
+        ellipsis: true,
+        render: (v: string | null) => (v ? v : '-'),
+      },
+      {
+        title: t('accessApp.description'),
+        dataIndex: 'description',
+        ellipsis: true,
+        render: (v: string | null) => (v ? v : '-'),
+      },
       {
         title: t('accessApp.colKey'),
         dataIndex: 'key',
-        width: 260,
+        width: 300,
         render: (v: string | null) => (v ? <KeyCell value={v} /> : '-'),
       },
       {
@@ -195,7 +222,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
       {
         title: t('accessApp.colActions'),
         key: 'actions',
-        width: 250,
+        width: 240,
         fixed: 'right' as const,
         render: (_, record) => (
           <Space size={0}>
@@ -225,25 +252,40 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-      <Alert type="info" showIcon message={t('accessApp.usageHint')} />
-      <DSCard styles={{ body: { paddingTop: spacing.sm } }}>
-        <DataTable<AccessAppItem>
-          sticky
-          scroll={{ x: 'max-content' }}
-          rowKey="accessAppId"
-          columns={columns}
-          dataSource={items}
-          loading={loading}
-          onRefresh={() => void load()}
-          refreshLoading={loading}
-          toolbar={
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              {t('accessApp.create')}
-            </Button>
-          }
-        />
-      </DSCard>
+    <>
+      <PageToolbar
+        filters={
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={applySearch}
+            allowClear
+            maxLength={100}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            placeholder={t('accessApp.searchPlaceholder')}
+            style={{ width: 240 }}
+          />
+        }
+        queries={
+          <Button loading={loading} onClick={applySearch}>
+            {t('ds.query.search')}
+          </Button>
+        }
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            {t('accessApp.create')}
+          </Button>
+        }
+      />
+
+      <DataTable<AccessAppItem>
+        sticky
+        scroll={{ x: 'max-content' }}
+        rowKey="accessAppId"
+        columns={columns}
+        dataSource={filteredItems}
+        loading={loading}
+      />
 
       <Modal
         title={editing ? t('accessApp.editTitle') : t('accessApp.createTitle')}
@@ -261,6 +303,7 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
             rules={[
               { required: true, message: t('accessApp.namePlaceholder') },
               { max: 20, message: `${t('accessApp.colName')} ≤ 20` },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('accessApp.namePlaceholder')} maxLength={20} />
@@ -300,6 +343,6 @@ export function TeamAccessApps({ teamId, canManage }: TeamAccessAppsProps) {
           </>
         )}
       </Modal>
-    </div>
+    </>
   )
 }

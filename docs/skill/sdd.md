@@ -109,3 +109,7 @@ Agent 运行时(src/ai)                 ▼
 ## 增量设计（2026-11-03：技能中心工具栏对齐规范第 7 条）
 
 - 用户反馈「搜索框后面图标多余、刷新改查询、我的技能按钮排序参考最新文档」：工具栏由手写 flex 换 `PageToolbar`（搜索输入框 → 查询类按钮 → 竖分隔线 → 操作类按钮），「新建技能」从搜索框左侧移到分隔线右侧（`actions`）；`Input.Search` 换普通 `Input`（去 `Input.Search` 自带的冗余 suffix 放大镜，仅保留 `SearchOutlined` 前缀），回车或「查询」按钮（`ds.query.search`，原「刷新」）应用关键字——关键字变化走 state 触发重载并回第一页，关键字未变化时手动重查一次；纯前端改动，`Skills.test.tsx` 3/3。
+
+## 资源命名规则（2026-11-07）
+
+- 技能名称统一约束：正则 `^[\u4e00-\u9fa5a-zA-Z0-9_]+$`（仅中文、英文、数字、下划线），`Create/UpdateSkillCommand.Validate` 落 `Matches` 规则（key 已有独立正则不变），前端 `SkillEditModal` 名称表单同步 pattern 校验；`SkillSeed` 内置技能名称去空格（「Word 文档生成」→「Word文档生成」等，仅新装库生效，存量行不动）；`ExtractSkillPackageCommand` 为包解析预览步骤不设名约束（保存走 CreateSkillCommand 时校验）。行为见 [@SKM-S1](./bdd.md#skm-s1)。

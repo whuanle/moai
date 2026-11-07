@@ -238,22 +238,22 @@ async function main() {
   await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { modelId: MODEL_ID, teamIds: [...new Set([...(auth.json?.items ?? []).map((i) => Number(i.teamId)), TID])] } })
 
   // 应用：Agent（已发布 A1 / 未发布 A2）+ Workflow（已发布 W1）
-  const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-agent-${TS}`, appType: 'agent' } })).json.value)
+  const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp_agent_${TS}`, appType: 'agent' } })).json.value)
   await api('PUT', `/api/app/${A1}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A1}/publish`, { token: owner.token })
   // 开启 A1 的 ACP 功能（key 唯一生成时机=开启功能；未开启的 ACP 端点一律 403 feature_disabled）
   await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
-  const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-draft-${TS}`, appType: 'agent' } })).json.value)
+  const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp_draft_${TS}`, appType: 'agent' } })).json.value)
 
-  const W1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-wf-${TS}`, appType: 'workflow' } })).json.value)
+  const W1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp_wf_${TS}`, appType: 'workflow' } })).json.value)
   await api('POST', '/api/app/workflow/draft', { token: owner.token, body: { appId: W1, teamId: TID, definition: JSON.stringify(buildDefinition()), editorData: JSON.stringify({ nodes: POS }) } })
   await api('POST', '/api/app/workflow/publish', { token: owner.token, body: { appId: W1, teamId: TID } })
   // workflow 应用同样开启 ACP（ACP-S14 workflow prompt 场景）
   await api('PUT', `/api/app/${W1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
   // A3：外部应用（is_auth=false，用户 token 换取要求 IsExternal）
-  const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp-ext-${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
+  const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `acp_ext_${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
   await api('PUT', `/api/app/${A3}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A3}/publish`, { token: owner.token })
   // A3 开启 ACP（ACP-S11 用户 token 会话场景）
@@ -269,12 +269,12 @@ async function main() {
   const K3 = await mkKey(`acp-k3-${TS}`)
   const owner2 = await mkuser('bo')
   const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `acp-team2-${TS}` } })).json.value)
-  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `acp-k4-${TS}` } })
+  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `acp_k4_${TS}` } })
   const K4 = { id: String(K4r.json?.accessAppId ?? ''), key: String(K4r.json?.key ?? '') }
 
   // 知识库 + 其资源 key（moai-tr-）：ACP 包围圈反例（wiki 资源 key 越圈 403）
   // wiki 资源 key 唯一生成时机=开启该库 MCP（PUT mcp-config 自动生成/复用）
-  const WIKI = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: `acp-wiki-${TS}`, description: 'acp e2e' } })).json?.value)
+  const WIKI = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: `acp_wiki_${TS}`, description: 'acp e2e' } })).json?.value)
   await api('PUT', `/api/wiki/${WIKI}/mcp-config`, { token: owner.token, body: { isMcpEnabled: true } })
   const kW = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'wiki', resourceId: String(WIKI) } })
   const WIKI_RES_KEY = String(kW.json?.key ?? '')

@@ -42,7 +42,7 @@ const CONFIG_GROUP_SECTIONS = ['info', 'publication', 'security', 'logs', 'monit
  * - 内部应用：左侧菜单承载 配置/信息/上架管理/日志/外部渠道（外部应用另有访问点），「配置」分区为左配置栏 + 右调试对话，
  *   安全（内容脱敏）与长期记忆并入「配置」分区收缩卡片；「日志」为 Tab 容器（日志/安全事件/使用分析，原「监控」分区并入、菜单移除）；
  * - 流程应用：头部 Tab（设计/调试/配置/运行历史），「调试」为会话式对话，「配置」下挂二级菜单（信息/上架管理/安全/日志/外部渠道，功能与内部应用一致）。
- * 应用身份（头像/名称）与「返回团队」收敛在左侧菜单栏顶部（与团队工作台一致），不渲染面包屑页头；
+ * 应用身份（头像/名称）与「返回内部应用」收敛在左侧菜单栏顶部（与团队工作台一致），不渲染面包屑页头；
  * 「进入对话」移至「配置」分区调试面板标题右侧（AppDebugChat headerExtra）；发布状态/线上版本/当前版本与未发布变更收敛在菜单栏底部；
  * 发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）；
  * 外部应用同一分区收敛为「发布」（仅团队发布卡，无上架审批与申请记录，外部应用不公开到平台）。
@@ -343,7 +343,7 @@ export function AppWorkspace() {
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              {/* 应用身份收敛在菜单栏顶部（与团队工作台一致）：头像/名称 + 返回团队；「进入对话」移至「配置」分区调试面板标题右侧 */}
+              {/* 应用身份收敛在菜单栏顶部（与团队工作台一致）：头像/名称 + 返回内部应用；「进入对话」移至「配置」分区调试面板标题右侧 */}
               <div style={{ padding: `0 ${spacing.xs}px ${spacing.sm}px` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `0 ${spacing.xs}px` }}>
                   <Avatar shape="square" size={30} src={resolveStorageUrl(detail?.avatarPath ?? null) || undefined} alt={detail?.name ?? undefined}>
@@ -360,7 +360,7 @@ export function AppWorkspace() {
                   onClick={() => navigate(isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}`)}
                   style={{ justifyContent: 'flex-start', marginTop: spacing.xs }}
                 >
-                  {t('appManage.backToTeam')}
+                  {t(isExternal ? 'appManage.backToExternalApps' : 'appManage.backToInternalApps')}
                 </Button>
               </div>
               <Menu

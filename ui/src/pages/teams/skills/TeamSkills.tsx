@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DeleteOutlined, DownloadOutlined, EditOutlined, EyeOutlined, SearchOutlined, SendOutlined, UndoOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tag, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Card, QueryBar, feedback, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -127,50 +127,62 @@ export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: b
     return <Tag>{t('skills.statusPrivate')}</Tag>
   }
 
-  /** 查看/编辑/上架/撤回/删除/下载操作，卡片底栏使用（紧凑卡片场景：纯图标 + aria-label） */
+  /** 查看/编辑/上架/撤回/删除/下载操作，卡片底栏使用（紧凑卡片场景：纯图标 + Tooltip + aria-label） */
   const renderActions = (record: SkillListItem) => (
     <Space size={0}>
-      <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('skills.detail')} onClick={() => void openDetail(record)} />
+      <Tooltip title={t('skills.detail')}>
+        <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('skills.detail')} onClick={() => void openDetail(record)} />
+      </Tooltip>
       {canManage && (
         <>
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            aria-label={t('skills.edit')}
-            onClick={() => {
-              setEditTarget(record.id ?? null)
-              setEditOpen(true)
-            }}
-          />
-          {record.isPublic ? null : record.pendingPublicationId ? (
-            <Popconfirm title={t('skills.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
-              <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('skills.withdraw')} />
-            </Popconfirm>
-          ) : (
+          <Tooltip title={t('skills.edit')}>
             <Button
               type="text"
               size="small"
-              icon={<SendOutlined />}
-              aria-label={t('skills.apply')}
+              icon={<EditOutlined />}
+              aria-label={t('skills.edit')}
               onClick={() => {
-                setApplyRecord(record)
-                applyForm.resetFields()
+                setEditTarget(record.id ?? null)
+                setEditOpen(true)
               }}
             />
+          </Tooltip>
+          {record.isPublic ? null : record.pendingPublicationId ? (
+            <Popconfirm title={t('skills.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
+              <Tooltip title={t('skills.withdraw')}>
+                <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('skills.withdraw')} />
+              </Tooltip>
+            </Popconfirm>
+          ) : (
+            <Tooltip title={t('skills.apply')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<SendOutlined />}
+                aria-label={t('skills.apply')}
+                onClick={() => {
+                  setApplyRecord(record)
+                  applyForm.resetFields()
+                }}
+              />
+            </Tooltip>
           )}
           <Popconfirm title={t('skills.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('skills.delete')} />
+            <Tooltip title={t('skills.delete')}>
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('skills.delete')} />
+            </Tooltip>
           </Popconfirm>
         </>
       )}
-      <Button
-        type="text"
-        size="small"
-        icon={<DownloadOutlined />}
-        aria-label={t('skills.download')}
-        onClick={() => void handleDownload(record)}
-      />
+      <Tooltip title={t('skills.download')}>
+        <Button
+          type="text"
+          size="small"
+          icon={<DownloadOutlined />}
+          aria-label={t('skills.download')}
+          onClick={() => void handleDownload(record)}
+        />
+      </Tooltip>
     </Space>
   )
 
@@ -278,14 +290,18 @@ export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: b
                           renderActions(record)
                         ) : (
                           <Space size={0}>
-                            <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('skills.detail')} onClick={() => void openDetail(record)} />
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<DownloadOutlined />}
-                              aria-label={t('skills.download')}
-                              onClick={() => void handleDownload(record)}
-                            />
+                            <Tooltip title={t('skills.detail')}>
+                              <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('skills.detail')} onClick={() => void openDetail(record)} />
+                            </Tooltip>
+                            <Tooltip title={t('skills.download')}>
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<DownloadOutlined />}
+                                aria-label={t('skills.download')}
+                                onClick={() => void handleDownload(record)}
+                              />
+                            </Tooltip>
                           </Space>
                         )}
                         <span title={t('skills.colUpdateTime')} style={{ whiteSpace: 'nowrap', fontSize: 12, color: neutral.textSecondary }}>

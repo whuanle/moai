@@ -4,6 +4,10 @@
 
 ## 自检记录
 
+- 2026-11-07（二）三级页返回入口收进左栏顶部：`WikiDetail` 原把「← 返回知识库 + 库名」独占一行放在左 Sider + 右 Content 两栏布局之上，右侧内容区头部留大片空白。改收进左 Sider 顶部（BackLink 包 `flexShrink: 0`、库名 `flex: 1`+`ellipsis`），与右侧内容同行；`KnowledgeGraphDetail` 同构改造（加载分支在顶部单独保留返回入口避免短暂丢导航）。design-system components.md BackLink 位置规则同步（三级分区页 → Sider 顶部，禁止位置改「全局侧边栏内」）。vitest `WikiDetail.test.tsx` **23/23**、`KnowledgeGraphDetail.test.tsx` **5/5**（各新增 within(aside) 结构断言：返回链接与实体名必须在左侧菜单栏内）；typecheck/lint 0 error。
+- 2026-11-07 文件列表工具栏规范化（前端布局重构，无业务行为变更）：`WikiDocuments` 原工具栏经 `DataTable` 的 `toolbar` prop 内嵌表格卡片，外层 `WikiDetail` files 分区又包一层 Card（双重卡片）。改 Dify 分体式（design-system pages.md）：①`WikiDetail` files 分区去掉外层 Card；②工具栏改独立 `PageToolbar` 裸排页面底色，排序按 frontend-conventions 第 7 条——filters=搜索框+向量化 Radio 筛选 → queries=「查询」按钮 → 竖分隔线 → actions=上传文档（primary）/批量处理/批量删除（danger+Popconfirm）；③「查询」自带刷新语义，删独立「刷新」按钮（`handleRefresh`/`onRefresh` 退役），`DataTable` 自带容器卡片承载表格。vitest `WikiDetail.test.tsx` 新增工具栏排序用例 1 例 **23/23**；typecheck/lint 0 error。**踩坑**：antd Button 两汉字自动插空格（可访问名称「查 询」）且图标 aria-label 拼入名称（「upload上传文档」「loading查 询」），角色断言用正则尾缀 `/查\s*询$/`。全量 vitest 17 例失败经 stash 对照 + 单跑复证为负载偶发（Classify/Plugins/AppChat/AdminAccessApps/WikiDocumentDetail 等无关文件单跑全过）。
+- 2026-11-07 跨知识库文件名搜索（@WK-S47）：新增 `GET /api/wiki/files/search`（teamId/query/limit）。后端 CQRS 三层——`QueryWikiTeamFilesCommand`（TeamId>0、Query 必填 ≤100、Limit 1-100）+ `QueryWikiTeamFilesCommandResponse/WikiTeamFileItem`（documentId/wikiId/wikiName/fileName/updateTime）+ `QueryWikiTeamFilesCommandHandler`（门禁照 QueryWikisCommandHandler：GetMyRoleAsync null→404；Wikis JOIN WikiDocuments，`w.TeamId` + 双表 `IsDeleted == 0` 手写软删过滤 + `FileName.Contains`；排序 前缀命中（`StartsWith`，同档 UpdateTime 倒序）> 包含命中，`CountAsync` 取 total、`Take(Limit)` 截断）+ Controller `[HttpGet("files/search")]`。**踩坑**：①Controller 手工组装命令发 MediatR 不会走 SharpGrip 校验管道（首版 `[FromQuery] long teamId, string query...` 空关键字/非法 limit 直落 200）——改 `[FromQuery] QueryWikiTeamFilesCommand req` 绑定复杂参数后校验生效（动作参数级校验）；②排序用例设计：「xxx.md」既精确又前缀（精确档对带扩展名的文件几乎不可达），改为断言「前缀档（同档 UpdateTime 倒序）> 包含档」。前端：Kiota 重生成（files/search 节点）+ `searchWikiTeamFiles` 封装 + TeamWikis 双 Tab 视图（Segmented「知识库 N | 文件 M」，知识库零命中且文件有命中自动落文件 Tab，文件行点击直达 `/team/{teamId}/wiki/{wikiId}/document/{documentId}/embedding`，total>items 提示仅显示前 50 条；i18n 增 tabWikis/tabFiles/fileMatchEmpty/fileMatchMore、searchPlaceholder 文案更新，zh/en）。验证：`dotnet build -o .builds/teamfilesearch` 0 error（宿主 bin 被运行实例锁定，独立输出）；5030 临时实例（`MoAI__Port=5030` + 独立 bin，与开发库共享配置）跑 `wiki-e2e.mjs` **59/59 全绿**（WK-14a…j 新增 11 项：门禁 401/404、空关键字/非法 limit 400、跨库命中排序、wikiName 回显、limit 截断、软删文档/删库过滤）；vitest TeamWikis 6/6（新增 3 例：文件命中自动 Tab+点击跳转、知识库命中默认 Tab+手动切换、空关键字不调接口）；typecheck/lint 0 error。
+- 2026-11-07 团队知识库列表工具栏搜索（@WK-S46）：`TeamWikis` 原「新建按钮 + 共 N 条」工具栏改 `PageToolbar` 三段式（与团队应用列表同款）：搜索框（SearchOutlined 前缀、allowClear、回车触发）+「查询」按钮 + 共 N 条（按过滤后数量回显）+ 竖分隔线 + 新建知识库（Admin+）。客户端过滤：关键字子串匹配名称/描述（不区分大小写），不改 `getWikis` 接口；空态区分「无数据」（wiki.empty）与「无命中」（wiki.filterEmpty，新增 i18n 键 searchPlaceholder/filterEmpty，zh/en 同步）。vitest TeamWikis.test 新增搜索用例 1 例（输入不查询不过滤/查询过滤/筛选空态）；typecheck/lint 0 error、全仓 vitest 780/780。
 - 构建：`dotnet build src/wiki/MoAI.Wiki.Api/MoAI.Wiki.Api.csproj --no-restore` → **0 错误**（2026-09-09；沙箱内 `--no-restore` 可用，完整 restore 仍被 NuGet ConfigurationDefaults 阻断，需系统终端复验）
 - 前端：`npm run typecheck` 全绿；`WikiDocumentDetail.test.tsx` **22/22**（含推荐切片长度默认值、句子/段落切割重叠单位联动、AI 切割失败反馈、切片预览单片/批量生成元数据与未选模型提示、向量化仅提交原文/元数据开关且至少选一项）；`eslint` 0 error
 - E2E：`node local-dev/wiki-e2e.mjs` → 覆盖 @WK-S1…@WK-S10（含公开只读场景）；`node local-dev/wiki-embedding-e2e.mjs` → 覆盖 @WK-S15/S16/S19/S21/S22（切割 → 向量化全流程），需后端 :5210 运行
@@ -35,7 +39,7 @@
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
 | @WK-S1 | wiki-e2e.mjs（WK-01） | PASS（2026-09-02） |
-| @WK-S2 | wiki-e2e.mjs（WK-02a-c） | PASS（2026-09-02） |
+| @WK-S2 | wiki-e2e.mjs（WK-02a-d，d=名称含特殊字符 400） | PASS（2026-09-02；2026-11-07 扩 WK-02d） |
 | @WK-S3 | wiki-e2e.mjs（WK-03a/b） | PASS（2026-09-02） |
 | @WK-S4 | wiki-e2e.mjs（WK-04a-c） | PASS（2026-09-02） |
 | @WK-S5 | wiki-e2e.mjs（WK-05a/b） | PASS（2026-09-02） |
@@ -45,6 +49,8 @@
 | @WK-S9 | （场景已删除：公开概念 2026-09-21 移除，编号不复用） | — |
 | @WK-S10 | wiki-e2e.mjs（WK-09a…c、WK-10：非成员详情/更新/删除一律 404） | PASS（2026-09-21，5033 实例） |
 | @WK-S40 | wiki-e2e.mjs（WK-10b：列表项含 documentCount/chunkCount/lastDocumentUpdateTime）+ TeamWikis.test.tsx | PASS 32/32 + vitest 2/2（2026-09-21） |
+| @WK-S46 | ui/src/pages/teams/wikis/__tests__/TeamWikis.test.tsx（工具栏搜索：输入不触发不过滤/查询后命中过滤/无命中筛选空态） | PASS 3/3 + 全仓 vitest 780/780（2026-11-07） |
+| @WK-S47 | wiki-e2e.mjs（WK-14a…j：门禁 401/404、空关键字与非法 limit 400、跨库命中 total/wikiName 回显、前缀>包含排序与同档更新时间倒序、limit 截断、软删文档与删库过滤）+ TeamWikis.test.tsx（双 Tab 视图 3 例） | **PASS 59/59**（2026-11-07，5030 实例）+ vitest 6/6 |
 | @WK-S41 | ui/src/pages/wiki/__tests__/WikiDetail.test.tsx（菜单含 MCP 入口；/mcp 页按 serverinfo serviceUrl 展示 `/api/teamres/wiki/{wikiId}/mcp` 地址与鉴权提示） | PASS 22/22（2026-09-26） |
 | @WK-S11/S12 | ui/src/pages/wiki/__tests__/Wiki.test.tsx | PASS 5/5（2026-09-07） |
 | @WK-S13/S14/S17 | ui/src/pages/wiki/__tests__/WikiDetail.test.tsx | PASS 18/18（2026-09-08 修复后） |

@@ -96,7 +96,7 @@ async function main() {
   const token = login.json.accessToken
 
   // 准备团队 T1：root 创建即 Owner，满足团队 Owner/Admin 门禁
-  const team1 = await api('POST', '/api/team', { token, body: { name: 'kg-t2cy-' + TS } })
+  const team1 = await api('POST', '/api/team', { token, body: { name: 'kg_t2cy_' + TS } })
   if (team1.status !== 200 || !Number(team1.json?.value)) {
     throw new Error(`创建团队 T1 失败: ${team1.status} ${team1.text.slice(0, 120)}`)
   }
@@ -112,7 +112,7 @@ async function main() {
   }
 
   // ===== 准备：空白托管图 + 实体类型/关系类型/节点/边（照 kg-e2e S4/S5/S7 的建法）=====
-  const c1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kg-t2cy-' + TS, templateKey: 'blank' } })
+  const c1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kg_t2cy_' + TS, templateKey: 'blank' } })
   if (c1.status !== 200 || !Number(c1.json?.value)) {
     throw new Error(`创建空白托管图失败: ${c1.status} ${c1.text.slice(0, 160)}`)
   }
@@ -148,7 +148,7 @@ async function main() {
   // 接入图探活兼夹具：建 connected 图成功即图库可达（KT-S9 用）；失败只降级，不中断托管图场景
   let CONN = 0
   {
-    const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kg-t2cy-conn-' + TS, mode: 'connected', database: 'neo4j' } })
+    const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kg_t2cy_conn_' + TS, mode: 'connected', database: 'neo4j' } })
     if (probe.status === 200 && Number(probe.json?.value)) {
       CONN = Number(probe.json.value)
     } else {

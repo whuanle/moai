@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { WikiDetail } from '../WikiDetail'
 import { getWikiDetail, updateWiki, getWikiDocuments, getWikiModelOptions, updateWikiEmbeddingConfig, updateWikiRerankModel } from '@/api/wiki'
@@ -67,6 +67,10 @@ describe('WikiDetail', () => {
     expect(screen.getByText('召回测试')).toBeInTheDocument()
     expect(screen.getByText('MCP')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
+    // 返回入口与库名收进左侧菜单栏（aside）顶部，与右侧内容同行，不独占整行高度
+    const sider = screen.getByRole('complementary')
+    expect(within(sider).getByRole('link', { name: /返回知识库/ })).toBeInTheDocument()
+    expect(within(sider).getByText('产品文档')).toBeInTheDocument()
   })
 
   it('MCP tab 展示知识库 MCP 接入地址', async () => {
@@ -82,6 +86,19 @@ describe('WikiDetail', () => {
     expect(await screen.findByText('文件列表')).toBeInTheDocument()
     expect(await screen.findByText('上传文档')).toBeInTheDocument()
     expect(getWikiDocuments).toHaveBeenCalled()
+  })
+
+  it('文件列表工具栏排序：筛选在左、查询按钮居中、无刷新按钮（查询自带刷新语义）', async () => {
+    renderDetail('/team/3/wiki/7/files')
+
+    expect(await screen.findByPlaceholderText('搜索文档名称')).toBeInTheDocument()
+    // antd 图标 aria-label 会拼进按钮可访问名称（如 loading查 询 / upload上传文档），用正则匹配尾缀
+    expect(screen.getByRole('button', { name: /查\s*询$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /上传文档$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /批量处理$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /批量删除$/ })).toBeInTheDocument()
+    // 查询按钮自带刷新语义，工具栏不再有独立刷新按钮
+    expect(screen.queryByRole('button', { name: /刷\s*新/ })).toBeNull()
   })
 
   it('召回测试 tab 展示召回测试表单', async () => {

@@ -114,7 +114,7 @@ async function main() {
   await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { modelId: MODEL_ID, teamIds } })
   check('TIMER-03 桩渠道与模型', Boolean(CH_ID) && Boolean(MODEL_ID))
 
-  const APP = String((await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `定时器应用-${TS}`, appType: 'agent' } })).json.value)
+  const APP = String((await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `定时器应用_${TS}`, appType: 'agent' } })).json.value)
   await api('PUT', `/api/app/${APP}/agent-config`, {
     token: adminToken,
     body: { prompt: '你是定时报告助手', wikiIds: [], plugins: [], modelId: MODEL_ID, executionSettings: { sandbox: { enabled: false }, memory: { enabled: false } } },
@@ -126,7 +126,7 @@ async function main() {
   const bad = await api('POST', '/api/timer', { token: adminToken, body: { teamId: TID, name, appId: APP, cronExpression: 'not a cron', inputContent: 'x', isEnabled: true, maxRetryCount: 0, retryIntervalSeconds: 60 } })
   check('TIMER-05 非法 cron 400', bad.status === 400, `got ${bad.status}`)
 
-  const APP2 = String((await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `未发布应用-${TS}`, appType: 'agent' } })).json.value)
+  const APP2 = String((await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `未发布应用_${TS}`, appType: 'agent' } })).json.value)
   const unp = await api('POST', '/api/timer', { token: adminToken, body: { teamId: TID, name: `${name}-unpub`, appId: APP2, cronExpression: '0 1 * * *', inputContent: 'x', isEnabled: true, maxRetryCount: 0, retryIntervalSeconds: 60 } })
   check('TIMER-06 绑定未发布应用 400', unp.status === 400, `got ${unp.status}`)
   await api('DELETE', `/api/app/${APP2}`, { token: adminToken })

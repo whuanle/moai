@@ -30,6 +30,16 @@ public interface IKnowledgeGraphStore
     Task<int> CountEdgesByRelationTypeAsync(long KnowledgeGraphId, long relationTypeId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 统计图谱内节点总数（托管图）.
+    /// </summary>
+    Task<long> CountNodesAsync(long KnowledgeGraphId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 统计图谱内边总数（托管图）.
+    /// </summary>
+    Task<long> CountEdgesAsync(long KnowledgeGraphId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 创建节点.
     /// </summary>
     Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken);

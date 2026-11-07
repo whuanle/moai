@@ -86,12 +86,12 @@ describe('PluginTemplates（系统模式）', () => {
     expect(await screen.findByText('暂无模板')).toBeInTheDocument()
   })
 
-  it('点击返回按钮回到动态插件页', async () => {
+  it('点击左上角「返回插件」链接回到动态插件页', async () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findByText('dynamic_greet')
 
-    await user.click(screen.getByRole('button', { name: /返回插件/ }))
+    await user.click(screen.getByRole('link', { name: /返回插件/ }))
     expect(await screen.findByText('动态插件页面标记')).toBeInTheDocument()
   })
 
@@ -136,13 +136,12 @@ describe('PluginTemplates（系统模式）', () => {
     expect(await screen.findByText('应用页面标记')).toBeInTheDocument()
   })
 
-  it('点击面包屑「动态插件」回到系统插件页', async () => {
-    const user = userEvent.setup()
+  it('不渲染面包屑，返回入口为左上角「返回插件」链接', async () => {
     renderPage()
     await screen.findByText('dynamic_greet')
 
-    await user.click(screen.getByText('动态插件'))
-    expect(await screen.findByText('动态插件页面标记')).toBeInTheDocument()
+    expect(document.querySelector('.ant-breadcrumb')).toBeNull()
+    expect(screen.getByRole('link', { name: /返回插件/ })).toBeInTheDocument()
   })
 })
 
@@ -193,22 +192,21 @@ describe('PluginTemplates（团队模式）', () => {
     expect(pluginApi.saveDynamicPlugin).not.toHaveBeenCalled()
   })
 
-  it('返回按钮回到团队插件分区', async () => {
+  it('点击左上角「返回插件」链接回到团队插件分区', async () => {
     const user = userEvent.setup()
     renderPage('/team/7/plugin/templates')
     await screen.findByText('dynamic_greet')
 
-    await user.click(screen.getByRole('button', { name: /返回插件/ }))
+    await user.click(screen.getByRole('link', { name: /返回插件/ }))
     expect(await screen.findByText('团队插件页面标记')).toBeInTheDocument()
   })
 
-  it('点击面包屑「动态插件」回到团队插件分区', async () => {
-    const user = userEvent.setup()
+  it('不渲染面包屑，返回入口为左上角「返回插件」链接', async () => {
     renderPage('/team/7/plugin/templates')
     await screen.findByText('dynamic_greet')
 
-    await user.click(screen.getByText('动态插件'))
-    expect(await screen.findByText('团队插件页面标记')).toBeInTheDocument()
+    expect(document.querySelector('.ant-breadcrumb')).toBeNull()
+    expect(screen.getByRole('link', { name: /返回插件/ })).toBeInTheDocument()
   })
 
   it('不可管理成员访问团队模板页重定向回团队插件', async () => {

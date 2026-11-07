@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Popconfirm, Space, Typography, theme } from 'antd'
+import { Button, Popconfirm, Space, Tooltip, Typography, theme } from 'antd'
 import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { feedback } from '@/design-system'
@@ -99,14 +99,18 @@ export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged,
           <Text code style={{ cursor: 'pointer', fontSize: 13 }} title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')} onClick={() => setRevealed((v) => !v)}>
             {revealed ? keyInfo.key : keyMask(keyInfo)}
           </Text>
-          <Button
-            type="text"
-            size="small"
-            icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-            aria-label={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}
-            onClick={() => setRevealed((v) => !v)}
-          />
-          <Button type="text" size="small" icon={<CopyOutlined />} aria-label={t('common.copy')} onClick={() => void copyKey()} />
+          <Tooltip title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}>
+            <Button
+              type="text"
+              size="small"
+              icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              aria-label={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}
+              onClick={() => setRevealed((v) => !v)}
+            />
+          </Tooltip>
+          <Tooltip title={t('common.copy')}>
+            <Button type="text" size="small" icon={<CopyOutlined />} aria-label={t('common.copy')} onClick={() => void copyKey()} />
+          </Tooltip>
           <Popconfirm title={t('teamresKey.resetConfirm')} onConfirm={() => void handleReset()}>
             <Button type="link" size="small" icon={<KeyOutlined />} disabled={busy}>
               {t('teamresKey.reset')}

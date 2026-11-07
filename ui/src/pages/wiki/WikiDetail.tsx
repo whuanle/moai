@@ -10,13 +10,12 @@ import {
 import { Alert, AutoComplete, Button, Form, Input, Layout, Menu, Select, Space, Spin, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { AvatarUpload, Card, feedback, Page } from '@/design-system'
+import { useNavigate, useParams } from 'react-router'
+import { AvatarUpload, BackLink, Card, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { getWikiDetail, getWikiModelOptions, updateWiki, updateWikiEmbeddingConfig, updateWikiRerankModel, uploadWikiAvatar } from '@/api/wiki'
-import { getTeamDetail } from '@/api/team'
 import { resolveStorageUrl } from '@/utils/storage'
-import { useAppStore } from '@/store/app'
+import { NAME_PATTERN } from '@/utils/validation'
 import { WikiDocuments } from './WikiDocuments'
 import { WikiMcp } from './WikiMcp'
 import { WikiRecallTest } from './WikiRecallTest'
@@ -102,22 +101,6 @@ export function WikiDetail() {
   const embeddingDisabled = embeddingLocked || modelOptionsLoading || modelOptionsFailed
   // 重排序模型与向量化配置解耦：知识库锁定后仍可修改
   const rerankDisabled = modelOptionsLoading || modelOptionsFailed
-
-  const myTeams = useAppStore((state) => state.myTeams)
-  const [teamName, setTeamName] = useState('')
-
-  useEffect(() => {
-    const fromStore = myTeams.find((team) => String(team.teamId) === String(teamId))?.name
-    if (fromStore) {
-      setTeamName(fromStore)
-      return
-    }
-    // 直接进入（未经过侧边栏团队上下文）时，回退查询团队信息
-    if (!Number.isFinite(teamId) || teamId <= 0) return
-    getTeamDetail(teamId)
-      .then((res) => setTeamName(res?.name ?? ''))
-      .catch(() => undefined)
-  }, [myTeams, teamId])
 
   const load = useCallback(async () => {
     if (!Number.isFinite(wikiId) || wikiId <= 0) return
@@ -300,15 +283,16 @@ export function WikiDetail() {
   }
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to={`/team/${teamId}`}>{teamName || t('wiki.title')}</Link> },
-        { title: <Link to={`/team/${teamId}/knowledge`}>{t('wiki.title')}</Link> },
-        { title: wiki.name ?? '' },
-      ]}
-    >
+    <Page>
       <Layout style={{ background: 'transparent', gap: spacing.md }}>
         <Sider width={200} style={{ background: 'transparent' }}>
+          {/* 「← 返回知识库 + 库名」收进左栏顶部，与右侧内容区同行，不独占整行高度（替代多级面包屑） */}
+          <div style={{ marginBottom: spacing.md, display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+            <div style={{ flexShrink: 0 }}>
+              <BackLink to={`/team/${teamId}/knowledge`}>{t('wiki.backToKnowledge')}</BackLink>
+            </div>
+            {wiki?.name && <Text strong ellipsis style={{ minWidth: 0, flex: 1 }}>{wiki.name}</Text>}
+          </div>
           <Menu
             mode="inline"
             items={menuItems}
@@ -318,10 +302,9 @@ export function WikiDetail() {
           />
         </Sider>
         <Content>
+          {/* 文件列表：工具行与表格分体（PageToolbar 裸排 + DataTable 自带卡片），不再包一层 Card */}
           {section === 'files' ? (
-            <Card styles={{ body: { padding: spacing.lg } }}>
-              <WikiDocuments wikiId={wikiId} teamId={teamId} />
-            </Card>
+            <WikiDocuments wikiId={wikiId} teamId={teamId} />
           ) : section === 'sources' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
               <WikiSources wikiId={wikiId} myRole={wiki.myRole} />
@@ -359,6 +342,7 @@ export function WikiDetail() {
                     rules={[
                       { required: true, message: t('wiki.namePlaceholder') },
                       { max: 50, message: `${t('wiki.name')} ≤ 50` },
+                      { pattern: NAME_PATTERN, message: t('validation.nameChars') },
                     ]}
                   >
                     <Input placeholder={t('wiki.namePlaceholder')} maxLength={50} />

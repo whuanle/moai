@@ -8,6 +8,7 @@ import { Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
+import { NAME_PATTERN } from '@/utils/validation'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createApp, getApps, type AppItem, type AppKind } from '@/api/app'
 import { ExternalChannelEntry } from '@/components/ExternalChannelEntry'
@@ -386,6 +387,7 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
             rules={[
               { required: true, message: t('appManage.namePlaceholder') },
               { max: 20, message: `${t('appManage.name')} ≤ 20` },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('appManage.namePlaceholder')} maxLength={20} />

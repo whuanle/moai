@@ -68,16 +68,17 @@ async function main() {
   }
 
   // 图数据库可达性探针：建一个 connected 图，成功即证明可达，随后清理
-  const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-probe-' + TS, mode: 'connected', database: 'neo4j' } })
+  const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_probe_' + TS, mode: 'connected', database: 'neo4j' } })
   if (probe.status !== 200) {
     skip(`图数据库探活失败 (${probe.status}): ${probe.text.slice(0, 160)}`)
   }
   await api('DELETE', kg(Number(probe.json.value)), { token })
 
   // ===== KG-S1 创建图谱（空白模板）=====
-  const blankName = 'kg-blank-' + TS
+  const blankName = 'kg_blank_' + TS
   const c1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: blankName, templateKey: 'blank' } })
   check('KG-S1a 创建空白图谱 200 且返回 id', c1.status === 200 && Number(c1.json?.value) > 0, `${c1.status} ${c1.text.slice(0, 120)}`)
+  check('KG-S1b 名称含特殊字符 400', (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-bad!', templateKey: 'blank' } })).status === 400)
   const G1 = Number(c1.json?.value)
   if (!Number.isFinite(G1)) throw new Error('KG-S1 建图失败，后续场景无法继续')
   {
@@ -86,7 +87,7 @@ async function main() {
   }
 
   // ===== KG-S2 创建模板图谱（logistics 物流运输）=====
-  const tplName = 'kg-logistics-' + TS
+  const tplName = 'kg_logistics_' + TS
   const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: tplName, templateKey: 'logistics' } })
   check('KG-S2a 创建物流运输模板图谱 200', c2.status === 200 && Number(c2.json?.value) > 0, `${c2.status} ${c2.text.slice(0, 120)}`)
   const G2 = Number(c2.json?.value)
@@ -212,13 +213,13 @@ async function main() {
 
   // ===== KG-S10 接入未知库名（方言语义：neo4j 多库→400 拒绝；memgraph 单库→200 仅登记名，随后清理）=====
   {
-    const s10 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-miss-' + TS, mode: 'connected', database: 'kg_missing_db_' + TS } })
+    const s10 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_conn_miss_' + TS, mode: 'connected', database: 'kg_missing_db_' + TS } })
     check('KG-S10 接入未知库名按方言处理（neo4j=400 / memgraph=200）', s10.status === 400 || s10.status === 200, `${s10.status}`)
     if (s10.status === 200 && Number(s10.json?.value)) await api('DELETE', kg(Number(s10.json.value)), { token })
   }
 
   // ===== KG-S11 接入真实数据库 neo4j（内省 schema）=====
-  const c11 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-' + TS, mode: 'connected', database: 'neo4j' } })
+  const c11 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_conn_' + TS, mode: 'connected', database: 'neo4j' } })
   check('KG-S11a 接入真实库 neo4j 200 且返回 id', c11.status === 200 && Number(c11.json?.value) > 0, `${c11.status} ${c11.text.slice(0, 120)}`)
   const CONN = Number(c11.json?.value)
   {

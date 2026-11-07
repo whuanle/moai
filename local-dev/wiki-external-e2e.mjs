@@ -117,16 +117,16 @@ async function main() {
   const T1 = Number((await retryApi('POST', '/api/team', { name: 'wx-team1-' + TS }, token)).json?.value)
   const T2 = Number((await retryApi('POST', '/api/team', { name: 'wx-team2-' + TS }, token)).json?.value)
   if (!Number.isFinite(T1) || !Number.isFinite(T2)) throw new Error('创建团队失败')
-  const w1res = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'wx-wiki1-' + TS, description: 'wiki external e2e' }, token)
-  const w1bres = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'wx-wiki1b-' + TS, description: 'wiki external e2e 资源 key 越圈用' }, token)
-  const w2res = await retryApi('POST', '/api/wiki', { teamId: T2, name: 'wx-wiki2-' + TS, description: 'wiki external e2e' }, token)
+  const w1res = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'wx_wiki1_' + TS, description: 'wiki external e2e' }, token)
+  const w1bres = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'wx_wiki1b_' + TS, description: 'wiki external e2e 资源 key 越圈用' }, token)
+  const w2res = await retryApi('POST', '/api/wiki', { teamId: T2, name: 'wx_wiki2_' + TS, description: 'wiki external e2e' }, token)
   if (w1res.status !== 200 || w1bres.status !== 200 || w2res.status !== 200) throw new Error(`建知识库失败: ${w1res.status}/${w1bres.status}/${w2res.status} ${w1res.text.slice(0, 120)}`)
   const W1 = Number(w1res.json?.value)
   const W1B = Number(w1bres.json?.value)
   const W2 = Number(w2res.json?.value)
 
-  const acc1 = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入1-' + TS, description: 'wiki external e2e' }, token)
-  const acc2 = await retryApi('POST', '/api/access-app', { teamId: T2, name: 'wx接入2-' + TS, description: 'wiki external e2e' }, token)
+  const acc1 = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'wx接入1_' + TS, description: 'wiki external e2e' }, token)
+  const acc2 = await retryApi('POST', '/api/access-app', { teamId: T2, name: 'wx接入2_' + TS, description: 'wiki external e2e' }, token)
   if (acc1.status !== 200 || acc2.status !== 200) throw new Error(`创建接入点失败: ${acc1.status}/${acc2.status}`)
   const KEY1 = acc1.json?.key
   const KEY2 = acc2.json?.key

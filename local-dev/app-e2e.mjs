@@ -82,12 +82,13 @@ async function main() {
   // AP-02 校验
   check('AP-02a 空名称 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '', appType: 'agent' } })).status === 400)
   check('AP-02b 名称超 20 字 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'x'.repeat(21), appType: 'agent' } })).status === 400)
-  check('AP-02c 非法应用类型 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'bad-type', appType: 'unknown' } })).status === 400)
-  check('AP-02d 非法 teamId 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: 0, name: 'bad-team', appType: 'agent' } })).status === 400)
+  check('AP-02c 非法应用类型 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'bad_type', appType: 'unknown' } })).status === 400)
+  check('AP-02d 非法 teamId 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: 0, name: 'bad_team', appType: 'agent' } })).status === 400)
+  check('AP-02e 名称含特殊字符 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'bad_name!', appType: 'agent' } })).status === 400)
 
   // AP-03 权限：应用是团队下的产物，仅团队管理员可创建
-  check('AP-03a Member 创建 403', (await api('POST', '/api/app', { token: member.token, body: { teamId: TID, name: 'member-app', appType: 'agent' } })).status === 403)
-  check('AP-03b 非成员创建 404', (await api('POST', '/api/app', { token: outsider.token, body: { teamId: TID, name: 'outsider-app', appType: 'agent' } })).status === 404)
+  check('AP-03a Member 创建 403', (await api('POST', '/api/app', { token: member.token, body: { teamId: TID, name: 'member_app', appType: 'agent' } })).status === 403)
+  check('AP-03b 非成员创建 404', (await api('POST', '/api/app', { token: outsider.token, body: { teamId: TID, name: 'outsider_app', appType: 'agent' } })).status === 404)
   check('AP-03c 非成员查列表 404', (await api('GET', `/api/app/list?teamId=${TID}`, { token: outsider.token })).status === 404)
 
   // AP-04 创建 Agent 应用
@@ -191,7 +192,7 @@ async function main() {
   }
 
   // AP-09 更新基础信息
-  check('AP-09a Member 更新 403', (await api('PUT', `/api/app/${AGENT_ID}`, { token: member.token, body: { name: 'member-edit' } })).status === 403)
+  check('AP-09a Member 更新 403', (await api('PUT', `/api/app/${AGENT_ID}`, { token: member.token, body: { name: 'member_edit' } })).status === 403)
   check('AP-09b Admin 更新 200', (await api('PUT', `/api/app/${AGENT_ID}`, { token: owner.token, body: { name: '智能客服', description: '改名后' } })).status === 200)
   {
     const r = await api('GET', `/api/app/${AGENT_ID}`, { token: owner.token })
@@ -269,6 +270,7 @@ async function main() {
     const createAcc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP接入', description: '接入测试' } })
     check('AP-13s 创建应用接入 200 且返回 key', createAcc.status === 200 && isGuid(createAcc.json?.accessAppId) && typeof createAcc.json?.key === 'string' && createAcc.json.key.startsWith('moai-ac-'), `${createAcc.status} ${createAcc.text.slice(0, 140)}`)
     const ACC_ID = String(createAcc.json?.accessAppId ?? '')
+    check('AP-13s2 接入名称含特殊字符 400', (await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP-接入' } })).status === 400)
 
     const accList = await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })
     const accItem = (accList.json?.items ?? []).find(i => i.accessAppId === ACC_ID)
@@ -517,9 +519,9 @@ async function main() {
   {
     check('AP-44a 未登录设置会话提示词 401', (await api('PUT', `/api/app/session/01924f5e-0000-7000-8000-00000000ffff/prompt`, { body: { promptId: 0 } })).status === 401)
 
-    const pPersonal = await api('POST', '/api/prompt', { token: owner.token, body: { teamId: 0, name: 'ap44-个人-' + TS, description: 'e2e', content: '你是严谨的审校专家' } })
-    const pTeam = await api('POST', '/api/prompt', { token: owner.token, body: { teamId: TID, name: 'ap44-团队-' + TS, description: 'e2e', content: '你是售前客服专家' } })
-    const outsiderPrompt = await api('POST', '/api/prompt', { token: outsider.token, body: { teamId: 0, name: 'ap44-外部-' + TS, description: 'e2e', content: 'x' } })
+    const pPersonal = await api('POST', '/api/prompt', { token: owner.token, body: { teamId: 0, name: 'ap44_个人_' + TS, description: 'e2e', content: '你是严谨的审校专家' } })
+    const pTeam = await api('POST', '/api/prompt', { token: owner.token, body: { teamId: TID, name: 'ap44_团队_' + TS, description: 'e2e', content: '你是售前客服专家' } })
+    const outsiderPrompt = await api('POST', '/api/prompt', { token: outsider.token, body: { teamId: 0, name: 'ap44_外部_' + TS, description: 'e2e', content: 'x' } })
     check('AP-44b 前置：个人/团队/外部提示词创建 200', pPersonal.status === 200 && pTeam.status === 200 && outsiderPrompt.status === 200, `${pPersonal.status}/${pTeam.status}/${outsiderPrompt.status}`)
     const PERSONAL_ID = Number(pPersonal.json?.value)
     const TEAM_ID = Number(pTeam.json?.value)
@@ -990,7 +992,7 @@ async function main() {
         const teamIds = [...new Set([...(curAuth.json?.items ?? []).map((i) => Number(i.teamId)), TID])]
         await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { teamIds } })
 
-        const app = await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `ap60-审批策略应用-${TS}`, appType: 'agent' } })
+        const app = await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: `ap60_审批策略应用_${TS}`, appType: 'agent' } })
         const APP_ID = String(app.json?.value ?? '')
         const cfgUrl = `/api/app/${APP_ID}/agent-config`
 
@@ -1147,12 +1149,12 @@ async function main() {
 
         // 绑定 Agent 应用与知识库并入白名单：userconfig 下发 agent__/search 工具名，审批模式直接执行
         // 应用名 ≤20 字符（CreateAppCommand 校验），工具名据此拼接（与 AgentAppToolProvider 同规则）
-        const B_NAME = `ag60t-${TS}`
+        const B_NAME = `ag60t_${TS}`
         const cb = await api('POST', '/api/app', { token: adminToken, body: { teamId: TID, name: B_NAME, appType: 'agent' } })
         const APP_B = String(cb.json?.value ?? '')
         await api('PUT', `/api/app/${APP_B}/agent-config`, { token: adminToken, body: { prompt: '你是B号助手', wikiIds: [], plugins: [], modelId: MODEL_ID } })
         await api('POST', `/api/app/${APP_B}/publish`, { token: adminToken })
-        const cw = await api('POST', '/api/wiki', { token: adminToken, body: { teamId: TID, name: `ap60-wiki-${TS}` } })
+        const cw = await api('POST', '/api/wiki', { token: adminToken, body: { teamId: TID, name: `ap60_wiki_${TS}` } })
         const WIKI_ID = Number(cw.json?.value ?? 0)
         const agentTool = `agent__${B_NAME}`
         const saveExt = await api('PUT', cfgUrl, { token: adminToken, body: {
@@ -1193,7 +1195,7 @@ async function main() {
           `${chat7.status} reply=${chat7.reply.slice(0, 160)} dec=${dec7.json?.status}`)
 
         // 检索工具多源判定：绑定第二个知识库但不在白名单 → 任一未放通即挂起，拒绝后不执行
-        const cw2 = await api('POST', '/api/wiki', { token: adminToken, body: { teamId: TID, name: `ap60-wiki2-${TS}` } })
+        const cw2 = await api('POST', '/api/wiki', { token: adminToken, body: { teamId: TID, name: `ap60_wiki2_${TS}` } })
         const WIKI_ID2 = Number(cw2.json?.value ?? 0)
         await api('PUT', cfgUrl, { token: adminToken, body: {
           prompt: 'p', wikiIds: [WIKI_ID, WIKI_ID2], plugins: [String(bindable.pluginId)], agentApps: [APP_B], modelId: MODEL_ID,
@@ -1203,7 +1205,7 @@ async function main() {
           },
         } })
         await api('POST', `/api/app/${APP_ID}/publish`, { token: adminToken })
-        const sess8 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60-wiki-gate' } })
+        const sess8 = await api('POST', `/api/app/${APP_ID}/session`, { token: adminToken, body: { title: 'ap60_wiki_gate' } })
         const SID8 = String(sess8.json?.value ?? '')
         const chat8Promise = chatSse(SID8, 'CALL:search_knowledge_base')
         let dec8Status = ''
@@ -1350,7 +1352,7 @@ async function main() {
       check('AP-61a 前置：桩渠道/模型创建并授权 200', crc.status === 200 && EMB_ID !== '' && MODEL_ID !== '' && authOk, `${crc.status} emb=${EMB_ID} chat=${MODEL_ID}`)
 
       // 知识库 + 绑定向量化 + 上传文档 + 切割 + 向量化
-      const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'ap61-wiki-' + TS, description: 'ap61' } })).json?.value ?? 0)
+      const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'ap61_wiki_' + TS, description: 'ap61' } })).json?.value ?? 0)
       const bind = await api('PUT', `/api/wiki/${WID}/embedding-config`, { token: owner.token, body: { wikiId: WID, embeddingModelId: EMB_ID, embeddingDimensions: 1024 } })
       const docContent = Buffer.from('# 退货政策说明\n\n' + '商品签收后 7 天内可无理由退货，退货运费由买家承担，需保证商品完好。'.repeat(12), 'utf8')
       const sha256 = crypto.createHash('sha256').update(docContent).digest('hex')

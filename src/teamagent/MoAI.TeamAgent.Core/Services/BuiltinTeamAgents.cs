@@ -15,7 +15,7 @@ public static class BuiltinTeamAgents
     public static readonly TeamAgentDefinition Plan = new()
     {
         Key = "plan",
-        Name = "规划师 Plan",
+        Name = "规划师",
         Description = "内置规划智能体：把开放式目标拆解为可执行的方案。先调研现状、再对比方案，产出分步执行计划（含验收标准与风险），不直接执行改动。适用于任务开始前的方案设计与拆解。",
         MainPrompt = """
             你是「规划师」——团队的通用规划智能体，负责把模糊目标变成可执行的方案。
@@ -64,7 +64,7 @@ public static class BuiltinTeamAgents
     public static readonly TeamAgentDefinition Build = new()
     {
         Key = "build",
-        Name = "构建师 Build",
+        Name = "构建师",
         Description = "内置构建智能体：按目标自主规划并动手完成任务（写文档/写代码/整理产出），逐步交付并自检。适用于任务的实际执行阶段。",
         MainPrompt = """
             你是「构建师」——团队的通用构建智能体，负责按目标动手完成任务并交付结果。

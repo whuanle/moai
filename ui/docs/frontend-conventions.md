@@ -292,3 +292,22 @@ import { AuditCell } from '@/design-system'
 - jsdom 不实现 canvas，相关单测需 stub `createImageBitmap`/`getContext`/`toBlob`/`toDataURL`（参考 `src/utils/__tests__/image.test.ts`）。
 - `onSelect` 经压缩 Promise **异步**回调（原为同步）：组件测试里「选图 → 立即触发依赖头像状态的后续操作」需在两者间 `await act(async () => {})` 冲刷微任务，否则状态未落地。
 
+### 11. 纯图标按钮必须带 Tooltip 悬浮提示
+
+凡是**只显示图标没有文字**的按钮（卡片底栏操作钮、工具栏图标钮、复制按钮、眼睛显隐切换、表单行删除钮、聊天侧原生 `<button>` 图标钮等），鼠标悬浮时必须出现文字提示，禁止让用户靠猜：
+
+```tsx
+<Tooltip title={t('teamAgents.detail')}>
+  <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('teamAgents.detail')} onClick={...} />
+</Tooltip>
+```
+
+- 文案与 `aria-label` 同源，一律走 `t()`（zh-CN 与 en-US 同步）。
+- `Popconfirm`/`Dropdown` 包裹**不算**提示：确认气泡与菜单只在点击后出现，悬浮态依然要有 `Tooltip`（`Tooltip` 包在 `Popconfirm` 内、按钮外）。
+- 显隐切换类按钮（眼睛开/关）`Tooltip title` 跟随状态切换；空字符串 title 等于没有提示，禁止用空 title 占位。
+- 没有现成语义 key 时新增 i18n key，不要复用确认句式（如 `deleteFieldConfirm`「确定删除该字段？」）当悬浮文案。
+- 原生 `<button>` 图标钮同样用 antd `Tooltip` 包裹（原生元素可被 Tooltip clone）。
+- 修复存量时优先参照正确示范：`TeamPrompts.tsx`、`TeamWikis.tsx`、`TeamDynamicPluginPanel.tsx`（btn helper 统一包 Tooltip）、`workflow/WorkflowDesigner.tsx`。
+
+规范出处：团队页卡片图标按钮无悬浮提示走查整改（2026-11-07）。
+

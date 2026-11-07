@@ -3,7 +3,7 @@
  * 所有节点可经 system.变量名 引用，调试运行与启动时可赋值覆盖默认值.
  */
 
-import { Button, Input, Popconfirm, Select } from 'antd'
+import { Button, Input, Popconfirm, Select, Tooltip } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { GlobalVariableDef } from './types'
@@ -55,7 +55,9 @@ export function VariablesDrawerBody({ variables, onChange }: VariablesDrawerProp
               options={FIELD_TYPE_OPTIONS.map((ft) => ({ value: ft, label: ft }))}
             />
             <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(index)}>
-              <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+              <Tooltip title={t('workflowDesigner.deleteRow')}>
+                <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+              </Tooltip>
             </Popconfirm>
           </div>
           <div className="wf-vars-row-bottom">

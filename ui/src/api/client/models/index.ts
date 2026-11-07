@@ -5114,6 +5114,15 @@ export function createQueryWikiSourcesCommandResponseFromDiscriminatorValue(pars
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiTeamFilesCommandResponse}
+ */
+// @ts-ignore
+export function createQueryWikiTeamFilesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiTeamFilesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiUploadLimitCommandResponse}
  */
 // @ts-ignore
@@ -7071,6 +7080,15 @@ export function createWikiSourceFeishuConfigFromDiscriminatorValue(parseNode: Pa
 // @ts-ignore
 export function createWikiSourceItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoWikiSourceItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiTeamFileItem}
+ */
+// @ts-ignore
+export function createWikiTeamFileItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiTeamFileItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -9073,10 +9091,12 @@ export function deserializeIntoKnowledgeGraphItem(knowledgeGraphItem: Partial<Kn
         "createTime": n => { knowledgeGraphItem.createTime = n.getStringValue(); },
         "database": n => { knowledgeGraphItem.database = n.getStringValue(); },
         "description": n => { knowledgeGraphItem.description = n.getStringValue(); },
+        "entityCount": n => { knowledgeGraphItem.entityCount = n.getNumberValue(); },
         "kgId": n => { knowledgeGraphItem.kgId = n.getStringValue(); },
         "mode": n => { knowledgeGraphItem.mode = n.getStringValue(); },
         "name": n => { knowledgeGraphItem.name = n.getStringValue(); },
         "readOnly": n => { knowledgeGraphItem.readOnly = n.getBooleanValue(); },
+        "relationCount": n => { knowledgeGraphItem.relationCount = n.getNumberValue(); },
         "teamId": n => { knowledgeGraphItem.teamId = n.getStringValue(); },
         "templateKey": n => { knowledgeGraphItem.templateKey = n.getStringValue(); },
     }
@@ -12142,6 +12162,18 @@ export function deserializeIntoQueryWikiSourcesCommandResponse(queryWikiSourcesC
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiTeamFilesCommandResponse(queryWikiTeamFilesCommandResponse: Partial<QueryWikiTeamFilesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryWikiTeamFilesCommandResponse.items = n.getCollectionOfObjectValues<WikiTeamFileItem>(createWikiTeamFileItemFromDiscriminatorValue); },
+        "teamId": n => { queryWikiTeamFilesCommandResponse.teamId = n.getStringValue(); },
+        "total": n => { queryWikiTeamFilesCommandResponse.total = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryWikiUploadLimitCommandResponse(queryWikiUploadLimitCommandResponse: Partial<QueryWikiUploadLimitCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "allowedFileTypes": n => { queryWikiUploadLimitCommandResponse.allowedFileTypes = n.getCollectionOfPrimitiveValues<string>(); },
@@ -13331,8 +13363,10 @@ export function deserializeIntoTeamTimerItem(teamTimerItem: Partial<TeamTimerIte
 export function deserializeIntoTeamUserItem(teamUserItem: Partial<TeamUserItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { teamUserItem.avatar = n.getStringValue(); },
+        "email": n => { teamUserItem.email = n.getStringValue(); },
         "joinTime": n => { teamUserItem.joinTime = n.getStringValue(); },
         "nickName": n => { teamUserItem.nickName = n.getStringValue(); },
+        "phone": n => { teamUserItem.phone = n.getStringValue(); },
         "role": n => { teamUserItem.role = n.getNumberValue(); },
         "userId": n => { teamUserItem.userId = n.getStringValue(); },
         "userName": n => { teamUserItem.userName = n.getStringValue(); },
@@ -14515,6 +14549,20 @@ export function deserializeIntoWikiSourceItem(wikiSourceItem: Partial<WikiSource
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoWikiTeamFileItem(wikiTeamFileItem: Partial<WikiTeamFileItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "documentId": n => { wikiTeamFileItem.documentId = n.getStringValue(); },
+        "fileName": n => { wikiTeamFileItem.fileName = n.getStringValue(); },
+        "updateTime": n => { wikiTeamFileItem.updateTime = n.getStringValue(); },
+        "wikiId": n => { wikiTeamFileItem.wikiId = n.getStringValue(); },
+        "wikiName": n => { wikiTeamFileItem.wikiName = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoWikiWorkflowConfig(wikiWorkflowConfig: Partial<WikiWorkflowConfig> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "embedding": n => { wikiWorkflowConfig.embedding = n.getObjectValue<WikiWorkflowEmbeddingOptions>(createWikiWorkflowEmbeddingOptionsFromDiscriminatorValue); },
@@ -15272,6 +15320,10 @@ export interface KnowledgeGraphItem extends Parsable {
      */
     description?: string | null;
     /**
+     * 实体（节点）数量；图库不可用或统计失败时为 null.
+     */
+    entityCount?: number | null;
+    /**
      * 图谱 id.
      */
     kgId?: string | null;
@@ -15287,6 +15339,10 @@ export interface KnowledgeGraphItem extends Parsable {
      * 是否只读（connected=true）.
      */
     readOnly?: boolean | null;
+    /**
+     * 关系（边）数量；图库不可用或统计失败时为 null.
+     */
+    relationCount?: number | null;
     /**
      * 团队 id.
      */
@@ -20632,6 +20688,23 @@ export interface QueryWikiSourcesCommandResponse extends Parsable {
     myRole?: number | null;
 }
 /**
+ * 跨知识库文件名搜索结果.
+ */
+export interface QueryWikiTeamFilesCommandResponse extends Parsable {
+    /**
+     * 命中的文件列表（按相关度排序：精确匹配 > 前缀匹配 > 包含，同档按更新时间倒序）.
+     */
+    items?: WikiTeamFileItem[] | null;
+    /**
+     * 团队 id.
+     */
+    teamId?: string | null;
+    /**
+     * 命中总数（排序截断前的全量匹配数）.
+     */
+    total?: number | null;
+}
+/**
  * 知识库上传约束响应.
  */
 export interface QueryWikiUploadLimitCommandResponse extends Parsable {
@@ -23433,10 +23506,12 @@ export function serializeKnowledgeGraphItem(writer: SerializationWriter, knowled
         writer.writeStringValue("createTime", knowledgeGraphItem.createTime);
         writer.writeStringValue("database", knowledgeGraphItem.database);
         writer.writeStringValue("description", knowledgeGraphItem.description);
+        writer.writeNumberValue("entityCount", knowledgeGraphItem.entityCount);
         writer.writeStringValue("kgId", knowledgeGraphItem.kgId);
         writer.writeStringValue("mode", knowledgeGraphItem.mode);
         writer.writeStringValue("name", knowledgeGraphItem.name);
         writer.writeBooleanValue("readOnly", knowledgeGraphItem.readOnly);
+        writer.writeNumberValue("relationCount", knowledgeGraphItem.relationCount);
         writer.writeStringValue("teamId", knowledgeGraphItem.teamId);
         writer.writeStringValue("templateKey", knowledgeGraphItem.templateKey);
     }
@@ -26502,6 +26577,18 @@ export function serializeQueryWikiSourcesCommandResponse(writer: SerializationWr
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiTeamFilesCommandResponse(writer: SerializationWriter, queryWikiTeamFilesCommandResponse: Partial<QueryWikiTeamFilesCommandResponse> | undefined | null = {}) : void {
+    if (queryWikiTeamFilesCommandResponse) {
+        writer.writeCollectionOfObjectValues<WikiTeamFileItem>("items", queryWikiTeamFilesCommandResponse.items, serializeWikiTeamFileItem);
+        writer.writeStringValue("teamId", queryWikiTeamFilesCommandResponse.teamId);
+        writer.writeNumberValue("total", queryWikiTeamFilesCommandResponse.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryWikiUploadLimitCommandResponse(writer: SerializationWriter, queryWikiUploadLimitCommandResponse: Partial<QueryWikiUploadLimitCommandResponse> | undefined | null = {}) : void {
     if (queryWikiUploadLimitCommandResponse) {
         writer.writeCollectionOfPrimitiveValues<string>("allowedFileTypes", queryWikiUploadLimitCommandResponse.allowedFileTypes);
@@ -27691,8 +27778,10 @@ export function serializeTeamTimerItem(writer: SerializationWriter, teamTimerIte
 export function serializeTeamUserItem(writer: SerializationWriter, teamUserItem: Partial<TeamUserItem> | undefined | null = {}) : void {
     if (teamUserItem) {
         writer.writeStringValue("avatar", teamUserItem.avatar);
+        writer.writeStringValue("email", teamUserItem.email);
         writer.writeStringValue("joinTime", teamUserItem.joinTime);
         writer.writeStringValue("nickName", teamUserItem.nickName);
+        writer.writeStringValue("phone", teamUserItem.phone);
         writer.writeNumberValue("role", teamUserItem.role);
         writer.writeStringValue("userId", teamUserItem.userId);
         writer.writeStringValue("userName", teamUserItem.userName);
@@ -28868,6 +28957,20 @@ export function serializeWikiSourceItem(writer: SerializationWriter, wikiSourceI
         writer.writeEnumValue<WikiSourceType>("sourceType", wikiSourceItem.sourceType);
         writer.writeStringValue("wikiId", wikiSourceItem.wikiId);
         writer.writeObjectValue<WikiWorkflowConfig>("workflowConfig", wikiSourceItem.workflowConfig, serializeWikiWorkflowConfig);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiTeamFileItem(writer: SerializationWriter, wikiTeamFileItem: Partial<WikiTeamFileItem> | undefined | null = {}) : void {
+    if (wikiTeamFileItem) {
+        writer.writeStringValue("documentId", wikiTeamFileItem.documentId);
+        writer.writeStringValue("fileName", wikiTeamFileItem.fileName);
+        writer.writeStringValue("updateTime", wikiTeamFileItem.updateTime);
+        writer.writeStringValue("wikiId", wikiTeamFileItem.wikiId);
+        writer.writeStringValue("wikiName", wikiTeamFileItem.wikiName);
     }
 }
 /**
@@ -30073,6 +30176,10 @@ export interface TeamUserItem extends Parsable {
      */
     avatar?: string | null;
     /**
+     * 邮箱（已脱敏：本地部分仅保留首字符，如 z***@example.com；空串=未设置）.
+     */
+    email?: string | null;
+    /**
      * 加入时间.
      */
     joinTime?: string | null;
@@ -30080,6 +30187,10 @@ export interface TeamUserItem extends Parsable {
      * 昵称.
      */
     nickName?: string | null;
+    /**
+     * 手机号（已脱敏：≥8 位保留前 3 后 4，如 138****5678；其余仅保留首字符；空串=未设置）.
+     */
+    phone?: string | null;
     /**
      * 角色：0=Owner 1=Admin 2=Member.
      */
@@ -32160,6 +32271,31 @@ export interface WikiSourceItem extends AuditsInfo, Parsable {
 }
 export type WikiSourceSyncStatus = (typeof WikiSourceSyncStatusObject)[keyof typeof WikiSourceSyncStatusObject];
 export type WikiSourceType = (typeof WikiSourceTypeObject)[keyof typeof WikiSourceTypeObject];
+/**
+ * 跨知识库命中的文件项.
+ */
+export interface WikiTeamFileItem extends Parsable {
+    /**
+     * 文档 id.
+     */
+    documentId?: string | null;
+    /**
+     * 文件名.
+     */
+    fileName?: string | null;
+    /**
+     * 最近更新时间.
+     */
+    updateTime?: string | null;
+    /**
+     * 所属知识库 id.
+     */
+    wikiId?: string | null;
+    /**
+     * 所属知识库名称.
+     */
+    wikiName?: string | null;
+}
 /**
  * 知识库默认工作流配置：切割 / 元数据生成 / 向量化三步预设.由 UpdateWikiWorkflowCommand 整体保存，批量执行工作流时作为前端预填默认值.
  */

@@ -52,7 +52,8 @@ public class CreatePromptCommand : IRequest<SimpleInt>, IUserIdContext, IModelVa
     public static void Validate(AbstractValidator<CreatePromptCommand> validate)
     {
         validate.RuleFor(x => x.TeamId).GreaterThanOrEqualTo(0).WithMessage("团队 id 不正确.");
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(20).WithMessage("名称最长 20 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(20).WithMessage("名称最长 20 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("提示词名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("描述最长 255 个字符.");
         validate.RuleFor(x => x.Content).NotEmpty().WithMessage("提示词内容不能为空.").MaximumLength(10000).WithMessage("提示词内容最长 10000 个字符.");
         validate.RuleFor(x => x.PromptClassId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");

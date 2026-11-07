@@ -55,7 +55,7 @@ async function main() {
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'pub-team-' + TS } })).json.value)
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
 
-  const app = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '上架应用-' + TS, appType: 'agent' } })
+  const app = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '上架应用_' + TS, appType: 'agent' } })
   const APP_ID = String(app.json?.value ?? '')
   // 公开列表（/api/app/public/list）只展示「已发布 + 已公开」的应用，这里先发布（发布 ≠ 公开）
   await api('POST', `/api/app/${APP_ID}/publish`, { token: owner.token })
@@ -145,11 +145,11 @@ async function main() {
   check('PB-14 已公开资源重复申请 409', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID, version: '1.3.1' } })).status === 409)
 
   // PB-15 外部应用不可申请公开
-  const ext = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '外部应用-' + TS, appType: 'agent', isExternal: true } })
+  const ext = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '外部应用_' + TS, appType: 'agent', isExternal: true } })
   check('PB-15 外部应用申请公开 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: String(ext.json?.value ?? '') } })).status === 400)
 
   // PB-16 排序：待审核恒排最前，组内按申请时间倒序
-  const appS = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '排序应用-' + TS, appType: 'agent' } })
+  const appS = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '排序应用_' + TS, appType: 'agent' } })
   const APPS_ID = String(appS.json?.value ?? '')
   await api('POST', `/api/app/${APPS_ID}/publish`, { token: owner.token })
   const applyS = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPS_ID, version: '2.0.0' } })
@@ -179,7 +179,7 @@ async function main() {
   // ===== 可视范围（组织）扩展 =====
 
   // PB-18 上架前置校验：未发布应用不可申请（@PB-S14）
-  const appUnpub = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '未发布应用-' + TS, appType: 'agent' } })
+  const appUnpub = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '未发布应用_' + TS, appType: 'agent' } })
   const APPU_ID = String(appUnpub.json?.value ?? '')
   check('PB-18a 未发布应用申请上架 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID } })).status === 400)
   await api('POST', `/api/app/${APPU_ID}/publish`, { token: owner.token })
@@ -239,7 +239,7 @@ async function main() {
   // PB-23 待审核数量角标接口：门禁 + 申请后 +1 + 审批通过后回落（@PB-S23）
   check('PB-23a 未登录查待审核数量 401', (await api('GET', '/api/publication/pending-count')).status === 401)
   check('PB-23b 非管理员查待审核数量 403', (await api('GET', '/api/publication/pending-count', { token: owner.token })).status === 403)
-  const appBadge = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '角标应用-' + TS, appType: 'agent' } })
+  const appBadge = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '角标应用_' + TS, appType: 'agent' } })
   const APPB_ID = String(appBadge.json?.value ?? '')
   await api('POST', `/api/app/${APPB_ID}/publish`, { token: owner.token })
   const pendBefore = (await api('GET', '/api/publication/pending-count', { token: adminToken })).json?.count ?? -1
@@ -254,7 +254,7 @@ async function main() {
 
   // 三个夹具应用：F1/F3 全员范围、F2 组织范围（研发部，member 在范围内、outsider 在范围外），发布次序 F1→F2→F3（发布时间倒序基线 F3>F2>F1）
   const mkFav = async (name, orgScoped) => {
-    const r = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `${name}-${TS}`, appType: 'agent' } })
+    const r = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `${name}_${TS}`, appType: 'agent' } })
     const id = String(r.json?.value ?? '')
     await api('POST', `/api/app/${id}/publish`, { token: owner.token })
     const body = orgScoped ? { resourceType: 'app', resourceId: id, visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: CHILD_ORG, scope: 'down' }] } : { resourceType: 'app', resourceId: id, visibleScope: 'all' }

@@ -196,9 +196,9 @@ async function main() {
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
   const OTHER_TID = Number((await api('POST', '/api/team', { token: outsider.token, body: { name: 'ww-other-' + TS } })).json.value)
 
-  const appA = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'ww-a-' + TS, appType: 'agent' } })).json.value
-  const appB = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'ww-b-' + TS, appType: 'agent' } })).json.value
-  const appC = (await api('POST', '/api/app', { token: outsider.token, body: { teamId: OTHER_TID, name: 'ww-c-' + TS, appType: 'agent' } })).json.value
+  const appA = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'ww_a_' + TS, appType: 'agent' } })).json.value
+  const appB = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'ww_b_' + TS, appType: 'agent' } })).json.value
+  const appC = (await api('POST', '/api/app', { token: outsider.token, body: { teamId: OTHER_TID, name: 'ww_c_' + TS, appType: 'agent' } })).json.value
 
   // ===== 模型准备（对话全链路用；失败时依赖模型的场景 SKIP） =====
   const adminToken = await adminLogin()
@@ -261,7 +261,7 @@ async function main() {
   check('WX-06d 非法渠道类型枚举 400', (await api('POST', '/api/weixinwork_app', { token: owner.token, body: mkConn('ww-e-' + TS, { agentId: 3000005, channelType: 'wiki', channelId: '1' }) })).status === 400)
   check('WX-06e 只传渠道 id 不传渠道类型 400', (await api('POST', '/api/weixinwork_app', { token: owner.token, body: { ...mkConn('ww-e-' + TS, { agentId: 3000006 }), channelId: appA } })).status === 400)
 
-  const crb = await api('POST', '/api/weixinwork_app', { token: owner.token, body: mkConn('ww-b-' + TS, { agentId: 3000007, channelType: 'app', channelId: appA }) })
+  const crb = await api('POST', '/api/weixinwork_app', { token: owner.token, body: mkConn('ww_b_' + TS, { agentId: 3000007, channelType: 'app', channelId: appA }) })
   check('WX-07a 创建即绑定 200 + guid', crb.status === 200 && isGuid(crb.json?.value), JSON.stringify(crb.json).slice(0, 160))
   const WID = crb.json.value
   const lst2 = await api('GET', `/api/weixinwork_app/list?teamId=${TID}`, { token: owner.token })

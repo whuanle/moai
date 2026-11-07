@@ -108,6 +108,10 @@ describe('TeamAgents', () => {
     expect(screen.getByText('内置')).toBeInTheDocument()
     // 子智能体数徽标
     expect(screen.getByText('2 个子智能体')).toBeInTheDocument()
+    // 卡片展示描述；空描述回显占位符
+    expect(screen.getByText('内置规划智能体')).toBeInTheDocument()
+    expect(screen.getByText('拆解任务并派发子智能体')).toBeInTheDocument()
+    expect(screen.getByText('-')).toBeInTheDocument()
     // 卡片视图：无表格、无条数统计文本
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     expect(screen.queryByText('共 3 条')).not.toBeInTheDocument()

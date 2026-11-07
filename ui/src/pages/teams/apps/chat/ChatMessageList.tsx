@@ -78,14 +78,16 @@ function AttachmentChips({ attachments }: { attachments: ParsedAttachment[] }) {
                 </button>
               )}
               {!imageSrc && (
-                <button
-                  type="button"
-                  className="moai-chat__bubble-attachment-toggle"
-                  onClick={() => setExpanded(expanded === key ? null : key)}
-                  aria-label={t('appChat.attachmentViewContent')}
-                >
-                  <CaretRightOutlined className={expanded === key ? 'is-open' : ''} />
-                </button>
+                <Tooltip title={t('appChat.attachmentViewContent')}>
+                  <button
+                    type="button"
+                    className="moai-chat__bubble-attachment-toggle"
+                    onClick={() => setExpanded(expanded === key ? null : key)}
+                    aria-label={t('appChat.attachmentViewContent')}
+                  >
+                    <CaretRightOutlined className={expanded === key ? 'is-open' : ''} />
+                  </button>
+                </Tooltip>
               )}
             </div>
             {expanded === key && att.content && (

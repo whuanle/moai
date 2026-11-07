@@ -305,7 +305,7 @@ async function main() {
 
   try {
     // ===== 配置校验（平台门禁：系统设置未开启长期记忆） =====
-    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用-' + TS, appType: 'agent' } })
+    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用_' + TS, appType: 'agent' } })
     const APP1 = String(ca.json?.value ?? '')
 
     const bad = await saveConfig(owner.token, APP1, models.conversationModelId)
@@ -520,7 +520,7 @@ async function main() {
     check('AM-24d 解锁恢复后记忆写入可查询', poll9.ok, `count=${poll9.items.length} items=${poll9.items.map((x) => x.content?.slice(0, 20)).join('|')}`)
 
     // ===== 压缩：flush 视图折叠旧工具结果（toolResultTriggerMessages=2） =====
-    const ca3 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '压缩应用-' + TS, appType: 'agent' } })
+    const ca3 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '压缩应用_' + TS, appType: 'agent' } })
     const APP3 = String(ca3.json?.value ?? '')
     await api('PUT', `/api/app/${APP3}/agent-config`, {
       token: owner.token,

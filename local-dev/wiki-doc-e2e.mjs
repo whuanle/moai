@@ -48,7 +48,7 @@ async function main() {
   // 准备团队 + 知识库
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'doc-team-' + TS } })).json.value)
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 2 } })
-  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'doc-wiki-' + TS } })).json.value)
+  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'doc_wiki_' + TS } })).json.value)
 
   // WD-01 无 token 401
   check('WD-01 无 token 查文档列表 401', (await api('GET', `/api/wiki/${WID}/documents`)).status === 401)

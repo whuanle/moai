@@ -82,7 +82,8 @@ public class CreateTeamAgentCommand : IRequest<SimpleGuid>, IModelValidator<Crea
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.Key).NotEmpty().WithMessage("智能体标识不能为空.")
             .Matches("^[a-z][a-z0-9_]{0,29}$").WithMessage("智能体标识仅允许小写字母开头，包含小写字母/数字/下划线，最长 30.");
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("智能体名称不能为空.").MaximumLength(50).WithMessage("智能体名称最长 50 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("智能体名称不能为空.").MaximumLength(50).WithMessage("智能体名称最长 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("智能体名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(500).WithMessage("智能体描述最长 500 个字符.");
         validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 不正确.");
         validate.RuleFor(x => x.MainPrompt).NotEmpty().WithMessage("主智能体提示词不能为空.").MaximumLength(50000).WithMessage("主智能体提示词最长 50000 个字符.");
@@ -93,7 +94,8 @@ public class CreateTeamAgentCommand : IRequest<SimpleGuid>, IModelValidator<Crea
             sub.RuleFor(x => x.Key).NotEmpty().WithMessage("子智能体标识不能为空.")
                 .Matches("^[a-z][a-z0-9_]{0,29}$").WithMessage("子智能体标识仅允许小写字母开头，包含小写字母/数字/下划线，最长 30.");
             sub.RuleFor(x => x.Name).NotEmpty().WithMessage("子智能体名称不能为空.")
-                .MaximumLength(50).WithMessage("子智能体名称最长 50 个字符.");
+                .MaximumLength(50).WithMessage("子智能体名称最长 50 个字符.")
+                .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("子智能体名称仅允许中文、英文、数字和下划线.");
             sub.RuleFor(x => x.Description).NotEmpty().WithMessage("子智能体描述不能为空，它是主智能体判断何时派发的依据.")
                 .MaximumLength(500).WithMessage("子智能体描述最长 500 个字符.");
             sub.RuleFor(x => x.Prompt).NotEmpty().WithMessage("子智能体提示词不能为空.")

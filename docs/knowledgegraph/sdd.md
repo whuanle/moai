@@ -109,7 +109,8 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 
 ## 7. 前端（v2 接线）
 
-- 路由：`/knowledge-graph`（跨团队卡片墙，对齐 wiki 模式）+ `/team/:teamId/kg/:graphId/:section?`（详情）；团队详情独立「知识图谱」分区（`TeamKnowledgeGraphs`，建图 / 接入 / 编辑 / 删除），Member 可见但只读。
+- 路由：`/knowledge-graph`（跨团队卡片墙，对齐 wiki 模式）+ `/team/:teamId/kg/:graphId/:section?`（详情）；团队详情独立「知识图谱」分区（`TeamKnowledgeGraphs`，工具栏 `PageToolbar`：关键字搜索框客户端过滤名称/描述（回车或「查询」触发，@KG-S31）+ 共 N 条 + 新建知识图谱，建图 / 接入 / 编辑 / 删除），Member 可见但只读。
+- 列表卡片（2026-11-07，@KG-S32）：与知识库列表卡片同构——头像+名称+元信息行（「N 实例 · M 关系」资源数量，接入图徽标「外部接入 · 只读」同行）→ 两行截断描述 → 分隔线页脚（创建时间+编辑/删除），列宽同知识库（xs24/sm12/md8/lg6/xxl4）；数量由 `GET list` 逐图携带（`entityCount/relationCount`，int?）：托管图直查图库 count、接入图经内省缓存（5 分钟）汇总标签计数，能力未开启/图库不可用/统计失败为 null 前端不展示（降级不阻断列表）。
 - 侧边栏 mainNav 新增「知识图谱」（`ClusterOutlined`）；`/team/*/kg/**` 高亮该入口。
 - 详情 section（v3 改版，2026-09-27）：托管图菜单收敛为 图览 / 维护 / 设置（`KnowledgeGraphDetail`）；维护页（`KnowledgeGraphMaintenance`，路由 `/maintenance?step=`）头部步骤条承载 ① 定义模型 → ② 录入实例 → ③ 连接关系，点步骤切换；旧独立路径 `/schema`、`/entities`、`/relations` 渲染期声明式 `<Navigate>` 重定向到维护页对应步骤（接入图 `schema` 仍是合法菜单，接入图仅 图览 / 模型 / 设置 + 只读徽标）。托管图与接入图进入详情均默认「图览」（`@antv/g6` v5 力导向，类型色板过滤、关键字搜索、点节点一跳展开、空态引导）。页内互跳（查看实例/查看关系/去定义模型/关联）统一指向 `/maintenance?step=…` 并用函数式 `setSearchParams` 保留过滤参数。
 - 图览交互（v2.8）：节点可拖动调整位置（编辑/只读态一致）；**建关系改两段式点击**（编辑态点起点节点再点终点节点，弹关系选择窗，替代 v2 的拖拽连线——与节点拖动手势冲突）；边中段显示关系类型名标签；点击节点弹详情抽屉（无遮罩，类型/描述/属性按模型定义排序，`mask=false` 不阻挡后续画布点击），点击边弹关系详情（关系名/起止）。注意 G6 v5 点击命中判定用 `event.targetType`（`target.type` 恒 undefined，v2~v2.7 点击展开实际失效）；Kiota 将节点 `properties` 字典收进 `additionalData`，消费方统一经 `flattenNodeProperties` 归一化。
@@ -133,3 +134,7 @@ v1 全部端点保留（图谱 CRUD、模板、schema、类型 CRUD、节点 / �
 - 消费端已落地：**Text2Cypher 查图插件**（2026-09-21）——内置动态插件模板 `kg_cypher_query` + KG 访问服务 `IKgCypherAccessService`（托管图 `$kgId` 门禁与结果侧 kgId 归属校验、接入图按库路由、schema 自描述）+ teamplugin 实例保存归属校验（越团队 403/图谱不存在 404），Agent 对话模型即席只读查图；设计见 [2026-09-21-kg-text2cypher-plugin-design.md](../superpowers/specs/2026-09-21-kg-text2cypher-plugin-design.md)，场景 [@KT-S1~S10](./bdd.md#feature-text2cypher-查图插件消费kt-s)。**图检索消费层 SP-A 一期**（2026-09-22）已落地（见 §5.2）。
 - SP-A 二期展望：关系/边向量化与关系语义检索、rerank 接入、KG×wiki 混合召回与融合排序、召回测试 UI、答案挂 citation 子图、全量重建进度可见、自动注入模式（见 [设计文档 §11](../superpowers/specs/2026-09-22-kg-graph-search-design.md)）。
 - 后续迭代：AI 抽取入图（审核流）、画布编辑、结构化导入、Cypher 控制台。
+
+## 资源命名规则（2026-11-07）
+
+- 知识图谱名称统一约束：正则 `^[\u4e00-\u9fa5a-zA-Z0-9_]+$`（仅中文、英文、数字、下划线），`Create/UpdateKnowledgeGraphCommand.Validate` 落 `Matches` 规则；**仅约束图谱资源名**——节点/实体类型/关系类型名称为图内容数据不设此限；KG 模板「空白 / 自定义」仅为模板下拉显示名不落资源名；前端 `TeamKnowledgeGraphs`/`KnowledgeGraphSettings` 名称表单同步 pattern 校验。行为见 [@KG-S1](./bdd.md#kg-s1)。

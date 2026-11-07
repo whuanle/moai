@@ -31,6 +31,10 @@ export interface TeamUserItem {
   userId?: string | number | null
   userName?: string | null
   nickName?: string | null
+  /** 已脱敏（本地部分仅保留首字符，如 z***@example.com），空串=未设置 */
+  email?: string | null
+  /** 已脱敏（保留前 3 后 4，如 138****5678），空串=未设置 */
+  phone?: string | null
   avatar?: string | null
   role?: number | null
   joinTime?: string | null

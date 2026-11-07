@@ -54,6 +54,20 @@ public class WikiController : ControllerBase
     }
 
     /// <summary>
+    /// 跨知识库按文件名搜索团队内的文档，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="query">文件名关键字.</param>
+    /// <param name="limit">返回条数上限，默认 50.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiTeamFilesCommandResponse"/>.</returns>
+    [HttpGet("files/search")]
+    public Task<QueryWikiTeamFilesCommandResponse> QueryWikiTeamFiles([FromQuery] QueryWikiTeamFilesCommand req, CancellationToken ct)
+    {
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 查询知识库上传文件大小上限（MB），任意登录用户可访问，供前端上传前预检.
     /// </summary>
     /// <param name="ct">取消令牌.</param>

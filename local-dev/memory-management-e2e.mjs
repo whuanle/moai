@@ -305,7 +305,7 @@ async function main() {
     check('MM-09b 总开关开启后跨应用记忆开关开启 200', (await saveSetting(rootToken, 'MEMORY_GLOBAL_ENABLED', 'true')).status === 200)
 
     // ===== 应用记忆：AI 工具写入 + 全局记忆工具写入（人工写入端点已下线） =====
-    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用A-' + TS, appType: 'agent' } })
+    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用A_' + TS, appType: 'agent' } })
     const APP1 = String(ca.json?.value ?? '')
 
     // 应用跨应用共享门禁：平台 MEMORY_GLOBAL_ENABLED 关闭时应用开启 allowGlobalMemory 400；开启后放行
@@ -401,7 +401,7 @@ async function main() {
       `total=${appKwHit.json?.total}`)
 
     // ===== 跨应用注入：应用 B（无应用内记忆）命中全局记忆，三级开关（平台已开启 → 管理员允许 → 用户接入）=====
-    const cb = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用B-' + TS, appType: 'agent' } })
+    const cb = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用B_' + TS, appType: 'agent' } })
     const APP2 = String(cb.json?.value ?? '')
     await api('PUT', `/api/app/${APP2}/agent-config`, {
       token: owner.token,
@@ -451,7 +451,7 @@ async function main() {
       `status=${chat2.status} reply=${(chat2.reply ?? '').slice(0, 80)} err=${chat2.runError}`)
 
     // 未开启记忆的应用设置全局接入偏好被拒绝（400）
-    const ca3 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用C-' + TS, appType: 'agent' } })
+    const ca3 = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '记忆应用C_' + TS, appType: 'agent' } })
     const APP3 = String(ca3.json?.value ?? '')
     await api('PUT', `/api/app/${APP3}/agent-config`, {
       token: owner.token,

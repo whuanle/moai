@@ -128,14 +128,16 @@ export function ChatComposer({
                     </>
                   )}
                 </span>
-                <button
-                  type="button"
-                  className="moai-chat__attachment-remove"
-                  onClick={() => onRemoveAttachment?.(att.id)}
-                  aria-label={t('appChat.attachmentRemove')}
-                >
-                  <CloseOutlined />
-                </button>
+                <Tooltip title={t('appChat.attachmentRemove')}>
+                  <button
+                    type="button"
+                    className="moai-chat__attachment-remove"
+                    onClick={() => onRemoveAttachment?.(att.id)}
+                    aria-label={t('appChat.attachmentRemove')}
+                  >
+                    <CloseOutlined />
+                  </button>
+                </Tooltip>
               </div>
             )
           })}
@@ -272,11 +274,13 @@ export function ChatComposer({
         <div className="moai-chat__composer-actions">
           {contextUsageNode}
           {sending ? (
-            <button type="button" className="moai-chat__send" onClick={onStop} aria-label={t('appChat.stop')}>
-              <StopOutlined />
-            </button>
+            <Tooltip title={t('appChat.stop')}>
+              <button type="button" className="moai-chat__send" onClick={onStop} aria-label={t('appChat.stop')}>
+                <StopOutlined />
+              </button>
+            </Tooltip>
           ) : (
-            <Tooltip title={attachmentsBlocking ? t('appChat.sendPendingAttachment') : ''}>
+            <Tooltip title={attachmentsBlocking ? t('appChat.sendPendingAttachment') : t('appChat.send')}>
               <button
                 type="button"
                 className="moai-chat__send"

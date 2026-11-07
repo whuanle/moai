@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphDetail } from '../KnowledgeGraphDetail'
@@ -73,6 +73,10 @@ describe('KnowledgeGraphDetail', () => {
     renderShell('/team/7/kg/1/maintenance?step=relations')
     expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
     expect(getKnowledgeGraphDetail).toHaveBeenCalledWith(1)
+    // 返回入口与图名收进左侧菜单栏（aside）顶部，与右侧内容同行，不独占整行高度
+    const sider = screen.getByRole('complementary')
+    expect(within(sider).getByRole('link', { name: /返回知识图谱/ })).toBeInTheDocument()
+    expect(within(sider).getByText('支付域图谱')).toBeInTheDocument()
   })
 
   it('旧独立菜单路径（/entities）重定向到维护页对应步骤', async () => {

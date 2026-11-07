@@ -213,7 +213,7 @@ async function main() {
   }
 
   // 图数据库可达性探针：建一个 connected 图，成功即证明可达，随后清理
-  const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs-probe-' + TS, mode: 'connected', database: 'neo4j' } })
+  const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs_probe_' + TS, mode: 'connected', database: 'neo4j' } })
   if (probe.status !== 200) {
     skip(`图数据库探活失败 (${probe.status}): ${probe.text.slice(0, 160)}`)
   }
@@ -231,7 +231,7 @@ async function main() {
   console.log(`INFO | 本地桩 embeddings 就绪 port=${stubPort} model=${embModelId}`)
 
   // ===== KGS-S1 托管图 + 配置向量化模型（先配模型再建节点，保证增量向量化不丢） =====
-  const c1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs-managed-' + TS, templateKey: 'blank' } })
+  const c1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs_managed_' + TS, templateKey: 'blank' } })
   check('KGS-S1a 创建托管图 200', c1.status === 200 && Number(c1.json?.value) > 0, `${c1.status} ${c1.text.slice(0, 120)}`)
   const G1 = Number(c1.json?.value)
   if (!Number.isFinite(G1) || G1 <= 0) throw new Error('KGS-S1 建图失败，后续场景无法继续')
@@ -352,7 +352,7 @@ async function main() {
   }
 
   // ===== KGS-S6 未配模型的第二张托管图 → 409 文案含「向量化」 =====
-  const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs-nomodel-' + TS, templateKey: 'blank' } })
+  const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs_nomodel_' + TS, templateKey: 'blank' } })
   check('KGS-S6a 创建未配模型托管图 200', c2.status === 200 && Number(c2.json?.value) > 0, `${c2.status} ${c2.text.slice(0, 120)}`)
   const G2 = Number(c2.json?.value)
   const s6 = await api('POST', `${kg(G2)}/search`, { token, body: { query: nameA, topK: 5 } })
@@ -370,7 +370,7 @@ async function main() {
   const team2 = await api('POST', '/api/team', { token, body: { name: 'kgs-team2-' + TS } })
   const TID2 = Number(team2.json?.value)
   check('KGS-S8a 前置：创建第二团队 200', team2.status === 200 && TID2 > 0, `${team2.status}`)
-  const g3 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID2, name: 'kgs-other-' + TS, templateKey: 'blank' } })
+  const g3 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID2, name: 'kgs_other_' + TS, templateKey: 'blank' } })
   const G3 = Number(g3.json?.value)
   check('KGS-S8a 前置：第二团队托管图 200', g3.status === 200 && G3 > 0, `${g3.status} ${g3.text.slice(0, 120)}`)
 
@@ -383,7 +383,7 @@ async function main() {
   const s8c = await api('PUT', cfgUrl, { token, body: agentBody([G3]) })
   check('KGS-S8c 绑定他团队图谱 400 且文案含「知识图谱」', s8c.status === 400 && s8c.text.includes('知识图谱'), `${s8c.status} ${s8c.text.slice(0, 160)}`)
 
-  const connR = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs-connected-' + TS, mode: 'connected', database: 'neo4j' } })
+  const connR = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kgs_connected_' + TS, mode: 'connected', database: 'neo4j' } })
   const G_CONN = Number(connR.json?.value)
   check('KGS-S8d 前置：创建本团队接入图 200', connR.status === 200 && G_CONN > 0, `${connR.status} ${connR.text.slice(0, 160)}`)
   const s8e = G_CONN > 0 ? await api('PUT', cfgUrl, { token, body: agentBody([G_CONN]) }) : { status: 0, text: '接入图创建失败' }

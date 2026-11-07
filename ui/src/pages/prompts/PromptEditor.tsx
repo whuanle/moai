@@ -3,13 +3,14 @@ import { CameraOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons'
 import { Avatar, Button, Card, Form, Input, Segmented, Select, Space, Tooltip, Upload, theme } from 'antd'
 import type { UploadProps } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { Page, feedback } from '@/design-system'
+import { useNavigate, useParams } from 'react-router'
+import { BackLink, Page, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { VditorMarkdownEditor, type VditorEditorMode } from '@/components/VditorMarkdownEditor'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createPrompt, getPromptDetail, setPromptAvatar, updatePrompt } from '@/api/prompt'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 
 const CONTENT_MAX = 10000
 
@@ -257,16 +258,12 @@ export function PromptEditor() {
     }
   }
 
-  const listTitle = teamId > 0 ? t('team.prompts') : t('nav.prompts')
-
   return (
-    <Page
-      breadcrumb={[
-        teamId > 0 ? { title: <Link to="/team">{t('team.title')}</Link> } : { title: <Link to="/prompts">{t('nav.prompts')}</Link> },
-        ...(teamId > 0 ? [{ title: <Link to={`/team/${teamId}/prompts`}>{listTitle}</Link> }] : []),
-        { title: isEdit ? t('prompt.editorEdit') : t('prompt.editorCreate') },
-      ]}
-    >
+    <Page>
+      {/* 左上角「← 返回提示词」替代多级面包屑（团队页返回团队提示词列表，个人页返回提示词中心） */}
+      <div style={{ marginBottom: spacing.md }}>
+        <BackLink to={teamId > 0 ? `/team/${teamId}/prompts` : '/prompts'}>{t('prompt.backToPrompts')}</BackLink>
+      </div>
       <Card styles={{ body: { padding: spacing.md, marginBottom: spacing.md } }} loading={loading}>
         <div style={{ display: 'flex', gap: spacing.md, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <Upload beforeUpload={avatarBeforeUpload} showUploadList={false} accept="image/*">
@@ -300,7 +297,11 @@ export function PromptEditor() {
               <Form.Item
                 name="name"
                 label={t('prompt.name')}
-                rules={[{ required: true, message: t('prompt.namePlaceholder') }, { max: 20, message: `${t('prompt.name')} ≤ 20` }]}
+                rules={[
+                  { required: true, message: t('prompt.namePlaceholder') },
+                  { max: 20, message: `${t('prompt.name')} ≤ 20` },
+                  { pattern: NAME_PATTERN, message: t('validation.nameChars') },
+                ]}
                 style={{ marginBottom: 0, width: 200 }}
               >
                 <Input placeholder={t('prompt.namePlaceholder')} maxLength={20} allowClear />

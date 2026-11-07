@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircleOutlined, CopyOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
@@ -294,7 +294,9 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage }: AppWe
               <Form.Item label={t('appWeixinWorkChannels.fieldCallbackUrl')}>
                 <Space.Compact style={{ width: '100%' }}>
                   <Input readOnly value={buildCallbackUrl(editing.weixinWorkAppId)} />
-                  <Button icon={<CopyOutlined />} onClick={() => void copyCallbackUrl()} aria-label={t('common.copy')} />
+                  <Tooltip title={t('common.copy')}>
+                    <Button icon={<CopyOutlined />} onClick={() => void copyCallbackUrl()} aria-label={t('common.copy')} />
+                  </Tooltip>
                 </Space.Compact>
               </Form.Item>
             )}

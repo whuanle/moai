@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { AuditCell, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   createWikiSource,
   deleteWikiSource,
@@ -625,6 +626,7 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
             rules={[
               { required: true, message: t('wiki.source.nameRequired') },
               { max: 50, message: t('wiki.source.nameInvalid') },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('wiki.source.namePlaceholder')} maxLength={50} disabled={Boolean(editing)} />
@@ -711,6 +713,8 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
             current: docPageNo,
             pageSize: docPageSize,
             total: docTotal,
+            // 覆盖 DataTable 默认的「共 N 条」统计文案
+            showTotal: undefined,
             onChange: (page, size) => {
               setDocPageNo(page)
               setDocPageSize(size)

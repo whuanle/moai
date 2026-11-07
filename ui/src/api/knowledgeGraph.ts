@@ -11,6 +11,10 @@ export interface KnowledgeGraphItem {
   database?: string | null
   readOnly?: boolean | null
   avatarPath?: string | null
+  /** 实体（节点）数量；图库不可用或统计失败时为 null */
+  entityCount?: number | null
+  /** 关系（边）数量；图库不可用或统计失败时为 null */
+  relationCount?: number | null
   createTime?: string | null
 }
 

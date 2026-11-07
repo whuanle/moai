@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { DeleteOutlined, MessageOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tag, theme, Typography } from 'antd'
+import { Alert, Avatar, Button, Checkbox, Col, Collapse, Divider, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tag, Tooltip, theme, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card as DSCard, feedback } from '@/design-system'
@@ -1488,13 +1488,15 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                     setQuickInputs((prev) => prev.map((x, i) => (i === index ? e.target.value : x)))
                                   }
                                 />
-                                <Button
-                                  type="text"
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  aria-label={t('appManage.quickInputsRemove')}
-                                  onClick={() => setQuickInputs((prev) => prev.filter((_, i) => i !== index))}
-                                />
+                                <Tooltip title={t('appManage.quickInputsRemove')}>
+                                  <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    aria-label={t('appManage.quickInputsRemove')}
+                                    onClick={() => setQuickInputs((prev) => prev.filter((_, i) => i !== index))}
+                                  />
+                                </Tooltip>
                               </div>
                             ))}
                             {quickInputs.length < MAX_QUICK_INPUTS && (
@@ -1776,12 +1778,15 @@ export function AppConfigSection({ teamId, appId, detail, loading, canManage, co
                                           onChange={(e) => updateNetworkRule(index, { portsText: e.target.value })}
                                           placeholder="443,80（可选）"
                                         />
-                                        <Button
-                                          type="text"
-                                          size="small"
-                                          icon={<DeleteOutlined />}
-                                          onClick={() => removeNetworkRule(index)}
-                                        />
+                                        <Tooltip title={t('appManage.sandboxNetworkRuleRemove')}>
+                                          <Button
+                                            type="text"
+                                            size="small"
+                                            icon={<DeleteOutlined />}
+                                            aria-label={t('appManage.sandboxNetworkRuleRemove')}
+                                            onClick={() => removeNetworkRule(index)}
+                                          />
+                                        </Tooltip>
                                       </Space>
                                     ))}
                                     <Button type="dashed" icon={<PlusOutlined />} onClick={addNetworkRule}>

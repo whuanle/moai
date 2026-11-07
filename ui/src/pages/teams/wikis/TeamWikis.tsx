@@ -1,19 +1,22 @@
-import { useCallback, useEffect, useState } from 'react'
-import { BookOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Space, Tooltip, Typography } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { BookOutlined, DeleteOutlined, EditOutlined, FileTextOutlined, SearchOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Form, Input, List, Modal, Popconfirm, Row, Segmented, Space, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { AvatarUpload, Card, feedback, useNeutralColors } from '@/design-system'
+import { AvatarUpload, Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   createWiki,
   deleteWiki,
   getWikis,
+  searchWikiTeamFiles,
   setWikiAvatar,
   updateWiki,
   type WikiItem,
+  type WikiTeamFileItem,
 } from '@/api/wiki'
 
 const { Paragraph, Text } = Typography
@@ -22,6 +25,9 @@ const { Paragraph, Text } = Typography
 const ROLE_MEMBER = 0
 
 const AVATAR_MAX_SIZE = 5 * 1024 * 1024
+
+/** 跨库文件名搜索返回条数上限（与后端默认一致） */
+const FILE_SEARCH_LIMIT = 50
 
 interface WikiFormValues {
   name: string
@@ -46,6 +52,14 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<WikiItem[]>([])
   const [myRole, setMyRole] = useState<number | null>(null)
+  /** 搜索输入框内容（查询按钮/回车触发后才生效） */
+  const [keyword, setKeyword] = useState('')
+  const [appliedKeyword, setAppliedKeyword] = useState('')
+  /** 跨库文件名搜索结果；null=未搜索（关键字为空） */
+  const [fileResult, setFileResult] = useState<{ items: WikiTeamFileItem[]; total: number } | null>(null)
+  const [fileSearching, setFileSearching] = useState(false)
+  /** 搜索结果视图：知识库卡片 / 命中文件列表 */
+  const [view, setView] = useState<'wikis' | 'files'>('wikis')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<WikiItem | null>(null)
   const [saving, setSaving] = useState(false)
@@ -73,6 +87,47 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
   useEffect(() => {
     void load()
   }, [load])
+
+  /** 跨库文件名搜索 + 视图自动切换：知识库有命中落知识库 Tab，否则文件有命中自动落文件 Tab */
+  const runFileSearch = useCallback(
+    async (kw: string) => {
+      setFileSearching(true)
+      try {
+        const res = await searchWikiTeamFiles(teamId, kw, FILE_SEARCH_LIMIT)
+        const fileItems = res.items ?? []
+        setFileResult({ items: fileItems, total: res.total ?? 0 })
+        const kwLower = kw.toLowerCase()
+        const kbCount = items.filter((item) =>
+          `${item.name ?? ''}\n${item.description ?? ''}`.toLowerCase().includes(kwLower),
+        ).length
+        setView(kbCount === 0 && fileItems.length > 0 ? 'files' : 'wikis')
+      } catch {
+        // 错误已由全局请求中间件统一提示
+      } finally {
+        setFileSearching(false)
+      }
+    },
+    [teamId, items],
+  )
+
+  /** 应用关键字筛选（查询按钮/回车触发）：知识库客户端过滤 + 文件名跨库服务端搜索 */
+  const applySearch = useCallback(() => {
+    const kw = keyword.trim()
+    setAppliedKeyword(kw)
+    if (!kw) {
+      setFileResult(null)
+      setView('wikis')
+      return
+    }
+    void runFileSearch(kw)
+  }, [keyword, runFileSearch])
+
+  /** 客户端过滤：关键字匹配名称/描述 */
+  const filteredItems = useMemo(() => {
+    const kw = appliedKeyword.toLowerCase()
+    if (!kw) return items
+    return items.filter((item) => `${item.name ?? ''}\n${item.description ?? ''}`.toLowerCase().includes(kw))
+  }, [items, appliedKeyword])
 
   const openCreate = () => {
     setEditing(null)
@@ -159,34 +214,85 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: spacing.md,
-          marginBottom: spacing.lg,
-        }}
-      >
-        {isAdminPlus && (
-          <Button type="primary" icon={<BookOutlined />} onClick={openCreate}>
-            {t('wiki.create')}
-          </Button>
-        )}
-        <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
-      </div>
+      <PageToolbar
+        filters={
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={applySearch}
+            allowClear
+            maxLength={100}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            placeholder={t('wiki.searchPlaceholder')}
+            style={{ width: 240 }}
+          />
+        }
+        queries={<Button onClick={applySearch}>{t('ds.query.search')}</Button>}
+        actions={
+          isAdminPlus && (
+            <Button type="primary" icon={<BookOutlined />} onClick={openCreate}>
+              {t('wiki.create')}
+            </Button>
+          )
+        }
+      />
 
-      {loading ? null : items.length === 0 ? (
+      {appliedKeyword && (
+        <Segmented
+          style={{ marginBottom: spacing.md }}
+          value={view}
+          onChange={(v) => setView(v as 'wikis' | 'files')}
+          options={[
+            { label: `${t('wiki.tabWikis')} ${filteredItems.length}`, value: 'wikis' },
+            { label: `${t('wiki.tabFiles')} ${fileResult?.items.length ?? 0}`, value: 'files' },
+          ]}
+        />
+      )}
+
+      {view === 'files' ? (
+        <>
+          <List
+            size="small"
+            bordered
+            loading={fileSearching}
+            dataSource={fileResult?.items ?? []}
+            locale={{ emptyText: t('wiki.fileMatchEmpty') }}
+            renderItem={(item) => (
+              <List.Item
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/team/${teamId}/wiki/${item.wikiId}/document/${item.documentId}/embedding`)}
+              >
+                <Space size={spacing.md} wrap style={{ minWidth: 0 }}>
+                  <FileTextOutlined style={{ color: neutral.textSecondary }} />
+                  <Text strong ellipsis style={{ maxWidth: 320 }}>
+                    {item.fileName}
+                  </Text>
+                  <Text type="secondary">{item.wikiName}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {formatDateTime(item.updateTime)}
+                  </Text>
+                </Space>
+              </List.Item>
+            )}
+          />
+          {fileResult && fileResult.total > fileResult.items.length && (
+            <Text type="secondary" style={{ fontSize: 12, marginTop: spacing.sm, display: 'block' }}>
+              {t('wiki.fileMatchMore', { top: FILE_SEARCH_LIMIT })}
+            </Text>
+          )}
+        </>
+      ) : loading ? null : items.length === 0 ? (
         <Empty description={t('wiki.empty')} />
+      ) : filteredItems.length === 0 ? (
+        <Empty description={t('wiki.filterEmpty')} />
       ) : (
         <Row gutter={[spacing.md, spacing.md]}>
-          {items.map((card) => {
+          {filteredItems.map((card) => {
             const name = card.name || '-'
             const avatarSrc = renderAvatarSource(card)
             return (
               <Col xs={24} sm={12} md={8} lg={6} xxl={4} key={String(card.wikiId)}>
-                <Card style={{ height: '100%', cursor: 'pointer' }} styles={{ body: { padding: spacing.md } }}>
+                <Card hoverable style={{ height: '100%', cursor: 'pointer' }} styles={{ body: { padding: spacing.md } }}>
                   <div
                     style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}
                     onClick={() => navigate(`/team/${teamId}/wiki/${card.wikiId}`)}
@@ -195,58 +301,63 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
                       <Avatar shape="square" size={44} icon={<BookOutlined />} src={avatarSrc}>
                         {name.slice(0, 1).toUpperCase()}
                       </Avatar>
-                      <div
-                        style={{
-                          minWidth: 0,
-                          alignSelf: 'center',
-                          fontWeight: 600,
-                          fontSize: 15,
-                          lineHeight: 1.4,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {name}
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 15,
+                            lineHeight: 1.4,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {name}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 2,
+                            fontSize: 12,
+                            lineHeight: 1.5,
+                            color: neutral.textTertiary,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {`${card.documentCount ?? 0} ${t('wiki.statDocuments')} · ${card.chunkCount ?? 0} ${t('wiki.statChunks')}`}
+                        </div>
                       </div>
                     </div>
                     <Paragraph
                       type="secondary"
-                      style={{ fontSize: 13, marginBottom: 0, minHeight: 38 }}
+                      style={{ fontSize: 13, marginBottom: 0, minHeight: 38, flex: 1 }}
                       ellipsis={{ rows: 2 }}
                     >
                       {card.description || '-'}
                     </Paragraph>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: spacing.md }}>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{card.documentCount ?? 0}</div>
-                        <div style={{ fontSize: 11, color: neutral.textTertiary, lineHeight: 1.4 }}>{t('wiki.statDocuments')}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{card.chunkCount ?? 0}</div>
-                        <div style={{ fontSize: 11, color: neutral.textTertiary, lineHeight: 1.4 }}>{t('wiki.statChunks')}</div>
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, whiteSpace: 'nowrap' }}>
-                          {card.lastDocumentUpdateTime ? formatDateTime(card.lastDocumentUpdateTime).slice(5) : '-'}
-                        </div>
-                        <div style={{ fontSize: 11, color: neutral.textTertiary, lineHeight: 1.4 }}>{t('wiki.statLastUpdate')}</div>
-                      </div>
-                    </div>
                     <div
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: spacing.sm,
-                        color: neutral.textTertiary,
                         fontSize: 12,
+                        color: neutral.textTertiary,
                         marginTop: 'auto',
                         borderTop: `1px solid ${neutral.border}`,
                         paddingTop: spacing.sm,
                       }}
                     >
-                      <span>{t('wiki.colCreateTime')}: {formatDateTime(card.createTime)}</span>
+                      <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {card.lastDocumentUpdateTime ? (
+                          <Tooltip title={`${t('wiki.colCreateTime')}: ${formatDateTime(card.createTime)}`}>
+                            <span>{`${t('wiki.statLastUpdate')} ${formatDateTime(card.lastDocumentUpdateTime).slice(5)}`}</span>
+                          </Tooltip>
+                        ) : (
+                          `${t('wiki.colCreateTime')}: ${formatDateTime(card.createTime)}`
+                        )}
+                      </span>
                       {isAdminPlus && (
                         <Space size={0} onClick={(e) => e.stopPropagation()}>
                           <Tooltip title={t('wiki.edit')}>
@@ -310,6 +421,7 @@ export function TeamWikis({ teamId }: TeamWikisProps) {
             rules={[
               { required: true, message: t('wiki.namePlaceholder') },
               { max: 50, message: `${t('wiki.name')} ≤ 50` },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('wiki.namePlaceholder')} maxLength={50} />

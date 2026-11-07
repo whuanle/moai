@@ -8,7 +8,7 @@ import {
   PlusOutlined,
   ThunderboltFilled,
 } from '@ant-design/icons'
-import { Alert, Popconfirm, theme } from 'antd'
+import { Alert, Popconfirm, Tooltip, theme } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import { useTranslation } from 'react-i18next'
 import type { HttpAgent } from '@ag-ui/client'
@@ -331,14 +331,16 @@ export function AppWorkflowDebugSection({
                     okText={t('appManage.confirm')}
                     cancelText={t('appManage.cancel')}
                   >
-                    <button
-                      type="button"
-                      className="moai-chat__session-del"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={t('appChat.deleteSession')}
-                    >
-                      <DeleteOutlined />
-                    </button>
+                    <Tooltip title={t('appChat.deleteSession')}>
+                      <button
+                        type="button"
+                        className="moai-chat__session-del"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={t('appChat.deleteSession')}
+                      >
+                        <DeleteOutlined />
+                      </button>
+                    </Tooltip>
                   </Popconfirm>
                 </div>
               )

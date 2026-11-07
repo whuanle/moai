@@ -112,7 +112,7 @@ const cleanup = async () => {
 }
 try {
   // 建物流模板图（自带模型与预置数据，供导入校验目标类型）
-  const graph = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-imp-' + TS, templateKey: 'logistics' } })
+  const graph = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_imp_' + TS, templateKey: 'logistics' } })
   const GID = Number(graph.json?.value)
   check('KG-S26a 创建物流模板图 200', graph.status === 200 && GID > 0, `${graph.status}`)
 
@@ -161,14 +161,14 @@ try {
   check('KG-S26f 导入航段带距离/价格属性', !!leg && leg.properties?.['距离公里'] === '700' && leg.properties?.['运输价格'] === '2100', JSON.stringify(leg?.properties))
 
   // 空白模板图（无实体类型）导入 → 409
-  const blank = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-imp-blank-' + TS, templateKey: 'blank' } })
+  const blank = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_imp_blank_' + TS, templateKey: 'blank' } })
   const BGID = Number(blank.json?.value)
   const impBlank = await api('POST', `/api/knowledge-graph/${BGID}/import-file`, { token, body: { objectKey: pre.json.objectKey, fileName: `kg-imp-${TS}.txt`, aiModelId: MODEL_ID } })
   check('KG-S26g 空白模板图导入 409（无实体类型）', impBlank.status === 409, `${impBlank.status} ${impBlank.text.slice(0, 120)}`)
 
   // ===== KG-S29 JSON 结构化导入（/import-json，与外部 /import 同管线）=====
   {
-    const jg = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-imp-json-' + TS, templateKey: 'blank' } })
+    const jg = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_imp_json_' + TS, templateKey: 'blank' } })
     const JGID = Number(jg.json?.value)
     if (!Number.isFinite(JGID)) throw new Error('KG-S29 建图失败')
 

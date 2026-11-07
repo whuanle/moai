@@ -22,6 +22,8 @@ Scenario: 门禁
 Scenario: 参数校验
   When 以空名称/非法或空 key（大写、空串）/空主提示词/非法子智能体标识（数字开头）/空子智能体名称/空子智能体描述/超过 20 个子智能体/组内重复标识创建
   Then 返回参数错误
+  When 以含特殊字符或空格（非中文/英文/数字/下划线）的主名称或子智能体名称创建
+  Then 返回参数错误（名称仅允许中文、英文、数字和下划线）
 
 @AG-S3 @auto:e2e
 Scenario: 依赖校验
@@ -113,7 +115,7 @@ Scenario: 删除
 @AG-S10 @auto:e2e
 Scenario: 内置种入与保护
   When 创建新团队
-  Then 团队自动种入内置「规划师 Plan」(key=plan)「构建师 Build」(key=build)（isSystem=true，含子智能体）
+  Then 团队自动种入内置「规划师」(key=plan)「构建师」(key=build)（isSystem=true，含子智能体；2026-11-07 起名称去英文后缀以符合资源命名规则）
   When 新建第二个团队
   Then 同样自动种入
   When Member 查看列表

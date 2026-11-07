@@ -100,7 +100,7 @@ async function main() {
   const T = Number((await retryApi('POST', '/api/team', { name: 'tr-team-' + TS }, token)).json?.value)
   if (!Number.isFinite(T)) throw new Error('创建团队失败')
   const mkWiki = async (n) => {
-    const r = await retryApi('POST', '/api/wiki', { teamId: T, name: `tr-wiki${n}-${TS}`, description: 'teamres key e2e' }, token)
+    const r = await retryApi('POST', '/api/wiki', { teamId: T, name: `tr_wiki${n}_${TS}`, description: 'teamres key e2e' }, token)
     if (r.status !== 200) throw new Error(`建知识库失败: ${r.status} ${r.text.slice(0, 120)}`)
     return Number(r.json?.value)
   }
@@ -124,7 +124,7 @@ async function main() {
   const MODEL_ID = String((models.json?.items ?? []).find((m) => m.name === modelName)?.id ?? '')
 
   const mkApp = async (n, external) => {
-    const r = await retryApi('POST', '/api/app', { teamId: T, name: `tr-agent-${n}-${TS}`, appType: 'agent', isExternal: external, isAuth: false }, token)
+    const r = await retryApi('POST', '/api/app', { teamId: T, name: `tr_agent_${n}_${TS}`, appType: 'agent', isExternal: external, isAuth: false }, token)
     const appId = String(r.json?.value ?? '')
     await api('PUT', `/api/app/${appId}/agent-config`, { token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
     const p = await retryApi('POST', `/api/app/${appId}/publish`, {}, token)
@@ -137,13 +137,13 @@ async function main() {
   const createKey = async (body) => api('POST', '/api/team-resource-key', { token, body })
 
   // ===== TR-S1~S3 moai-ac- 去范围化 =====
-  const acc = await retryApi('POST', '/api/access-app', { teamId: T, name: 'tr接入-' + TS, description: 'teamres key e2e' }, token)
+  const acc = await retryApi('POST', '/api/access-app', { teamId: T, name: 'tr接入_' + TS, description: 'teamres key e2e' }, token)
   if (acc.status !== 200) throw new Error(`创建应用接入失败: ${acc.status} ${acc.text.slice(0, 120)}`)
   const ACCESS_KEY = acc.json?.key
   const ACCESS_SECRET = acc.json?.secret
   check('TR-S1 创建接入不传 scopes 200', acc.status === 200 && typeof ACCESS_KEY === 'string' && ACCESS_KEY.startsWith('moai-ac-'), `${acc.status}`)
 
-  const accScoped = await retryApi('POST', '/api/access-app', { teamId: T, name: 'tr接入带scopes-' + TS, description: 'scopes 退役', scopes: ['wiki_read', 'hacker'] }, token)
+  const accScoped = await retryApi('POST', '/api/access-app', { teamId: T, name: 'tr接入带scopes_' + TS, description: 'scopes 退役', scopes: ['wiki_read', 'hacker'] }, token)
   check('TR-S2 传 scopes 字段被忽略（退役）创建 200', accScoped.status === 200, `${accScoped.status} ${accScoped.text.slice(0, 120)}`)
 
   const listAcc = await api('GET', `/api/access-app/list?teamId=${T}`, { token })
@@ -356,7 +356,7 @@ async function main() {
   check('TR-S29 伪造 moai-tr-/moai-ac- 与旧 moai- 前缀均 401', forgedTr.status === 401 && forgedAc.status === 401 && legacyMoai.status === 401, `tr=${forgedTr.status} ac=${forgedAc.status} legacy=${legacyMoai.status}`)
 
   const otherTeam = Number((await retryApi('POST', '/api/team', { name: 'tr-team-other-' + TS }, token)).json?.value)
-  const otherAcc = await retryApi('POST', '/api/access-app', { teamId: otherTeam, name: 'tr其他团队接入-' + TS }, token)
+  const otherAcc = await retryApi('POST', '/api/access-app', { teamId: otherTeam, name: 'tr其他团队接入_' + TS }, token)
   const otherKeyHit = await api('GET', xw(W1), { token: String(otherAcc.json?.key ?? '') })
   check('TR-S30 其它团队 moai-ac- key 访问本团队知识库 404', otherKeyHit.status === 404, `${otherKeyHit.status}`)
 

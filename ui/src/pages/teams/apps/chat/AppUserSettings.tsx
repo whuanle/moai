@@ -225,9 +225,11 @@ export function AppUserSettings({ open, appId, experts, currentPromptId, onClose
       />
       <div className="moai-chat__sidebar-head">
         <span className="moai-chat__sidebar-title">{t('appChat.userSettings')}</span>
-        <button type="button" className="moai-chat__experts-close" onClick={onClose} aria-label={t('appChat.close')}>
-          <CloseOutlined />
-        </button>
+        <Tooltip title={t('appChat.close')}>
+          <button type="button" className="moai-chat__experts-close" onClick={onClose} aria-label={t('appChat.close')}>
+            <CloseOutlined />
+          </button>
+        </Tooltip>
       </div>
       <div className="moai-chat__experts-hint">{t('appChat.userSettingsHint')}</div>
       {loading ? (

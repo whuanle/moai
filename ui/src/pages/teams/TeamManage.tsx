@@ -15,6 +15,7 @@ import {
   ProfileOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
+  SearchOutlined,
   SettingOutlined,
   StopOutlined,
   TeamOutlined,
@@ -24,10 +25,11 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
-import { AvatarUpload, Card as DSCard, DataTable, feedback, Page } from '@/design-system'
+import { AvatarUpload, Card as DSCard, DataTable, feedback, Page, QueryBar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
+import { resolveStorageUrl } from '@/utils/storage'
 import { Variables } from '@/pages/variables/Variables'
 import { TeamTimers } from '@/pages/teams/timers/TeamTimers'
 import { TeamPrompts } from '@/pages/teams/prompts/TeamPrompts'
@@ -171,6 +173,12 @@ export function TeamManage() {
     if (result.addedCount > 0) await reloadMembers()
   }
 
+  /** 成员搜索提交（QueryBar）：应用关键字过滤（昵称/用户名，前端过滤） */
+  const handleMemberSearch = (values: Record<string, unknown>) => {
+    const keyword = typeof values.memberKeyword === 'string' ? values.memberKeyword.trim() : ''
+    setMemberKeyword(keyword)
+  }
+
   const handleChangeRole = async (member: TeamUserItem, role: number) => {
     try {
       await updateTeamUserRole(teamId, Number(member.userId), role)
@@ -258,9 +266,12 @@ export function TeamManage() {
       {
         title: t('team.colMember'),
         key: 'member',
+        width: 220,
         render: (_, record) => (
           <Space size={spacing.sm}>
-            <Avatar size={32}>{(record.nickName || record.userName || '?').slice(0, 1).toUpperCase()}</Avatar>
+            <Avatar size={36} src={record.avatar ? resolveStorageUrl(record.avatar) : undefined} alt={record.userName || ''}>
+              {(record.nickName || record.userName || '?').slice(0, 1).toUpperCase()}
+            </Avatar>
             <div>
               <div style={{ fontWeight: 500 }}>{record.nickName || record.userName || '-'}</div>
               {record.nickName && record.nickName !== record.userName && (
@@ -271,6 +282,19 @@ export function TeamManage() {
             </div>
           </Space>
         ),
+      },
+      {
+        title: t('team.colEmail'),
+        dataIndex: 'email',
+        width: 200,
+        ellipsis: true,
+        render: (v: string | null) => v || '-',
+      },
+      {
+        title: t('team.colPhone'),
+        dataIndex: 'phone',
+        width: 140,
+        render: (v: string | null) => v || '-',
       },
       {
         title: t('team.colRole'),
@@ -418,15 +442,37 @@ export function TeamManage() {
             // 内部应用同属使用分区：Dify 式分层（工具栏裸排 + 应用卡自带白色表面）
             <TeamApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'externalApps' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamExternalApps teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 外部应用同使用分区口径（Dify 式分层）：工具栏裸排 + 应用卡自带白色表面
+            <TeamExternalApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'accessApps' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamAccessApps teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 应用接入同使用分区口径（Dify 式分层）：工具栏裸排 + DataTable 自带白色卡片容器
+            <TeamAccessApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'members' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
+            // 成员管理同使用分区口径（Dify 式分层）：QueryBar 裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）；
+            // 查询按钮自带刷新语义，不放独立刷新按钮（前端规范第 7 条）
+            <>
+              <QueryBar
+                onSearch={handleMemberSearch}
+                loading={membersLoading}
+                extra={
+                  isOwner && (
+                    <Button type="primary" icon={<UserAddOutlined />} onClick={() => setAddModalOpen(true)}>
+                      {t('team.addMember')}
+                    </Button>
+                  )
+                }
+              >
+                <Form.Item name="memberKeyword">
+                  <Input
+                    placeholder={t('team.searchMemberPlaceholder')}
+                    prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+                    allowClear
+                    maxLength={50}
+                    style={{ width: 240 }}
+                  />
+                </Form.Item>
+              </QueryBar>
               <DataTable<TeamUserItem>
                 sticky
                 scroll={{ x: 'max-content' }}
@@ -434,28 +480,8 @@ export function TeamManage() {
                 columns={memberColumns}
                 dataSource={filteredMembers}
                 loading={membersLoading}
-                onRefresh={() => void reloadMembers()}
-                refreshLoading={membersLoading}
-                toolbar={
-                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
-                    <Input.Search
-                      value={memberKeyword}
-                      onChange={(e) => setMemberKeyword(e.target.value)}
-                      onSearch={(v) => setMemberKeyword(v)}
-                      placeholder={t('team.searchMemberPlaceholder')}
-                      allowClear
-                      maxLength={50}
-                      style={{ width: 220 }}
-                    />
-                    {isOwner && (
-                      <Button type="primary" icon={<UserAddOutlined />} onClick={() => setAddModalOpen(true)}>
-                        {t('team.addMember')}
-                      </Button>
-                    )}
-                  </div>
-                }
               />
-            </DSCard>
+            </>
           ) : activeSection === 'prompts' ? (
             // 使用分区（应用/提示词/技能/智能体/知识库/知识图谱）不走外层白卡容器（Dify 式）：
             // 工具栏/分页裸排在页面底色上，列表内容自带白色表面（卡片或 DataTable 容器），与列表内容天然分层

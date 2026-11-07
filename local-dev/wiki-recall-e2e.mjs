@@ -276,7 +276,7 @@ async function main() {
   const TID = Number(teamRes.json?.value)
   const addMember = await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
   check('WK-S37 前置：添加成员 200', addMember.status === 200, `${addMember.status} ${addMember.text.slice(0, 120)}`)
-  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'recall-wiki-' + TS, description: 'recall e2e' } })).json.value)
+  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'recall_wiki_' + TS, description: 'recall e2e' } })).json.value)
 
   // ===== 模型准备：本地桩优先，失败时回退平台既有模型（admin 自举 + 探针） =====
   const adminToken = await adminLogin()

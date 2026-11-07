@@ -250,14 +250,11 @@ export function Variables({ teamId }: { teamId?: number }) {
         sticky
         scroll={{ x: 1100 }}
         toolbar={
-          <Space size={12}>
-            {isAdminPlus && (
-              <Button type="primary" onClick={openCreate}>
-                {t('variable.create')}
-              </Button>
-            )}
-            <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
-          </Space>
+          isAdminPlus && (
+            <Button type="primary" onClick={openCreate}>
+              {t('variable.create')}
+            </Button>
+          )
         }
         onRefresh={() => void load()}
         refreshLoading={loading}

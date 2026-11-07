@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { AvatarUpload, feedback } from '@/design-system'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   createSkill,
   extractSkillPackage,
@@ -263,7 +264,10 @@ export function SkillEditModal({ open, skillId, teamId, onSaved, onCancel }: Ski
         <Form.Item
           name="name"
           label={t('skills.formName')}
-          rules={[{ required: true, message: t('skills.nameRequired') }]}
+          rules={[
+            { required: true, message: t('skills.nameRequired') },
+            { pattern: NAME_PATTERN, message: t('validation.nameChars') },
+          ]}
         >
           <Input maxLength={50} />
         </Form.Item>

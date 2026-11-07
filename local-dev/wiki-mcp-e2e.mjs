@@ -172,19 +172,19 @@ async function main() {
   // ===== 准备：团队 + 两个知识库 + 应用接入 key + 团队接入 key（含/不含 wiki_mcp） =====
   const T = Number((await retryApi('POST', '/api/team', { name: 'wm-team-' + TS }, admin)).json?.value)
   if (!Number.isFinite(T)) throw new Error('创建团队失败')
-  const w1Res = await retryApi('POST', '/api/wiki', { teamId: T, name: 'wm-main-' + TS, description: 'wiki mcp e2e 主库' }, admin)
-  const w2Res = await retryApi('POST', '/api/wiki', { teamId: T, name: 'wm-second-' + TS, description: 'wiki mcp e2e 副库' }, admin)
+  const w1Res = await retryApi('POST', '/api/wiki', { teamId: T, name: 'wm_main_' + TS, description: 'wiki mcp e2e 主库' }, admin)
+  const w2Res = await retryApi('POST', '/api/wiki', { teamId: T, name: 'wm_second_' + TS, description: 'wiki mcp e2e 副库' }, admin)
   const W1 = Number(w1Res.json?.value)
   const W2 = Number(w2Res.json?.value)
   if (!Number.isFinite(W1) || !Number.isFinite(W2)) throw new Error(`创建知识库失败: W1=${w1Res.status} ${w1Res.text.slice(0, 160)} | W2=${w2Res.status} ${w2Res.text.slice(0, 160)}`)
 
   // 接入 scopes 字段（wiki_read/wiki_mcp）已退役：moai-ac- 不传 scopes 即全量
-  const acc = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入-' + TS, description: 'wiki mcp e2e' }, admin)
+  const acc = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入_' + TS, description: 'wiki mcp e2e' }, admin)
   const ACCESS_KEY = acc.json?.key
   if (!ACCESS_KEY) throw new Error(`创建应用接入失败: ${acc.status} ${acc.text.slice(0, 120)}`)
 
   // 团队接入 key（moai-）已下线：MCP 场景改用应用接入 key（moai-ac-）
-  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入MCP-' + TS, description: 'wiki mcp e2e' }, admin)
+  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T, name: 'wm接入MCP_' + TS, description: 'wiki mcp e2e' }, admin)
   const TEAM_KEY = kMcp.json?.key
   if (!TEAM_KEY) throw new Error(`创建应用接入 key 失败: ${kMcp.status}`)
 
@@ -200,7 +200,7 @@ async function main() {
 
   // 跨团队知识库（404 用例）
   const T2 = Number((await retryApi('POST', '/api/team', { name: 'wm-team2-' + TS }, admin)).json?.value)
-  const W3 = Number((await retryApi('POST', '/api/wiki', { teamId: T2, name: 'wm-other-' + TS, description: '别的团队' }, admin)).json?.value)
+  const W3 = Number((await retryApi('POST', '/api/wiki', { teamId: T2, name: 'wm_other_' + TS, description: '别的团队' }, admin)).json?.value)
 
   // ===== 向量准备：桩渠道 + 模型授权 + embedding 配置 + 两文档切割向量化 =====
   let hasEmb = false

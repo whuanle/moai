@@ -142,9 +142,9 @@ async function main() {
   const T2 = Number((await retryApi('POST', '/api/team', { name: 'kgm-team2-' + TS }, admin)).json?.value)
   if (!Number.isFinite(T1) || !Number.isFinite(T2)) throw new Error('创建团队失败')
 
-  const g1Res = await retryApi('POST', '/api/knowledge-graph', { teamId: T1, name: 'kgm-main-' + TS, templateKey: 'blank' }, admin)
-  const g2Res = await retryApi('POST', '/api/knowledge-graph', { teamId: T1, name: 'kgm-noemb-' + TS, templateKey: 'blank' }, admin)
-  const g3Res = await retryApi('POST', '/api/knowledge-graph', { teamId: T2, name: 'kgm-other-' + TS, templateKey: 'blank' }, admin)
+  const g1Res = await retryApi('POST', '/api/knowledge-graph', { teamId: T1, name: 'kgm_main_' + TS, templateKey: 'blank' }, admin)
+  const g2Res = await retryApi('POST', '/api/knowledge-graph', { teamId: T1, name: 'kgm_noemb_' + TS, templateKey: 'blank' }, admin)
+  const g3Res = await retryApi('POST', '/api/knowledge-graph', { teamId: T2, name: 'kgm_other_' + TS, templateKey: 'blank' }, admin)
   const G1 = Number(g1Res.json?.value)
   const G2 = Number(g2Res.json?.value)
   const G3 = Number(g3Res.json?.value)
@@ -155,12 +155,12 @@ async function main() {
   if (!Number.isFinite(G1) || !Number.isFinite(G2) || !Number.isFinite(G3)) throw new Error(`建图失败: ${g1Res.status}/${g2Res.status}/${g3Res.status}`)
 
   // 接入 scopes 字段（kg_read/kg_mcp）已退役：moai-ac- 不传 scopes 即全量
-  const acc = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-' + TS, description: 'kg mcp e2e' }, admin)
+  const acc = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入_' + TS, description: 'kg mcp e2e' }, admin)
   const ACCESS_KEY = acc.json?.key
   if (!ACCESS_KEY) throw new Error(`创建应用接入失败: ${acc.status} ${acc.text.slice(0, 120)}`)
 
   // 团队接入 key（moai-）已下线：MCP 场景改用应用接入 key（moai-ac-，命名带 kgm接入- 前缀便于清理）
-  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入-MCP-' + TS, description: 'kg mcp e2e' }, admin)
+  const kMcp = await retryApi('POST', '/api/access-app', { teamId: T1, name: 'kgm接入_MCP_' + TS, description: 'kg mcp e2e' }, admin)
   const TEAM_KEY = kMcp.json?.key
   if (!TEAM_KEY) throw new Error(`创建应用接入 key 失败: ${kMcp.status}`)
 
@@ -188,7 +188,7 @@ async function main() {
   await retryApi('POST', `${kg(G3)}/entity-types`, { name: '别家类型-' + TS }, admin)
 
   // wiki MCP 端点（域隔离反向断言用，建一个空知识库即可）
-  const wRes = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'kgm-wiki-' + TS, description: 'kg mcp e2e 域隔离' }, admin)
+  const wRes = await retryApi('POST', '/api/wiki', { teamId: T1, name: 'kgm_wiki_' + TS, description: 'kg mcp e2e 域隔离' }, admin)
   const W1 = Number(wRes.json?.value)
 
   // wiki W1 的资源 key（moai-tr-）：KG MCP 的越圈反例（KGM-S1e）；G1 自己的资源 key：包围圈内放行（KGM-S8）
@@ -391,7 +391,7 @@ async function main() {
     if (Number.isFinite(W1) && W1 > 0) await api('DELETE', `/api/wiki/${W1}`, { token: admin })
     const accList = await api('GET', '/api/access-app/list?teamId=' + T1, { token: admin }).catch(() => ({ json: { items: [] } }))
     for (const item of (accList.json?.items ?? [])) {
-      if (String(item.name ?? '').startsWith('kgm接入-')) await api('DELETE', `/api/access-app/${item.id}`, { token: admin })
+      if (String(item.name ?? '').startsWith('kgm接入_')) await api('DELETE', `/api/access-app/${item.id}`, { token: admin })
     }
     for (const rowId of [TR_KEY_WIKI_ROW, TR_KEY_G1_ROW]) {
       // key 不支持删除：清理不再删 key 行（随资源保留）

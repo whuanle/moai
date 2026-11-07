@@ -295,7 +295,9 @@ export function TeamCustomPluginPanel({
               },
             }}
           >
-            <Button type="text" size="small" icon={<MoreOutlined />} aria-label={t('plugins.moreActions')} />
+            <Tooltip title={t('plugins.moreActions')}>
+              <Button type="text" size="small" icon={<MoreOutlined />} aria-label={t('plugins.moreActions')} />
+            </Tooltip>
           </Dropdown>
         )}
         {manageable && (

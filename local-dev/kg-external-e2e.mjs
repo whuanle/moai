@@ -60,8 +60,8 @@ async function main() {
   const cap = await api('GET', `/api/knowledge-graph/list?teamId=${T1}`, { token })
   if (cap.status !== 200 || cap.json?.enabled !== true) skip(`list.enabled=${cap.json?.enabled}`)
 
-  const g1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kx-managed1-' + TS, templateKey: 'blank' } })
-  const g2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T2, name: 'kx-managed2-' + TS, templateKey: 'blank' } })
+  const g1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kx_managed1_' + TS, templateKey: 'blank' } })
+  const g2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T2, name: 'kx_managed2_' + TS, templateKey: 'blank' } })
   if (g1.status !== 200 || g2.status !== 200) throw new Error(`建 managed 图失败: ${g1.status}/${g2.status}`)
   const G1 = Number(g1.json?.value)
   const G2 = Number(g2.json?.value)
@@ -69,14 +69,14 @@ async function main() {
   // connected 探活：成功即保留供 KX-07 只读断言；失败则标记不可用
   let CONN = 0
   {
-    const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kx-conn-' + TS, mode: 'connected', database: 'neo4j' } })
+    const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: T1, name: 'kx_conn_' + TS, mode: 'connected', database: 'neo4j' } })
     if (probe.status === 200 && Number(probe.json?.value) > 0) CONN = Number(probe.json.value)
     else console.warn(`WARN | connected 探活失败 (${probe.status})，KX-07 将跳过: ${probe.text.slice(0, 120)}`)
   }
 
   // 接入点：团队1 / 团队2 各一个
-  const acc1 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入1-' + TS, description: 'kg external e2e' } })
-  const acc2 = await api('POST', '/api/access-app', { token, body: { teamId: T2, name: 'kx接入2-' + TS, description: 'kg external e2e' } })
+  const acc1 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入1_' + TS, description: 'kg external e2e' } })
+  const acc2 = await api('POST', '/api/access-app', { token, body: { teamId: T2, name: 'kx接入2_' + TS, description: 'kg external e2e' } })
   if (acc1.status !== 200 || acc2.status !== 200) throw new Error(`创建接入点失败: ${acc1.status}/${acc2.status}`)
   const KEY1 = acc1.json?.key
   const KEY2 = acc2.json?.key
@@ -299,7 +299,7 @@ async function main() {
     }
     // ===== KX-09 moai-ac- 全量 key（kg_read/kg_write 分档随 scopes 退役）：读+写均放行 =====
     {
-      const accFull = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入全量-' + TS, description: 'kg scope 退役 e2e' } })
+      const accFull = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入全量_' + TS, description: 'kg scope 退役 e2e' } })
       const KEY_FULL = accFull.json?.key
       const ID_FULL = accFull.json?.accessAppId
       check('KX-09a 创建接入不传 scopes 200 moai-ac- 前缀', accFull.status === 200 && String(KEY_FULL ?? '').startsWith('moai-ac-'), `${accFull.status} ${accFull.text.slice(0, 120)}`)
@@ -400,7 +400,7 @@ async function main() {
 
       // 原「kg_read 只读分档 403」反例已随 scopes 退役：接入全量放行，
       // 写档端点放行以无副作用调用验证（validateOnly 预检 / 幽灵 key 批删），by-key 读档放行
-      const accFull2 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入导入全量-' + TS, description: 'import scope 退役 e2e' } })
+      const accFull2 = await api('POST', '/api/access-app', { token, body: { teamId: T1, name: 'kx接入导入全量_' + TS, description: 'import scope 退役 e2e' } })
       const tokFull2 = await api('POST', '/api/teamres/token', { body: { accessAppKey: accFull2.json?.key, secret: accFull2.json?.secret } })
       const AT_FULL2 = tokFull2.json?.accessToken
       check('KX-11d 全量 key 导入端点放行（validateOnly 预检 200）', (await api('POST', xkg(G1) + '/import', { token: AT_FULL2, body: { ...importBody, validateOnly: true } })).status === 200)

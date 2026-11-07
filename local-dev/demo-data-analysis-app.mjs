@@ -299,7 +299,7 @@ async function main() {
 
   // ===== 输出入口 =====
   console.log('\n===== 商业数据分析演示应用就绪 =====')
-  console.log(`团队 id        : ${TID}（商业数据分析演示团队-${TS}，另含内置 规划师 Plan / 构建师 Build）`)
+  console.log(`团队 id        : ${TID}（商业数据分析演示团队-${TS}，另含内置 规划师/构建师）`)
   console.log(`团队智能体 id  : ${AGENT_ID}（商业数据分析组：总监 + 指标拆解师/趋势分析师/可视化顾问/行业情报员/报告撰写员）`)
   console.log(`应用 id        : ${APP_ID}（商业数据分析助手，已发布）`)
   console.log(`对话模型       : ${model.name}${model.stubbed ? '（本地桩保底，回复为演示文本）' : '（复用环境已有模型）'}`)

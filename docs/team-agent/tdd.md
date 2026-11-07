@@ -14,7 +14,7 @@
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
 | @AG-S1 | team-agent-e2e.mjs（AG-01、AG-02、AG-03a、AG-10c/d、AG-11、AG-12、AG-16、AG-18、AG-19） | PASS 54/54（2026-11-06） |
-| @AG-S2 | team-agent-e2e.mjs（AG-04a~h：含 key 非法/空、子名空） | PASS 54/54（2026-11-06） |
+| @AG-S2 | team-agent-e2e.mjs（AG-04a~j：含 key 非法/空、子名空、AG-04i 主名特殊字符 400、AG-04j 子名空格 400） | PASS 54/54（2026-11-06；2026-11-07 扩 i/j → 56/56） |
 | @AG-S3 | team-agent-e2e.mjs（AG-05a~e：插件/wiki/图谱 400 + 伪造头像 404） | PASS 54/54（2026-11-06） |
 | @AG-S4 | team-agent-e2e.mjs（AG-06、AG-07a/b、AG-08/08b/08c：含 key 与子 key/name 回读） | PASS 54/54（2026-11-06） |
 | @AG-S5 | team-agent-e2e.mjs（AG-09a name 409、AG-09b key 409、AG-13b） | PASS 54/54（2026-11-06） |
@@ -24,5 +24,5 @@
 | @AG-S9 | team-agent-e2e.mjs（AG-18~23，AG-23 同名同 key 重建） | PASS 54/54（2026-11-06） |
 | @AG-S10 | team-agent-e2e.mjs（AG-24~32：新团队种入 key=plan/build/子智能体/删除 400/编辑保留/Member 可见/补种门禁与幂等/第二团队种入） | PASS 54/54（2026-11-06） |
 | JSON 列读写/子标识唯一/内置定义合法 | tests/MoAI.TeamAgent.Tests | PASS 12/12（2026-11-05） |
-| 前端列表页（卡片启停开关/成员视图 Tag/内置标记与删除隐藏） | ui/src/pages/teams/agents/__tests__/TeamAgents.test.tsx | PASS 9/9（2026-11-06） |
+| 前端列表页（卡片启停开关/成员视图 Tag/内置标记与删除隐藏/两行省略描述与空描述占位） | ui/src/pages/teams/agents/__tests__/TeamAgents.test.tsx | PASS 9/9（2026-11-06；2026-11-07 补卡片描述展示断言，修复卡片漏渲染 description） |
 | Phase 2 D53（绑定与子代理协作解耦 + moai.subagent 过程事件） | local-dev/team-agent-app-e2e.mjs（TAA 40/40，映射见 docs/app/tdd.md @AP-S157/S158）+ subagent-e2e.mjs 回归 10/10（SubAgentInvoker 共享执行路径） | PASS 40/40、10/10（2026-11-06） |

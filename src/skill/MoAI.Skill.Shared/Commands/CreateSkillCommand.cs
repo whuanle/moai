@@ -66,7 +66,8 @@ public class CreateSkillCommand : IRequest<SimpleGuid>, IModelValidator<CreateSk
     {
         validate.RuleFor(x => x.Key).NotEmpty().WithMessage("技能标识不能为空.")
             .Matches("^[a-z][a-z0-9_]{0,29}$").WithMessage("技能标识仅允许小写字母开头，包含小写字母/数字/下划线，最长 30.");
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("技能名称不能为空.").MaximumLength(50).WithMessage("技能名称最长 50 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("技能名称不能为空.").MaximumLength(50).WithMessage("技能名称最长 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("技能名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("技能描述最长 255 个字符.");
         validate.RuleFor(x => x.TeamId).GreaterThanOrEqualTo(0).WithMessage("团队 id 不正确.");
         validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");

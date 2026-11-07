@@ -53,12 +53,14 @@ describe('TeamKnowledgeGraphs', () => {
       teamId: '7',
       myRole: 2,
       enabled: true,
-      items: [{ kgId: '1', teamId: '7', name: '支付域图谱', description: '运维' }],
+      items: [{ kgId: '1', teamId: '7', name: '支付域图谱', description: '运维', entityCount: 12, relationCount: 34 }],
     })
 
     renderTeam()
 
     expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
+    // 卡片展示图谱资源数量（实体/关系）
+    expect(screen.getByText('12 实例 · 34 关系')).toBeInTheDocument()
     expect(getKnowledgeGraphs).toHaveBeenCalledWith(7)
     expect(screen.getByRole('button', { name: /新建知识图谱/ })).toBeInTheDocument()
   })
@@ -194,5 +196,38 @@ describe('TeamKnowledgeGraphs', () => {
 
     await waitFor(() => expect(createKnowledgeGraph).toHaveBeenCalledTimes(1))
     expect(uploadKnowledgeGraphAvatar).not.toHaveBeenCalled()
+  })
+
+  it('工具栏关键字搜索：查询后过滤名称/描述，无命中显示筛选空态', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: '7',
+      myRole: 2,
+      enabled: true,
+      items: [
+        { kgId: '1', teamId: '7', name: '支付域图谱', description: '交易数据' },
+        { kgId: '2', teamId: '7', name: '物流图谱', description: '' },
+      ],
+    })
+    renderTeam()
+
+    expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
+    expect(screen.getByText('物流图谱')).toBeInTheDocument()
+
+    // 输入但不触发查询：卡片不过滤
+    const input = screen.getByPlaceholderText('搜索知识图谱名称/描述')
+    fireEvent.change(input, { target: { value: '支付' } })
+    expect(screen.getByText('支付域图谱')).toBeInTheDocument()
+    expect(screen.getByText('物流图谱')).toBeInTheDocument()
+
+    // 点查询：只剩支付域图谱
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    expect(screen.queryByText('物流图谱')).toBeNull()
+    expect(screen.getByText('支付域图谱')).toBeInTheDocument()
+
+    // 无命中：筛选空态（区别于完全无数据的空态）
+    fireEvent.change(input, { target: { value: '不存在的图谱' } })
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    expect(screen.getByText('没有符合筛选条件的知识图谱')).toBeInTheDocument()
+    expect(screen.queryByText('还没有知识图谱，请在所属团队下新建一个')).toBeNull()
   })
 })

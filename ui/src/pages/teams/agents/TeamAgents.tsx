@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DeleteOutlined, EditOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Pagination, Popconfirm, Row, Space, Spin, Switch, Tag } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Pagination, Popconfirm, Row, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Card, QueryBar, feedback, useNeutralColors } from '@/design-system'
@@ -88,20 +88,26 @@ export function TeamAgents({ teamId, canManage }: { teamId: number; canManage: b
     setPage(1)
   }
 
-  /** 查看/编辑/删除操作，卡片底栏使用（紧凑卡片场景：纯图标 + aria-label） */
+  /** 查看/编辑/删除操作，卡片底栏使用（紧凑卡片场景：纯图标 + Tooltip + aria-label） */
   const renderActions = (record: TeamAgentListItem) => (
     <Space size={0}>
-      <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('teamAgents.detail')} onClick={() => void openDetail(record)} />
-      <Button
-        type="text"
-        size="small"
-        icon={<EditOutlined />}
-        aria-label={t('teamAgents.edit')}
-        onClick={() => navigate(`/team/${teamId}/agent/${record.id}/edit`)}
-      />
+      <Tooltip title={t('teamAgents.detail')}>
+        <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('teamAgents.detail')} onClick={() => void openDetail(record)} />
+      </Tooltip>
+      <Tooltip title={t('teamAgents.edit')}>
+        <Button
+          type="text"
+          size="small"
+          icon={<EditOutlined />}
+          aria-label={t('teamAgents.edit')}
+          onClick={() => navigate(`/team/${teamId}/agent/${record.id}/edit`)}
+        />
+      </Tooltip>
       {!record.isSystem && (
         <Popconfirm title={t('teamAgents.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-          <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('teamAgents.delete')} />
+          <Tooltip title={t('teamAgents.delete')}>
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('teamAgents.delete')} />
+          </Tooltip>
         </Popconfirm>
       )}
     </Space>
@@ -154,11 +160,11 @@ export function TeamAgents({ teamId, canManage }: { teamId: number; canManage: b
                     styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.sm }}>
                         <Avatar shape="square" size={44} src={record.avatarObjectKey ? resolveStorageUrl(record.avatarObjectKey) : undefined} alt={name}>
                           {name.slice(0, 1).toUpperCase()}
                         </Avatar>
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ minWidth: 0, flex: 1, alignSelf: 'center' }}>
                           <div
                             title={name}
                             style={{
@@ -172,24 +178,27 @@ export function TeamAgents({ teamId, canManage }: { teamId: number; canManage: b
                           >
                             {name}
                           </div>
-                          <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            {canManage ? (
-                              <Switch
-                                size="small"
-                                checked={record.enabled ?? false}
-                                checkedChildren={t('teamAgents.statusEnabled')}
-                                unCheckedChildren={t('teamAgents.statusDisabled')}
-                                onChange={(checked) => void handleEnabledChange(record, checked)}
-                              />
-                            ) : record.enabled ? (
-                              <Tag color="success">{t('teamAgents.statusEnabled')}</Tag>
-                            ) : (
-                              <Tag>{t('teamAgents.statusDisabled')}</Tag>
-                            )}
-                            {record.isSystem && <Tag color="purple">{t('teamAgents.builtin')}</Tag>}
-                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 2 }}>
+                          {canManage ? (
+                            <Switch
+                              size="small"
+                              checked={record.enabled ?? false}
+                              checkedChildren={t('teamAgents.statusEnabled')}
+                              unCheckedChildren={t('teamAgents.statusDisabled')}
+                              onChange={(checked) => void handleEnabledChange(record, checked)}
+                            />
+                          ) : record.enabled ? (
+                            <Tag color="success">{t('teamAgents.statusEnabled')}</Tag>
+                          ) : (
+                            <Tag>{t('teamAgents.statusDisabled')}</Tag>
+                          )}
+                          {record.isSystem && <Tag color="purple">{t('teamAgents.builtin')}</Tag>}
                         </div>
                       </div>
+                      <Typography.Paragraph type="secondary" style={{ fontSize: 13, marginBottom: 0, minHeight: 38 }} ellipsis={{ rows: 2 }}>
+                        {record.description || '-'}
+                      </Typography.Paragraph>
                       <div>{<Tag>{t('teamAgents.subCountBadge', { count: record.subCount ?? 0 })}</Tag>}</div>
                       <div
                         style={{

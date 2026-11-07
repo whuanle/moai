@@ -61,9 +61,10 @@
 - 详情弹窗 `TeamAgentDetailModal.tsx`：只读主信息 + 子智能体定义列表；依赖 id 经团队选项映射为名称 Tag
 - API 封装 `ui/src/api/team-agent.ts`（Kiota 生成物之上，页面只调封装层）；i18n `teamAgents.*` + `team.teamAgents`，zh/en 同步
 
-## 5c. 系统内置智能体（规划师 Plan / 构建师 Build）
+## 5c. 系统内置智能体（规划师 / 构建师）
 
 - **定义在代码**：`TeamAgent.Core/Services/BuiltinTeamAgents.cs` 为唯一事实源（主提示词 + 子智能体 researcher/analyst/planner、executor/reviewer/fixer，依赖为空=通用可用）
+- **名称（2026-11-07）**：内置主智能体名称为「规划师」「构建师」（原名「规划师 Plan」「构建师 Build」含空格，与全平台资源命名规则冲突已收敛）；Seeder 按 key 幂等，存量团队旧行名称不动，用户下次编辑时按新规则顺手改名即可
 - **自动种入**：团队创建时 `CreateTeamCommandHandler` 调用 `ITeamAgentSeeder.EnsureSeededAsync(teamId)`（Team.Core → TeamAgent.Core 单向引用，无环）；**按名称幂等**（同名已存在即跳过），种入失败仅告警不阻断团队创建
 - **存量补种**：`POST /api/team-agent/seed-builtin`（仅平台管理员）遍历全部团队幂等补种
 - **保护语义（决策 D7）**：`is_system=true` 的行**不可删除**（400，保住"每个团队都有 plan/build"的兜底）、**可编辑**（团队可定制提示词/依赖/启停；编辑后按名称幂等的补种不会重复种入——名称仍在）

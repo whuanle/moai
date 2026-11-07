@@ -81,11 +81,12 @@ async function main() {
   // PT-02 校验
   check('PT-02a 空名称 400', (await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: '', content: 'c' } })).status === 400)
   check('PT-02b 超长名称 400', (await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: 'a'.repeat(21), content: 'c' } })).status === 400)
+  check('PT-02e 名称含特殊字符 400', (await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: 'a-b!', content: 'c' } })).status === 400)
   check('PT-02c 空内容 400', (await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: 'n', content: '' } })).status === 400)
   check('PT-02d 分类不存在 404', (await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: 'n', content: 'c', promptClassId: 99999999 } })).status === 404)
 
   // PT-03 创建个人提示词（带分类）
-  const created = await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: '个人提示词-' + TS, description: '个人自用', content: '你是测试助手 {{lang}}', promptClassId: CLASS_ID } })
+  const created = await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: '个人提示词_' + TS, description: '个人自用', content: '你是测试助手 {{lang}}', promptClassId: CLASS_ID } })
   const PID = Number(created.json?.value)
   check('PT-03 创建个人提示词 200 且返回 id', created.status === 200 && PID > 0, `${created.status} ${created.text.slice(0, 140)}`)
 
@@ -103,7 +104,7 @@ async function main() {
 
   // PT-06 更新权限与生效
   check('PT-06a 他人更新 403', (await api('PUT', `/api/prompt/${PID}`, { token: bob.token, body: { name: 'x', content: 'y' } })).status === 403)
-  const upd = await api('PUT', `/api/prompt/${PID}`, { token: alice.token, body: { name: '个人提示词改-' + TS, description: '改', content: '更新后的内容', promptClassId: 0 } })
+  const upd = await api('PUT', `/api/prompt/${PID}`, { token: alice.token, body: { name: '个人提示词改_' + TS, description: '改', content: '更新后的内容', promptClassId: 0 } })
   const updDetail = await api('GET', `/api/prompt/${PID}`, { token: alice.token })
   check('PT-06b 创建人更新 200 且生效', upd.status === 200 && updDetail.json?.content === '更新后的内容' && Number(updDetail.json?.promptClassId) === 0, `${upd.status} ${upd.text.slice(0, 140)}`)
 
@@ -112,7 +113,7 @@ async function main() {
   // PT-07 创建权限
   check('PT-07a Member 创建团队提示词 403', (await api('POST', '/api/prompt', { token: tMember.token, body: { teamId: TID, name: 'n', content: 'c' } })).status === 403)
   check('PT-07b 非成员创建 404', (await api('POST', '/api/prompt', { token: bob.token, body: { teamId: TID, name: 'n', content: 'c' } })).status === 404)
-  const teamCreated = await api('POST', '/api/prompt', { token: tOwner.token, body: { teamId: TID, name: '团队提示词-' + TS, description: '团队共用', content: '团队提示词内容' } })
+  const teamCreated = await api('POST', '/api/prompt', { token: tOwner.token, body: { teamId: TID, name: '团队提示词_' + TS, description: '团队共用', content: '团队提示词内容' } })
   const TPID = Number(teamCreated.json?.value)
   check('PT-07c Owner 创建团队提示词 200', teamCreated.status === 200 && TPID > 0, `${teamCreated.status} ${teamCreated.text.slice(0, 140)}`)
 
@@ -171,12 +172,12 @@ async function main() {
   await api('GET', `/api/prompt/${PID}`, { token: tMember.token })
   const c1 = Number(((await api('GET', '/api/prompt/market_list', { token: bob.token })).json?.items ?? []).find(i => Number(i.promptId) === PID)?.counter ?? 0)
   check('PT-14a 他人查看市场提示词计数 +1', c1 === c0 + 1, `before=${c0} after=${c1}`)
-  const kw = '个人提示词改-' + TS
+  const kw = '个人提示词改_' + TS
   const filtered = await api('GET', `/api/prompt/market_list?keywords=${encodeURIComponent(kw)}`, { token: bob.token })
   check('PT-14b 市场关键字过滤命中', (filtered.json?.items ?? []).some(i => Number(i.promptId) === PID) && (filtered.json?.items ?? []).every(i => String(i.name).includes(kw)))
 
   // PT-15 删除：移除待审核申请、市场不可见
-  const tempCreate = await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: '待删提示词-' + TS, content: 'c' } })
+  const tempCreate = await api('POST', '/api/prompt', { token: alice.token, body: { teamId: 0, name: '待删提示词_' + TS, content: 'c' } })
   const TEMPID = Number(tempCreate.json?.value)
   const apply5 = await api('POST', '/api/publication/apply', { token: alice.token, body: { resourceType: 'prompt', resourceId: String(TEMPID) } })
   const del = await api('DELETE', `/api/prompt/${TEMPID}`, { token: alice.token })

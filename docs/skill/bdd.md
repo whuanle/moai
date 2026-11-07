@@ -175,6 +175,8 @@ Feature: 技能市场与个人/团队自助维护
     When Alice 创建个人技能并上传包文件
     Then Alice 的 my_list 含该技能（未公开、无待审、文件数正确）
     And Bob 的 my_list 不含 Alice 的个人技能
+    When 以含特殊字符（非中文/英文/数字/下划线）的名称创建技能
+    Then 400 拒绝（名称仅允许中文、英文、数字和下划线）
 
   @SKM-S2 @auto:e2e
   Scenario: 团队技能列表

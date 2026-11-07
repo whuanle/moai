@@ -53,6 +53,16 @@ public class KnowledgeGraphItem
     public string AvatarPath { get; init; } = string.Empty;
 
     /// <summary>
+    /// 实体（节点）数量；图库不可用或统计失败时为 null.
+    /// </summary>
+    public int? EntityCount { get; init; }
+
+    /// <summary>
+    /// 关系（边）数量；图库不可用或统计失败时为 null.
+    /// </summary>
+    public int? RelationCount { get; init; }
+
+    /// <summary>
     /// 创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; init; }

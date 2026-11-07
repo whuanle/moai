@@ -55,3 +55,7 @@
 - 应用 Agent 配置的 Prompt 仍是自由文本，尚未接入提示词库选择器（后续独立需求）。
 - `is_audit` 字段为建表遗留，业务未使用。
 - 提示词列表无分页（与 variable/publication 同策略），数据量大时需补。
+
+## 资源命名规则（2026-11-07）
+
+- 提示词名称统一约束：正则 `^[\u4e00-\u9fa5a-zA-Z0-9_]+$`（仅中文、英文、数字、下划线），`Create/UpdatePromptCommand.Validate` 落 `Matches` 规则，前端 `PromptEditor` 名称表单同步 pattern 校验（`validation.nameChars`）；与 app/skill/team-agent/wiki/KG 各资源同规则（各模块 sdd 同日记）。行为见 [@PT-S2](./bdd.md#pt-s2)。

@@ -54,9 +54,9 @@ async function main() {
   const OTHER_TID = Number((await api('POST', '/api/team', { token: outsider.token, body: { name: 'feishu-other-' + TS } })).json.value)
 
   // 两个团队应用：本团队 A、本团队 B、外部团队 C
-  const appA = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'fa-' + TS, appType: 'agent' } })).json.value
-  const appB = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'fb-' + TS, appType: 'agent' } })).json.value
-  const appC = (await api('POST', '/api/app', { token: outsider.token, body: { teamId: OTHER_TID, name: 'fc-' + TS, appType: 'agent' } })).json.value
+  const appA = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'fa_' + TS, appType: 'agent' } })).json.value
+  const appB = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'fb_' + TS, appType: 'agent' } })).json.value
+  const appC = (await api('POST', '/api/app', { token: outsider.token, body: { teamId: OTHER_TID, name: 'fc_' + TS, appType: 'agent' } })).json.value
 
   // FS-01 未登录
   check('FS-01 未登录查列表 401', (await api('GET', `/api/feishu_app/list?teamId=${TID}`)).status === 401)

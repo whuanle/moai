@@ -110,6 +110,26 @@ public sealed class CypherKnowledgeGraphStore : IKnowledgeGraphStore
     }
 
     /// <inheritdoc/>
+    public async Task<long> CountNodesAsync(long KnowledgeGraphId, CancellationToken cancellationToken)
+    {
+        var records = await ReadAsync(
+            "MATCH (n:KgNode {kgId: $kgId}) RETURN count(n) AS c",
+            new { kgId = KnowledgeGraphId },
+            cancellationToken);
+        return records[0]["c"].As<long>();
+    }
+
+    /// <inheritdoc/>
+    public async Task<long> CountEdgesAsync(long KnowledgeGraphId, CancellationToken cancellationToken)
+    {
+        var records = await ReadAsync(
+            "MATCH ()-[r:KG_REL {kgId: $kgId}]->() RETURN count(r) AS c",
+            new { kgId = KnowledgeGraphId },
+            cancellationToken);
+        return records[0]["c"].As<long>();
+    }
+
+    /// <inheritdoc/>
     public async Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken)
     {
         await _provider.EnsureInitializedAsync(cancellationToken);

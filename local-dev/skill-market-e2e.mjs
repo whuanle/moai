@@ -82,11 +82,18 @@ async function main() {
   const c1 = await api('POST', '/api/skill', {
     token: alice.token,
     body: {
-      key: 'mkt_' + TS, name: '市场技能-' + TS, description: '供市场流转', instructions: '# 使用说明',
+      key: 'mkt_' + TS, name: '市场技能_' + TS, description: '供市场流转', instructions: '# 使用说明',
       files: [{ path: `gen_${TS}.py`, fileId: file1, fileName: `gen_${TS}.py` }], teamId: 0,
     },
   })
   check('SM-01 创建个人技能（含已上传文件）200', c1.status === 200 && !!c1.json?.value, `${c1.status} ${c1.text.slice(0, 140)}`)
+  check('SM-01b 技能名称含特殊字符 400', (await api('POST', '/api/skill', {
+    token: alice.token,
+    body: {
+      key: 'mkt_bad_' + TS, name: 'bad-skill!', description: 'x', instructions: '# x',
+      files: [{ path: 'a.py', fileId: 1, fileName: 'a.py' }], teamId: 0,
+    },
+  })).status === 400)
   const SKILL = String(c1.json?.value)
 
   const myList = await api('GET', '/api/skill/my_list', { token: alice.token })
@@ -134,7 +141,7 @@ async function main() {
   const file2 = await uploadSkillFile(tOwner.token, `team_${TS}.py`)
   const c2 = await api('POST', '/api/skill', {
     token: tOwner.token,
-    body: { key: 'tmkt_' + TS, name: '团队市场技能-' + TS, instructions: '# 团队技能', files: [{ path: `team_${TS}.py`, fileId: file2, fileName: `team_${TS}.py` }], teamId: TID },
+    body: { key: 'tmkt_' + TS, name: '团队市场技能_' + TS, instructions: '# 团队技能', files: [{ path: `team_${TS}.py`, fileId: file2, fileName: `team_${TS}.py` }], teamId: TID },
   })
   const TSKILL = String(c2.json?.value ?? '')
   check('SM-20 Owner 创建团队技能 200', c2.status === 200 && !!TSKILL, `${c2.status} ${c2.text.slice(0, 140)}`)
@@ -165,7 +172,7 @@ async function main() {
   const file3 = await uploadSkillFile(alice.token, `del_${TS}.py`)
   const c3 = await api('POST', '/api/skill', {
     token: alice.token,
-    body: { key: 'del_' + TS, name: '待删技能-' + TS, files: [{ path: `del_${TS}.py`, fileId: file3, fileName: `del_${TS}.py` }], teamId: 0 },
+    body: { key: 'del_' + TS, name: '待删技能_' + TS, files: [{ path: `del_${TS}.py`, fileId: file3, fileName: `del_${TS}.py` }], teamId: 0 },
   })
   const DEL_SKILL = String(c3.json?.value ?? '')
   const apply4 = await api('POST', '/api/publication/apply', { token: alice.token, body: { resourceType: 'skill', resourceId: DEL_SKILL } })

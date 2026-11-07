@@ -35,7 +35,7 @@ export function WorkflowAppHeader({
   return (
     <div className="wf-header">
       <div className="wf-header-left">
-        <Tooltip title={t('appManage.backToTeam')}>
+        <Tooltip title={t('appManage.backToInternalApps')}>
           <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(`/team/${teamId}`)} />
         </Tooltip>
         <div className="wf-header-titles">

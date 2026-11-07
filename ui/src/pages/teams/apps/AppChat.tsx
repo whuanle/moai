@@ -817,15 +817,17 @@ export function AppChat() {
       <UserSwitchOutlined className="moai-chat__expert-chip-icon" />
       <span className="moai-chat__expert-chip-label">{t('appChat.currentExpert')}</span>
       <span className="moai-chat__expert-chip-name">{selectedExpert.name}</span>
-      <button
-        type="button"
-        className="moai-chat__expert-chip-clear"
-        disabled={promptSaving}
-        onClick={() => void toggleExpert(selectedPromptId)}
-        aria-label={t('appChat.clearExpert')}
-      >
-        <CloseOutlined />
-      </button>
+      <Tooltip title={t('appChat.clearExpert')}>
+        <button
+          type="button"
+          className="moai-chat__expert-chip-clear"
+          disabled={promptSaving}
+          onClick={() => void toggleExpert(selectedPromptId)}
+          aria-label={t('appChat.clearExpert')}
+        >
+          <CloseOutlined />
+        </button>
+      </Tooltip>
     </div>
   )
 
@@ -1034,14 +1036,16 @@ export function AppChat() {
                     okText={t('appManage.confirm')}
                     cancelText={t('appManage.cancel')}
                   >
-                    <button
-                      type="button"
-                      className="moai-chat__session-del"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={t('appChat.deleteSession')}
-                    >
-                      <DeleteOutlined />
-                    </button>
+                    <Tooltip title={t('appChat.deleteSession')}>
+                      <button
+                        type="button"
+                        className="moai-chat__session-del"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={t('appChat.deleteSession')}
+                      >
+                        <DeleteOutlined />
+                      </button>
+                    </Tooltip>
                   </Popconfirm>
                 </div>
               )
@@ -1085,18 +1089,23 @@ export function AppChat() {
 
       <main className={`moai-chat__main${isLanding ? ' is-landing' : ''}`}>
         <header className="moai-chat__topbar">
-          <Button
-            className="moai-chat__menu-btn"
-            type="text"
-            icon={<MenuOutlined />}
-            onClick={() => setSidebarOpen((v) => !v)}
-          />
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            aria-label={t('appChat.back')}
-            onClick={() => navigate('/apps')}
-          />
+          <Tooltip title={t('appChat.sessions')}>
+            <Button
+              className="moai-chat__menu-btn"
+              type="text"
+              icon={<MenuOutlined />}
+              aria-label={t('appChat.sessions')}
+              onClick={() => setSidebarOpen((v) => !v)}
+            />
+          </Tooltip>
+          <Tooltip title={t('appChat.back')}>
+            <Button
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              aria-label={t('appChat.back')}
+              onClick={() => navigate('/apps')}
+            />
+          </Tooltip>
           <div className="moai-chat__brand">
             <div className="moai-chat__brand-avatar">
               {appAvatar ? (

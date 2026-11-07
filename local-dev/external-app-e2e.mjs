@@ -60,9 +60,9 @@ async function main() {
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'external-team-' + TS } })).json.value)
 
   // 准备：外部应用（is_auth=true）、外部应用（is_auth=false）、范围外外部应用、内部应用
-  const APP_AUTH = await mkExternalApp(owner, TID, '外部·需授权' + TS.slice(-4), true)
-  const APP_FREE = await mkExternalApp(owner, TID, '外部·免授权' + TS.slice(-4), false)
-  const APP_OUT = await mkExternalApp(owner, TID, '外部·未授权' + TS.slice(-4), true)
+  const APP_AUTH = await mkExternalApp(owner, TID, '外部_需授权' + TS.slice(-4), true)
+  const APP_FREE = await mkExternalApp(owner, TID, '外部_免授权' + TS.slice(-4), false)
+  const APP_OUT = await mkExternalApp(owner, TID, '外部_未授权' + TS.slice(-4), true)
   const APP_IN = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '内部应用' + TS.slice(-4), appType: 'agent' } })).json.value)
   // 其他团队的外部应用（用于跨团队 403 断言）
   const TID2 = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'external-team2-' + TS } })).json.value)
@@ -84,7 +84,7 @@ async function main() {
     const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID, TID2])]
     await api('PUT', `/api/ai/model/${EA_MODEL_ID}/authorization`, { token: eaAdminToken, body: { teamIds } })
   }
-  const APP_OTHER_TEAM = await mkExternalApp(owner, TID2, '外部·他团队' + TS.slice(-4), true)
+  const APP_OTHER_TEAM = await mkExternalApp(owner, TID2, '外部_他团队' + TS.slice(-4), true)
 
   // EA-01 未携带 token 访问外部接口
   check('EA-01 无 token 访问 /api/teamres/app/list 401', (await api('GET', '/api/teamres/app/list')).status === 401)

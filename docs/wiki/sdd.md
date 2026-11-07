@@ -59,6 +59,7 @@
 |---|---|---|---|
 | POST | `/api/wiki` | 创建 `{teamId, name, description?}` | `SimpleLong` |
 | GET | `/api/wiki/list?teamId=` | 团队知识库列表（含 myRole、avatarPath、documentCount、chunkCount、lastDocumentUpdateTime） | `QueryWikisCommandResponse` |
+| GET | `/api/wiki/files/search?teamId=&query=&limit=50` | 跨知识库按文件名搜索团队内文档（@WK-S47）： Wikis JOIN WikiDocuments 双表软删过滤 + `FileName.Contains`；排序 前缀命中（同档更新时间倒序）> 包含命中；`limit` 1-100 截断，`total` 为全量命中数；仅团队成员（非成员 404） | `QueryWikiTeamFilesCommandResponse`（`teamId/total/items[]`，items 含 `documentId/wikiId/wikiName/fileName/updateTime`） |
 | GET | `/api/wiki/{id}` | 详情（含 myRole、avatarPath、embeddingModelName、embeddingDimensions、rerankModelId/Name、isLock） | `QueryWikiCommandResponse` |
 | PUT | `/api/wiki/{id}` | 更新 `{name, description?}` | Empty |
 | DELETE | `/api/wiki/{id}` | 软删除 | Empty |
@@ -99,7 +100,7 @@
 - **MCP tab（`WikiMcp`，2026-09-26）**：展示该知识库的 MCP 服务器地址——`serverinfo.serviceUrl`（对外完整 URL，未取到回退当前 origin）+ `/api/teamres/wiki/{wikiId}/mcp`，只读输入框 + 一键复制；附一行鉴权提示（携带勾选「知识库 MCP」范围的团队/应用接入 key）。地址与工具语义见 D35。
 - **召回测试 tab（`WikiRecallTest`，仅团队成员）**：双栏 playground 布局——左栏 400px 查询表单（查询问题 ≤1000 字、Enter 直接搜索、Shift+Enter 换行；文档范围多选（`getWikiDocuments` 拉取前 100 篇，空=全部）；返回条数（1-50，默认 5）与相似度阈值（可选 0-1）并排；「AI 增强」分组内 AI 优化问题 / AI 生成回答开关 + 对话模型选择（`getWikiModelOptions` 的 conversationModels，开关全关时禁用、任一开启时必填并自动带入第一个可用模型）；搜索召回按钮通栏）+ 右栏结果区自适应剩余宽度（未搜索时展示引导空态，搜索中展示状态条；已有结果再次搜索时顶部叠加状态条、旧结果保留）。结果区自上而下：**AI 回答卡片**（`colorInfoBg` 背景 + 机器人图标 + "由 {model} 生成"署名 + 14px/1.8 行高正文；请求了回答但为空时降级提示——有命中→warning"AI 未返回回答内容，可尝试更换模型"、无命中→info"已跳过 AI 回答"）、优化后的问题 Alert（问题文本加粗）、召回结果列表（标题带条数；命中项含序号 + 相似度得分着色 Tag、文档名、元数据类型 Tag——0=原文 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段、内容 4 行截断可展开）。md 断点以下纵向堆叠。i18n 键 `wiki.recall.*`（zh/en 同步）。后端配套：`IsAnswer` 的回答调用显式 `DisableThinking = true`——思考型模型（如 Hy4 preview）经 MAF `GetResponseAsync` 会把输出预算耗在思维链，`response.Text` 返回空串。
 - `/team/{teamId}/wiki/{wikiId}/document/{documentId}/embedding` 文档级页：展示文档内容、普通/AI 切割与向量化；普通切割可选择 Maomi.ToMarkdown 切割方式、长度单位（字符/Token）、重叠单位、切片长度与切片重叠；无历史切割配置时，前端按 wiki 向量维度默认推荐 Markdown 感知 + Token 计量 + 句子重叠 1 的最佳配置，并提供「应用推荐值」恢复推荐；选择句子优先/段落优先切割时，前端自动切换并锁定对应重叠单位；选择 Token 时前端下拉提供后端明确支持的编码；AI 切割提供可直接使用的默认提示词模板，不再额外展示说明提示；切片预览可选择对话模型后对单个切片或全部切片生成/重生成元数据；向量化仅选择是否对原文切片/已生成元数据向量化，两项均未勾选时阻止提交，元数据生成模型选择器不在向量化表单中。
-- **团队详情「知识库」tab（`TeamWikis`）**：真正的知识库管理（新建/修改/删除），仅 Owner/Admin 可操作，Member 只读。数据源 `getWikis(teamId)` 的 `myRole` 判定。卡片以**统计条**展示文件数量 / 切片数量 / 最近文档更新（来自列表接口 `documentCount/chunkCount/lastDocumentUpdateTime`，无文档时最近更新显示占位符），公开状态标识已随公开概念移除；新建/编辑弹窗仅名称 + 简介。
+- **团队详情「知识库」tab（`TeamWikis`）**：真正的知识库管理（新建/修改/删除），仅 Owner/Admin 可操作，Member 只读。数据源 `getWikis(teamId)` 的 `myRole` 判定。工具栏为 `PageToolbar` 三段式（与团队应用列表同款）：关键字搜索框（同时匹配两层——知识库客户端过滤子串匹配名称/描述不区分大小写（@WK-S46）+ 文件名跨库搜索 `searchWikiTeamFiles` 调 `GET /api/wiki/files/search`（@WK-S47）；回车或「查询」触发）+ 共 N 条（按过滤后数量回显）+ 竖分隔线 + 新建知识库（Admin+）。搜索触发后工具栏下方出现「知识库 N ｜ 文件 M」Segmented 视图切换：知识库有命中落卡片视图（原空态语义），知识库零命中且文件有命中自动落**文件视图**——文件行 = 文件名 + 所属知识库 + 更新时间，点击直达 `/team/{teamId}/wiki/{wikiId}/document/{documentId}/embedding`；命中总数超过返回条数（50）时提示「仅显示前 50 条」。卡片以**统计条**展示文件数量 / 切片数量 / 最近文档更新（来自列表接口 `documentCount/chunkCount/lastDocumentUpdateTime`，无文档时最近更新显示占位符），公开状态标识已随公开概念移除；新建/编辑弹窗仅名称 + 简介。
 - **设置页不提供「默认工作流」卡（2026-09-21 产品决策移除）**：批量执行的步骤参数在多选文档弹窗中每次实时填写；`PUT workflow-config` 保留为后端能力，主要供外部源工作流缺省时回退（见 D21）。
 - **爬虫源表单（`WikiSourceCrawlerForm`）**：起始地址（必填，前端同步做 http/https 校验）、路径前缀、抓取深度、单轮页数上限、**请求间隔（抓取频率）**、请求超时、正文选择器、UserAgent、是否覆盖已存在页面。请求间隔提供「快速 1 秒 / 常规 3 秒 / 慢速 10 秒 / 极慢 30 秒」四档快捷链接，默认 1 秒；表单内以 `Alert` 明示「串行抓取 + 间隔 + 页数上限」的三重保护，避免把目标站点抓崩。
 - **新建/编辑弹窗（`Modal`，2026-09-21 由抽屉 + `Segmented` 改版）**：新建无单一入口，而是「新建飞书源 / 新建爬虫」双按钮各自打开对应类型的 Modal；编辑打开同一 Modal，类型以只读 Tag 展示（后端 D24 规定类型创建后不可变更）。类型由入口按钮/记录决定（`activeType` 状态驱动字段区切换），飞书字段与爬虫字段互不渲染，避免隐藏字段被一并校验。
@@ -156,3 +157,7 @@
 - `wiki-e2e.mjs` 覆盖知识库 CRUD + 文档 CRUD；`wiki-embedding-e2e.mjs` 覆盖 提取→切割→向量化（WK-S15/S16/S19/S21/S22）已加脚本，待后端可运行时联调
 - 文档操作页（提取/切割/切片预览/向量化）已落地；召回测试已落地（2026-09-21，`POST /wiki/{id}/recall-test` + 详情页召回测试 tab，证据 `local-dev/wiki-recall-e2e.mjs` PASS 30/0/0）；rerank 模型已接入召回（2026-10-05，D36，含失败降级）；供应用引用的独立文档检索端点为下阶段工作（D23）
 - **D11/D12/D13** 抽取 → `wiki_document_content` → `wiki_document_chunk_content` → `wiki_embedding_{wikiId}` 的整条流水线已拆分为三步独立操作，抽取/切割在 `WikiDocumentProcessingService`，向量化在 `WikiEmbeddingService`
+
+## 资源命名规则（2026-11-07）
+
+- 知识库名称与外部源名称统一约束：正则 `^[\u4e00-\u9fa5a-zA-Z0-9_]+$`（仅中文、英文、数字、下划线），`Create/UpdateWikiCommand`、`Create/UpdateWikiSourceCommand.Validate` 落 `Matches` 规则（外部源更新为可空部分更新，规则随 `.When(x => x.Name != null)` 生效），前端 `TeamWikis`/`WikiDetail`/`WikiSources` 名称表单同步 pattern 校验。行为见 [@WK-S2](./bdd.md#wk-s2)。

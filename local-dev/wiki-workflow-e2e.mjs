@@ -175,7 +175,7 @@ async function main() {
   const TID = Number(teamRes.json?.value)
   const addMember = await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
   check('WK-S28 前置：添加成员 200', addMember.status === 200, `${addMember.status} ${addMember.text.slice(0, 120)}`)
-  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wf-wiki-' + TS, description: 'workflow e2e' } })).json.value)
+  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wf_wiki_' + TS, description: 'workflow e2e' } })).json.value)
 
   // 模型可用性：优先读取现有公开/已授权模型，缺失时自举授权；再用探针挑出真正可用的模型
   let opt = await api('GET', `/api/wiki/model-options?teamId=${TID}`, { token: owner.token })
@@ -420,7 +420,7 @@ async function main() {
     }
 
     // 未配置向量模型的新知识库：批量向量化整体 409
-    const WID2 = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wf-wiki2-' + TS, description: 'no embedding' } })).json.value)
+    const WID2 = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wf_wiki2_' + TS, description: 'no embedding' } })).json.value)
     const up = await uploadWikiDoc(member.token, WID2, `wf-e-${TS}.md`, makeMd('无向量模型文档E', 10), 'text/markdown')
     if (up.documentId) {
       const batch = await api('POST', `/api/wiki/${WID2}/documents/batch-workflow`, {

@@ -7,6 +7,7 @@ import { AvatarUpload, Card, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   deleteKnowledgeGraph,
   getKnowledgeGraphModelOptions,
@@ -186,7 +187,10 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
             <Form.Item
               name="name"
               label={t('knowledgegraph.name')}
-              rules={[{ required: true, message: t('knowledgegraph.namePlaceholder') }]}
+              rules={[
+                { required: true, message: t('knowledgegraph.namePlaceholder') },
+                { pattern: NAME_PATTERN, message: t('validation.nameChars') },
+              ]}
             >
               <Input maxLength={50} placeholder={t('knowledgegraph.namePlaceholder')} />
             </Form.Item>

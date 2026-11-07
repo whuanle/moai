@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Col, Empty, Row, Space, Spin, Tag, Typography } from 'antd'
-import { ArrowLeftOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Col, Empty, Row, Spin, Tag, Typography } from 'antd'
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useParams } from 'react-router'
 import { classifyApi, type PluginClassify } from '@/api/classify'
 import { pluginApi, type DynamicPluginTemplate } from '@/api/plugin'
 import { getTeamDynamicTemplates, getTeamPlugins } from '@/api/team-plugin'
-import { Card, Page } from '@/design-system'
+import { BackLink, Card, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { DynamicPluginInstanceModal } from './components/DynamicPluginInstanceModal'
@@ -16,7 +16,6 @@ const { Text, Paragraph } = Typography
 /** 模板列表页：无 teamId 路由参数为系统模式（管理员 /plugin/templates）；带 teamId 为团队模式（/team/{teamId}/plugin/templates），实例数分别按全站/本团队统计. */
 export function PluginTemplates() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { teamId: teamIdParam } = useParams()
   const parsedTeamId = teamIdParam != null ? Number(teamIdParam) : NaN
   const isTeamMode = Number.isInteger(parsedTeamId) && parsedTeamId > 0
@@ -89,24 +88,20 @@ export function PluginTemplates() {
   const backPath = isTeamMode ? `/team/${teamId}/plugins` : '/plugin?tab=dynamic'
 
   return (
-    <Page
-      title={t('plugins.templateList')}
-      subtitle={t('plugins.templateListSubtitle')}
-      breadcrumb={[
-        { title: t('plugins.tabDynamic'), onClick: () => navigate(backPath) },
-        { title: t('plugins.templateList') },
-      ]}
-      extra={
-        <Space>
+    <>
+      {/* 左上角「← 返回插件」替代「动态插件 / 模板列表」面包屑与原头部返回按钮（系统/团队模式同文案） */}
+      <div style={{ marginBottom: spacing.md }}>
+        <BackLink to={backPath}>{t('plugins.backToPlugins')}</BackLink>
+      </div>
+      <Page
+        title={t('plugins.templateList')}
+        subtitle={t('plugins.templateListSubtitle')}
+        extra={
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
             {t('plugins.refresh')}
           </Button>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath)}>
-            {t('plugins.backToPlugins')}
-          </Button>
-        </Space>
-      }
-    >
+        }
+      >
       {loading ? (
         <div style={{ textAlign: 'center', padding: spacing.xxl * 2 }}>
           <Spin />
@@ -158,7 +153,8 @@ export function PluginTemplates() {
         onSaved={load}
         onClose={() => setCreateTemplateKey(null)}
       />
-    </Page>
+      </Page>
+    </>
   )
 }
 

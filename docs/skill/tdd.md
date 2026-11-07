@@ -58,7 +58,7 @@
 
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
-| @SKM-S1~S2 | local-dev/skill-market-e2e.mjs（SM-01~03、20~22） | PASS 28/28（2026-09-17） |
+| @SKM-S1~S2 | local-dev/skill-market-e2e.mjs（SM-01~03、20~22；SM-01b=名称含特殊字符 400） | PASS 28/28（2026-09-17；2026-11-07 扩 SM-01b → 29/29） |
 | @SKM-S3~S4 | local-dev/skill-market-e2e.mjs（SM-04~07、18~19；SM-06 断言含 response-content-disposition） | PASS 28/28（2026-09-17，附件头修复后回归） |
 | @SKM-S5 | local-dev/skill-market-e2e.mjs（SM-08~16） | PASS 28/28（2026-09-17） |
 | @SKM-S6~S7 | local-dev/skill-market-e2e.mjs（SM-17、23~25） | PASS 28/28（2026-09-17） |

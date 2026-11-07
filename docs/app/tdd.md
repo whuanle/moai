@@ -159,7 +159,7 @@
 | @AP-S107 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（环形渲染与紧凑统计、比例弧与常规色、欢迎态不显示、Tooltip 明细含缓存命中行） | PASS 25/25（2026-10-27） |
 | @AP-S95 | local-dev/app-e2e.mjs（AP-13t 建会话后轮询公开列表 teamName 非空且 useCount≥1，计数器批量落库最长等 90s）+ AppPlaza 卡片底部「团队名 · N 次使用」渲染 | PASS 196/200（2026-10-27，useCount 改计数器口径后 AP-13t 加轮询；其余 4 失败为 AP-20 环境依赖与本轮无关） |
 | @AP-S1 | app-e2e.mjs（AP-01） | PASS |
-| @AP-S2 | app-e2e.mjs（AP-02a-d） | PASS |
+| @AP-S2 | app-e2e.mjs（AP-02a-e，e=名称含特殊字符 400） | PASS（2026-11-07 扩 AP-02e） |
 | @AP-S3 | app-e2e.mjs（AP-03a-c、AP-09a、AP-10c） | PASS |
 | @AP-S4 | app-e2e.mjs（AP-04、AP-05） | PASS |
 | @AP-S5 | app-e2e.mjs（AP-06、AP-09e） | PASS |
@@ -175,8 +175,8 @@
 | @AP-S14 | app-e2e.mjs（AP-13a-d，公开改经上架审核）+ TeamApps.test.tsx（卡片状态标签、新建弹窗无公开开关） | PASS 101/101（2026-09-15） |
 | @AP-S20 | app-e2e.mjs（AP-13e-k）+ TeamExternalApps.test.tsx | PASS 101/101（2026-09-15） |
 | @AP-S21 | app-e2e.mjs（AP-13m-r、AP-13o2/o3 走上架审核）+ AppPlaza.test.tsx | PASS 101/101（2026-09-15） |
-| @AP-S22 | TeamExternalApps.test.tsx + AppPlaza.test.tsx + TeamManage.test.tsx（分区与导航） | PASS（2026-09-13） |
-| @AP-S23 | app-e2e.mjs（AP-13s~y）+ TeamAccessApps.test.tsx | PASS（2026-09-13） |
+| @AP-S22 | TeamExternalApps.test.tsx + AppPlaza.test.tsx + TeamManage.test.tsx（分区与导航；2026-11-07 发布开关改版：停用二次确认/免确认发布，vitest 新增 2 例） | PASS（2026-09-13；2026-11-07 更新） |
+| @AP-S23 | app-e2e.mjs（AP-13s~y + AP-13s2 接入名称含特殊字符 400）+ TeamAccessApps.test.tsx | PASS（2026-09-13；2026-11-07 扩 AP-13s2） |
 | @AP-S24 | TeamAccessApps.test.tsx（区块顶部 key 用途提示） | PASS 3/3（2026-09-21） |
 | @AP-S15 | TeamApps.test.tsx（卡片 + 卡片右上角「管理」点击进入管理页；Member 只读） | PASS 6/6（2026-09-11） |
 | @AP-S16 | AppConfigSection.test.tsx（工作台配置分区「Agent 配置」；2026-09-19 起应用信息拆至「信息」分区 @AP-S49。原单页分栏已被工作台取代，见 @AP-S40） | PASS 9/9（2026-09-19） |

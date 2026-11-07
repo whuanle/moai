@@ -65,7 +65,8 @@ public class CreateAppCommand : IRequest<SimpleGuid>, IUserIdContext, IModelVali
     public static void Validate(AbstractValidator<CreateAppCommand> validate)
     {
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("应用名称不能为空.").MaximumLength(20).WithMessage("应用名称最长 20 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("应用名称不能为空.").MaximumLength(20).WithMessage("应用名称最长 20 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("应用名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("应用描述最长 255 个字符.");
         validate.RuleFor(x => x.AppType).IsInEnum().WithMessage("应用类型不正确.");
         validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 最长 255 个字符.");

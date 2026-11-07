@@ -36,11 +36,29 @@ describe('TeamAccessApps（团队应用接入分区）', () => {
 
     expect(await screen.findByText('ERP 接入')).toBeTruthy()
     expect(screen.getByText('moai-ac-abcd****')).toBeTruthy()
-    expect(screen.getByText(/全量访问团队 \/api\/teamres 资源/)).toBeTruthy()
+    expect(screen.getByText('erp 系统')).toBeTruthy()
     await waitFor(() => expect(getAccessApps).toHaveBeenCalledWith(1))
 
     fireEvent.click(screen.getByRole('button', { name: '点击查看完整 key' }))
     expect(await screen.findByText('moai-ac-abcd1234efgh5678ijkl')).toBeTruthy()
+  })
+
+  it('工具栏关键字过滤：查询命中名称/描述，无命中显示空表', async () => {
+    render(<TeamAccessApps teamId={1} canManage />)
+    await screen.findByText('ERP 接入')
+
+    fireEvent.change(screen.getByPlaceholderText('搜索名称或描述'), { target: { value: 'erp' } })
+    // antd 对两字中文按钮自动插空格：「查询」的可访问名为「loading查 询」（含 loading 图标），用尾部锚定正则避免误匹配
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询$/ }))
+    expect(screen.getByText('ERP 接入')).toBeTruthy()
+
+    fireEvent.change(screen.getByPlaceholderText('搜索名称或描述'), { target: { value: '不存在' } })
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询$/ }))
+    expect(screen.queryByText('ERP 接入')).toBeNull()
+
+    fireEvent.change(screen.getByPlaceholderText('搜索名称或描述'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询$/ }))
+    expect(screen.getByText('ERP 接入')).toBeTruthy()
   })
 
   it('管理员可新建接入（无需勾选范围）并在创建后显示一次性 key', async () => {

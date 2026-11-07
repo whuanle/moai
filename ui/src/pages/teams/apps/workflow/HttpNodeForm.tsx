@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react'
-import { App, Button, Input, InputNumber, Modal, Popconfirm, Select, Switch, Tabs } from 'antd'
+import { App, Button, Input, InputNumber, Modal, Popconfirm, Select, Switch, Tabs, Tooltip } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 
@@ -55,7 +55,9 @@ function KvListEditor({
               className="wf-field-name"
             />
             <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => onChange(list.filter((_, i) => i !== index))}>
-              <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+              <Tooltip title={t('workflowDesigner.deleteRow')}>
+                <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+              </Tooltip>
             </Popconfirm>
           </div>
           <TemplateValueInput
@@ -296,7 +298,9 @@ export function HttpNodeForm({
               />
               <TypeSelect value={field.fieldType} onChange={(v) => patchSettings({ extract: extract.map((f, i) => (i === index ? { ...f, fieldType: v } : f)) })} />
               <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => patchSettings({ extract: extract.filter((_, i) => i !== index) })}>
-                <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                <Tooltip title={t('workflowDesigner.deleteRow')}>
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+                </Tooltip>
               </Popconfirm>
             </div>
             <Input

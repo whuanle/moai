@@ -3,8 +3,8 @@ import { DownloadOutlined, FileTextOutlined, ScissorOutlined, ThunderboltOutline
 import Editor, { loader } from '@monaco-editor/react'
 import { Alert, Button, Card, Checkbox, Col, Form, Image, Input, InputNumber, Modal, Row, Select, Space, Spin, Tabs, Tag, Typography, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router'
-import { feedback, Page } from '@/design-system'
+import { useParams } from 'react-router'
+import { BackLink, feedback, Page } from '@/design-system'
 import { spacing, themePresets } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { aichannelApi } from '@/api/aichannel'
@@ -444,14 +444,17 @@ export function WikiDocumentDetail() {
     setPreviewChunkId(chunkId)
   }
 
+  // 左上角「← 返回知识库」替代「文件 / 文档操作」面包屑（回到本库文件分区）
+  const backRow = (
+    <div style={{ marginBottom: spacing.md }}>
+      <BackLink to={`/team/${params.teamId}/wiki/${wikiId}/files`}>{t('wiki.backToKnowledge')}</BackLink>
+    </div>
+  )
+
   if (loading) {
     return (
-      <Page
-        breadcrumb={[
-          { title: <Link to={`/team/${params.teamId}/wiki/${wikiId}`}>{t('wiki.menuFiles')}</Link> },
-          { title: t('wiki.doc.operationTitle') },
-        ]}
-      >
+      <Page>
+        {backRow}
         <div style={{ padding: '48px 0', textAlign: 'center' }}>
           <Spin />
         </div>
@@ -461,24 +464,16 @@ export function WikiDocumentDetail() {
 
   if (!detail) {
     return (
-      <Page
-        breadcrumb={[
-          { title: <Link to={`/team/${params.teamId}/wiki/${wikiId}`}>{t('wiki.menuFiles')}</Link> },
-          { title: t('wiki.doc.operationTitle') },
-        ]}
-      >
+      <Page>
+        {backRow}
         <Alert type="info" showIcon message={t('wiki.doc.operationPlaceholder')} />
       </Page>
     )
   }
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to={`/team/${params.teamId}/wiki/${wikiId}`}>{t('wiki.menuFiles')}</Link> },
-        { title: t('wiki.doc.operationTitle') },
-      ]}
-    >
+    <Page>
+      {backRow}
       <Space direction="vertical" size={spacing.lg} style={{ width: '100%' }}>
         <Card
           title={t('wiki.doc.extractTitle')}

@@ -12,6 +12,7 @@
 | `AuditCell` | 表格「创建/更新」审计列两行单元格（操作人在上、时间在下；无操作人降级单行时间） | -（`user`/`time` 均可空，全空显示 `-`） |
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |
+| `BackLink` | 返回链接（箭头图标+「返回xx」文案），替代多级面包屑；带左分区菜单的三级页放 Sider 顶部（与右侧内容同行） | `to`, `children` |
 | `Card` | 通用卡片 | - |
 
 > `Card` 传入的 `style`/`styles` 与组件默认值（边框/阴影/body padding 20/header 加粗底线）**合并**而非整体替换，覆盖同名属性即可定制。
@@ -41,6 +42,22 @@ import { AuditCell } from '@/design-system'
 - 操作人名称在上、`formatDateTime()` 时间在下（次要色小字号）。
 - `user` 为空时降级为单行时间；`user`/`time` 全空显示 `-`。禁止再手写内联的两行审计 JSX 或拆四个扁平列。
 
+## BackLink
+
+页面左上角返回链接（`ui/src/design-system/components/BackLink/`），「← 返回xx」形态，替代「团队 / 提示词 / 编辑」式多级面包屑（团队三级详情/编辑页标准导航，首站：提示词编辑器/智能体编辑器/知识库详情/知识图谱详情/插件模板/我的记忆）：
+
+```tsx
+import { BackLink } from '@/design-system'
+
+<div style={{ marginBottom: spacing.md }}>
+  <BackLink to={`/team/${teamId}/prompts`}>{t('prompt.backToPrompts')}</BackLink>
+</div>
+```
+
+- 文案 = 「返回」+ 上级分区名（如 返回内部应用/返回提示词/返回知识库），路由指向上级列表页；同一行右侧可附当前实体名（`Text strong ellipsis`）兜底上下文。
+- **位置**：页面带左分区菜单（Sider）的三级详情页（知识库/知识图谱详情）——BackLink + 实体名收进 Sider **顶部**，与右侧内容区同行，**不独占整行高度**（独占行会让右侧头部出现大片空白）；无分区菜单的三级页（编辑器类）仍在内容顶部左侧。Sider 内 BackLink 包 `flexShrink: 0`，实体名 `flex: 1` + `ellipsis` 挤压换行由实体名承担。
+- 团队三级页面**禁止**再写 `Page breadcrumb` 层级链；侧栏收敛型页面（应用工作台/团队工作台）返回入口放侧栏顶部 Button，不用 BackLink。
+
 ## 反馈约定
 
 `useFeedback`（`Feedback` 模块）是**唯一**的消息/通知入口，详见 `feedback.md`。业务错误走 `message`，服务器 500 / 网络异常 / 严重错误 / 系统通知走 `notification`。
@@ -54,6 +71,7 @@ import { AuditCell } from '@/design-system'
 | `DataTable` | `Page` 内 | 直接嵌套进卡片 |
 | `FormPage` | 表单页根 | 表格内 |
 | `DetailPage` | 详情页根 | 表格内 |
+| `BackLink` | 三级分区页：页面内左侧菜单栏（Sider）顶部；其余页面：内容顶部左侧（面包屑位置） | 弹窗/表格单元格/全局侧边栏（AppLayout 侧边栏）内 |
 | `Chat` | 对话页根 | 表格内 |
 
 ## 危险操作确认（Popconfirm）

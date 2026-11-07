@@ -6,7 +6,7 @@
  */
 
 import { ArrowLeftOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Input, Switch } from 'antd'
+import { Button, Input, Switch, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useWorkflowDesignerStore } from './store'
 import { VariablesDrawerBody } from './VariablesDrawer'
@@ -46,7 +46,9 @@ export function SystemSettingsPanel({ onClose }: SystemSettingsPanelProps) {
     <div className="wf-side-panel">
       <div className="wf-side-panel-head">
         <span className="wf-side-panel-title">{t('workflowDesigner.systemSettings')}</span>
-        <Button size="small" type="text" icon={<ArrowLeftOutlined />} onClick={onClose} />
+        <Tooltip title={t('workflowDesigner.closePanel')}>
+          <Button size="small" type="text" icon={<ArrowLeftOutlined />} aria-label={t('workflowDesigner.closePanel')} onClick={onClose} />
+        </Tooltip>
       </div>
       <div className="wf-side-panel-body">
         <div className="wf-settings-section">
@@ -95,13 +97,15 @@ export function SystemSettingsPanel({ onClose }: SystemSettingsPanelProps) {
                   placeholder={t('workflowDesigner.quickInputsPlaceholder')}
                   onChange={(e) => setQuickInputs(quickInputs.map((x, i) => (i === index ? e.target.value : x)))}
                 />
-                <Button
-                  type="text"
-                  danger
-                  icon={<DeleteOutlined />}
-                  aria-label={t('workflowDesigner.quickInputsRemove')}
-                  onClick={() => setQuickInputs(quickInputs.filter((_, i) => i !== index))}
-                />
+                <Tooltip title={t('workflowDesigner.quickInputsRemove')}>
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    aria-label={t('workflowDesigner.quickInputsRemove')}
+                    onClick={() => setQuickInputs(quickInputs.filter((_, i) => i !== index))}
+                  />
+                </Tooltip>
               </div>
             ))}
             {quickInputs.length < MAX_QUICK_INPUTS && (

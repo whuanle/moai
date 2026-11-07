@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Alert, Layout, Menu, Tag } from 'antd'
+import { Alert, Layout, Menu, Tag, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { ApartmentOutlined, ApiOutlined, ClusterOutlined, ExperimentOutlined, ImportOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons'
-import { Card, Page } from '@/design-system'
+import { BackLink, Card, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+
+const { Text } = Typography
 import { getKnowledgeGraphDetail, type KnowledgeGraphDetail as GraphDetail } from '@/api/knowledgeGraph'
 import { KnowledgeGraphCanvas } from './KnowledgeGraphCanvas'
 import { KnowledgeGraphImportPage } from './KnowledgeGraphImportPage'
@@ -78,22 +80,30 @@ export function KnowledgeGraphDetail() {
   )
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to={`/team/${teamId}`}>{t('knowledgegraph.title')}</Link> },
-        { title: graph?.name ?? '' },
-      ]}
-    >
+    <Page>
       {graph && graph.enabled === false && (
         <Alert type="warning" showIcon message={t('knowledgegraph.disabled')} style={{ marginBottom: spacing.md }} />
       )}
       {graph === null ? (
-        <Card loading styles={{ body: { padding: spacing.lg, minHeight: 160 } }} />
+        <>
+          {/* 加载中先给返回入口，避免短暂丢失导航 */}
+          <div style={{ marginBottom: spacing.md }}>
+            <BackLink to={`/team/${teamId}/knowledgegraph`}>{t('knowledgegraph.backToKnowledgeGraph')}</BackLink>
+          </div>
+          <Card loading styles={{ body: { padding: spacing.lg, minHeight: 160 } }} />
+        </>
       ) : legacyStep ? (
         <Navigate to={`/team/${teamId}/kg/${graphId}/maintenance?step=${legacyStep}`} replace />
       ) : (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
           <Sider width={200} style={{ background: 'transparent' }}>
+            {/* 「← 返回知识图谱 + 图名」收进左栏顶部，与右侧内容区同行，不独占整行高度（替代多级面包屑） */}
+            <div style={{ marginBottom: spacing.md, display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
+              <div style={{ flexShrink: 0 }}>
+                <BackLink to={`/team/${teamId}/knowledgegraph`}>{t('knowledgegraph.backToKnowledgeGraph')}</BackLink>
+              </div>
+              {graph?.name && <Text strong ellipsis style={{ minWidth: 0, flex: 1 }}>{graph.name}</Text>}
+            </div>
             <Menu
               mode="inline"
               items={menuItems}

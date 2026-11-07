@@ -120,7 +120,8 @@ public class CreateWikiSourceCommand : IRequest<SimpleGuid>, IModelValidator<Cre
         // WikiId 来自路由参数由 Controller 回填，自动验证发生在回填前，此处不做校验（否则恒 400）
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("请输入外部源名称.")
-            .MaximumLength(50).WithMessage("外部源名称不能超过 50 个字符.");
+            .MaximumLength(50).WithMessage("外部源名称不能超过 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("外部源名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description)
             .MaximumLength(255).WithMessage("描述不能超过 255 个字符.");
         validate.RuleFor(x => x.SourceType)

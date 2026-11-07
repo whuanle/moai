@@ -316,6 +316,8 @@ export function KnowledgeGraphRelations({ graphId, teamId, graphEnabled = true, 
           current: pageNo,
           pageSize,
           total,
+          // 覆盖 DataTable 默认的「共 N 条」统计文案
+          showTotal: undefined,
           onChange: (page) => setPageNo(page),
         }}
       />

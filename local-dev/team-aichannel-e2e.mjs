@@ -237,7 +237,7 @@ check('TC-S5 模型网关 chat/completions 端点已下线', gwChat.status === 4
 const gwModelsEp = await fetch(`${BASE}/api/aigateway/${teamId}/v1/models`)
 check('TC-S5 模型网关 models 端点已下线 404', gwModelsEp.status === 404, `${gwModelsEp.status}`)
 
-const acc = await api(owner.token, '/api/access-app', 'POST', { teamId, name: `tch-e2e-接入-${ts}`, description: 'team aichannel e2e', scopes: ['model'] })
+const acc = await api(owner.token, '/api/access-app', 'POST', { teamId, name: `tch_e2e_接入_${ts}`, description: 'team aichannel e2e', scopes: ['model'] })
 check('TC-S5 scopes 字段退役被忽略创建 200（含 model 范围也 200）', acc.status === 200, JSON.stringify(acc.body))
 
 // ---------- 团队隔离 ----------

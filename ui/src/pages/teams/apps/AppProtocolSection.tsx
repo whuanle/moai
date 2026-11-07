@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Divider, Input, Space, Switch, Tag, Typography } from 'antd'
+import { Button, Divider, Input, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import { CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Card as DSCard } from '@/design-system'
@@ -112,7 +112,9 @@ export function AppProtocolSection({ appId, teamId, canManage }: AppProtocolSect
           <Text strong style={{ fontSize: 13 }}>ACP</Text>
           <Space.Compact style={{ width: '100%', marginTop: spacing.xs }}>
             <Input readOnly value={acpAddress} placeholder={t('appWorkspace.acpAddressPlaceholder')} />
-            <Button icon={<CopyOutlined />} disabled={!acpAddress} onClick={() => void copyAddress(acpAddress)} aria-label={t('common.copy')} />
+            <Tooltip title={t('common.copy')}>
+              <Button icon={<CopyOutlined />} disabled={!acpAddress} onClick={() => void copyAddress(acpAddress)} aria-label={t('common.copy')} />
+            </Tooltip>
           </Space.Compact>
           <div style={{ marginTop: spacing.sm, display: 'flex', flexWrap: 'wrap', gap: spacing.xs, alignItems: 'center' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>{t('appWorkspace.acpMethods')}</Text>
@@ -129,7 +131,9 @@ export function AppProtocolSection({ appId, teamId, canManage }: AppProtocolSect
           <Text strong style={{ fontSize: 13 }}>A2A</Text>
           <Space.Compact style={{ width: '100%', marginTop: spacing.xs }}>
             <Input readOnly value={a2aAddress} placeholder={t('appWorkspace.a2aAddressPlaceholder')} />
-            <Button icon={<CopyOutlined />} disabled={!a2aAddress} onClick={() => void copyAddress(a2aAddress)} aria-label={t('common.copy')} />
+            <Tooltip title={t('common.copy')}>
+              <Button icon={<CopyOutlined />} disabled={!a2aAddress} onClick={() => void copyAddress(a2aAddress)} aria-label={t('common.copy')} />
+            </Tooltip>
           </Space.Compact>
           <div style={{ marginTop: spacing.sm }}>
             <Text type="secondary" style={{ fontSize: 12 }}>{a2aAddress ? `${t('appWorkspace.a2aAgentCard')}：${a2aAddress}/agent.json` : ''}</Text>

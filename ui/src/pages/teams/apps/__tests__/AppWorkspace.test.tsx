@@ -201,7 +201,7 @@ describe('AppWorkspace（应用工作台）', () => {
     await waitFor(() => expect(screen.queryByText(/已有未发布的配置修改/)).toBeNull())
   })
 
-  it('未发布：头部不提供发布入口（发布收敛在「上架管理」分区），侧边栏顶部为「返回团队」、状态收敛在底部', async () => {
+  it('未发布：头部不提供发布入口（发布收敛在「上架管理」分区），侧边栏顶部为「返回内部应用」、状态收敛在底部', async () => {
     vi.mocked(getAppDetail).mockResolvedValue({
       appId: 'a1',
       teamId: '3',
@@ -215,11 +215,11 @@ describe('AppWorkspace（应用工作台）', () => {
 
     renderPage()
 
-    // 侧边栏顶部只有应用身份（头像/名称）与「返回团队」；「进入对话」已移至配置分区调试面板标题右侧
+    // 侧边栏顶部只有应用身份（头像/名称）与「返回内部应用」；「进入对话」已移至配置分区调试面板标题右侧
     expect(await screen.findByText('未发布')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /^发\s*布$/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /停\s*用/ })).toBeNull()
-    expect(screen.getByRole('button', { name: /返回团队/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /返回内部应用/ })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /返回应用列表/ })).toBeNull()
   })
 })

@@ -37,7 +37,7 @@ async function mkuser(p) {
   return { name, userId: Number(l.json.userId), token: l.json.accessToken }
 }
 
-const mkSub = (key, extra = {}) => ({ key, name: `${key} 的中文名`, description: `${key} 的职责描述：何时派发它`, prompt: `你是${key}专员`, ...extra })
+const mkSub = (key, extra = {}) => ({ key, name: `${key}的中文名`, description: `${key} 的职责描述：何时派发它`, prompt: `你是${key}专员`, ...extra })
 
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
@@ -55,7 +55,7 @@ async function main() {
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 'member' } })
 
   // 造一个真实知识库供依赖回读
-  const wikiId = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'ag-wiki-' + TS } })).json.value)
+  const wikiId = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'ag_wiki_' + TS } })).json.value)
   if (!wikiId) console.log('WARN | 知识库创建失败，依赖回读用例将降级', wikiId)
 
   // @AG-S1 门禁
@@ -72,6 +72,8 @@ async function main() {
   check('AG-04f 子智能体名空 400', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: 'n3b', name: 'n3b', mainPrompt: 'p', subs: [{ key: 'okkey', name: '', description: 'd', prompt: 'p' }] } })).status === 400)
   check('AG-04g 子智能体超 20 个 400', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: 'n4', name: 'n4', mainPrompt: 'p', subs: Array.from({ length: 21 }, (_, i) => mkSub(`s${i}`)) } })).status === 400)
   check('AG-04h 子标识组内重复 400', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: 'n5', name: 'n5', mainPrompt: 'p', subs: [mkSub('dup'), mkSub('dup')] } })).status === 400)
+  check('AG-04i 名称含特殊字符 400', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: 'n6', name: 'bad_name!', mainPrompt: 'p' } })).status === 400)
+  check('AG-04j 子智能体名称含空格 400', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: 'n7', name: 'n7', mainPrompt: 'p', subs: [{ key: 'okkey2', name: 'bad name', description: 'd', prompt: 'p' }] } })).status === 400)
 
   // @AG-S5 依赖校验 400
   const fakePlugin = '11111111-1111-1111-1111-111111111111'
@@ -85,7 +87,7 @@ async function main() {
   const createBody = {
     teamId: TID,
     key: `ag_main_${TS}`,
-    name: 'ag-main-' + TS,
+    name: 'ag_main_' + TS,
     description: '主智能体：负责拆解任务并派发',
     mainPrompt: '你是团队负责人，按需派发子智能体完成研究。',
     mainWikiIds: wikiId ? [wikiId] : [],
@@ -113,7 +115,7 @@ async function main() {
 
   // @AG-S4 团队内重名 409（name 与 key 双唯一）
   check('AG-09a 同团队重名 409', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: `other_${TS}`, name: createBody.name, mainPrompt: 'p' } })).status === 409)
-  check('AG-09b 同团队 key 重名 409', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: createBody.key, name: `other-${TS}`, mainPrompt: 'p' } })).status === 409)
+  check('AG-09b 同团队 key 重名 409', (await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: createBody.key, name: `other_${TS}`, mainPrompt: 'p' } })).status === 409)
 
   // @AG-S7 列表关键字过滤 + 非成员 404
   {
@@ -129,13 +131,13 @@ async function main() {
   check('AG-11 Member 更新 403', (await api('PUT', `/api/team-agent/${AGID}`, { token: member.token, body: { name: 'x', mainPrompt: 'p' } })).status === 403)
   check('AG-12 非成员更新 404', (await api('PUT', `/api/team-agent/${AGID}`, { token: outsider.token, body: { name: 'x', mainPrompt: 'p' } })).status === 404)
 
-  const second = await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: `ag_second_${TS}`, name: 'ag-second-' + TS, mainPrompt: '第二个智能体' } })
+  const second = await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: `ag_second_${TS}`, name: 'ag_second_' + TS, mainPrompt: '第二个智能体' } })
   const AGID2 = second.json?.value
   check('AG-13a 第二个智能体创建 200', second.status === 200 && typeof AGID2 === 'string', `${second.status}`)
-  check('AG-13b 更新撞已存在名称 409', (await api('PUT', `/api/team-agent/${AGID}`, { token: owner.token, body: { name: 'ag-second-' + TS, mainPrompt: 'p' } })).status === 409)
+  check('AG-13b 更新撞已存在名称 409', (await api('PUT', `/api/team-agent/${AGID}`, { token: owner.token, body: { name: 'ag_second_' + TS, mainPrompt: 'p' } })).status === 409)
 
   const updateBody = {
-    name: 'ag-main-v2-' + TS,
+    name: 'ag_main_v2_' + TS,
     description: '改版后',
     enabled: false,
     mainPrompt: '你是团队负责人 v2。',
@@ -170,7 +172,7 @@ async function main() {
   check('AG-20 Owner 删除 200', (await api('DELETE', `/api/team-agent/${AGID2}`, { token: owner.token })).status === 200)
   check('AG-21 删除后详情 404', (await api('GET', `/api/team-agent/${AGID2}`, { token: owner.token })).status === 404)
   check('AG-22 删除后列表不含', !((await api('GET', `/api/team-agent/list?teamId=${TID}`, { token: owner.token })).json?.items ?? []).some((x) => x.id === AGID2))
-  const recreated = await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: `ag_second_${TS}`, name: 'ag-second-' + TS, mainPrompt: '重建同名同 key' } })
+  const recreated = await api('POST', '/api/team-agent', { token: owner.token, body: { teamId: TID, key: `ag_second_${TS}`, name: 'ag_second_' + TS, mainPrompt: '重建同名同 key' } })
   check('AG-23 软删后同名同 key 可重建', recreated.status === 200, `${recreated.status} ${recreated.text.slice(0, 120)}`)
 
   // @AG-S10 内置智能体种子：团队创建时自动种入规划师/构建师（幂等）+ 补种端点
@@ -221,7 +223,7 @@ async function main() {
     const items2 = r2.json?.items ?? []
     check(
       'AG-32 第二个团队创建时同样自动种入',
-      items2.some((x) => x.isSystem && /Plan/.test(x.name || '')) && items2.some((x) => x.isSystem && /Build/.test(x.name || '')),
+      items2.some((x) => x.isSystem && x.key === 'plan') && items2.some((x) => x.isSystem && x.key === 'build'),
       JSON.stringify(items2.map((x) => x.name)),
     )
   }

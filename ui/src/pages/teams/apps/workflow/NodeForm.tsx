@@ -304,7 +304,9 @@ function SwitchBranchesEditor({
             />
             {branches.length > 1 && (
               <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(index)}>
-                <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                <Tooltip title={t('workflowDesigner.deleteRow')}>
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+                </Tooltip>
               </Popconfirm>
             )}
           </div>
@@ -801,7 +803,9 @@ function ClassifierClassesEditor({
             />
             {classes.length > 1 && (
               <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(index)}>
-                <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                <Tooltip title={t('workflowDesigner.deleteRow')}>
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+                </Tooltip>
               </Popconfirm>
             )}
           </div>
@@ -845,7 +849,9 @@ function OutputsEditor({ data, onUpdateData }: { data: NodeData; onUpdateData: (
             />
             <TypeSelect value={o.fieldType} onChange={(v) => update(i, { fieldType: v })} />
             <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(i)}>
-              <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+              <Tooltip title={t('workflowDesigner.deleteRow')}>
+                <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+              </Tooltip>
             </Popconfirm>
           </div>
           <Input
@@ -926,7 +932,9 @@ function BindingsSection({
                 <TypeSelect value={binding.fieldType} onChange={(v) => update(name, { fieldType: v })} />
               )}
               <Popconfirm title={t('workflowDesigner.deleteFieldConfirm')} onConfirm={() => remove(name)}>
-                <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                <Tooltip title={t('workflowDesigner.deleteRow')}>
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('workflowDesigner.deleteRow')} />
+                </Tooltip>
               </Popconfirm>
             </div>
             <div className="wf-b-row-value">

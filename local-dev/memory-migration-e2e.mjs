@@ -341,7 +341,7 @@ async function main() {
     check('MG-02 无记忆时发起迁移 400', emptyStart.status === 400 && emptyStart.text.includes('暂无记忆'), `${emptyStart.status} ${emptyStart.text.slice(0, 120)}`)
 
     // ===== 写入记忆：应用记忆与全局记忆均经 memory_save 工具轮（人工写入端点已下线） =====
-    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '迁移应用-' + TS, appType: 'agent' } })
+    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '迁移应用_' + TS, appType: 'agent' } })
     const APP1 = String(ca.json?.value ?? '')
     check('MG-03a 应用创建 200', isGuid(APP1), ca.text.slice(0, 120))
     check('MG-03b 记忆配置保存 200', (await saveConfig(owner.token, APP1, models.conversationModelId, { allowGlobalMemory: true })).status === 200)

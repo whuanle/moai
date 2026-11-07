@@ -70,7 +70,8 @@ public class UpdateTeamAgentCommand : IRequest<EmptyCommandResponse>, IModelVali
     public static void Validate(AbstractValidator<UpdateTeamAgentCommand> validate)
     {
         // AgentId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段；key 创建后不可变更.
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("智能体名称不能为空.").MaximumLength(50).WithMessage("智能体名称最长 50 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("智能体名称不能为空.").MaximumLength(50).WithMessage("智能体名称最长 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("智能体名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(500).WithMessage("智能体描述最长 500 个字符.");
         validate.RuleFor(x => x.MainPrompt).NotEmpty().WithMessage("主智能体提示词不能为空.").MaximumLength(50000).WithMessage("主智能体提示词最长 50000 个字符.");
         validate.RuleFor(x => x.Subs.Count).LessThanOrEqualTo(20).WithMessage("子智能体最多 20 个.");
@@ -80,7 +81,8 @@ public class UpdateTeamAgentCommand : IRequest<EmptyCommandResponse>, IModelVali
             sub.RuleFor(x => x.Key).NotEmpty().WithMessage("子智能体标识不能为空.")
                 .Matches("^[a-z][a-z0-9_]{0,29}$").WithMessage("子智能体标识仅允许小写字母开头，包含小写字母/数字/下划线，最长 30.");
             sub.RuleFor(x => x.Name).NotEmpty().WithMessage("子智能体名称不能为空.")
-                .MaximumLength(50).WithMessage("子智能体名称最长 50 个字符.");
+                .MaximumLength(50).WithMessage("子智能体名称最长 50 个字符.")
+                .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("子智能体名称仅允许中文、英文、数字和下划线.");
             sub.RuleFor(x => x.Description).NotEmpty().WithMessage("子智能体描述不能为空，它是主智能体判断何时派发的依据.")
                 .MaximumLength(500).WithMessage("子智能体描述最长 500 个字符.");
             sub.RuleFor(x => x.Prompt).NotEmpty().WithMessage("子智能体提示词不能为空.")
