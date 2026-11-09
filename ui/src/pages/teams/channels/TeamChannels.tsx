@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import {
-  Alert,
   AutoComplete,
   Button,
   Checkbox,
@@ -18,10 +17,10 @@ import {
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import {
-  CloudServerOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  ReloadOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -35,7 +34,7 @@ import {
   type SyncModelCandidate,
 } from '@/api/aichannel'
 import { getCatalogProviders, type CatalogProvider } from '@/api/models-catalog'
-import { AuditCell, DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatTokenCount } from '@/utils/format'
 
@@ -847,11 +846,18 @@ export function TeamChannels({ teamId }: { teamId: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
-      <Alert
-        type="info"
-        showIcon
-        icon={<CloudServerOutlined />}
-        message={t('team.channelsHint')}
+      {/* 工具行裸排在页面底色上（Dify 式分层），DataTable 自带白色卡片容器承载表格 */}
+      <PageToolbar
+        queries={
+          <Button icon={<ReloadOutlined />} loading={channelLoading} onClick={() => void loadChannels()}>
+            {t('ds.table.refresh')}
+          </Button>
+        }
+        actions={
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateChannel}>
+            {t('models.addChannel')}
+          </Button>
+        }
       />
 
       <DataTable<AIChannelItem>
@@ -894,13 +900,6 @@ export function TeamChannels({ teamId }: { teamId: number }) {
             />
           ),
         }}
-        toolbar={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateChannel}>
-            {t('models.addChannel')}
-          </Button>
-        }
-        onRefresh={loadChannels}
-        refreshLoading={channelLoading}
       />
 
       <Modal

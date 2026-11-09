@@ -60,4 +60,16 @@ public class PublicController : ControllerBase
     {
         return await _mediator.Send(req, ct);
     }
+
+    /// <summary>
+    /// 获取知识图谱文件导入预上传地址（文档/文本提取能力全集，公开目录 chat 前缀，供 AI 导入提取）.
+    /// </summary>
+    /// <param name="req">预上传请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>预上传响应，包含上传地址和文件信息.</returns>
+    [HttpPost("pre_upload_graph_file")]
+    public async Task<PreUploadFileCommandResponse> PreUploadGraphFile([FromBody] PreUploadGraphFileCommand req, CancellationToken ct = default)
+    {
+        return await _mediator.Send(req, ct);
+    }
 }

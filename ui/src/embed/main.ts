@@ -28,7 +28,10 @@ export default api
  * 无 data-app-id 的引入（自托管 mount 场景）静默跳过，由业务方自行调 MoaiWidget.mount.
  *
  * script src 与宿主页同源部署（MoAI 站点根 /embed/moai-widget.js），API 地址默认取 script 的源；
- * 前后端分离部署时可用 data-server 显式指向后端地址。
+ * 前后端分离部署时可用 data-server 显式指向后端地址.
+ *
+ * 显示形式默认取访问点服务端配置（floating 悬浮组件 / inline 内嵌小窗），
+ * 可用 data-mode 覆盖；inline 需 data-target 指定占位容器（CSS 选择器）.
  *
  * 用法：
  * <script src="https://<site>/embed/moai-widget.js"
@@ -36,7 +39,16 @@ export default api
  *         data-server="<可选，后端地址，默认同 script 源>"
  *         data-key="<应用接入key，is_auth=true 时快速验证用；生产建议 tokenProvider>"
  *         data-external-user-id="<可选>"
- *         data-nickname="<可选>"></script>
+ *         data-nickname="<可选>"
+ *         data-mode="<可选，floating/inline，覆盖服务端配置>"
+ *         data-target="<inline 模式占位容器选择器，如 #moai-chat>"></script>
+ *
+ * inline 内嵌小窗用法：
+ * <div id="moai-chat" style="height:620px"></div>
+ * <script src="https://<site>/embed/moai-widget.js"
+ *         data-app-id="<appId>"
+ *         data-mode="inline"
+ *         data-target="#moai-chat"></script>
  */
 function bootstrap(): void {
   const scripts = Array.from(document.querySelectorAll<HTMLScriptElement>('script[src*="moai-widget"]'))
@@ -54,12 +66,15 @@ function bootstrap(): void {
       }
     }
 
+    const mode = script.dataset.mode === 'inline' ? 'inline' : script.dataset.mode === 'floating' ? 'floating' : undefined
     const options: WidgetOptions = {
       appId,
       server: server.replace(/\/+$/, ''),
       accessAppKey: script.dataset.key,
       externalUserId: script.dataset.externalUserId,
       nickname: script.dataset.nickname,
+      mode,
+      target: script.dataset.target,
     }
     api.mount(options)
   }

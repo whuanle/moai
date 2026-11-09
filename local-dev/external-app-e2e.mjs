@@ -246,6 +246,38 @@ async function main() {
   check('EA-28b 组件暴露 tokenProvider 拦截器（授权应用推荐接入）', widgetSrc.includes('tokenProvider'))
   check('EA-28c 组件暴露 onRequest 中间件与全局 mount', widgetSrc.includes('onRequest') && widgetSrc.includes('mount'))
 
+  // ===== 访问点显示形式与开场白（悬浮/内嵌 + 流式对话增强） =====
+  // EA-37 显示形式 displayMode：未配置行走列默认 floating；保存 inline 后内外视图与公开端点一致回显
+  {
+    const pubDefault = await api('GET', `/api/teamres/app/${APP_AUTH}/access-point`)
+    check('EA-37a 未配置 displayMode 公开回显默认 floating', pubDefault.status === 200 && pubDefault.json?.displayMode === 'floating', `${pubDefault.status} ${JSON.stringify(pubDefault.json?.displayMode)}`)
+    const saveInline = await api('PUT', `/api/app/${APP_AUTH}/access-point`, { token: owner.token, body: { title: '在线客服', position: 'bottomLeft', displayMode: 'inline', panelWidth: 420, panelHeight: 600, enabled: true } })
+    check('EA-37b 保存 displayMode=inline 200', saveInline.status === 200, `${saveInline.status} ${saveInline.text.slice(0, 140)}`)
+    const internalView = (await api('GET', `/api/app/${APP_AUTH}/access-point`, { token: owner.token })).json
+    const pubInline = await api('GET', `/api/teamres/app/${APP_AUTH}/access-point`)
+    check('EA-37c 内部视图回读 inline 且 position 归一化 camel', internalView?.displayMode === 'inline' && internalView?.position === 'bottomLeft', JSON.stringify({ displayMode: internalView?.displayMode, position: internalView?.position }))
+    check('EA-37d 公开配置回显 displayMode=inline', pubInline.json?.displayMode === 'inline', JSON.stringify(pubInline.json?.displayMode))
+  }
+
+  // EA-38 开场白公开下发（发布快照口径）：组件新会话展示开场白，不参与模型上下文
+  {
+    const osBase = { modelId: EA_MODEL_ID, prompt: EA_PROMPT, wikiIds: [], plugins: [], workflowApps: [], quickInputs: [] }
+    check('EA-38a 启用开场白并发布 200', (await api('PUT', `/api/app/${APP_FREE}/agent-config`, { token: owner.token, body: { ...osBase, openingStatement: '欢迎-快照A', openingStatementEnabled: true } })).status === 200
+      && (await api('POST', `/api/app/${APP_FREE}/publish`, { token: owner.token })).status === 200)
+    check('EA-38b 公开配置下发开场白（发布快照口径）', (await api('GET', `/api/teamres/app/${APP_FREE}/access-point`)).json?.openingStatement === '欢迎-快照A')
+    await api('PUT', `/api/app/${APP_FREE}/agent-config`, { token: owner.token, body: { ...osBase, openingStatement: '欢迎-草稿B', openingStatementEnabled: true } })
+    check('EA-38c 草稿改开场白未发布不影响公开（仍返回发布快照）', (await api('GET', `/api/teamres/app/${APP_FREE}/access-point`)).json?.openingStatement === '欢迎-快照A')
+    await api('PUT', `/api/app/${APP_FREE}/agent-config`, { token: owner.token, body: { ...osBase, openingStatement: '欢迎-关闭', openingStatementEnabled: false } })
+    await api('POST', `/api/app/${APP_FREE}/publish`, { token: owner.token })
+    check('EA-38d 开场白停用后公开为 null', (await api('GET', `/api/teamres/app/${APP_FREE}/access-point`)).json?.openingStatement == null)
+  }
+
+  // EA-39 访问点从未配置的应用：position 回退 bottomRight（camel，修复历史 kebab 默认）、displayMode 回退 floating
+  {
+    const fallback = await api('GET', `/api/teamres/app/${APP_OUT}/access-point`)
+    check('EA-39 未配置行公开回退 bottomRight/floating', fallback.status === 200 && fallback.json?.position === 'bottomRight' && fallback.json?.displayMode === 'floating', `${fallback.status} ${fallback.json?.position}/${fallback.json?.displayMode}`)
+  }
+
   // ===== 外部应用沙箱/技能限制 =====
   // EA-29 外部应用不允许技能与沙箱：保存显式携带即 400，正常保存后技能落空、沙箱关闭
   const cfgBase = { modelId: EA_MODEL_ID, prompt: EA_PROMPT, wikiIds: [], plugins: [], workflowApps: [], openingStatement: '', openingStatementEnabled: false, quickInputs: [] }

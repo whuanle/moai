@@ -202,6 +202,10 @@ async function main() {
   await api('POST', '/api/ai/model', { token, body: { channelId: cfgChId, meta: { modelId: cfgModelName, name: cfgModelName, modelKind: 'conversation', description: 'kg-search 配置保存桩模型' }, enabled: true, isPublic: false } })
   const cfgModels = await api('GET', `/api/ai/model?channelId=${cfgChId}`, { token })
   const KGS_CFG_MODEL_ID = String((cfgModels.json?.items ?? []).find((m) => m.name === cfgModelName)?.id ?? '')
+  // 渠道批量授权给团队（app 配置保存校验「模型该团队可用」需要；v4.3 起校验收紧后脚本补齐）
+  if (cfgChId) {
+    await api('PUT', `/api/ai/channel/${cfgChId}/authorization`, { token, body: { grantTeamIds: [TID], revokeTeamIds: [] } })
+  }
 
   // 能力检测：list.enabled
   const list0 = await api('GET', `/api/knowledge-graph/list?teamId=${TID}`, { token })
@@ -307,6 +311,8 @@ async function main() {
     check('KGS-S2k 邻居含 B（direction=out/relationName=依赖/description 字段）',
       !!toB && toB.direction === 'out' && toB.relationName === '依赖' && typeof toB.description === 'string',
       JSON.stringify(nbList).slice(0, 200))
+    // v4.2 B3：邻居行携带度数（number）
+    check('KGS-S44a 邻居行携带度数字段', nbList.every((x) => typeof x.degree === 'number'), JSON.stringify(nbList.map((x) => [x.name, x.degree])))
   }
 
   // ===== KGS-S3 改节点名 → 新名命中、旧名不命中（向量替换） =====
@@ -488,6 +494,14 @@ async function main() {
     check('KGS-S10d 向量召回命中既有节点', recall.status === 200 && (recall.json?.hits ?? []).some((h) => h.name === nameA), `${recall.status} ${recall.text.slice(0, 200)}`)
     const recallTop1 = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 1 } })
     check('KGS-S10e top=1 仅 1 条', recallTop1.status === 200 && (recallTop1.json?.hits ?? []).length <= 1, `${recallTop1.status}`)
+
+    // v4.2 B3：neighborTopK 透传（邻居携度数）与越界校验
+    const recallNb = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 5, neighborTopK: 3 } })
+    check('KGS-S44b recall-test neighborTopK=3 生效且邻居携度数',
+      recallNb.status === 200 && (recallNb.json?.hits ?? []).every((h) => (h.neighbors ?? []).length <= 3 && (h.neighbors ?? []).every((n) => typeof n.degree === 'number')),
+      `${recallNb.status} ${JSON.stringify(recallNb.json?.hits?.[0]?.neighbors ?? []).slice(0, 140)}`)
+    const badNb = await api('POST', `${kg(G1)}/recall-test`, { token, body: { query: nameA, top: 5, neighborTopK: 31 } })
+    check('KGS-S44c 邻居数越界 400', badNb.status === 400 && badNb.text.includes('0-30'), `${badNb.status} ${badNb.text.slice(0, 120)}`)
 
     // c) AI 优化 + 回答（桩 chat 固定返回 kgs-stub-answer）
     if (CHAT_ID) {

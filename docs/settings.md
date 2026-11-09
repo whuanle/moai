@@ -65,7 +65,7 @@ public sealed class SettingDefinition
 ### key 命名
 
 - 使用**小写加下划线**（snake_case），如 `some_setting_key`。
-- 例外：与外部系统部署变量一一对应的配置项保留其原始大写形式，例如 Neo4j 知识图谱的 `OPEN_NEO4J`、`NEO4J_URI`、`NEO4J_USERNAME`、`NEO4J_PASSWORD`，便于运维按同名环境变量对照。
+- 例外：与外部系统部署变量一一对应的配置项保留其原始大写形式，例如图数据库（知识图谱）的 `KG_ENABLED`、`KG_URI`、`KG_USERNAME`、`KG_PASSWORD`、`KG_DIALECT`，便于运维按同名环境变量对照。
 - 每个 key 定义为一个 `const string`，避免硬编码字符串散落各处。
 - key 全局唯一，删除该配置项等于移除其定义 + 种子数据。
 
@@ -132,18 +132,18 @@ public async Task<EmptyCommandResponse> SaveSetting([FromBody] SaveSettingComman
 - 其中 `IsRoot`（`setting` 表 `key="root"` 的值等于当前用户 id）由 `UserAccountService.GetUserStateAsync` 填充到 `UserStateInfo.IsRoot`。
 - 认证由 `ApiApplicationModelConvention` 自动为 Controller 追加 `[Authorize]`，无需手写。
 
-## 示例（内置：是否开启 Neo4j 知识图谱）
+## 示例（内置：是否开启知识图谱（图数据库））
 
 `SettingDefinitions`：
 
 ```csharp
-public const string Neo4jEnabledKey = "OPEN_NEO4J";
+public const string GraphEnabledKey = "KG_ENABLED";
 
 new SettingDefinition
 {
-    Key = Neo4jEnabledKey,
-    Name = "Neo4j 知识图谱",
-    Description = "开启后，知识库可以使用知识图谱能力；关闭时无需填写连接信息.",
+    Key = GraphEnabledKey,
+    Name = "知识图谱",
+    Description = "开启后，团队可以使用知识图谱能力；关闭时无需填写连接信息.",
     DefaultValue = "false"
 }
 ```
@@ -198,7 +198,7 @@ protected static void SeedData(ModelBuilder modelBuilder)
 | `KG_PASSWORD` | 图数据库密码 | `""` | 同上，明文存储，仅超级管理员可改 |
 | `KG_DIALECT` | 图数据库方言 | `"memgraph"` | memgraph / neo4j，影响内省与索引语句 |
 | `WIKI_MAX_FILE_SIZE_MB` | 知识库最大文件大小 | `"50"` | 0 表示不限制（平台硬上限 1GB） |
-| `WIKI_ALLOWED_FILE_TYPES` | 知识库允许上传的文件类型 | `".pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json"` | 逗号分隔扩展名白名单（每项 `.` 开头 1~16 位字母数字，≤100 项，保存校验并归一为小写去重），网页端与开放接口上传同时受限；默认与文档/文本提取能力对齐，放开的未知文本类型按纯文本兜底提取；经 `IWikiSettingsService.GetAllowedFileTypesAsync` 读取，`GET /api/wiki/upload-limit` 回显 `allowedFileTypes` |
+| `WIKI_ALLOWED_FILE_TYPES` | 知识库允许上传的文件类型 | 42 种提取能力全集（`DocumentFormatConst.ExtractableFormatsJoined`：Office/PDF/HTML/Markdown/EPUB/ODT/RTF 与代码配置类文本） | 逗号分隔扩展名白名单（每项 `.` 开头 1~16 位字母数字，≤100 项，保存校验并归一为小写去重），网页端与开放接口上传同时受限；默认与文档/文本提取能力对齐，放开的未知文本类型按纯文本兜底提取；存量库历史默认值（旧 10 种）读取时自动按新默认返回（自定义过的值不动）；经 `IWikiSettingsService.GetAllowedFileTypesAsync` 读取，`GET /api/wiki/upload-limit` 回显 `allowedFileTypes` |
 | `SANDBOX_MAX_TTL_SECONDS` | 沙箱存活时间上限 | `"86400"` | 每个应用沙箱最大存活时间（秒），保存时校验 60~604800；团队保存应用配置不得超出 |
 | `SANDBOX_MAX_CPU` | 沙箱 CPU 上限 | `"4"` | K8s 数量格式（如 `4`/`2000m`），保存时校验格式 |
 | `SANDBOX_MAX_MEMORY` | 沙箱内存上限 | `"8Gi"` | K8s 数量格式（如 `8Gi`/`512Mi`），保存时校验格式 |

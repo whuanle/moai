@@ -4,7 +4,7 @@ import { Button, Form, Input, Modal, Popconfirm, Select, Space, Switch, Tag, Typ
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { AuditCell, Page, DataTable, QueryBar, feedback } from '@/design-system'
+import { AuditCell, DataTable, QueryBar, feedback } from '@/design-system'
 import { useAppStore } from '@/store/app'
 import {
   createVariable,
@@ -211,23 +211,32 @@ export function Variables({ teamId }: { teamId?: number }) {
 
   if (!currentTeamId) {
     return (
-      <Page>
+      <>
         <div style={{ padding: '48px 0', textAlign: 'center' }}>
           <Text type="secondary">
             {t('wiki.selectTeamFirst')} <Link to="/team">{t('wiki.goCreateTeam')}</Link>
           </Text>
         </div>
-      </Page>
+      </>
     )
   }
 
   return (
-    <Page>
+    <>
+      {/* 查询行裸排在页面底色上（Dify 式分层）：筛选+查询/重置在左，新建变量在竖分隔线右侧；
+          查询按钮自带刷新语义，不放独立刷新按钮（前端规范第 7 条） */}
       <QueryBar
         form={filterForm}
         onSearch={applyFilters}
         onReset={applyFilters}
         loading={loading}
+        extra={
+          isAdminPlus && (
+            <Button type="primary" onClick={openCreate}>
+              {t('variable.create')}
+            </Button>
+          )
+        }
       >
         <Form.Item name="name">
           <Select allowClear placeholder={t('variable.nameAll')} style={{ width: 140 }} options={nameOptions} />
@@ -249,15 +258,6 @@ export function Variables({ teamId }: { teamId?: number }) {
         loading={loading}
         sticky
         scroll={{ x: 1100 }}
-        toolbar={
-          isAdminPlus && (
-            <Button type="primary" onClick={openCreate}>
-              {t('variable.create')}
-            </Button>
-          )
-        }
-        onRefresh={() => void load()}
-        refreshLoading={loading}
       />
       <Modal
         open={formOpen}
@@ -304,6 +304,6 @@ export function Variables({ teamId }: { teamId?: number }) {
           </Form.Item>
         </Form>
       </Modal>
-    </Page>
+    </>
   )
 }

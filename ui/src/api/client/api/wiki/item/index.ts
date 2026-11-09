@@ -12,6 +12,8 @@ import { EmbeddingConfigRequestBuilderRequestsMetadata, type EmbeddingConfigRequ
 // @ts-ignore
 import { McpConfigRequestBuilderRequestsMetadata, type McpConfigRequestBuilder } from './mcpConfig/index.js';
 // @ts-ignore
+import { ModelMigrationRequestBuilderRequestsMetadata, type ModelMigrationRequestBuilder } from './modelMigration/index.js';
+// @ts-ignore
 import { RecallTestRequestBuilderRequestsMetadata, type RecallTestRequestBuilder } from './recallTest/index.js';
 // @ts-ignore
 import { RerankModelRequestBuilderRequestsMetadata, type RerankModelRequestBuilder } from './rerankModel/index.js';
@@ -42,6 +44,10 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * The mcpConfig property
      */
     get mcpConfig(): McpConfigRequestBuilder;
+    /**
+     * The modelMigration property
+     */
+    get modelMigration(): ModelMigrationRequestBuilder;
     /**
      * The recallTest property
      */
@@ -132,6 +138,9 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
     },
     mcpConfig: {
         requestsMetadata: McpConfigRequestBuilderRequestsMetadata,
+    },
+    modelMigration: {
+        requestsMetadata: ModelMigrationRequestBuilderRequestsMetadata,
     },
     recallTest: {
         requestsMetadata: RecallTestRequestBuilderRequestsMetadata,

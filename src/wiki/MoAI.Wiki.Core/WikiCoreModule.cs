@@ -36,5 +36,8 @@ public class WikiCoreModule : IModule
         context.Services.AddMcpServer()
             .WithHttpTransport(options => options.Stateless = true)
             .WithTools<WikiMcpTools>();
+
+        // 检索经验聚类周期清理任务（每日 UTC 0 点删除超期未命中聚类）
+        context.Services.AddHostedService<Jobs.WikiRecallClusterCleanupRegistration>();
     }
 }

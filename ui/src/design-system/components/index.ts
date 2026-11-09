@@ -1,5 +1,6 @@
 export * from './Page'
 export * from './BackLink'
+export * from './SiderHeader'
 export * from './PageToolbar'
 export * from './QueryBar'
 export * from './DataTable'

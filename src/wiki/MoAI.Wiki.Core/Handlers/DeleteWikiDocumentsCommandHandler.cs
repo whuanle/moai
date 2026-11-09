@@ -4,7 +4,6 @@ using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
-using MoAI.Storage.Services;
 using MoAI.Team.Services;
 using MoAI.Wiki.Commands;
 using MoAI.Wiki.Services;
@@ -17,26 +16,23 @@ namespace MoAI.Wiki.Handlers;
 public class DeleteWikiDocumentsCommandHandler : IRequestHandler<DeleteWikiDocumentsCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
-    private readonly IStorageService _storageService;
     private readonly ITeamService _teamService;
     private readonly IUserContextProvider _userContextProvider;
-    private readonly WikiDocumentProcessingService _processingService;
+    private readonly WikiDocumentRemovalService _removalService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteWikiDocumentsCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    /// <param name="storageService">存储领域服务.</param>
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
-    /// <param name="processingService">文档内容处理服务.</param>
-    public DeleteWikiDocumentsCommandHandler(DatabaseContext databaseContext, IStorageService storageService, ITeamService teamService, IUserContextProvider userContextProvider, WikiDocumentProcessingService processingService)
+    /// <param name="removalService">文档删除领域服务（向量/切片/元数据/正文/映射/OSS/图片全链路清理）.</param>
+    public DeleteWikiDocumentsCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider, WikiDocumentRemovalService removalService)
     {
         _databaseContext = databaseContext;
-        _storageService = storageService;
         _teamService = teamService;
         _userContextProvider = userContextProvider;
-        _processingService = processingService;
+        _removalService = removalService;
     }
 
     /// <inheritdoc/>
@@ -54,36 +50,7 @@ public class DeleteWikiDocumentsCommandHandler : IRequestHandler<DeleteWikiDocum
             throw new BusinessException("未指定要删除的文档.") { StatusCode = 404 };
         }
 
-        _databaseContext.WikiDocuments.RemoveRange(documents);
-        await _databaseContext.SaveChangesAsync(cancellationToken);
-
-        // 删除关联切片/元数据
-        var deletedDocumentIds = documents.Select(x => x.Id).ToArray();
-        var chunks = await _databaseContext.WikiDocumentChunkContents
-            .Where(x => deletedDocumentIds.Contains(x.DocumentId))
-            .ToArrayAsync(cancellationToken);
-        if (chunks.Length > 0)
-        {
-            _databaseContext.WikiDocumentChunkContents.RemoveRange(chunks);
-        }
-
-        var metadata = await _databaseContext.WikiDocumentChunkMetadata
-            .Where(x => deletedDocumentIds.Contains(x.DocumentId))
-            .ToArrayAsync(cancellationToken);
-        if (metadata.Length > 0)
-        {
-            _databaseContext.WikiDocumentChunkMetadata.RemoveRange(metadata);
-        }
-
-        // 删除 oss 文件
-        var fileIds = documents.Select(x => (long)x.FileId).ToArray();
-        await _storageService.DeleteFilesAsync(fileIds, cancellationToken);
-
-        await _databaseContext.SaveChangesAsync(cancellationToken);
-
-        // 删除关联的内嵌图片附件登记，并清理不再被引用的图片文件
-        await _processingService.DeleteDocumentImagesAsync((int)request.WikiId, deletedDocumentIds, cancellationToken);
-
+        await _removalService.RemoveDocumentsAsync((int)request.WikiId, documents, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 

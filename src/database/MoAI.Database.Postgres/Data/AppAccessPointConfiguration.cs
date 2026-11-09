@@ -49,6 +49,11 @@ internal partial class AppAccessPointConfiguration : IEntityTypeConfiguration<Ap
         entity.Property(e => e.DefaultOpen)
             .HasComment("是否默认展开")
             .HasColumnName("default_open");
+        entity.Property(e => e.DisplayMode)
+            .HasMaxLength(20)
+            .HasDefaultValueSql("'floating'::character varying")
+            .HasComment("显示形式：floating 悬浮组件 / inline 内嵌小窗")
+            .HasColumnName("display_mode");
         entity.Property(e => e.Enabled)
             .HasDefaultValue(true)
             .HasComment("是否启用访问点")

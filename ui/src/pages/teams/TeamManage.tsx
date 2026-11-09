@@ -4,7 +4,6 @@ import type { MenuProps, TableColumnsType } from 'antd'
 import {
   AppstoreAddOutlined,
   AppstoreOutlined,
-  ArrowLeftOutlined,
   BookOutlined,
   CloudServerOutlined,
   ClusterOutlined,
@@ -25,7 +24,7 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
-import { AvatarUpload, Card as DSCard, DataTable, feedback, Page, QueryBar } from '@/design-system'
+import { AvatarUpload, Card as DSCard, DataTable, feedback, Page, QueryBar, SiderHeader } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
@@ -410,25 +409,8 @@ export function TeamManage() {
     <Page>
       <Layout style={{ background: 'transparent', gap: spacing.md }}>
         <Sider width={200} style={{ background: 'transparent' }}>
-          <div style={{ padding: `0 ${spacing.xs}px ${spacing.sm}px` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `0 ${spacing.xs}px` }}>
-              <Avatar size={30} src={detail?.avatar || undefined}>
-                {(detail?.name ?? '?').slice(0, 1).toUpperCase()}
-              </Avatar>
-              <Text strong ellipsis style={{ flex: 1, minWidth: 0, fontSize: 15 }}>
-                {detail?.name ?? ''}
-              </Text>
-            </div>
-            <Button
-              block
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/apps')}
-              style={{ justifyContent: 'flex-start', marginTop: spacing.xs }}
-            >
-              {t('team.backHome')}
-            </Button>
-          </div>
+          {/* 侧栏顶部身份区：团队头像+名称 + 下方整宽返回按钮（design-system SiderHeader，与应用工作台同构） */}
+          <SiderHeader name={detail?.name} avatarSrc={detail?.avatar || undefined} backTo="/apps" backLabel={t('team.backHome')} />
           <Menu
             mode="inline"
             items={loading ? [] : menuItems}
@@ -495,21 +477,21 @@ export function TeamManage() {
           ) : activeSection === 'knowledgegraph' ? (
             <TeamKnowledgeGraphs teamId={teamId} />
           ) : activeSection === 'channels' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamChannels teamId={teamId} />
-            </DSCard>
+            // 模型渠道同使用分区口径（Dify 式分层）：工具栏裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）
+            <TeamChannels teamId={teamId} />
           ) : activeSection === 'plugins' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamPlugins teamId={teamId} />
-            </DSCard>
+            // 插件同使用分区口径（Dify 式分层）：Tabs/工具栏裸排在页面底色上，
+            // 插件卡与 DataTable 自带白色表面，不再外包 DSCard（避免大卡片套小卡片）
+            <TeamPlugins teamId={teamId} />
           ) : activeSection === 'variables' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <Variables teamId={teamId} />
-            </DSCard>
+            // 环境变量同使用分区口径（Dify 式分层）：QueryBar 裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）
+            <Variables teamId={teamId} />
           ) : activeSection === 'timers' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamTimers teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 自动化同使用分区口径（Dify 式分层）：工具栏裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）
+            <TeamTimers teamId={teamId} canManage={isAdminPlus} />
           ) : (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <Form form={settingsForm} layout="vertical" style={{ width: '100%', maxWidth: 480 }}>

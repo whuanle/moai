@@ -28,14 +28,19 @@ public class QueryKnowledgeGraphCommandResponse
     public string? Description { get; init; }
 
     /// <summary>
-    /// 模板 key.
-    /// </summary>
-    public string? TemplateKey { get; init; }
-
-    /// <summary>
     /// 向量化模型 id（元素为 ai_model.id 的 uuid）；未配置向量化时为 null.
     /// </summary>
     public Guid? EmbeddingModelId { get; init; }
+
+    /// <summary>
+    /// 默认抽取模型 id（AI 导入缺省对话模型）；为空表示未配置.
+    /// </summary>
+    public Guid? ExtractModelId { get; init; }
+
+    /// <summary>
+    /// 画布样式规则（键=实体类型 id 字符串，值=属性名或空串表示不显示第二行）；null=未配置（画布按默认显示类型名）.
+    /// </summary>
+    public Dictionary<string, string>? CanvasStyle { get; init; }
 
     /// <summary>
     /// 向量维度；未配置向量化时为 0.

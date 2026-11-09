@@ -55,6 +55,11 @@ public partial class AppAccessPointEntity : IFullAudited
     public string Position { get; set; } = default!;
 
     /// <summary>
+    /// 显示形式：floating 悬浮组件 / inline 内嵌小窗.
+    /// </summary>
+    public string DisplayMode { get; set; } = "floating";
+
+    /// <summary>
     /// 悬浮按钮文案，空则用图标.
     /// </summary>
     public string? LauncherText { get; set; }

@@ -314,6 +314,7 @@ public class AppController : ControllerBase
             Placeholder = req.Placeholder,
             PrimaryColor = req.PrimaryColor,
             Position = req.Position,
+            DisplayMode = req.DisplayMode,
             LauncherText = req.LauncherText,
             Avatar = req.Avatar,
             PanelWidth = req.PanelWidth,

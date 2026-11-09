@@ -12,9 +12,10 @@ import {
   EditOutlined,
   HistoryOutlined,
   PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { AuditCell, CronExpressionInput, DataTable, feedback } from '@/design-system'
+import { AuditCell, CronExpressionInput, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { getApps, type AppItem } from '@/api/app'
@@ -285,34 +286,42 @@ export function TeamTimers({ teamId, canManage }: { teamId: number; canManage: b
 
   return (
     <>
+      {/* 工具行裸排在页面底色上（Dify 式分层），DataTable 自带白色卡片容器承载表格 */}
+      <PageToolbar
+        filters={
+          <Input.Search
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onSearch={(v) => {
+              setKeyword(v)
+              setPageNo(1)
+            }}
+            placeholder={t('timer.searchPlaceholder')}
+            allowClear
+            maxLength={100}
+            style={{ width: 220 }}
+          />
+        }
+        queries={
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void load()}>
+            {t('ds.table.refresh')}
+          </Button>
+        }
+        actions={
+          canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              {t('timer.create')}
+            </Button>
+          )
+        }
+      />
+
       <DataTable<TeamTimerItem>
         rowKey="timerId"
         loading={loading}
         dataSource={items}
-        scroll={{ x: 'max-content' }}
-        onRefresh={() => void load()}
-        refreshLoading={loading}
-        toolbar={
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
-            <Input.Search
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onSearch={(v) => {
-                setKeyword(v)
-                setPageNo(1)
-              }}
-              placeholder={t('timer.searchPlaceholder')}
-              allowClear
-              maxLength={100}
-              style={{ width: 220 }}
-            />
-            {canManage && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                {t('timer.create')}
-              </Button>
-            )}
-          </div>
-        }
+        // 显式总宽约束列宽（Member 1680 / 管理员含操作列 2000）：max-content 会让长 URL 单元格撑开整表、ellipsis 失效
+        scroll={{ x: canManage ? 2000 : 1680 }}
         pagination={{
           current: pageNo,
           pageSize,

@@ -259,7 +259,11 @@
 | @EA-S17 | external-app-e2e.mjs（EA-32a~d） | PASS 74/74（2026-09-27） |
 | @EA-S18 | 已随团队接入 key 下线退役（原团队 key 直连场景，编号不复用）；现状见 [@EA-S19](./bdd.md#ea-s19) | —（2026-09-27） |
 | @EA-S19 | external-app-e2e.mjs（EA-36 已下线 moai- 前缀 401）＋ teamres-key-e2e.mjs（TR-S32 旧 moai- 前缀 401） | EA 75/75、TR 41/41（2026-11-04） |
-| @EA-S20 | embed/__tests__/widget.test.ts（5 例：tokenProvider 优先/onRequest 改写/refresh_token 换新/provider 重新获取/无凭证提示）＋ external-app-e2e.mjs（EA-28b/c 产物含 tokenProvider·onRequest·mount） | EA 76/76、embed 5/5（2026-10-10） |
+| @EA-S20 | embed/__tests__/widget.test.ts（tokenProvider 优先/onRequest 改写（打开面板换 token/建会话/对话路由均经中间件）/refresh_token 换新/provider 重新获取/无凭证提示）＋ external-app-e2e.mjs（EA-28b/c 产物含 tokenProvider·onRequest·mount） | EA 84/84、embed 14/14（2026-11-09） |
+| @EA-S21 | external-app-e2e.mjs（EA-37a~d：未配置回显 floating/保存 inline 内外一致/位置 camel 回显/公开回显）＋ embed/__tests__/widget.test.ts（inline 渲染进占位容器、无悬浮按钮、面板进文档流） | EA 84/84、embed 14/14（2026-11-09） |
+| @EA-S22 | external-app-e2e.mjs（EA-38a~d：启用开场白发布后公开下发/草稿改动不影响公开/停用后为 null） | EA 84/84（2026-11-09） |
+| @EA-S23 | external-app-e2e.mjs（EA-39 未配置行回退 bottomRight/floating）＋ embed/__tests__/widget.test.ts（存量 kebab 位置 bottom-left 同样渲染左侧） | EA 84/84、embed 14/14（2026-11-09） |
+| @EA-S24 | embed/__tests__/widget.test.ts（打字动效与思考块流式/正文折叠+markdown 完成+复制/停止 abortRun 保留部分内容/失败重试重发/放大与 ESC/新对话清空重开场白/历史恢复 markdown+折叠思考块/转义无 script 注入）＋ local-dev/external-widget-verify.mjs（真实构建产物 + 真实后端 + 真实模型：思考流出现、流式回复、会话 id 持久化、重挂载恢复历史、内嵌模式与放大） | embed 14/14、verify 18/18（2026-11-09） |
 | @ACP-S1 | app-acp-e2e.mjs（ACP-S01~S05；S02a moai-ac- 全量 key 放行、S02b wiki 资源 key 越圈 403——scope 门禁已退役改包围圈） | PASS 25/25（2026-11-04） |
 | @ACP-S2 | app-acp-e2e.mjs（ACP-S06） | PASS（2026-09-27） |
 | @ACP-S3 | app-acp-e2e.mjs（ACP-S07/S08） | PASS（2026-09-27） |
@@ -288,7 +292,7 @@ cd src/MoAI && dotnet run                  # :5000
 # 2) E2E（覆盖 @AP-S1~S10、S13、S14、S17~S21、S23；AP-20 需本地库有可授权的私有模型，用 root 管理员临时授权给 E2E 团队）
 node local-dev/app-e2e.mjs                 # 期望 217/217 PASS（含 AP-40 调试会话 / AP-42 日志 / AP-43 用量 / AP-45 对话开场白 / AP-54 发布配置快照双轨 / AP-57 快捷输入 / AP-58 流程应用绑定 / AP-59 对话调用流程工具 / AP-60 审批策略〔a~q：六类白名单校验/放行/多源全量判定〕，AP-59/AP-60 需 admin 账号否则 SKIP）
 node local-dev/chat-attachment-e2e.mjs     # 期望 12/12 PASS（@AP-S55 对话附件：直传/提取/白名单/越权防护）
-node local-dev/external-app-e2e.mjs        # 期望 75/75 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点 + 沙箱/技能限制 + EA-28b/c 组件拦截器 @EA-S20；EA-30~34/36 key 直连 @EA-S15~S17/S19，EA-30a/b 去范围化断言，需先执行 asserts/external_app.sql）
+node local-dev/external-app-e2e.mjs        # 期望 84/84 PASS（@EA-S1~S13 外部 token + 外部会话/对话 + 访问点（显示形式/开场白/回退归一化 @EA-S21~S23）+ 沙箱/技能限制 + EA-28b/c 组件拦截器 @EA-S20；EA-30~34/36 key 直连 @EA-S15~S17/S19，EA-30a/b 去范围化断言，需先执行 asserts/external_app.sql）
 node local-dev/app-acp-e2e.mjs             # 期望 25/25 PASS（@ACP-S01~S19 应用 ACP：接入 key 鉴权（moai-ac- 全量 / app moai-tr- 资源 key 包围圈）+ 协议行为 + Agent/Workflow 对话 + cancel + 资源 key 停用吊销即时性；内置桩模型，零 SKIP）
 node local-dev/teamres-key-e2e.mjs         # 期望 31/31 PASS（@TR-S1~S31 接入去范围化 + teamres_key 管理端/包围圈/生命周期；TA 系列已退役）
 node local-dev/app-a2a-e2e.mjs             # 期望 24/24 PASS（@A2A-S01~S14 应用 A2A：Agent Card/message-send/stream/tasks + 资源 key 吊销即时性 @A2A-S13；内置桩模型）

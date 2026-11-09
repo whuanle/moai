@@ -154,7 +154,7 @@ public class UpdateWikiSourceCommandHandler : IRequestHandler<UpdateWikiSourceCo
     private async Task ApplyFeishuAsync(WikiSourceEntity source, UpdateWikiSourceCommand request, CancellationToken cancellationToken)
     {
         var config = WikiSourceConfigJson.DeserializeFeishu(source.Config) ?? new WikiSourceFeishuConfig();
-        var rebinding = request.FeishuAppId.HasValue || !string.IsNullOrWhiteSpace(request.NewAppId);
+        var rebinding = !string.IsNullOrWhiteSpace(request.NewAppId);
 
         if (rebinding)
         {
@@ -162,7 +162,6 @@ public class UpdateWikiSourceCommandHandler : IRequestHandler<UpdateWikiSourceCo
                 source.TeamId,
                 request.ContextUserId,
                 request.ContextUserType,
-                request.FeishuAppId,
                 request.NewAppName,
                 request.NewAppId,
                 request.NewAppSecret,

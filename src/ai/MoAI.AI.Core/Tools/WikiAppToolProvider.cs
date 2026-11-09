@@ -85,7 +85,7 @@ public sealed class WikiAppToolProvider : IAppToolProvider
             return AppToolResult.Fail("缺少参数 query.");
         }
 
-        var hits = await _wikiSearchService.SearchAsync(wikiIds, query, TopPerWiki, cancellationToken).ConfigureAwait(false);
+        var hits = await _wikiSearchService.SearchAsync(wikiIds, query, TopPerWiki, cancellationToken: cancellationToken).ConfigureAwait(false);
         var payload = hits.Select(hit => new
         {
             wikiId = hit.WikiId,

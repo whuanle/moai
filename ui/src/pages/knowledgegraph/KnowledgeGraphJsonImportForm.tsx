@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate, useParams } from 'react-router'
 import { Alert, Button, Checkbox, Input, Select, Space, Tag, Typography, Upload } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { DownloadOutlined, InboxOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
+import { DownloadOutlined, InboxOutlined, MergeOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import { DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import {
@@ -62,6 +63,8 @@ interface KnowledgeGraphJsonImportFormProps {
 /** JSON 结构化导入表单：粘贴或上传 JSON → 可选预检 → 反序列化落库（与外部 /import 同一管线，逐条返回结果） */
 export function KnowledgeGraphJsonImportForm({ graphId, onImported }: KnowledgeGraphJsonImportFormProps) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const params = useParams<{ teamId: string }>()
   const [content, setContent] = useState('')
   const [mode, setMode] = useState<'upsert' | 'create'>('upsert')
   const [autoCreateTypes, setAutoCreateTypes] = useState(true)
@@ -222,6 +225,29 @@ export function KnowledgeGraphJsonImportForm({ graphId, onImported }: KnowledgeG
                 { title: t('knowledgegraph.importPage.duplicateMatched'), key: 'match', render: (_: unknown, record: KnowledgeGraphDuplicateSuspect) => record.kind === 'inbatch' ? `#${record.matchIndex} ${record.matchName}` : `${record.matchName}` },
                 { title: t('knowledgegraph.importPage.duplicateSource'), dataIndex: 'kind', key: 'kind', width: 110, render: (v: string) => v === 'inbatch' ? t('knowledgegraph.importPage.duplicateInBatch') : t('knowledgegraph.importPage.duplicateExisting') },
                 { title: t('knowledgegraph.importPage.duplicateScore'), dataIndex: 'score', key: 'score', width: 90, render: (v: number) => (v * 100).toFixed(1) + '%' },
+                {
+                  title: t('knowledgegraph.importPage.columnActions'),
+                  key: 'actions',
+                  width: 110,
+                  render: (_: unknown, record: KnowledgeGraphDuplicateSuspect) => {
+                    // 新行节点 id 从逐条结果按 index 对齐；对端 existing 用 matchNodeId、inbatch 用 matchIndex 对应行 id
+                    const nodeResultByIdx = (idx?: number | null) => (result.results ?? []).find(r => r.kind === 'node' && r.index === idx)
+                    const newNodeId = nodeResultByIdx(record.index)?.id
+                    const otherNodeId = record.kind === 'inbatch' ? nodeResultByIdx(record.matchIndex)?.id : record.matchNodeId
+                    const mergeIds = [newNodeId, otherNodeId].filter((x): x is string => !!x)
+                    if (mergeIds.length < 2) return null
+                    return (
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<MergeOutlined />}
+                        onClick={() => navigate(`/team/${params.teamId}/kg/${graphId}/canvas?merge=${mergeIds.join(',')}`)}
+                      >
+                        {t('knowledgegraph.importPage.duplicateGoMerge')}
+                      </Button>
+                    )
+                  },
+                },
               ]}
               dataSource={result.duplicateSuspects ?? []}
               pagination={false}

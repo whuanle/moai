@@ -205,6 +205,8 @@ public partial class DatabaseContext : DbContext
 
     public virtual DbSet<KnowledgeGraphRelationTypeEntity> KnowledgeGraphRelationTypes { get; set; }
 
+    public virtual DbSet<KgImportJobEntity> KgImportJobs { get; set; }
+
     /// <summary>
     /// oauth2.0系统.
     /// </summary>
@@ -326,11 +328,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentEntity> WikiDocumentChunkContents { get; set; }
 
     /// <summary>
-    /// 切片向量化内容.
-    /// </summary>
-    public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
-
-    /// <summary>
     /// 切片元数据内容表（提问/提纲/摘要）.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkMetadatumEntity> WikiDocumentChunkMetadata { get; set; }
@@ -354,6 +351,11 @@ public partial class DatabaseContext : DbContext
     /// 外部源文档，外部源条目与知识库文档的映射，记录内容哈希用于增量比对.
     /// </summary>
     public virtual DbSet<WikiSourceDocumentEntity> WikiSourceDocuments { get; set; }
+
+    /// <summary>
+    /// 知识库检索经验聚类.
+    /// </summary>
+    public virtual DbSet<WikiRecallClusterEntity> WikiRecallClusters { get; set; }
 
     /// <summary>
     /// 工作任务.

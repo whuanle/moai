@@ -107,6 +107,8 @@ public class WikiSourceCrawlerService
         var consecutiveFailures = 0;
         var lastRequestTime = DateTimeOffset.MinValue;
         var breakerTripped = false;
+        // 深度钳制/页数丢弃导致链接被静默放弃时置位：本轮抓取不是全量覆盖（删除同步据此跳过）
+        var coverageIncomplete = false;
 
         using var httpClient = CreateHttpClient(userAgent, timeout);
         var parser = new HtmlParser();
@@ -116,6 +118,8 @@ public class WikiSourceCrawlerService
         {
             if (depth >= maxDepth)
             {
+                // 深度钳制：该页的子链接被静默放弃，本轮覆盖不完整（删除同步据此跳过，防止误删）
+                coverageIncomplete = true;
                 return;
             }
 
@@ -123,6 +127,8 @@ public class WikiSourceCrawlerService
             {
                 if (result.Total + queue.Count >= maxPages)
                 {
+                    // 页数上限丢弃链接：本轮覆盖不完整
+                    coverageIncomplete = true;
                     break;
                 }
 
@@ -296,6 +302,7 @@ public class WikiSourceCrawlerService
 
         result.BreakerTripped = breakerTripped;
         result.Truncated = queue.Count > 0;
+        result.CoverageIncomplete = coverageIncomplete;
         return result;
     }
 

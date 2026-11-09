@@ -12,7 +12,8 @@
 | `AuditCell` | 表格「创建/更新」审计列两行单元格（操作人在上、时间在下；无操作人降级单行时间） | -（`user`/`time` 均可空，全空显示 `-`） |
 | `FormPage` | 表单页壳 | `onFinish` |
 | `DetailPage` | 详情展示 | `items` |
-| `BackLink` | 返回链接（箭头图标+「返回xx」文案），替代多级面包屑；带左分区菜单的三级页放 Sider 顶部（与右侧内容同行） | `to`, `children` |
+| `BackLink` | 返回链接（箭头图标+「返回xx」文案），替代多级面包屑；无分区菜单的三级页（编辑器类）放内容顶部左侧 | `to`, `children` |
+| `SiderHeader` | 侧栏收敛型页面左栏顶部身份区：上段资源头像+名称、下段整宽「← 返回xx」按钮（仿首页侧边栏头部两段式） | `backTo`, `backLabel` |
 | `Card` | 通用卡片 | - |
 
 > `Card` 传入的 `style`/`styles` 与组件默认值（边框/阴影/body padding 20/header 加粗底线）**合并**而非整体替换，覆盖同名属性即可定制。
@@ -44,7 +45,7 @@ import { AuditCell } from '@/design-system'
 
 ## BackLink
 
-页面左上角返回链接（`ui/src/design-system/components/BackLink/`），「← 返回xx」形态，替代「团队 / 提示词 / 编辑」式多级面包屑（团队三级详情/编辑页标准导航，首站：提示词编辑器/智能体编辑器/知识库详情/知识图谱详情/插件模板/我的记忆）：
+页面左上角返回链接（`ui/src/design-system/components/BackLink/`），「← 返回xx」形态，替代「团队 / 提示词 / 编辑」式多级面包屑（团队三级详情/编辑页标准导航，首站：提示词编辑器/智能体编辑器/插件模板/我的记忆；带分区菜单的三级详情页已改用 SiderHeader）：
 
 ```tsx
 import { BackLink } from '@/design-system'
@@ -54,9 +55,29 @@ import { BackLink } from '@/design-system'
 </div>
 ```
 
-- 文案 = 「返回」+ 上级分区名（如 返回内部应用/返回提示词/返回知识库），路由指向上级列表页；同一行右侧可附当前实体名（`Text strong ellipsis`）兜底上下文。
-- **位置**：页面带左分区菜单（Sider）的三级详情页（知识库/知识图谱详情）——BackLink + 实体名收进 Sider **顶部**，与右侧内容区同行，**不独占整行高度**（独占行会让右侧头部出现大片空白）；无分区菜单的三级页（编辑器类）仍在内容顶部左侧。Sider 内 BackLink 包 `flexShrink: 0`，实体名 `flex: 1` + `ellipsis` 挤压换行由实体名承担。
-- 团队三级页面**禁止**再写 `Page breadcrumb` 层级链；侧栏收敛型页面（应用工作台/团队工作台）返回入口放侧栏顶部 Button，不用 BackLink。
+- 文案 = 「返回」+ 上级分区名（如 返回内部应用/返回提示词/返回知识库），路由指向上级列表页。
+- **位置**：无分区菜单的三级页（编辑器类）在内容顶部左侧；带分区菜单的三级详情页**不用** BackLink，改用 SiderHeader（返回入口不再与实体名挤同一行）。
+- 团队三级页面**禁止**再写 `Page breadcrumb` 层级链。
+
+## SiderHeader
+
+侧栏收敛型页面左栏顶部身份区（`ui/src/design-system/components/SiderHeader/`），仿首页侧边栏头部两段式——上段资源头像+名称、下段整宽「← 返回xx」文字按钮（首站：团队工作台/应用工作台/知识库详情/知识图谱详情）：
+
+```tsx
+import { SiderHeader } from '@/design-system'
+
+<SiderHeader
+  name={wiki?.name}
+  avatarSrc={avatarSrc}
+  avatarFallback={<BookOutlined />}
+  backTo={`/team/${teamId}/knowledge`}
+  backLabel={t('wiki.backToKnowledge')}
+/>
+```
+
+- 头像 `square` 30px（资源头像均方形裁剪）；`avatarSrc` 传已 `resolveStorageUrl` 的完整 URL，缺省回退 `avatarFallback` 图标（如 BookOutlined/ClusterOutlined），再回退名称首字符。
+- 返回按钮 `block type="text"` 整宽左对齐 + `ArrowLeftOutlined`，`backTo` 指向上级列表页，文案走 `t()`。
+- 带左分区菜单（Sider）的三级详情页**必须**用 SiderHeader，**禁止**退回「返回链接 + 实体名挤同一行」的旧形态；无分区菜单的编辑页仍用 BackLink。
 
 ## 反馈约定
 
@@ -71,7 +92,8 @@ import { BackLink } from '@/design-system'
 | `DataTable` | `Page` 内 | 直接嵌套进卡片 |
 | `FormPage` | 表单页根 | 表格内 |
 | `DetailPage` | 详情页根 | 表格内 |
-| `BackLink` | 三级分区页：页面内左侧菜单栏（Sider）顶部；其余页面：内容顶部左侧（面包屑位置） | 弹窗/表格单元格/全局侧边栏（AppLayout 侧边栏）内 |
+| `BackLink` | 无分区菜单页面：内容顶部左侧（面包屑位置）；侧栏页加载分支兜底 | 弹窗/表格单元格/全局侧边栏（AppLayout 侧边栏）内 |
+| `SiderHeader` | 页面内左侧菜单栏（Sider）顶部 | 弹窗/表格单元格/全局侧边栏（AppLayout 侧边栏）/右侧内容区内 |
 | `Chat` | 对话页根 | 表格内 |
 
 ## 危险操作确认（Popconfirm）

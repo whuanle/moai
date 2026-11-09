@@ -11,6 +11,11 @@ public class ImportKnowledgeGraphFromFileResponse
     public int NodesCreated { get; init; }
 
     /// <summary>
+    /// 合并实体数（命中已有节点：描述去重拼接、属性补齐、证据追加，v4 B1 幂等合并）.
+    /// </summary>
+    public int NodesMerged { get; init; }
+
+    /// <summary>
     /// 新增关系（边）数.
     /// </summary>
     public int EdgesCreated { get; init; }

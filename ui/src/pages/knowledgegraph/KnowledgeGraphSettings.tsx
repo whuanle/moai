@@ -13,8 +13,12 @@ import {
   getKnowledgeGraphModelOptions,
   updateKnowledgeGraph,
   updateKnowledgeGraphEmbeddingConfig,
+  updateKnowledgeGraphExtractModel,
   uploadKnowledgeGraphAvatar,
+  getKnowledgeGraphSchema,
+  updateKnowledgeGraphCanvasStyle,
   type KnowledgeGraphDetail as GraphDetail,
+  type KnowledgeGraphEntityTypeItem,
   type KnowledgeGraphModelOption,
 } from '@/api/knowledgeGraph'
 
@@ -28,6 +32,13 @@ interface SettingsFormValues {
 interface EmbeddingFormValues {
   embeddingModelId: string
   embeddingDimensions: number
+}
+
+/** 画布样式规则的类型行（B8） */
+interface StyleRow {
+  typeId: string
+  typeName: string
+  properties: string[]
 }
 
 /** 向量维度预设档位：维度由用户手动设置，上限 2000（pgvector 建 hnsw 索引硬上限），与知识库设置页一致 */
@@ -48,6 +59,13 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
   const [embeddingForm] = Form.useForm<EmbeddingFormValues>()
   const [embeddingSaving, setEmbeddingSaving] = useState(false)
   const [embeddingModels, setEmbeddingModels] = useState<KnowledgeGraphModelOption[]>([])
+  const [conversationModels, setConversationModels] = useState<KnowledgeGraphModelOption[]>([])
+  const [extractModelId, setExtractModelId] = useState<string | null>(null)
+  const [extractSaving, setExtractSaving] = useState(false)
+  /** 画布样式规则（B8）：类型行清单 + 当前 captions */
+  const [styleRows, setStyleRows] = useState<StyleRow[]>([])
+  const [captions, setCaptions] = useState<Record<string, string>>({})
+  const [styleSaving, setStyleSaving] = useState(false)
   const [modelOptionsLoading, setModelOptionsLoading] = useState(false)
   const [modelOptionsLoaded, setModelOptionsLoaded] = useState(false)
   const [modelOptionsFailed, setModelOptionsFailed] = useState(false)
@@ -85,7 +103,33 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
       embeddingModelId: graph?.embeddingModelId ?? '',
       embeddingDimensions: graph?.embeddingDimensions ?? undefined,
     })
+    setExtractModelId(graph?.extractModelId ?? null)
+    setCaptions(graph?.canvasStyle ?? {})
   }, [graph, form, embeddingForm])
+
+  // 样式规则行（B8）：托管图拉 schema 组装类型与属性清单
+  useEffect(() => {
+    if (isConnected || !isAdminPlus || !graph?.kgId) {
+      setStyleRows([])
+      return
+    }
+    let cancelled = false
+    getKnowledgeGraphSchema(Number(graph.kgId))
+      .then((schema) => {
+        if (cancelled) return
+        setStyleRows((schema.entityTypes ?? []).filter((x) => x.entityTypeId != null).map((x) => ({
+          typeId: String(x.entityTypeId),
+          typeName: x.name ?? '',
+          properties: (x.properties ?? []).filter((p) => p.name).map((p) => p.name as string),
+        })))
+      })
+      .catch(() => {
+        if (!cancelled) setStyleRows([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isConnected, isAdminPlus, graph?.kgId])
 
   // 向量化模型选项（仅托管图 + Admin+ 需要；模型渠道配置变化后重新进入页面可重取）
   useEffect(() => {
@@ -100,6 +144,7 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
       .then((options) => {
         if (cancelled) return
         setEmbeddingModels(options.embeddingModels ?? [])
+        setConversationModels(options.conversationModels ?? [])
       })
       .catch(() => {
         if (!cancelled) {
@@ -158,6 +203,35 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
       }
     } finally {
       setEmbeddingSaving(false)
+    }
+  }
+
+  const handleSaveExtractModel = async () => {
+    if (!graph?.kgId || modelOptionsFailed) return
+    setExtractSaving(true)
+    try {
+      await updateKnowledgeGraphExtractModel(Number(graph.kgId), extractModelId || null)
+      feedback.success(t('knowledgegraph.extractModel.saveSuccess'))
+      onChanged()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setExtractSaving(false)
+    }
+  }
+
+  const handleSaveCanvasStyle = async () => {
+    if (!graph?.kgId) return
+    setStyleSaving(true)
+    try {
+      const cleaned = Object.fromEntries(Object.entries(captions).filter(([, v]) => v !== ''))
+      await updateKnowledgeGraphCanvasStyle(Number(graph.kgId), Object.keys(cleaned).length > 0 ? cleaned : null)
+      feedback.success(t('knowledgegraph.style.saveSuccess'))
+      onChanged()
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setStyleSaving(false)
     }
   }
 
@@ -280,13 +354,73 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
               </Form>
             )
           )}
+          {!isConnected && modelOptionsLoaded && (
+            <div style={{ marginTop: spacing.lg }}>
+              <div style={{ fontWeight: 600, marginBottom: spacing.md }}>
+                {t('knowledgegraph.extractModel.title')}
+              </div>
+              <Select
+                style={{ width: '100%' }}
+                value={extractModelId}
+                onChange={setExtractModelId}
+                allowClear
+                placeholder={t('knowledgegraph.extractModel.placeholder')}
+                loading={modelOptionsLoading}
+                disabled={modelOptionsFailed}
+                showSearch
+                virtual={false}
+                options={conversationModels.map((model) => ({ value: model.id ?? '', label: model.name ?? model.id ?? '' }))}
+              />
+              <div style={{ marginTop: spacing.sm, fontSize: 12, opacity: 0.65 }}>
+                {t('knowledgegraph.extractModel.extra')}
+              </div>
+              <Button
+                type="primary"
+                style={{ marginTop: spacing.md }}
+                loading={extractSaving}
+                disabled={modelOptionsFailed}
+                onClick={() => void handleSaveExtractModel()}
+              >
+                {t('knowledgegraph.extractModel.save')}
+              </Button>
+            </div>
+          )}
+          {!isConnected && isAdminPlus && styleRows.length > 0 && (
+            <div style={{ marginTop: spacing.lg }}>
+              <div style={{ fontWeight: 600, marginBottom: spacing.sm }}>
+                {t('knowledgegraph.style.title')}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.65, marginBottom: spacing.sm }}>
+                {t('knowledgegraph.style.extra')}
+              </div>
+              {styleRows.map((row) => (
+                <div key={row.typeId} style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm }}>
+                  <span style={{ minWidth: 120, fontSize: 13 }}>{row.typeName}</span>
+                  <Select
+                    style={{ flex: 1 }}
+                    value={captions[row.typeId] ?? ''}
+                    onChange={(value) => setCaptions((prev) => ({ ...prev, [row.typeId]: value }))}
+                    options={[
+                      { value: '', label: t('knowledgegraph.style.none') },
+                      { value: '__type__', label: t('knowledgegraph.style.typeName') },
+                      ...row.properties.map((p) => ({ value: p, label: p })),
+                    ]}
+                  />
+                </div>
+              ))}
+              <Button
+                type="primary"
+                style={{ marginTop: spacing.sm }}
+                loading={styleSaving}
+                onClick={() => void handleSaveCanvasStyle()}
+              >
+                {t('knowledgegraph.style.save')}
+              </Button>
+            </div>
+          )}
           <Descriptions column={1} style={{ marginTop: spacing.lg }}>
-            {isConnected ? (
+            {isConnected && (
               <Descriptions.Item label={t('knowledgegraph.database')}>{graph?.database || '-'}</Descriptions.Item>
-            ) : (
-              <Descriptions.Item label={t('knowledgegraph.settings.templateKey')}>
-                {graph?.templateKey || t('knowledgegraph.templateBlank')}
-              </Descriptions.Item>
             )}
             <Descriptions.Item label={t('knowledgegraph.settings.createTime')}>
               {formatDateTime(graph?.createTime)}
@@ -313,12 +447,8 @@ export function KnowledgeGraphSettings({ graph, onChanged }: KnowledgeGraphSetti
             <span style={{ fontWeight: 600 }}>{graph?.description || '-'}</span>
           </div>
           <Descriptions column={1}>
-            {isConnected ? (
+            {isConnected && (
               <Descriptions.Item label={t('knowledgegraph.database')}>{graph?.database || '-'}</Descriptions.Item>
-            ) : (
-              <Descriptions.Item label={t('knowledgegraph.settings.templateKey')}>
-                {graph?.templateKey || t('knowledgegraph.templateBlank')}
-              </Descriptions.Item>
             )}
             <Descriptions.Item label={t('knowledgegraph.settings.createTime')}>
               {formatDateTime(graph?.createTime)}

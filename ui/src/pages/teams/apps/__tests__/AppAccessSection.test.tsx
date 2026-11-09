@@ -20,6 +20,7 @@ const CONFIG = {
   placeholder: null,
   primaryColor: null,
   position: 'bottomRight',
+  displayMode: 'floating',
   launcherText: null,
   avatar: null,
   panelWidth: 380,
@@ -49,6 +50,9 @@ describe('AppAccessSection', () => {
     expect(await screen.findByText('访问点配置')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByDisplayValue('380')).toBeInTheDocument())
     expect(screen.getByText(/\/api\/teamres\/agent\/a1\/chat/)).toBeInTheDocument()
+    // 显示形式默认悬浮，且悬浮位置字段可见
+    expect(screen.getByText('悬浮组件（右下/左下角）')).toBeInTheDocument()
+    expect(screen.getByText('悬浮位置')).toBeInTheDocument()
   })
 
   it('嵌入代码片段包含 appId 与 server 地址', async () => {
@@ -56,6 +60,9 @@ describe('AppAccessSection', () => {
     await screen.findByText('访问点配置')
     await waitFor(() => expect(screen.getByText(/data-app-id="a1"/)).toBeInTheDocument())
     expect(screen.queryByText(/data-key=/)).not.toBeInTheDocument()
+    // 悬浮模式不带 inline 占位容器与 data-mode
+    expect(screen.queryByText(/data-mode="inline"/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/id="moai-chat"/)).not.toBeInTheDocument()
   })
 
   it('需授权应用嵌入代码默认推荐后端签发 token，可切换快速验证 data-key', async () => {
@@ -70,10 +77,25 @@ describe('AppAccessSection', () => {
     await waitFor(() => expect(screen.getByText(/data-key="/)).toBeInTheDocument())
   })
 
+  it('切到内嵌小窗后：位置字段隐藏，嵌入片段带占位容器与 data-target', async () => {
+    renderSection()
+    await waitFor(() => expect(screen.getByDisplayValue('380')).toBeInTheDocument())
+    // antd Select：点开显示形式下拉并选择内嵌小窗
+    fireEvent.mouseDown(screen.getByText('悬浮组件（右下/左下角）').closest('.ant-select-selector')!)
+    expect(await screen.findByText('内嵌小窗（占位容器嵌入页面）')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('内嵌小窗（占位容器嵌入页面）'))
+    // 悬浮位置字段隐藏
+    expect(screen.queryByText('悬浮位置')).not.toBeInTheDocument()
+    // 嵌入片段带占位容器 + inline 属性
+    await waitFor(() => expect(screen.getByText(/id="moai-chat"/)).toBeInTheDocument())
+    expect(screen.getByText(/data-mode="inline"/)).toBeInTheDocument()
+    expect(screen.getByText(/data-target="#moai-chat"/)).toBeInTheDocument()
+  })
+
   it('保存访问点配置', async () => {
     renderSection()
     await waitFor(() => expect(screen.getByDisplayValue('380')).toBeInTheDocument())
     fireEvent(await screen.findByRole('button', { name: '保存配置' }), new MouseEvent('click', { bubbles: true }))
-    await waitFor(() => expect(saveAppAccessPoint).toHaveBeenCalledWith('a1', expect.objectContaining({ panelWidth: 380, panelHeight: 560, enabled: true })))
+    await waitFor(() => expect(saveAppAccessPoint).toHaveBeenCalledWith('a1', expect.objectContaining({ panelWidth: 380, panelHeight: 560, displayMode: 'floating', enabled: true })))
   })
 })

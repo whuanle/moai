@@ -33,8 +33,15 @@ select 'WIKI_MAX_FILE_SIZE_MB', '知识库最大文件大小', '知识库上传�
 where not exists (select 1 from setting where key = 'WIKI_MAX_FILE_SIZE_MB');
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
-select 'WIKI_ALLOWED_FILE_TYPES', '知识库允许上传的文件类型', '知识库允许上传的文档扩展名（逗号分隔，如 .pdf,.docx,.md），对网页端与开放接口上传同时生效；默认与文档/文本提取能力对齐，图片暂不支持.', '.pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json', 0, 0
+select 'WIKI_ALLOWED_FILE_TYPES', '知识库允许上传的文件类型', '知识库允许上传的文档扩展名（逗号分隔，如 .pdf,.docx,.md），对网页端与开放接口上传同时生效；默认与文档/文本提取能力对齐（Office/PDF/HTML/Markdown/EPUB/ODT/RTF 与代码配置类文本等 42 种），图片暂不支持.', '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml', 0, 0
 where not exists (select 1 from setting where key = 'WIKI_ALLOWED_FILE_TYPES');
+
+-- 存量库升级：仍为旧默认值（未被管理员自定义过）的行自动升级为新默认 42 种
+update setting
+set value = '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml',
+    description = '知识库允许上传的文档扩展名（逗号分隔，如 .pdf,.docx,.md），对网页端与开放接口上传同时生效；默认与文档/文本提取能力对齐（Office/PDF/HTML/Markdown/EPUB/ODT/RTF 与代码配置类文本等 42 种），图片暂不支持.'
+where key = 'WIKI_ALLOWED_FILE_TYPES'
+  and value = '.pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json';
 
 insert into setting (key, name, description, value, create_user_id, update_user_id)
 select 'SANDBOX_MAX_TTL_SECONDS', '沙箱存活时间上限', '每个应用沙箱最大存活时间（秒），团队保存应用配置时不得超出；默认 86400（24 小时），范围 60~604800.', '86400', 0, 0

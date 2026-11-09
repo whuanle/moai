@@ -500,7 +500,7 @@ async function main() {
   } finally {
     // ===== WX-11 允许上传文件类型设置（WIKI_ALLOWED_FILE_TYPES，root 写，网页端与外部接口共用）=====
     {
-      const DEFAULT_TYPES = '.pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json'
+      const DEFAULT_TYPES = '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml'
       const putTypes = async (value) => api('PUT', '/api/settings', { token, body: { key: 'WIKI_ALLOWED_FILE_TYPES', value } })
       const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex')
       const xPreup = (fileName, fileSize, sha, contentType) => api('POST', xw(W1, '/documents/preupload'), { token: AT1, body: { fileName, contentType, fileSize, sha256: sha } })

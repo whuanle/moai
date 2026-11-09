@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Radio, Row, Select, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import { ClusterOutlined, DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { AvatarUpload, Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -36,6 +36,7 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   const navigate = useNavigate()
   const neutral = useNeutralColors()
   const [items, setItems] = useState<KnowledgeGraphItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [myRole, setMyRole] = useState<number | null>(null)
   const [enabled, setEnabled] = useState(true)
   /** 搜索输入框内容（查询按钮/回车触发后才生效） */
@@ -51,6 +52,7 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   const isAdminPlus = myRole !== null && myRole !== ROLE_MEMBER
 
   const load = useCallback(async () => {
+    setLoading(true)
     try {
       const res = await getKnowledgeGraphs(teamId)
       setItems(res.items ?? [])
@@ -58,6 +60,8 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
       setEnabled(res.enabled ?? false)
     } catch {
       // 错误已由全局请求中间件统一提示
+    } finally {
+      setLoading(false)
     }
   }, [teamId])
 
@@ -77,11 +81,11 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
     if (enabled) void getKnowledgeGraphTemplates().then(setTemplates).catch(() => setTemplates([]))
   }, [enabled])
 
-  /** 弹窗关闭时清理待上传头像与预览地址 */
+  /** 弹窗关闭时清理待上传头像与预览地址（仅 blob 预览需要回收） */
   const resetAvatar = () => {
     setAvatarFile(null)
     setAvatarPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
+      if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
       return undefined
     })
   }
@@ -96,7 +100,8 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
   const openEdit = (record: KnowledgeGraphItem) => {
     setEditing(record)
     form.setFieldsValue({ name: record.name ?? '', description: record.description ?? undefined })
-    resetAvatar()
+    setAvatarFile(null)
+    setAvatarPreview(record.avatarPath?.trim() ? resolveStorageUrl(record.avatarPath) : undefined)
     setOpen(true)
   }
 
@@ -127,6 +132,13 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
     try {
       if (editing) {
         await updateKnowledgeGraph(Number(editing.kgId), { name: values.name, description: values.description })
+        if (avatarFile) {
+          try {
+            await uploadKnowledgeGraphAvatar(Number(editing.kgId), avatarFile)
+          } catch {
+            // 头像登记失败已由全局请求中间件提示，图谱更新不受影响，可在设置页补传
+          }
+        }
         feedback.success(t('knowledgegraph.saveSuccess'))
       } else {
         const mode = values.mode ?? 'managed'
@@ -192,12 +204,13 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
         }
       />
       {!enabled && <div style={{ marginBottom: spacing.md }}>{t('knowledgegraph.disabled')}</div>}
-      {items.length === 0 ? (
-        <Empty description={t('knowledgegraph.empty')} />
-      ) : filteredItems.length === 0 ? (
-        <Empty description={t('knowledgegraph.filterEmpty')} />
-      ) : (
-        <Row gutter={[spacing.md, spacing.md]}>
+      <Spin spinning={loading}>
+        {items.length === 0 ? (
+          <Empty description={t('knowledgegraph.empty')} />
+        ) : filteredItems.length === 0 ? (
+          <Empty description={t('knowledgegraph.filterEmpty')} />
+        ) : (
+          <Row gutter={[spacing.md, spacing.md]}>
           {filteredItems.map((item) => (
           <Col key={String(item.kgId)} xs={24} sm={12} md={8} lg={6} xxl={4}>
             <Card
@@ -228,20 +241,6 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
                       {item.name || '-'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs, marginTop: 2, minWidth: 0 }}>
-                      {(item.entityCount != null || item.relationCount != null) && (
-                        <span
-                          style={{
-                            fontSize: 12,
-                            lineHeight: 1.5,
-                            color: neutral.textTertiary,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {`${item.entityCount ?? 0} ${t('knowledgegraph.statEntities')} · ${item.relationCount ?? 0} ${t('knowledgegraph.statRelations')}`}
-                        </span>
-                      )}
                       {item.mode === 'connected' && (
                         <Tag color="blue" style={{ marginRight: 0, flexShrink: 0 }}>
                           {t('knowledgegraph.connectedBadge')}
@@ -299,8 +298,9 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
             </Card>
           </Col>
         ))}
-        </Row>
-      )}
+          </Row>
+        )}
+      </Spin>
 
       <Modal
         open={open}
@@ -312,20 +312,18 @@ export function TeamKnowledgeGraphs({ teamId }: { teamId: number }) {
         maskClosable={false}
       >
         <Form form={form} layout="vertical">
-          {!editing && (
-            <Form.Item label={t('knowledgegraph.avatar')}>
-              <Space size={spacing.md} align="center">
-                <AvatarUpload
-                  src={avatarPreview}
-                  fallback={<ClusterOutlined />}
-                  shape="square"
-                  size={64}
-                  onSelect={handleAvatarSelect}
-                />
-                <span style={{ opacity: 0.65 }}>{t('knowledgegraph.avatarHint')}</span>
-              </Space>
-            </Form.Item>
-          )}
+          <Form.Item label={t('knowledgegraph.avatar')}>
+            <Space size={spacing.md} align="center">
+              <AvatarUpload
+                src={avatarPreview}
+                fallback={<ClusterOutlined />}
+                shape="square"
+                size={64}
+                onSelect={handleAvatarSelect}
+              />
+              <span style={{ opacity: 0.65 }}>{t('knowledgegraph.avatarHint')}</span>
+            </Space>
+          </Form.Item>
           <Form.Item
             name="name"
             label={t('knowledgegraph.name')}

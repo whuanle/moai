@@ -31,7 +31,7 @@ export interface SourcesRequestBuilder extends BaseRequestBuilder<SourcesRequest
      get(requestConfiguration?: RequestConfiguration<SourcesRequestBuilderGetQueryParameters> | undefined) : Promise<QueryWikiSourcesCommandResponse | undefined>;
     /**
      * 创建外部源，需要团队 Admin 及以上角色；创建后自动绑定飞书渠道并立即拉取一次.
-     * @param body 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源支持两种绑定方式：选择团队已有的飞书应用连接（FeishuAppId），或直接填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
+     * @param body 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源须填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<SimpleGuid>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -49,7 +49,7 @@ export interface SourcesRequestBuilder extends BaseRequestBuilder<SourcesRequest
      toGetRequestInformation(requestConfiguration?: RequestConfiguration<SourcesRequestBuilderGetQueryParameters> | undefined) : RequestInformation;
     /**
      * 创建外部源，需要团队 Admin 及以上角色；创建后自动绑定飞书渠道并立即拉取一次.
-     * @param body 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源支持两种绑定方式：选择团队已有的飞书应用连接（FeishuAppId），或直接填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
+     * @param body 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源须填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

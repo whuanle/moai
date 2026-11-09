@@ -276,13 +276,37 @@ Scenario: 超管设置知识库最大文件大小并全局生效
 ```gherkin
 @WK-S43 @auto:e2e
 Scenario: 超管设置知识库允许上传的文件类型并全局生效
-  When 超管保存设置项 WIKI_ALLOWED_FILE_TYPES（逗号分隔扩展名，默认与文档/文本提取能力对齐，图片暂不支持）
+  When 超管保存设置项 WIKI_ALLOWED_FILE_TYPES（逗号分隔扩展名，默认与文档/文本提取能力对齐共 42 种，图片暂不支持）
   Then 团队成员访问 upload-limit 查询接口返回 allowedFileTypes（供上传控件 accept 与前端预检）
   When 团队成员预上传不在允许类型内的文件（网页端与外部开放接口同一入口）
   Then 返回 400 且错误信息携带允许类型清单
   When 超管恢复默认允许类型
   Then 原被拒绝的类型预上传通过
   And 管理员放开的未知文本类扩展名（如 .sh）上传后按纯文本兜底提取入库，二进制文件提取失败不产出乱码
+  And 存量库中仍存历史默认值（10 种）且未被自定义过的部署，读取时自动按新默认 42 种返回
+```
+
+## Feature: 知识库 42 种格式上传与提取（代码/配置文本兜底 + EPUB/ODT/RTF 自研提取）
+
+> 提取路由与自研提取器设计见 [sdd.md](./sdd.md)「文档文本提取分层」；设置默认值见 [@WK-S43](#wk-s43) 与 [@SET-S44](../settings/bdd.md#set-s44)。
+
+```gherkin
+@WK-S56 @auto:e2e
+Scenario: 默认白名单内的各类文件上传后均可提取出正文
+  Given 默认允许类型为 42 种（Office/PDF/HTML/Markdown 之外含代码、配置与 EPUB/ODT/RTF）
+  When 团队成员上传代码文本文件（.py）并完成提取
+  Then 正文包含源码原文（纯文本兜底，保留代码行）
+  When 上传配置文件（.yaml）并完成提取
+  Then 正文保留键值行
+  When 上传 EPUB 电子书（zip 容器）
+  Then 按 container.xml 定位 OPF spine 顺序抽取章节，正文含章节标题与段落
+  When 上传 ODT 文档（zip 容器）
+  Then 按 content.xml 逐段抽取，正文含标题与段落
+  When 上传 RTF 文档（含 Unicode 转义与字体表）
+  Then 控制词剥离后正文含 Unicode 中文与换行，且不残留字体表内容
+  When 上传内容含 NUL 字节的二进制文件（伪装 .py）
+  Then 提取明确拒绝，文档不产出乱码正文
+  And 非常规扩展名（.mdx/.textpack）在白名单内预上传放行
 ```
 
 ## Feature: 文档内嵌图片附件（提取 pdf/word/excel/ppt 落出的图片资产，先存后用、不做 OCR）
@@ -437,6 +461,107 @@ Scenario: 重排序接入、渠道故障降级与相邻片段上下文
   Then 命中项不含重排序得分且顺序恢复为向量序
 ```
 
+## Feature: 向量生命周期与检索增强（WK-S48~S52）
+
+```gherkin
+@WK-S48 @auto:e2e
+Scenario: 删除文档/知识库的向量生命周期闭环
+  Given 知识库已有文档完成向量化且可召回
+  When 删除已完成向量化的文档
+  Then 向量集合中该文档的向量被同步删除，召回不再出现该文档命中（含 pgvector 直接删除与召回侧软删过滤双保险）
+  And 文档的提取正文（wiki_document_content）与外部源映射（wiki_source_document）一并清理，OSS 文件与内嵌图片同步删除
+  When 删除后重建同内容文档并重新向量化
+  Then 召回命中指向新文档的新切片
+  When 删除整个知识库
+  Then 级联软删全部文档（逐批走文档删除链路）并 DROP 整库向量集合（__wiki_{id}）
+
+@WK-S48b @auto:e2e
+Scenario: 外部源删除同步（源中已消失的文档随同步下线）
+  Given 外部源（爬虫/飞书）已同步入库若干文档
+  When 一轮同步完整遍历（未截断、未熔断、无深度/页数静默放弃）且源中部分文档已消失
+  Then 消失文档连同向量/切片/元数据/OSS 全链路下线，同步结果回显 removed 数量
+  When 本轮遍历被截断或存在深度钳制/页数丢弃（覆盖不完整）
+  Then 不执行删除同步（防止把尚未抓到的页面误删），已入库文档保留
+
+@WK-S49 @auto:e2e
+Scenario: 召回按 ChunkId 去重（信噪比）
+  Given 文档已生成元数据且原文切片与元数据（大纲/问题/关键词/摘要/聚合段）均向量化
+  When 执行召回使同一切片的多条 MetadataType 变体进入候选
+  Then 同一 ChunkId 只保留得分最高的一条命中，结果集中切片不重复
+
+@WK-S50 @auto:e2e
+Scenario: 向量化模型迁移（临时集合 + 事务换名）
+  Given 知识库已绑定 embedding 模型 A（1024 维）且已有向量与召回基线
+  When 团队 Member 发起迁移
+  Then 返回 403
+  When 目标与当前模型/维度一致或目标模型不可用
+  Then 返回 400
+  When 管理员发起迁移到模型 B（256 维）
+  Then 返回 200 与任务 id；同一知识库并发二次发起返回 409
+  And 迁移进行中该库的切割与向量化命令返回 409（写阻断）
+  And 状态接口回显活跃任务（等待/处理中）与进度（migratedCount/totalCount）
+  When 迁移完成
+  Then 任务终态成功且重建条数与向量总数一致；知识库配置切到模型 B/256 维且 IsLock 保持 true
+  And 迁移后按新维度召回有命中；锁定态保存 embedding 配置返回 409 并提示走迁移端点
+  When 目标渠道不可达（死渠道）发起迁移
+  Then 任务终态失败且消息含「已回滚」，知识库配置保持不变，原向量仍可召回
+
+@WK-S51 @auto:e2e
+Scenario: 关键词混合检索（多路先验）
+  Given 知识库切片含仅靠向量相似度难以稳定命中的独特词内容（pg_trgm 索引加速 ILIKE）
+  When 以包含独特词的查询执行召回
+  Then 命中该切片且标记 isKeywordHit=true（切片原文或关键词/问题元数据与查询探针匹配）
+  And 最终返回条数不超过 top（向量精确度排序在前，关键词补充命中追加在后；配置重排序时重排分为最终序）
+  When 显式设置相似度阈值（minScore>0）
+  Then 本次检索退化为纯向量召回（关键词命中不带相似度分，不受阈值约束）
+
+@WK-S52 @auto:e2e
+Scenario: 过期索引检测（IsUpdate 生命周期）
+  Given 文档已完成向量化且可召回
+  When 重新切割文档（切片重建、旧向量删除）但尚未重新向量化
+  Then 召回（关键词兜底路径）仍可命中该文档且命中带 isStale=true（内容已更新、重嵌未完成）
+  When 重新向量化完成
+  Then IsUpdate 清零，后续命中 isStale=false
+  And 已软删文档/切片的命中在回填阶段被剔除（存量孤儿向量兜底）
+
+@WK-S53 @auto:e2e
+Scenario: 检索经验沉淀与复用（同查询免 embedding 快速路径）
+  Given 知识库可召回且已有向量化内容
+  When 首次以查询 Q 检索
+  Then 走完整链路（embedding 模型被调用）且命中非空，结果异步沉淀为经验聚类
+  When 再次以相同查询 Q 检索（等待聚类落库后）
+  Then 直接复用聚类命中返回（命中与首次一致），embedding 模型不再被调用（快速路径生效）
+  When 以未沉淀过的新查询检索
+  Then 走完整链路（embedding 被调用）
+  And 显式传 isKeywordSearch=false 时退化为纯向量召回且不走经验缓存
+  When 主要命中文档被删除（索引纪元推进）
+  Then 聚类失效自愈（纪元不匹配即删除）并回落完整检索（embedding 被调用），命中不再包含已删文档
+  And 范围过滤（documentIds）与严格阈值（minScore>0）查询不复用缓存
+  And 该库文档/切片/向量集合发生任何变更（删除、重切割、向量化成功）都会推进索引纪元使全部聚类失效
+  And 超过 30 天未命中的聚类由 Hangfire 周期任务清理
+
+@WK-S54 @auto:e2e
+Scenario: 入库管线并行化与内容级兜底检索（上传提取后即可查）
+  Given 批量工作流对多文档并行提取/切割（每任务独立 scope，有界并发 4）
+  And 元数据生成按批并行调用对话模型（并发 4，单 chunk 失败收集不中断）
+  And 向量化 MQ 消费 Qos=4 多文档并行（同库首嵌建表互斥，无 pg_type 竞态）
+  When 文档已提取但尚未切割时执行召回
+  Then 内容级兜底命中该文档：isContentFallback=true、isKeywordHit=true、片段含探针词（首个命中窗口前 200/后 700 字符）且无切片序号
+  When 文档完成切割后再次召回
+  Then 切片候选非空，兜底不再触发，命中带正常切片序号（切片命中接管）
+  And 兜底命中不沉淀检索经验聚类（ChunkId=0）
+  And 同库并发首嵌无建表唯一约束冲突（按 wiki 建表互斥 + 23505 重试兜底）
+```
+
+@WK-S55 @auto:e2e
+Scenario: 切片标题锚点与自适应证据窗口
+  Given 含多级标题的文档已完成切割与向量化（切割时提取所在章节标题面包屑）
+  When 召回命中该文档切片
+  Then 每个命中携带非空标题锚点（anchor 含文档标题，面包屑形如「标题A > 标题B」）
+  When 以 contextWindow=2 召回且窗口内存在距离 ±2 的切片
+  Then 命中的上下文出现距离 ±2 的相邻片段且不超过 ±2（默认窗口 1 仍只有 ±1）
+  And AI 切割切片按文本回原文定位取锚点（定位失败留空）
+
 ## Feature: 外部开放接口（应用 token，WX-*）
 
 ```gherkin
@@ -560,7 +685,7 @@ Scenario: 管理员创建时的参数校验
   Then 返回参数错误
   When 爬虫源缺少配置、起始地址不是 http(s)、单轮页数超上限
   Then 返回参数错误
-  When 飞书文档源未选择任何绑定方式、同时给了两种绑定方式、或缺少节点 token
+  When 飞书文档源缺连接名称/AppID/AppSecret 任一项、或缺少节点 token（已有连接 id 方式已下线，仅按新凭证新建连接）
   Then 返回参数错误
 
 @WS-S4 @auto:e2e

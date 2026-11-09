@@ -21,6 +21,7 @@ public class AiPartitionDocumentCommandHandler : IRequestHandler<AiPartitionDocu
     private readonly ITeamService _teamService;
     private readonly IUserContextProvider _userContextProvider;
     private readonly WikiDocumentProcessingService _processingService;
+    private readonly IWikiModelMigrationService _migrationService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiPartitionDocumentCommandHandler"/> class.
@@ -29,22 +30,29 @@ public class AiPartitionDocumentCommandHandler : IRequestHandler<AiPartitionDocu
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
     /// <param name="processingService">文档内容处理服务.</param>
+    /// <param name="migrationService">模型迁移守卫（迁移期间阻断切割）.</param>
     public AiPartitionDocumentCommandHandler(
         DatabaseContext databaseContext,
         ITeamService teamService,
         IUserContextProvider userContextProvider,
-        WikiDocumentProcessingService processingService)
+        WikiDocumentProcessingService processingService,
+        IWikiModelMigrationService migrationService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
         _userContextProvider = userContextProvider;
         _processingService = processingService;
+        _migrationService = migrationService;
     }
 
     /// <inheritdoc/>
     public async Task<EmptyCommandResponse> Handle(AiPartitionDocumentCommand request, CancellationToken cancellationToken)
     {
         var document = await EnsureMemberAndLoadDocumentAsync(request.WikiId, request.DocumentId, cancellationToken);
+
+        // 模型迁移期间阻断切割，防止切片与迁移中的向量集合错位
+        await _migrationService.EnsureNotMigratingAsync(document.WikiId, cancellationToken);
+
         await _processingService.AiPartitionAsync(document.WikiId, document.Id, request.AiModelId, request.PromptTemplate, cancellationToken);
         return EmptyCommandResponse.Default;
     }

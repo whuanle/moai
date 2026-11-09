@@ -41,6 +41,16 @@ public class ExternalAccessPointResponse
     public string Position { get; init; } = "bottomRight";
 
     /// <summary>
+    /// 显示形式：floating 悬浮组件（默认）/ inline 内嵌小窗（宿主页放置占位容器嵌入）.
+    /// </summary>
+    public string DisplayMode { get; init; } = "floating";
+
+    /// <summary>
+    /// 对话开场白（发布快照口径，未启用或为空时为 null）；组件新会话开始时作为首条助手消息展示，不参与模型上下文.
+    /// </summary>
+    public string? OpeningStatement { get; init; }
+
+    /// <summary>
     /// 悬浮按钮文案，空则用图标.
     /// </summary>
     public string? LauncherText { get; init; }

@@ -29,6 +29,11 @@ public class QueryKnowledgeGraphSearchCommand : IRequest<QueryKnowledgeGraphSear
     /// </summary>
     public double? MinScore { get; init; }
 
+    /// <summary>
+    /// 每个命中实体按度数排序保留的邻居数（0=默认 10；1-30，度数高者优先进入上下文）.
+    /// </summary>
+    public int NeighborTopK { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryKnowledgeGraphSearchCommand> validate)
     {
@@ -36,5 +41,6 @@ public class QueryKnowledgeGraphSearchCommand : IRequest<QueryKnowledgeGraphSear
         validate.RuleFor(x => x.Query).NotEmpty().WithMessage("查询文本不能为空.");
         validate.RuleFor(x => x.TopK).InclusiveBetween(1, 50).WithMessage("TopK 取值 1-50.");
         validate.RuleFor(x => x.MinScore).InclusiveBetween(0, 1).When(x => x.MinScore.HasValue).WithMessage("MinScore 取值 0-1.");
+        validate.RuleFor(x => x.NeighborTopK).InclusiveBetween(0, 30).WithMessage("邻居数取值 0-30.");
     }
 }

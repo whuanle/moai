@@ -3,6 +3,7 @@ using Maomi.ToMarkdown;
 using Maomi.ToMarkdown.TextExtract;
 using Maomi.ToMarkdown.TextSplit;
 using Maomi.ToMarkdown.Token;
+using MoAI.Storage.TextExtract;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -208,7 +209,11 @@ public class WikiDocumentProcessingService
             sizeUnit = ToConfigValue(sizeUnit),
             tokenEncodingOrModel = sizeUnit == DocumentPartitionSizeUnit.Token ? NormalizeTokenEncodingOrModel(tokenEncodingOrModel) : null,
         });
-        await ReplaceChunksAsync(document, slices, sliceConfig, cancellationToken);
+
+        // 切片标题锚点：TextChunk.StartPosition 为原文 1-based 位置，映射标题面包屑
+        var headingMap = BuildHeadingBreadcrumbs(markdown);
+        var anchors = textChunks.Select(x => ResolveAnchor(headingMap, x.StartPosition - 1)).ToList();
+        await ReplaceChunksAsync(document, slices, sliceConfig, anchors, cancellationToken);
         return slices.Count;
     }
 
@@ -246,7 +251,10 @@ public class WikiDocumentProcessingService
             throw new InvalidOperationException("AI 未返回有效的切割结果.");
         }
 
-        await ReplaceChunksAsync(document, slices, JsonSerializer.Serialize(new { aiModelId, mode = "ai" }), cancellationToken);
+        // AI 切割切片可能重组文本：按切片文本回原文定位后取标题面包屑，定位失败锚点留空
+        var headingMap = BuildHeadingBreadcrumbs(markdown);
+        var anchors = slices.Select(s => ResolveAnchor(headingMap, LocateSlice(markdown, s))).ToList();
+        await ReplaceChunksAsync(document, slices, JsonSerializer.Serialize(new { aiModelId, mode = "ai" }), anchors, cancellationToken);
         return slices.Count;
     }
 
@@ -303,16 +311,21 @@ public class WikiDocumentProcessingService
                 }
             }
 
-            try
+            // Maomi.ToMarkdown 原生扩展名直接提取；其余（EPUB/ODT/RTF/代码配置类文本）走平台自研提取层
+            if (DocumentTextExtract.IsNativeSupported(document.FileName))
             {
-                return (await _textExtractionService.ExtractAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
+                try
+                {
+                    return (await _textExtractionService.ExtractAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
+                }
+                catch (NotSupportedException)
+                {
+                    // 原生判定与库实际能力出现偏差时的安全网：嗅探排除二进制后按纯文本读取，与 PlainTextExtractor 行为对齐.
+                    return (await TextFileReader.ReadAsTextAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
+                }
             }
-            catch (NotSupportedException)
-            {
-                // Maomi.ToMarkdown 不识别的扩展名（管理员在允许类型中放开的文本类文件，如 .csv/.sh/.cs）：
-                // 嗅探排除二进制后按纯文本读取，与 PlainTextExtractor 行为对齐.
-                return (await WikiTextFileReader.ReadAsTextAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
-            }
+
+            return (await DocumentTextExtract.ExtractAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
         }
     }
 
@@ -547,7 +560,7 @@ public class WikiDocumentProcessingService
     private static string ToConfigValue(DocumentPartitionSizeUnit sizeUnit)
         => sizeUnit == DocumentPartitionSizeUnit.Token ? "token" : "character";
 
-    private async Task ReplaceChunksAsync(WikiDocumentEntity document, IReadOnlyList<string> slices, string sliceConfig, CancellationToken cancellationToken)
+    private async Task ReplaceChunksAsync(WikiDocumentEntity document, IReadOnlyList<string> slices, string sliceConfig, IReadOnlyList<string>? anchors = null, CancellationToken cancellationToken = default)
     {
         var oldChunkIds = await _databaseContext.WikiDocumentChunkContents
             .Where(x => x.DocumentId == document.Id && x.WikiId == document.WikiId && x.IsDeleted == 0)
@@ -566,8 +579,9 @@ public class WikiDocumentProcessingService
             .ExecuteDeleteAsync(cancellationToken);
 
         var order = 0;
-        foreach (var slice in slices)
+        for (var i = 0; i < slices.Count; i++)
         {
+            var slice = slices[i];
             if (string.IsNullOrEmpty(slice))
             {
                 continue;
@@ -581,13 +595,156 @@ public class WikiDocumentProcessingService
                 SliceContent = slice,
                 SliceOrder = order,
                 SliceLength = slice.Length,
+                SliceAnchor = anchors != null && i < anchors.Count ? anchors[i] ?? string.Empty : string.Empty,
             });
             order++;
         }
 
         document.SliceConfig = sliceConfig;
         document.IsEmbedding = false;
+        // 切片已重建而向量已随旧切片删除，标记内容待更新（召回命中标 IsStale，向量化完成后清除）
+        document.IsUpdate = true;
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 推进索引纪元：切片集合变化使该库的检索经验聚类失效
+        await _databaseContext.Wikis
+            .Where(x => x.Id == document.WikiId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.IndexEpoch, x => x.IndexEpoch + 1)
+                .SetProperty(x => x.UpdateTime, DateTimeOffset.UtcNow), cancellationToken);
+    }
+
+    /// <summary>
+    /// 扫描 markdown 标题行（# ~ ######），按文档顺序构建标题面包屑快照（标题起始字符位置 → 层级链「标题A > 标题B」）.
+    /// 代码块内的 # 行会被误识别为标题（启发式取舍，切割锚点场景可接受）.
+    /// </summary>
+    /// <param name="markdown">markdown 全文.</param>
+    /// <returns>面包屑快照列表（按位置升序）.</returns>
+    private static List<(int Position, string Breadcrumb)> BuildHeadingBreadcrumbs(string markdown)
+    {
+        var result = new List<(int Position, string Breadcrumb)>();
+        if (string.IsNullOrEmpty(markdown))
+        {
+            return result;
+        }
+
+        var stack = new List<(int Level, string Text)>();
+        var position = 0;
+        foreach (var line in markdown.Split('\n'))
+        {
+            var lineStart = position;
+            position += line.Length + 1;
+
+            var trimmed = line.TrimStart();
+            if (!trimmed.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var level = 0;
+            while (level < trimmed.Length && trimmed[level] == '#')
+            {
+                level++;
+            }
+
+            if (level > 6 || level >= trimmed.Length || trimmed[level] != ' ')
+            {
+                continue;
+            }
+
+            var text = trimmed[(level + 1)..].Trim();
+            if (text.Length == 0)
+            {
+                continue;
+            }
+
+            stack.RemoveAll(h => h.Level >= level);
+            stack.Add((level, text));
+            var breadcrumb = string.Join(" > ", stack.Select(h => h.Text));
+            if (breadcrumb.Length > 512)
+            {
+                breadcrumb = breadcrumb[..512];
+            }
+
+            result.Add((lineStart, breadcrumb));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 解析位置所在的标题面包屑：取最后一个起始位置不晚于该位置的标题快照.
+    /// </summary>
+    /// <param name="headingMap">标题面包屑快照.</param>
+    /// <param name="position">0-based 字符位置（负数返回空）.</param>
+    /// <returns>标题面包屑；未落在任何标题下返回空串.</returns>
+    private static string ResolveAnchor(List<(int Position, string Breadcrumb)> headingMap, int position)
+    {
+        if (headingMap.Count == 0 || position < 0)
+        {
+            return string.Empty;
+        }
+
+        string anchor = string.Empty;
+        foreach (var entry in headingMap)
+        {
+            if (entry.Position > position)
+            {
+                break;
+            }
+
+            anchor = entry.Breadcrumb;
+        }
+
+        return anchor;
+    }
+
+    /// <summary>
+    /// 在原文中定位切片文本（AI 切割切片可能重组文本：整段 → 前 80 字符 → 首个非空行逐级回退）.
+    /// </summary>
+    /// <param name="markdown">markdown 全文.</param>
+    /// <param name="slice">切片文本.</param>
+    /// <returns>0-based 起始位置；定位失败返回 -1.</returns>
+    private static int LocateSlice(string markdown, string slice)
+    {
+        if (string.IsNullOrWhiteSpace(slice))
+        {
+            return -1;
+        }
+
+        var trimmed = slice.Trim();
+        var found = markdown.IndexOf(trimmed, StringComparison.Ordinal);
+        if (found >= 0)
+        {
+            return found;
+        }
+
+        if (trimmed.Length > 80)
+        {
+            found = markdown.IndexOf(trimmed[..80], StringComparison.Ordinal);
+            if (found >= 0)
+            {
+                return found;
+            }
+        }
+
+        var firstLine = trimmed.Split('\n').FirstOrDefault(l => !string.IsNullOrWhiteSpace(l));
+        if (!string.IsNullOrWhiteSpace(firstLine))
+        {
+            var line = firstLine.Trim();
+            if (line.Length > 80)
+            {
+                line = line[..80];
+            }
+
+            found = markdown.IndexOf(line, StringComparison.Ordinal);
+            if (found >= 0)
+            {
+                return found;
+            }
+        }
+
+        return -1;
     }
 
     private async Task<(AiModelEntity Model, AiChannelEntity Channel)> ResolveChatAsync(Guid modelId, int teamId, CancellationToken cancellationToken)

@@ -35,6 +35,10 @@ internal partial class WikiConfiguration : IEntityTypeConfiguration<WikiEntity>
         entity.Property(e => e.Counter)
             .HasComment("计数器")
             .HasColumnName("counter");
+        entity.Property(e => e.IndexEpoch)
+            .HasDefaultValue(0L)
+            .HasComment("索引纪元：文档/切片/向量集合变更（删文档/重切割/向量化成功）时 +1，检索经验聚类据此失效自愈")
+            .HasColumnName("index_epoch");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")

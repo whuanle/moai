@@ -35,6 +35,7 @@ export interface AccessAppItem extends Parsable {
 }
 export type AccessAppStatus = (typeof AccessAppStatusObject)[keyof typeof AccessAppStatusObject];
 export type AccessAppType = (typeof AccessAppTypeObject)[keyof typeof AccessAppTypeObject];
+export type AccessPointDisplayMode = (typeof AccessPointDisplayModeObject)[keyof typeof AccessPointDisplayModeObject];
 export type AccessPointPosition = (typeof AccessPointPositionObject)[keyof typeof AccessPointPositionObject];
 /**
  * 手动封禁 IP（管理员），仅管理员.
@@ -307,6 +308,10 @@ export interface AppAccessPointConfigResponse extends Parsable {
      */
     defaultOpen?: boolean | null;
     /**
+     * 显示形式：floating 悬浮组件（默认）/ inline 内嵌小窗.
+     */
+    displayMode?: string | null;
+    /**
      * 是否启用访问点.
      */
     enabled?: boolean | null;
@@ -327,7 +332,7 @@ export interface AppAccessPointConfigResponse extends Parsable {
      */
     placeholder?: string | null;
     /**
-     * 悬浮位置.
+     * 悬浮位置（bottomRight / bottomLeft，camelCase）.
      */
     position?: string | null;
     /**
@@ -2809,7 +2814,7 @@ export interface CreateKnowledgeGraphCommand extends Parsable {
      */
     teamId?: string | null;
     /**
-     * 模板 key，null=自定义.
+     * 模板 key，null=自定义；仅创建时作为种子类型数据参考，不与图谱持久化关联.
      */
     templateKey?: string | null;
 }
@@ -2885,6 +2890,15 @@ export function createKnowledgeGraphEntityTypeItemFromDiscriminatorValue(parseNo
 // @ts-ignore
 export function createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoKnowledgeGraphEntityTypeProperty;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {KnowledgeGraphImportJobItem}
+ */
+// @ts-ignore
+export function createKnowledgeGraphImportJobItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoKnowledgeGraphImportJobItem;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3115,6 +3129,24 @@ export function createMemoryItemFromDiscriminatorValue(parseNode: ParseNode | un
 // @ts-ignore
 export function createMemoryMigrationTaskStateFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoMemoryMigrationTaskState;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {MergeKnowledgeGraphNodesCommand}
+ */
+// @ts-ignore
+export function createMergeKnowledgeGraphNodesCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoMergeKnowledgeGraphNodesCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {MergeKnowledgeGraphNodesCommandResponse}
+ */
+// @ts-ignore
+export function createMergeKnowledgeGraphNodesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoMergeKnowledgeGraphNodesCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -3452,6 +3484,15 @@ export function createPreUploadChatFileCommandFromDiscriminatorValue(parseNode: 
 // @ts-ignore
 export function createPreUploadFileCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPreUploadFileCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PreUploadGraphFileCommand}
+ */
+// @ts-ignore
+export function createPreUploadGraphFileCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPreUploadGraphFileCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4043,6 +4084,15 @@ export function createQueryKnowledgeGraphCanvasCommandResponseFromDiscriminatorV
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphCommandResponse_canvasStyle}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphCommandResponse_canvasStyleFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphCommandResponse_canvasStyle;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryKnowledgeGraphCommandResponse}
  */
 // @ts-ignore
@@ -4075,6 +4125,15 @@ export function createQueryKnowledgeGraphEdgesCommandFromDiscriminatorValue(pars
 // @ts-ignore
 export function createQueryKnowledgeGraphEdgesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryKnowledgeGraphEdgesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphImportJobsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphImportJobsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphImportJobsCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -4201,6 +4260,33 @@ export function createQueryKnowledgeGraphSearchNeighborItemFromDiscriminatorValu
 // @ts-ignore
 export function createQueryKnowledgeGraphTemplatesCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoQueryKnowledgeGraphTemplatesCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphText2CypherCommand}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphText2CypherCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphText2CypherCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphText2CypherCommandResponse_rows}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphText2CypherCommandResponse_rowsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphText2CypherCommandResponse_rows;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryKnowledgeGraphText2CypherCommandResponse}
+ */
+// @ts-ignore
+export function createQueryKnowledgeGraphText2CypherCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryKnowledgeGraphText2CypherCommandResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -5042,6 +5128,15 @@ export function createQueryWikiDocumentsCommandResponseFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryWikiModelMigrationStatusResponse}
+ */
+// @ts-ignore
+export function createQueryWikiModelMigrationStatusResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryWikiModelMigrationStatusResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryWikiModelOptionsCommandResponse}
  */
 // @ts-ignore
@@ -5700,6 +5795,24 @@ export function createStartMemoryModelMigrationCommandResponseFromDiscriminatorV
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {StartWikiModelMigrationCommand}
+ */
+// @ts-ignore
+export function createStartWikiModelMigrationCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoStartWikiModelMigrationCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {StartWikiModelMigrationCommandResponse}
+ */
+// @ts-ignore
+export function createStartWikiModelMigrationCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoStartWikiModelMigrationCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SubstituteVariableCommand}
  */
 // @ts-ignore
@@ -6165,6 +6278,24 @@ export function createTeamVariableItemFromDiscriminatorValue(parseNode: ParseNod
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TestKnowledgeGraphConnectionCommand}
+ */
+// @ts-ignore
+export function createTestKnowledgeGraphConnectionCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTestKnowledgeGraphConnectionCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {TestKnowledgeGraphConnectionCommandResponse}
+ */
+// @ts-ignore
+export function createTestKnowledgeGraphConnectionCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoTestKnowledgeGraphConnectionCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {TestNotificationChannelCommand}
  */
 // @ts-ignore
@@ -6354,6 +6485,24 @@ export function createUpdateKnowledgeGraphAvatarCommandFromDiscriminatorValue(pa
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateKnowledgeGraphCanvasStyleCommand_captions}
+ */
+// @ts-ignore
+export function createUpdateKnowledgeGraphCanvasStyleCommand_captionsFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateKnowledgeGraphCanvasStyleCommand_captions;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateKnowledgeGraphCanvasStyleCommand}
+ */
+// @ts-ignore
+export function createUpdateKnowledgeGraphCanvasStyleCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateKnowledgeGraphCanvasStyleCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {UpdateKnowledgeGraphCommand}
  */
 // @ts-ignore
@@ -6386,6 +6535,15 @@ export function createUpdateKnowledgeGraphEmbeddingConfigCommandFromDiscriminato
 // @ts-ignore
 export function createUpdateKnowledgeGraphEntityTypeCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoUpdateKnowledgeGraphEntityTypeCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {UpdateKnowledgeGraphExtractModelCommand}
+ */
+// @ts-ignore
+export function createUpdateKnowledgeGraphExtractModelCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoUpdateKnowledgeGraphExtractModelCommand;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -6953,6 +7111,15 @@ export function createWikiMcpConfigResponseFromDiscriminatorValue(parseNode: Par
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {WikiModelMigrationTaskState}
+ */
+// @ts-ignore
+export function createWikiModelMigrationTaskStateFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoWikiModelMigrationTaskState;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {WikiModelOptionItem}
  */
 // @ts-ignore
@@ -6969,7 +7136,7 @@ export function createWikiSearchContextChunkFromDiscriminatorValue(parseNode: Pa
     return deserializeIntoWikiSearchContextChunk;
 }
 /**
- * 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源支持两种绑定方式：选择团队已有的飞书应用连接（FeishuAppId），或直接填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
+ * 创建知识库外部源，需要团队 Admin 及以上角色.飞书文档源须填写飞书开放平台 AppID/AppSecret 新建连接（NewAppId/NewAppSecret）.创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
  */
 export interface CreateWikiSourceCommand extends Parsable {
     /**
@@ -6984,10 +7151,6 @@ export interface CreateWikiSourceCommand extends Parsable {
      * 描述.
      */
     description?: string | null;
-    /**
-     * 方式一：选择团队已有的飞书应用连接 id（feishu_app.id）.
-     */
-    feishuAppId?: Guid | null;
     /**
      * 是否拉取节点下的全部子文档.
      */
@@ -7013,19 +7176,19 @@ export interface CreateWikiSourceCommand extends Parsable {
      */
     name?: string | null;
     /**
-     * 方式二：接入域名，为空默认 https://open.feishu.cn；Lark 为 https://open.larksuite.com.
+     * 接入域名，为空默认 https://open.feishu.cn；Lark 为 https://open.larksuite.com.
      */
     newAppDomain?: string | null;
     /**
-     * 方式二：飞书开放平台 AppID，形如 cli_xxx.
+     * 飞书开放平台 AppID，形如 cli_xxx，必填.
      */
     newAppId?: string | null;
     /**
-     * 方式二：新建飞书应用连接的名称.
+     * 新建飞书应用连接的名称，团队内唯一.
      */
     newAppName?: string | null;
     /**
-     * 方式二：飞书开放平台 AppSecret.
+     * 飞书开放平台 AppSecret，必填.
      */
     newAppSecret?: string | null;
     /**
@@ -7456,6 +7619,7 @@ export function deserializeIntoAppAccessPointConfigResponse(appAccessPointConfig
         "appId": n => { appAccessPointConfigResponse.appId = n.getGuidValue(); },
         "avatar": n => { appAccessPointConfigResponse.avatar = n.getStringValue(); },
         "defaultOpen": n => { appAccessPointConfigResponse.defaultOpen = n.getBooleanValue(); },
+        "displayMode": n => { appAccessPointConfigResponse.displayMode = n.getStringValue(); },
         "enabled": n => { appAccessPointConfigResponse.enabled = n.getBooleanValue(); },
         "launcherText": n => { appAccessPointConfigResponse.launcherText = n.getStringValue(); },
         "panelHeight": n => { appAccessPointConfigResponse.panelHeight = n.getNumberValue(); },
@@ -8558,7 +8722,6 @@ export function deserializeIntoCreateWikiSourceCommand(createWikiSourceCommand: 
         "crawler": n => { createWikiSourceCommand.crawler = n.getObjectValue<WikiSourceCrawlerConfig>(createWikiSourceCrawlerConfigFromDiscriminatorValue); },
         "cron": n => { createWikiSourceCommand.cron = n.getStringValue(); },
         "description": n => { createWikiSourceCommand.description = n.getStringValue(); },
-        "feishuAppId": n => { createWikiSourceCommand.feishuAppId = n.getGuidValue(); },
         "includeSubNodes": n => { createWikiSourceCommand.includeSubNodes = n.getBooleanValue(); },
         "isEnable": n => { createWikiSourceCommand.isEnable = n.getBooleanValue(); },
         "isEventSubscription": n => { createWikiSourceCommand.isEventSubscription = n.getBooleanValue(); },
@@ -8934,6 +9097,7 @@ export function deserializeIntoImportKnowledgeGraphFromFileResponse(importKnowle
         "edgesCreated": n => { importKnowledgeGraphFromFileResponse.edgesCreated = n.getNumberValue(); },
         "message": n => { importKnowledgeGraphFromFileResponse.message = n.getStringValue(); },
         "nodesCreated": n => { importKnowledgeGraphFromFileResponse.nodesCreated = n.getNumberValue(); },
+        "nodesMerged": n => { importKnowledgeGraphFromFileResponse.nodesMerged = n.getNumberValue(); },
         "skippedEdges": n => { importKnowledgeGraphFromFileResponse.skippedEdges = n.getNumberValue(); },
         "skippedNodes": n => { importKnowledgeGraphFromFileResponse.skippedNodes = n.getNumberValue(); },
         "truncated": n => { importKnowledgeGraphFromFileResponse.truncated = n.getBooleanValue(); },
@@ -9071,6 +9235,24 @@ export function deserializeIntoKnowledgeGraphEntityTypeProperty(knowledgeGraphEn
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoKnowledgeGraphImportJobItem(knowledgeGraphImportJobItem: Partial<KnowledgeGraphImportJobItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { knowledgeGraphImportJobItem.createTime = n.getStringValue(); },
+        "doneRows": n => { knowledgeGraphImportJobItem.doneRows = n.getNumberValue(); },
+        "error": n => { knowledgeGraphImportJobItem.errorEscaped = n.getStringValue(); },
+        "fileName": n => { knowledgeGraphImportJobItem.fileName = n.getStringValue(); },
+        "jobId": n => { knowledgeGraphImportJobItem.jobId = n.getStringValue(); },
+        "result": n => { knowledgeGraphImportJobItem.result = n.getObjectValue<ImportKnowledgeGraphFromFileResponse>(createImportKnowledgeGraphFromFileResponseFromDiscriminatorValue); },
+        "status": n => { knowledgeGraphImportJobItem.status = n.getStringValue(); },
+        "totalRows": n => { knowledgeGraphImportJobItem.totalRows = n.getNumberValue(); },
+        "type": n => { knowledgeGraphImportJobItem.type = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoKnowledgeGraphIntrospectionDiff(knowledgeGraphIntrospectionDiff: Partial<KnowledgeGraphIntrospectionDiff> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "addedLabels": n => { knowledgeGraphIntrospectionDiff.addedLabels = n.getCollectionOfPrimitiveValues<string>(); },
@@ -9091,14 +9273,11 @@ export function deserializeIntoKnowledgeGraphItem(knowledgeGraphItem: Partial<Kn
         "createTime": n => { knowledgeGraphItem.createTime = n.getStringValue(); },
         "database": n => { knowledgeGraphItem.database = n.getStringValue(); },
         "description": n => { knowledgeGraphItem.description = n.getStringValue(); },
-        "entityCount": n => { knowledgeGraphItem.entityCount = n.getNumberValue(); },
         "kgId": n => { knowledgeGraphItem.kgId = n.getStringValue(); },
         "mode": n => { knowledgeGraphItem.mode = n.getStringValue(); },
         "name": n => { knowledgeGraphItem.name = n.getStringValue(); },
         "readOnly": n => { knowledgeGraphItem.readOnly = n.getBooleanValue(); },
-        "relationCount": n => { knowledgeGraphItem.relationCount = n.getNumberValue(); },
         "teamId": n => { knowledgeGraphItem.teamId = n.getStringValue(); },
-        "templateKey": n => { knowledgeGraphItem.templateKey = n.getStringValue(); },
     }
 }
 /**
@@ -9132,6 +9311,7 @@ export function deserializeIntoKnowledgeGraphModelOptionItem(knowledgeGraphModel
 // @ts-ignore
 export function deserializeIntoKnowledgeGraphNodeItem(knowledgeGraphNodeItem: Partial<KnowledgeGraphNodeItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "degree": n => { knowledgeGraphNodeItem.degree = n.getNumberValue(); },
         "description": n => { knowledgeGraphNodeItem.description = n.getStringValue(); },
         "entityLabel": n => { knowledgeGraphNodeItem.entityLabel = n.getStringValue(); },
         "entityTypeId": n => { knowledgeGraphNodeItem.entityTypeId = n.getStringValue(); },
@@ -9356,6 +9536,31 @@ export function deserializeIntoMemoryMigrationTaskState(memoryMigrationTaskState
         "taskId": n => { memoryMigrationTaskState.taskId = n.getGuidValue(); },
         "totalCount": n => { memoryMigrationTaskState.totalCount = n.getNumberValue(); },
         "updateTime": n => { memoryMigrationTaskState.updateTime = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoMergeKnowledgeGraphNodesCommand(mergeKnowledgeGraphNodesCommand: Partial<MergeKnowledgeGraphNodesCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "confirm": n => { mergeKnowledgeGraphNodesCommand.confirm = n.getBooleanValue(); },
+        "knowledgeGraphId": n => { mergeKnowledgeGraphNodesCommand.knowledgeGraphId = n.getStringValue(); },
+        "sourceNodeIds": n => { mergeKnowledgeGraphNodesCommand.sourceNodeIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "targetNodeId": n => { mergeKnowledgeGraphNodesCommand.targetNodeId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoMergeKnowledgeGraphNodesCommandResponse(mergeKnowledgeGraphNodesCommandResponse: Partial<MergeKnowledgeGraphNodesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "droppedSelfLoopEdges": n => { mergeKnowledgeGraphNodesCommandResponse.droppedSelfLoopEdges = n.getNumberValue(); },
+        "rehungEdges": n => { mergeKnowledgeGraphNodesCommandResponse.rehungEdges = n.getNumberValue(); },
+        "removedNodes": n => { mergeKnowledgeGraphNodesCommandResponse.removedNodes = n.getNumberValue(); },
     }
 }
 /**
@@ -9661,6 +9866,19 @@ export function deserializeIntoPreUploadFileCommandResponse(preUploadFileCommand
         "isExist": n => { preUploadFileCommandResponse.isExist = n.getBooleanValue(); },
         "objectKey": n => { preUploadFileCommandResponse.objectKey = n.getStringValue(); },
         "uploadUrl": n => { preUploadFileCommandResponse.uploadUrl = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPreUploadGraphFileCommand(preUploadGraphFileCommand: Partial<PreUploadGraphFileCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "contentType": n => { preUploadGraphFileCommand.contentType = n.getStringValue(); },
+        "fileName": n => { preUploadGraphFileCommand.fileName = n.getStringValue(); },
+        "fileSize": n => { preUploadGraphFileCommand.fileSize = n.getNumberValue(); },
+        "shA256": n => { preUploadGraphFileCommand.shA256 = n.getStringValue(); },
     }
 }
 /**
@@ -10552,6 +10770,7 @@ export function deserializeIntoQueryIpBanListCommandResponse(queryIpBanListComma
 // @ts-ignore
 export function deserializeIntoQueryKnowledgeGraphCanvasCommand(queryKnowledgeGraphCanvasCommand: Partial<QueryKnowledgeGraphCanvasCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "depth": n => { queryKnowledgeGraphCanvasCommand.depth = n.getNumberValue(); },
         "entityTypeId": n => { queryKnowledgeGraphCanvasCommand.entityTypeId = n.getStringValue(); },
         "keyword": n => { queryKnowledgeGraphCanvasCommand.keyword = n.getStringValue(); },
         "knowledgeGraphId": n => { queryKnowledgeGraphCanvasCommand.knowledgeGraphId = n.getStringValue(); },
@@ -10580,19 +10799,29 @@ export function deserializeIntoQueryKnowledgeGraphCanvasCommandResponse(queryKno
 export function deserializeIntoQueryKnowledgeGraphCommandResponse(queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatarPath": n => { queryKnowledgeGraphCommandResponse.avatarPath = n.getStringValue(); },
+        "canvasStyle": n => { queryKnowledgeGraphCommandResponse.canvasStyle = n.getObjectValue<QueryKnowledgeGraphCommandResponse_canvasStyle>(createQueryKnowledgeGraphCommandResponse_canvasStyleFromDiscriminatorValue); },
         "createTime": n => { queryKnowledgeGraphCommandResponse.createTime = n.getStringValue(); },
         "database": n => { queryKnowledgeGraphCommandResponse.database = n.getStringValue(); },
         "description": n => { queryKnowledgeGraphCommandResponse.description = n.getStringValue(); },
         "embeddingDimensions": n => { queryKnowledgeGraphCommandResponse.embeddingDimensions = n.getNumberValue(); },
         "embeddingModelId": n => { queryKnowledgeGraphCommandResponse.embeddingModelId = n.getGuidValue(); },
         "enabled": n => { queryKnowledgeGraphCommandResponse.enabled = n.getBooleanValue(); },
+        "extractModelId": n => { queryKnowledgeGraphCommandResponse.extractModelId = n.getGuidValue(); },
         "kgId": n => { queryKnowledgeGraphCommandResponse.kgId = n.getStringValue(); },
         "mode": n => { queryKnowledgeGraphCommandResponse.mode = n.getStringValue(); },
         "myRole": n => { queryKnowledgeGraphCommandResponse.myRole = n.getNumberValue(); },
         "name": n => { queryKnowledgeGraphCommandResponse.name = n.getStringValue(); },
         "readOnly": n => { queryKnowledgeGraphCommandResponse.readOnly = n.getBooleanValue(); },
         "teamId": n => { queryKnowledgeGraphCommandResponse.teamId = n.getStringValue(); },
-        "templateKey": n => { queryKnowledgeGraphCommandResponse.templateKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphCommandResponse_canvasStyle(queryKnowledgeGraphCommandResponse_canvasStyle: Partial<QueryKnowledgeGraphCommandResponse_canvasStyle> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -10631,6 +10860,17 @@ export function deserializeIntoQueryKnowledgeGraphEdgesCommandResponse(queryKnow
     return {
         "items": n => { queryKnowledgeGraphEdgesCommandResponse.items = n.getCollectionOfObjectValues<KnowledgeGraphEdgeItem>(createKnowledgeGraphEdgeItemFromDiscriminatorValue); },
         "total": n => { queryKnowledgeGraphEdgesCommandResponse.total = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphImportJobsCommandResponse(queryKnowledgeGraphImportJobsCommandResponse: Partial<QueryKnowledgeGraphImportJobsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryKnowledgeGraphImportJobsCommandResponse.items = n.getCollectionOfObjectValues<KnowledgeGraphImportJobItem>(createKnowledgeGraphImportJobItemFromDiscriminatorValue); },
+        "total": n => { queryKnowledgeGraphImportJobsCommandResponse.total = n.getStringValue(); },
     }
 }
 /**
@@ -10706,6 +10946,7 @@ export function deserializeIntoQueryKnowledgeGraphRecallTestCommand(queryKnowled
         "isOptimizeQuery": n => { queryKnowledgeGraphRecallTestCommand.isOptimizeQuery = n.getBooleanValue(); },
         "knowledgeGraphId": n => { queryKnowledgeGraphRecallTestCommand.knowledgeGraphId = n.getStringValue(); },
         "minScore": n => { queryKnowledgeGraphRecallTestCommand.minScore = n.getNumberValue(); },
+        "neighborTopK": n => { queryKnowledgeGraphRecallTestCommand.neighborTopK = n.getNumberValue(); },
         "query": n => { queryKnowledgeGraphRecallTestCommand.query = n.getStringValue(); },
         "top": n => { queryKnowledgeGraphRecallTestCommand.top = n.getNumberValue(); },
     }
@@ -10763,6 +11004,7 @@ export function deserializeIntoQueryKnowledgeGraphSearchCommand(queryKnowledgeGr
     return {
         "knowledgeGraphId": n => { queryKnowledgeGraphSearchCommand.knowledgeGraphId = n.getStringValue(); },
         "minScore": n => { queryKnowledgeGraphSearchCommand.minScore = n.getNumberValue(); },
+        "neighborTopK": n => { queryKnowledgeGraphSearchCommand.neighborTopK = n.getNumberValue(); },
         "query": n => { queryKnowledgeGraphSearchCommand.query = n.getStringValue(); },
         "topK": n => { queryKnowledgeGraphSearchCommand.topK = n.getNumberValue(); },
     }
@@ -10778,6 +11020,7 @@ export function deserializeIntoQueryKnowledgeGraphSearchCommandResponse(queryKno
         "hits": n => { queryKnowledgeGraphSearchCommandResponse.hits = n.getCollectionOfObjectValues<QueryKnowledgeGraphSearchItem>(createQueryKnowledgeGraphSearchItemFromDiscriminatorValue); },
         "skippedHints": n => { queryKnowledgeGraphSearchCommandResponse.skippedHints = n.getCollectionOfPrimitiveValues<string>(); },
         "text": n => { queryKnowledgeGraphSearchCommandResponse.text = n.getStringValue(); },
+        "textTruncated": n => { queryKnowledgeGraphSearchCommandResponse.textTruncated = n.getBooleanValue(); },
     }
 }
 /**
@@ -10804,6 +11047,7 @@ export function deserializeIntoQueryKnowledgeGraphSearchItem(queryKnowledgeGraph
 // @ts-ignore
 export function deserializeIntoQueryKnowledgeGraphSearchNeighborItem(queryKnowledgeGraphSearchNeighborItem: Partial<QueryKnowledgeGraphSearchNeighborItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "degree": n => { queryKnowledgeGraphSearchNeighborItem.degree = n.getNumberValue(); },
         "description": n => { queryKnowledgeGraphSearchNeighborItem.description = n.getStringValue(); },
         "direction": n => { queryKnowledgeGraphSearchNeighborItem.direction = n.getStringValue(); },
         "name": n => { queryKnowledgeGraphSearchNeighborItem.name = n.getStringValue(); },
@@ -10818,6 +11062,44 @@ export function deserializeIntoQueryKnowledgeGraphSearchNeighborItem(queryKnowle
 export function deserializeIntoQueryKnowledgeGraphTemplatesCommandResponse(queryKnowledgeGraphTemplatesCommandResponse: Partial<QueryKnowledgeGraphTemplatesCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryKnowledgeGraphTemplatesCommandResponse.items = n.getCollectionOfObjectValues<KnowledgeGraphTemplateItem>(createKnowledgeGraphTemplateItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphText2CypherCommand(queryKnowledgeGraphText2CypherCommand: Partial<QueryKnowledgeGraphText2CypherCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "aiModelId": n => { queryKnowledgeGraphText2CypherCommand.aiModelId = n.getGuidValue(); },
+        "knowledgeGraphId": n => { queryKnowledgeGraphText2CypherCommand.knowledgeGraphId = n.getStringValue(); },
+        "question": n => { queryKnowledgeGraphText2CypherCommand.question = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphText2CypherCommandResponse(queryKnowledgeGraphText2CypherCommandResponse: Partial<QueryKnowledgeGraphText2CypherCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "columns": n => { queryKnowledgeGraphText2CypherCommandResponse.columns = n.getCollectionOfPrimitiveValues<string>(); },
+        "cypher": n => { queryKnowledgeGraphText2CypherCommandResponse.cypher = n.getStringValue(); },
+        "error": n => { queryKnowledgeGraphText2CypherCommandResponse.errorEscaped = n.getStringValue(); },
+        "nodeIds": n => { queryKnowledgeGraphText2CypherCommandResponse.nodeIds = n.getCollectionOfPrimitiveValues<string>(); },
+        "ok": n => { queryKnowledgeGraphText2CypherCommandResponse.ok = n.getBooleanValue(); },
+        "rowCount": n => { queryKnowledgeGraphText2CypherCommandResponse.rowCount = n.getNumberValue(); },
+        "rows": n => { queryKnowledgeGraphText2CypherCommandResponse.rows = n.getCollectionOfObjectValues<QueryKnowledgeGraphText2CypherCommandResponse_rows>(createQueryKnowledgeGraphText2CypherCommandResponse_rowsFromDiscriminatorValue); },
+        "truncated": n => { queryKnowledgeGraphText2CypherCommandResponse.truncated = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryKnowledgeGraphText2CypherCommandResponse_rows(queryKnowledgeGraphText2CypherCommandResponse_rows: Partial<QueryKnowledgeGraphText2CypherCommandResponse_rows> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
     }
 }
 /**
@@ -12052,6 +12334,21 @@ export function deserializeIntoQueryWikiDocumentsCommandResponse(queryWikiDocume
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryWikiModelMigrationStatusResponse(queryWikiModelMigrationStatusResponse: Partial<QueryWikiModelMigrationStatusResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "activeMigration": n => { queryWikiModelMigrationStatusResponse.activeMigration = n.getObjectValue<WikiModelMigrationTaskState>(createWikiModelMigrationTaskStateFromDiscriminatorValue); },
+        "currentDimensions": n => { queryWikiModelMigrationStatusResponse.currentDimensions = n.getNumberValue(); },
+        "currentModelId": n => { queryWikiModelMigrationStatusResponse.currentModelId = n.getGuidValue(); },
+        "currentModelName": n => { queryWikiModelMigrationStatusResponse.currentModelName = n.getStringValue(); },
+        "totalVectorCount": n => { queryWikiModelMigrationStatusResponse.totalVectorCount = n.getNumberValue(); },
+        "wikiId": n => { queryWikiModelMigrationStatusResponse.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryWikiModelOptionsCommandResponse(queryWikiModelOptionsCommandResponse: Partial<QueryWikiModelOptionsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "conversationModels": n => { queryWikiModelOptionsCommandResponse.conversationModels = n.getCollectionOfObjectValues<WikiModelOptionItem>(createWikiModelOptionItemFromDiscriminatorValue); },
@@ -12069,8 +12366,10 @@ export function deserializeIntoQueryWikiRecallTestCommand(queryWikiRecallTestCom
         "aiModelId": n => { queryWikiRecallTestCommand.aiModelId = n.getGuidValue(); },
         "contextUserId": n => { queryWikiRecallTestCommand.contextUserId = n.getStringValue(); },
         "contextUserType": n => { queryWikiRecallTestCommand.contextUserType = n.getEnumValue<UserType>(UserTypeObject); },
+        "contextWindow": n => { queryWikiRecallTestCommand.contextWindow = n.getNumberValue(); },
         "documentIds": n => { queryWikiRecallTestCommand.documentIds = n.getCollectionOfPrimitiveValues<string>(); },
         "isAnswer": n => { queryWikiRecallTestCommand.isAnswer = n.getBooleanValue(); },
+        "isKeywordSearch": n => { queryWikiRecallTestCommand.isKeywordSearch = n.getBooleanValue(); },
         "isOptimizeQuery": n => { queryWikiRecallTestCommand.isOptimizeQuery = n.getBooleanValue(); },
         "minScore": n => { queryWikiRecallTestCommand.minScore = n.getNumberValue(); },
         "query": n => { queryWikiRecallTestCommand.query = n.getStringValue(); },
@@ -12098,6 +12397,7 @@ export function deserializeIntoQueryWikiRecallTestCommandResponse(queryWikiRecal
 // @ts-ignore
 export function deserializeIntoQueryWikiRecallTestItem(queryWikiRecallTestItem: Partial<QueryWikiRecallTestItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "anchor": n => { queryWikiRecallTestItem.anchor = n.getStringValue(); },
         "chunkId": n => { queryWikiRecallTestItem.chunkId = n.getStringValue(); },
         "chunkIndex": n => { queryWikiRecallTestItem.chunkIndex = n.getNumberValue(); },
         "content": n => { queryWikiRecallTestItem.content = n.getStringValue(); },
@@ -12105,6 +12405,9 @@ export function deserializeIntoQueryWikiRecallTestItem(queryWikiRecallTestItem: 
         "documentChunkCount": n => { queryWikiRecallTestItem.documentChunkCount = n.getNumberValue(); },
         "documentId": n => { queryWikiRecallTestItem.documentId = n.getStringValue(); },
         "documentName": n => { queryWikiRecallTestItem.documentName = n.getStringValue(); },
+        "isContentFallback": n => { queryWikiRecallTestItem.isContentFallback = n.getBooleanValue(); },
+        "isKeywordHit": n => { queryWikiRecallTestItem.isKeywordHit = n.getBooleanValue(); },
+        "isStale": n => { queryWikiRecallTestItem.isStale = n.getBooleanValue(); },
         "metadataType": n => { queryWikiRecallTestItem.metadataType = n.getNumberValue(); },
         "rerankScore": n => { queryWikiRecallTestItem.rerankScore = n.getNumberValue(); },
         "score": n => { queryWikiRecallTestItem.score = n.getNumberValue(); },
@@ -12457,6 +12760,7 @@ export function deserializeIntoSaveAppAccessPointCommand(saveAppAccessPointComma
     return {
         "avatar": n => { saveAppAccessPointCommand.avatar = n.getStringValue(); },
         "defaultOpen": n => { saveAppAccessPointCommand.defaultOpen = n.getBooleanValue(); },
+        "displayMode": n => { saveAppAccessPointCommand.displayMode = n.getEnumValue<AccessPointDisplayMode>(AccessPointDisplayModeObject); },
         "enabled": n => { saveAppAccessPointCommand.enabled = n.getBooleanValue(); },
         "launcherText": n => { saveAppAccessPointCommand.launcherText = n.getStringValue(); },
         "panelHeight": n => { saveAppAccessPointCommand.panelHeight = n.getNumberValue(); },
@@ -12968,6 +13272,28 @@ export function deserializeIntoStartMemoryModelMigrationCommandResponse(startMem
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoStartWikiModelMigrationCommand(startWikiModelMigrationCommand: Partial<StartWikiModelMigrationCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "dimensions": n => { startWikiModelMigrationCommand.dimensions = n.getNumberValue(); },
+        "modelId": n => { startWikiModelMigrationCommand.modelId = n.getGuidValue(); },
+        "wikiId": n => { startWikiModelMigrationCommand.wikiId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoStartWikiModelMigrationCommandResponse(startWikiModelMigrationCommandResponse: Partial<StartWikiModelMigrationCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "taskId": n => { startWikiModelMigrationCommandResponse.taskId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSubstituteVariableCommand(substituteVariableCommand: Partial<SubstituteVariableCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "content": n => { substituteVariableCommand.content = n.getStringValue(); },
@@ -13103,6 +13429,7 @@ export function deserializeIntoSyncWikiSourceCommandResponse(syncWikiSourceComma
         "failed": n => { syncWikiSourceCommandResponse.failed = n.getNumberValue(); },
         "items": n => { syncWikiSourceCommandResponse.items = n.getCollectionOfObjectValues<SyncWikiSourceDocumentResult>(createSyncWikiSourceDocumentResultFromDiscriminatorValue); },
         "message": n => { syncWikiSourceCommandResponse.message = n.getStringValue(); },
+        "removed": n => { syncWikiSourceCommandResponse.removed = n.getNumberValue(); },
         "skipped": n => { syncWikiSourceCommandResponse.skipped = n.getNumberValue(); },
         "total": n => { syncWikiSourceCommandResponse.total = n.getNumberValue(); },
         "unchanged": n => { syncWikiSourceCommandResponse.unchanged = n.getNumberValue(); },
@@ -13394,6 +13721,32 @@ export function deserializeIntoTeamVariableItem(teamVariableItem: Partial<TeamVa
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoTestKnowledgeGraphConnectionCommand(testKnowledgeGraphConnectionCommand: Partial<TestKnowledgeGraphConnectionCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "dialect": n => { testKnowledgeGraphConnectionCommand.dialect = n.getStringValue(); },
+        "password": n => { testKnowledgeGraphConnectionCommand.password = n.getStringValue(); },
+        "uri": n => { testKnowledgeGraphConnectionCommand.uri = n.getStringValue(); },
+        "username": n => { testKnowledgeGraphConnectionCommand.username = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoTestKnowledgeGraphConnectionCommandResponse(testKnowledgeGraphConnectionCommandResponse: Partial<TestKnowledgeGraphConnectionCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "dialect": n => { testKnowledgeGraphConnectionCommandResponse.dialect = n.getStringValue(); },
+        "error": n => { testKnowledgeGraphConnectionCommandResponse.errorEscaped = n.getStringValue(); },
+        "latencyMs": n => { testKnowledgeGraphConnectionCommandResponse.latencyMs = n.getStringValue(); },
+        "ok": n => { testKnowledgeGraphConnectionCommandResponse.ok = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoTestNotificationChannelCommand(testNotificationChannelCommand: Partial<TestNotificationChannelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "config": n => { testNotificationChannelCommand.config = n.getStringValue(); },
@@ -13661,6 +14014,26 @@ export function deserializeIntoUpdateKnowledgeGraphAvatarCommand(updateKnowledge
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoUpdateKnowledgeGraphCanvasStyleCommand(updateKnowledgeGraphCanvasStyleCommand: Partial<UpdateKnowledgeGraphCanvasStyleCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "captions": n => { updateKnowledgeGraphCanvasStyleCommand.captions = n.getObjectValue<UpdateKnowledgeGraphCanvasStyleCommand_captions>(createUpdateKnowledgeGraphCanvasStyleCommand_captionsFromDiscriminatorValue); },
+        "knowledgeGraphId": n => { updateKnowledgeGraphCanvasStyleCommand.knowledgeGraphId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateKnowledgeGraphCanvasStyleCommand_captions(updateKnowledgeGraphCanvasStyleCommand_captions: Partial<UpdateKnowledgeGraphCanvasStyleCommand_captions> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoUpdateKnowledgeGraphCommand(updateKnowledgeGraphCommand: Partial<UpdateKnowledgeGraphCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "description": n => { updateKnowledgeGraphCommand.description = n.getStringValue(); },
@@ -13705,6 +14078,17 @@ export function deserializeIntoUpdateKnowledgeGraphEntityTypeCommand(updateKnowl
         "knowledgeGraphId": n => { updateKnowledgeGraphEntityTypeCommand.knowledgeGraphId = n.getStringValue(); },
         "name": n => { updateKnowledgeGraphEntityTypeCommand.name = n.getStringValue(); },
         "properties": n => { updateKnowledgeGraphEntityTypeCommand.properties = n.getCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>(createKnowledgeGraphEntityTypePropertyFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoUpdateKnowledgeGraphExtractModelCommand(updateKnowledgeGraphExtractModelCommand: Partial<UpdateKnowledgeGraphExtractModelCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "extractModelId": n => { updateKnowledgeGraphExtractModelCommand.extractModelId = n.getGuidValue(); },
+        "knowledgeGraphId": n => { updateKnowledgeGraphExtractModelCommand.knowledgeGraphId = n.getStringValue(); },
     }
 }
 /**
@@ -14247,7 +14631,6 @@ export function deserializeIntoUpdateWikiSourceCommand(updateWikiSourceCommand: 
         "crawler": n => { updateWikiSourceCommand.crawler = n.getObjectValue<WikiSourceCrawlerConfig>(createWikiSourceCrawlerConfigFromDiscriminatorValue); },
         "cron": n => { updateWikiSourceCommand.cron = n.getStringValue(); },
         "description": n => { updateWikiSourceCommand.description = n.getStringValue(); },
-        "feishuAppId": n => { updateWikiSourceCommand.feishuAppId = n.getGuidValue(); },
         "includeSubNodes": n => { updateWikiSourceCommand.includeSubNodes = n.getBooleanValue(); },
         "isEnable": n => { updateWikiSourceCommand.isEnable = n.getBooleanValue(); },
         "isEventSubscription": n => { updateWikiSourceCommand.isEventSubscription = n.getBooleanValue(); },
@@ -14438,6 +14821,25 @@ export function deserializeIntoWikiMcpConfigResponse(wikiMcpConfigResponse: Part
         "key": n => { wikiMcpConfigResponse.key = n.getStringValue(); },
         "keyPrefix": n => { wikiMcpConfigResponse.keyPrefix = n.getStringValue(); },
         "teamResourceKeyId": n => { wikiMcpConfigResponse.teamResourceKeyId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoWikiModelMigrationTaskState(wikiModelMigrationTaskState: Partial<WikiModelMigrationTaskState> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "createTime": n => { wikiModelMigrationTaskState.createTime = n.getStringValue(); },
+        "message": n => { wikiModelMigrationTaskState.message = n.getStringValue(); },
+        "migratedCount": n => { wikiModelMigrationTaskState.migratedCount = n.getNumberValue(); },
+        "state": n => { wikiModelMigrationTaskState.state = n.getNumberValue(); },
+        "targetDimensions": n => { wikiModelMigrationTaskState.targetDimensions = n.getNumberValue(); },
+        "targetModelId": n => { wikiModelMigrationTaskState.targetModelId = n.getGuidValue(); },
+        "targetModelName": n => { wikiModelMigrationTaskState.targetModelName = n.getStringValue(); },
+        "taskId": n => { wikiModelMigrationTaskState.taskId = n.getGuidValue(); },
+        "totalCount": n => { wikiModelMigrationTaskState.totalCount = n.getNumberValue(); },
+        "updateTime": n => { wikiModelMigrationTaskState.updateTime = n.getStringValue(); },
     }
 }
 /**
@@ -15035,11 +15437,11 @@ export interface ImportDuplicateSuspect extends Parsable {
     score?: number | null;
 }
 /**
- * AI 导入文件生成图谱：读取已直传的文档文件，Maomi.ToMarkdown 提取内容后由对话模型按图谱现有模型抽取实体与关系写入图库，仅 Owner/Admin 的托管图可导入.
+ * AI 导入文件生成图谱（B2 异步化）：读取已直传的文档文件，登记导入任务交 Hangfire 执行（提取→抽取→幂等合并落库），仅 Owner/Admin 的托管图可导入；返回任务 id（D27）.
  */
 export interface ImportKnowledgeGraphFromFileCommand extends Parsable {
     /**
-     * 团队可用的 AI 对话模型 id.
+     * 团队可用的 AI 对话模型 id（可空：缺省时回退图谱默认抽取模型，两者皆空则 400，D30）.
      */
     aiModelId?: Guid | null;
     /**
@@ -15075,6 +15477,10 @@ export interface ImportKnowledgeGraphFromFileResponse extends Parsable {
      * 新增实体（节点）数.
      */
     nodesCreated?: number | null;
+    /**
+     * 合并实体数（命中已有节点：描述去重拼接、属性补齐、证据追加，v4 B1 幂等合并）.
+     */
+    nodesMerged?: number | null;
     /**
      * 跳过的关系数（类型不存在/端点缺失/约束不满足）.
      */
@@ -15275,6 +15681,47 @@ export interface KnowledgeGraphEntityTypeProperty extends Parsable {
     type?: string | null;
 }
 /**
+ * 导入任务列表项.
+ */
+export interface KnowledgeGraphImportJobItem extends Parsable {
+    /**
+     * 创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 已完成行数.
+     */
+    doneRows?: number | null;
+    /**
+     * 失败原因（成功为 null）.
+     */
+    errorEscaped?: string | null;
+    /**
+     * 导入文件名.
+     */
+    fileName?: string | null;
+    /**
+     * 任务 id.
+     */
+    jobId?: string | null;
+    /**
+     * 结果统计（未完成为 null）.
+     */
+    result?: ImportKnowledgeGraphFromFileResponse | null;
+    /**
+     * 任务状态：pending/extracting/parsing/merging/done/failed/cancelled.
+     */
+    status?: string | null;
+    /**
+     * 总行数（解析后回填，解析前为 0）.
+     */
+    totalRows?: number | null;
+    /**
+     * 任务类型：file=AI 文档导入.
+     */
+    type?: string | null;
+}
+/**
  * 接入图内省相对上次基线的变化.
  */
 export interface KnowledgeGraphIntrospectionDiff extends Parsable {
@@ -15320,10 +15767,6 @@ export interface KnowledgeGraphItem extends Parsable {
      */
     description?: string | null;
     /**
-     * 实体（节点）数量；图库不可用或统计失败时为 null.
-     */
-    entityCount?: number | null;
-    /**
      * 图谱 id.
      */
     kgId?: string | null;
@@ -15340,17 +15783,9 @@ export interface KnowledgeGraphItem extends Parsable {
      */
     readOnly?: boolean | null;
     /**
-     * 关系（边）数量；图库不可用或统计失败时为 null.
-     */
-    relationCount?: number | null;
-    /**
      * 团队 id.
      */
     teamId?: string | null;
-    /**
-     * 模板 key.
-     */
-    templateKey?: string | null;
 }
 /**
  * 知识图谱 MCP 接入配置响应：开关 + 该图的团队资源 key（开启过 MCP 才有；未生成时 key 相关字段为 null）.
@@ -15390,6 +15825,10 @@ export interface KnowledgeGraphModelOptionItem extends Parsable {
  * 节点列表项.
  */
 export interface KnowledgeGraphNodeItem extends Parsable {
+    /**
+     * 节点度数（邻接边总数；画布/邻接查询携带，接入图为 0）.
+     */
+    degree?: number | null;
     /**
      * 描述.
      */
@@ -15852,6 +16291,44 @@ export interface MemoryMigrationTaskState extends Parsable {
      * 任务最后更新时间.
      */
     updateTime?: string | null;
+}
+/**
+ * 实体合并：把多个源节点合并进目标节点——目标保留名称与类型，描述/属性深合并（冲突目标优先），源节点边重挂到目标（同三元组去重、自环丢弃），源节点删除.
+ */
+export interface MergeKnowledgeGraphNodesCommand extends Parsable {
+    /**
+     * 已确认影响面（受影响边数 ≥20 时必须为 true，否则 409 提示确认）.
+     */
+    confirm?: boolean | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 源节点 id 列表（1~20 个，合并后删除）.
+     */
+    sourceNodeIds?: string[] | null;
+    /**
+     * 目标节点 id（合并保留方）.
+     */
+    targetNodeId?: string | null;
+}
+/**
+ * 实体合并结果.
+ */
+export interface MergeKnowledgeGraphNodesCommandResponse extends Parsable {
+    /**
+     * 因合并成为自环（两端均为被合并节点）而丢弃的边数量.
+     */
+    droppedSelfLoopEdges?: number | null;
+    /**
+     * 重挂到目标节点的新建边数量（同三元组已存在跳过、自环丢弃不计）.
+     */
+    rehungEdges?: number | null;
+    /**
+     * 被删除的源节点数量.
+     */
+    removedNodes?: number | null;
 }
 /**
  * 站内信条目：审计列语义为 创建人=发送人（系统消息为空）、创建时间=发送时间.
@@ -16391,6 +16868,27 @@ export interface PreUploadFileCommandResponse extends Parsable {
      * 预签名上传地址，当 IsExist = true 时为空.
      */
     uploadUrl?: string | null;
+}
+/**
+ * 知识图谱文件导入预上传命令，生成预签名上传地址（文档/文本提取能力全集，公开目录，供 AI 导入提取）.
+ */
+export interface PreUploadGraphFileCommand extends Parsable {
+    /**
+     * 文件类型 (MIME Type).
+     */
+    contentType?: string | null;
+    /**
+     * 文件名称.
+     */
+    fileName?: string | null;
+    /**
+     * 文件大小 (字节).
+     */
+    fileSize?: number | null;
+    /**
+     * 文件 SHA-256.
+     */
+    shA256?: string | null;
 }
 /**
  * 图片预上传命令，生成预签名上传地址.
@@ -18039,6 +18537,10 @@ export interface QueryIpBanListCommandResponse extends Parsable {
  */
 export interface QueryKnowledgeGraphCanvasCommand extends Parsable {
     /**
+     * 子图深度（1=仅种子节点，2=种子集再向外扩一跳；仅托管图生效，默认 1）.
+     */
+    depth?: number | null;
+    /**
      * 实体类型筛选（节点，托管图）.
      */
     entityTypeId?: string | null;
@@ -18089,6 +18591,10 @@ export interface QueryKnowledgeGraphCommandResponse extends Parsable {
      */
     avatarPath?: string | null;
     /**
+     * 画布样式规则（键=实体类型 id 字符串，值=属性名或空串表示不显示第二行）；null=未配置（画布按默认显示类型名）.
+     */
+    canvasStyle?: QueryKnowledgeGraphCommandResponse_canvasStyle | null;
+    /**
      * 创建时间.
      */
     createTime?: string | null;
@@ -18113,6 +18619,10 @@ export interface QueryKnowledgeGraphCommandResponse extends Parsable {
      */
     enabled?: boolean | null;
     /**
+     * 默认抽取模型 id（AI 导入缺省对话模型）；为空表示未配置.
+     */
+    extractModelId?: Guid | null;
+    /**
      * 图谱 id.
      */
     kgId?: string | null;
@@ -18136,10 +18646,11 @@ export interface QueryKnowledgeGraphCommandResponse extends Parsable {
      * 团队 id.
      */
     teamId?: string | null;
-    /**
-     * 模板 key.
-     */
-    templateKey?: string | null;
+}
+/**
+ * 画布样式规则（键=实体类型 id 字符串，值=属性名或空串表示不显示第二行）；null=未配置（画布按默认显示类型名）.
+ */
+export interface QueryKnowledgeGraphCommandResponse_canvasStyle extends Parsable {
 }
 /**
  * 边详情响应.
@@ -18195,6 +18706,19 @@ export interface QueryKnowledgeGraphEdgesCommandResponse extends Parsable {
      * 列表.
      */
     items?: KnowledgeGraphEdgeItem[] | null;
+    /**
+     * 总数.
+     */
+    total?: string | null;
+}
+/**
+ * 导入任务列表响应.
+ */
+export interface QueryKnowledgeGraphImportJobsCommandResponse extends Parsable {
+    /**
+     * 任务列表（按 id 倒序）.
+     */
+    items?: KnowledgeGraphImportJobItem[] | null;
     /**
      * 总数.
      */
@@ -18314,6 +18838,10 @@ export interface QueryKnowledgeGraphRecallTestCommand extends Parsable {
      */
     minScore?: number | null;
     /**
+     * 每个命中实体按度数排序保留的邻居数（0=默认 10；1-30，度数高者优先）.
+     */
+    neighborTopK?: number | null;
+    /**
      * 查询文本.
      */
     query?: string | null;
@@ -18418,6 +18946,10 @@ export interface QueryKnowledgeGraphSearchCommand extends Parsable {
      */
     minScore?: number | null;
     /**
+     * 每个命中实体按度数排序保留的邻居数（0=默认 10；1-30，度数高者优先进入上下文）.
+     */
+    neighborTopK?: number | null;
+    /**
      * 查询文本.
      */
     query?: string | null;
@@ -18446,6 +18978,10 @@ export interface QueryKnowledgeGraphSearchCommandResponse extends Parsable {
      * 文本化拼接结果（供 LLM 上下文，超长截断）.
      */
     text?: string | null;
+    /**
+     * 文本化结果是否因超出预算截断（截断自尾部低分命中开始）.
+     */
+    textTruncated?: boolean | null;
 }
 /**
  * 图谱语义检索命中项.
@@ -18489,6 +19025,10 @@ export interface QueryKnowledgeGraphSearchItem extends Parsable {
  */
 export interface QueryKnowledgeGraphSearchNeighborItem extends Parsable {
     /**
+     * 邻居节点度数（邻接边总数；邻居按度数降序取 Top）.
+     */
+    degree?: number | null;
+    /**
      * 邻居描述.
      */
     description?: string | null;
@@ -18513,6 +19053,62 @@ export interface QueryKnowledgeGraphTemplatesCommandResponse extends Parsable {
      * 模板列表.
      */
     items?: KnowledgeGraphTemplateItem[] | null;
+}
+/**
+ * Text2Cypher 画布问图（B7/D31）：自然语言 → 对话模型按图谱结构生成只读 Cypher → 守卫与 $kgId 隔离执行 →返回生成的 Cypher、表格结果与结果中抽取的本图节点 id 集合（供画布高亮）；Member 可用（只读面）.
+ */
+export interface QueryKnowledgeGraphText2CypherCommand extends Parsable {
+    /**
+     * 对话模型 id（可空：缺省回退图谱默认抽取模型，两者皆空 400，D30 同款回退）.
+     */
+    aiModelId?: Guid | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+    /**
+     * 自然语言问题.
+     */
+    question?: string | null;
+}
+/**
+ * Text2Cypher 问图结果（B7/D31）.
+ */
+export interface QueryKnowledgeGraphText2CypherCommandResponse extends Parsable {
+    /**
+     * 结果列名.
+     */
+    columns?: string[] | null;
+    /**
+     * 模型生成的 Cypher（失败时也返回原文，便于用户排查与复制）.
+     */
+    cypher?: string | null;
+    /**
+     * 失败原因（成功为 null）.
+     */
+    errorEscaped?: string | null;
+    /**
+     * 结果中识别出的本图节点 id 集合（供画布高亮定位；属性投影行不含节点 id 时为空）.
+     */
+    nodeIds?: string[] | null;
+    /**
+     * 是否执行成功（false 时 error 携带守卫/执行的教学式错误，cypher 为模型生成的原文）.
+     */
+    ok?: boolean | null;
+    /**
+     * 实际返回行数.
+     */
+    rowCount?: number | null;
+    /**
+     * 结果行（列名 → 值；值已规范化为字符串/数字/布尔）.
+     */
+    rows?: QueryKnowledgeGraphText2CypherCommandResponse_rows[] | null;
+    /**
+     * 结果是否因行数上限截断（封顶 500）.
+     */
+    truncated?: boolean | null;
+}
+export interface QueryKnowledgeGraphText2CypherCommandResponse_rows extends Parsable {
 }
 /**
  * 登录日志分页响应.
@@ -20500,6 +21096,35 @@ export interface QueryWikiDocumentsCommandResponse extends Parsable {
     total?: number | null;
 }
 /**
+ * 迁移状态响应.
+ */
+export interface QueryWikiModelMigrationStatusResponse extends Parsable {
+    /**
+     * 最近一次迁移任务（活跃任务优先，含进度）；从未迁移时为 null.
+     */
+    activeMigration?: WikiModelMigrationTaskState | null;
+    /**
+     * 当前向量维度.
+     */
+    currentDimensions?: number | null;
+    /**
+     * 当前生效的向量化模型 id.
+     */
+    currentModelId?: Guid | null;
+    /**
+     * 当前生效的向量化模型名称.
+     */
+    currentModelName?: string | null;
+    /**
+     * 该库当前向量总条数.
+     */
+    totalVectorCount?: number | null;
+    /**
+     * 知识库 id.
+     */
+    wikiId?: string | null;
+}
+/**
  * 团队可用模型选项响应.
  */
 export interface QueryWikiModelOptionsCommandResponse extends Parsable {
@@ -20533,6 +21158,10 @@ export interface QueryWikiRecallTestCommand extends Parsable {
      */
     contextUserType?: UserType | null;
     /**
+     * 相邻上下文窗口大小（1-3，默认 1：每个命中片段附前一片段与后一片段）.
+     */
+    contextWindow?: number | null;
+    /**
      * 文档范围过滤（文档 id 集合）；为空表示全部文档.
      */
     documentIds?: string[] | null;
@@ -20540,6 +21169,10 @@ export interface QueryWikiRecallTestCommand extends Parsable {
      * 是否基于召回内容生成 AI 回答.
      */
     isAnswer?: boolean | null;
+    /**
+     * 是否启用检索增强（检索经验复用 + 关键词混合检索）；默认 true.传 false 退化为纯向量召回（不走经验缓存，严格按本次向量相似度检索，用于 A/B 对比与问题排查）.
+     */
+    isKeywordSearch?: boolean | null;
     /**
      * 是否先由 AI 将问题优化为适合检索的查询文本.
      */
@@ -20587,6 +21220,10 @@ export interface QueryWikiRecallTestCommandResponse extends Parsable {
  */
 export interface QueryWikiRecallTestItem extends Parsable {
     /**
+     * 切片标题锚点（所在章节的标题面包屑）；空串表示未定位到章节.
+     */
+    anchor?: string | null;
+    /**
      * 切片 id.
      */
     chunkId?: string | null;
@@ -20614,6 +21251,18 @@ export interface QueryWikiRecallTestItem extends Parsable {
      * 文档名称.
      */
     documentName?: string | null;
+    /**
+     * 是否为内容级兜底命中（文档已提取但尚未切割：探针匹配提取正文返回文档级片段，无切片序号）.
+     */
+    isContentFallback?: boolean | null;
+    /**
+     * 是否同时命中关键词检索（切片原文或关键词/问题元数据与查询词匹配）.
+     */
+    isKeywordHit?: boolean | null;
+    /**
+     * 命中文档的内容是否已更新且重新向量化尚未完成；内容可能过期.
+     */
+    isStale?: boolean | null;
     /**
      * 命中内容的元数据类型：0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段.
      */
@@ -21150,6 +21799,10 @@ export interface SaveAppAccessPointCommand extends Parsable {
      * 是否默认展开.
      */
     defaultOpen?: boolean | null;
+    /**
+     * 显示形式：floating 悬浮组件（默认）/ inline 内嵌小窗.
+     */
+    displayMode?: AccessPointDisplayMode | null;
     /**
      * 是否启用访问点.
      */
@@ -21870,6 +22523,7 @@ export function serializeAppAccessPointConfigResponse(writer: SerializationWrite
         writer.writeGuidValue("appId", appAccessPointConfigResponse.appId);
         writer.writeStringValue("avatar", appAccessPointConfigResponse.avatar);
         writer.writeBooleanValue("defaultOpen", appAccessPointConfigResponse.defaultOpen);
+        writer.writeStringValue("displayMode", appAccessPointConfigResponse.displayMode);
         writer.writeBooleanValue("enabled", appAccessPointConfigResponse.enabled);
         writer.writeStringValue("launcherText", appAccessPointConfigResponse.launcherText);
         writer.writeNumberValue("panelHeight", appAccessPointConfigResponse.panelHeight);
@@ -22973,7 +23627,6 @@ export function serializeCreateWikiSourceCommand(writer: SerializationWriter, cr
         writer.writeObjectValue<WikiSourceCrawlerConfig>("crawler", createWikiSourceCommand.crawler, serializeWikiSourceCrawlerConfig);
         writer.writeStringValue("cron", createWikiSourceCommand.cron);
         writer.writeStringValue("description", createWikiSourceCommand.description);
-        writer.writeGuidValue("feishuAppId", createWikiSourceCommand.feishuAppId);
         writer.writeBooleanValue("includeSubNodes", createWikiSourceCommand.includeSubNodes);
         writer.writeBooleanValue("isEnable", createWikiSourceCommand.isEnable);
         writer.writeBooleanValue("isEventSubscription", createWikiSourceCommand.isEventSubscription);
@@ -23349,6 +24002,7 @@ export function serializeImportKnowledgeGraphFromFileResponse(writer: Serializat
         writer.writeNumberValue("edgesCreated", importKnowledgeGraphFromFileResponse.edgesCreated);
         writer.writeStringValue("message", importKnowledgeGraphFromFileResponse.message);
         writer.writeNumberValue("nodesCreated", importKnowledgeGraphFromFileResponse.nodesCreated);
+        writer.writeNumberValue("nodesMerged", importKnowledgeGraphFromFileResponse.nodesMerged);
         writer.writeNumberValue("skippedEdges", importKnowledgeGraphFromFileResponse.skippedEdges);
         writer.writeNumberValue("skippedNodes", importKnowledgeGraphFromFileResponse.skippedNodes);
         writer.writeBooleanValue("truncated", importKnowledgeGraphFromFileResponse.truncated);
@@ -23486,6 +24140,24 @@ export function serializeKnowledgeGraphEntityTypeProperty(writer: SerializationW
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeKnowledgeGraphImportJobItem(writer: SerializationWriter, knowledgeGraphImportJobItem: Partial<KnowledgeGraphImportJobItem> | undefined | null = {}) : void {
+    if (knowledgeGraphImportJobItem) {
+        writer.writeStringValue("createTime", knowledgeGraphImportJobItem.createTime);
+        writer.writeNumberValue("doneRows", knowledgeGraphImportJobItem.doneRows);
+        writer.writeStringValue("error", knowledgeGraphImportJobItem.errorEscaped);
+        writer.writeStringValue("fileName", knowledgeGraphImportJobItem.fileName);
+        writer.writeStringValue("jobId", knowledgeGraphImportJobItem.jobId);
+        writer.writeObjectValue<ImportKnowledgeGraphFromFileResponse>("result", knowledgeGraphImportJobItem.result, serializeImportKnowledgeGraphFromFileResponse);
+        writer.writeStringValue("status", knowledgeGraphImportJobItem.status);
+        writer.writeNumberValue("totalRows", knowledgeGraphImportJobItem.totalRows);
+        writer.writeStringValue("type", knowledgeGraphImportJobItem.type);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeKnowledgeGraphIntrospectionDiff(writer: SerializationWriter, knowledgeGraphIntrospectionDiff: Partial<KnowledgeGraphIntrospectionDiff> | undefined | null = {}) : void {
     if (knowledgeGraphIntrospectionDiff) {
         writer.writeCollectionOfPrimitiveValues<string>("addedLabels", knowledgeGraphIntrospectionDiff.addedLabels);
@@ -23506,14 +24178,11 @@ export function serializeKnowledgeGraphItem(writer: SerializationWriter, knowled
         writer.writeStringValue("createTime", knowledgeGraphItem.createTime);
         writer.writeStringValue("database", knowledgeGraphItem.database);
         writer.writeStringValue("description", knowledgeGraphItem.description);
-        writer.writeNumberValue("entityCount", knowledgeGraphItem.entityCount);
         writer.writeStringValue("kgId", knowledgeGraphItem.kgId);
         writer.writeStringValue("mode", knowledgeGraphItem.mode);
         writer.writeStringValue("name", knowledgeGraphItem.name);
         writer.writeBooleanValue("readOnly", knowledgeGraphItem.readOnly);
-        writer.writeNumberValue("relationCount", knowledgeGraphItem.relationCount);
         writer.writeStringValue("teamId", knowledgeGraphItem.teamId);
-        writer.writeStringValue("templateKey", knowledgeGraphItem.templateKey);
     }
 }
 /**
@@ -23547,6 +24216,7 @@ export function serializeKnowledgeGraphModelOptionItem(writer: SerializationWrit
 // @ts-ignore
 export function serializeKnowledgeGraphNodeItem(writer: SerializationWriter, knowledgeGraphNodeItem: Partial<KnowledgeGraphNodeItem> | undefined | null = {}) : void {
     if (knowledgeGraphNodeItem) {
+        writer.writeNumberValue("degree", knowledgeGraphNodeItem.degree);
         writer.writeStringValue("description", knowledgeGraphNodeItem.description);
         writer.writeStringValue("entityLabel", knowledgeGraphNodeItem.entityLabel);
         writer.writeStringValue("entityTypeId", knowledgeGraphNodeItem.entityTypeId);
@@ -23771,6 +24441,31 @@ export function serializeMemoryMigrationTaskState(writer: SerializationWriter, m
         writer.writeGuidValue("taskId", memoryMigrationTaskState.taskId);
         writer.writeNumberValue("totalCount", memoryMigrationTaskState.totalCount);
         writer.writeStringValue("updateTime", memoryMigrationTaskState.updateTime);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeMergeKnowledgeGraphNodesCommand(writer: SerializationWriter, mergeKnowledgeGraphNodesCommand: Partial<MergeKnowledgeGraphNodesCommand> | undefined | null = {}) : void {
+    if (mergeKnowledgeGraphNodesCommand) {
+        writer.writeBooleanValue("confirm", mergeKnowledgeGraphNodesCommand.confirm);
+        writer.writeStringValue("knowledgeGraphId", mergeKnowledgeGraphNodesCommand.knowledgeGraphId);
+        writer.writeCollectionOfPrimitiveValues<string>("sourceNodeIds", mergeKnowledgeGraphNodesCommand.sourceNodeIds);
+        writer.writeStringValue("targetNodeId", mergeKnowledgeGraphNodesCommand.targetNodeId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeMergeKnowledgeGraphNodesCommandResponse(writer: SerializationWriter, mergeKnowledgeGraphNodesCommandResponse: Partial<MergeKnowledgeGraphNodesCommandResponse> | undefined | null = {}) : void {
+    if (mergeKnowledgeGraphNodesCommandResponse) {
+        writer.writeNumberValue("droppedSelfLoopEdges", mergeKnowledgeGraphNodesCommandResponse.droppedSelfLoopEdges);
+        writer.writeNumberValue("rehungEdges", mergeKnowledgeGraphNodesCommandResponse.rehungEdges);
+        writer.writeNumberValue("removedNodes", mergeKnowledgeGraphNodesCommandResponse.removedNodes);
     }
 }
 /**
@@ -24076,6 +24771,19 @@ export function serializePreUploadFileCommandResponse(writer: SerializationWrite
         writer.writeBooleanValue("isExist", preUploadFileCommandResponse.isExist);
         writer.writeStringValue("objectKey", preUploadFileCommandResponse.objectKey);
         writer.writeStringValue("uploadUrl", preUploadFileCommandResponse.uploadUrl);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePreUploadGraphFileCommand(writer: SerializationWriter, preUploadGraphFileCommand: Partial<PreUploadGraphFileCommand> | undefined | null = {}) : void {
+    if (preUploadGraphFileCommand) {
+        writer.writeStringValue("contentType", preUploadGraphFileCommand.contentType);
+        writer.writeStringValue("fileName", preUploadGraphFileCommand.fileName);
+        writer.writeNumberValue("fileSize", preUploadGraphFileCommand.fileSize);
+        writer.writeStringValue("shA256", preUploadGraphFileCommand.shA256);
     }
 }
 /**
@@ -24967,6 +25675,7 @@ export function serializeQueryIpBanListCommandResponse(writer: SerializationWrit
 // @ts-ignore
 export function serializeQueryKnowledgeGraphCanvasCommand(writer: SerializationWriter, queryKnowledgeGraphCanvasCommand: Partial<QueryKnowledgeGraphCanvasCommand> | undefined | null = {}) : void {
     if (queryKnowledgeGraphCanvasCommand) {
+        writer.writeNumberValue("depth", queryKnowledgeGraphCanvasCommand.depth);
         writer.writeStringValue("entityTypeId", queryKnowledgeGraphCanvasCommand.entityTypeId);
         writer.writeStringValue("keyword", queryKnowledgeGraphCanvasCommand.keyword);
         writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphCanvasCommand.knowledgeGraphId);
@@ -24995,19 +25704,29 @@ export function serializeQueryKnowledgeGraphCanvasCommandResponse(writer: Serial
 export function serializeQueryKnowledgeGraphCommandResponse(writer: SerializationWriter, queryKnowledgeGraphCommandResponse: Partial<QueryKnowledgeGraphCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphCommandResponse) {
         writer.writeStringValue("avatarPath", queryKnowledgeGraphCommandResponse.avatarPath);
+        writer.writeObjectValue<QueryKnowledgeGraphCommandResponse_canvasStyle>("canvasStyle", queryKnowledgeGraphCommandResponse.canvasStyle, serializeQueryKnowledgeGraphCommandResponse_canvasStyle);
         writer.writeStringValue("createTime", queryKnowledgeGraphCommandResponse.createTime);
         writer.writeStringValue("database", queryKnowledgeGraphCommandResponse.database);
         writer.writeStringValue("description", queryKnowledgeGraphCommandResponse.description);
         writer.writeNumberValue("embeddingDimensions", queryKnowledgeGraphCommandResponse.embeddingDimensions);
         writer.writeGuidValue("embeddingModelId", queryKnowledgeGraphCommandResponse.embeddingModelId);
         writer.writeBooleanValue("enabled", queryKnowledgeGraphCommandResponse.enabled);
+        writer.writeGuidValue("extractModelId", queryKnowledgeGraphCommandResponse.extractModelId);
         writer.writeStringValue("kgId", queryKnowledgeGraphCommandResponse.kgId);
         writer.writeStringValue("mode", queryKnowledgeGraphCommandResponse.mode);
         writer.writeNumberValue("myRole", queryKnowledgeGraphCommandResponse.myRole);
         writer.writeStringValue("name", queryKnowledgeGraphCommandResponse.name);
         writer.writeBooleanValue("readOnly", queryKnowledgeGraphCommandResponse.readOnly);
         writer.writeStringValue("teamId", queryKnowledgeGraphCommandResponse.teamId);
-        writer.writeStringValue("templateKey", queryKnowledgeGraphCommandResponse.templateKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphCommandResponse_canvasStyle(writer: SerializationWriter, queryKnowledgeGraphCommandResponse_canvasStyle: Partial<QueryKnowledgeGraphCommandResponse_canvasStyle> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphCommandResponse_canvasStyle) {
     }
 }
 /**
@@ -25046,6 +25765,17 @@ export function serializeQueryKnowledgeGraphEdgesCommandResponse(writer: Seriali
     if (queryKnowledgeGraphEdgesCommandResponse) {
         writer.writeCollectionOfObjectValues<KnowledgeGraphEdgeItem>("items", queryKnowledgeGraphEdgesCommandResponse.items, serializeKnowledgeGraphEdgeItem);
         writer.writeStringValue("total", queryKnowledgeGraphEdgesCommandResponse.total);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphImportJobsCommandResponse(writer: SerializationWriter, queryKnowledgeGraphImportJobsCommandResponse: Partial<QueryKnowledgeGraphImportJobsCommandResponse> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphImportJobsCommandResponse) {
+        writer.writeCollectionOfObjectValues<KnowledgeGraphImportJobItem>("items", queryKnowledgeGraphImportJobsCommandResponse.items, serializeKnowledgeGraphImportJobItem);
+        writer.writeStringValue("total", queryKnowledgeGraphImportJobsCommandResponse.total);
     }
 }
 /**
@@ -25121,6 +25851,7 @@ export function serializeQueryKnowledgeGraphRecallTestCommand(writer: Serializat
         writer.writeBooleanValue("isOptimizeQuery", queryKnowledgeGraphRecallTestCommand.isOptimizeQuery);
         writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphRecallTestCommand.knowledgeGraphId);
         writer.writeNumberValue("minScore", queryKnowledgeGraphRecallTestCommand.minScore);
+        writer.writeNumberValue("neighborTopK", queryKnowledgeGraphRecallTestCommand.neighborTopK);
         writer.writeStringValue("query", queryKnowledgeGraphRecallTestCommand.query);
         writer.writeNumberValue("top", queryKnowledgeGraphRecallTestCommand.top);
     }
@@ -25178,6 +25909,7 @@ export function serializeQueryKnowledgeGraphSearchCommand(writer: SerializationW
     if (queryKnowledgeGraphSearchCommand) {
         writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphSearchCommand.knowledgeGraphId);
         writer.writeNumberValue("minScore", queryKnowledgeGraphSearchCommand.minScore);
+        writer.writeNumberValue("neighborTopK", queryKnowledgeGraphSearchCommand.neighborTopK);
         writer.writeStringValue("query", queryKnowledgeGraphSearchCommand.query);
         writer.writeNumberValue("topK", queryKnowledgeGraphSearchCommand.topK);
     }
@@ -25193,6 +25925,7 @@ export function serializeQueryKnowledgeGraphSearchCommandResponse(writer: Serial
         writer.writeCollectionOfObjectValues<QueryKnowledgeGraphSearchItem>("hits", queryKnowledgeGraphSearchCommandResponse.hits, serializeQueryKnowledgeGraphSearchItem);
         writer.writeCollectionOfPrimitiveValues<string>("skippedHints", queryKnowledgeGraphSearchCommandResponse.skippedHints);
         writer.writeStringValue("text", queryKnowledgeGraphSearchCommandResponse.text);
+        writer.writeBooleanValue("textTruncated", queryKnowledgeGraphSearchCommandResponse.textTruncated);
     }
 }
 /**
@@ -25219,6 +25952,7 @@ export function serializeQueryKnowledgeGraphSearchItem(writer: SerializationWrit
 // @ts-ignore
 export function serializeQueryKnowledgeGraphSearchNeighborItem(writer: SerializationWriter, queryKnowledgeGraphSearchNeighborItem: Partial<QueryKnowledgeGraphSearchNeighborItem> | undefined | null = {}) : void {
     if (queryKnowledgeGraphSearchNeighborItem) {
+        writer.writeNumberValue("degree", queryKnowledgeGraphSearchNeighborItem.degree);
         writer.writeStringValue("description", queryKnowledgeGraphSearchNeighborItem.description);
         writer.writeStringValue("direction", queryKnowledgeGraphSearchNeighborItem.direction);
         writer.writeStringValue("name", queryKnowledgeGraphSearchNeighborItem.name);
@@ -25233,6 +25967,44 @@ export function serializeQueryKnowledgeGraphSearchNeighborItem(writer: Serializa
 export function serializeQueryKnowledgeGraphTemplatesCommandResponse(writer: SerializationWriter, queryKnowledgeGraphTemplatesCommandResponse: Partial<QueryKnowledgeGraphTemplatesCommandResponse> | undefined | null = {}) : void {
     if (queryKnowledgeGraphTemplatesCommandResponse) {
         writer.writeCollectionOfObjectValues<KnowledgeGraphTemplateItem>("items", queryKnowledgeGraphTemplatesCommandResponse.items, serializeKnowledgeGraphTemplateItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphText2CypherCommand(writer: SerializationWriter, queryKnowledgeGraphText2CypherCommand: Partial<QueryKnowledgeGraphText2CypherCommand> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphText2CypherCommand) {
+        writer.writeGuidValue("aiModelId", queryKnowledgeGraphText2CypherCommand.aiModelId);
+        writer.writeStringValue("knowledgeGraphId", queryKnowledgeGraphText2CypherCommand.knowledgeGraphId);
+        writer.writeStringValue("question", queryKnowledgeGraphText2CypherCommand.question);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphText2CypherCommandResponse(writer: SerializationWriter, queryKnowledgeGraphText2CypherCommandResponse: Partial<QueryKnowledgeGraphText2CypherCommandResponse> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphText2CypherCommandResponse) {
+        writer.writeCollectionOfPrimitiveValues<string>("columns", queryKnowledgeGraphText2CypherCommandResponse.columns);
+        writer.writeStringValue("cypher", queryKnowledgeGraphText2CypherCommandResponse.cypher);
+        writer.writeStringValue("error", queryKnowledgeGraphText2CypherCommandResponse.errorEscaped);
+        writer.writeCollectionOfPrimitiveValues<string>("nodeIds", queryKnowledgeGraphText2CypherCommandResponse.nodeIds);
+        writer.writeBooleanValue("ok", queryKnowledgeGraphText2CypherCommandResponse.ok);
+        writer.writeNumberValue("rowCount", queryKnowledgeGraphText2CypherCommandResponse.rowCount);
+        writer.writeCollectionOfObjectValues<QueryKnowledgeGraphText2CypherCommandResponse_rows>("rows", queryKnowledgeGraphText2CypherCommandResponse.rows, serializeQueryKnowledgeGraphText2CypherCommandResponse_rows);
+        writer.writeBooleanValue("truncated", queryKnowledgeGraphText2CypherCommandResponse.truncated);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryKnowledgeGraphText2CypherCommandResponse_rows(writer: SerializationWriter, queryKnowledgeGraphText2CypherCommandResponse_rows: Partial<QueryKnowledgeGraphText2CypherCommandResponse_rows> | undefined | null = {}) : void {
+    if (queryKnowledgeGraphText2CypherCommandResponse_rows) {
     }
 }
 /**
@@ -26467,6 +27239,21 @@ export function serializeQueryWikiDocumentsCommandResponse(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryWikiModelMigrationStatusResponse(writer: SerializationWriter, queryWikiModelMigrationStatusResponse: Partial<QueryWikiModelMigrationStatusResponse> | undefined | null = {}) : void {
+    if (queryWikiModelMigrationStatusResponse) {
+        writer.writeObjectValue<WikiModelMigrationTaskState>("activeMigration", queryWikiModelMigrationStatusResponse.activeMigration, serializeWikiModelMigrationTaskState);
+        writer.writeNumberValue("currentDimensions", queryWikiModelMigrationStatusResponse.currentDimensions);
+        writer.writeGuidValue("currentModelId", queryWikiModelMigrationStatusResponse.currentModelId);
+        writer.writeStringValue("currentModelName", queryWikiModelMigrationStatusResponse.currentModelName);
+        writer.writeNumberValue("totalVectorCount", queryWikiModelMigrationStatusResponse.totalVectorCount);
+        writer.writeStringValue("wikiId", queryWikiModelMigrationStatusResponse.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryWikiModelOptionsCommandResponse(writer: SerializationWriter, queryWikiModelOptionsCommandResponse: Partial<QueryWikiModelOptionsCommandResponse> | undefined | null = {}) : void {
     if (queryWikiModelOptionsCommandResponse) {
         writer.writeCollectionOfObjectValues<WikiModelOptionItem>("conversationModels", queryWikiModelOptionsCommandResponse.conversationModels, serializeWikiModelOptionItem);
@@ -26484,8 +27271,10 @@ export function serializeQueryWikiRecallTestCommand(writer: SerializationWriter,
         writer.writeGuidValue("aiModelId", queryWikiRecallTestCommand.aiModelId);
         writer.writeStringValue("contextUserId", queryWikiRecallTestCommand.contextUserId);
         writer.writeEnumValue<UserType>("contextUserType", queryWikiRecallTestCommand.contextUserType);
+        writer.writeNumberValue("contextWindow", queryWikiRecallTestCommand.contextWindow);
         writer.writeCollectionOfPrimitiveValues<string>("documentIds", queryWikiRecallTestCommand.documentIds);
         writer.writeBooleanValue("isAnswer", queryWikiRecallTestCommand.isAnswer);
+        writer.writeBooleanValue("isKeywordSearch", queryWikiRecallTestCommand.isKeywordSearch);
         writer.writeBooleanValue("isOptimizeQuery", queryWikiRecallTestCommand.isOptimizeQuery);
         writer.writeNumberValue("minScore", queryWikiRecallTestCommand.minScore);
         writer.writeStringValue("query", queryWikiRecallTestCommand.query);
@@ -26513,6 +27302,7 @@ export function serializeQueryWikiRecallTestCommandResponse(writer: Serializatio
 // @ts-ignore
 export function serializeQueryWikiRecallTestItem(writer: SerializationWriter, queryWikiRecallTestItem: Partial<QueryWikiRecallTestItem> | undefined | null = {}) : void {
     if (queryWikiRecallTestItem) {
+        writer.writeStringValue("anchor", queryWikiRecallTestItem.anchor);
         writer.writeStringValue("chunkId", queryWikiRecallTestItem.chunkId);
         writer.writeNumberValue("chunkIndex", queryWikiRecallTestItem.chunkIndex);
         writer.writeStringValue("content", queryWikiRecallTestItem.content);
@@ -26520,6 +27310,9 @@ export function serializeQueryWikiRecallTestItem(writer: SerializationWriter, qu
         writer.writeNumberValue("documentChunkCount", queryWikiRecallTestItem.documentChunkCount);
         writer.writeStringValue("documentId", queryWikiRecallTestItem.documentId);
         writer.writeStringValue("documentName", queryWikiRecallTestItem.documentName);
+        writer.writeBooleanValue("isContentFallback", queryWikiRecallTestItem.isContentFallback);
+        writer.writeBooleanValue("isKeywordHit", queryWikiRecallTestItem.isKeywordHit);
+        writer.writeBooleanValue("isStale", queryWikiRecallTestItem.isStale);
         writer.writeNumberValue("metadataType", queryWikiRecallTestItem.metadataType);
         writer.writeNumberValue("rerankScore", queryWikiRecallTestItem.rerankScore);
         writer.writeNumberValue("score", queryWikiRecallTestItem.score);
@@ -26872,6 +27665,7 @@ export function serializeSaveAppAccessPointCommand(writer: SerializationWriter, 
     if (saveAppAccessPointCommand) {
         writer.writeStringValue("avatar", saveAppAccessPointCommand.avatar);
         writer.writeBooleanValue("defaultOpen", saveAppAccessPointCommand.defaultOpen);
+        writer.writeEnumValue<AccessPointDisplayMode>("displayMode", saveAppAccessPointCommand.displayMode);
         writer.writeBooleanValue("enabled", saveAppAccessPointCommand.enabled);
         writer.writeStringValue("launcherText", saveAppAccessPointCommand.launcherText);
         writer.writeNumberValue("panelHeight", saveAppAccessPointCommand.panelHeight);
@@ -27383,6 +28177,28 @@ export function serializeStartMemoryModelMigrationCommandResponse(writer: Serial
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeStartWikiModelMigrationCommand(writer: SerializationWriter, startWikiModelMigrationCommand: Partial<StartWikiModelMigrationCommand> | undefined | null = {}) : void {
+    if (startWikiModelMigrationCommand) {
+        writer.writeNumberValue("dimensions", startWikiModelMigrationCommand.dimensions);
+        writer.writeGuidValue("modelId", startWikiModelMigrationCommand.modelId);
+        writer.writeStringValue("wikiId", startWikiModelMigrationCommand.wikiId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeStartWikiModelMigrationCommandResponse(writer: SerializationWriter, startWikiModelMigrationCommandResponse: Partial<StartWikiModelMigrationCommandResponse> | undefined | null = {}) : void {
+    if (startWikiModelMigrationCommandResponse) {
+        writer.writeGuidValue("taskId", startWikiModelMigrationCommandResponse.taskId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSubstituteVariableCommand(writer: SerializationWriter, substituteVariableCommand: Partial<SubstituteVariableCommand> | undefined | null = {}) : void {
     if (substituteVariableCommand) {
         writer.writeStringValue("content", substituteVariableCommand.content);
@@ -27518,6 +28334,7 @@ export function serializeSyncWikiSourceCommandResponse(writer: SerializationWrit
         writer.writeNumberValue("failed", syncWikiSourceCommandResponse.failed);
         writer.writeCollectionOfObjectValues<SyncWikiSourceDocumentResult>("items", syncWikiSourceCommandResponse.items, serializeSyncWikiSourceDocumentResult);
         writer.writeStringValue("message", syncWikiSourceCommandResponse.message);
+        writer.writeNumberValue("removed", syncWikiSourceCommandResponse.removed);
         writer.writeNumberValue("skipped", syncWikiSourceCommandResponse.skipped);
         writer.writeNumberValue("total", syncWikiSourceCommandResponse.total);
         writer.writeNumberValue("unchanged", syncWikiSourceCommandResponse.unchanged);
@@ -27809,6 +28626,32 @@ export function serializeTeamVariableItem(writer: SerializationWriter, teamVaria
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeTestKnowledgeGraphConnectionCommand(writer: SerializationWriter, testKnowledgeGraphConnectionCommand: Partial<TestKnowledgeGraphConnectionCommand> | undefined | null = {}) : void {
+    if (testKnowledgeGraphConnectionCommand) {
+        writer.writeStringValue("dialect", testKnowledgeGraphConnectionCommand.dialect);
+        writer.writeStringValue("password", testKnowledgeGraphConnectionCommand.password);
+        writer.writeStringValue("uri", testKnowledgeGraphConnectionCommand.uri);
+        writer.writeStringValue("username", testKnowledgeGraphConnectionCommand.username);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeTestKnowledgeGraphConnectionCommandResponse(writer: SerializationWriter, testKnowledgeGraphConnectionCommandResponse: Partial<TestKnowledgeGraphConnectionCommandResponse> | undefined | null = {}) : void {
+    if (testKnowledgeGraphConnectionCommandResponse) {
+        writer.writeStringValue("dialect", testKnowledgeGraphConnectionCommandResponse.dialect);
+        writer.writeStringValue("error", testKnowledgeGraphConnectionCommandResponse.errorEscaped);
+        writer.writeStringValue("latencyMs", testKnowledgeGraphConnectionCommandResponse.latencyMs);
+        writer.writeBooleanValue("ok", testKnowledgeGraphConnectionCommandResponse.ok);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeTestNotificationChannelCommand(writer: SerializationWriter, testNotificationChannelCommand: Partial<TestNotificationChannelCommand> | undefined | null = {}) : void {
     if (testNotificationChannelCommand) {
         writer.writeStringValue("config", testNotificationChannelCommand.config);
@@ -28076,6 +28919,26 @@ export function serializeUpdateKnowledgeGraphAvatarCommand(writer: Serialization
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeUpdateKnowledgeGraphCanvasStyleCommand(writer: SerializationWriter, updateKnowledgeGraphCanvasStyleCommand: Partial<UpdateKnowledgeGraphCanvasStyleCommand> | undefined | null = {}) : void {
+    if (updateKnowledgeGraphCanvasStyleCommand) {
+        writer.writeObjectValue<UpdateKnowledgeGraphCanvasStyleCommand_captions>("captions", updateKnowledgeGraphCanvasStyleCommand.captions, serializeUpdateKnowledgeGraphCanvasStyleCommand_captions);
+        writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphCanvasStyleCommand.knowledgeGraphId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateKnowledgeGraphCanvasStyleCommand_captions(writer: SerializationWriter, updateKnowledgeGraphCanvasStyleCommand_captions: Partial<UpdateKnowledgeGraphCanvasStyleCommand_captions> | undefined | null = {}) : void {
+    if (updateKnowledgeGraphCanvasStyleCommand_captions) {
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeUpdateKnowledgeGraphCommand(writer: SerializationWriter, updateKnowledgeGraphCommand: Partial<UpdateKnowledgeGraphCommand> | undefined | null = {}) : void {
     if (updateKnowledgeGraphCommand) {
         writer.writeStringValue("description", updateKnowledgeGraphCommand.description);
@@ -28120,6 +28983,17 @@ export function serializeUpdateKnowledgeGraphEntityTypeCommand(writer: Serializa
         writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphEntityTypeCommand.knowledgeGraphId);
         writer.writeStringValue("name", updateKnowledgeGraphEntityTypeCommand.name);
         writer.writeCollectionOfObjectValues<KnowledgeGraphEntityTypeProperty>("properties", updateKnowledgeGraphEntityTypeCommand.properties, serializeKnowledgeGraphEntityTypeProperty);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeUpdateKnowledgeGraphExtractModelCommand(writer: SerializationWriter, updateKnowledgeGraphExtractModelCommand: Partial<UpdateKnowledgeGraphExtractModelCommand> | undefined | null = {}) : void {
+    if (updateKnowledgeGraphExtractModelCommand) {
+        writer.writeGuidValue("extractModelId", updateKnowledgeGraphExtractModelCommand.extractModelId);
+        writer.writeStringValue("knowledgeGraphId", updateKnowledgeGraphExtractModelCommand.knowledgeGraphId);
     }
 }
 /**
@@ -28662,7 +29536,6 @@ export function serializeUpdateWikiSourceCommand(writer: SerializationWriter, up
         writer.writeObjectValue<WikiSourceCrawlerConfig>("crawler", updateWikiSourceCommand.crawler, serializeWikiSourceCrawlerConfig);
         writer.writeStringValue("cron", updateWikiSourceCommand.cron);
         writer.writeStringValue("description", updateWikiSourceCommand.description);
-        writer.writeGuidValue("feishuAppId", updateWikiSourceCommand.feishuAppId);
         writer.writeBooleanValue("includeSubNodes", updateWikiSourceCommand.includeSubNodes);
         writer.writeBooleanValue("isEnable", updateWikiSourceCommand.isEnable);
         writer.writeBooleanValue("isEventSubscription", updateWikiSourceCommand.isEventSubscription);
@@ -28853,6 +29726,25 @@ export function serializeWikiMcpConfigResponse(writer: SerializationWriter, wiki
         writer.writeStringValue("key", wikiMcpConfigResponse.key);
         writer.writeStringValue("keyPrefix", wikiMcpConfigResponse.keyPrefix);
         writer.writeGuidValue("teamResourceKeyId", wikiMcpConfigResponse.teamResourceKeyId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeWikiModelMigrationTaskState(writer: SerializationWriter, wikiModelMigrationTaskState: Partial<WikiModelMigrationTaskState> | undefined | null = {}) : void {
+    if (wikiModelMigrationTaskState) {
+        writer.writeStringValue("createTime", wikiModelMigrationTaskState.createTime);
+        writer.writeStringValue("message", wikiModelMigrationTaskState.message);
+        writer.writeNumberValue("migratedCount", wikiModelMigrationTaskState.migratedCount);
+        writer.writeNumberValue("state", wikiModelMigrationTaskState.state);
+        writer.writeNumberValue("targetDimensions", wikiModelMigrationTaskState.targetDimensions);
+        writer.writeGuidValue("targetModelId", wikiModelMigrationTaskState.targetModelId);
+        writer.writeStringValue("targetModelName", wikiModelMigrationTaskState.targetModelName);
+        writer.writeGuidValue("taskId", wikiModelMigrationTaskState.taskId);
+        writer.writeNumberValue("totalCount", wikiModelMigrationTaskState.totalCount);
+        writer.writeStringValue("updateTime", wikiModelMigrationTaskState.updateTime);
     }
 }
 /**
@@ -29357,6 +30249,32 @@ export interface StartMemoryModelMigrationCommandResponse extends Parsable {
     taskId?: Guid | null;
 }
 /**
+ * 发起知识库向量化模型迁移：以新模型/维度重建该库全部向量（临时集合 + 事务换名），完成后更新知识库配置.仅团队管理员可操作；同一知识库同时只允许一个活跃迁移任务，迁移期间该库提取/切割/向量化被阻断.
+ */
+export interface StartWikiModelMigrationCommand extends Parsable {
+    /**
+     * 目标向量维度（1-2000）.
+     */
+    dimensions?: number | null;
+    /**
+     * 目标向量化模型 id（团队可用的 embedding 模型）.
+     */
+    modelId?: Guid | null;
+    /**
+     * 知识库 id，由 Controller 从路由参数回填.
+     */
+    wikiId?: string | null;
+}
+/**
+ * 发起迁移响应.
+ */
+export interface StartWikiModelMigrationCommandResponse extends Parsable {
+    /**
+     * 迁移任务 id.
+     */
+    taskId?: Guid | null;
+}
+/**
  * 对文本执行 ${key} 变量替换（含私密变量解密），仅团队 Admin 及以上可调用；插件运行时应使用服务端内部的 IVariableService，避免将私密值回传给成员.
  */
 export interface SubstituteVariableCommand extends Parsable {
@@ -29552,6 +30470,10 @@ export interface SyncWikiSourceCommandResponse extends Parsable {
      * 同步结果说明（失败时为错误原因）.
      */
     message?: string | null;
+    /**
+     * 已从外部源消失并随本轮同步删除的文档数（遍历被截断时不执行删除，恒为 0）.
+     */
+    removed?: number | null;
     /**
      * 跳过的非文档类型节点数（如电子表格、多维表格）.
      */
@@ -30238,6 +31160,48 @@ export interface TeamVariableItem extends AuditsInfo, Parsable {
     variableId?: string | null;
 }
 /**
+ * 测试图数据库连通性（系统设置开启前预检），仅超级管理员可调用.字段均为可选覆盖：留空时回退系统设置中已保存的连接信息，便于保存前用表单值直接测试.
+ */
+export interface TestKnowledgeGraphConnectionCommand extends Parsable {
+    /**
+     * 方言：memgraph / neo4j，空=用已保存值（再缺省 memgraph）.
+     */
+    dialect?: string | null;
+    /**
+     * 密码，空=用已保存值.
+     */
+    password?: string | null;
+    /**
+     * 连接地址（如 bolt://127.0.0.1:7687），空=用已保存值.
+     */
+    uri?: string | null;
+    /**
+     * 用户名，空=用已保存值.
+     */
+    username?: string | null;
+}
+/**
+ * 图数据库连通性测试结果（连接失败不抛 503，交由 ok=false + 原因回显，便于设置页展示「测试未通过」）.
+ */
+export interface TestKnowledgeGraphConnectionCommandResponse extends Parsable {
+    /**
+     * 实际使用的方言（归一后）.
+     */
+    dialect?: string | null;
+    /**
+     * 未通过原因（ok=false 时回显）.
+     */
+    errorEscaped?: string | null;
+    /**
+     * 探活耗时（毫秒）.
+     */
+    latencyMs?: string | null;
+    /**
+     * 是否连通.
+     */
+    ok?: boolean | null;
+}
+/**
  * 测试通知渠道：向目标渠道同步发送一条测试通知并返回结果（不落发送记录）.指定 id 时使用已保存配置（忽略启用状态）；否则使用传入的类型与配置（保存前试发）.SMTP 渠道须传入收件人邮箱、短信渠道须传入收件人手机号（发送时动态指定）；应用机器人渠道（feishuAppBot/dingtalkAppBot/wecomAppBot）测试仅定向当前管理员本人（按其平台账号绑定投递）.
  */
 export interface TestNotificationChannelCommand extends Parsable {
@@ -30657,6 +31621,24 @@ export interface UpdateKnowledgeGraphAvatarCommand extends Parsable {
     objectKey?: string | null;
 }
 /**
+ * 配置画布样式规则（管理员，B8）：按实体类型配置画布节点第二行 caption 显示什么——键=实体类型 id 字符串，值=属性名（节点带该属性时显示属性值）或空串（不显示第二行）；未配置的类型默认显示类型名.
+ */
+export interface UpdateKnowledgeGraphCanvasStyleCommand extends Parsable {
+    /**
+     * caption 规则（实体类型 id → 属性名或空串）；传 null 清除全部规则回默认.
+     */
+    captions?: UpdateKnowledgeGraphCanvasStyleCommand_captions | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
+}
+/**
+ * caption 规则（实体类型 id → 属性名或空串）；传 null 清除全部规则回默认.
+ */
+export interface UpdateKnowledgeGraphCanvasStyleCommand_captions extends Parsable {
+}
+/**
  * 更新知识图谱，需要团队 Admin 及以上角色.
  */
 export interface UpdateKnowledgeGraphCommand extends Parsable {
@@ -30735,6 +31717,19 @@ export interface UpdateKnowledgeGraphEntityTypeCommand extends Parsable {
      * 属性定义.
      */
     properties?: KnowledgeGraphEntityTypeProperty[] | null;
+}
+/**
+ * 配置知识图谱的默认抽取模型（管理员，D30）：AI 导入未显式指定模型时使用（请求级 aiModelId > 图谱默认 > 400）.
+ */
+export interface UpdateKnowledgeGraphExtractModelCommand extends Parsable {
+    /**
+     * 默认抽取模型 id（需已启用、团队可用的对话模型）；null 表示清除默认（导入时必须显式指定）.
+     */
+    extractModelId?: Guid | null;
+    /**
+     * 图谱 id.
+     */
+    knowledgeGraphId?: string | null;
 }
 /**
  * 更新知识图谱 MCP 接入开关（仅托管图）：开启时自动生成/复用该图唯一的团队资源 key（查库无则写、有则复用），关闭后端点按开关拒绝（key 保留）；需要团队 Admin 及以上角色.
@@ -31629,10 +32624,6 @@ export interface UpdateWikiSourceCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 方式一：改绑到团队已有的飞书应用连接 id；为空表示不修改绑定.
-     */
-    feishuAppId?: Guid | null;
-    /**
      * 是否拉取节点下的全部子文档，为空表示不修改.
      */
     includeSubNodes?: boolean | null;
@@ -31657,19 +32648,19 @@ export interface UpdateWikiSourceCommand extends Parsable {
      */
     name?: string | null;
     /**
-     * 方式二：接入域名.
+     * 接入域名.
      */
     newAppDomain?: string | null;
     /**
-     * 方式二：飞书开放平台 AppID.
+     * 飞书开放平台 AppID，提交时按新凭证新建连接并改绑；为空表示不修改绑定.
      */
     newAppId?: string | null;
     /**
-     * 方式二：新建飞书应用连接的名称.
+     * 新建飞书应用连接的名称；提交 NewAppId 时必填，为空表示不修改绑定.
      */
     newAppName?: string | null;
     /**
-     * 方式二：飞书开放平台 AppSecret.
+     * 飞书开放平台 AppSecret.
      */
     newAppSecret?: string | null;
     /**
@@ -32041,6 +33032,51 @@ export interface WikiMcpConfigResponse extends Parsable {
      * 资源 key 行 id（未生成时 null）.
      */
     teamResourceKeyId?: Guid | null;
+}
+/**
+ * 迁移任务状态（含进度回显）.
+ */
+export interface WikiModelMigrationTaskState extends Parsable {
+    /**
+     * 任务创建时间.
+     */
+    createTime?: string | null;
+    /**
+     * 任务消息（进度或失败原因）.
+     */
+    message?: string | null;
+    /**
+     * 已重建的向量条数.
+     */
+    migratedCount?: number | null;
+    /**
+     * 任务状态：1 等待 / 2 处理中 / 4 成功 / 5 失败.
+     */
+    state?: number | null;
+    /**
+     * 目标向量维度.
+     */
+    targetDimensions?: number | null;
+    /**
+     * 目标向量化模型 id.
+     */
+    targetModelId?: Guid | null;
+    /**
+     * 目标向量化模型名称.
+     */
+    targetModelName?: string | null;
+    /**
+     * 任务 id.
+     */
+    taskId?: Guid | null;
+    /**
+     * 计划重建的向量总条数.
+     */
+    totalCount?: number | null;
+    /**
+     * 任务最后更新时间.
+     */
+    updateTime?: string | null;
 }
 /**
  * 团队可用模型选项项.
@@ -32449,6 +33485,13 @@ export const AccessAppTypeObject = {
     None: "none",
     Subsystem: "subsystem",
     App: "app",
+} as const;
+/**
+ * 访问点显示形式.
+ */
+export const AccessPointDisplayModeObject = {
+    Floating: "floating",
+    Inline: "inline",
 } as const;
 /**
  * 访问点悬浮位置.

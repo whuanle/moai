@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Popconfirm, Space, Tooltip, Typography, theme } from 'antd'
-import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined } from '@ant-design/icons'
+import { CopyOutlined, EyeInvisibleOutlined, EyeOutlined, KeyOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -26,14 +26,15 @@ interface ResourceKeyCardProps {
   onChanged: () => void
   /** 提示文案 i18n key（可选；不传不渲染说明行） */
   hintKey?: string
-  /** 盒子标题 i18n key（可选；不传则无标题行） */
+  /** 标题 i18n key（可选；不传则无标题行） */
   titleKey?: string
 }
 
 /**
- * 团队资源 key 盒子：一个资源一把 key（应用 ACP/A2A 共用其应用的 key、知识库/知识图谱各一把），
- * key 之间不可混用（绑定资源实例，越资源访问被拒绝）。
+ * 团队资源 key 区块（平铺，无容器盒子——由父页 Card/分区提供承载）：
+ * 一个资源一把 key（应用 ACP/A2A 共用其应用的 key、知识库/知识图谱各一把），key 之间不可混用（越资源访问被拒绝）。
  * key 由资源开启对外功能时后端自动生成/复用，此处仅展示（掩码/复制）与重置；不支持删除。
+ * 布局：标题行（标题居左 / 重置居右）+ key 行（等宽 key 居左 / 显隐与复制居右）+ 说明行。
  */
 export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged, hintKey, titleKey }: ResourceKeyCardProps) {
   const { t } = useTranslation()
@@ -67,24 +68,28 @@ export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged,
   }
 
   const hasTitle = Boolean(titleKey)
+  const hasKey = Boolean(keyInfo?.key)
+  const showReset = canManage && hasKey
 
   return (
-    <div
-      style={{
-        background: token.colorFillQuaternary,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        borderRadius: token.borderRadiusLG,
-        padding: `${spacing.md}px ${spacing.lg}px`,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: spacing.sm,
-      }}
-    >
-      {hasTitle && (
-        <Space size={spacing.sm}>
-          <KeyOutlined style={{ color: token.colorPrimary }} />
-          <Text strong style={{ fontSize: 13 }}>{t(titleKey!)}</Text>
-        </Space>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+      {/* 标题行：标题居左，重置居右（破坏性操作与 key 值保持距离） */}
+      {(hasTitle || showReset) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: hasTitle ? 'space-between' : 'flex-end', gap: spacing.sm }}>
+          {hasTitle && (
+            <Space size={spacing.xs}>
+              <KeyOutlined style={{ color: token.colorPrimary }} />
+              <Text strong style={{ fontSize: 13 }}>{t(titleKey!)}</Text>
+            </Space>
+          )}
+          {showReset && (
+            <Popconfirm title={t('teamresKey.resetConfirm')} onConfirm={() => void handleReset()}>
+              <Button type="text" size="small" danger icon={<ReloadOutlined />} disabled={busy}>
+                {t('teamresKey.reset')}
+              </Button>
+            </Popconfirm>
+          )}
+        </div>
       )}
 
       {!canManage ? (
@@ -95,28 +100,31 @@ export function ResourceKeyCard({ featureEnabled, canManage, keyInfo, onChanged,
         // 功能开启后 key 由父页自动补齐，此为瞬态
         <Text type="secondary" style={{ fontSize: 12 }}>{t('teamresKey.fetchingHint')}</Text>
       ) : (
-        <Space size={0} wrap align="center">
-          <Text code style={{ cursor: 'pointer', fontSize: 13 }} title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')} onClick={() => setRevealed((v) => !v)}>
-            {revealed ? keyInfo.key : keyMask(keyInfo)}
-          </Text>
+        // key 行：等宽 key 居左（点按切换显隐），显隐/复制居右
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
           <Tooltip title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}>
-            <Button
-              type="text"
-              size="small"
-              icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-              aria-label={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}
+            <Text
+              style={{ fontFamily: 'monospace', fontSize: 13, cursor: 'pointer' }}
               onClick={() => setRevealed((v) => !v)}
-            />
+            >
+              {revealed ? keyInfo.key : keyMask(keyInfo)}
+            </Text>
           </Tooltip>
-          <Tooltip title={t('common.copy')}>
-            <Button type="text" size="small" icon={<CopyOutlined />} aria-label={t('common.copy')} onClick={() => void copyKey()} />
-          </Tooltip>
-          <Popconfirm title={t('teamresKey.resetConfirm')} onConfirm={() => void handleReset()}>
-            <Button type="link" size="small" icon={<KeyOutlined />} disabled={busy}>
-              {t('teamresKey.reset')}
-            </Button>
-          </Popconfirm>
-        </Space>
+          <Space size={0}>
+            <Tooltip title={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}>
+              <Button
+                type="text"
+                size="small"
+                icon={revealed ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                aria-label={revealed ? t('teamresKey.hideKey') : t('teamresKey.revealKey')}
+                onClick={() => setRevealed((v) => !v)}
+              />
+            </Tooltip>
+            <Tooltip title={t('common.copy')}>
+              <Button type="text" size="small" icon={<CopyOutlined />} aria-label={t('common.copy')} onClick={() => void copyKey()} />
+            </Tooltip>
+          </Space>
+        </div>
       )}
 
       {hintKey && <Text type="secondary" style={{ fontSize: 12 }}>{t(hintKey)}</Text>}

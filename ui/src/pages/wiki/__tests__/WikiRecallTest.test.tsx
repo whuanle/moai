@@ -109,6 +109,7 @@ describe('WikiRecallTest', () => {
         documentIds: [],
         top: 5,
         minScore: null,
+        contextWindow: 1,
         aiModelId: null,
         isOptimizeQuery: false,
         isAnswer: false,

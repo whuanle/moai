@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MoAI 外部应用 · 访问点完整测试（悬浮 / 内嵌 + 流式交互）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f6f8; color: #1f2329; }
+  .page { max-width: 860px; margin: 0 auto; padding: 32px 20px 140px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: #86909c; font-size: 13px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td { padding: 6px 10px; border-bottom: 1px solid #f0f1f3; }
+  td:first-child { color: #86909c; width: 180px; }
+  code { background: rgba(22,93,255,0.08); color: #165dff; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  pre { background: #1f2329; color: #e5e6eb; border-radius: 8px; padding: 14px 16px; font-size: 12px; line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-all; margin: 0; }
+  .ok { color: #00b42a; font-weight: 600; }
+  .bad { color: #f53f3f; font-weight: 600; }
+  #status-line { font-size: 13px; margin-top: 10px; }
+  ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 2; }
+  .inline-demo { height: 620px; max-width: 480px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>MoAI 外部应用 · 访问点完整测试页</h1>
+  <div class="sub">
+    团队 1 · 外部测试应用 · 对话模型 GLM-5.3-Flash（思考模型）· 本页模拟「任意业务站点」宿主页，
+    直接双击用浏览器打开即可（file:// 亦可，接口 CORS 全放行）。本页同时演示两种显示形式：
+    <b>右下角悬浮组件</b>（页面加载即挂载）与 <b>内嵌小窗</b>（下方占位容器）。
+  </div>
+
+  <div class="card">
+    <h2>1. 访问点配置自检（页面加载时实时拉取）</h2>
+    <table id="cfg-table"><tbody><tr><td>加载中…</td><td></td></tr></tbody></table>
+    <div id="status-line"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. 两种显示形式的嵌入代码（与「应用配置 → 访问点」页生成片段同构）</h2>
+    <pre id="snippet"></pre>
+  </div>
+
+  <div class="card">
+    <h2>3. 内嵌小窗演示（占位容器内渲染，右下角面板与它互不影响）</h2>
+    <div id="moai-inline-demo" class="inline-demo"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. 检查清单（悬浮与内嵌面板逐项核对）</h2>
+    <ul>
+      <li>右下角悬浮按钮文案 <b>在线咨询</b>；面板<b>默认展开</b>，标题 <b>MoAI 测试助手</b>、蓝色 #165DFF</li>
+      <li>新会话首条为<b>开场白气泡</b>（来自应用发布配置，不参与模型上下文）</li>
+      <li>发送一句话：先出现<b>三点打字动效</b> → <b>思考过程折叠块</b>实时流出（可展开/收起）→ 正文开始后思考块自动折叠为「已思考 Xs」→ 正文<b>流式逐字 + 闪烁光标</b></li>
+      <li>回复完成后正文转为 <b>markdown 渲染</b>（加粗/代码块/列表等），气泡下方出现<b>复制</b>按钮</li>
+      <li>生成中发送按钮变红色 <b>■ 停止</b>，点击立即中断并保留已生成内容</li>
+      <li>点 ⤢ 面板<b>放大为近全屏</b>，再点 ⤡ 或按 <b>Esc</b> 还原（两种模式一致）</li>
+      <li>头部 <b>＋ 新对话</b>：清空消息、重开场白、下次发送新建会话</li>
+      <li>向上滚动消息区暂停自动跟随并出现「↓ 回到最新」浮标</li>
+      <li><b>刷新页面</b>：自动恢复最近一次会话的聊天记录（含思考块，默认折叠）</li>
+      <li>Enter 发送、Shift+Enter 换行；断网/失败气泡带「重试」按钮重发上一条</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // 页面自检：拉取访问点公开配置并渲染表格
+  const APP_ID = '01a1ba18-f85f-727a-bfe9-9f1897ddc1aa'
+  const SERVER = 'http://127.0.0.1:5000'
+  const snippet =
+`<!-- 悬浮组件（显示形式取服务端配置 displayMode） -->
+<script src="${SERVER}/embed/moai-widget.js"
+        data-app-id="${APP_ID}"
+        data-server="${SERVER}"
+        data-external-user-id="test-html-001"
+        data-nickname="HTML测试员"
+>&lt;/script>
+
+<!-- 内嵌小窗（宿主页放占位容器，面板嵌入页面文档流） -->
+<div id="moai-chat" style="height:620px"></div>
+<script src="${SERVER}/embed/moai-widget.js"
+        data-app-id="${APP_ID}"
+        data-server="${SERVER}"
+        data-mode="inline"
+        data-target="#moai-chat"
+>&lt;/script>`
+  document.getElementById('snippet').textContent = snippet.replace(/&lt;\/script>/g, '</script>')
+  fetch(`${SERVER}/api/teamres/app/${APP_ID}/access-point`)
+    .then(r => r.json().then(j => ({ ok: r.ok, j })))
+    .then(({ ok, j }) => {
+      const rows = [
+        ['HTTP 状态', ok ? '<span class="ok">200 正常</span>' : '<span class="bad">异常</span>'],
+        ['enabled', j.enabled === true ? '<span class="ok">true（已启用）</span>' : `<span class="bad">${j.enabled}（未启用，组件不会渲染）</span>`],
+        ['displayMode', j.displayMode === 'inline' ? 'inline（内嵌小窗）' : 'floating（悬浮组件）'],
+        ['isAuth', j.isAuth ? 'true（需接入 key/tokenProvider）' : '<span class="ok">false（免授权，匿名可聊）</span>'],
+        ['appName', j.appName ?? ''],
+        ['title / subtitle', `${j.title ?? ''} / ${j.subtitle ?? ''}`],
+        ['placeholder', j.placeholder ?? ''],
+        ['primaryColor / position', `${j.primaryColor ?? ''} / ${j.position ?? ''}`],
+        ['launcherText', j.launcherText ?? ''],
+        ['panelWidth × panelHeight', `${j.panelWidth} × ${j.panelHeight}`],
+        ['defaultOpen', String(j.defaultOpen)],
+        ['openingStatement', (j.openingStatement || '（未启用）').slice(0, 60)],
+      ]
+      document.getElementById('cfg-table').innerHTML = '<tbody>' + rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('') + '</tbody>'
+      document.getElementById('status-line').innerHTML = j.enabled === true
+        ? '<span class="ok">✓ 访问点配置正常：右下角悬浮组件与下方内嵌小窗均已挂载</span>'
+        : '<span class="bad">✗ 访问点未启用（应用未发布 / 已禁用 / 访问点开关关闭）</span>'
+    })
+    .catch(e => {
+      document.getElementById('status-line').innerHTML = `<span class="bad">✗ 后端不可达（${SERVER}）：${e}</span>——先启动后端再刷新本页`
+    })
+</script>
+
+<!-- 悬浮组件：标准 data-* 嵌入（displayMode 取服务端配置） -->
+<script src="http://127.0.0.1:5000/embed/moai-widget.js"
+        data-app-id="01a1ba18-f85f-727a-bfe9-9f1897ddc1aa"
+        data-server="http://127.0.0.1:5000"
+        data-external-user-id="test-html-001"
+        data-nickname="HTML测试员"
+></script>
+
+<!-- 内嵌小窗演示：编程挂载进占位容器（覆盖显示形式为 inline，身份独立） -->
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    if (window.MoaiWidget && document.getElementById('moai-inline-demo')) {
+      window.MoaiWidget.mount({
+        appId: '01a1ba18-f85f-727a-bfe9-9f1897ddc1aa',
+        server: 'http://127.0.0.1:5000',
+        mode: 'inline',
+        target: '#moai-inline-demo',
+        externalUserId: 'test-html-inline-001',
+        nickname: '内嵌小窗测试员'
+      })
+    }
+  })
+</script>
+</body>
+</html>

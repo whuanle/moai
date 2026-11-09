@@ -54,6 +54,13 @@ internal partial class KnowledgeGraphConfiguration : IEntityTypeConfiguration<Kn
         entity.Property(e => e.EmbeddingModelId)
             .HasComment("向量化模型的id；为空表示未配置、图谱不参与向量检索")
             .HasColumnName("embedding_model_id");
+        entity.Property(e => e.ExtractModelId)
+            .HasComment("默认抽取模型的id（AI 导入缺省对话模型）；为空表示未配置、导入时必须显式指定")
+            .HasColumnName("extract_model_id");
+        entity.Property(e => e.CanvasStyleJson)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("画布样式规则 JSON（按实体类型配置节点第二行 caption；空串=未配置）")
+            .HasColumnName("canvas_style_json");
         entity.Property(e => e.IsDeleted)
             .HasComment("软删除，0=未删除")
             .HasColumnName("is_deleted");
@@ -69,9 +76,6 @@ internal partial class KnowledgeGraphConfiguration : IEntityTypeConfiguration<Kn
             .HasMaxLength(50)
             .HasColumnName("name");
         entity.Property(e => e.TeamId).HasColumnName("team_id");
-        entity.Property(e => e.TemplateKey)
-            .HasMaxLength(50)
-            .HasColumnName("template_key");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

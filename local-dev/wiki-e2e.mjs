@@ -321,7 +321,7 @@ async function main() {
     const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
     const rootTk = rootL.json.accessToken
     const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex')
-    const DEFAULT_TYPES = '.pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json'
+    const DEFAULT_TYPES = '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml'
     const preup = (fileName, sha) => api('POST', `/api/wiki/${WID12}/documents/preupload`, {
       token: bob.token,
       body: { fileName, contentType: 'application/pdf', fileSize: 10, sha256: sha },
@@ -449,6 +449,76 @@ async function main() {
     await api('DELETE', `/api/wiki/${wA}`, { token: alice.token })
     const s3 = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
     check('WK-14j 删除知识库后其文档不再命中', s3.status === 200 && Number(s3.json?.total) === 1 && (s3.json?.items ?? []).every((x) => Number(x.wikiId) === wB), `total=${s3.json?.total}`)
+  }
+
+  // WK-15 42 种格式上传与提取（@WK-S56：默认白名单扩容——代码/配置文本纯文本兜底 + EPUB/ODT/RTF 自研提取器）
+  {
+    const wk15 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk15_' + TS } })
+    const WID15 = Number(wk15.json?.value)
+    const rootL15 = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const rootTk15 = rootL15.json.accessToken
+    const DEFAULT_TYPES15 = '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml'
+    const putTypes15 = async (value) => api('PUT', '/api/settings', { token: rootTk15, body: { key: 'WIKI_ALLOWED_FILE_TYPES', value } })
+    await putTypes15(DEFAULT_TYPES15)
+
+    const readContent15 = async (documentId) => {
+      const res = await api('GET', `/api/wiki/${WID15}/documents/${documentId}/content`, { token: alice.token })
+      return res.status === 200 ? String(res.json?.value ?? '') : ''
+    }
+
+    // a. upload-limit 回显 42 种默认类型
+    const lim15 = await api('GET', '/api/wiki/upload-limit', { token: bob.token })
+    check('WK-15a upload-limit 回显 42 种默认类型', lim15.status === 200 && (lim15.json?.allowedFileTypes ?? []).join(',') === DEFAULT_TYPES15, `${JSON.stringify(lim15.json).slice(0, 200)}`)
+
+    // b. 代码文本 .py 走纯文本兜底提取
+    const pyBuf = Buffer.from(`# moai-wiki sample ${TS}\nprint("知识库代码提取 ${TS}")\n`, 'utf8')
+    const pyDoc = await uploadWikiDoc(WID15, bob.token, `sample-${TS}.py`, 'text/x-python', pyBuf)
+    check('WK-15b .py 上传提取成功且正文含代码', !!pyDoc.documentId && (await readContent15(pyDoc.documentId)).includes(`print("知识库代码提取 ${TS}")`), `${pyDoc.error ?? ''}`)
+
+    // c. 配置文本 .yaml
+    const yamlBuf = Buffer.from(`service: moai\nwiki: ${TS}\nformats:\n  - code\n  - config\n`, 'utf8')
+    const yamlDoc = await uploadWikiDoc(WID15, bob.token, `conf-${TS}.yaml`, 'application/yaml', yamlBuf)
+    check('WK-15c .yaml 提取正文保留键值', !!yamlDoc.documentId && (await readContent15(yamlDoc.documentId)).includes(`wiki: ${TS}`), `${yamlDoc.error ?? ''}`)
+
+    // d. EPUB 自研提取器（zip：mimetype + container.xml + OPF spine + xhtml 章节）
+    const epub = buildRawZip([
+      ['mimetype', 'application/epub+zip'],
+      ['META-INF/container.xml', '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'],
+      ['OEBPS/content.opf', '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="uid">moai-epub</dc:identifier><dc:title>moai-epub</dc:title></metadata><manifest><item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="ch1"/></spine></package>'],
+      ['OEBPS/chapter1.xhtml', `<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>c1</title></head><body><h1>第一章 电商运营</h1><p>EPUB 提取探针 ${TS}：青岛港吞吐量再创新高。</p><p>第二段落收尾。</p></body></html>`],
+    ])
+    const epubDoc = await uploadWikiDoc(WID15, bob.token, `book-${TS}.epub`, 'application/epub+zip', epub)
+    const epubText = await readContent15(epubDoc.documentId)
+    check('WK-15d EPUB 提取正文含章节标题与段落', !!epubDoc.documentId && epubText.includes('第一章 电商运营') && epubText.includes(`EPUB 提取探针 ${TS}`), `${epubDoc.error ?? ''}${epubText.slice(0, 120)}`)
+
+    // e. ODT 自研提取器（zip：mimetype + content.xml text:p）
+    const odt = buildRawZip([
+      ['mimetype', 'application/vnd.oasis.opendocument.text'],
+      ['content.xml', `<?xml version="1.0" encoding="UTF-8"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:h>ODT 标题${TS}</text:h><text:p>ODT 段落探针 ${TS}。</text:p></office:text></office:body></office:document-content>`],
+    ])
+    const odtDoc = await uploadWikiDoc(WID15, bob.token, `doc-${TS}.odt`, 'application/vnd.oasis.opendocument.text', odt)
+    const odtText = await readContent15(odtDoc.documentId)
+    check('WK-15e ODT 提取正文含标题段落', !!odtDoc.documentId && odtText.includes(`ODT 标题${TS}`) && odtText.includes(`ODT 段落探针 ${TS}`), `${odtDoc.error ?? ''}${odtText.slice(0, 120)}`)
+
+    // f. RTF 控制词剥离（\uN Unicode + \par 换行 + 跳过 fonttbl destination 组）
+    const rtfProbe = `RTF探针${TS}`
+    const rtfUnicode = Array.from(rtfProbe).map((ch) => `\\u${ch.charCodeAt(0)}?`).join('')
+    const rtf = `{\\rtf1\\ansi{\\fonttbl{\\f0 Arial;}}{\\colortbl;\\red0\\green0\\blue0;}\\f0\\fs24 ${rtfUnicode}\\par Line-${TS} tail\\par}`
+    const rtfDoc = await uploadWikiDoc(WID15, bob.token, `rtf-${TS}.rtf`, 'application/rtf', Buffer.from(rtf, 'utf8'))
+    const rtfOut = await readContent15(rtfDoc.documentId)
+    check('WK-15f RTF 提取 Unicode 正文与换行、跳过字体表', !!rtfDoc.documentId && rtfOut.includes(rtfProbe) && rtfOut.includes(`Line-${TS}`) && !rtfOut.includes('fonttbl'), `${rtfDoc.error ?? ''}${rtfOut.slice(0, 160)}`)
+
+    // g. 二进制伪装 .py：NUL 嗅探拒绝，不产出乱码正文
+    const binBuf = Buffer.from([0x4d, 0x5a, 0x00, 0x01, 0x00, 0x00, 0x90, 0x90])
+    const binDoc = await uploadWikiDoc(WID15, bob.token, `bin-${TS}.py`, 'application/octet-stream', binBuf)
+    const binText = await readContent15(binDoc.documentId)
+    check('WK-15g 二进制文件提取拒绝（无正文）', !!binDoc.documentId && binText === '', `${binDoc.error ?? ''}${binText.slice(0, 80)}`)
+
+    // h. 非常规扩展名 .mdx/.textpack 白名单放行
+    check('WK-15h .mdx preupload 200', (await api('POST', `/api/wiki/${WID15}/documents/preupload`, { token: bob.token, body: { fileName: `note-${TS}.mdx`, contentType: 'text/markdown', fileSize: 10, sha256: sha256Hex(`mdx-${TS}`) } })).status === 200)
+    check('WK-15i .textpack preupload 200', (await api('POST', `/api/wiki/${WID15}/documents/preupload`, { token: bob.token, body: { fileName: `pack-${TS}.textpack`, contentType: 'text/plain', fileSize: 10, sha256: sha256Hex(`pack-${TS}`) } })).status === 200)
+
+    await putTypes15(DEFAULT_TYPES15)
   }
 
   console.log(`\n===== 知识库 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

@@ -55,8 +55,51 @@ export type LoginEmailCodeMode = (typeof LOGIN_EMAIL_CODE_MODE_OPTIONS)[number]
 export const LOGIN_CAPTCHA_MODE_OPTIONS = ['off', 'always', 'after_fail'] as const
 export type LoginCaptchaMode = (typeof LOGIN_CAPTCHA_MODE_OPTIONS)[number]
 
-/** 知识库允许上传文件类型的内置默认值（与后端 SettingDefinitions 一致），设置项缺失/非法时回退 */
-export const WIKI_DEFAULT_FILE_TYPES = ['.pdf', '.docx', '.xlsx', '.pptx', '.html', '.htm', '.md', '.markdown', '.txt', '.json']
+/** 知识库允许上传文件类型的内置默认值（与后端 SettingDefinitions/DocumentFormatConst 一致），设置项缺失/非法时回退 */
+export const WIKI_DEFAULT_FILE_TYPES = [
+  '.bat',
+  '.c',
+  '.conf',
+  '.cpp',
+  '.css',
+  '.csv',
+  '.docx',
+  '.epub',
+  '.go',
+  '.h',
+  '.hpp',
+  '.htm',
+  '.html',
+  '.ini',
+  '.java',
+  '.js',
+  '.json',
+  '.less',
+  '.log',
+  '.md',
+  '.markdown',
+  '.mdx',
+  '.odt',
+  '.pdf',
+  '.php',
+  '.pptx',
+  '.properties',
+  '.py',
+  '.rb',
+  '.rtf',
+  '.scss',
+  '.sh',
+  '.sql',
+  '.swift',
+  '.tex',
+  '.textpack',
+  '.ts',
+  '.txt',
+  '.xlsx',
+  '.xml',
+  '.yaml',
+  '.yml',
+]
 
 /** 单个扩展名合法形态：点号开头 + 1~16 位字母/数字（与后端 WikiFileTypes 校验一致） */
 const WIKI_FILE_TYPE_PATTERN = /^\.[a-z0-9]{1,16}$/

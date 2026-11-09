@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Maomi.MQ;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -31,11 +32,17 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
     private const string EmbeddingBindType = "embedding";
     private const string ActiveTaskConstraintName = "ux_worker_task_bind_active";
 
+    /// <summary>
+    /// 批量提取/切割的并行度（每任务独立 DI scope，各持独立 DbContext）.
+    /// </summary>
+    private const int PartitionConcurrency = 4;
+
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
     private readonly IUserContextProvider _userContextProvider;
-    private readonly WikiDocumentProcessingService _processingService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly IWikiModelMigrationService _migrationService;
     private readonly ILogger<BatchRunWikiDocumentWorkflowCommandHandler> _logger;
 
     /// <summary>
@@ -44,22 +51,25 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
-    /// <param name="processingService">文档内容处理服务（提取/切割）.</param>
+    /// <param name="scopeFactory">作用域工厂（并行提取/切割每任务独立 scope，DbContext 非线程安全）.</param>
     /// <param name="messagePublisher">消息发布器.</param>
+    /// <param name="migrationService">模型迁移守卫.</param>
     /// <param name="logger">日志.</param>
     public BatchRunWikiDocumentWorkflowCommandHandler(
         DatabaseContext databaseContext,
         ITeamService teamService,
         IUserContextProvider userContextProvider,
-        WikiDocumentProcessingService processingService,
+        IServiceScopeFactory scopeFactory,
         IMessagePublisher messagePublisher,
+        IWikiModelMigrationService migrationService,
         ILogger<BatchRunWikiDocumentWorkflowCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
         _userContextProvider = userContextProvider;
-        _processingService = processingService;
+        _scopeFactory = scopeFactory;
         _messagePublisher = messagePublisher;
+        _migrationService = migrationService;
         _logger = logger;
     }
 
@@ -79,6 +89,9 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
         }
+
+        // 模型迁移期间阻断批量工作流，防止切片与迁移中的向量集合错位
+        await _migrationService.EnsureNotMigratingAsync(wiki.Id, cancellationToken);
 
         if (request.IsEmbedding && (wiki.EmbeddingModelId == Guid.Empty || wiki.EmbeddingDimensions <= 0))
         {
@@ -115,6 +128,55 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
             .Distinct()
             .ToListAsync(cancellationToken);
 
+        // Phase 1：并行执行需要提取/切割的文档（每任务独立 DI scope——DbContext 非线程安全；SemaphoreSlim 有界并发）；
+        // 失败按文档收集，Phase 2 顺序循环中逐文档报告
+        var partitionFailures = new Dictionary<int, Exception>();
+        if (request.IsPartition)
+        {
+            var partitionTargets = requestedIds
+                .Where(id => documents.ContainsKey((int)id) && !activeTaskIds.Contains((int)id))
+                .Select(id => (DocumentId: (int)id, NeedsExtract: !hasContentIds.Contains((int)id)))
+                .ToList();
+            using var semaphore = new SemaphoreSlim(PartitionConcurrency);
+            await Task.WhenAll(partitionTargets.Select(async target =>
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var processing = scope.ServiceProvider.GetRequiredService<WikiDocumentProcessingService>();
+                    if (target.NeedsExtract)
+                    {
+                        await processing.ExtractAsync(wiki.Id, target.DocumentId, cancellationToken);
+                    }
+
+                    if (!request.IsAiPartition)
+                    {
+                        // 普通切割本地切分，同步执行；AI 切割为 LLM 调用，随异步任务执行
+                        await processing.PartitionAsync(
+                            wiki.Id,
+                            target.DocumentId,
+                            request.ChunkSize,
+                            request.ChunkOverlap,
+                            request.SplitMode,
+                            request.OverlapUnit,
+                            request.SizeUnit,
+                            request.TokenEncodingOrModel,
+                            cancellationToken);
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogWarning(ex, "批量工作流切割前置执行失败. WikiId={WikiId}, DocumentId={DocumentId}", wiki.Id, target.DocumentId);
+                    partitionFailures[target.DocumentId] = ex;
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }));
+        }
+
         var items = new List<BatchRunWikiDocumentWorkflowDocumentItem>();
         foreach (var requestedId in requestedIds)
         {
@@ -140,38 +202,20 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
 
             if (request.IsPartition)
             {
-                try
+                // 提取/切割已由并行前置阶段执行（Phase 1），此处只消费结果
+                if (partitionFailures.TryGetValue(documentId, out var partitionError))
                 {
-                    if (!hasContent)
-                    {
-                        await _processingService.ExtractAsync(wiki.Id, documentId, cancellationToken);
-                    }
-
-                    if (!request.IsAiPartition)
-                    {
-                        // 普通切割本地切分，同步执行；AI 切割为 LLM 调用，随异步任务执行
-                        await _processingService.PartitionAsync(
-                            wiki.Id,
-                            documentId,
-                            request.ChunkSize,
-                            request.ChunkOverlap,
-                            request.SplitMode,
-                            request.OverlapUnit,
-                            request.SizeUnit,
-                            request.TokenEncodingOrModel,
-                            cancellationToken);
-                        hasChunks = true;
-                    }
-
-                    hasContent = true;
-                    hasMetadata = false;
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    _logger.LogWarning(ex, "批量工作流切割前置执行失败. WikiId={WikiId}, DocumentId={DocumentId}", wiki.Id, documentId);
-                    items.Add(Fail(requestedId, document.FileName, $"切割失败：{ex.Message}"));
+                    items.Add(Fail(requestedId, document.FileName, $"切割失败：{partitionError.Message}"));
                     continue;
                 }
+
+                if (!request.IsAiPartition)
+                {
+                    hasChunks = true;
+                }
+
+                hasContent = true;
+                hasMetadata = false;
             }
 
             if (request.IsGenerateMetadata && !hasChunks && !partitionInTask)

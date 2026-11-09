@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Seed;
@@ -53,6 +54,12 @@ public class WikiSettingsService : IWikiSettingsService
             .FirstOrDefaultAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(value))
+        {
+            return WikiFileTypes.Default;
+        }
+
+        // 存量库升级：未自定义过的行仍是旧默认值（提取能力扩容前），按新默认返回
+        if (string.Equals(value.Trim(), WikiFileTypes.LegacyDefaultValue, StringComparison.Ordinal))
         {
             return WikiFileTypes.Default;
         }

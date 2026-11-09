@@ -34,4 +34,9 @@ public class KnowledgeGraphNodeItem
     /// 描述.
     /// </summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 节点度数（邻接边总数；画布/邻接查询携带，接入图为 0）.
+    /// </summary>
+    public int Degree { get; init; }
 }

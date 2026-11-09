@@ -5,6 +5,7 @@ import '@/i18n'
 import { Settings } from '../Settings'
 import { useAppStore } from '@/store/app'
 import { getSettings, saveSetting } from '@/api/settings'
+import { testKnowledgeGraphConnection } from '@/api/knowledgeGraph'
 import { getNotificationChannels } from '@/api/notification'
 import { getMemoryModelMigrationStatus, startMemoryModelMigration } from '@/api/memory'
 import { refreshServerInfo } from '@/api/auth'
@@ -21,6 +22,10 @@ vi.mock('@/api/settings', async (importOriginal) => {
     resetLoginBackground: vi.fn().mockResolvedValue(undefined),
   }
 })
+
+vi.mock('@/api/knowledgeGraph', () => ({
+  testKnowledgeGraphConnection: vi.fn().mockResolvedValue({ ok: true, latencyMs: 5, dialect: 'memgraph', error: null }),
+}))
 
 vi.mock('@/api/notification', () => ({
   getNotificationChannels: vi.fn().mockResolvedValue([
@@ -115,7 +120,8 @@ describe('Settings（系统设置）', () => {
     expect(screen.queryByLabelText('密码')).toBeNull()
   })
 
-  it('开启后填写连接信息，保存时提交开关、图数据库类型与三项连接设置', async () => {
+  it('开启后填写连接信息，保存时先提交连接项并实测连通，通过才落开关键', async () => {
+    vi.mocked(testKnowledgeGraphConnection).mockResolvedValue({ ok: true, latencyMs: 12, dialect: 'memgraph', error: null })
     renderSettings()
     await screen.findByText('知识图谱（图数据库）')
 
@@ -135,6 +141,49 @@ describe('Settings（系统设置）', () => {
     expect(saveSetting).toHaveBeenCalledWith('KG_USERNAME', 'neo4j')
     expect(saveSetting).toHaveBeenCalledWith('KG_PASSWORD', 'secret')
     expect(saveSetting).toHaveBeenCalledWith('KG_DIALECT', 'memgraph')
+    // 用表单当前值实测连通性，且开关在测试之后才提交
+    expect(testKnowledgeGraphConnection).toHaveBeenCalledWith({
+      uri: 'bolt://127.0.0.1:7687',
+      username: 'neo4j',
+      password: 'secret',
+      dialect: 'memgraph',
+    })
+    const saveMock = vi.mocked(saveSetting)
+    const enabledIdx = saveMock.mock.calls.findIndex((c) => c[0] === 'KG_ENABLED')
+    expect(saveMock.mock.calls[enabledIdx]).toEqual(['KG_ENABLED', 'true'])
+    // 测试连通发生在落开关键之前（invocationCallOrder 与 calls 下标对应）
+    expect(vi.mocked(testKnowledgeGraphConnection).mock.invocationCallOrder[0])
+      .toBeLessThan(saveMock.mock.invocationCallOrder[enabledIdx])
+  })
+
+  it('连接测试未通过时不提交开关键（连接项已保存，可改后重试）', async () => {
+    vi.mocked(testKnowledgeGraphConnection).mockResolvedValue({ ok: false, latencyMs: 0, dialect: 'memgraph', error: '无法连接图数据库，请检查地址与凭据.' })
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getAllByRole('switch')[0])
+    fireEvent.change(await screen.findByLabelText('连接地址'), { target: { value: 'bolt://127.0.0.1:9' } })
+
+    fireEvent.click(screen.getAllByRole('button', { name: /保\s*存/ })[1])
+
+    await waitFor(() => expect(testKnowledgeGraphConnection).toHaveBeenCalled())
+    expect(saveSetting).toHaveBeenCalledWith('KG_URI', 'bolt://127.0.0.1:9')
+    expect(saveSetting).not.toHaveBeenCalledWith('KG_ENABLED', expect.anything())
+  })
+
+  it('测试连接按钮直接用表单值实测，不触发任何保存', async () => {
+    renderSettings()
+    await screen.findByText('知识图谱（图数据库）')
+
+    fireEvent.click(screen.getAllByRole('switch')[0])
+    fireEvent.change(await screen.findByLabelText('连接地址'), { target: { value: 'bolt://127.0.0.1:7687' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /测试连接/ }))
+
+    await waitFor(() => expect(testKnowledgeGraphConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ uri: 'bolt://127.0.0.1:7687' }),
+    ))
+    expect(saveSetting).not.toHaveBeenCalled()
   })
 
   it('关闭知识图谱时保存不提交连接信息', async () => {

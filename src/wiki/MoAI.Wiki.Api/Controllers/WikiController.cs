@@ -191,6 +191,8 @@ public class WikiController : ControllerBase
             AiModelId = req.AiModelId,
             IsOptimizeQuery = req.IsOptimizeQuery,
             IsAnswer = req.IsAnswer,
+            IsKeywordSearch = req.IsKeywordSearch,
+            ContextWindow = req.ContextWindow,
         };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
@@ -214,6 +216,41 @@ public class WikiController : ControllerBase
             EmbeddingModelId = req.EmbeddingModelId,
             EmbeddingDimensions = req.EmbeddingDimensions,
         };
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 发起知识库向量化模型迁移：以新模型/维度重建该库全部向量（临时集合 + 事务换名），完成后更新知识库配置，仅团队 Admin 及以上可操作.
+    /// 同一知识库同时只允许一个活跃迁移任务，迁移期间该库提取/切割/向量化被阻断（409）.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">迁移请求（目标模型 + 维度）.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="StartWikiModelMigrationCommandResponse"/>.</returns>
+    [HttpPost("{id}/model-migration")]
+    public Task<StartWikiModelMigrationCommandResponse> StartWikiModelMigration(long id, [FromBody] StartWikiModelMigrationCommand req, CancellationToken ct)
+    {
+        var cmd = new StartWikiModelMigrationCommand
+        {
+            WikiId = id,
+            ModelId = req.ModelId,
+            Dimensions = req.Dimensions,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询知识库向量化模型迁移状态（当前配置 + 向量总数 + 最近任务进度），仅团队成员可访问.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiModelMigrationStatusResponse"/>.</returns>
+    [HttpGet("{id}/model-migration")]
+    public Task<QueryWikiModelMigrationStatusResponse> QueryWikiModelMigrationStatus(long id, CancellationToken ct)
+    {
+        var cmd = new QueryWikiModelMigrationStatusCommand { WikiId = id };
+        _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }
 

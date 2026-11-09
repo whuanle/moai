@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphRecallTest } from '../KnowledgeGraphRecallTest'
 import { recallKnowledgeGraphTest } from '@/api/knowledgeGraph'
@@ -29,7 +30,7 @@ describe('KnowledgeGraphRecallTest', () => {
       ],
       skippedHints: [],
     })
-    render(<KnowledgeGraphRecallTest kgId={9} teamId={7} />)
+    render(<MemoryRouter><KnowledgeGraphRecallTest kgId={9} teamId={7} /></MemoryRouter>)
     const editor = screen.getByRole('textbox')
     fireEvent.change(editor, { target: { value: '运价' } })
     fireEvent.click(screen.getByRole('button', { name: /开始测试/ }))
@@ -45,7 +46,7 @@ describe('KnowledgeGraphRecallTest', () => {
       query: '运价', optimizedQuery: '运价 查询', answer: '运价是 800 元。',
       hits: [], skippedHints: [],
     })
-    render(<KnowledgeGraphRecallTest kgId={9} teamId={7} />)
+    render(<MemoryRouter><KnowledgeGraphRecallTest kgId={9} teamId={7} /></MemoryRouter>)
     // 等待模型选项 mock 的 promise 落地（自动带模型依赖它）
     await act(async () => { await Promise.resolve() })
     const editor = screen.getByRole('textbox')
@@ -62,7 +63,7 @@ describe('KnowledgeGraphRecallTest', () => {
 
   it('命中为空时渲染空态提示', async () => {
     vi.mocked(recallKnowledgeGraphTest).mockResolvedValue({ query: '不存在', optimizedQuery: '', answer: '', hits: [], skippedHints: [] })
-    render(<KnowledgeGraphRecallTest kgId={9} teamId={7} />)
+    render(<MemoryRouter><KnowledgeGraphRecallTest kgId={9} teamId={7} /></MemoryRouter>)
     const editor = screen.getByRole('textbox')
     fireEvent.change(editor, { target: { value: '不存在' } })
     fireEvent.click(screen.getByRole('button', { name: /开始测试/ }))

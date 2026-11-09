@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Alert, Layout, Menu, Tag, Typography } from 'antd'
+import { Alert, Layout, Menu, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import { ApartmentOutlined, ApiOutlined, ClusterOutlined, ExperimentOutlined, ImportOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons'
-import { BackLink, Card, Page } from '@/design-system'
+import { BackLink, Card, Page, SiderHeader } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+import { resolveStorageUrl } from '@/utils/storage'
 
-const { Text } = Typography
 import { getKnowledgeGraphDetail, type KnowledgeGraphDetail as GraphDetail } from '@/api/knowledgeGraph'
 import { KnowledgeGraphCanvas } from './KnowledgeGraphCanvas'
 import { KnowledgeGraphImportPage } from './KnowledgeGraphImportPage'
@@ -97,13 +97,14 @@ export function KnowledgeGraphDetail() {
       ) : (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
           <Sider width={200} style={{ background: 'transparent' }}>
-            {/* 「← 返回知识图谱 + 图名」收进左栏顶部，与右侧内容区同行，不独占整行高度（替代多级面包屑） */}
-            <div style={{ marginBottom: spacing.md, display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
-              <div style={{ flexShrink: 0 }}>
-                <BackLink to={`/team/${teamId}/knowledgegraph`}>{t('knowledgegraph.backToKnowledgeGraph')}</BackLink>
-              </div>
-              {graph?.name && <Text strong ellipsis style={{ minWidth: 0, flex: 1 }}>{graph.name}</Text>}
-            </div>
+            {/* 侧栏顶部身份区：上段「图谱头像 + 图名」、下段「← 返回知识图谱」整宽按钮（与团队/应用工作台同构，仿首页侧边栏头部） */}
+            <SiderHeader
+              name={graph?.name}
+              avatarSrc={graph?.avatarPath?.trim() ? resolveStorageUrl(graph.avatarPath) : undefined}
+              avatarFallback={<ClusterOutlined />}
+              backTo={`/team/${teamId}/knowledgegraph`}
+              backLabel={t('knowledgegraph.backToKnowledgeGraph')}
+            />
             <Menu
               mode="inline"
               items={menuItems}
@@ -120,9 +121,11 @@ export function KnowledgeGraphDetail() {
               // 图览：无头部步骤条与导入入口，画布占满剩余高度与全部宽度
               <KnowledgeGraphCanvas
                 graphId={graphId}
+                teamId={teamId}
                 mode={graph.mode}
                 myRole={graph?.myRole ?? null}
                 graphEnabled={graph?.enabled !== false}
+                canvasStyle={graph?.canvasStyle ?? null}
               />
             ) : section === 'maintenance' ? (
               <KnowledgeGraphMaintenance graph={graph} />

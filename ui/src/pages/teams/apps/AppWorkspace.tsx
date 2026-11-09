@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, ArrowLeftOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, MessageOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
-import { Avatar, Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography, theme } from 'antd'
+import { ApiOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, MessageOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
+import { Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
-import { Page } from '@/design-system'
+import { Page, SiderHeader } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
 import { formatAppVersion } from '@/utils/appVersion'
 import { useShellStore } from '@/store/shell'
@@ -343,26 +343,13 @@ export function AppWorkspace() {
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              {/* 应用身份收敛在菜单栏顶部（与团队工作台一致）：头像/名称 + 返回内部应用；「进入对话」移至「配置」分区调试面板标题右侧 */}
-              <div style={{ padding: `0 ${spacing.xs}px ${spacing.sm}px` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `0 ${spacing.xs}px` }}>
-                  <Avatar shape="square" size={30} src={resolveStorageUrl(detail?.avatarPath ?? null) || undefined} alt={detail?.name ?? undefined}>
-                    {(detail?.name ?? '?').slice(0, 1).toUpperCase()}
-                  </Avatar>
-                  <Text strong ellipsis style={{ flex: 1, minWidth: 0, fontSize: 15 }}>
-                    {detail?.name ?? ''}
-                  </Text>
-                </div>
-                <Button
-                  block
-                  type="text"
-                  icon={<ArrowLeftOutlined />}
-                  onClick={() => navigate(isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}`)}
-                  style={{ justifyContent: 'flex-start', marginTop: spacing.xs }}
-                >
-                  {t(isExternal ? 'appManage.backToExternalApps' : 'appManage.backToInternalApps')}
-                </Button>
-              </div>
+              {/* 侧栏顶部身份区（SiderHeader 与团队工作台/知识库/知识图谱同构）：上段应用头像+名称、下段返回按钮；「进入对话」移至「配置」分区调试面板标题右侧 */}
+              <SiderHeader
+                name={detail?.name}
+                avatarSrc={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
+                backTo={isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}`}
+                backLabel={t(isExternal ? 'appManage.backToExternalApps' : 'appManage.backToInternalApps')}
+              />
               <Menu
                 mode="inline"
                 items={menuItems}

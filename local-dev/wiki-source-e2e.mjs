@@ -236,21 +236,30 @@ async function main() {
       (await api('POST', `/api/wiki/${WID}/sources`, { token: owner.token, body: crawlPayload(site, { maxPages: 99999 }) })).status === 400,
     )
     check(
-      'WS-S04g 飞书源未选任何绑定方式 400',
-      (await api('POST', `/api/wiki/${WID}/sources`, { token: owner.token, body: { name: 'fs-none', sourceType: 'feishuDoc', nodeToken: 'tok' } })).status === 400,
+      'WS-S04g 飞书源缺 AppID/AppSecret 400（已有连接方式已下线）',
+      (await api('POST', `/api/wiki/${WID}/sources`, { token: owner.token, body: { name: 'fs_none', sourceType: 'feishuDoc', nodeToken: 'tok' } })).status === 400,
     )
     check(
-      'WS-S04h 飞书源同时给两种方式 400',
+      'WS-S04h 飞书源只给 AppID 缺 AppSecret 400',
       (
         await api('POST', `/api/wiki/${WID}/sources`, {
           token: owner.token,
-          body: { name: 'fs-both', sourceType: 'feishuDoc', nodeToken: 'tok', feishuAppId: crypto.randomUUID(), newAppId: 'cli_x' },
+          body: { name: 'fs_both', sourceType: 'feishuDoc', nodeToken: 'tok', newAppId: 'cli_x' },
+        })
+      ).status === 400,
+    )
+    check(
+      'WS-S04h2 飞书源带 feishuAppId 但缺新建凭证 400（字段已下线仅被忽略）',
+      (
+        await api('POST', `/api/wiki/${WID}/sources`, {
+          token: owner.token,
+          body: { name: 'fs_oldid', sourceType: 'feishuDoc', nodeToken: 'tok', feishuAppId: crypto.randomUUID() },
         })
       ).status === 400,
     )
     check(
       'WS-S04i 飞书源缺 nodeToken 400',
-      (await api('POST', `/api/wiki/${WID}/sources`, { token: owner.token, body: { name: 'fs-notok', sourceType: 'feishuDoc', newAppId: 'cli_x', newAppSecret: 's' } })).status === 400,
+      (await api('POST', `/api/wiki/${WID}/sources`, { token: owner.token, body: { name: 'fs_notok', sourceType: 'feishuDoc', newAppId: 'cli_x', newAppSecret: 's' } })).status === 400,
     )
 
     // ======================= WS-S05 创建爬虫源 + 立即同步 =======================

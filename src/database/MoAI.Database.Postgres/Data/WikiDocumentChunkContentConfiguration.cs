@@ -28,6 +28,9 @@ internal partial class WikiDocumentChunkContentConfiguration : IEntityTypeConfig
 
         entity.HasIndex(e => e.WikiId, "idx_wiki_document_chunk_content_preview_wiki_slice");
 
+        // 切片序号复合索引：召回邻居扩展 / 按序号取片段 / 向量化按序读切片走此索引（存量库由启动 DDL 补齐同名索引）
+        entity.HasIndex(e => new { e.DocumentId, e.SliceOrder }, "idx_wiki_document_chunk_content_doc_slice");
+
         entity.Property(e => e.Id)
             .HasComment("切片唯一ID（slice_id）")
             .HasColumnName("id");
@@ -51,6 +54,11 @@ internal partial class WikiDocumentChunkContentConfiguration : IEntityTypeConfig
         entity.Property(e => e.SliceLength)
             .HasComment("切片字符长度")
             .HasColumnName("slice_length");
+        entity.Property(e => e.SliceAnchor)
+            .HasMaxLength(512)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("切片标题锚点（所在章节标题面包屑，切割时从 markdown 标题结构提取）")
+            .HasColumnName("slice_anchor");
         entity.Property(e => e.SliceOrder)
             .HasComment("切片在文档中的顺序")
             .HasColumnName("slice_order");

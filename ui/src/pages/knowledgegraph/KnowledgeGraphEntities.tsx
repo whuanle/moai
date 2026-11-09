@@ -51,11 +51,15 @@ export function KnowledgeGraphEntities({ graphId, teamId, graphEnabled = true, m
   const [form] = Form.useForm<FormValues>()
   const pageSize = 20
   const canWrite = graphEnabled && myRole !== null && myRole !== ROLE_MEMBER
-  // 支持从模型页/关系页带 ?typeId= 跳入并按类型过滤
+  // 支持从模型页/关系页带 ?typeId= 跳入并按类型过滤；画布侧栏编辑带 ?keyword= 跳入并按名称定位
   const typeFilter = useMemo(() => {
     const raw = searchParams.get('typeId')
     return raw != null && Number.isFinite(Number(raw)) ? Number(raw) : null
   }, [searchParams])
+  const urlKeyword = useMemo(() => searchParams.get('keyword') ?? '', [searchParams])
+  useEffect(() => {
+    if (urlKeyword) setKeyword(urlKeyword)
+  }, [urlKeyword])
 
   const load = useCallback(async () => {
     if (!Number.isFinite(graphId) || graphId <= 0) return

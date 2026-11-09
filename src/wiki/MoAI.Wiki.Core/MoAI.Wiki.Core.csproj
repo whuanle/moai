@@ -22,6 +22,7 @@
 	<ItemGroup>
 		<PackageReference Include="AngleSharp" />
 		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
+		<PackageReference Include="Hangfire.Core" />
 		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 		<PackageReference Include="Maomi.ToMarkdown" />
 		<PackageReference Include="Maomi.ToMarkdown.Token" />
@@ -29,6 +30,7 @@
 		<PackageReference Include="ModelContextProtocol" />
 		<PackageReference Include="ModelContextProtocol.AspNetCore" />
 		<PackageReference Include="Npgsql" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 	</ItemGroup>
 
 	<ItemGroup>

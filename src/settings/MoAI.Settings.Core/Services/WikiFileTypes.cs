@@ -29,6 +29,11 @@ public static partial class WikiFileTypes
     public static IReadOnlyList<string> Default { get; } = ParseOrDefault(null);
 
     /// <summary>
+    /// 历史默认值（提取能力扩容前的 10 种）：存量库未自定义过的行存的是该值，读取时按新默认返回.
+    /// </summary>
+    public const string LegacyDefaultValue = ".pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json";
+
+    /// <summary>
     /// 严格解析并归一：小写、去重、剔除空白项；为空或存在任一非法项时返回 false.
     /// </summary>
     /// <param name="value">逗号分隔的扩展名配置.</param>

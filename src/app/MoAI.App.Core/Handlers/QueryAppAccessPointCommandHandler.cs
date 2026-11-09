@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.App.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Database.Enums;
@@ -63,7 +64,8 @@ public class QueryAppAccessPointCommandHandler : IRequestHandler<QueryAppAccessP
             Subtitle = config?.Subtitle,
             Placeholder = config?.Placeholder,
             PrimaryColor = config?.PrimaryColor,
-            Position = config?.Position ?? "bottomRight",
+            Position = AccessPointPositionText.Normalize(config?.Position),
+            DisplayMode = AccessPointDisplayModeText.Normalize(config?.DisplayMode),
             LauncherText = config?.LauncherText,
             Avatar = config?.Avatar,
             PanelWidth = config?.PanelWidth ?? 380,

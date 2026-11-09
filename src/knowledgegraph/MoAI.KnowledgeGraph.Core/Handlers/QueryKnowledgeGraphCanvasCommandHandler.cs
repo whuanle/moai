@@ -60,8 +60,9 @@ public class QueryKnowledgeGraphCanvasCommandHandler : IRequestHandler<QueryKnow
             };
         }
 
+        var depth = request.Depth < 1 ? 1 : Math.Min(request.Depth, 2);
         var (managedNodes, managedEdges, managedTruncated) = await _store.QueryCanvasAsync(
-            request.KnowledgeGraphId, request.EntityTypeId, request.RelationTypeId, request.Keyword, limit, cancellationToken);
+            request.KnowledgeGraphId, request.EntityTypeId, request.RelationTypeId, request.Keyword, limit, depth, cancellationToken);
 
         return new QueryKnowledgeGraphCanvasCommandResponse
         {
@@ -71,6 +72,7 @@ public class QueryKnowledgeGraphCanvasCommandHandler : IRequestHandler<QueryKnow
                 EntityTypeId = x.EntityTypeId,
                 Name = x.Name,
                 Description = x.Description,
+                Degree = x.Degree,
                 Properties = KnowledgeGraphPropertyJson.ParseValues(x.PropsJson),
             }).ToList(),
             Edges = managedEdges.Select(x => new KnowledgeGraphEdgeItem

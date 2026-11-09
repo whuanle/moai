@@ -13,7 +13,7 @@ using MoAI.Infra.Models;
 namespace MoAI.Wiki.Services;
 
 /// <summary>
-/// 外部源与飞书应用连接的绑定服务：封装「选择已有连接 / 新建连接」两种绑定方式，
+/// 外部源与飞书应用连接的绑定服务：按 AppID/AppSecret 新建团队飞书应用连接，
 /// 以及外部源渠道（订阅型，可与团队应用共享同一飞书应用）的绑定与解除.
 /// </summary>
 [InjectOnScoped]
@@ -34,45 +34,30 @@ public class WikiSourceBindingService
     }
 
     /// <summary>
-    /// 解析外部源要使用的飞书应用连接 id：优先使用已有连接，否则按 AppID/AppSecret 新建连接.
+    /// 解析外部源要使用的飞书应用连接 id：按飞书开放平台 AppID/AppSecret 新建团队飞书应用连接（连接名称团队内唯一）.
     /// </summary>
     /// <param name="teamId">团队 id.</param>
     /// <param name="userId">操作用户 id.</param>
     /// <param name="userType">操作用户类型.</param>
-    /// <param name="feishuAppId">方式一：已有连接 id，为空表示改用方式二.</param>
-    /// <param name="newAppName">方式二：新建连接名称.</param>
-    /// <param name="newAppId">方式二：飞书开放平台 AppID.</param>
-    /// <param name="newAppSecret">方式二：飞书开放平台 AppSecret.</param>
-    /// <param name="newAppDomain">方式二：接入域名.</param>
+    /// <param name="newAppName">新建连接名称.</param>
+    /// <param name="newAppId">飞书开放平台 AppID.</param>
+    /// <param name="newAppSecret">飞书开放平台 AppSecret.</param>
+    /// <param name="newAppDomain">接入域名.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>飞书应用连接 id.</returns>
     public async Task<Guid> ResolveAsync(
         int teamId,
         long userId,
         UserType userType,
-        Guid? feishuAppId,
         string? newAppName,
         string? newAppId,
         string? newAppSecret,
         string? newAppDomain,
         CancellationToken cancellationToken)
     {
-        if (feishuAppId.HasValue)
-        {
-            var exists = await _databaseContext.FeishuApps
-                .AnyAsync(x => x.Id == feishuAppId.Value && x.TeamId == teamId, cancellationToken);
-
-            if (!exists)
-            {
-                throw new BusinessException("所选飞书应用连接不存在或不属于该团队.") { StatusCode = 404 };
-            }
-
-            return feishuAppId.Value;
-        }
-
         if (string.IsNullOrWhiteSpace(newAppId) || string.IsNullOrWhiteSpace(newAppSecret))
         {
-            throw new BusinessException("请选择已有飞书应用连接，或填写飞书开放平台 AppID 与 AppSecret 新建连接.") { StatusCode = 400 };
+            throw new BusinessException("请填写飞书开放平台 AppID 与 AppSecret 新建连接.") { StatusCode = 400 };
         }
 
         var created = await _mediator.Send(new CreateFeishuAppCommand

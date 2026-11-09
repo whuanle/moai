@@ -203,6 +203,12 @@ public record WikiMcpRecallItem
     public string DocumentName { get; init; } = default!;
 
     /// <summary>
+    /// 切片标题锚点（所在章节的标题面包屑，引用可落到章节）；空串表示未定位到章节.
+    /// </summary>
+    [JsonPropertyName("anchor")]
+    public string Anchor { get; init; } = default!;
+
+    /// <summary>
     /// 切片 id.
     /// </summary>
     [JsonPropertyName("chunkId")]
@@ -243,6 +249,24 @@ public record WikiMcpRecallItem
     /// </summary>
     [JsonPropertyName("rerankScore")]
     public double? RerankScore { get; init; }
+
+    /// <summary>
+    /// 是否同时命中关键词检索（切片原文或关键词/问题元数据与查询词匹配）.
+    /// </summary>
+    [JsonPropertyName("isKeywordHit")]
+    public bool IsKeywordHit { get; init; }
+
+    /// <summary>
+    /// 是否为内容级兜底命中（文档已提取但尚未切割：探针匹配提取正文返回文档级片段，无切片序号）.
+    /// </summary>
+    [JsonPropertyName("isContentFallback")]
+    public bool IsContentFallback { get; init; }
+
+    /// <summary>
+    /// 命中文档的内容是否已更新且重新向量化尚未完成（内容可能过期，可提示用户）.
+    /// </summary>
+    [JsonPropertyName("isStale")]
+    public bool IsStale { get; init; }
 
     /// <summary>
     /// 相邻上下文片段（命中片段的前一个与后一个，已按全文去重）.

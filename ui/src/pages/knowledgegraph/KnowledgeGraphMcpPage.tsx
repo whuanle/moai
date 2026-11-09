@@ -99,20 +99,22 @@ export function KnowledgeGraphMcpPage({ kgId, teamId, canManage }: KnowledgeGrap
 
         <Divider style={{ margin: 0 }} />
 
-        {/* MCP 地址与只读工具 */}
+        {/* MCP 地址 */}
         <div>
           <Text strong style={{ fontSize: 13 }}>{t('knowledgegraph.mcpAddress')}</Text>
           <Space.Compact style={{ width: '100%', marginTop: spacing.xs }}>
             <Input readOnly value={address} placeholder={t('knowledgegraph.mcpAddressPlaceholder')} />
             <Button icon={<CopyOutlined />} disabled={!address} onClick={() => void copyAddress()} aria-label={t('common.copy')} />
           </Space.Compact>
-          <div style={{ marginTop: spacing.sm }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>{t('knowledgegraph.mcpTools')}</Text>
-            <div style={{ marginTop: spacing.xs, display: 'flex', flexWrap: 'wrap', gap: spacing.xs }}>
-              {MCP_TOOLS.map((name) => (
-                <Tag key={name} style={{ fontFamily: 'monospace', marginRight: 0 }}>{name}</Tag>
-              ))}
-            </div>
+        </div>
+
+        {/* 只读工具清单 */}
+        <div>
+          <Text strong style={{ fontSize: 13 }}>{t('knowledgegraph.mcpTools')}</Text>
+          <div style={{ marginTop: spacing.xs, display: 'flex', flexWrap: 'wrap', gap: spacing.xs }}>
+            {MCP_TOOLS.map((name) => (
+              <Tag key={name} style={{ fontFamily: 'monospace', marginRight: 0 }}>{name}</Tag>
+            ))}
           </div>
         </div>
 

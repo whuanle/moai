@@ -57,4 +57,36 @@ public static class GraphSearchTextHelper
     /// <returns>截断后的文本.</returns>
     public static string Truncate(string text)
         => text.Length <= MaxTextLength ? text : text[..MaxTextLength] + "…(已截断)";
+
+    /// <summary>
+    /// 多命中整段组装（预算裁剪，B3）：按传入顺序（上游已按得分降序）逐段填充，
+    /// 预算耗尽时丢弃后续整段（低分命中优先被裁）并置截断标记；单段自身超限走前缀截断兜底.
+    /// </summary>
+    /// <param name="hits">命中列表（得分降序）.</param>
+    /// <returns>文本化结果与是否截断.</returns>
+    public static (string Text, bool Truncated) BuildHitsText(IReadOnlyList<GraphSearchHit> hits)
+    {
+        var builder = new StringBuilder();
+        var truncated = false;
+        foreach (var hit in hits)
+        {
+            var fragment = BuildHitFragment(hit, hit.Neighbors) + "\n\n";
+            if (builder.Length > 0 && builder.Length + fragment.Length > MaxTextLength)
+            {
+                truncated = true;
+                break;
+            }
+
+            builder.Append(fragment);
+        }
+
+        var text = builder.ToString().TrimEnd();
+        if (text.Length > MaxTextLength)
+        {
+            text = Truncate(text);
+            truncated = true;
+        }
+
+        return (text, truncated);
+    }
 }

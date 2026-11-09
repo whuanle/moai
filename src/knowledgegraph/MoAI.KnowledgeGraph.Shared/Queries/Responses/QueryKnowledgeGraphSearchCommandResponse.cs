@@ -21,6 +21,11 @@ public class QueryKnowledgeGraphSearchCommandResponse
     public string Text { get; init; } = string.Empty;
 
     /// <summary>
+    /// 文本化结果是否因超出预算截断（截断自尾部低分命中开始）.
+    /// </summary>
+    public bool TextTruncated { get; init; }
+
+    /// <summary>
     /// 被跳过的图谱及原因（该端点经 Handler 先行校验，未配置向量化会直接 409，此字段通常仅含模型不可用等运行期提示）.
     /// </summary>
     public List<string> SkippedHints { get; init; } = new();
@@ -96,4 +101,9 @@ public class QueryKnowledgeGraphSearchNeighborItem
     /// 邻居描述.
     /// </summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 邻居节点度数（邻接边总数；邻居按度数降序取 Top）.
+    /// </summary>
+    public int Degree { get; init; }
 }

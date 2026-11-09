@@ -93,6 +93,10 @@ public class DatabasPostgresModule : IModule
             dbContext.Database.ExecuteSqlRaw(
                 "ALTER TABLE app ADD COLUMN IF NOT EXISTS use_count integer NOT NULL DEFAULT 0");
 
+            // knowledge_graph.template_key（创建模板绑定）已退役：模板仅创建时作为种子数据参考，不再持久化关联，幂等清除存量列
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE knowledge_graph DROP COLUMN IF EXISTS template_key");
+
             // user_oauth_connection.union_id（飞书租户级唯一id，渠道用户识别跨应用匹配）为后加列，幂等补齐
             dbContext.Database.ExecuteSqlRaw(
                 "ALTER TABLE user_oauth_connection ADD COLUMN IF NOT EXISTS union_id character varying(100) NULL");
@@ -207,6 +211,52 @@ public class DatabasPostgresModule : IModule
                     CONSTRAINT idx_wiki_document_image_primary PRIMARY KEY (id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_wiki_document_image_document_id_index ON wiki_document_image (wiki_id, document_id) WHERE is_deleted = 0;
+                """);
+
+            // wiki 混合检索（关键词先验路径）：pg_trgm 扩展 + 切片原文/关键词问题元数据的 GIN trgm 索引加速 ILIKE，
+            // 补切片序号复合索引（召回邻居扩展/按序号取片段此前走 (document_id, id) 索引后过滤）
+            dbContext.Database.ExecuteSqlRaw(
+                """
+                CREATE EXTENSION IF NOT EXISTS pg_trgm;
+                CREATE INDEX IF NOT EXISTS idx_wiki_document_chunk_content_slice_content_trgm ON wiki_document_chunk_content USING gin (slice_content gin_trgm_ops);
+                CREATE INDEX IF NOT EXISTS idx_wiki_document_chunk_metadata_content_trgm ON wiki_document_chunk_metadata USING gin (metadata_content gin_trgm_ops);
+                CREATE INDEX IF NOT EXISTS idx_wiki_document_chunk_content_doc_slice ON wiki_document_chunk_content (document_id, slice_order);
+                CREATE INDEX IF NOT EXISTS idx_wiki_document_content_content_trgm ON wiki_document_content USING gin (content gin_trgm_ops);
+                """);
+
+            // wiki_document_chunk_embedding（知识库切片向量，早期遗留死表：全仓库无任何读写，向量实际存于 pgvector 动态表 __wiki_{id}）
+            dbContext.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS wiki_document_chunk_embedding");
+
+            // wiki.index_epoch（索引纪元，D44 检索经验聚类的新鲜度依据）为后加列：存量库幂等补齐
+            dbContext.Database.ExecuteSqlRaw("ALTER TABLE wiki ADD COLUMN IF NOT EXISTS index_epoch bigint NOT NULL DEFAULT 0");
+
+            // wiki_document_chunk_content.slice_anchor（切片标题锚点，D46）为后加列：存量库幂等补齐
+            dbContext.Database.ExecuteSqlRaw("ALTER TABLE wiki_document_chunk_content ADD COLUMN IF NOT EXISTS slice_anchor varchar(512) NOT NULL DEFAULT ''");
+
+            // wiki_recall_cluster（知识库检索经验聚类）为后加表：EnsureCreated 只在建库时建表，
+            // 存量库用幂等 DDL 补齐（与 asserts/wiki_recall_cluster.sql 等价，免手工执行）
+            dbContext.Database.ExecuteSqlRaw(
+                """
+                CREATE TABLE IF NOT EXISTS wiki_recall_cluster (
+                    id bigint NOT NULL,
+                    wiki_id int NOT NULL,
+                    query_hash varchar(64) NOT NULL,
+                    query varchar(1000) NOT NULL,
+                    index_epoch bigint NOT NULL DEFAULT 0,
+                    hits_json text NOT NULL,
+                    hit_count int NOT NULL DEFAULT 0,
+                    recall_count int NOT NULL DEFAULT 0,
+                    last_recall_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    create_user_id bigint NOT NULL DEFAULT 0,
+                    create_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    update_user_id bigint NOT NULL DEFAULT 0,
+                    update_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    is_deleted bigint NOT NULL DEFAULT 0,
+                    CONSTRAINT idx_wiki_recall_cluster_primary PRIMARY KEY (id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_wiki_recall_cluster_wiki_id ON wiki_recall_cluster (wiki_id) WHERE is_deleted = 0;
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_wiki_recall_cluster_wiki_query_uindex ON wiki_recall_cluster (wiki_id, query_hash) WHERE is_deleted = 0;
+                ALTER TABLE wiki_recall_cluster ADD COLUMN IF NOT EXISTS index_epoch bigint NOT NULL DEFAULT 0;
                 """);
 
             // resource_usage_daily / resource_usage_total（资源使用统计）为后加表：EnsureCreated 只在建库时建表，

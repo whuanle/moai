@@ -10,8 +10,7 @@ namespace MoAI.Wiki.Commands;
 
 /// <summary>
 /// 创建知识库外部源，需要团队 Admin 及以上角色.
-/// 飞书文档源支持两种绑定方式：选择团队已有的飞书应用连接（<see cref="FeishuAppId"/>），
-/// 或直接填写飞书开放平台 AppID/AppSecret 新建连接（<see cref="NewAppId"/>/<see cref="NewAppSecret"/>）.
+/// 飞书文档源须填写飞书开放平台 AppID/AppSecret 新建连接（<see cref="NewAppId"/>/<see cref="NewAppSecret"/>）.
 /// 创建后自动绑定飞书渠道（订阅型渠道，可与团队应用共享同一飞书应用）.
 /// </summary>
 public class CreateWikiSourceCommand : IRequest<SimpleGuid>, IModelValidator<CreateWikiSourceCommand>, IUserIdContext, IWikiSourceWorkflowCommand, IWikiCrawlerSourceCommand, IWikiFeishuSourceCommand
@@ -42,27 +41,22 @@ public class CreateWikiSourceCommand : IRequest<SimpleGuid>, IModelValidator<Cre
     public WikiSourceCrawlerConfig? Crawler { get; init; }
 
     /// <summary>
-    /// 方式一：选择团队已有的飞书应用连接 id（feishu_app.id）.
-    /// </summary>
-    public Guid? FeishuAppId { get; init; }
-
-    /// <summary>
-    /// 方式二：新建飞书应用连接的名称.
+    /// 新建飞书应用连接的名称，团队内唯一.
     /// </summary>
     public string? NewAppName { get; init; }
 
     /// <summary>
-    /// 方式二：飞书开放平台 AppID，形如 cli_xxx.
+    /// 飞书开放平台 AppID，形如 cli_xxx，必填.
     /// </summary>
     public string? NewAppId { get; init; }
 
     /// <summary>
-    /// 方式二：飞书开放平台 AppSecret.
+    /// 飞书开放平台 AppSecret，必填.
     /// </summary>
     public string? NewAppSecret { get; init; }
 
     /// <summary>
-    /// 方式二：接入域名，为空默认 https://open.feishu.cn；Lark 为 https://open.larksuite.com.
+    /// 接入域名，为空默认 https://open.feishu.cn；Lark 为 https://open.larksuite.com.
     /// </summary>
     public string? NewAppDomain { get; init; }
 
@@ -202,15 +196,11 @@ public class CreateWikiSourceCommand : IRequest<SimpleGuid>, IModelValidator<Cre
             .MaximumLength(128).WithMessage("节点 token 不能超过 128 个字符.")
             .When(x => x.SourceType == WikiSourceType.FeishuDoc);
 
-        // 两种绑定方式互斥且必选其一（仅飞书文档源需要）
+        // 飞书文档源必须完整填写新建连接三件套（名称/AppID/AppSecret），不再支持选择已有连接
         validate.RuleFor(x => x)
             .Must(x => x.SourceType != WikiSourceType.FeishuDoc
-                || x.FeishuAppId.HasValue
                 || (!string.IsNullOrWhiteSpace(x.NewAppId) && !string.IsNullOrWhiteSpace(x.NewAppSecret)))
-            .WithMessage("请选择已有飞书应用连接，或填写飞书开放平台 AppID 与 AppSecret 新建连接.");
-        validate.RuleFor(x => x)
-            .Must(x => !x.FeishuAppId.HasValue || string.IsNullOrWhiteSpace(x.NewAppId))
-            .WithMessage("选择已有连接与新建连接只能二选一.");
+            .WithMessage("请填写飞书开放平台 AppID 与 AppSecret 新建连接.");
         validate.RuleFor(x => x.NewAppName)
             .NotEmpty().WithMessage("请输入飞书应用连接名称.")
             .MaximumLength(50).WithMessage("连接名称不能超过 50 个字符.")

@@ -12,6 +12,8 @@ vi.mock('@/api/wiki', () => ({
   updateWikiEmbeddingConfig: vi.fn().mockResolvedValue(undefined),
   updateWikiRerankModel: vi.fn().mockResolvedValue(undefined),
   getWikiUploadLimit: vi.fn().mockResolvedValue({ maxFileSizeMb: 0, allowedFileTypes: [] }),
+  getWikiModelMigrationStatus: vi.fn().mockResolvedValue({ activeMigration: null }),
+  startWikiModelMigration: vi.fn().mockResolvedValue('task-id'),
 }))
 
 vi.mock('@/api/kiota', () => ({
@@ -67,9 +69,9 @@ describe('WikiDetail', () => {
     expect(screen.getByText('召回测试')).toBeInTheDocument()
     expect(screen.getByText('MCP')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
-    // 返回入口与库名收进左侧菜单栏（aside）顶部，与右侧内容同行，不独占整行高度
+    // 侧栏顶部身份区收进左侧菜单栏（aside）：上段头像+库名、下段返回按钮（SiderHeader，仿首页侧边栏头部）
     const sider = screen.getByRole('complementary')
-    expect(within(sider).getByRole('link', { name: /返回知识库/ })).toBeInTheDocument()
+    expect(within(sider).getByRole('button', { name: /返回知识库/ })).toBeInTheDocument()
     expect(within(sider).getByText('产品文档')).toBeInTheDocument()
   })
 

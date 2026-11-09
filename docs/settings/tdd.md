@@ -16,7 +16,7 @@
 | @SET-S8 | @manual 代码走查（`SettingsService.SaveSettingAsync` 无记录插入分支） | PASS（2026-09-01） |
 | @SET-S9 | @manual 代码走查（Controller `!IsRoot` 分支；member 403 见 @SET-S2 同轮实证） | PASS（2026-09-01） |
 | @SET-S11 ~ @SET-S15 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)；三轮浏览器全页面回归含设置页） | PASS（2026-09-01/09-02） |
-| @SET-S16 ~ @SET-S18 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（root 开启并保存三项连接、关闭仅存 OPEN_NEO4J、非 root 被重定向，4/4） | PASS（2026-09-10） |
+| @SET-S16 ~ @SET-S18 | `ui/src/pages/settings/__tests__/Settings.test.tsx`（2026-11-08 改写后 30/30：root 开启=先四项连接→testConnection 实测（mock）→通过才落 KG_ENABLED（invocationCallOrder 断言顺序）、测试未通过不落开关、测试按钮不触发保存、关闭仅存 KG_ENABLED、非 root 被重定向） | PASS（2026-09-10 初版；2026-11-08 改写复跑 30/30） |
 | @SET-S19 | @manual 代码走查（`KnowledgeGraphSettingsService.GetAsync`：未开启短路返回 `Enabled=false`；开启回传连接项，缺失走 `SettingDefinitions` 默认值） | PASS（2026-09-10） |
 | @SET-S20、@SET-S21 | [local-dev/sandbox-limits-e2e.mjs](../../local-dev/sandbox-limits-e2e.mjs)（root 保存三项上限并回读、TTL 越界与 CPU/内存格式非法 400） | PASS 21/21（2026-09-19） |
 | @SET-S22 | [tests/MoAI.App.Tests](../../tests/MoAI.App.Tests/)（`SandboxQuantityTests` K8s 数量解析）+ @manual 代码走查（`SandboxSettingsService.GetLimitsAsync` 回退默认） | PASS 35/35（2026-09-19） |

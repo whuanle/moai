@@ -35,6 +35,12 @@ public partial class WikiEntity : IFullAudited
     public int Counter { get; set; }
 
     /// <summary>
+    /// 索引纪元：文档/切片/向量集合发生任何变更（删除文档、重新切割、向量化成功）时 +1，
+    /// 检索经验聚类据此判断来源是否变化（纪元不匹配即失效自愈），保证缓存不吞新增内容.
+    /// </summary>
+    public long IndexEpoch { get; set; }
+
+    /// <summary>
     /// 是否已被锁定配置.
     /// </summary>
     public bool IsLock { get; set; }

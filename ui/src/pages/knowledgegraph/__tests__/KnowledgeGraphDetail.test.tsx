@@ -33,6 +33,26 @@ vi.mock('@/api/knowledgeGraph', () => ({
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
 
+// jsdom 无 canvas 2d 上下文，G6 渲染管线无法启动：以命令式句柄桩替换（画布交互另有组件级验证）
+vi.mock('@antv/g6', () => {
+  class GraphStub {
+    on() { return this }
+    off() { return this }
+    async render() {}
+    destroy() {}
+    setSize() {}
+    setData() {}
+    focusElement() {}
+    fitView() {}
+    zoomBy() {}
+    setElementState() {}
+    getElementState() { return [] }
+    getNodeData() { return [] }
+    getEdgeData() { return [] }
+  }
+  return { Graph: GraphStub }
+})
+
 function renderShell(initialEntry = '/team/7/kg/1/maintenance?step=entities') {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
@@ -73,9 +93,9 @@ describe('KnowledgeGraphDetail', () => {
     renderShell('/team/7/kg/1/maintenance?step=relations')
     expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
     expect(getKnowledgeGraphDetail).toHaveBeenCalledWith(1)
-    // 返回入口与图名收进左侧菜单栏（aside）顶部，与右侧内容同行，不独占整行高度
+    // 侧栏顶部身份区收进左侧菜单栏（aside）：上段头像+图名、下段返回按钮（SiderHeader，仿首页侧边栏头部）
     const sider = screen.getByRole('complementary')
-    expect(within(sider).getByRole('link', { name: /返回知识图谱/ })).toBeInTheDocument()
+    expect(within(sider).getByRole('button', { name: /返回知识图谱/ })).toBeInTheDocument()
     expect(within(sider).getByText('支付域图谱')).toBeInTheDocument()
   })
 

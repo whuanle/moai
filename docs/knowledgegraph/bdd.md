@@ -117,17 +117,34 @@ Scenario: 工具栏关键字搜索过滤卡片
   And 新建知识图谱按钮仍在操作区（Admin+，未开启能力时禁用）
 ```
 
-## Feature: 团队图谱列表卡片布局与资源数量
+## Feature: 团队图谱列表卡片布局（实时计数已退役，列表不触碰图库）
 
 ```gherkin
 @KG-S32 @auto:vitest
-Scenario: 列表卡片展示图谱资源数量
-  Given 团队下已有知识图谱（托管图在图库中有节点与边）
+Scenario: 列表卡片布局（实时资源数量展示已退役改写）
+  Given 团队下已有知识图谱
   When 成员查询团队知识图谱列表
-  Then 每个卡片项携带实体（节点）数量与关系（边）数量：托管图直查图库 count、接入图经内省缓存（5 分钟）汇总标签计数
-  And 卡片名称下方元信息行展示「N 实例 · M 关系」，接入图徽标（外部接入 · 只读）同行展示
-  And 图库不可用、能力未开启或统计失败时数量为 null，卡片不展示数量且列表不受影响（降级不阻断）
+  Then 列表接口只读业务库（设置开关 + 图谱行），不触碰图数据库——响应项不再携带实体/关系数量（entityCount/relationCount 已随实时计数退役移除），数量在进入详情/模型页时按需统计
+  And 卡片名称下方元信息行仅展示接入图徽标（外部接入 · 只读）
   And 卡片与知识库列表同构：头像+名称+元信息行、两行截断描述、分隔线页脚（创建时间+编辑/删除），列宽与知识库一致（超宽屏 1/6）
+```
+
+```gherkin
+@KG-S34 @auto:e2e
+Scenario: 图库不可用时列表秒回（限幅降级已退役改写：列表不触碰图库）
+  Given 系统设置已开启知识图谱且团队下已有图谱，但图数据库连接不可用（Bolt 端口拒绝连接）
+  When 成员查询团队知识图谱列表
+  Then 接口毫秒级返回 200（列表纯业务库查询，原「单图统计限幅 3 秒 + 超时任务旁路泄漏」方案已整体移除，不再随图谱数产生图库探测任务）
+  And enabled/myRole 正常回显，Admin+ 新建按钮随之出现
+  And 图库不可用由具体操作端点（建图/画布/CRUD）连接失败自动报错（503），列表不承担探测职责
+```
+
+```gherkin
+@KG-S47 @auto:e2e
+Scenario: 列表响应不携带实时计数字段
+  Given 系统设置已开启知识图谱且团队下已有图谱
+  When 成员查询团队知识图谱列表
+  Then 响应项不含 entityCount/relationCount 字段（KnowledgeGraphItem 已删除两属性），enabled 开关仍随响应回显供前端拦截
 ```
 
 ## Feature: 图览画布与权限（v2）
@@ -207,21 +224,98 @@ Scenario: 进入图谱默认图览且菜单收敛
   Then 重定向到维护页对应步骤（?step=entities|relations|schema），旧链接不 404
 ```
 
-## Feature: AI 导入文件生成图谱（v2.9）
+## Feature: AI 导入文件生成图谱（v2.9；v4.1 异步任务化）
 
 ```gherkin
 @KG-S26 @auto:e2e
-Scenario: AI 导入文件生成图谱
+Scenario: AI 导入文件生成图谱（异步任务）
   Given Owner/Admin 已为托管图定义模型（实体类型/关系类型）且团队有可用对话模型
   When 在「导入」菜单页 AI 智能导入页签上传文档并选择模型发起导入
-  Then 文件经 Maomi.ToMarkdown 提取内容（超上限截断）
-  And 对话模型按图谱现有模型抽取实体与关系
+  Then 登记导入任务并返回任务 id（不再同步等待）
+  And 任务依次经历 提取文本 → AI 抽取 → 合并落库 到达终态 done
+  And 文件经 Maomi.ToMarkdown 提取内容（超上限截断），对话模型按图谱现有模型抽取实体与关系
   And 仅模型已定义的类型被写入，关系起止约束校验通过后入图
-  And 返回导入统计且画布可见新节点与边
+  And 任务结果携带导入统计（新建/合并/跳过）且画布可见新节点与边
   When 对非公开目录的 objectKey 发起导入
   Then 返回参数错误
   When 对没有实体类型的图谱发起导入
   Then 返回冲突（409）并提示先定义模型
+```
+
+```gherkin
+@KG-S42 @auto:e2e
+Scenario: 导入任务状态机与治理
+  Given 托管图存在至少一条导入任务
+  When 查询导入任务列表（分页倒序）与任务详情
+  Then 返回状态（pending/extracting/parsing/merging/done/failed/cancelled）、进度（done/total）、错误与结果统计
+  When 对 done 任务发起重试或取消
+  Then 返回冲突（409）
+  When 对 failed/cancelled 任务发起重试
+  Then 任务重置为排队中并重新执行（幂等合并不产生重复数据）
+  When 对排队/执行中任务发起取消
+  Then pending 立即取消，执行中在阶段间隙生效
+
+@KG-S43 @auto:e2e
+Scenario: 重复导入幂等合并（B1 证据链）
+  Given 同一文档已完成一次导入
+  When 再次导入同一文档
+  Then 任务终态 done 且统计为 新建 0 / 合并 2 / 新边 0
+  And 命中节点描述去重拼接、缺失属性补齐、来源证据追加（FIFO 上限 20 条）
+  And 命中同三元组的边跳过不重建
+  And 图库节点与边总数不变
+```
+
+```gherkin
+@KG-S44 @auto:e2e
+Scenario: 检索邻居按度数排序与预算裁剪（B3）
+  When 语义检索或召回测试携带邻居数参数（0=默认 10，1-30）
+  Then 每个命中实体的一跳邻居按度数降序取 Top 进入上下文（邻居行携带度数），同一邻居的多条关系逐边成行
+  When 邻居数越界（>30 或负数）
+  Then 返回参数错误（400）
+  And 命中文本化按预算（8192 字符）整段组装，预算耗尽丢弃尾部低分命中并置 textTruncated 标记
+
+@KG-S45 @auto:e2e
+Scenario: 默认抽取模型三级回退（B5）
+  Given 管理员在图谱设置页配置了默认抽取模型（团队可用对话模型）
+  When AI 导入未显式指定模型
+  Then 使用图谱默认抽取模型执行任务
+  When 请求级指定模型
+  Then 请求级优先于图谱默认
+  When 两者皆未提供
+  Then 返回参数错误（400）提示选择模型或配置默认
+  When 配置的模型不是对话模型或团队不可用
+  Then 配置返回参数错误（400）
+```
+
+```gherkin
+@KG-S48 @manual
+Scenario: 画布问图（Text2Cypher，B7/D31）
+  Given 托管图有可用对话模型（或已配默认抽取模型）
+  When 画布搜索框切到「AI 问图」输入自然语言问题并回车
+  Then 模型按图谱结构生成只读 Cypher（模型三级回退：请求级 &gt; 图谱默认 &gt; 400）
+  And 生成的 Cypher 通过只读守卫（写关键字/多语句/超长/字符串字面量剥除后校验）并由 $kgId 隔离执行
+  And 结果卡展示生成的 Cypher（可复制）与行数（500 行封顶，超出置截断）
+  And 结果行中的本图节点 id 在画布上高亮（缺失节点可双击展开邻接补拉）
+  When 生成的 Cypher 未通过守卫或执行失败
+  Then 展示教学式错误原因与生成的 Cypher 原文
+  When 对接入图发起画布问图
+  Then 返回冲突（409，接入图问图走 kg_cypher_query 插件）
+```
+
+```gherkin
+@KG-S49 @manual
+Scenario: 画布样式规则（B8）
+  Given 托管图已定义带属性的实体类型
+  When 管理员在设置页「画布样式规则」为某类型选择追加显示内容（属性值/类型名/不显示）并保存
+  Then 规则持久化到图谱（captions 键=实体类型 id，值=属性名或空串）
+  When 图览画布加载该类型节点
+  Then 节点 label 以「名称 · 所选内容」追加显示（所选属性缺失时仅显示名称；未配置规则的类型保持纯名称）
+  When 规则包含不存在的实体类型 id 或超限（>50 条/属性名>100）
+  Then 返回参数错误（400）
+  When 接入图配置样式规则或普通成员操作
+  Then 返回冲突（409）/权限错误（403）
+  When Captions 传 null（前端全选「不显示」保存）
+  Then 清除全部规则回默认
 ```
 
 > JSON 结构化导入场景（@KG-S29，导入页 /import-json）：与外部 /import 共用管线（类型名引用/自动建类型/业务 key upsert/端点引用/逐条报告）。
@@ -304,6 +398,16 @@ Scenario: 新建图谱时上传头像
   And 团队图谱列表卡片与图谱详情回显该头像
   When 未选择头像直接提交
   Then 图谱正常创建且不调用头像登记
+
+@KG-S33 @auto:vitest
+Scenario: 编辑图谱时上传头像
+  Given Owner/Admin 打开编辑知识图谱弹窗（列表卡片编辑入口）
+  Then 弹窗展示头像上传控件，已有头像回显当前头像预览
+  When 选择本地图片（仅图片、不超过 5MB）并提交保存
+  Then 基础信息保存成功且头像经存储直传登记（登记失败不阻断保存）
+  And 团队图谱列表卡片回显新头像
+  When 不选择头像直接提交
+  Then 仅保存基础信息且不调用头像登记，已有头像保持不变
 ```
 
 ## Feature: 模型属性设置（v2.3）
@@ -330,6 +434,22 @@ Scenario: 设置卡片折叠与图数据库类型排版
   When 开启知识图谱
   Then 「图数据库类型」下拉与说明文案纵向排列
   And 用户名与密码输入框同行展示
+  And 开启区操作行含「测试连接」按钮（用表单当前值实测，无需先保存）
+```
+
+```gherkin
+@KG-S46 @auto:e2e
+Scenario: 图数据库连通性预检端点（开启前测试，仅 root）
+  Given 系统设置已保存图数据库连接信息
+  When 超管以空请求体调用 POST /api/knowledge-graph/test-connection
+  Then 回退已保存连接实测：可达返回 200 {ok:true, latencyMs, dialect}（临时驱动不复用运行时单例，探活语句与建接入图同口径：memgraph RETURN 1 / neo4j CALL db.labels()）
+  When 超管以错误地址（bolt://127.0.0.1:1）覆盖调用
+  Then 8 秒整体限幅内返回 200 {ok:false, error=原因}（连接超时 5 秒；驱动不响应取消令牌，限幅任务竞争裁决后 Dispose 中断，不 5xx 不挂起）
+  When 超管以非法地址（not-a-uri）或非法方言（mysql）调用
+  Then 返回 400（IModelValidator 校验：bolt/neo4j scheme、方言白名单）
+  When 未认证或普通用户调用
+  Then 分别返回 401 / 403（角色门禁只在 Controller）
+  And 设置页保存流程：开启时先保存连接项再实测，通过才落 KG_ENABLED=true；测试未通过不落开关、表单值保留可改后重试；关闭时仅写开关不写连接项
 ```
 
 > 外部开放接口（`/api/teamres/knowledge-graph`）场景编号沿用证据脚本 `kg-external-e2e.mjs` 的 KX-\* 体系（KX-01~KX-15），不复用 KG-\*。授权模型：moai-ac- 接入 key/token 即团队级授权（kg_read/kg_write 分档已随 scope 体系退役），moai-tr- 图资源 key 受包围圈约束（[@KX-15](#kx-15)），设计见 [sdd.md §5.1](./sdd.md#51-外部开放接口apexternalknowledge-graph)。
@@ -647,4 +767,73 @@ Scenario: 召回测试（/recall-test）
   Then 返回向量召回的实体命中（得分/类型名/一跳邻居）且 topK 生效
   When 开启 AI 优化问题与 AI 回答并选择对话模型
   Then 返回优化后查询与基于召回事实的回答
+```
+
+## Feature: 图览画布探索工作台（v4，G6 重写）
+
+```gherkin
+Background:
+  Given 团队已开启知识图谱能力且存在托管图谱
+
+@KG-S35 @manual
+Scenario: 双击展开与收起邻居
+  When 画布上双击某节点
+  Then 拉取其一跳邻接入图（邻接接口携带节点度数）并标记该节点为已展开
+  When 再次双击该节点
+  Then 仅因本次展开引入且无其它连边的邻居被回收，其余节点保留
+
+@KG-S36 @manual
+Scenario: 图例多选过滤与搜索定位
+  Given 画布已加载多个实体类型的节点
+  When 在左下图例面板点击某类型
+  Then 该类型节点及相连边即时隐藏（画布内过滤，不重新请求）
+  When 再次点击恢复显示或点「显示全部」
+  Then 全部类型恢复
+  When 搜索框输入名称并回车
+  Then 画布内命中节点高亮并居中定位；未命中时提示按关键字重新加载子图
+
+@KG-S37 @manual
+Scenario: 实体合并（画布多选 → 合并对话框）
+  Given 管理员在画布 Ctrl+多选 2~20 个实体并点「合并」
+  When 在合并对话框选择保留目标并确认
+  Then 源实体被删除、其关系重挂到目标（同三元组已存在跳过、两端均为源的自环丢弃）、描述与属性合并进目标、目标向量重建且源向量删除
+  When 起止类型约束不满足或影响关系数 ≥20 未带确认标记
+  Then 返回参数错误（400）或要求二次确认（409）
+  When 普通成员或接入图调用合并接口
+  Then 返回权限错误（403）或冲突（409）
+
+@KG-S38 @auto:e2e
+Scenario: 画布子图深度（depth=2）
+  When 画布查询携带 depth=2
+  Then 以种子节点集再向外扩一跳并入结果（受 limit 总预算约束，超限置 truncated）
+  When depth 超出 1~2
+  Then 返回参数错误（400）
+
+@KG-S39 @manual
+Scenario: 召回结果在画布查看
+  Given 召回测试已返回命中实体
+  When 点击「在画布查看」
+  Then 跳转图览画布并高亮命中节点（缺失节点经邻接接口补拉后聚焦首个命中）
+
+@KG-S40 @auto:e2e
+Scenario: 邻接查询携带节点度数
+  When 请求节点一跳邻接
+  Then 返回的邻居节点携带度数（邻接边总数），供画布节点大小与详情侧栏展示
+```
+
+## Feature: AI 文件导入支持 42 种文档与文本格式（v4.2）
+
+> 提取分层（原生/自研 EPUB·ODT·RTF/纯文本兜底）与知识库同口径，设计见 [../wiki/sdd.md](../wiki/sdd.md) D47；导入异步任务状态机见本模块 [sdd.md](./sdd.md)。
+
+```gherkin
+@KG-S41 @auto:e2e
+Scenario: AI 文件导入放开 42 种提取能力格式
+  When 用户经知识图谱导入专用预上传端点上传代码文本文件（.py，≤20MB）
+  Then 预上传通过且文件落公开 chat 目录（导入命令校验不变）
+  When 上传不在白名单内的文件（如 .exe）
+  Then 预上传拒绝（400）且错误信息携带支持格式清单
+  When 经对话附件通用上传端点上传同一 .py 文件
+  Then 仍被拒绝（400）——对话附件白名单不受图谱导入扩容影响
+  When 对已直传的 .py 文件发起 AI 导入
+  Then 导入任务完成后成功抽取实体（任务内按纯文本兜底提取，与知识库同提取层）
 ```

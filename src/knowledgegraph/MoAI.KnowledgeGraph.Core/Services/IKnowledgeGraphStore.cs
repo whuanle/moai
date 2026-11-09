@@ -8,16 +8,22 @@ namespace MoAI.KnowledgeGraph.Services;
 public interface IKnowledgeGraphStore
 {
     /// <summary>
-    /// 有界子图查询（画布）：按实体类型/关键字取节点子集，边仅返回节点集内部的边.
+    /// 有界子图查询（画布）：按实体类型/关键字取节点子集，边仅返回节点集内部的边；depth=2 时以种子集再向外扩一跳（受 limit 总预算约束）.
     /// </summary>
     /// <returns>返回节点、边与是否被截断.</returns>
-    Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphEdgeRecord> Edges, bool Truncated)> QueryCanvasAsync(long KnowledgeGraphId, long? entityTypeId, long? relationTypeId, string? keyword, int limit, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphEdgeRecord> Edges, bool Truncated)> QueryCanvasAsync(long KnowledgeGraphId, long? entityTypeId, long? relationTypeId, string? keyword, int limit, int depth, CancellationToken cancellationToken);
 
     /// <summary>
     /// 一跳邻接展开：返回指定节点的邻居节点与相连的边.
     /// </summary>
     /// <returns>返回邻居节点、边与是否被截断.</returns>
     Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphEdgeRecord> Edges, bool Truncated)> GetNeighborsAsync(long KnowledgeGraphId, string nodeId, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一跳邻接展开（度数优先）：邻居按邻接边总数降序取 Top（检索上下文扩展用——枢纽邻居优先进入 LLM 上下文）.
+    /// </summary>
+    /// <returns>返回邻居节点（度数降序）、边与是否被截断.</returns>
+    Task<(IReadOnlyList<KnowledgeGraphNodeRecord> Nodes, IReadOnlyList<KnowledgeGraphEdgeRecord> Edges, bool Truncated)> GetNeighborsByDegreeAsync(long KnowledgeGraphId, string nodeId, int limit, CancellationToken cancellationToken);
 
     /// <summary>
     /// 统计某实体类型下的节点数.
@@ -40,9 +46,14 @@ public interface IKnowledgeGraphStore
     Task<long> CountEdgesAsync(long KnowledgeGraphId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 创建节点.
+    /// 创建节点（srcJson 为可选来源证据，导入路径携带）.
     /// </summary>
-    Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken);
+    Task<KnowledgeGraphNodeRecord> CreateNodeAsync(long KnowledgeGraphId, long entityTypeId, string name, string description, string? propsJson, string? key, CancellationToken cancellationToken, string? srcJson = null);
+
+    /// <summary>
+    /// 更新节点证据面（描述/属性/来源证据整体覆盖；导入幂等合并写回用，不改类型与名称）.
+    /// </summary>
+    Task UpdateNodeEvidenceAsync(long KnowledgeGraphId, string nodeId, string description, string? propsJson, string? srcJson, CancellationToken cancellationToken);
 
     /// <summary>
     /// 批量创建节点（单语句 UNWIND，单事务），返回记录顺序与输入一致.
@@ -158,6 +169,18 @@ public interface IKnowledgeGraphStore
     /// 清空图谱在图库中的所有节点与边.
     /// </summary>
     Task PurgeGraphAsync(long KnowledgeGraphId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 读取与指定节点集合任一端相连的边（含方向与两端节点 id），用于实体合并前的约束校验与重挂计算.
+    /// </summary>
+    Task<IReadOnlyList<KnowledgeGraphEdgeRecord>> GetEdgesTouchingNodesAsync(long KnowledgeGraphId, IReadOnlyList<string> nodeIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 实体合并（单事务）：更新目标节点描述/属性 → 按传入新边清单重挂关系到目标 → DETACH 删除源节点（其旧边随之删除）.
+    /// 会成为自环（两端均为被合并节点）的边不入新边清单，由源节点删除自然移除.
+    /// </summary>
+    /// <returns>返回实际新建的重挂边数量.</returns>
+    Task<int> MergeNodesAsync(long KnowledgeGraphId, string targetNodeId, string mergedDescription, string? mergedPropsJson, IReadOnlyList<KnowledgeGraphEdgeInput> edgesToCreate, IReadOnlyList<string> sourceNodeIds, CancellationToken cancellationToken);
 
     /// <summary>
     /// 探活指定数据库.

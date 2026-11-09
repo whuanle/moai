@@ -28,11 +28,6 @@ public class KnowledgeGraphItem
     public string? Description { get; init; }
 
     /// <summary>
-    /// 模板 key.
-    /// </summary>
-    public string? TemplateKey { get; init; }
-
-    /// <summary>
     /// 来源：managed / connected.
     /// </summary>
     public string Mode { get; init; } = KnowledgeGraphModes.Managed;
@@ -51,16 +46,6 @@ public class KnowledgeGraphItem
     /// 头像 ObjectKey（空串表示未设置，前端经 /static/{key} 解析）.
     /// </summary>
     public string AvatarPath { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 实体（节点）数量；图库不可用或统计失败时为 null.
-    /// </summary>
-    public int? EntityCount { get; init; }
-
-    /// <summary>
-    /// 关系（边）数量；图库不可用或统计失败时为 null.
-    /// </summary>
-    public int? RelationCount { get; init; }
 
     /// <summary>
     /// 创建时间.

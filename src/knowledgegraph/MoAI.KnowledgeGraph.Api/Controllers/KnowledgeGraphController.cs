@@ -1,5 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MoAI.Account.Services;
+using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.KnowledgeGraph.Commands;
@@ -17,16 +19,19 @@ public class KnowledgeGraphController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IUserContextProvider _userContextProvider;
+    private readonly IUserAccountService _userAccountService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KnowledgeGraphController"/> class.
     /// </summary>
     /// <param name="mediator">MediatR 实例.</param>
     /// <param name="userContextProvider">用户上下文提供者（路由回填命令的手动用户上下文注入）.</param>
-    public KnowledgeGraphController(IMediator mediator, IUserContextProvider userContextProvider)
+    /// <param name="userAccountService">用户账号服务（root 门禁判定）.</param>
+    public KnowledgeGraphController(IMediator mediator, IUserContextProvider userContextProvider, IUserAccountService userAccountService)
     {
         _mediator = mediator;
         _userContextProvider = userContextProvider;
+        _userAccountService = userAccountService;
     }
 
     /// <summary>
@@ -48,6 +53,24 @@ public class KnowledgeGraphController : ControllerBase
     [HttpGet("list")]
     public Task<QueryKnowledgeGraphsCommandResponse> List([FromQuery] long teamId, CancellationToken ct)
         => _mediator.Send(new QueryKnowledgeGraphsCommand { TeamId = teamId }, ct);
+
+    /// <summary>
+    /// 测试图数据库连通性（系统设置「知识图谱」开启前预检），仅超级管理员可调用；字段留空回退已保存的连接设置.
+    /// </summary>
+    /// <param name="req">测试连接请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>连通性与耗时.</returns>
+    [HttpPost("test-connection")]
+    public async Task<TestKnowledgeGraphConnectionCommandResponse> TestConnection([FromBody] TestKnowledgeGraphConnectionCommand req, CancellationToken ct)
+    {
+        var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
+        if (!userState.IsRoot)
+        {
+            throw new BusinessException("只有超级管理员可以测试图数据库连接") { StatusCode = 403 };
+        }
+
+        return await _mediator.Send(req, ct);
+    }
 
     /// <summary>
     /// 查询团队可用的 AI 模型选项（对话模型用于 AI 导入文件，向量化模型用于图检索配置）.
@@ -130,6 +153,39 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new UpdateKnowledgeGraphEmbeddingConfigCommand { KnowledgeGraphId = id, EmbeddingModelId = req.EmbeddingModelId, EmbeddingDimensions = req.EmbeddingDimensions }, ct);
 
     /// <summary>
+    /// 画布问图（Text2Cypher，B7/D31）：自然语言 → 模型生成只读 Cypher（守卫 + $kgId 隔离执行）→ 表格结果与本图节点 id 集合（供画布高亮）；Member 可用，仅托管图.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">问题与可选模型.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>问图结果.</returns>
+    [HttpPost("{id}/text2cypher")]
+    public Task<QueryKnowledgeGraphText2CypherCommandResponse> Text2Cypher(long id, [FromBody] QueryKnowledgeGraphText2CypherCommand req, CancellationToken ct)
+        => _mediator.Send(new QueryKnowledgeGraphText2CypherCommand { KnowledgeGraphId = id, Question = req.Question, AiModelId = req.AiModelId }, ct);
+
+    /// <summary>
+    /// 配置知识图谱默认抽取模型（AI 导入缺省对话模型，D30 三级回退：请求级 &gt; 图谱默认 &gt; 400），仅托管图 Owner/Admin 可操作；ExtractModelId 传 null 清除默认.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">配置请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>空响应.</returns>
+    [HttpPut("{id}/extract-model")]
+    public Task<EmptyCommandResponse> UpdateExtractModel(long id, [FromBody] UpdateKnowledgeGraphExtractModelCommand req, CancellationToken ct)
+        => _mediator.Send(new UpdateKnowledgeGraphExtractModelCommand { KnowledgeGraphId = id, ExtractModelId = req.ExtractModelId }, ct);
+
+    /// <summary>
+    /// 配置画布样式规则（B8）：按实体类型配置节点第二行 caption（值=属性名或空串不显示）；Captions 传 null 清除全部规则；仅托管图 Owner/Admin.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">配置请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>空响应.</returns>
+    [HttpPut("{id}/canvas-style")]
+    public Task<EmptyCommandResponse> UpdateCanvasStyle(long id, [FromBody] UpdateKnowledgeGraphCanvasStyleCommand req, CancellationToken ct)
+        => _mediator.Send(new UpdateKnowledgeGraphCanvasStyleCommand { KnowledgeGraphId = id, Captions = req.Captions }, ct);
+
+    /// <summary>
     /// 知识图谱语义检索（向量 topK + 一跳扩展）.
     /// </summary>
     /// <param name="id">图谱 id.</param>
@@ -138,7 +194,7 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>检索结果.</returns>
     [HttpPost("{id}/search")]
     public Task<QueryKnowledgeGraphSearchCommandResponse> Search(long id, [FromBody] QueryKnowledgeGraphSearchCommand req, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = id, Query = req.Query, TopK = req.TopK, MinScore = req.MinScore }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphSearchCommand { KnowledgeGraphId = id, Query = req.Query, TopK = req.TopK, MinScore = req.MinScore, NeighborTopK = req.NeighborTopK }, ct);
 
     /// <summary>
     /// 召回测试：向量召回（实体 + 一跳邻居），支持相似度阈值、AI 优化问题与 AI 生成回答，仅团队成员可访问.
@@ -156,6 +212,7 @@ public class KnowledgeGraphController : ControllerBase
             Query = req.Query,
             Top = req.Top,
             MinScore = req.MinScore,
+            NeighborTopK = req.NeighborTopK,
             AiModelId = req.AiModelId,
             IsOptimizeQuery = req.IsOptimizeQuery,
             IsAnswer = req.IsAnswer,
@@ -181,10 +238,55 @@ public class KnowledgeGraphController : ControllerBase
     /// <param name="id">图谱 id.</param>
     /// <param name="req">导入请求.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>导入统计.</returns>
+    /// <returns>导入任务 id（异步执行，轮询任务详情取进度与统计）.</returns>
     [HttpPost("{id}/import-file")]
-    public Task<ImportKnowledgeGraphFromFileResponse> ImportFile(long id, [FromBody] ImportKnowledgeGraphFromFileCommand req, CancellationToken ct)
+    public Task<SimpleString> ImportFile(long id, [FromBody] ImportKnowledgeGraphFromFileCommand req, CancellationToken ct)
         => _mediator.Send(new ImportKnowledgeGraphFromFileCommand { KnowledgeGraphId = id, ObjectKey = req.ObjectKey, FileName = req.FileName, AiModelId = req.AiModelId }, ct);
+
+    /// <summary>
+    /// 导入任务列表（分页倒序）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="pageNo">页码.</param>
+    /// <param name="pageSize">每页条数.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>任务列表.</returns>
+    [HttpGet("{id}/import-jobs")]
+    public Task<QueryKnowledgeGraphImportJobsCommandResponse> ListImportJobs(long id, [FromQuery] int pageNo = 1, [FromQuery] int pageSize = 10, CancellationToken ct = default)
+        => _mediator.Send(new QueryKnowledgeGraphImportJobsCommand { KnowledgeGraphId = id, PageNo = pageNo, PageSize = pageSize }, ct);
+
+    /// <summary>
+    /// 导入任务详情（状态/进度/错误/结果统计）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="jobId">任务 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>任务详情.</returns>
+    [HttpGet("{id}/import-jobs/{jobId:long}")]
+    public Task<KnowledgeGraphImportJobItem> ImportJobDetail(long id, long jobId, CancellationToken ct)
+        => _mediator.Send(new QueryKnowledgeGraphImportJobCommand { KnowledgeGraphId = id, JobId = jobId }, ct);
+
+    /// <summary>
+    /// 重试导入任务（仅失败/已取消；幂等重跑合并不重复）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="jobId">任务 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>空响应.</returns>
+    [HttpPost("{id}/import-jobs/{jobId:long}/retry")]
+    public Task<EmptyCommandResponse> RetryImportJob(long id, long jobId, CancellationToken ct)
+        => _mediator.Send(new RetryKnowledgeGraphImportJobCommand { KnowledgeGraphId = id, JobId = jobId }, ct);
+
+    /// <summary>
+    /// 取消导入任务（pending 立即生效；执行中在阶段间隙生效）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="jobId">任务 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>空响应.</returns>
+    [HttpPost("{id}/import-jobs/{jobId:long}/cancel")]
+    public Task<EmptyCommandResponse> CancelImportJob(long id, long jobId, CancellationToken ct)
+        => _mediator.Send(new CancelKnowledgeGraphImportJobCommand { KnowledgeGraphId = id, JobId = jobId }, ct);
 
     /// <summary>
     /// JSON 结构化导入（导入页）：直接反序列化导入页提交的 JSON 文本（顶层 mode/autoCreateTypes/validateOnly/nodes/edges）并落库，
@@ -400,7 +502,7 @@ public class KnowledgeGraphController : ControllerBase
         => _mediator.Send(new DeleteKnowledgeGraphEdgeCommand { KnowledgeGraphId = id, EdgeId = edgeId }, ct);
 
     /// <summary>
-    /// 画布有界子图查询（托管图按类型过滤，接入图按标签过滤）.
+    /// 画布有界子图查询（托管图按类型过滤，接入图按标签过滤；depth=2 时托管图以种子集再扩一跳）.
     /// </summary>
     /// <param name="id">图谱 id.</param>
     /// <param name="req">查询请求.</param>
@@ -408,7 +510,18 @@ public class KnowledgeGraphController : ControllerBase
     /// <returns>子图节点与边.</returns>
     [HttpPost("{id}/canvas")]
     public Task<QueryKnowledgeGraphCanvasCommandResponse> Canvas(long id, [FromBody] QueryKnowledgeGraphCanvasCommand req, CancellationToken ct)
-        => _mediator.Send(new QueryKnowledgeGraphCanvasCommand { KnowledgeGraphId = id, EntityTypeId = req.EntityTypeId, Label = req.Label, RelationTypeId = req.RelationTypeId, Keyword = req.Keyword, Limit = req.Limit }, ct);
+        => _mediator.Send(new QueryKnowledgeGraphCanvasCommand { KnowledgeGraphId = id, EntityTypeId = req.EntityTypeId, Label = req.Label, RelationTypeId = req.RelationTypeId, Keyword = req.Keyword, Limit = req.Limit, Depth = req.Depth }, ct);
+
+    /// <summary>
+    /// 实体合并：源节点合并进目标节点（描述/属性深合并、边重挂、源删除）.
+    /// </summary>
+    /// <param name="id">图谱 id.</param>
+    /// <param name="req">合并请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>合并结果统计.</returns>
+    [HttpPost("{id}/nodes/merge")]
+    public Task<MergeKnowledgeGraphNodesCommandResponse> MergeNodes(long id, [FromBody] MergeKnowledgeGraphNodesCommand req, CancellationToken ct)
+        => _mediator.Send(new MergeKnowledgeGraphNodesCommand { KnowledgeGraphId = id, TargetNodeId = req.TargetNodeId, SourceNodeIds = req.SourceNodeIds, Confirm = req.Confirm }, ct);
 
     /// <summary>
     /// 节点一跳邻接展开（托管图按节点 id，接入图按 elementId）.

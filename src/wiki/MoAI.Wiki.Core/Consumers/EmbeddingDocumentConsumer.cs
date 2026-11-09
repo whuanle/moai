@@ -14,8 +14,10 @@ namespace MoAI.Wiki.Consumers;
 
 /// <summary>
 /// 知识库文档工作流消费者：按任务数据执行 AI 切割 → 元数据生成 → 向量化（各步骤可选）.
+/// Qos=4 允许至多 4 个文档并行处理（每消息独立 DI scope，各持独立 DbContext；任务原子认领防重），
+/// 解除批量上传的全平台串行瓶颈；渠道限流 429 由任务失败与 MQ 重投兜底.
 /// </summary>
-[Consumer("wiki.document.embedding", Qos = 1)]
+[Consumer("wiki.document.embedding", Qos = 4)]
 public class EmbeddingDocumentConsumer : IConsumer<EmbeddingDocumentTaskMessage>
 {
     private const string ProcessingMessage = "任务处理中";

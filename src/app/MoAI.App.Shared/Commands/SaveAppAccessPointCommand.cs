@@ -44,6 +44,11 @@ public class SaveAppAccessPointCommand : IRequest<EmptyCommandResponse>, IUserId
     public AccessPointPosition Position { get; init; }
 
     /// <summary>
+    /// 显示形式：floating 悬浮组件（默认）/ inline 内嵌小窗.
+    /// </summary>
+    public AccessPointDisplayMode DisplayMode { get; init; }
+
+    /// <summary>
     /// 悬浮按钮文案，空则用图标.
     /// </summary>
     public string? LauncherText { get; init; }
@@ -95,5 +100,6 @@ public class SaveAppAccessPointCommand : IRequest<EmptyCommandResponse>, IUserId
         validate.RuleFor(x => x.Avatar).MaximumLength(255).WithMessage("头像 objectKey 最长 255 个字符.");
         validate.RuleFor(x => x.PanelWidth).InclusiveBetween(280, 640).WithMessage("面板宽度必须在 280~640 之间.");
         validate.RuleFor(x => x.PanelHeight).InclusiveBetween(360, 900).WithMessage("面板高度必须在 360~900 之间.");
+        validate.RuleFor(x => x.DisplayMode).IsInEnum().WithMessage("显示形式必须为 floating 或 inline.");
     }
 }

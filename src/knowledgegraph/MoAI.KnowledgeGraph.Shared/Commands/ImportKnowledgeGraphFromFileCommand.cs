@@ -6,9 +6,9 @@ using MoAI.KnowledgeGraph.Queries.Responses;
 namespace MoAI.KnowledgeGraph.Commands;
 
 /// <summary>
-/// AI 导入文件生成图谱：读取已直传的文档文件，Maomi.ToMarkdown 提取内容后由对话模型按图谱现有模型抽取实体与关系写入图库，仅 Owner/Admin 的托管图可导入.
+/// AI 导入文件生成图谱（B2 异步化）：读取已直传的文档文件，登记导入任务交 Hangfire 执行（提取→抽取→幂等合并落库），仅 Owner/Admin 的托管图可导入；返回任务 id（D27）.
 /// </summary>
-public class ImportKnowledgeGraphFromFileCommand : IRequest<ImportKnowledgeGraphFromFileResponse>, IModelValidator<ImportKnowledgeGraphFromFileCommand>
+public class ImportKnowledgeGraphFromFileCommand : IRequest<SimpleString>, IModelValidator<ImportKnowledgeGraphFromFileCommand>
 {
     /// <summary>
     /// 图谱 id，由 Controller 从路由参数回填.
@@ -26,9 +26,9 @@ public class ImportKnowledgeGraphFromFileCommand : IRequest<ImportKnowledgeGraph
     public string FileName { get; init; } = default!;
 
     /// <summary>
-    /// 团队可用的 AI 对话模型 id.
+    /// 团队可用的 AI 对话模型 id（可空：缺省时回退图谱默认抽取模型，两者皆空则 400，D30）.
     /// </summary>
-    public Guid AiModelId { get; init; }
+    public Guid? AiModelId { get; init; }
 
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<ImportKnowledgeGraphFromFileCommand> validate)
@@ -38,6 +38,5 @@ public class ImportKnowledgeGraphFromFileCommand : IRequest<ImportKnowledgeGraph
             .Must(x => x.StartsWith("public/chat/", StringComparison.Ordinal))
             .WithMessage("文件 ObjectKey 不合法.");
         validate.RuleFor(x => x.FileName).NotEmpty().WithMessage("文件名不能为空.").MaximumLength(255).WithMessage("文件名最长 255 个字符.");
-        validate.RuleFor(x => x.AiModelId).NotEmpty().WithMessage("请选择 AI 对话模型.");
     }
 }

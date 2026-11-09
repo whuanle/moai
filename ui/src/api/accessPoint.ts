@@ -10,11 +10,15 @@ export interface ExternalAccessPointResponse {
   placeholder?: string | null
   primaryColor?: string | null
   position?: string | null
+  /** floating 悬浮组件 / inline 内嵌小窗 */
+  displayMode?: string | null
   launcherText?: string | null
   avatar?: string | null
   panelWidth?: number | null
   panelHeight?: number | null
   defaultOpen?: boolean | null
+  /** 对话开场白（未启用为 null） */
+  openingStatement?: string | null
   enabled?: boolean | null
 }
 
@@ -28,6 +32,8 @@ export interface AppAccessPointConfig {
   primaryColor?: string | null
   /** bottomRight / bottomLeft */
   position?: string | null
+  /** floating 悬浮组件 / inline 内嵌小窗 */
+  displayMode?: string | null
   /** 悬浮按钮文案，空则用图标 */
   launcherText?: string | null
   /** 头像 objectKey */
@@ -45,6 +51,8 @@ export interface SaveAccessPointPayload {
   placeholder?: string | null
   primaryColor?: string | null
   position?: string
+  /** floating / inline */
+  displayMode?: string
   launcherText?: string | null
   avatar?: string | null
   panelWidth: number
@@ -68,6 +76,7 @@ export async function getAppAccessPoint(appId: string): Promise<AppAccessPointCo
     placeholder: res?.placeholder ?? null,
     primaryColor: res?.primaryColor ?? null,
     position: res?.position ?? 'bottomRight',
+    displayMode: res?.displayMode ?? 'floating',
     launcherText: res?.launcherText ?? null,
     avatar: res?.avatar ?? null,
     panelWidth: res?.panelWidth ?? 380,
@@ -86,6 +95,7 @@ export async function saveAppAccessPoint(appId: string, payload: SaveAccessPoint
     placeholder: payload.placeholder ?? null,
     primaryColor: payload.primaryColor ?? null,
     position: payload.position,
+    displayMode: payload.displayMode ?? 'floating',
     launcherText: payload.launcherText ?? null,
     avatar: payload.avatar ?? null,
     panelWidth: payload.panelWidth,

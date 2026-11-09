@@ -9,6 +9,11 @@ import type { KnowledgeGraphDetail } from '@/api/knowledgeGraph'
 vi.mock('@/api/knowledgeGraph', () => ({
   updateKnowledgeGraph: vi.fn(),
   deleteKnowledgeGraph: vi.fn(),
+  getKnowledgeGraphSchema: vi.fn().mockResolvedValue({ entityTypes: [{ entityTypeId: 1, name: '人物', properties: [] }], relationTypes: [] }),
+  getKnowledgeGraphModelOptions: vi.fn().mockResolvedValue({ conversationModels: [], embeddingModels: [] }),
+  updateKnowledgeGraphEmbeddingConfig: vi.fn(),
+  updateKnowledgeGraphExtractModel: vi.fn(),
+  updateKnowledgeGraphCanvasStyle: vi.fn(),
 }))
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))

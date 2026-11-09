@@ -25,6 +25,7 @@ interface AccessPointFormValues {
   placeholder?: string | null
   primaryColor?: string | null
   position?: string
+  displayMode?: string
   launcherText?: string | null
   avatar?: string | null
   panelWidth: number
@@ -56,6 +57,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
         placeholder: res.placeholder ?? undefined,
         primaryColor: res.primaryColor ?? undefined,
         position: res.position ?? 'bottomRight',
+        displayMode: res.displayMode ?? 'floating',
         launcherText: res.launcherText ?? undefined,
         avatar: res.avatar ?? undefined,
         panelWidth: res.panelWidth ?? 380,
@@ -77,6 +79,15 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
   // 嵌入代码用站点自身源（开发期即前端 dev server，生产为同源部署）；widget 默认以 script 源调用 API，
   // 开发期由 Vite 代理 /api 到后端，分离部署可在 script 上加 data-server 指向后端
   const siteOrigin = window.location.origin
+  // 显示形式与面板高度随表单联动刷新嵌入片段
+  const displayMode = Form.useWatch('displayMode', form) ?? 'floating'
+  const panelHeightWatch = Form.useWatch('panelHeight', form)
+  const isInline = displayMode === 'inline'
+  const panelHeight = typeof panelHeightWatch === 'number' ? panelHeightWatch : 620
+  const inlineTargetAttrs = isInline
+    ? [`<div id="moai-chat" style="height:${typeof panelHeight === 'number' ? panelHeight : 620}px"></div>`]
+    : []
+  const inlineAttr = isInline ? `\n        data-mode="inline"\n        data-target="#moai-chat"` : ''
   const preStyle: CSSProperties = {
     margin: 0,
     padding: spacing.sm,
@@ -88,17 +99,19 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
   }
   const basicSnippet = [
     `<!-- 可选：data-external-user-id 绑定外部身份以继承会话；data-nickname 外部用户显示名；data-server 后端地址（分离部署时） -->`,
+    ...inlineTargetAttrs,
     `<script src="${siteOrigin}/embed/moai-widget.js"`,
-    `        data-app-id="${appId}"`,
+    `        data-app-id="${appId}"${inlineAttr}`,
     `></script>`,
   ].join('\n')
   // 需授权应用推荐接入：业务后端持 key 签发外部用户 token，组件经 tokenProvider 注入，key 不落前端
   const backendIssuedSnippet = [
+    ...inlineTargetAttrs,
     `<script src="${serverUrl}/embed/moai-widget.js"></script><!-- 可下载后自托管到业务站点 -->`,
     `<script>`,
     `  MoaiWidget.mount({`,
     `    appId: '${appId}',`,
-    `    server: '${serverUrl}',`,
+    `    server: '${serverUrl}',${isInline ? `\n    mode: 'inline',\n    target: '#moai-chat',` : ''}`,
     `    tokenProvider: function () {`,
     `      // 业务后端持应用接入 key 调 POST ${serverUrl}/api/teamres/token 签发外部用户 token`,
     `      return fetch('/your-backend/moai-token').then(function (r) { return r.json() })`,
@@ -109,8 +122,9 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
   ].join('\n')
   const quickKeySnippet = [
     `<!-- key 暴露在宿主页 HTML 中，仅快速验证使用 -->`,
+    ...inlineTargetAttrs,
     `<script src="${siteOrigin}/embed/moai-widget.js"`,
-    `        data-app-id="${appId}"`,
+    `        data-app-id="${appId}"${inlineAttr}`,
     `        data-key="<应用接入key>"`,
     `></script>`,
   ].join('\n')
@@ -130,6 +144,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
         placeholder: values.placeholder ?? null,
         primaryColor: values.primaryColor ?? null,
         position: values.position ?? 'bottomRight',
+        displayMode: values.displayMode ?? 'floating',
         launcherText: values.launcherText ?? null,
         avatar: values.avatar ?? null,
         panelWidth: values.panelWidth,
@@ -165,7 +180,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
       <Row gutter={[spacing.md, spacing.md]}>
         <Col xs={24} lg={15} xxl={16}>
           <DSCard title={t('accessPoint.configTitle')}>
-            <Form form={form} layout="vertical" disabled={!canManage} onFinish={handleSave} initialValues={{ position: 'bottomRight', panelWidth: 380, panelHeight: 560, defaultOpen: false, enabled: true }}>
+            <Form form={form} layout="vertical" disabled={!canManage} onFinish={handleSave} initialValues={{ position: 'bottomRight', displayMode: 'floating', panelWidth: 380, panelHeight: 560, defaultOpen: false, enabled: true }}>
               <Row gutter={[spacing.md, spacing.md]}>
                 <Col xs={24} md={12}>
                   <Form.Item name="title" label={t('accessPoint.fieldTitle')}>
@@ -193,15 +208,27 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item name="position" label={t('accessPoint.fieldPosition')}>
+                  <Form.Item name="displayMode" label={t('accessPoint.fieldDisplayMode')} rules={[{ required: true }]}>
                     <Select
                       options={[
-                        { value: 'bottomRight', label: t('accessPoint.positionBottomRight') },
-                        { value: 'bottomLeft', label: t('accessPoint.positionBottomLeft') },
+                        { value: 'floating', label: t('accessPoint.displayModeFloating') },
+                        { value: 'inline', label: t('accessPoint.displayModeInline') },
                       ]}
                     />
                   </Form.Item>
                 </Col>
+                {!isInline && (
+                  <Col xs={24} md={12}>
+                    <Form.Item name="position" label={t('accessPoint.fieldPosition')}>
+                      <Select
+                        options={[
+                          { value: 'bottomRight', label: t('accessPoint.positionBottomRight') },
+                          { value: 'bottomLeft', label: t('accessPoint.positionBottomLeft') },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                )}
                 <Col xs={24} md={12}>
                   <Form.Item name="avatar" label={t('accessPoint.fieldAvatar')}>
                     <Space>

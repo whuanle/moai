@@ -78,6 +78,7 @@ public class QueryKnowledgeGraphNodeNeighborsCommandHandler : IRequestHandler<Qu
                 EntityTypeId = x.EntityTypeId,
                 Name = x.Name,
                 Description = x.Description,
+                Degree = x.Degree,
                 Properties = KnowledgeGraphPropertyJson.ParseValues(x.PropsJson),
             }).ToList(),
             Edges = managedEdges.Select(x => new KnowledgeGraphEdgeItem

@@ -4,6 +4,7 @@ import { CaretRightOutlined, UploadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
 import { refreshServerInfo } from '@/api/auth'
+import { testKnowledgeGraphConnection } from '@/api/knowledgeGraph'
 import { getNotificationChannels, getNotificationTemplates } from '@/api/notification'
 import {
   clearAllMemory,
@@ -195,6 +196,7 @@ export function Settings() {
 
   const [loading, setLoading] = useState(true)
   const [savingGraph, setSavingGraph] = useState(false)
+  const [testingGraph, setTestingGraph] = useState(false)
   const [graphEnabled, setGraphEnabled] = useState(false)
   const [graphUri, setGraphUri] = useState('')
   const [graphUsername, setGraphUsername] = useState('')
@@ -434,16 +436,58 @@ export function Settings() {
     }
   }
 
+  /** 测试图数据库连通性：用表单当前值（无需先保存），通过/未通过都只提示不改任何设置 */
+  async function handleTestGraph() {
+    setTestingGraph(true)
+    try {
+      const res = await testKnowledgeGraphConnection({
+        uri: graphUri,
+        username: graphUsername,
+        password: graphPassword,
+        dialect: graphDialect,
+      })
+      if (res.ok) {
+        feedback.success(t('settings.knowledgeGraph.testSuccess', { ms: res.latencyMs }))
+      } else {
+        feedback.error(res.error || t('settings.knowledgeGraph.testFailed'))
+      }
+    } catch {
+      // 请求层错误（门禁/参数校验）已由全局请求中间件统一提示
+    } finally {
+      setTestingGraph(false)
+    }
+  }
+
+  /**
+   * 保存知识图谱设置：关闭时只写开关；开启时先保存连接信息，再实测连通性，通过才落开关键——
+   * 测试未通过不开启（保留表单值与开关的本地态，改完可重试），开启后不做实时状态检测.
+   */
   async function handleSaveGraph() {
     setSavingGraph(true)
     try {
-      await saveSetting(SettingKeys.kgEnabled, graphEnabled ? 'true' : 'false')
-      if (graphEnabled) {
-        await saveSetting(SettingKeys.kgUri, graphUri)
-        await saveSetting(SettingKeys.kgUsername, graphUsername)
-        await saveSetting(SettingKeys.kgPassword, graphPassword)
-        await saveSetting(SettingKeys.kgDialect, graphDialect)
+      if (!graphEnabled) {
+        await saveSetting(SettingKeys.kgEnabled, 'false')
+        feedback.success(t('settings.saveSuccess'))
+        setGraphDirty(false)
+        return
       }
+
+      await saveSetting(SettingKeys.kgUri, graphUri)
+      await saveSetting(SettingKeys.kgUsername, graphUsername)
+      await saveSetting(SettingKeys.kgPassword, graphPassword)
+      await saveSetting(SettingKeys.kgDialect, graphDialect)
+      const test = await testKnowledgeGraphConnection({
+        uri: graphUri,
+        username: graphUsername,
+        password: graphPassword,
+        dialect: graphDialect,
+      })
+      if (!test.ok) {
+        feedback.error(t('settings.knowledgeGraph.testBlocked', { reason: test.error ?? '' }))
+        return
+      }
+
+      await saveSetting(SettingKeys.kgEnabled, 'true')
       feedback.success(t('settings.saveSuccess'))
       setGraphDirty(false)
     } catch {
@@ -1056,7 +1100,7 @@ export function Settings() {
             </div>
           )}
 
-          <div style={{ marginTop: spacing.lg, textAlign: 'left' }}>
+          <div style={{ marginTop: spacing.lg, textAlign: 'left', display: 'flex', gap: spacing.md }}>
             <Button
               type="primary"
               loading={savingGraph}
@@ -1065,6 +1109,11 @@ export function Settings() {
             >
               {t('settings.save')}
             </Button>
+            {graphEnabled && (
+              <Button loading={testingGraph} disabled={loading} onClick={handleTestGraph}>
+                {t('settings.knowledgeGraph.test')}
+              </Button>
+            )}
           </div>
         </CollapsibleCard>
 

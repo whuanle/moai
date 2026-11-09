@@ -68,7 +68,11 @@ public sealed class GraphDriverProvider : IAsyncDisposable
                 IDriver newDriver;
                 try
                 {
-                    newDriver = GraphDatabase.Driver(new Uri(settings.Uri), AuthTokens.Basic(settings.Username, settings.Password));
+                    // 连接超时 10 秒：图库宕机时操作端点快速失败（503）而非长时间挂起——不做实时状态检测，连接失败由操作自身报错
+                    newDriver = GraphDatabase.Driver(
+                        new Uri(settings.Uri),
+                        AuthTokens.Basic(settings.Username, settings.Password),
+                        builder => builder.WithConnectionTimeout(TimeSpan.FromSeconds(10)));
                 }
                 catch (Exception ex) when (ex is FormatException or ArgumentException)
                 {

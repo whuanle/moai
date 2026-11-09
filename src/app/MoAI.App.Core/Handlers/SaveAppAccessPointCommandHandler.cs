@@ -88,6 +88,7 @@ public class SaveAppAccessPointCommandHandler : IRequestHandler<SaveAppAccessPoi
         config.Placeholder = request.Placeholder;
         config.PrimaryColor = string.IsNullOrEmpty(request.PrimaryColor) ? null : request.PrimaryColor;
         config.Position = request.Position.ToJsonString();
+        config.DisplayMode = request.DisplayMode.ToJsonString();
         config.LauncherText = request.LauncherText;
         config.Avatar = request.Avatar;
         config.PanelWidth = request.PanelWidth;

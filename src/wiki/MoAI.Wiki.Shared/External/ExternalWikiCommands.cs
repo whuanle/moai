@@ -641,6 +641,11 @@ public class QueryExternalWikiRecallCommand : IRequest<QueryExternalWikiRecallCo
     /// </summary>
     public IReadOnlyCollection<long> DocumentIds { get; init; } = Array.Empty<long>();
 
+    /// <summary>
+    /// 相邻上下文窗口大小（1-3，默认 1：每个命中片段附前一片段与后一片段）.
+    /// </summary>
+    public int? ContextWindow { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryExternalWikiRecallCommand> validate)
     {
@@ -649,6 +654,7 @@ public class QueryExternalWikiRecallCommand : IRequest<QueryExternalWikiRecallCo
         validate.RuleFor(x => x.Top).InclusiveBetween(1, 50).WithMessage("返回条数必须在 1-50 之间.");
         validate.RuleFor(x => x.MinScore).InclusiveBetween(0d, 1d).WithMessage("相似度阈值必须在 0-1 之间.").When(x => x.MinScore.HasValue);
         validate.RuleForEach(x => x.DocumentIds).GreaterThan(0).WithMessage("文档 id 无效.");
+        validate.RuleFor(x => x.ContextWindow).InclusiveBetween(1, 3).WithMessage("上下文窗口必须在 1-3 之间.").When(x => x.ContextWindow.HasValue);
     }
 }
 
@@ -694,6 +700,11 @@ public class QueryExternalWikiRecallItem
     public string DocumentName { get; set; } = default!;
 
     /// <summary>
+    /// 切片标题锚点（所在章节的标题面包屑）；空串表示未定位到章节.
+    /// </summary>
+    public string Anchor { get; set; } = default!;
+
+    /// <summary>
     /// 切片 id.
     /// </summary>
     public long ChunkId { get; set; }
@@ -727,6 +738,21 @@ public class QueryExternalWikiRecallItem
     /// 重排序得分（知识库配置了重排序模型且重排成功时才有值）.
     /// </summary>
     public double? RerankScore { get; set; }
+
+    /// <summary>
+    /// 是否同时命中关键词检索（切片原文或关键词/问题元数据与查询词匹配）.
+    /// </summary>
+    public bool IsKeywordHit { get; set; }
+
+    /// <summary>
+    /// 是否为内容级兜底命中（文档已提取但尚未切割：探针匹配提取正文返回文档级片段，无切片序号）.
+    /// </summary>
+    public bool IsContentFallback { get; set; }
+
+    /// <summary>
+    /// 命中文档的内容是否已更新且重新向量化尚未完成；调用方可据此提示内容可能过期.
+    /// </summary>
+    public bool IsStale { get; set; }
 
     /// <summary>
     /// 相邻上下文片段（命中片段的前一个与后一个，已按全文去重）.

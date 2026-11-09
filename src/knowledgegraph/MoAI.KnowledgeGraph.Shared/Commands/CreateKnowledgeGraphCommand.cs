@@ -26,7 +26,7 @@ public class CreateKnowledgeGraphCommand : IRequest<SimpleLong>, IModelValidator
     public string? Description { get; init; }
 
     /// <summary>
-    /// 模板 key，null=自定义.
+    /// 模板 key，null=自定义；仅创建时作为种子类型数据参考，不与图谱持久化关联.
     /// </summary>
     public string? TemplateKey { get; init; }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MoAI.Infra;
 
 namespace MoAI.Database.Seed;
 
@@ -287,8 +288,8 @@ public static class SettingDefinitions
         {
             Key = WikiAllowedFileTypesKey,
             Name = "知识库允许上传的文件类型",
-            Description = "知识库允许上传的文档扩展名（逗号分隔，如 .pdf,.docx,.md），对网页端与开放接口上传同时生效；默认与文档/文本提取能力对齐，图片暂不支持.",
-            DefaultValue = ".pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json"
+            Description = "知识库允许上传的文档扩展名（逗号分隔，如 .pdf,.docx,.md），对网页端与开放接口上传同时生效；默认与文档/文本提取能力对齐（Office/PDF/HTML/Markdown/EPUB/ODT/RTF 与代码配置类文本等 42 种），图片暂不支持.",
+            DefaultValue = DocumentFormatConst.ExtractableFormatsJoined
         },
         new SettingDefinition
         {

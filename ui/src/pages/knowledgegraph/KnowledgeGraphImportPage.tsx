@@ -36,7 +36,7 @@ export function KnowledgeGraphImportPage({ graph, onChanged }: KnowledgeGraphImp
                 <RobotOutlined /> {t('knowledgegraph.importPage.aiTab')}
               </span>
             ),
-            children: <KnowledgeGraphAiImportForm key={refreshKey} teamId={teamId} graphId={graphId} onImported={handleImported} />,
+            children: <KnowledgeGraphAiImportForm key={refreshKey} teamId={teamId} graphId={graphId} extractModelId={graph.extractModelId ?? null} onImported={handleImported} />,
           },
           {
             key: 'json',

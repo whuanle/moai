@@ -39,11 +39,17 @@ public class QueryKnowledgeGraphCanvasCommand : IRequest<QueryKnowledgeGraphCanv
     /// </summary>
     public int Limit { get; init; } = 200;
 
+    /// <summary>
+    /// 子图深度（1=仅种子节点，2=种子集再向外扩一跳；仅托管图生效，默认 1）.
+    /// </summary>
+    public int Depth { get; init; } = 1;
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryKnowledgeGraphCanvasCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
         validate.RuleFor(x => x.Limit).InclusiveBetween(0, 500).WithMessage("节点数量上限为 0~500.");
+        validate.RuleFor(x => x.Depth).InclusiveBetween(1, 2).WithMessage("子图深度为 1~2.");
         validate.RuleFor(x => x.Keyword).MaximumLength(100).WithMessage("关键字最长 100 个字符.");
         validate.RuleFor(x => x.Label).MaximumLength(100).Must(x => x == null || !x.Contains('`')).WithMessage("标签名非法.");
     }

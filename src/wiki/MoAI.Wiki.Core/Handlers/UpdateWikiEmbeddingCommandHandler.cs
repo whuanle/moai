@@ -51,7 +51,7 @@ public class UpdateWikiEmbeddingCommandHandler : IRequestHandler<UpdateWikiEmbed
 
         if (wiki.IsLock)
         {
-            throw new BusinessException("知识库已有文档向量化，配置已锁定，不能修改.") { StatusCode = 409 };
+            throw new BusinessException("知识库已有文档向量化，配置已锁定，更换模型请使用模型迁移端点（POST /wiki/{id}/model-migration）.") { StatusCode = 409 };
         }
 
         await EnsureEmbeddingModelAsync(request.EmbeddingModelId, wiki.TeamId, cancellationToken);

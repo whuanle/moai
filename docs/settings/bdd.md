@@ -6,14 +6,14 @@
 ```gherkin
 Feature: 查询设置项
   Background:
-    Given 系统内置设置项 OPEN_NEO4J（默认值 "false"）
+    Given 系统内置设置项 KG_ENABLED（默认值 "false"）
 
   @SET-S1 @auto:e2e
   Scenario: 管理员查询设置项
     Given admin 已登录
     When 请求设置项列表
     Then 返回全部内置项，每项含 key/名称/描述/当前值
-    And OPEN_NEO4J 的值为数据库当前值（无记录时为默认值）
+    And KG_ENABLED 的值为数据库当前值（无记录时为默认值）
 
   @SET-S2 @auto:e2e
   Scenario: 普通用户无权查询
@@ -32,13 +32,13 @@ Feature: 保存设置项
 
   @SET-S4 @auto:e2e
   Scenario: root 保存设置项并回读生效
-    When 保存 OPEN_NEO4J 为 "true"
+    When 保存 KG_ENABLED 为 "true"
     Then 操作成功
     And 再次查询时该项值为 "true"
 
   @SET-S5 @manual
   Scenario: root 关闭开关
-    When 保存 OPEN_NEO4J 为 "false"
+    When 保存 KG_ENABLED 为 "false"
     Then 操作成功且回读为 "false"
 
   @SET-S6 @auto:e2e
@@ -98,23 +98,27 @@ Feature: 前端设置页（/settings）
     Then 被重定向到应用市场
     And 接口层同时返回 403
 
-Feature: 知识图谱设置（Neo4j）
+Feature: 知识图谱设置（图数据库，2026-11-08 键名改 KG_* 并新增开启前测试流程）
   Background:
-    Given 系统内置设置项 OPEN_NEO4J（默认值 "false"）与 NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD（默认空串）
+    Given 系统内置设置项 KG_ENABLED（默认值 "false"）与 KG_URI/KG_USERNAME/KG_PASSWORD（默认空串）、KG_DIALECT（默认 "memgraph"）
+    And 图数据库连通性预检端点 POST /api/knowledge-graph/test-connection（仅 root，见 knowledgegraph 模块 [@KG-S46](../knowledgegraph/bdd.md#kg-s46)）
 
   @SET-S16 @auto:vitest
-  Scenario: root 开启知识图谱并保存连接信息
+  Scenario: root 开启知识图谱（先连接→实测→通过才落开关，2026-11-08 改写）
     Given root 登录并进入系统设置页
-    When 打开「开启 Neo4j 知识图谱」并填写连接地址、用户名、密码后保存
-    Then 分别保存 OPEN_NEO4J="true" 与三项连接设置
+    When 打开「开启知识图谱」并填写连接地址、图数据库类型、用户名、密码后保存
+    Then 先依次保存 KG_URI/KG_DIALECT/KG_USERNAME/KG_PASSWORD 四项连接设置
+    And 以表单值调用 test-connection 实测，通过后才保存 KG_ENABLED="true"（保存顺序由测试以 invocationCallOrder 断言）
     And 回读时开关与连接信息与提交值一致
 
   @SET-S17 @auto:vitest
-  Scenario: 关闭知识图谱不提交连接信息
+  Scenario: 关闭知识图谱仅写开关（连接项不动）+ 测试未通过不落开关（2026-11-08 扩展）
     Given root 在系统设置页
-    When 保持/切回「开启 Neo4j 知识图谱」为关闭并保存
-    Then 仅保存 OPEN_NEO4J="false"
-    And 不提交 NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD
+    When 保持/切回「开启知识图谱」为关闭并保存
+    Then 仅保存 KG_ENABLED="false"
+    And 不提交 KG_URI/KG_USERNAME/KG_PASSWORD
+    When 连接测试返回 ok=false 时保存（开关为开）
+    Then 连接项照常保存但不保存 KG_ENABLED（表单值保留可改后重试）
 
   @SET-S18 @auto:vitest
   Scenario: 非 root 管理员访问设置页被重定向
@@ -124,11 +128,11 @@ Feature: 知识图谱设置（Neo4j）
 
   @SET-S19 @manual
   Scenario: 业务读取知识图谱配置
-    Given OPEN_NEO4J 为 "false"
+    Given KG_ENABLED 为 "false"
     When 业务模块调用 IKnowledgeGraphSettingsService
     Then 返回 Enabled=false 且不携带连接信息
-    When OPEN_NEO4J 为 "true" 且已填写连接信息
-    Then 返回 Enabled=true 与该连接信息
+    When KG_ENABLED 为 "true" 且已填写连接信息
+    Then 返回 Enabled=true 与该连接信息（方言非法回退 memgraph）
 ```
 
 ```gherkin
@@ -356,7 +360,7 @@ Feature: 登录页背景图
 ```gherkin
 Feature: 知识库允许上传的文件类型
   Background:
-    Given 系统内置设置项 WIKI_ALLOWED_FILE_TYPES（逗号分隔扩展名，默认 ".pdf,.docx,.xlsx,.pptx,.html,.htm,.md,.markdown,.txt,.json"，与文档/文本提取能力对齐，图片暂不支持）
+    Given 系统内置设置项 WIKI_ALLOWED_FILE_TYPES（逗号分隔扩展名，默认 42 种提取能力全集（Office/PDF/HTML/Markdown/EPUB/ODT/RTF 与代码配置类文本），图片暂不支持；存量库历史默认值读取时自动按新默认返回）
 
   @SET-S44 @auto:e2e
   Scenario: root 配置允许上传的文件类型并全局生效

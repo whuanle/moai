@@ -723,6 +723,51 @@ Scenario: 悬浮组件 token 拦截器与请求中间件（需授权应用自托
   When 需授权应用未提供 key 与 tokenProvider 且无中间件接管换 token
   Then 换 token 失败，组件提示需要配置 key 或接入 tokenProvider
   And 组件暴露全局 MoaiWidget.mount（window.MoaiWidget = { mount, MoaiWidget }）供下载后的 JS 在业务站点编程挂载；无 data-app-id 的 script 引入静默跳过自动引导
+
+@EA-S21 @auto:e2e
+Scenario: 访问点显示形式（悬浮 / 内嵌小窗）
+  Given 团队管理员已为外部应用保存访问点配置
+  When 未指定显示形式保存
+  Then 内部视图与公开端点均回显 floating（悬浮组件）
+  When 保存显示形式为内嵌小窗（inline）
+  Then 保存成功且内部视图与公开端点一致回显 inline，位置字段同时以 camelCase 回显
+  When 宿主页以占位容器（data-target）嵌入组件并指定 inline
+  Then 面板渲染进占位容器进入页面文档流，且不出现悬浮按钮
+
+@EA-S22 @auto:e2e
+Scenario: 访问点开场白公开下发（发布快照口径）
+  Given 外部应用已启用对话开场白并发布
+  When 匿名查询访问点公开配置
+  Then 返回该应用的对话开场白（组件新会话展示为首条助手消息，不参与模型上下文）
+  When 管理员修改草稿开场白但未重新发布
+  Then 公开端点仍返回发布快照中的开场白
+  When 开场白被停用并重新发布
+  Then 公开端点开场白为空
+
+@EA-S23 @auto:e2e
+Scenario: 访问点未配置行的回退与位置归一化
+  Given 外部应用从未保存过访问点配置
+  When 匿名查询其公开配置
+  Then 显示形式回退 floating、位置回退 bottomRight（camelCase）
+  When 保存位置为左下并查询
+  Then 公开回显 bottomLeft（兼容历史 kebab 存量值，读取侧统一归一化为 camelCase）
+
+@EA-S24 @auto:unit
+Scenario: 悬浮组件对话体验（思考流、停止、重试、markdown、会话恢复）
+  Given 组件已挂载且访问点已启用
+  When 会话开始且尚无模型输出
+  Then 展示打字动效；思考模型下发思考流时以可折叠思考块实时渲染，正文开始后思考块自动折叠并显示思考耗时
+  When 模型正文流式输出
+  Then 纯文本逐字追加并显示流式光标，完成后转为 markdown 渲染并出现复制按钮
+  When 生成中点击停止
+  Then 立即中止流并保留已生成内容，发送按钮还原
+  When 运行失败
+  Then 失败气泡提供重试按钮重发上一条用户消息
+  When 面板头部点击放大或新对话
+  Then 面板切换近全屏浮层（Esc 还原）；新对话清空消息、清除持久化会话并重新展示开场白
+  When 访客刷新页面后重新挂载组件
+  Then 复用持久化的最近会话并回放历史消息（含折叠思考块），会话失效时回退新建
+  And 组件对 assistant 内容先转义再渲染 markdown，仅允许 http(s) 链接
 ```
 
 ## Feature: 外部应用能力限制（沙箱与技能）
