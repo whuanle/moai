@@ -271,6 +271,10 @@ PUSH=0 bash deploy/publish.sh
 - 默认平台 `linux/amd64`；多平台需 `buildx` + QEMU（Apple Silicon 上仿真 amd64 构建已知不稳定，见 [SOP 排障](./sop.md)）。
 - 发布后，服务器 `docker compose pull moai && docker compose up -d moai` 即可升级。
 
+### 6.1 内网 Gitea Actions 构建部署
+
+不走 Docker Hub、由内网 Gitea 手动触发：构建机 buildx 推送内网 Zot（纯 HTTP LAN），部署机经 Tailnet 拉取并复用 `moai` 网络切换容器。详见 [gitea-actions.md](./gitea-actions.md)（`.gitea/workflows/deploy.yml` + `deploy/gitea/remote-deploy.sh`，变量与 mo_platform 同名：`ZOT_*` / `MINI_SSH_*`，含 runner、insecure registry、复用矩阵与排障）。
+
 ## 7. 知识图谱（可选接入 Memgraph）
 
 知识图谱模块不随 compose 内置。需要时单独部署图数据库并接入：

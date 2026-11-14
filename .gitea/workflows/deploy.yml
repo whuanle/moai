@@ -1,0 +1,223 @@
+# ============================================================
+# MoAI 手动构建并部署（Gitea Actions）
+#
+# 与 mo_platform 的 .gitea/workflows/build-image.yml 同构：
+#   1) build-push：buildx 构建前后端一体镜像，推送到内网 Zot（纯 HTTP LAN）
+#   2) deploy：经 SSH 把 compose 文件同步到目标机，登录 Zot 拉镜像 → 复用/完整栈 compose 切换
+#
+# 触发：Gitea 仓库页 → Actions → deploy-moai → Run workflow（可先切到要发布的分支再触发）
+#
+# 仓库变量（与 mo_platform 完全同名，可直接复用；公开仓库不写死任何地址）：
+#   ZOT_REGISTRY         构建机可访问的 OCI registry host:port
+#   ZOT_REGISTRY_URL     完整 URL（备用/人工排查）
+#   ZOT_USERNAME / ZOT_PASSWORD
+#   MINI_SSH_USER        部署机 SSH 用户
+#   MINI_SSH_RSA         部署机 SSH 私钥全文（也可放 Secrets）
+#   MINI_SSH_HOST        部署机地址
+#   MINI_SSH_PORT        部署机 SSH 端口
+# 可选变量：
+#   ZOT_REGISTRY_TARGET  部署机视角的 registry（默认同 ZOT_REGISTRY）
+#   MINI_SSH_KNOWN_HOST  目标机 known_hosts 行（建议配置，避免首次指纹信任）
+#   MOAI_APP_DIR         目标机部署目录（相对 $HOME），默认 moai
+# ============================================================
+name: deploy-moai
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '镜像 tag（留空 = sha-<短哈希>）'
+        required: false
+        default: ''
+      deploy_only:
+        description: '跳过构建，仅部署 registry 上已有的 tag（true / false）'
+        required: false
+        default: 'false'
+
+env:
+  IMAGE_NAME: moai
+  # 仓库「变量管理」优先，兼容写在 Secrets 里的同名值
+  ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY || secrets.ZOT_REGISTRY }}
+  ZOT_REGISTRY_URL: ${{ vars.ZOT_REGISTRY_URL || secrets.ZOT_REGISTRY_URL }}
+  ZOT_USERNAME: ${{ vars.ZOT_USERNAME || secrets.ZOT_USERNAME }}
+  ZOT_PASSWORD: ${{ vars.ZOT_PASSWORD || secrets.ZOT_PASSWORD }}
+  ZOT_REGISTRY_TARGET: ${{ vars.ZOT_REGISTRY_TARGET || vars.ZOT_REGISTRY || secrets.ZOT_REGISTRY_TARGET }}
+  MINI_SSH_USER: ${{ vars.MINI_SSH_USER || secrets.MINI_SSH_USER }}
+  MINI_SSH_RSA: ${{ vars.MINI_SSH_RSA || secrets.MINI_SSH_RSA }}
+  MINI_SSH_HOST: ${{ vars.MINI_SSH_HOST || secrets.MINI_SSH_HOST }}
+  MINI_SSH_PORT: ${{ vars.MINI_SSH_PORT || secrets.MINI_SSH_PORT }}
+  MINI_SSH_KNOWN_HOST: ${{ vars.MINI_SSH_KNOWN_HOST || secrets.MINI_SSH_KNOWN_HOST }}
+  MOAI_APP_DIR: ${{ vars.MOAI_APP_DIR || 'moai' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: linux_local
+    timeout-minutes: 120
+    steps:
+      - name: 校验仓库变量
+        run: |
+          set -euo pipefail
+          missing=""
+          for name in ZOT_REGISTRY ZOT_USERNAME ZOT_PASSWORD MINI_SSH_USER MINI_SSH_RSA MINI_SSH_HOST MINI_SSH_PORT; do
+            eval "value=\${$name:-}"
+            [ -n "$value" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "缺少仓库变量/密钥:$missing"
+            echo "在 Gitea 仓库 → 设置 → Actions 中补齐（与 mo_platform 同名可直接复用）。"
+            exit 1
+          fi
+          echo "变量齐备（部署目标已脱敏，不在日志中回显）"
+
+      - name: 解析镜像 tag
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="sha-$(printf '%s' "$GITHUB_SHA" | cut -c1-7)"; fi
+          case "$TAG" in *[!A-Za-z0-9._-]*) echo "非法 tag：$TAG"; exit 1;; esac
+          echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "本次构建：${GITHUB_REF_NAME} @ $(printf '%s' "$GITHUB_SHA" | cut -c1-7)"
+          echo "推送镜像：${ZOT_REGISTRY}/${IMAGE_NAME}:${TAG}"
+
+      - name: 准备源码
+        if: ${{ inputs.deploy_only != 'true' }}
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/moai-src-$GITHUB_RUN_ID"
+          rm -rf "$SRC" && mkdir -p "$SRC"
+          # 用 Actions 自动注入的 token 走 HTTP 拉本仓库（不依赖第三方 action）
+          curl -fsSL -H "Authorization: token ${{ github.token }}" \
+            "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
+            -o "$RUNNER_TEMP/moai-src.tar.gz"
+          tar -xzf "$RUNNER_TEMP/moai-src.tar.gz" --strip-components=1 -C "$SRC"
+          echo "SRC=$SRC" >> "$GITHUB_ENV"
+          ls "$SRC" | head -20
+          test -f "$SRC/Dockerfile"
+
+      - name: 构建并推送到 Zot
+        if: ${{ inputs.deploy_only != 'true' }}
+        run: |
+          set -euo pipefail
+          BUILDER_NAME=moai
+          DOCKER_CONFIG_DIR="$RUNNER_TEMP/zot-docker-config-$GITHUB_RUN_ID"
+          BUILDKITD_CONFIG="$RUNNER_TEMP/moai-buildkitd-$GITHUB_RUN_ID.toml"
+          cleanup() { rm -rf "$DOCKER_CONFIG_DIR" "$BUILDKITD_CONFIG"; }
+          trap cleanup EXIT
+
+          mkdir -p "$DOCKER_CONFIG_DIR"
+          AUTH="$(printf '%s:%s' "$ZOT_USERNAME" "$ZOT_PASSWORD" | base64 | tr -d '\n')"
+          printf '{"auths":{"%s":{"auth":"%s"}}}\n' "$ZOT_REGISTRY" "$AUTH" > "$DOCKER_CONFIG_DIR/config.json"
+          chmod 600 "$DOCKER_CONFIG_DIR/config.json"
+          export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"
+
+          IMAGE="$ZOT_REGISTRY/$IMAGE_NAME"
+          cat > "$BUILDKITD_CONFIG" <<EOF
+          [registry."$ZOT_REGISTRY"]
+          http = true
+          insecure = true
+
+          [registry."docker.io"]
+          mirrors = ["docker.m.daocloud.io"]
+          EOF
+
+          if docker buildx inspect "$BUILDER_NAME" >/dev/null 2>&1; then
+            echo "复用 Buildx builder $BUILDER_NAME 及其层缓存"
+          else
+            docker buildx create \
+              --name "$BUILDER_NAME" \
+              --driver docker-container \
+              --driver-opt network=host \
+              --driver-opt image=moby/buildkit:buildx-stable-1 \
+              --buildkitd-config "$BUILDKITD_CONFIG"
+          fi
+          docker buildx inspect --bootstrap "$BUILDER_NAME"
+
+          BUILD_LOG="$RUNNER_TEMP/buildx-build.log"
+          if docker buildx build \
+            --builder "$BUILDER_NAME" \
+            --progress=plain \
+            --push \
+            --provenance=false \
+            --sbom=false \
+            --cache-from "type=registry,ref=$IMAGE:latest" \
+            --cache-to "type=inline,mode=max" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t "$IMAGE:$IMAGE_TAG" \
+            -t "$IMAGE:latest" \
+            "$SRC" >"$BUILD_LOG" 2>&1; then
+            tail -n 30 "$BUILD_LOG"
+          else
+            echo '构建失败，最后 160 行：' >&2
+            tail -n 160 "$BUILD_LOG" >&2
+            exit 1
+          fi
+          echo "已推送 ${IMAGE}:${IMAGE_TAG} 与 :latest"
+
+      - name: 部署到目标机
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.deploy_only }}" = "true" ]; then
+            TAG="${{ inputs.image_tag }}"; TAG="${TAG:-latest}"
+          else
+            TAG="$IMAGE_TAG"
+          fi
+          IMAGE_REF="$ZOT_REGISTRY_TARGET/$IMAGE_NAME:$TAG"
+          echo "DEPLOY_IMAGE=$IMAGE_REF" >> "$GITHUB_ENV"
+
+          # 与 mo_platform 相同的 SSH 通道：仅挂载宿主 ssh 二进制，避免依赖 job 容器内的 ssh
+          dssh() {
+            docker run --rm -i --network host \
+              -v /usr/bin/ssh:/host/ssh:ro \
+              -v /usr/lib/x86_64-linux-gnu:/host/lib:ro \
+              -v /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2:/host/ld-linux:ro \
+              -e MINI_SSH_USER -e MINI_SSH_RSA -e MINI_SSH_HOST -e MINI_SSH_PORT -e MINI_SSH_KNOWN_HOST \
+              node:22-bookworm-slim bash -c '
+                set -euo pipefail
+                ssh() { /host/ld-linux --library-path /host/lib /host/ssh "$@"; }
+                key=/tmp/deploy_key; kh=/tmp/known_hosts
+                printf "%s\n" "$MINI_SSH_RSA" > "$key"; chmod 600 "$key"
+                if [ -n "${MINI_SSH_KNOWN_HOST:-}" ]; then
+                  printf "%s\n" "$MINI_SSH_KNOWN_HOST" > "$kh"
+                  hostkey=StrictHostKeyChecking=yes
+                else
+                  : > "$kh"
+                  hostkey=StrictHostKeyChecking=accept-new
+                fi
+                ssh -i "$key" -p "$MINI_SSH_PORT" \
+                    -o UserKnownHostsFile="$kh" -o "$hostkey" \
+                    -o ConnectTimeout=20 \
+                    "$MINI_SSH_USER@$MINI_SSH_HOST" "$@"
+              ' -- "$@"
+          }
+
+          # 1) 同步 compose 相关文件（以仓库为准；不覆盖 .env / configs）
+          if [ "${{ inputs.deploy_only }}" != "true" ]; then
+            tar -C "$SRC" -czf - \
+              docker-compose.yml \
+              docker-compose.reuse.yml \
+              init-pgvector.sql \
+              deploy/deploy-compose.sh \
+              deploy/opensandbox/sandbox.toml \
+              .env.example \
+            | dssh "mkdir -p ~/$MOAI_APP_DIR/deploy/opensandbox ~/$MOAI_APP_DIR/configs/plugins && tar -xzf - -C ~/$MOAI_APP_DIR"
+            echo "==> compose 文件已同步到 ~/$MOAI_APP_DIR"
+          fi
+
+          # 2) 执行目标机部署脚本（登录 Zot → pull → 复用/完整栈切换 → 探活回滚）
+          {
+            printf 'export MOAI_IMAGE_REF=%q MOAI_APP_DIR=%q MOAI_PULL=1 ZOT_REGISTRY_TARGET=%q ZOT_USERNAME=%q ZOT_PASSWORD=%q\n' \
+              "$IMAGE_REF" "$MOAI_APP_DIR" "$ZOT_REGISTRY_TARGET" "$ZOT_USERNAME" "$ZOT_PASSWORD"
+            cat deploy/gitea/remote-deploy.sh
+          } | dssh bash
+
+      - name: 结果汇总
+        run: |
+          {
+            echo "### MoAI 部署完成"
+            echo ""
+            echo "- 分支/提交：\`${GITHUB_REF_NAME}\` @ \`$(printf '%s' "$GITHUB_SHA" | cut -c1-7)\`"
+            echo "- 镜像：\`${DEPLOY_IMAGE:-registry 上已有 tag}\`"
+            echo "- 目标机：\`${MINI_SSH_USER}@${MINI_SSH_HOST}:${MINI_SSH_PORT}\` 目录 \`~/$MOAI_APP_DIR\`"
+            echo "- 仅部署（未构建）：\`${{ inputs.deploy_only }}\`"
+          } >> "$GITHUB_STEP_SUMMARY" || true
