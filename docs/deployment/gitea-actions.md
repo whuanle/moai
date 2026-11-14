@@ -2,11 +2,11 @@
 
 > 适用：源码在公网 Git，构建与部署走内网 Gitea Actions；构建机推镜像到内网 registry，
 > 部署机经 SSH 拉取并切换容器。与 `mo_platform` 的 `.gitea/workflows/build-image.yml` **同构**，
-> 变量名完全同名且都取 Gitea **全局变量**（站点管理 → 工作流 → 变量），可直接复用。
+> 仓库变量/密钥完全同名（变量 6 个 + 密钥 2 个），可直接复用。
 > 关联：[Docker 部署](./docker.md) ｜ [SOP](./sop.md) ｜ 落地文件：`.gitea/workflows/deploy.yml`、`deploy/gitea/remote-deploy.sh`
 
 > ⚠️ 本仓库是公开仓库：**任何真实主机名、IP、端口、域名、用户名、指纹、凭据都不能写进被跟踪的文件**。
-> 本文一律用 `<占位符>` 表示，实际值只放在 Gitea 全局变量（站点管理 → 工作流 → 变量），以及部署机本地的 `DEPLOY.local.md`（不跟踪）。
+> 本文一律用 `<占位符>` 表示，实际值只放在 Gitea 仓库变量/密钥，以及部署机本地的 `DEPLOY.local.md`（不跟踪）。
 
 ## 1. 链路总览
 
@@ -28,33 +28,33 @@
 与 mo_platform 的差异：MoPlatform 部署时重跑 `deploy-compose.sh` 重建配置；MoAI 只切镜像，
 `configs/system.json` 与 `.env` 是运维资产，不被流水线覆盖。
 
-## 2. 变量来源：Gitea 全局变量（不是仓库环境变量）
+## 2. 仓库变量与密钥（Gitea 仓库 → 设置 → Actions）
 
-变量全部配在 **站点管理 → 工作流 → 变量**（`/-/admin/actions/variables`）这一层，即 Gitea 的
-**全局变量**；MoAI 仓库本身**不配置任何仓库级变量**。
+变量与密钥都配在 **仓库级**（`<repo>` → 设置 → Actions）：能公开的走**变量 Variables**
+（`vars.*`），敏感值走**密钥 Secrets**（`secrets.*`，日志自动打码）。与 mo_platform 同名，可直接复用。
 
-读取方式没有特殊语法——Gitea 会把 **global + 组织/用户 + 仓库** 三层变量合并进工作流的 `vars` 上下文
-（同名时低层级优先：仓库 > 组织/用户 > 全局），所以直接写 `${{ vars.MINI_SSH_USER }}` 就能读到全局值，
-工作流里再叠加一次 `secrets.` 兜底（历史可能把同名值放进了 Secrets）：
+| 类型 | 名称 | 说明 |
+|---|---|---|
+| 变量 | `ZOT_REGISTRY` | 构建机可访问的 registry `host:port`（纯 HTTP 也可以） |
+| 变量 | `ZOT_REGISTRY_URL` | 同上完整 URL（备用/排查） |
+| 变量 | `ZOT_USERNAME` | registry 用户名 |
+| 变量 | `MINI_SSH_USER` | 部署机 SSH 用户 |
+| 变量 | `MINI_SSH_HOST` | 部署机地址 |
+| 变量 | `MINI_SSH_PORT` | 部署机 SSH 端口 |
+| **密钥** | `ZOT_PASSWORD` | registry 密码 / token |
+| **密钥** | `MINI_SSH_RSA` | 部署机 SSH 私钥全文 |
+
+工作流里的取法（没有 `||` 兜底，放错类别会直接在校验步骤报出来）：
 
 ```yaml
 env:
-  ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY || secrets.ZOT_REGISTRY }}
-  MINI_SSH_HOST: ${{ vars.MINI_SSH_HOST || secrets.MINI_SSH_HOST }}
+  ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY }}
+  ZOT_PASSWORD: ${{ secrets.ZOT_PASSWORD }}
+  MINI_SSH_RSA: ${{ secrets.MINI_SSH_RSA }}
+  MINI_SSH_HOST: ${{ vars.MINI_SSH_HOST }}
 ```
 
-| 名称 | 说明 |
-|---|---|
-| `ZOT_REGISTRY` | 构建机可访问的 registry `host:port`（纯 HTTP 也可以） |
-| `ZOT_REGISTRY_URL` | 同上完整 URL（备用/排查） |
-| `ZOT_USERNAME` | registry 用户名 |
-| `ZOT_PASSWORD` | registry 密码 / token |
-| `MINI_SSH_USER` | 部署机 SSH 用户 |
-| `MINI_SSH_RSA` | 部署机 SSH 私钥全文 |
-| `MINI_SSH_HOST` | 部署机地址 |
-| `MINI_SSH_PORT` | 部署机 SSH 端口 |
-
-可选项（不配走默认，同样读全局变量）：
+可选项（不配走默认，同样是仓库变量）：
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
@@ -62,7 +62,7 @@ env:
 | `MINI_SSH_KNOWN_HOST` | 空 | 目标机 known_hosts 行；配置后启用 `StrictHostKeyChecking=yes`，留空则 `accept-new` |
 | `MOAI_APP_DIR` | `moai` | 部署机目录，相对 `$HOME` → `~/moai` |
 
-> 全局变量一次配置、所有仓库共享，新增仓库零配置；个别仓库要覆盖时再在仓库/组织级配同名变量即可。
+> 若同一组织下多个仓库共用这套值，也可放到**组织级**同名变量/密钥（仓库级优先）。
 > 工作流不会把变量值打印到日志（部署地址在汇总里显示为 `***`）。
 
 ## 3. Gitea 侧开关与 runner
@@ -178,7 +178,7 @@ git push gitea v0.1.0
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | 打 tag 后没有运行 | tag 不是 `v*` / 数字开头，或该 tag 对应的提交里没有工作流文件 | 用 `X.Y.Z`/`vX.Y.Z`；确认 tag 指向含 `.gitea/workflows/deploy.yml` 的提交 |
-| 作业开头直接失败「缺少全局变量/密钥」 | 全局变量未配或名字写错 | 站点管理 → 工作流 → 变量 补齐（与 mo_platform 同名即可）；仓库级同名变量会覆盖全局值 |
+| 作业开头直接失败「缺少仓库变量/密钥」 | 变量/密钥未配或放错类别（变量 vs 密钥） | 仓库 → 设置 → Actions：6 个变量 + `ZOT_PASSWORD`/`MINI_SSH_RSA` 两个密钥 |
 | 工作流列表为空 / 无 Run workflow | Actions 未开、缺 `repo.actions`、runner 未注册或 Gitea 版本过低 | 检查 `app.ini`、站点管理 → Actions 的 runner 在线状态 |
 | 作业一直 queued | 没有 `linux_local` 标签的 runner | `--labels linux_local` 注册，或改 `runs-on` 与之匹配 |
 | 构建卡在拉基础镜像 | Docker Hub 出口受限 | 确认 buildkitd 配置里的 `docker.m.daocloud.io` 镜像可用 |

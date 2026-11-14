@@ -9,18 +9,15 @@
 #   1) 打版本 tag 自动构建并部署（tag 名必须 X.Y.Z 或 vX.Y.Z，镜像版本 = 去掉 v 的版本号）
 #   2) Gitea 仓库页 → Actions → deploy-moai → Run workflow（可先切到要发布的分支再触发）
 #
-# 变量来源：Gitea「站点管理 → 工作流 → 变量」的**全局变量**（不是仓库环境变量）
-#   Gitea 会把 global + 组织/用户 + 仓库三层变量合并进 vars 上下文，同名时低层级优先，
-#   所以 ${{ vars.X }} 直接就能读到全局变量；本仓库不需要任何仓库级变量。
-#   与 mo_platform 完全同名，可直接复用（公开仓库不写死任何地址）：
-#   ZOT_REGISTRY         构建机可访问的 OCI registry host:port
-#   ZOT_REGISTRY_URL     完整 URL（备用/人工排查）
-#   ZOT_USERNAME / ZOT_PASSWORD
-#   MINI_SSH_USER        部署机 SSH 用户
-#   MINI_SSH_RSA         部署机 SSH 私钥全文（也可放 Secrets）
-#   MINI_SSH_HOST        部署机地址
-#   MINI_SSH_PORT        部署机 SSH 端口
-# 可选变量（同样取全局变量，缺省走默认值）：
+# 变量来源：Gitea 仓库「设置 → Actions」（仓库级变量/密钥，非全局变量）
+#   变量（Variables）：
+#     ZOT_REGISTRY / ZOT_REGISTRY_URL / ZOT_USERNAME
+#     MINI_SSH_USER / MINI_SSH_HOST / MINI_SSH_PORT
+#   密钥（Secrets）：
+#     ZOT_PASSWORD（registry 密码/token）
+#     MINI_SSH_RSA（部署机 SSH 私钥全文）
+#   公开仓库不写死任何地址：仓库文件里只有占位符，真实值只在仓库变量/密钥与部署机本地。
+# 可选变量（缺省走默认值）：
 #   ZOT_REGISTRY_TARGET  部署机视角的 registry（默认同 ZOT_REGISTRY）
 #   MINI_SSH_KNOWN_HOST  目标机 known_hosts 行（建议配置，避免首次指纹信任）
 #   MOAI_APP_DIR         目标机部署目录（相对 $HOME），默认 moai
@@ -49,18 +46,17 @@ concurrency:
 
 env:
   IMAGE_NAME: moai
-  # 全部取自 Gitea 全局变量（vars 上下文自动合并 global/组织/仓库，低层级优先），
-  # 兼容历史写在 Secrets 里的同名值
-  ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY || secrets.ZOT_REGISTRY }}
-  ZOT_REGISTRY_URL: ${{ vars.ZOT_REGISTRY_URL || secrets.ZOT_REGISTRY_URL }}
-  ZOT_USERNAME: ${{ vars.ZOT_USERNAME || secrets.ZOT_USERNAME }}
-  ZOT_PASSWORD: ${{ vars.ZOT_PASSWORD || secrets.ZOT_PASSWORD }}
-  ZOT_REGISTRY_TARGET: ${{ vars.ZOT_REGISTRY_TARGET || vars.ZOT_REGISTRY || secrets.ZOT_REGISTRY_TARGET }}
-  MINI_SSH_USER: ${{ vars.MINI_SSH_USER || secrets.MINI_SSH_USER }}
-  MINI_SSH_RSA: ${{ vars.MINI_SSH_RSA || secrets.MINI_SSH_RSA }}
-  MINI_SSH_HOST: ${{ vars.MINI_SSH_HOST || secrets.MINI_SSH_HOST }}
-  MINI_SSH_PORT: ${{ vars.MINI_SSH_PORT || secrets.MINI_SSH_PORT }}
-  MINI_SSH_KNOWN_HOST: ${{ vars.MINI_SSH_KNOWN_HOST || secrets.MINI_SSH_KNOWN_HOST }}
+  # 仓库「设置 → Actions」：变量走 vars.*，密钥走 secrets.*（与 mo_platform 同名）
+  ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY }}
+  ZOT_REGISTRY_URL: ${{ vars.ZOT_REGISTRY_URL }}
+  ZOT_USERNAME: ${{ vars.ZOT_USERNAME }}
+  ZOT_PASSWORD: ${{ secrets.ZOT_PASSWORD }}
+  ZOT_REGISTRY_TARGET: ${{ vars.ZOT_REGISTRY_TARGET || vars.ZOT_REGISTRY }}
+  MINI_SSH_USER: ${{ vars.MINI_SSH_USER }}
+  MINI_SSH_RSA: ${{ secrets.MINI_SSH_RSA }}
+  MINI_SSH_HOST: ${{ vars.MINI_SSH_HOST }}
+  MINI_SSH_PORT: ${{ vars.MINI_SSH_PORT }}
+  MINI_SSH_KNOWN_HOST: ${{ vars.MINI_SSH_KNOWN_HOST }}
   MOAI_APP_DIR: ${{ vars.MOAI_APP_DIR || 'moai' }}
 
 jobs:
@@ -68,7 +64,7 @@ jobs:
     runs-on: linux_local
     timeout-minutes: 120
     steps:
-      - name: 校验全局变量
+      - name: 校验仓库变量与密钥
         run: |
           set -euo pipefail
           missing=""
@@ -77,12 +73,13 @@ jobs:
             [ -n "$value" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
-            echo "缺少全局变量/密钥:$missing"
-            echo "在 Gitea「站点管理 → 工作流 → 变量」补齐全局变量（与 mo_platform 同名可直接复用；"
-            echo "同名时仓库级/组织级变量会覆盖全局值，不需要为本仓库单独配置）。"
+            echo "缺少仓库变量/密钥:$missing"
+            echo "在 Gitea 仓库 → 设置 → Actions 补齐："
+            echo "  变量：ZOT_REGISTRY ZOT_REGISTRY_URL ZOT_USERNAME MINI_SSH_USER MINI_SSH_HOST MINI_SSH_PORT"
+            echo "  密钥：ZOT_PASSWORD MINI_SSH_RSA"
             exit 1
           fi
-          echo "变量齐备（部署目标已脱敏，不在日志中回显）"
+          echo "变量与密钥齐备（部署目标已脱敏，不在日志中回显）"
 
       - name: 解析镜像 tag
         run: |
@@ -254,6 +251,6 @@ jobs:
             echo "- 触发：\`${GITHUB_REF}\`"
             echo "- 分支/提交：\`${GITHUB_REF_NAME}\` @ \`${SHORT_SHA}\`"
             echo "- 镜像：\`${DEPLOY_IMAGE:-registry 上已有 tag}\`"
-            echo "- 目标机：\`***\` 目录 \`~/$MOAI_APP_DIR\`（地址取全局变量，不回显）"
+            echo "- 目标机：\`***\` 目录 \`~/$MOAI_APP_DIR\`（地址取仓库变量，不回显）"
             echo "- 仅部署（未构建）：\`${{ inputs.deploy_only }}\`"
           } >> "$GITHUB_STEP_SUMMARY" || true
