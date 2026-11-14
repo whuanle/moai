@@ -52,3 +52,20 @@ jobs:
           ls -l /tmp/moai-probe.tgz
           tar -tzf /tmp/moai-probe.tgz | head -3
           test -f /tmp/moai-probe.tgz
+  dns-lookup:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          getent hosts "$(printf '%s' "$GITHUB_SERVER_URL" | sed -e 's#^[a-z]*://##' -e 's#/.*##')" || { echo "dns fail"; exit 1; }
+          echo "dns ok"
+  curl-insecure:
+    runs-on: linux_local
+    timeout-minutes: 10
+    steps:
+      - run: |
+          set -euo pipefail
+          curl -fsSLk "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" -o /tmp/moai-probe-k.tgz
+          ls -l /tmp/moai-probe-k.tgz
+          tar -tzf /tmp/moai-probe-k.tgz | head -3
