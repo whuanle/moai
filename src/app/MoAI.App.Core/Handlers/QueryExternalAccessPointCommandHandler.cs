@@ -39,14 +39,13 @@ public class QueryExternalAccessPointCommandHandler : IRequestHandler<QueryExter
                 x.Name,
                 x.Avatar,
                 x.IsExternal,
-                x.IsAuth,
                 x.IsDisable,
                 x.PublishStatus
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // 应用不存在或非外部应用按不存在处理，不泄露存在性
-        if (rows == null || !rows.IsExternal)
+        // 应用不存在按不存在处理；内部应用未发布/禁用同样按不存在处理，不泄露存在性（外部应用保持原口径回 Enabled=false）
+        if (rows == null || (!rows.IsExternal && (rows.IsDisable || rows.PublishStatus != 1)))
         {
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
         }
@@ -109,8 +108,18 @@ public class QueryExternalAccessPointCommandHandler : IRequestHandler<QueryExter
             PanelHeight = config?.PanelHeight ?? 560,
             DefaultOpen = config?.DefaultOpen ?? false,
             OpeningStatement = openingStatement,
-            IsAuth = rows.IsAuth,
-            Enabled = !rows.IsDisable && rows.PublishStatus == 1 && (config?.Enabled ?? true),
+            AuthMode = rows.IsExternal ? "open" : "token",
+            Endpoints = new ExternalAccessPointEndpointsResponse
+            {
+                Chat = $"{server}/api/teamres/agent/{request.AppId}/chat",
+                Sessions = $"{server}/api/teamres/agent/{request.AppId}/session",
+                Messages = $"{server}/api/teamres/session/{{sessionId}}/messages",
+                Token = rows.IsExternal
+                    ? string.Empty
+                    : $"{server}/api/subsys/system/app-tokens",
+            },
+            Enabled = !rows.IsDisable && rows.PublishStatus == 1
+                && (rows.IsExternal ? (config?.Enabled ?? true) : (config != null && config.Enabled)),
         };
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MoAI.AIPlugin;
 using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Services;
+using MoAI.AIPlugin.Custom.Services;
 
 namespace MoAI.AIPlugin.Custom;
 
@@ -17,6 +18,8 @@ public class CustomPluginModule : IModule
     {
         context.Services.AddScoped<IPluginRunContextAccessor, PluginRunContextAccessor>();
         context.Services.AddScoped<IDynamicInstanceResolver, DynamicInstanceResolver>();
+        context.Services.AddScoped<IPluginMarketplaceService, PluginMarketplaceService>();
+        context.Services.AddHostedService<PluginPackageStartupLoader>();
         context.Services.AddScoped<McpToolCallService>();
         context.Services.AddScoped<OpenApiToolCallService>();
         context.Services.AddScoped<MoAI.Statistics.Services.IResourceUsageWriter, PluginUsageCounterActivatorJob>();

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppstoreAddOutlined, SearchOutlined, SettingOutlined } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Popconfirm, Row, Select, Space, Spin, Switch, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AvatarUpload, Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
@@ -98,7 +98,7 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
 
   const openCreate = () => {
     createForm.resetFields()
-    createForm.setFieldsValue({ appType: 'agent', isAuth: true })
+    createForm.setFieldsValue({ appType: 'agent' })
     setCreateAvatar(null)
     setCreateOpen(true)
   }
@@ -114,7 +114,6 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
         description: values.description,
         avatar: createAvatar?.objectKey,
         isExternal: true,
-        isAuth: values.isAuth ?? false,
       })
       feedback.success(t('appManage.createSuccess'))
       setCreateOpen(false)
@@ -313,11 +312,6 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
                               {published ? t('appManage.published') : t('appManage.unpublished')}
                             </Tag>
                           )}
-                          <Tooltip title={t('appManage.isAuth')}>
-                            <Tag color={item.isAuth ? 'gold' : 'cyan'} style={{ marginInlineEnd: 0 }}>
-                              {item.isAuth ? t('appManage.authOn') : t('appManage.authOff')}
-                            </Tag>
-                          </Tooltip>
                         </Space>
                       </div>
                     </div>
@@ -383,12 +377,7 @@ export function TeamExternalApps({ teamId, canManage }: TeamExternalAppsProps) {
           <Form.Item name="description" label={t('appManage.description')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('appManage.descriptionPlaceholder')} maxLength={255} rows={3} />
           </Form.Item>
-          <Form.Item name="isAuth" label={t('appManage.isAuth')} valuePropName="checked">
-            <Switch checkedChildren={t('appManage.authOn')} unCheckedChildren={t('appManage.authOff')} />
-          </Form.Item>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('appManage.isAuthHint')}
-          </Text>
+          {/* is_auth 已退役：外部应用一律匿名开放 */}
         </Form>
       </Modal>
     </>

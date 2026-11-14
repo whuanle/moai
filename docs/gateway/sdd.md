@@ -36,7 +36,7 @@
 - **D-GW2（修订）凭证双轨授权模型**：应用接入 key 不再携带任何范围概念——存在即团队级全量（换 token / 直连同口径）；细粒度授权下沉到资源 key，以「路径包围圈」而非「位掩码」表达，授权单位从资源组收缩到资源实例。
 - **D-GW9（修订）包围圈前置拦截取代分档判定**：`ExternalAuthenticationMiddleware` 在凭证解析后按 `IsResourceKeyPathAllowed` 判定 moai-tr- 可达端点——路由资源 id 与绑定 id 精确等值、团队级 list 端点放行交 handler 过滤（`OnlyWikiId/OnlyGraphId`）；越圈统一 403 insufficient_scope。原「GET 与 `*/list`=读档」分档口径与控制器 `RequireCaller(requireWrite)` 兜底一并删除（签名简化）。
 - **D-GW4（修订）刷新重验**：refresh token 刷新时按接入**当前存在性与 secret** 重签（范围概念已删）——接入删除在下次刷新即生效；access token 有效期内不回收。
-- **D-GW7（退役）应用对话门禁**：`app_chat` 位随 scope 体系删除，兑换/刷新用户 token 不再要求任何资格位；会话面门禁保留「需授权（is_auth）应用仅外部用户 token」与 appId 归属团队校验。
+- **D-GW7（退役；2026-11-13 收敛）应用对话门禁**：`app_chat` 位随 scope 体系删除，兑换/刷新 token 不再要求任何资格位；外部应用 `is_auth` 退役（一律匿名开放），会话面 key 直连/匿名 token 按用户身份放行、应用 token 仍 403；内部应用走访问点访问用户 token（`typ=normal`，绑定单应用 + 访问点开启），跨团队仍 403/404。见 [../app/sdd.md](../app/sdd.md) 决策 D57。
 - **D-GW6 key 直连外部接口**：`/api/teamres` 认证中间件接受 Bearer/x-api-key 携带 moai-ac-/moai-tr- 直连；每请求直查数据库，删除/停用/重置下一请求即生效（TR-S24~S28、ACP-S17a/b 验证）。资源 key 为纯直连凭证：不可换 token（`POST /api/teamres/token` 仅认 moai-ac-）。
 - **资源 key 生命周期（2026-11-04）**：get-or-create 幂等（同 (团队,类型,资源) 原样返回 created=false）；重置=同表行重生成 key（行 id 不变，直连身份延续）；停用 401、启用恢复、删除（软删）401；wiki/kg 生成时校验资源归属团队否则 404。
 - **团队接入 key 下线（2026-09-27）/ 模型网关下线（2026-10-29）**：历史决策原文见 git 历史——前者删除 `team_api_key` 表与 `moai-` 单前缀认证，后者删除 `src/gateway/` 三项目与 `/api/aigateway/*` 四端点，团队可用模型查询迁至 aichannel 模块。

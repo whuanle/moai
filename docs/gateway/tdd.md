@@ -7,9 +7,9 @@
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|
 | @GW-S3 | team-aichannel-e2e.mjs#TC-S5（chat/completions 与 models 端点下线断言 + scopes 字段退役被忽略创建 200） | TC 38/38（2026-11-04） |
-| @GW-S6 | teamres-key-e2e.mjs#TR-S1~S9（不传/传 scopes 均 200、列表无 scopes、wiki 读写+KG list+token 兑换+用户 token 无 app_chat、x-api-key 直连）；正向断言另见 wiki-external-e2e.mjs#WX-09e | TR 31/31、WX 57/57（2026-11-04） |
+| @GW-S6 | teamres-key-e2e.mjs#TR-S1~S9（不传/传 scopes 均 200、列表无 scopes、wiki 读写+KG list+app token 兑换+x-api-key 直连；key+externalUserId 换用户 token 退役断言见 TR-S9）；正向断言另见 wiki-external-e2e.mjs#WX-09e | TR 39/39、WX 57/57（2026-11-13） |
 | @GW-S7（已退役，断言改为下线） | team-aichannel-e2e.mjs#TC-S5 ＋ external-app-e2e.mjs#EA-34a | TC 38/38、EA 75/75（2026-11-04） |
-| @GW-S8（已退役，app_chat 概念删除） | teamres-key-e2e.mjs#TR-S9（换用户 token 无需范围资格） | TR 31/31（2026-11-04） |
+| @GW-S8（已退役，app_chat 概念删除；用户 token 亦随外部应用授权退役） | teamres-key-e2e.mjs#TR-S9（key+externalUserId 返回 400 并指向访问点） | TR 39/39（2026-11-13） |
 | @GW-S9（已退役，kg 分档删除） | kg-external-e2e.mjs#KX-09a~h（全量 token/直连读写均放行、跨资源组 wiki/list 放行） | KX 110/110（2026-11-04） |
 | @GW-S10 | teamres-key-e2e.mjs#TR-S24~S28（重置/停用/删除即时生效）＋ ACP-S17a/b、A2A-S13b/c（资源 key 吊销即时性） | TR 31/31、ACP 25/25、A2A 24/24（2026-11-04） |
 | @GW-S11 | teamres-key-e2e.mjs#TR-S16~S23（wiki/app key 包围圈：本库 REST+MCP 放行、越库/越圈 403、团队级 list 过滤）；模块侧 WX-12、KX-15、WM-S1e/S8、KGM-S1e/S8、ACP-S02a/b、A2A-S02a/b | TR 31/31、WX 57/57、KX 110/110、WM 34/34、KGM 36/36（2026-11-04） |

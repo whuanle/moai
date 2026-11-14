@@ -12,14 +12,16 @@
 |---|---|---|---|
 | 应用接入 key | `access_app`（统一表，Level=team），`moai-ac-` + 随机 | 团队管理员（`/api/access-app`） | **存在即有效**（软删除自动过滤），**团队级全量访问 /api/teamres**（wiki 读写、KG 读写、agent 对话、ACP/A2A、wiki/KG MCP），无任何范围勾选；appid 明文可回显；配套密钥 PBKDF2 落库（原文仅创建/重置返回一次），已设密钥则兑换 token 必须携带 secret |
 | 团队资源 key | `teamres_key`，`moai-tr-` + 32 位随机（前 12 位展示前缀） | **资源对外功能开启时自动生成/复用**（应用开 ACP/A2A `PUT /api/app/{id}/feature`、知识库/知识图谱开 MCP `PUT {id}/mcp-config`——查库无则写、有则复用；未开启功能手动 `POST /api/team-resource-key` 400）；管理面 `/api/team-resource-key`（get-or-create/重置；**key 无启停状态且不可删除**，团队 Admin+） | **包围圈凭证**：仅能访问绑定资源实例的端点（§2b），无 secret、**不可换 token**（`POST /api/teamres/token` 仅认 moai-ac-，携带 moai-tr- 400/401）；无启停状态（status 列已删），重置下一请求旧 key 即 401；**一资源一把**（app 行 resource_id=应用 Guid、wiki 行=wikiId、kg 行=kgId，`varchar(64)`），get-or-create 幂等；key 明文回显仅团队 Admin+（`ITeamService.GetMyRoleAsync` 门禁） |
-| 外部 token（JWT） | 换取签发，不落库 | `POST /api/teamres/token`（仅认 moai-ac- key） | access 2h（Debug 7d）+ refresh 7d；**不再携带 scope claim**（`ClaimScope` 已删），授权语义= 团队归属 + app_ids + 外部用户身份；刷新按来源接入**当前**存在性重验；**已设密钥则兑换必须携带 secret** |
-| 匿名临时身份 | 无 key | `POST /api/teamres/token` 只传 appId（应用须 `is_auth=false`） | 刷新要求应用仍无需授权 |
+| 外部 token（JWT） | 换取签发，不落库 | `POST /api/teamres/token` | access 2h（Debug 7d）+ refresh 7d；**不再携带 scope claim**（`ClaimScope` 已删），授权语义= 团队归属 + 外部用户身份；刷新按来源接入/应用**当前**状态重验。**应用 token** 仅认 moai-ac- key（无用户身份）；**匿名用户 token** 只传 appId（外部应用一律开放）；`accessAppKey + externalUserId` 换用户 token 已退役（400） |
+| 访问用户 token（JWT） | 换取签发，不落库 | `POST /api/subsys/system/app-tokens`（系统级 `moai-sa-` 接入：`AppType=app` 或 `AppType=subsystem`） | access 2h + refresh 7d；`typ=normal`、sub=真实站内用户 id、claim `appid` 绑定单个内部应用；首次未绑定身份时自动创建用户并绑定 OAuth；会话落 `UserType.Normal` 与站内账号合并；刷新校验用户未禁用 + 应用发布 + 访问点开启；团队级 `moai-ac-` 不可换发 |
+| 匿名临时身份 | 无 key | `POST /api/teamres/token` 只传 appId（外部应用一律开放，`is_auth` 已退役） | 刷新要求应用仍可用（发布、未禁用） |
 | 系统级接入 appid（参照） | 同一张 `access_app`（Level=system，AppType 分型 subsystem/app），`moai-sa-` + Base64Url(Guid+HMAC) 结构化自校验 appid | root（`/api/subsystem/*`，合并管理面） | 与团队级同表分域：不能访问 /api/teamres、只能访问 /api/subsys/**（见 [../subsystem/sdd.md](../subsystem/sdd.md)），全量访问协作面资源 |
 
-三条认证路径（对 `/api/teamres/*`）：
-1. **换 token**：moai-ac- 接入 key → 外部 token → Bearer JWT（应用/用户/匿名三类，见 [../app/sdd.md](../app/sdd.md) §2.2）。
+四条认证路径（对 `/api/teamres/*`）：
+1. **换 token**：`POST /api/teamres/token` → 应用 token / 匿名用户 token；内部应用另经系统协作面 `POST /api/subsys/system/app-tokens` → 访问用户 token（四类见 [../app/sdd.md](../app/sdd.md) §2.2）。
 2. **moai-ac- key 直连**：Bearer / `x-api-key` 直接带 key，`ExternalAccessKeyService.ResolveContextAsync` 按前缀构建直连上下文（`IsKeyDirect=true`，`Scopes` 字段已删）；直连发起会话走 `EnsurePrincipalUserAsync` 的固定直连身份（`__key_direct__`）承载归属。
 3. **moai-tr- 资源 key 直连**：同上解析，上下文带 `IsResourceKey/ResourceKeyType/ResourceKeyId`，中间件前置**包围圈**判定（§2b）；直连身份标识按 key 行 Guid 派生（`__key_direct_{行id}__`，重置 key 值行 id 不变、身份延续），`external_user.access_app_id=null`。
+4. **访问用户 token**：系统协作面按第三方登录绑定签发（`typ=normal`），Bearer 进入后仅能访问绑定内部应用（token `appid` = 路由 appId）且访问点须开启；会话归属真实站内用户。
 
 ## 2. scope 位表（已整体退役，2026-11-04 去范围化）
 
@@ -45,7 +47,7 @@
 
 - 包围圈在中间件按**路由资源 id 精确等值**判定（`TryGetRouteId`，id ≠ 绑定 id 即 403），团队级 list 端点精确路径匹配放行、由 handler 过滤结果（`QueryExternalWikisCommandHandler` / `QueryExternalGraphsCommandHandler`）。
 - MCP 端点（`/api/teamres/wiki/{wikiId}/mcp`、`/api/teamres/knowledge-graph/{kgId}/mcp`）：接受 moai-ac-（团队隔离照旧 404）与**该资源自己的 moai-tr- key**；原 `wiki_mcp`/`kg_mcp` scope 概念删除。wiki/KG 控制器与 MCP tools 的 `RequireCaller` 已删 `requireWrite` 读写分档参数（签名简化），caller 模型新增 `OnlyWikiId/OnlyGraphId`。
-- moai-ac- key 无包围圈（全量）；用户 token / 匿名 token 语义不变（受 app_ids 与 is_auth 门禁）。
+- moai-ac- key 无包围圈（全量）；匿名 token 仅限外部应用（团队归属 + 发布/未禁用）；访问用户 token 仅限绑定内部应用且访问点开启。
 
 ## 3. 资源组 → 端点清单（授权 = 团队归属，无读/写分档）
 
@@ -53,7 +55,7 @@
 
 - 知识库 `/api/teamres/wiki/*`：`POST /list`、`GET /{wikiId}`、文档列表/正文/embedding/下载/召回（`POST /{wikiId}/recall/list`）等读面（7）+ embedding-config/上传/提取/切割/向量化/元数据生成/删除/重命名等写面（10）+ MCP `/api/teamres/wiki/{wikiId}/mcp`（三只读工具，见 wiki sdd D35）。
 - 知识图谱 `/api/teamres/knowledge-graph/*`：列表/schema/节点/边查询读面（9）+ 节点/边/实体类型/关系类型增删改与批量导入写面（17）+ MCP `/api/teamres/knowledge-graph/{kgId}/mcp`（四只读工具，工具域由 `KnowledgeGraphMcpToolGate` 过滤）。
-- 应用对话面：`POST /api/teamres/token`（用户 token）、`/api/teamres/agent/{appId}/session*`、`/api/teamres/session/{sessionId}/messages` 等——仅外部用户 token（原 `app_chat` 资格门禁已随 scope 退役删除，兑换用户 token 不再要求任何范围）。
+- 应用对话面：`POST /api/teamres/token`（匿名用户 token）、`/api/teamres/agent/{appId}/session*`、`/api/teamres/session/{sessionId}/messages` 等——外部应用接受匿名 token/key 直连（外部身份），内部应用仅接受访问用户 token（真实站内用户，绑定单应用 + 访问点开启）；应用 token 无用户身份不能建会话。原 `app_chat` 资格门禁已随 scope 退役删除。
 - 应用 ACP：`POST /api/teamres/app/{appId}/acp`（Agent Client Protocol JSON-RPC 2.0；外部用户语义 + appId 归属团队 + 已发布未禁用 + **应用已开启对外协议接入**（未开启 403 feature_disabled），不要求 `IsExternal`；GET 405）。
 - 应用 A2A：`POST /api/teamres/app/{appId}/a2a` 与 Agent Card `GET /a2a/agent.json`（Google Agent2Agent，门禁与 ACP 同口径，要求开启 A2A 功能）。
 - 其他：`/api/teamres/app/list`（任意外部 token）、`/api/teamres/app/{appId}/access-point`（匿名）。
@@ -66,8 +68,10 @@
              （moai-tr- 须 Status=Enabled，否则 null → 401）
              否则 Bearer → 外部 JWT（ExternalJwtBearerAuthenticationHandler → Items[TokenContextItemKey]）
   → ①资源 key 包围圈：IsResourceKeyPathAllowed（§2b，前置拦截，越圈 403 insufficient_scope；moai-ac-/token 不经过此步）
-  → ②appId 门禁：路由含 appId 时校验应用属凭证团队且可用（ACP/A2A 路径跳过走各自专属门禁；
-     is_auth 应用会话面仅外部用户 token，key 直连/应用 token 403 external_user_token_required）
+  → ②appId 门禁：路由含 appId 时校验应用可用（ACP/A2A 路径跳过走各自专属门禁）；
+     外部应用：凭证团队归属 + 发布/未禁用（匿名开放，is_auth 已退役）；
+     内部应用：仅访问用户 token（typ=normal 且 UserId>0），token appid=路由 appId，
+     且访问点配置启用（关闭 403 access_point_disabled，非访问用户 token 404 不泄露）
   → ③wiki/KG MCP 门禁：IsWikiMcpPath/IsKgMcpPath 主体须接入 key/应用 token/资源 key（外部用户 token 拒绝）
      + 路由 id 归属凭证团队（404 不泄露）；非 POST 按协议 405
   → ④ACP/A2A 门禁：key 直连先 EnsurePrincipalUserAsync 解析直连会话身份 → 外部用户语义（ExternalId>0）

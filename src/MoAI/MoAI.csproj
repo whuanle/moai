@@ -63,7 +63,6 @@
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Core\MoAI.AIPlugin.Core.csproj" />
 		<ProjectReference Include="..\classify\MoAI.Classify.Core\MoAI.Classify.Core.csproj" />
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Static\MoAI.AIPlugin.Static.csproj" />
-		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Dynamic\MoAI.AIPlugin.Dynamic.csproj" />
 		<ProjectReference Include="..\aiplugin\MoAI.AIPlugin.Custom\MoAI.AIPlugin.Custom.csproj" />
 		<ProjectReference Include="..\ai\MoAI.AI.Core\MoAI.AI.Core.csproj" />
 		<ProjectReference Include="..\feishu\MoAI.Feishu.Core\MoAI.Feishu.Core.csproj" />
@@ -74,10 +73,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Update="models.json">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-		</Content>
 		<!-- 登录风控 IP 归属地离线库（ip2region v2 xdb，缺失时地理相关规则自动降级） -->
 		<Content Include="..\..\configs\ip2region.xdb" Link="configs\ip2region.xdb">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

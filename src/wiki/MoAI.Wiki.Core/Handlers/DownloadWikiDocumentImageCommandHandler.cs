@@ -47,7 +47,7 @@ public class DownloadWikiDocumentImageCommandHandler : IRequestHandler<DownloadW
             throw new BusinessException("未找到文档图片附件.") { StatusCode = 404 };
         }
 
-        var url = await _storageService.GetDownloadUrlAsync(image.ObjectKey, image.FileName, TimeSpan.FromMinutes(2), cancellationToken);
+        var url = await _storageService.GetDownloadUrlAsync(image.ObjectKey, image.FileName, TimeSpan.FromMinutes(1), cancellationToken);
 
         return new SimpleString
         {

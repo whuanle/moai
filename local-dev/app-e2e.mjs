@@ -248,14 +248,14 @@ async function main() {
     check('AP-14 创建时伪造 objectKey 404', fake.status === 404, `${fake.status} ${fake.text.slice(0, 120)}`)
   }
 
-  // AP-13e ~ AP-13l 外部应用（is_external / is_auth）
+  // AP-13e ~ AP-13l 外部应用（is_external；is_auth 已退役，请求字段忽略并恒为 false）
   {
     const ext = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '对外助手', appType: 'agent', isExternal: true, isAuth: true } })
     check('AP-13e 管理员创建外部应用 200', ext.status === 200 && isGuid(ext.json?.value), `${ext.status} ${ext.text.slice(0, 140)}`)
     const EXT_ID = String(ext.json?.value ?? '')
 
     const ed = await api('GET', `/api/app/${EXT_ID}`, { token: owner.token })
-    check('AP-13f 外部应用详情 isExternal/isAuth 正确', ed.json?.isExternal === true && ed.json?.isAuth === true, JSON.stringify(ed.json))
+    check('AP-13f 外部应用详情 isExternal=true 且退役 isAuth 恒为 false', ed.json?.isExternal === true && ed.json?.isAuth === false, JSON.stringify(ed.json))
 
     const internalList = await api('GET', `/api/app/list?teamId=${TID}`, { token: owner.token })
     check('AP-13g 内部应用列表不包含外部应用', !(internalList.json?.items ?? []).some(i => i.appId === EXT_ID), JSON.stringify((internalList.json?.items ?? []).map(i => i.name)))
@@ -264,7 +264,9 @@ async function main() {
     check('AP-13h 外部应用列表包含新建外部应用', extList.status === 200 && (extList.json?.items ?? []).some(i => i.appId === EXT_ID), `${extList.status} ${extList.text.slice(0, 140)}`)
     check('AP-13i 普通成员查外部列表 403', (await api('GET', `/api/app/external/list?teamId=${TID}`, { token: member.token })).status === 403)
     check('AP-13j 非成员查外部列表 404', (await api('GET', `/api/app/external/list?teamId=${TID}`, { token: outsider.token })).status === 404)
-    check('AP-13k 内部应用设置 isAuth 被拒 400', (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '非法内部应用', appType: 'agent', isAuth: true } })).status === 400)
+    const ignored = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '退役字段内部应用', appType: 'agent', isAuth: true } })
+    const ignoredDetail = ignored.status === 200 ? await api('GET', `/api/app/${String(ignored.json?.value ?? '')}`, { token: owner.token }) : null
+    check('AP-13k 内部应用携带退役 isAuth 创建 200 且字段被忽略', ignored.status === 200 && ignoredDetail?.json?.isAuth === false, `${ignored.status} ${ignored.text.slice(0, 140)}`)
 
     // AP-13s ~ AP-13y 应用接入（access_app）
     const createAcc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'ERP接入', description: '接入测试' } })

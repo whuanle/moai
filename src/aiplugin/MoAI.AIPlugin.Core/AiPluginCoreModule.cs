@@ -17,5 +17,6 @@ public class AIPluginCoreModule : IModule
         context.Services.AddSingleton<IPluginRegistry, PluginRegistry>();
         context.Services.AddSingleton<IPluginExecutor, PluginExecutor>();
         context.Services.AddScoped<IPluginUsageCounter, PluginUsageCounter>();
+        context.Services.AddScoped<IPluginFileStorageService, PluginFileStorageService>();
     }
 }

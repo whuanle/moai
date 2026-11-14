@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using MoAI.AIPlugin.Attributes;
 using MoAI.AIPlugin.Contracts;
@@ -9,7 +9,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 /// <summary>
 /// 静态示例插件：回显请求参数.
 /// </summary>
-[AiPlugin(key: "static_echo", Name = "静态回显", Description = "回显请求参数，无需额外配置")]
+[AiPlugin(key: "static_echo", Name = "静态回显", HumanDescription = "用于原样返回输入内容，方便检查参数是否正确传递。适合插件接入测试、工作流调试和功能演示，不会对输入做额外处理。", Description = "回显请求参数，无需额外配置")]
 public class StaticEchoPlugin : IStaticPluginRuntime<StaticEchoRequest, StaticEchoResponse>
 {
     /// <inheritdoc/>

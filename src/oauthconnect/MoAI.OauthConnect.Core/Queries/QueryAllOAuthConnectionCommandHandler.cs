@@ -44,6 +44,7 @@ public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAu
                 WellKnown = x.WellKnown,
                 AgentId = x.AgentId,
                 AuthorizeUrl = x.AuthorizeUrl,
+                IsVisible = x.IsVisible,
                 CreateTime = x.CreateTime,
                 CreateUserId = (int)x.CreateUserId,
                 UpdateTime = x.UpdateTime,

@@ -25,6 +25,7 @@ import { useAppStore } from '@/store/app'
 import { CustomPluginPanel } from './CustomPluginPanel'
 import { DynamicPluginPanel } from './DynamicPluginPanel'
 import { PluginStatsPanel } from './PluginStatsPanel'
+import { PluginMarketplacePanel } from './PluginMarketplacePanel'
 import { PluginAvatar, PluginAvatarUpload } from './components/PluginAvatarUpload'
 import { PluginRunDrawer } from './components/PluginRunDrawer'
 import { PluginSemanticModal } from './components/PluginSemanticModal'
@@ -40,7 +41,7 @@ import {
   type PluginView,
 } from './components/PluginCardView'
 
-const TAB_KEYS = ['custom', 'dynamic', 'static', 'stats'] as const
+const TAB_KEYS = ['custom', 'dynamic', 'static', 'online', 'stats'] as const
 
 const { Text } = Typography
 
@@ -370,7 +371,7 @@ function PluginPanel({ kind, classifies }: { kind: PluginKind; classifies: Plugi
             <Form.Item name="title" label={t('plugins.formPluginTitle')} rules={[{ required: true, message: t('plugins.pluginTitleRequired') }]}>
               <Input maxLength={50} />
             </Form.Item>
-            <Form.Item name="description" label={t('plugins.formDescription')}>
+            <Form.Item name="description" label={t('plugins.humanDescription')} extra={t('plugins.humanDescriptionHint')}>
               <Input.TextArea maxLength={255} />
             </Form.Item>
             <Form.Item name="classifyId" label={t('plugins.formClassify')}>
@@ -428,6 +429,7 @@ export function Plugins() {
     },
     { key: 'dynamic', label: t('plugins.tabDynamic'), children: <DynamicPluginPanel classifies={classifies} /> },
     { key: 'static', label: t('plugins.tabStatic'), children: <PluginPanel kind="static" classifies={classifies} /> },
+    { key: 'online', label: t('plugins.tabOnline'), children: <PluginMarketplacePanel /> },
     { key: 'stats', label: t('plugins.tabStats'), children: <PluginStatsPanel /> },
   ]
 

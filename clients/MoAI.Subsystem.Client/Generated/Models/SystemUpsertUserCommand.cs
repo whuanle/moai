@@ -31,6 +31,24 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public string NickName { get; set; }
 #endif
+        /// <summary>第三方登录渠道 id（oauth_connection.id），可选；与 OauthSub 成对出现时，upsert 用户后幂等绑定第三方身份（后续经 /api/subsys/system/app-tokens 按 oauth 身份换发访问用户 token）.</summary>
+        public Guid? OauthProviderId { get; set; }
+        /// <summary>第三方用户唯一标识（open_id / unionId / userid），可选；与 OauthProviderId 成对出现.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public string? OauthSub { get; set; }
+#nullable restore
+#else
+        public string OauthSub { get; set; }
+#endif
+        /// <summary>第三方 union_id，可选（飞书场景；与 Sub 一并落库便于按 unionId 匹配）.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public string? OauthUnionId { get; set; }
+#nullable restore
+#else
+        public string OauthUnionId { get; set; }
+#endif
         /// <summary>初始密码，可选（明文，走 TLS 传输）；缺省时创建路径自动生成随机密码并在响应中一次性返回；更新路径 null=不修改.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -76,6 +94,9 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
                 { "email", n => { Email = n.GetStringValue(); } },
                 { "isDisable", n => { IsDisable = n.GetBoolValue(); } },
                 { "nickName", n => { NickName = n.GetStringValue(); } },
+                { "oauthProviderId", n => { OauthProviderId = n.GetGuidValue(); } },
+                { "oauthSub", n => { OauthSub = n.GetStringValue(); } },
+                { "oauthUnionId", n => { OauthUnionId = n.GetStringValue(); } },
                 { "password", n => { Password = n.GetStringValue(); } },
                 { "phone", n => { Phone = n.GetStringValue(); } },
                 { "userName", n => { UserName = n.GetStringValue(); } },
@@ -91,6 +112,9 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             writer.WriteStringValue("email", Email);
             writer.WriteBoolValue("isDisable", IsDisable);
             writer.WriteStringValue("nickName", NickName);
+            writer.WriteGuidValue("oauthProviderId", OauthProviderId);
+            writer.WriteStringValue("oauthSub", OauthSub);
+            writer.WriteStringValue("oauthUnionId", OauthUnionId);
             writer.WriteStringValue("password", Password);
             writer.WriteStringValue("phone", Phone);
             writer.WriteStringValue("userName", UserName);

@@ -85,7 +85,7 @@ cp .env.example .env   # 先在 .env 配置账号与服务地址
 bash deploy/deploy-compose.sh
 ```
 
-一条命令拉起 MoAI 与常用依赖。部署方式（Docker / Compose / Kubernetes）与完整配置说明见[文档中心 · 安装](https://docs.whuanle.cn/zh/moai/1.install/2.docker-compose)。
+部署脚本会检查 `moai` 网络：新环境启动完整服务栈；已有 Mo 系列服务时复用 PostgreSQL、Redis、RabbitMQ 和 RustFS，并为 MoAI 单独创建数据库与存储桶。部署方式（Docker / Compose / Kubernetes）与完整配置说明见[文档中心 · 安装](https://docs.whuanle.cn/zh/moai/1.install/2.docker-compose)。
 
 ## 文档
 

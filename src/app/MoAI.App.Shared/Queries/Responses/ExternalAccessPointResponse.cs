@@ -71,12 +71,17 @@ public class ExternalAccessPointResponse
     public bool DefaultOpen { get; init; }
 
     /// <summary>
-    /// 应用是否需要授权访问（is_auth=true 时组件必须提供接入 key）.
+    /// 认证模式：open 匿名开放（外部应用，is_auth 已退役）/ token 需访问用户 token（内部应用访问点身份穿透）.
     /// </summary>
-    public bool IsAuth { get; init; }
+    public string AuthMode { get; init; } = "open";
 
     /// <summary>
-    /// 是否启用访问点（应用已发布未禁用 且 配置启用）.
+    /// 接入端点（内部应用访问点下发，接入方免组件按 AG-UI 协议直连）；外部应用 Chat/Sessions/Messages 同样可用.
+    /// </summary>
+    public ExternalAccessPointEndpointsResponse? Endpoints { get; init; }
+
+    /// <summary>
+    /// 是否启用访问点（应用已发布未禁用 且 配置启用；内部应用须显式开启访问点）.
     /// </summary>
     public bool Enabled { get; init; }
 }

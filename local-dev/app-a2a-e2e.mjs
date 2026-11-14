@@ -181,7 +181,7 @@ async function main() {
   const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
   const adminToken = adminLogin.json?.accessToken ?? ''
 
-  const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: `a2a-team-${TS}` } })).json.value)
+  const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: `a2a_team_${TS}` } })).json.value)
 
   // 桩渠道 + conversation 模型并授权给团队
   const stub = await startStubServer()
@@ -220,11 +220,11 @@ async function main() {
     const r = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name } })
     return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? ''), secret: String(r.json?.secret ?? '') }
   }
-  const K1 = await mkKey(`a2a-k1-${TS}`)
-  const K2 = await mkKey(`a2a-k2-${TS}`)
-  const K3 = await mkKey(`a2a-k3-${TS}`)
+  const K1 = await mkKey(`a2a_k1_${TS}`)
+  const K2 = await mkKey(`a2a_k2_${TS}`)
+  const K3 = await mkKey(`a2a_k3_${TS}`)
   const owner2 = await mkuser('bo')
-  const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `a2a-team2-${TS}` } })).json.value)
+  const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `a2a_team2_${TS}` } })).json.value)
   const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `a2a_k4_${TS}` } })
   const K4 = { id: String(K4r.json?.accessAppId ?? ''), key: String(K4r.json?.key ?? '') }
 
@@ -251,7 +251,7 @@ async function main() {
   const card = await agentCard({ key: K1.key }, A1)
   check('A2A-S03 agent.json：name/url/protocolVersion/streaming',
     card.status === 200 && card.json?.protocolVersion === '0.3.0' && String(card.json?.url ?? '').endsWith(`/api/teamres/app/${A1}/a2a`)
-    && card.json?.capabilities?.streaming === true && Array.isArray(card.json?.skills) && card.json.name?.includes('a2a-agent'),
+    && card.json?.capabilities?.streaming === true && Array.isArray(card.json?.skills) && card.json.name?.includes('a2a_agent'),
     JSON.stringify(card.json).slice(0, 220))
 
   // ===== A2A-S04 协议基础 =====
@@ -339,15 +339,15 @@ async function main() {
   const canceledFinal = streamC.finalTask?.status?.state === 'canceled' || streamC.events.some((e) => e.kind === 'status-update' && e.status?.state === 'canceled')
   check('A2A-S11 tasks/cancel 中断（canceled 状态）', canceledFinal, JSON.stringify(streamC.finalTask).slice(0, 200))
 
-  // ===== A2A-S12 用户 token 路径（外部应用 A3）=====
+  // ===== A2A-S12 外部应用用户面（用户 token 随授权退役改匿名 token，语义改写编号不复用）=====
   const EXT_UID = `a2a-user-${TS}`
-  const tok = await api('POST', '/api/teamres/token', { body: { accessAppKey: K1.key, secret: K1.secret, appId: A3, externalUserId: EXT_UID, nickname: 'a2a用户' } })
+  const tok = await api('POST', '/api/teamres/token', { body: { appId: A3, externalUserId: EXT_UID } })
   const userToken = String(tok.json?.accessToken ?? '')
   const sendU = await a2a({ token: userToken }, A3, {
     jsonrpc: '2.0', id: 12, method: 'message/send',
     params: { message: { role: 'user', kind: 'message', messageId: `m-${TS}-5`, parts: [{ kind: 'text', text: `用户token${TS}` }] } },
   })
-  check('A2A-S12 用户 token message/send completed',
+  check('A2A-S12 匿名 token 外部应用 message/send completed',
     tok.status === 200 && sendU.json?.result?.status?.state === 'completed', JSON.stringify(sendU.json?.result).slice(0, 160))
 
   // ===== A2A-S13 资源 key 重置即时吊销（key 无启停状态、不可删除：旧 key 立即 401、新 key 200，行 id 不变） =====

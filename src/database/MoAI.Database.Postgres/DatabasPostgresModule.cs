@@ -89,6 +89,13 @@ public class DatabasPostgresModule : IModule
             dbContext.Database.ExecuteSqlRaw(
                 "ALTER TABLE oauth_connection ADD COLUMN IF NOT EXISTS agent_id character varying(100) NULL");
 
+            // oauth_connection.is_visible（隐藏连接器：纯身份映射用）为后加列，幂等补齐
+            dbContext.Database.ExecuteSqlRaw(
+                "ALTER TABLE oauth_connection ADD COLUMN IF NOT EXISTS is_visible boolean NOT NULL DEFAULT true");
+
+            // app.is_auth 已退役（外部应用一律匿名开放）：存量行收敛为 false，幂等执行
+            dbContext.Database.ExecuteSqlRaw("UPDATE app SET is_auth = false WHERE is_auth = true");
+
             // app.use_count（应用累计使用次数）为后加列，幂等补齐
             dbContext.Database.ExecuteSqlRaw(
                 "ALTER TABLE app ADD COLUMN IF NOT EXISTS use_count integer NOT NULL DEFAULT 0");
@@ -558,6 +565,55 @@ public class DatabasPostgresModule : IModule
                 "ALTER TABLE app_agent_config ADD COLUMN IF NOT EXISTS model_ids text NOT NULL DEFAULT '[]'");
             dbContext.Database.ExecuteSqlRaw(
                 "ALTER TABLE app_agent_session ADD COLUMN IF NOT EXISTS last_model_id uuid NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'");
+
+            // plugin_package（MoPlatform 在线插件安装快照）为后加表；EnsureCreated 不会改动存量库，故使用幂等 DDL 补齐。
+            // ExecuteSqlRaw 使用 composite-format 解析 SQL，JSON 空对象默认值中的花括号须双写转义。
+            dbContext.Database.ExecuteSqlRaw(
+                """
+                CREATE TABLE IF NOT EXISTS plugin_package (
+                    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                    platform_plugin_id bigint NOT NULL DEFAULT 0,
+                    platform_version_id bigint NOT NULL DEFAULT 0,
+                    plugin_key varchar(64) NOT NULL,
+                    version varchar(32) NOT NULL DEFAULT ''::character varying,
+                    package_hash varchar(64) NOT NULL DEFAULT ''::character varying,
+                    entry_assembly varchar(512) NOT NULL DEFAULT ''::character varying,
+                    manifest_json text NOT NULL DEFAULT '{{}}'::text,
+                    metadata_json text NOT NULL DEFAULT '{{}}'::text,
+                    name varchar(100) NOT NULL DEFAULT ''::character varying,
+                    summary varchar(512) NOT NULL DEFAULT ''::character varying,
+                    description text NOT NULL DEFAULT ''::text,
+                    avatar_path varchar(255) NOT NULL DEFAULT ''::character varying,
+                    enabled boolean NOT NULL DEFAULT true,
+                    create_user_id bigint NOT NULL DEFAULT 0,
+                    create_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    update_user_id bigint NOT NULL DEFAULT 0,
+                    update_time timestamptz NOT NULL DEFAULT timezone('utc'::text, now()),
+                    is_deleted bigint NOT NULL DEFAULT 0,
+                    CONSTRAINT plugin_package_pkey PRIMARY KEY (id)
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_package_key_deleted_uindex ON plugin_package (plugin_key, is_deleted);
+                COMMENT ON TABLE plugin_package IS 'MoPlatform 在线插件包安装快照';
+                COMMENT ON COLUMN plugin_package.id IS '主键';
+                COMMENT ON COLUMN plugin_package.platform_plugin_id IS 'MoPlatform 插件 id';
+                COMMENT ON COLUMN plugin_package.platform_version_id IS 'MoPlatform 当前包版本 id';
+                COMMENT ON COLUMN plugin_package.plugin_key IS '插件唯一 key';
+                COMMENT ON COLUMN plugin_package.version IS '插件包版本';
+                COMMENT ON COLUMN plugin_package.package_hash IS '插件包 SHA-256 十六进制摘要';
+                COMMENT ON COLUMN plugin_package.entry_assembly IS '插件入口程序集相对路径';
+                COMMENT ON COLUMN plugin_package.manifest_json IS 'MoPlatform 兼容性清单 JSON';
+                COMMENT ON COLUMN plugin_package.metadata_json IS '插件本地元数据快照 JSON';
+                COMMENT ON COLUMN plugin_package.name IS '插件名称';
+                COMMENT ON COLUMN plugin_package.summary IS '插件简短说明';
+                COMMENT ON COLUMN plugin_package.description IS '插件详细描述';
+                COMMENT ON COLUMN plugin_package.avatar_path IS 'MoAI OSS 插件图标对象 key';
+                COMMENT ON COLUMN plugin_package.enabled IS '是否上架启用；下架不删除包也不卸载程序集';
+                COMMENT ON COLUMN plugin_package.create_user_id IS '创建人';
+                COMMENT ON COLUMN plugin_package.create_time IS '创建时间';
+                COMMENT ON COLUMN plugin_package.update_user_id IS '最后修改人';
+                COMMENT ON COLUMN plugin_package.update_time IS '更新时间';
+                COMMENT ON COLUMN plugin_package.is_deleted IS '软删除';
+                """);
 
             // 种子数据(如 user/setting/classify)使用显式 Id 插入，不会推进 serial/identity 序列，
             // 会导致后续自增时主键冲突。此处将所有序列同步到对应表当前最大 Id，保证后续插入不冲突。

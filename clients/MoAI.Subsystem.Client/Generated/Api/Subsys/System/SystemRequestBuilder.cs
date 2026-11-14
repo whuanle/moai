@@ -2,6 +2,7 @@
 #pragma warning disable CS0618
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions;
+using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.AppTokens;
 using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Org;
 using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Teams;
 using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Users;
@@ -17,6 +18,11 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class SystemRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>The appTokens property</summary>
+        public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.AppTokens.AppTokensRequestBuilder AppTokens
+        {
+            get => new global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.AppTokens.AppTokensRequestBuilder(PathParameters, RequestAdapter);
+        }
         /// <summary>The org property</summary>
         public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Org.OrgRequestBuilder Org
         {

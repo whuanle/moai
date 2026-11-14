@@ -106,7 +106,7 @@ describe('AppWorkspace（应用工作台）', () => {
     } as never)
   })
 
-  it('内部应用展示配置/信息/日志/外部渠道菜单项：内容脱敏与长期记忆并入配置收缩卡片、监控并入日志 Tab，无独立安全/记忆/监控菜单与访问点', async () => {
+  it('内部应用展示配置/信息/日志/外部渠道/访问点菜单项：内容脱敏与长期记忆并入配置收缩卡片、监控并入日志 Tab，无独立安全/记忆/监控菜单（访问点为身份穿透入口）', async () => {
     renderPage()
     expect(await screen.findByRole('menuitem', { name: /配置/ })).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: /信息/ })).toBeTruthy()
@@ -119,7 +119,8 @@ describe('AppWorkspace（应用工作台）', () => {
     // 监控（使用分析）并入「日志」Tab 容器，不再单独成菜单
     expect(screen.queryByRole('menuitem', { name: /监控/ })).toBeNull()
     expect(screen.getByRole('menuitem', { name: /外部渠道/ })).toBeTruthy()
-    expect(screen.queryByRole('menuitem', { name: /访问点/ })).toBeNull()
+    // 内部应用同样有访问点：身份穿透入口（访问用户 token）
+    expect(screen.getByRole('menuitem', { name: /访问点/ })).toBeTruthy()
   })
 
   it('外部应用额外展示访问点与发布菜单项，不展示外部渠道与上架管理', async () => {

@@ -9,6 +9,7 @@ import {
   Popconfirm,
   Select,
   Space,
+  Switch,
   Tag,
   Tooltip,
   Typography,
@@ -204,6 +205,7 @@ export function OauthConnect() {
 
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [savingVisibilityIds, setSavingVisibilityIds] = useState<Set<string>>(() => new Set())
   const [items, setItems] = useState<OAuthConnectionItem[]>([])
   const [redirectUri, setRedirectUri] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -212,8 +214,8 @@ export function OauthConnect() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [keyword, setKeyword] = useState<string | undefined>(undefined)
 
-  const load = async () => {
-    setLoading(true)
+  const load = async (showLoading = true) => {
+    if (showLoading) setLoading(true)
     try {
       const res = await getOAuthConnections()
       setItems(res.items)
@@ -221,7 +223,7 @@ export function OauthConnect() {
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
@@ -316,6 +318,7 @@ export function OauthConnect() {
           iconUrl: values.iconUrl,
           wellKnown: values.wellKnown,
           agentId: values.agentId,
+          isVisible: true,
         })
       }
       feedback.success(t('oauthconnect.saveSuccess'))
@@ -335,6 +338,35 @@ export function OauthConnect() {
       void load()
     } catch {
       // 错误已由全局请求中间件统一提示
+    }
+  }
+
+  const handleVisibilityChange = async (record: OAuthConnectionItem, isVisible: boolean) => {
+    if (!record.id) return
+
+    setSavingVisibilityIds((current) => new Set(current).add(record.id!))
+    try {
+      await updateOAuthConnection(record.id, {
+        name: record.name ?? '',
+        provider: (record.provider ?? 'custom') as OAuthPrivider,
+        key: record.key ?? '',
+        iconUrl: record.iconUrl ?? '',
+        wellKnown: record.wellKnown ?? undefined,
+        agentId: record.agentId ?? undefined,
+        isVisible,
+      })
+      setItems((current) => current.map((item) => item.id === record.id ? { ...item, isVisible } : item))
+      setDetail((current) => current?.id === record.id ? { ...current, isVisible } : current)
+      feedback.success(t(isVisible ? 'oauthconnect.visibilityEnabled' : 'oauthconnect.visibilityDisabled'))
+      void load(false)
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setSavingVisibilityIds((current) => {
+        const next = new Set(current)
+        next.delete(record.id!)
+        return next
+      })
     }
   }
 
@@ -372,9 +404,24 @@ export function OauthConnect() {
       {
         title: t('oauthconnect.colProvider'),
         dataIndex: 'provider',
-        width: '13.5%',
+        width: '12%',
         ellipsis: true,
         render: (p: string | null) => renderProvider(p),
+      },
+      {
+        title: t('oauthconnect.colVisibility'),
+        key: 'isVisible',
+        width: '9%',
+        render: (_, record) => (
+          <Switch
+            checked={record.isVisible !== false}
+            checkedChildren={t('oauthconnect.visibleOn')}
+            unCheckedChildren={t('oauthconnect.visibleOff')}
+            aria-label={t('oauthconnect.isVisible')}
+            loading={Boolean(record.id && savingVisibilityIds.has(record.id))}
+            onChange={(checked) => void handleVisibilityChange(record, checked)}
+          />
+        ),
       },
       { title: t('oauthconnect.colKey'), dataIndex: 'key', width: '11.5%', ellipsis: true },
       {
@@ -395,19 +442,19 @@ export function OauthConnect() {
       {
         title: t('oauthconnect.colCreate'),
         key: 'create',
-        width: '13.5%',
+        width: '12%',
         render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
       },
       {
         title: t('oauthconnect.colUpdate'),
         key: 'update',
-        width: '13.5%',
+        width: '12%',
         render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('oauthconnect.colActions'),
         key: 'actions',
-        width: '22%',
+        width: '18%',
         render: (_, record) => (
           <Space size={0}>
             <Button
@@ -448,7 +495,7 @@ export function OauthConnect() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, redirectUri],
+    [t, redirectUri, savingVisibilityIds],
   )
 
   const detailItems: DescriptionsProps['items'] = useMemo(() => {
@@ -483,6 +530,11 @@ export function OauthConnect() {
         ),
       },
       { key: 'agentId', label: t('oauthconnect.agentId'), children: detail.agentId || '-' },
+      {
+        key: 'isVisible',
+        label: t('oauthconnect.isVisible'),
+        children: detail.isVisible === false ? t('oauthconnect.visibleOff') : t('oauthconnect.visibleOn'),
+      },
       { key: 'createUser', label: t('oauthconnect.colCreateUser'), children: detail.createUserName || '-' },
       {
         key: 'createTime',

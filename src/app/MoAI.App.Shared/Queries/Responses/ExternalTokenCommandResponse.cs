@@ -23,17 +23,32 @@ public class ExternalTokenCommandResponse
     public int ExpiresIn { get; init; }
 
     /// <summary>
-    /// token 类型：应用 token 或用户 token.
+    /// token 类型：应用 token / 用户 token（匿名） / 访问用户 token.
     /// </summary>
     public ExternalTokenType TokenType { get; init; }
 
     /// <summary>
-    /// 外部用户 id（用户 token / 匿名 token），应用 token 为 null.
+    /// 外部用户 id（用户 token / 匿名 token），应用 token / 访问用户 token 为 null.
     /// </summary>
     public long? ExternalId { get; init; }
 
     /// <summary>
-    /// 外部身份标识（用户 token / 匿名 token），应用 token 为 null.
+    /// 外部身份标识（用户 token / 匿名 token），应用 token / 访问用户 token 为 null.
     /// </summary>
     public string? ExternalUserId { get; init; }
+
+    /// <summary>
+    /// 站内用户 id（访问用户 token），其余形态为 null.
+    /// </summary>
+    public long? UserId { get; init; }
+
+    /// <summary>
+    /// 站内用户名（访问用户 token），其余形态为 null.
+    /// </summary>
+    public string? UserName { get; init; }
+
+    /// <summary>
+    /// 站内用户昵称（访问用户 token），其余形态为 null.
+    /// </summary>
+    public string? NickName { get; init; }
 }

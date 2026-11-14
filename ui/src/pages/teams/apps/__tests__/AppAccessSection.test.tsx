@@ -29,8 +29,8 @@ const CONFIG = {
   enabled: true,
 }
 
-function renderSection(isExternal = true, isAuth = false, canManage = true) {
-  return render(<AppAccessSection appId="a1" isExternal={isExternal} isAuth={isAuth} canManage={canManage} userRole={2} />)
+function renderSection(isExternal = true, canManage = true) {
+  return render(<AppAccessSection appId="a1" isExternal={isExternal} canManage={canManage} userRole={2} />)
 }
 
 beforeEach(() => {
@@ -39,42 +39,34 @@ beforeEach(() => {
 })
 
 describe('AppAccessSection', () => {
-  it('内部应用显示提示且不加载配置', async () => {
-    renderSection(false)
-    expect(await screen.findByText('只有外部应用可以配置访问点')).toBeInTheDocument()
-    expect(getAppAccessPoint).not.toHaveBeenCalled()
-  })
-
-  it('加载默认配置并渲染表单与端点信息', async () => {
-    renderSection()
+  it('外部应用：加载配置并渲染表单与对话端点、嵌入代码', async () => {
+    renderSection(true)
     expect(await screen.findByText('访问点配置')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByDisplayValue('380')).toBeInTheDocument())
     expect(screen.getByText(/\/api\/teamres\/agent\/a1\/chat/)).toBeInTheDocument()
     // 显示形式默认悬浮，且悬浮位置字段可见
     expect(screen.getByText('悬浮组件（右下/左下角）')).toBeInTheDocument()
     expect(screen.getByText('悬浮位置')).toBeInTheDocument()
-  })
-
-  it('嵌入代码片段包含 appId 与 server 地址', async () => {
-    renderSection()
-    await screen.findByText('访问点配置')
     await waitFor(() => expect(screen.getByText(/data-app-id="a1"/)).toBeInTheDocument())
+    // is_auth 已退役：不再出现 data-key 快速验证片段
     expect(screen.queryByText(/data-key=/)).not.toBeInTheDocument()
-    // 悬浮模式不带 inline 占位容器与 data-mode
-    expect(screen.queryByText(/data-mode="inline"/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/id="moai-chat"/)).not.toBeInTheDocument()
   })
 
-  it('需授权应用嵌入代码默认推荐后端签发 token，可切换快速验证 data-key', async () => {
-    renderSection(true, true)
-    await screen.findByText('访问点配置')
-    // 默认展示推荐接入：MoaiWidget.mount + tokenProvider（key 不落前端）
-    await waitFor(() => expect(screen.getByText(/MoaiWidget\.mount/)).toBeInTheDocument())
-    expect(screen.getByText(/tokenProvider/)).toBeInTheDocument()
-    expect(screen.queryByText(/data-key=/)).not.toBeInTheDocument()
-    // 切到快速验证签页签才出现 data-key 片段
-    fireEvent.click(screen.getByRole('tab', { name: '快速验证（data-key）' }))
-    await waitFor(() => expect(screen.getByText(/data-key="/)).toBeInTheDocument())
+  it('内部应用：同样加载配置，并展示身份穿透接入信息（颁发端点 + AG-UI 直连 + tokenProvider 组件）', async () => {
+    renderSection(false)
+    expect(await screen.findByText('访问点配置')).toBeInTheDocument()
+    expect(getAppAccessPoint).toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByDisplayValue('380')).toBeInTheDocument())
+    // 接入信息面板：颁发端点 + 未绑定 404 指引
+    expect(screen.getByText('接入信息（内部应用身份穿透）')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByText(/\/api\/subsys\/system\/app-tokens/).length).toBeGreaterThan(0))
+    expect(screen.getByText(/第三方身份未绑定用户时返回 404/)).toBeInTheDocument()
+    // AG-UI 直连片段 + 组件接入片段
+    await waitFor(() => expect(screen.getByText('AG-UI 直连（免组件）')).toBeInTheDocument())
+    expect(screen.getByText('组件接入（tokenProvider）')).toBeInTheDocument()
+    expect(screen.getAllByText(/oauthProviderId/).length).toBeGreaterThan(0)
+    // 内部应用不展示外部应用的悬浮组件嵌入片段
+    expect(screen.queryByText(/data-app-id="a1"/)).not.toBeInTheDocument()
   })
 
   it('切到内嵌小窗后：位置字段隐藏，嵌入片段带占位容器与 data-target', async () => {

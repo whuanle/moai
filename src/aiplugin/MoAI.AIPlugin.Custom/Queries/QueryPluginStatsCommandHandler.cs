@@ -72,6 +72,12 @@ public class QueryPluginStatsCommandHandler : IRequestHandler<QueryPluginStatsCo
             .ToListAsync(cancellationToken))
             .ToHashSet();
 
+        // 在线插件包作为原生系统插件计入插件统计，启停状态决定 FunctionCount。
+        var onlinePackageIds = await _databaseContext.PluginPackages
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+        staticIds.UnionWith(onlinePackageIds);
+
         var teamIds = plugins.Select(x => x.TeamId).Where(x => x > 0).Distinct().ToList();
         var teamNames = teamIds.Count == 0
             ? new Dictionary<int, string>()

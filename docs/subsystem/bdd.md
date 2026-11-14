@@ -595,6 +595,43 @@ Feature: 系统应用接入（系统级接入 key）
     When 禁用用户后其登录被拒
     And 重新启用返回 200
 
+  @SAA-S63 @auto:e2e
+  Scenario: 用户 upsert 携带第三方身份绑定
+    When 推送用户并携带连接器 id、第三方标识与 union_id
+    Then 返回 oauthBound=true（新建时附一次性初始密码）
+    When 以相同用户与身份重复推送
+    Then 幂等复用绑定（created=false、oauthBound=true、userId 不变）
+    When 同一身份绑给另一用户，或同一用户在同一渠道更换标识
+    Then 返回 409；未知渠道 400
+    And 绑定冲突在写用户前被拒绝，不留下半成品用户
+
+  @SAA-S64 @auto:e2e
+  Scenario: 为第三方身份颁发内部应用访问用户 token
+  When 以系统级凭据提交应用 id、连接器 id 与第三方标识
+  Then 返回 accessToken/refreshToken/expiresIn、站内 userId 与 userName
+  When 第三方身份未绑定站内用户
+  Then 在本次请求内自动创建用户并绑定第三方身份，返回 userCreated=true
+  When 使用相同第三方身份再次请求
+  Then 幂等复用同一用户并返回 userCreated=false
+  When 命中多个用户、用户被禁用、目标为外部应用或未发布/访问点关闭
+  Then 分别返回 409、403、400、403
+    When 目标为已发布且访问点开启的内部应用
+    Then 颁发的 token 仅能访问该应用，刷新按用户/应用/访问点状态重验
+
+  @SAA-S66 @auto:e2e
+  Scenario: 系统级子系统与系统级应用接入共享用户身份能力
+    When 以系统级子系统接入凭据调用内部应用访问用户 token 颁发接口
+    Then 返回访问用户 token
+    When 以团队级应用接入凭据调用该接口
+    Then 返回未认证
+
+  @SAA-S65 @auto:e2e
+  Scenario: 访问用户 token 自动建户不产生孤儿用户
+    When 对未发布或访问点关闭的内部应用以全新第三方身份申请 token
+    Then 请求被拒且不会创建用户或 OAuth 绑定
+    When 目标应用恢复可用后以相同第三方身份再次申请
+    Then 本次才自动创建用户并完成绑定
+
   @SAA-S24 @auto:e2e
   Scenario: 组织角色创建与层级
     When 创建根角色与子角色

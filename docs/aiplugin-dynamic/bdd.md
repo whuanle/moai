@@ -2,6 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/ops-p1-plugins-e2e.mjs](../../local-dev/ops-p1-plugins-e2e.mjs) ｜ [local-dev/ops-p2-plugins-e2e.mjs](../../local-dev/ops-p2-plugins-e2e.mjs) ｜ [local-dev/ops-p0-plugins-e2e.mjs](../../local-dev/ops-p0-plugins-e2e.mjs) ｜ [local-dev/hot-board-e2e.mjs](../../local-dev/hot-board-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。标签：`@DYN-S<n>` 为场景主键（永久不复用）；`@auto:e2e` 由脚本验证（默认 `local-dev/dynamic-plugin-e2e.mjs`，博查成功路径与响应解析为 `local-dev/bocha-search-e2e.mjs`，墨迹天气为 `local-dev/moji-weather-e2e.mjs`），`@manual` 人工走查。
+> 生命周期说明（2026-11-14）：MoAI 宿主已停止注册仓库内置动态模板；旧内置模板成功路径为历史场景，其实现迁往 `mo_plugins` 并通过 MoPlatform 在线包分发。动态实例配置与团队插件行为仍按本文件有效。
 
 ## Feature: 动态插件实例列表
 
@@ -1270,4 +1271,64 @@
   Scenario: 团队侧保存与系统侧同一校验
     When 提交调用策略 action 非法的工具元数据
     Then 返回 400
+```
+
+## Feature: MoPlatform 在线插件分发与本地包生命周期
+
+```gherkin
+  @DYN-S159 @manual
+  Scenario: 管理员安装在线插件并本地化展示资源
+    Given MoPlatform 插件目录存在已上架且兼容的插件包
+    When 管理员在在线插件页搜索并安装该插件
+    Then MoAI 校验清单与下载包 SHA-256 后将包保存到本地插件目录
+    And 插件描述快照写入数据库且图标上传到 MoAI OSS
+
+  @DYN-S160 @auto:unit
+  Scenario: 不安全插件包路径或描述冲突被拒
+    Given 管理员正在安装在线插件包
+    When ZIP 含越界路径或包内 key 与平台清单不一致
+    Then 安装失败且不注册该插件
+    And 解压不会在暂存目录之外写入文件
+
+  @DYN-S161 @auto:unit
+  Scenario: 下架只禁用插件而不卸载已加载程序集
+    Given 在线插件已加载并出现在注册表
+    When 管理员下架该插件
+    Then 插件从可发现列表移除且后续运行被拒
+    And 插件仍保持已注册并保留本地包目录
+
+  @DYN-S162 @manual
+  Scenario: 重启后自动发现已安装插件包
+    Given configs/plugins 下包含有效插件目录与本地元数据
+    When MoAI 服务重新启动
+    Then 插件目录中的主程序集自动载入且已上架插件可被应用工具发现
+    And 单个包加载失败不会阻断其它插件或宿主启动
+
+  @DYN-S163 @auto:vitest
+  Scenario: 管理员只能上架或下架而不能卸载
+    Given 管理员打开在线插件页并查看已安装插件
+    When 管理员下架某插件
+    Then 界面展示下架状态与可恢复上架操作
+    And 界面不提供删除或卸载操作
+
+  @DYN-S164 @manual
+  Scenario: 已下架插件保留描述、图标与包文件
+    Given 在线插件已安装并上传图标到 MoAI OSS
+    When 管理员将其下架并刷新页面
+    Then 插件仍在已安装列表且使用本地描述与图标
+    And MoAI 不再依赖 MoPlatform 的实时图片或描述地址
+
+  @DYN-S165 @auto:unit
+  Scenario: 在线插件安装快照可被运行时加载器读取
+    Given 安装流程已将插件元数据以 camelCase 写入本地快照
+    When 加载器读取该插件快照
+    Then 插件 key、包摘要与入口程序集均被正确读取
+    And 有效插件不会因元数据字段大小写不匹配而自动下架
+
+  @DYN-S166 @auto:unit
+  Scenario: 启动扫描发现插件目录并跳过暂存目录
+    Given configs/plugins 下有多个插件目录与一个中断安装留下的隐藏暂存目录
+    When 插件模块枚举启动时需要加载的插件目录
+    Then 每个插件目录都进入加载流程
+    And 隐藏暂存目录不会被当成已安装插件
 ```

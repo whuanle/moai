@@ -65,6 +65,13 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
             .Where(x => x.IsDeleted == 0)
             .ToListAsync(cancellationToken);
 
+        // 在线插件包在独立「在线插件」面板管理，不混入静态/自定义列表。
+        var onlinePackages = await _databaseContext.PluginPackages
+            .Select(x => new { x.Id, x.PluginKey })
+            .ToListAsync(cancellationToken);
+        var onlinePackageIds = onlinePackages.Select(x => x.Id).ToHashSet();
+        var onlinePackageKeys = onlinePackages.Select(x => x.PluginKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var dynamicById = dynamicEntities.ToDictionary(x => x.Id, x => x);
 
         var dynamicIds = dynamicEntities.Select(x => x.Id).ToHashSet();
@@ -75,6 +82,7 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
             .ToHashSet();
 
         var dbItems = plugins
+            .Where(x => !onlinePackageIds.Contains(x.PluginId))
             .Select(x => new
             {
                 Plugin = x,
@@ -176,13 +184,14 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
 
             var memoryStatics = _registry.GetAll()
                 .Where(x => !x.IsDynamic)
+                .Where(x => !onlinePackageKeys.Contains(x.Key))
                 .Where(x => !dbStaticKeys.Contains(x.Key))
                 .Select(x => new QueryPluginManageListCommandResponseItem
                 {
                     Id = Guid.Empty,
                     PluginName = x.Key,
                     Title = x.Name,
-                    Description = x.Description,
+                    Description = string.IsNullOrWhiteSpace(x.HumanDescription) ? x.Description : x.HumanDescription,
                     Type = (int)PluginType.NativePlugin,
                     ClassifyId = 0,
                     ClassifyName = null,

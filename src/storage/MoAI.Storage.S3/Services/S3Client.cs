@@ -12,6 +12,11 @@ namespace MoAI.Storage.Services;
 /// </summary>
 public class S3Client : IDisposable
 {
+    /// <summary>
+    /// 所有 S3 预签名 URL 的统一有效期.
+    /// </summary>
+    internal static readonly TimeSpan PreSignedUrlLifetime = TimeSpan.FromMinutes(1);
+
     private readonly SystemOptionStorage _storageOption;
     private readonly AmazonS3Client _s3Client;
     private bool _disposed;
@@ -36,7 +41,7 @@ public class S3Client : IDisposable
     /// </summary>
     /// <param name="objectKey">对象 key.</param>
     /// <param name="contentType">内容类型.</param>
-    /// <param name="expiration">有效期.</param>
+    /// <param name="expiration">兼容旧调用签名；有效期统一固定为 1 分钟.</param>
     /// <returns>预签名地址.</returns>
     public async Task<string> GeneratePreSignedUploadUrlAsync(string objectKey, string? contentType, TimeSpan expiration)
     {
@@ -44,7 +49,7 @@ public class S3Client : IDisposable
         {
             BucketName = _storageOption.Bucket,
             Key = objectKey,
-            Expires = DateTime.UtcNow.Add(expiration),
+            Expires = DateTime.UtcNow.Add(PreSignedUrlLifetime),
             Verb = HttpVerb.PUT
         };
 
@@ -61,7 +66,7 @@ public class S3Client : IDisposable
     /// 生成预签名下载地址.
     /// </summary>
     /// <param name="objectKey">对象 key.</param>
-    /// <param name="expiration">有效期.</param>
+    /// <param name="expiration">兼容旧调用签名；有效期统一固定为 1 分钟.</param>
     /// <param name="fileName">下载文件名，提供时通过 response-content-disposition 强制浏览器附件下载（避免文本类内容被内联渲染）.</param>
     /// <returns>下载地址.</returns>
     public async Task<Uri> GeneratePreSignedDownloadUrlAsync(string objectKey, TimeSpan expiration, string? fileName = null)
@@ -70,7 +75,7 @@ public class S3Client : IDisposable
         {
             BucketName = _storageOption.Bucket,
             Key = objectKey,
-            Expires = DateTime.UtcNow.Add(expiration),
+            Expires = DateTime.UtcNow.Add(PreSignedUrlLifetime),
             Verb = HttpVerb.GET
         };
 

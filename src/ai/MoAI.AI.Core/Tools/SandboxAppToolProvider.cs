@@ -23,7 +23,7 @@ namespace MoAI.AI.Services;
 [InjectOnScoped]
 public sealed class SandboxAppToolProvider : IAppToolProvider
 {
-    private static readonly TimeSpan ArtifactDownloadExpiry = TimeSpan.FromHours(1);
+    private static readonly TimeSpan ArtifactDownloadExpiry = TimeSpan.FromMinutes(1);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

@@ -38,6 +38,8 @@
 | @SAA-S24 ~ @SAA-S26 | 同上（SAA-S43 ~ SAA-S49：组织角色） | PASS 58/58（2026-11-01） |
 | @SAA-S27 ~ @SAA-S31 | 同上（SAA-S50 ~ SAA-S57：团队治理/删除后全链失效） | PASS 58/58（2026-11-01） |
 | @SAA-S60 ~ @SAA-S62 | 同上（SAA-S58 ~ SAA-S61：资源面全量/子系统 token 互通/应用接入心跳在线） | PASS 58/58（2026-11-01） |
+| @SAA-S63 | local-dev/internal-app-access-e2e.mjs（IA-S4a~c 创建/幂等/直连读用户、IA-S5a~d 冲突与参数校验；冲突前置校验不产生半成品用户） | PASS 56/56（2026-11-13） |
+| @SAA-S64、@SAA-S65、@SAA-S66 | local-dev/internal-app-access-e2e.mjs（IA-S2c subsystem 与 app 同权；IA-S7a~g 未绑定一次调用自动建户/绑定/幂等/未知渠道/参数/多匹配、IA-S8a~f 目标校验与失败不建户、IA-S9a/b 访问点关闭、IA-S15 单应用绑定、IA-S16/S17 刷新与禁用吊销） | 待执行（2026-11-13） |
 | @SAA-S3、@SAA-S18、@SAA-S58 | 已退役（范围分档下线，编号不复用，见 BDD 退役标注） | —（2026-11-01） |
 | @SAA-S59 | [TeamAccessApps.test.tsx](../../ui/src/pages/teams/apps/__tests__/TeamAccessApps.test.tsx)（团队级创建/重置，合并模型未触及） | PASS 6/6（2026-10-29） |
 

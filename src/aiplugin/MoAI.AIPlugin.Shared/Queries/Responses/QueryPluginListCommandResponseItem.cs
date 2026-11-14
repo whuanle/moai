@@ -16,7 +16,7 @@ public class QueryPluginListCommandResponseItem
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// 插件描述.
+    /// 人读用途简介；AI 使用提示仍由插件工具元数据单独提供.
     /// </summary>
     public string Description { get; init; } = string.Empty;
 
@@ -49,4 +49,14 @@ public class QueryPluginListCommandResponseItem
     /// 配置示例 JSON，静态插件为 null.
     /// </summary>
     public string? ConfigExample { get; init; }
+
+    /// <summary>
+    /// 工具数（多工具动态插件为工具数，其余固定 1）.
+    /// </summary>
+    public int ToolCount { get; init; }
+
+    /// <summary>
+    /// 工具清单（单工具插件固定一个 key=run 的项）.
+    /// </summary>
+    public List<QueryPluginToolItem> Tools { get; init; } = new();
 }

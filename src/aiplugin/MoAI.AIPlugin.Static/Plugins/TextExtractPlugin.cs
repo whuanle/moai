@@ -16,6 +16,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 [AiPlugin(
     key: "static_text_extract",
     Name = "文本提取",
+    HumanDescription = "用于从常见文档和网页文件中提取文字，便于搜索、问答和内容整理。适合 PDF、Office 文档及纯文本资料；输出以可读正文为主，不强调原始版面还原。",
     Description = "从 http/https 文件地址提取文本，按文件名后缀支持 pdf/docx/pptx/xlsx/html/md/txt/json/csv 等格式")]
 public class TextExtractPlugin : IStaticPluginRuntime<TextExtractRequest, TextExtractResponse>
 {

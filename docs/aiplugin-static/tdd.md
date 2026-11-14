@@ -24,6 +24,7 @@
 | @STP-S17 | @manual（运行抽屉走查，见 sop.md 内置插件小节） | 待验证 |
 | @STP-S18 | tests/MoAI.AIPlugin.Static.Tests/CurrentUserPluginTests.cs（单测）+ 实测：独立端口实例 admin 登录运行返回 UserId=1/UserName=admin/IsAdmin=true/Source=admin | PASS 单测 3/3 + 实测 200（2026-10-08） |
 | @STP-S19 | tests/MoAI.AIPlugin.Static.Tests/CurrentUserPluginTests.cs + PluginExecutorContextInjectionTests.cs（执行器不传上下文时插件读到 null） | PASS 7/7（2026-10-08） |
+| @STP-S20 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginFileStorageServiceTests.cs（5 例：内容寻址/非可定位流/按 id 取下载地址/私有文件无公开地址/公网转存） | PASS 5/5（2026-11-14） |
 
 ## 前端测试
 

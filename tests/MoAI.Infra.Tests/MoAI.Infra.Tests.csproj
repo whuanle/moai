@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
     <ProjectReference Include="..\..\src\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
   </ItemGroup>
 

@@ -143,7 +143,7 @@ async function syncModel(channelId: string): Promise<SyncAIModelCommandResponse>
 /** 模型目录在线同步结果（Kiota 生成类型别名）. */
 export type SyncCatalogResult = SyncAIModelCatalogCommandResponse
 
-/** 从 models.opencode.ai 下载最新模型目录保存到服务端 configs 目录，保存后立即生效（仅管理员）. */
+/** 从 MoPlatform 下载并校验最新模型目录，保存到服务端 configs 目录后立即生效（仅管理员）. */
 async function syncCatalog(): Promise<SyncCatalogResult> {
   const client = getApiClient()
   const res = await client.api.ai.model.catalog.sync.post()

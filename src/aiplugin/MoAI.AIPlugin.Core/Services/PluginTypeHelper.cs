@@ -38,11 +38,36 @@ public static class PluginTypeHelper
         }
 
         var args = pluginInterface.GetGenericArguments();
+        var definition = pluginInterface.GetGenericTypeDefinition();
+        if (definition == typeof(Contracts.IDynamicPluginToolsRuntime<>))
+        {
+            // 多工具动态插件：参数/响应类型在工具方法上，插件级 Request/Response 置空
+            var tools = DiscoverTools(type);
+            if (tools.Count == 0)
+            {
+                throw new InvalidOperationException($"多工具插件 {type.FullName} 未声明任何 [AiPluginTool] 工具方法");
+            }
+
+            return new PluginInfo
+            {
+                Key = attribute.Key,
+                Name = attribute.Name,
+                Description = attribute.Description,
+                HumanDescription = attribute.HumanDescription,
+                PluginType = type,
+                Request = null,
+                Response = null,
+                ConfigType = args[0],
+                Tools = tools,
+            };
+        }
+
         return new PluginInfo
         {
             Key = attribute.Key,
             Name = attribute.Name,
             Description = attribute.Description,
+            HumanDescription = attribute.HumanDescription,
             PluginType = type,
             Request = args[0],
             Response = args[1],
@@ -51,7 +76,66 @@ public static class PluginTypeHelper
     }
 
     /// <summary>
-    /// 查找类型实现的具体插件运行时接口（静态或动态）.
+    /// 扫描多工具插件类型的公开实例方法，收集 <see cref="Attributes.AiPluginToolAttribute"/> 标记的工具元数据.
+    /// </summary>
+    /// <param name="pluginType">插件类型.</param>
+    /// <returns>工具元数据列表（按声明顺序）.</returns>
+    public static List<PluginToolInfo> DiscoverTools(Type pluginType)
+    {
+        var tools = new List<PluginToolInfo>();
+        foreach (var method in pluginType.GetMethods(BindingFlags.Public | BindingFlags.Instance).OrderBy(m => m.MetadataToken))
+        {
+            var attr = method.GetCustomAttribute<Attributes.AiPluginToolAttribute>();
+            if (attr == null)
+            {
+                continue;
+            }
+
+            var parameters = method.GetParameters();
+            if (method.IsAbstract
+                || method.IsGenericMethodDefinition
+                || parameters.Length != 2
+                || parameters[1].ParameterType != typeof(CancellationToken)
+                || !typeof(Task).IsAssignableFrom(method.ReturnType)
+                || method.ReturnType == typeof(Task))
+            {
+                throw new InvalidOperationException(
+                    $"插件 {pluginType.FullName} 的工具方法 {method.Name} 签名不符合约定：须为 Task<TResponse> XxxAsync(TRequest request, CancellationToken cancellationToken)");
+            }
+
+            var requestType = parameters[0].ParameterType;
+            var responseType = method.ReturnType.GetGenericArguments()[0];
+
+            // 参数示例：特性内联优先，缺省回落请求类型上的 static GetParamsExampleValue()
+            var example = attr.ParamsExample;
+            if (string.IsNullOrWhiteSpace(example))
+            {
+                example = GetStaticExample(requestType, "GetParamsExampleValue");
+            }
+
+            tools.Add(new PluginToolInfo
+            {
+                Key = attr.Key,
+                Title = attr.Title,
+                Description = attr.Description,
+                Request = requestType,
+                Response = responseType,
+                Method = method,
+                ParamsExample = example,
+            });
+        }
+
+        var duplicated = tools.GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);
+        if (duplicated != null)
+        {
+            throw new InvalidOperationException($"插件 {pluginType.FullName} 存在重复的工具 key：{duplicated.Key}");
+        }
+
+        return tools;
+    }
+
+    /// <summary>
+    /// 查找类型实现的具体插件运行时接口（静态/动态/多工具动态）.
     /// </summary>
     /// <param name="type">候选类型.</param>
     /// <returns>返回插件运行时接口，否则 null.</returns>
@@ -71,6 +155,11 @@ public static class PluginTypeHelper
             }
 
             if (definition == typeof(Contracts.IDynamicPluginRuntime<,,>))
+            {
+                return iface;
+            }
+
+            if (definition == typeof(Contracts.IDynamicPluginToolsRuntime<>))
             {
                 return iface;
             }
@@ -103,6 +192,36 @@ public static class PluginTypeHelper
             return null;
         }
 #pragma warning restore CA1031
+    }
+
+    /// <summary>
+    /// 组装插件的工具清单响应项：多工具插件展开为全部工具，单工具插件固定一个 key=run 的项.
+    /// </summary>
+    /// <param name="plugin">插件元数据.</param>
+    /// <returns>工具项列表.</returns>
+    public static List<Queries.Responses.QueryPluginToolItem> BuildToolItems(PluginInfo plugin)
+    {
+        if (plugin.IsMultiTool)
+        {
+            return plugin.Tools.Select(t => new Queries.Responses.QueryPluginToolItem
+            {
+                Key = t.Key,
+                Title = t.Title,
+                Description = t.Description,
+                ParamsExample = t.ParamsExample,
+            }).ToList();
+        }
+
+        return
+        [
+            new Queries.Responses.QueryPluginToolItem
+            {
+                Key = "run",
+                Title = plugin.Name,
+                Description = plugin.Description,
+                ParamsExample = GetStaticExample(plugin.PluginType, "GetParamsExampleValue"),
+            },
+        ];
     }
 
     /// <summary>

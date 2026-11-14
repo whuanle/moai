@@ -71,7 +71,9 @@ public class QueryAppAccessPointCommandHandler : IRequestHandler<QueryAppAccessP
             PanelWidth = config?.PanelWidth ?? 380,
             PanelHeight = config?.PanelHeight ?? 560,
             DefaultOpen = config?.DefaultOpen ?? false,
-            Enabled = config?.Enabled ?? true,
+
+            // 外部应用沿用「未配置即开放」；内部应用访问点=身份穿透入口，未保存过时默认关闭（开启即授权动作）
+            Enabled = config?.Enabled ?? app.IsExternal,
         };
     }
 }

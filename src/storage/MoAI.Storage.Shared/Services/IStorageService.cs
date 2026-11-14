@@ -53,7 +53,7 @@ public interface IStorageService
     /// 批量生成文件下载地址（预签名）.
     /// </summary>
     /// <param name="objectKeys">对象 key 列表.</param>
-    /// <param name="expiryDuration">地址有效期.</param>
+    /// <param name="expiryDuration">兼容旧调用签名；预签名地址有效期统一固定为 1 分钟.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>key 到下载地址的映射.</returns>
     Task<IReadOnlyDictionary<string, Uri>> GetDownloadUrlsAsync(IReadOnlyCollection<KeyValueString> objectKeys, TimeSpan expiryDuration, CancellationToken cancellationToken = default);
@@ -63,7 +63,7 @@ public interface IStorageService
     /// </summary>
     /// <param name="objectKey">对象 key.</param>
     /// <param name="fileName">文件名称.</param>
-    /// <param name="expiryDuration">地址有效期.</param>
+    /// <param name="expiryDuration">兼容旧调用签名；预签名地址有效期统一固定为 1 分钟.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>下载地址.</returns>
     Task<Uri> GetDownloadUrlAsync(string objectKey, string fileName, TimeSpan expiryDuration, CancellationToken cancellationToken = default);
@@ -98,4 +98,12 @@ public interface IStorageService
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>文件信息，不存在时返回 null.</returns>
     Task<StorageFileInfo?> GetFileInfoAsync(string objectKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 按文件 id 获取 file 记录信息.
+    /// </summary>
+    /// <param name="fileId">文件 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>文件信息，不存在或尚未上传完成时返回 null.</returns>
+    Task<StorageFileInfo?> GetFileInfoByIdAsync(long fileId, CancellationToken cancellationToken = default);
 }

@@ -11,6 +11,7 @@
 | Custom 渠道 | 「发现端点」必填（OIDC discovery URL，须可被**后端**访问）；保存时后端实时拉取解析授权地址 | [@OC-S7](./bdd.md#oc-s7) |
 | 编辑连接器 | 提供商不可改；Secret 留空=保持不变；Custom 换发现端点后授权地址自动重解析 | [@OC-S13](./bdd.md#oc-s13)、[@OC-S23](./bdd.md#oc-s23) |
 | 删除连接器 | 二次确认后软删除；**渠道立即从登录页消失**，已绑定用户的历史记录保留 | [@OC-S16](./bdd.md#oc-s16)、[@OC-S19](./bdd.md#oc-s19) |
+| 快速隐藏/显示连接器 | 在连接器列表的「登录页显示」列直接切换，无需打开编辑窗体；关闭后连接器不再出现在登录页与个人中心绑定页，但仍供系统接口身份映射 | [@OC-S31](./bdd.md#oc-s31)、[@OC-S32](./bdd.md#oc-s32) |
 
 ## 2. 排障
 
@@ -18,7 +19,8 @@
 |---|---|---|
 | 创建 Custom 连接器 500 | 发现端点不可达/非法规格（缺陷：未转业务异常） | 确认 wellKnown 可被后端访问（注意内网/代理）且为标准 discovery 文档；见 [@OC-S11](./bdd.md#oc-s11) |
 | 保存 400「认证名称已存在」 | 名称与其他连接器重复（含软删除记录） | 更换名称，见 [@OC-S8](./bdd.md#oc-s8) |
-| 登录页不显示某渠道 | 连接器已被软删除 | 重新创建，见 [@OC-S19](./bdd.md#oc-s19) |
+| 登录页不显示某渠道 | 连接器已被软删除，或列表中「登录页显示」开关被关闭（隐藏连接器） | 管理端检查连接器列表的开关状态：需要露出则直接打开；确为隐藏用途属预期，见 [@OC-S19](./bdd.md#oc-s19)/[@OC-S31](./bdd.md#oc-s31)/[@OC-S32](./bdd.md#oc-s32) |
+| 个人中心看不到已绑定的第三方账号 | 绑定的是隐藏连接器（系统托管，刻意不露出防误解绑） | 正常行为；解绑请由系统侧维护绑定关系，见 [@OC-S31](./bdd.md#oc-s31) |
 | 第三方登录提示"第三方接口错误" | 提供方接口异常或 Key/Secret 失效 | 核对凭据；查后端日志 Get openid error |
 | 企业微信登录提示"企业微信接口错误" | Secret/AgentId 不匹配、code 已消费、可信域名未配、应用不可见该成员 | 核对 CorpID/Secret/AgentId 与可信域名；gettoken 与 getuserinfo 的 errcode/errmsg 落后端日志 |
 | 跳转地址 400「不合法的跳转地址」 | redirectUri 与 `SystemOptions.WebUI` 不同 Host | 检查 WebUI 配置（见 [../infra/sop.md](../infra/sop.md)） |
@@ -46,3 +48,5 @@
 | 2026-09-02 | PUT 恒 400 缺陷修复并实测通过；按 [DOC-STANDARD](../DOC-STANDARD.md) 重构四件套 |
 | 2026-10-27 | 图标上传增加正方形提示与 `ImageSquareCropModal` 裁剪（[@OC-S25](./bdd.md#oc-s25)） |
 | 2026-10-27 | 新增企业微信提供商（[@OC-S26](./bdd.md#oc-s26)~[@OC-S28](./bdd.md#oc-s28)）：AgentId 字段、固定 wwlogin 授权地址、登录页 URL 拼接；冒烟 [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs) 17/17 |
+| 2026-11-13 | 新增「登录页显示」开关与隐藏连接器（[@OC-S31](./bdd.md#oc-s31)）：`oauth_connection.is_visible`，隐藏后不在登录页/个人中心露出，仅供系统身份映射；存量库执行 [asserts/oauth-connection-visible.sql](../../asserts/oauth-connection-visible.sql) |
+| 2026-11-14 | 管理端列表新增可直接切换的「登录页显示」状态列，编辑表单移除该开关（[@OC-S32](./bdd.md#oc-s32)） |

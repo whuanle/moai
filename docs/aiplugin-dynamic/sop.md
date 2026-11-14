@@ -3,11 +3,13 @@
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/jina-search-e2e.mjs](../../local-dev/jina-search-e2e.mjs) ｜ [local-dev/metaso-search-e2e.mjs](../../local-dev/metaso-search-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。场景编号引用 BDD，不重复步骤。
 
-## 验收流程
+## 迁移前动态模板验收（历史资料）
+
+> 迁移说明（2026-11-14）：本节列出的动态插件实例管理与旧模板桩 E2E（博查、墨迹天气、Jina、秘塔等）、模板名和示例都只作为迁移前资料；当前 MoAI 宿主不会自动注册它们。在线插件现行验收见下方「MoPlatform 在线插件」，需要先在 MoPlatform 上架并从 MoAI 安装相应包。
 
 启动后端（默认 `:5000`，`cd src/MoAI && dotnet run`）后，二选一：
 
-- 自动（实例管理与失败路径）：`node local-dev/dynamic-plugin-e2e.mjs`（覆盖 [@DYN-S1](./bdd.md#dyn-s1)~[@DYN-S21](./bdd.md#dyn-s21) 中的大部分；`DYN_BASE` 可改地址）。
+- 历史脚本（迁移前实例管理与失败路径证据，不作为当前宿主验收）：`node local-dev/dynamic-plugin-e2e.mjs`（`DYN_BASE` 可改地址）。
 - 自动（博查成功路径与响应解析，**无需真实 Key**）：`node local-dev/bocha-search-e2e.mjs`。脚本自带 BoCha 桩服务，并拉起一个指向桩服务的独立后端（默认 `:5199`，桩 `:5198`）后跑完整链路。可用 `BSE_BACKEND_PORT`/`BSE_MOCK_PORT` 改端口，`BSE_KEEP_BACKEND=1` 保留后端排查。
 - 自动（墨迹天气成功路径与响应解析，**无需真实 AppCode**）：`node local-dev/moji-weather-e2e.mjs`。脚本自带墨迹桩服务（云市场报文形态），并拉起一个指向桩服务的独立后端（默认 `:5197`，桩 `:5196`）后跑完整链路。可用 `MWE_BACKEND_PORT`/`MWE_MOCK_PORT` 改端口，`MWE_KEEP_BACKEND=1` 保留后端排查；后端基础设施连接取自 `local-dev/system.local.json` 拍平的环境变量。
 - 自动（Jina 搜索/网页阅读成功路径与响应解析，**无需真实 Key**）：`node local-dev/jina-search-e2e.mjs`。脚本自带 Jina 桩服务（按请求体含 `q`/`url` 区分搜索与阅读端点），并拉起一个指向桩服务的独立后端（默认 `:5201`，桩 `:5200`）后跑完整链路。可用 `JSE_BACKEND_PORT`/`JSE_MOCK_PORT` 改端口，`JSE_KEEP_BACKEND=1` 保留后端排查。
@@ -20,7 +22,16 @@
 4. 点击「运行」→ 抽屉运行，传入请求参数，返回正确结果（[@DYN-S10](./bdd.md#dyn-s10)）；运行不存在实例提示不存在（[@DYN-S11](./bdd.md#dyn-s11)）。
 5. 删除实例成功（[@DYN-S12](./bdd.md#dyn-s12)）；删除不存在实例被 404（[@DYN-S13](./bdd.md#dyn-s13)）。
 6. 非管理员（member）访问被 403（[@DYN-S14](./bdd.md#dyn-s14)）。
-7. 内置模板走查（[@DYN-S15](./bdd.md#dyn-s15) 至 [@DYN-S24](./bdd.md#dyn-s24)）：模板下拉可见博查两个模板与飞书模板，按「博查搜索排障」「飞书推送排障」建实例运行。
+7. 旧内置模板（如博查/飞书）已从 MoAI 宿主退役；安装对应 MoPlatform 在线包后，动态包模板可继续从动态实例 Tab 新建配置实例。
+
+## MoPlatform 在线插件
+
+1. 在运行时配置 `MoAI:MoPlatform:Endpoint` 指向 MoPlatform；MoAI 自动在 `configs/plugins/.client-fingerprint` 生成并复用 256 位随机指纹，不需管理员密码/PAT。该指纹只用于平台 Redis 配额归并，不是强身份认证。
+2. 打开管理端 `/plugin?tab=online`，在「插件市场」搜索并安装。安装会校验兼容清单、SHA-256、ZIP 路径和大小；包目录为 `configs/plugins/{pluginKey}`，插件详情/图标快照写 MoAI 数据库，图标上传 MoAI OSS。
+   若 MoPlatform 预签名地址使用独立 CDN/对象存储域名，需将其 authority（`host[:port]`）加入 `MoAI:PluginMarketplace:AllowedDownloadHosts`；默认只信任 MoPlatform 与 MoAI Storage 配置中的域名。
+3. 服务启动时自动扫描 `configs/plugins` 下每个非隐藏插件目录，并按 `moai.plugin.json` 加载主程序集；在线安装则在当前进程立即动态加载，无需重启。不可信插件程序集会在 MoAI 进程内执行，安装前应确认来源。坏包会单包隔离并留日志，不阻断宿主。
+4. 下架会立即从插件注册表/工具发现中禁用，但**不删除包、不卸载程序集**；可以重新上架。在线插件页无卸载操作。
+5. 安装与重启检查场景 [@DYN-S159](./bdd.md#dyn-s159)~[@DYN-S164](./bdd.md#dyn-s164)；动态实例仍由原有配置表保存插件运行配置。
 
 ## 常见问题
 
@@ -56,8 +67,16 @@
 | 秘塔搜索图片范围 `Results` 为空 | image 范围结果在 `Images` 字段 | 按 `Images`（标题/图片地址/缩略图）读取 |
 | 秘塔搜索没有 `Summary` | 请求 `IncludeSummary` 传了 `false`（不做摘要召回增强） | 传 `{"IncludeSummary":true}` 重新运行 |
 | 秘塔阅读 `Title`/`Author` 为空 | `Format` 用了默认 markdown（纯文本形态不带结构化字段） | 传 `{"Format":"json"}` 获取标题/作者/日期结构化字段 |
+| 在线插件目录不可用 | `MoAI:MoPlatform:Endpoint` 未配置或平台不可达 | 检查 MoPlatform 地址和网络；MoAI 服务端调用，浏览器不直连平台 |
+| 在线包/图标下载域名未信任 | MoPlatform 预签名 URL 的 authority 不在 MoPlatform、MoAI Storage 或 AllowedDownloadHosts 列表 | 只为已确认的对象存储/CDN authority 配置 `MoAI:PluginMarketplace:AllowedDownloadHosts` 后重试 |
+| 在线安装报 key 冲突 | 插件已安装/下架或 key 已被现有插件占用 | 在线覆盖和卸载当前不支持；确认已安装状态后直接上架，避免重复安装 |
+| 安装后提示“插件已安装，但加载失败，已自动下架” | 安装包加载失败；检查快照解析、入口程序集和插件契约，当前修复版本会以 Web JSON 选项读取 camelCase 元数据 | 查看安装时的后端异常日志；升级 MoAI 后在已安装列表重新上架，包本身有效时无需重新下载 |
+| 在线插件启动后不显示 | 插件包清单/入口程序集/共享依赖不兼容，或该包已下架 | 查看后端插件包加载错误日志；修复/重发由 MoPlatform 提供的新包，当前进程不支持热卸载 |
+| 在线插件图标为空 | 包内无受支持图标且 MoPlatform 图标资源不可用 | 在 MoPlatform 为插件包加入根目录 PNG/JPG/GIF/WebP 图标后发布新包 |
 
 ## 内置模板
+
+> **历史资料（已退役）**：以下 key、配置示例和上游说明描述迁移前的宿主内置动态模板，不代表当前 MoAI 已包含这些插件。当前宿主只加载管理员从 MoPlatform 安装的在线包；需要使用这些能力时，先确认对应包已发布并安装。
 
 - `dynamic_greet`（`DynamicGreetPlugin`）：配置 `{"Prefix":"Hello"}`，请求 `{"Name":"MoAI"}`，用于验证实例化/配置链路。
 - `bocha_web_search`（`BoChaWebSearchPlugin`）：配置 `{"ApiKey":"sk-xxxx"}`，请求 `{"Query":"...","Freshness":"noLimit","Summary":true,"Count":10}`；走基础设施层 `IBoChaClient`（Refit）访问 `{MoAI:BoCha:Endpoint}/v1/web-search`。
@@ -68,7 +87,7 @@
 - `jina_reader`（`JinaReaderPlugin`）：配置同上，请求 `{"Url":"https://...","ReturnFormat":"markdown","WithLinksSummary":false,"WithImagesSummary":false,"NoCache":false,"Timeout":null}`；走 `IJinaReaderClient` 访问 `{MoAI:Jina:ReaderEndpoint}/`（默认 `https://r.jina.ai`），把网页（含 JS 渲染页）转成 LLM 友好正文。
 - `metaso_search`（`MetasoSearchPlugin`）：配置 `{"ApiKey":"mk-xxxx"}`，请求 `{"Query":"...","Scope":"webpage","Size":10,"IncludeSummary":false,"IncludeRawContent":false,"ConciseSnippet":false}`；走基础设施层 `IMetasoClient`（Refit）访问 `{MoAI:Metaso:Endpoint}/api/v1/search`（默认 `https://metaso.cn`），按范围检索网页/文库/论文/图片/视频/播客。
 - `metaso_reader`（`MetasoReaderPlugin`）：配置同上，请求 `{"Url":"https://...","Format":"markdown"}`；走 `IMetasoClient` 访问 `{MoAI:Metaso:Endpoint}/api/v1/reader`，把网页转成 LLM 友好 Markdown 正文（json 格式附标题/作者/日期）。
-- `base64_decode`（`Base64DecodePlugin`）：配置 `{"MaxDecodeBytes":2097152,"TextMaxLength":20000}`，请求 `{"Base64":"...","FileName":"可选.png"}`；纯本地解码（构造注入 `IStorageService`）：文本直接返回，图片/二进制转存 `/static` 公开地址并附 Markdown 引用，支持 data URL 前缀。
+- `base64_decode`（`Base64DecodePlugin`）：配置 `{"MaxDecodeBytes":2097152,"TextMaxLength":20000}`，请求 `{"Base64":"...","FileName":"可选.png"}`；纯本地解码（构造注入 `IPluginFileStorageService`）：文本直接返回，图片/二进制转存 `/static` 公开地址并附 Markdown 引用，支持 data URL 前缀。
 
 ### 博查搜索排障
 
@@ -85,7 +104,7 @@
 1. 配置示例：`{"WebhookKey":"https://open.feishu.cn/open-apis/bot/v2/hook/<token>","SignKey":""}`。`WebhookKey` 也可只填最后的 token，plugin 会自动归一；只填 token 时若机器人开启了「签名校验」则必须再配 `SignKey`，否则会得到 `19021`。
 2. 运行示例：`{"Text":"MoAI 提醒：本轮任务已全部完成"}`。Text 不能为空。
 3. 失败时结果面板给出 `HTTP <状态码>` 或飞书业务码（如 `19001`/`19021`/`9499`），按上表定位；Refit 对非 2xx 的报文会拼到错误信息里，便于核对飞书侧返回内容。
-4. 模板不依赖真实可用机器人也能跑失败路径（空 WebhookKey / 空 Text / 占位 token → 飞书返回 `19001`），**纳入 CI**：见 `node local-dev/dynamic-plugin-e2e.mjs` 的 `@DYN-S23`/`@DYN-S24`。
+4. 迁移前脚本曾用无效凭据覆盖失败路径（空 WebhookKey / 空 Text / 占位 token → 飞书返回 `19001`）；这是历史证据，不代表当前 MoAI 宿主仍内置该模板，也不作为当前在线包验收。
 
 ### 墨迹天气排障
 
@@ -133,7 +152,7 @@
 4. 报「不是有效的 Base64」多为粘入了非编码内容或长度不对（须 4 的倍数）；报「超过上限」可在实例配置调大 `MaxDecodeBytes`（上限 32MB）；解码失败不会产生任何转存文件。
 5. 成功路径验证（单元级，无需后端）：`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests --filter Base64DecodePluginTests`。
 
-## 种子说明
+## 历史种子说明（已退役）
 
-- 动态实例默认无 DB 记录；创建实例后才在 `plugin_dynamic` + `plugin` 表生成记录。
-- 内置动态模板：`dynamic_greet`、`bocha_web_search`、`bocha_ai_search`、`feishu_webhook_text`、`moji_weather`、`jina_search`、`jina_reader`、`metaso_search`、`metaso_reader`、`news_hot_board`、`base64_decode`（均在 `MoAI.AIPlugin.Dynamic`）。
+- 以下记录描述迁移前的宿主种子与模板；当前需先从 MoPlatform 安装对应在线包，动态实例才可选用该包提供的模板。
+- 历史内置动态模板：`dynamic_greet`、`bocha_web_search`、`bocha_ai_search`、`feishu_webhook_text`、`moji_weather`、`jina_search`、`jina_reader`、`metaso_search`、`metaso_reader`、`news_hot_board`、`base64_decode`（旧实现曾位于 `MoAI.AIPlugin.Dynamic`）。

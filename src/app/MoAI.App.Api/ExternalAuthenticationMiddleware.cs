@@ -19,7 +19,8 @@ namespace MoAI.App;
 /// 1. 外部 token（POST /api/teamres/token 换取，audience = Server + |external）；
 /// 2. key 直连：Authorization/x-api-key 直接携带应用接入 key（moai-ac-），团队级全量访问 /api/teamres；
 /// 3. 团队资源 key（moai-tr-）：仅能访问绑定资源的端点（应用 ACP/A2A、知识库 REST+MCP、知识图谱 REST+MCP）。
-/// 用户 token 的 external_user.id 落入 NameIdentifier，<c>AppAgentDispatcher</c> 等内部组件按既有
+/// 外部应用匿名开放（is_auth 已退役）；内部应用走访问点身份穿透：访问用户 token（typ=normal，sub=站内用户 id）
+/// 的真实用户 id 落入 NameIdentifier，<c>AppAgentDispatcher</c> 等内部组件按既有
 /// 「会话归属 = CreateUserId」逻辑零改动复用；应用 token / key 直连无数值主体，固定 0.
 /// 必须注册在 <c>CustomAuthorizaMiddleware</c> 之前（后者会提前触发并缓存用户上下文）.
 /// </summary>
@@ -27,7 +28,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
 {
     private const string InvalidTokenMessage =
         "Invalid or missing external credential. Pass an external access token, an app access key (moai-ac-)"
-        + " or a resource key (moai-tr-) in the Authorization header; exchange a user token via POST /api/teamres/token for apps that require authorization.";
+        + " or a resource key (moai-tr-) in the Authorization header; internal apps require an access user token issued via POST /api/subsys/system/app-tokens.";
 
     private static readonly string[] AnonymousPaths =
     {
@@ -117,8 +118,8 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         }
 
         // 所有携带 appId 路由值的外部端点（/api/teamres/agent/{appId}/...、access-point 等）：
-        // 校验 appId 属于凭证归属团队（团队级授权）且应用可用；需要授权（is_auth）的应用会话面
-        // 仅外部用户 token 可进入，key 直连/应用 token 一律 403 引导换取用户 token。
+        // 外部应用校验 appId 属于凭证归属团队（团队级授权）且应用可用（匿名开放，is_auth 已退役）；
+        // 内部应用仅访问用户 token（身份穿透）可进入，且 token 绑定应用须与路由一致。
         // 应用 ACP/A2A 端点不走此通用门禁：内部应用（非外部应用）同样开放 ACP/A2A，
         // 由下方各自专属门禁接管
         Guid? routeAppId = null;
@@ -635,19 +636,44 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         var databaseContext = context.RequestServices.GetRequiredService<DatabaseContext>();
         var app = await databaseContext.Apps
             .Where(x => x.Id == appId)
-            .Select(x => new { x.TeamId, x.IsExternal, x.IsDisable, x.PublishStatus, x.IsAuth })
+            .Select(x => new { x.TeamId, x.IsExternal, x.IsDisable, x.PublishStatus })
             .FirstOrDefaultAsync(context.RequestAborted);
 
-        if (app == null || !app.IsExternal)
+        if (app == null)
         {
             await WriteErrorAsync(context, StatusCodes.Status404NotFound, "not_found_error", "app_not_found", "Application not found.");
             return false;
         }
 
-        // 团队级授权：appId 必须属于凭证归属团队
-        if ((long)app.TeamId != tokenContext.TeamId)
+        if (app.IsExternal)
         {
-            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "You do not have access to this application.");
+            // 外部应用：匿名开放（is_auth 已退役），团队级授权 + 可用性
+            if ((long)app.TeamId != tokenContext.TeamId)
+            {
+                await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "You do not have access to this application.");
+                return false;
+            }
+
+            if (app.IsDisable || app.PublishStatus != 1)
+            {
+                await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "Application is unavailable.");
+                return false;
+            }
+
+            return true;
+        }
+
+        // 内部应用：仅访问用户 token（身份穿透）可进入；对外部凭证按不存在处理，不泄露内部应用存在性
+        if (tokenContext.SubjectType != UserType.Normal || tokenContext.UserId <= 0)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status404NotFound, "not_found_error", "app_not_found", "Application not found.");
+            return false;
+        }
+
+        // token 绑定单应用：访问用户 token 与路由 appId 不一致即越权
+        if (tokenContext.AppId == null || tokenContext.AppId.Value != appId)
+        {
+            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "permission_denied", "This token is bound to a different application.");
             return false;
         }
 
@@ -657,13 +683,13 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             return false;
         }
 
-        // 访问点公开配置不设授权门禁（组件加载时需要读取 is_auth 判断是否走授权流程）
-        var isAccessPointPath = context.Request.Path.StartsWithSegments("/api/teamres/app", StringComparison.OrdinalIgnoreCase)
-            && context.Request.Path.Value!.EndsWith("/access-point", StringComparison.OrdinalIgnoreCase);
-        if (tokenContext.ExternalId <= 0 && app.IsAuth && !isAccessPointPath)
+        // 访问点已开启是内部应用接入的授权动作，关闭即拒
+        var accessPointEnabled = await databaseContext.AppAccessPoints
+            .AnyAsync(x => x.AppId == appId && x.Enabled, context.RequestAborted);
+        if (!accessPointEnabled)
         {
-            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "external_user_token_required",
-                "This application requires authorization. Exchange an external user token first via POST /api/teamres/token.");
+            await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "access_point_disabled",
+                "The access point of this application is not enabled.");
             return false;
         }
 
@@ -671,16 +697,18 @@ public class ExternalAuthenticationMiddleware : IMiddleware
     }
 
     /// <summary>
-    /// 构造外部身份 principal：携带外部用户 id（用户 token 或已解析的 key 直连身份）时落 external_user.id，其余固定 0（匿名语义）.
+    /// 构造外部身份 principal：访问用户 token 落真实站内用户 id（会话归属/用量/权限全链路按该用户运作），
+    /// 用户 token 或已解析的 key 直连身份落 external_user.id，其余固定 0（匿名语义）.
     /// </summary>
     private static ClaimsPrincipal BuildPrincipal(ExternalTokenContext tokenContext)
     {
+        var principalId = ResolvePrincipalId(tokenContext);
         var claims = new List<Claim>
         {
             new("subject_type", tokenContext.SubjectType.ToString()),
             new("subject_id", tokenContext.SubjectId),
             new(ClaimTypes.Name, tokenContext.Nickname ?? tokenContext.SubjectId),
-            new(ClaimTypes.NameIdentifier, (tokenContext.ExternalId > 0 ? tokenContext.ExternalId : 0).ToString()),
+            new(ClaimTypes.NameIdentifier, principalId.ToString()),
             new(JwtRegisteredClaimNames.Typ, tokenContext.SubjectType.ToJsonString()),
         };
 
@@ -693,6 +721,20 @@ public class ExternalAuthenticationMiddleware : IMiddleware
         return new ClaimsPrincipal(identity);
     }
 
+    /// <summary>
+    /// 解析 principal 数值主体：访问用户 token → 真实站内用户 id；
+    /// 外部用户 token / key 直连解析身份 → external_user.id；其余 0（匿名语义）.
+    /// </summary>
+    private static long ResolvePrincipalId(ExternalTokenContext tokenContext)
+    {
+        if (tokenContext.SubjectType == UserType.Normal)
+        {
+            return tokenContext.UserId;
+        }
+
+        return tokenContext.ExternalId > 0 ? tokenContext.ExternalId : 0;
+    }
+
     private static ExternalTokenContext WithExternalUser(ExternalTokenContext tokenContext, long externalId, string externalUserId)
     {
         return new ExternalTokenContext
@@ -700,6 +742,7 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             SubjectType = tokenContext.SubjectType,
             SubjectId = tokenContext.SubjectId,
             ExternalId = externalId,
+            UserId = tokenContext.UserId,
             TeamId = tokenContext.TeamId,
             AccessAppId = tokenContext.AccessAppId,
             AppId = tokenContext.AppId,

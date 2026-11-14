@@ -498,7 +498,7 @@ export function Models() {
     }
   }
 
-  // 从 models.opencode.ai 下载最新模型目录到服务端 configs，渠道同步即按最新目录匹配元数据
+  // 从 MoPlatform 下载最新模型目录到服务端 configs，渠道同步即按最新目录匹配元数据
   const handleSyncCatalog = async () => {
     setSyncingCatalog(true)
     try {

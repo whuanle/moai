@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Col, Form, Input, Row, Select, Space, Switch, Tag, Typography } from 'antd'
+import { Alert, Button, Col, Form, Input, Row, Select, Space, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AvatarUpload, Card as DSCard, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
@@ -58,7 +58,6 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
     infoForm.setFieldsValue({
       name: detail.name ?? '',
       description: detail.description ?? undefined,
-      isAuth: detail.isAuth ?? false,
       classifyId: detail.classifyId || undefined,
     })
   }, [detail, infoForm])
@@ -72,7 +71,6 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
         name: values.name,
         description: values.description,
         isExternal: detail?.isExternal ?? false,
-        isAuth: values.isAuth ?? false,
         classifyId: values.classifyId ?? 0,
       })
       feedback.success(t('appManage.updateSuccess'))
@@ -158,16 +156,7 @@ export function AppInfoSection({ appId, detail, canManage, onReload }: AppInfoSe
             <Form.Item name="classifyId" label={t('appManage.formClassify')}>
               <Select allowClear placeholder={t('appManage.classifyPlaceholder')} options={classifyOptions} />
             </Form.Item>
-            {detail?.isExternal && (
-              <Form.Item
-                name="isAuth"
-                label={t('appManage.isAuth')}
-                valuePropName="checked"
-                extra={t('appManage.isAuthHint')}
-              >
-                <Switch checkedChildren={t('appManage.authOn')} unCheckedChildren={t('appManage.authOff')} />
-              </Form.Item>
-            )}
+            {/* is_auth 已退役：外部应用一律匿名开放，不再提供授权开关 */}
             {canManage && (
               <Button type="primary" loading={savingInfo} onClick={() => void handleSaveInfo()}>
                 {t('appManage.saveInfo')}

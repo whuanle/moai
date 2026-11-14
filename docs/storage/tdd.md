@@ -18,6 +18,9 @@
 | @STO-S19 ~ @STO-S21 | @manual 代码走查（IStorageService 状态机与 S3Client 实现，见 SDD 关键决策） | PASS（2026-09-01） |
 | @STO-S22 ~ @STO-S24 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)） | PASS（2026-09-01/02） |
 | @STO-S25 | chat-attachment-e2e.mjs（CA-01 未登录/CA-02 白名单与大小/CA-03/05 直传成功） | PASS 12/12（2026-09-20） |
+| @STO-S26 | [local-dev/audit-storage.mjs](../../local-dev/audit-storage.mjs)（校验上传签名 `X-Amz-Expires=60` 与响应 expiration） | 未执行：运行中的 MoAI 占用 DLL，需重启为新构建后连接 MinIO 验收 |
+| @STO-S27 | @manual 代码走查（上传与下载签名均由 `S3Client` 固定 1 分钟，忽略传入时长） | PASS（2026-11-14，代码走查 + storage S3 项目构建） |
+| @STO-S28 | @manual 代码走查（`StorageService.GetFileInfoByIdAsync` 仅查 `Id=fileId && IsUploaded`；`PluginFileStorageServiceTests` 以桩验证上层按 id 取地址链路） | PASS（2026-11-14，插件/宿主全量构建 0 error） |
 
 ## 回归命令
 

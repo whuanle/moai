@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Models;
+using MoAI.AIPlugin.Services;
 using MoAI.AIPlugin.Static.Plugins;
 using MoAI.Infra.Models;
 using Xunit;
@@ -13,6 +14,17 @@ namespace MoAI.AIPlugin.Static.Tests;
 /// </summary>
 public class CurrentUserPluginTests
 {
+    [Fact]
+    public void PluginInfo_SeparatesHumanDescriptionFromAiPrompt()
+    {
+        var info = PluginTypeHelper.TryGetPluginInfo(typeof(CurrentUserPlugin));
+
+        Assert.NotNull(info);
+        Assert.Contains("身份", info!.HumanDescription, StringComparison.Ordinal);
+        Assert.Contains("执行上下文", info.Description, StringComparison.Ordinal);
+        Assert.NotEqual(info.HumanDescription, info.Description);
+    }
+
     private sealed class FakeRunContextAccessor : IPluginRunContextAccessor
     {
         public PluginRunContext? Context { get; private set; }

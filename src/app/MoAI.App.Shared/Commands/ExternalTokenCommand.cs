@@ -7,12 +7,13 @@ using MoAI.Infra.Services;
 namespace MoAI.App.Commands;
 
 /// <summary>
-/// 外部应用换取 token：第三方使用应用接入 key（moai-ac-）换取应用 token 或用户 token，
-/// 也支持 is_auth=false 应用的匿名换 token.
+/// 外部应用换取 token：第三方使用应用接入 key（moai-ac-）换取应用 token，
+/// 或对匿名开放的外部应用直接换 token（is_auth 已退役，外部应用一律匿名开放）.
 /// 调用形态：
 /// 1. 应用 token：只提供 AccessAppKey，应用 token 授权范围为团队资源；
-/// 2. 用户 token：提供 AccessAppKey + AppId + ExternalUserId，绑定外部用户且仅授权单个应用；
-/// 3. 匿名 token：只提供 AppId（应用须 is_auth=false），生成/复用临时外部身份.
+/// 2. 匿名 token：只提供 AppId，生成/复用临时外部身份；
+/// 3. 已退役：AccessAppKey + ExternalUserId 组合换外部用户 token 返回 400，
+///    按用户身份访问改走内部应用访问点（POST /api/subsys/system/app-tokens）.
 /// </summary>
 public class ExternalTokenCommand : IRequest<ExternalTokenCommandResponse>, IModelValidator<ExternalTokenCommand>
 {

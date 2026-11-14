@@ -15,7 +15,8 @@ export interface AccessPointConfig {
   panelHeight?: number | null
   defaultOpen?: boolean | null
   openingStatement?: string | null
-  isAuth?: boolean | null
+  /** open 匿名开放（外部应用）/ token 需访问用户 token（内部应用访问点，须接入 tokenProvider） */
+  authMode?: string | null
   enabled?: boolean | null
 }
 
@@ -54,8 +55,6 @@ export type WidgetDisplayMode = 'floating' | 'inline'
 export interface WidgetOptions {
   appId: string
   server: string
-  /** 应用接入 key：直接在前端换取 token，仅建议快速验证使用（key 会暴露在宿主页 HTML 中） */
-  accessAppKey?: string
   externalUserId?: string
   nickname?: string
   /** 显示形式覆盖：默认取访问点服务端配置 displayMode（floating/inline） */
@@ -63,8 +62,8 @@ export interface WidgetOptions {
   /** inline 模式的挂载目标：CSS 选择器或元素本身；缺省回落 body 并 console.warn */
   target?: string | HTMLElement
   /**
-   * token 拦截器（需授权应用推荐接入方式）：向业务系统自己的后端要 token（后端持 key 调
-   * POST /api/teamres/token 签发外部用户 token），组件不再自己换 token，也不需要 accessAppKey。
+   * token 拦截器（内部应用访问点必须接入）：向业务系统自己的后端要访问用户 token（后端持
+   * 系统级接入凭据调 POST /api/subsys/system/app-tokens 颁发），组件不再自己换 token。
    * 返回 accessToken 字符串或 { accessToken, refreshToken }；每次调用应返回当前可用凭证.
    */
   tokenProvider?: WidgetTokenProvider
@@ -81,7 +80,7 @@ interface HistoryMessage {
 
 const TEXT_FALLBACK = {
   inputPlaceholder: '输入消息… / Type a message…',
-  needKey: '此应用需要授权访问：请配置应用接入 key 或接入 tokenProvider 由业务后端签发 token / This app requires authorization: provide an access key or a tokenProvider',
+  needToken: '此应用需持访问用户 token 访问：请由业务后端颁发 token 并经 tokenProvider 注入 / This app requires an access user token issued by your backend via tokenProvider',
   tokenFailed: '获取访问凭证失败 / Failed to obtain access token',
   sendFailed: '发送失败 / Failed to send',
   initFailed: '初始化失败，请稍后重试 / Initialization failed',
@@ -760,9 +759,9 @@ export class MoaiWidget {
   }
 
   /**
-   * 确保持有外部 token：tokenProvider 优先（业务后端签发，key 不落前端）；
-   * 否则组件自己换 token——需授权应用带 accessAppKey（快速验证），免授权应用匿名换取。
-   * 需授权应用无 key 时也发起请求，给 onRequest 代理/中间件留下接管机会，失败再提示.
+   * 确保持有访问凭证：tokenProvider 优先（业务后端签发，key 不落前端；内部应用访问点必须接入）；
+   * 否则组件匿名换 token（is_auth 已退役，外部应用一律匿名开放）。
+   * 内部应用（authMode=token）无 tokenProvider 时直接提示，不发起匿名请求.
    */
   private async ensureToken(): Promise<boolean> {
     if (this.token) return true
@@ -779,19 +778,22 @@ export class MoaiWidget {
       return true
     }
 
+    if (cfg.authMode === 'token') {
+      this.appendMessage('assistant', TEXT_FALLBACK.needToken)
+      return false
+    }
+
     const externalUserId = resolveExternalUserId(this.opts.appId, this.opts.externalUserId)
     try {
       const res = await this.runRequest({
         url: `${this.opts.server}/api/teamres/token`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: cfg.isAuth
-          ? { accessAppKey: this.opts.accessAppKey, appId: this.opts.appId, externalUserId, nickname: this.opts.nickname }
-          : { appId: this.opts.appId, externalUserId, nickname: this.opts.nickname },
+        body: { appId: this.opts.appId, externalUserId, nickname: this.opts.nickname },
       })
       if (!res.ok) {
         console.warn(`${LOG_TAG} 换取外部 token 失败 status=${res.status} / token exchange failed`)
-        this.appendMessage('assistant', cfg.isAuth ? TEXT_FALLBACK.needKey : TEXT_FALLBACK.initFailed)
+        this.appendMessage('assistant', TEXT_FALLBACK.initFailed)
         return false
       }
       const data = (await res.json()) as TokenResponse

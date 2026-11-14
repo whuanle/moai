@@ -9,8 +9,6 @@
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
 		<ProjectReference Include="..\..\knowledgegraph\MoAI.KnowledgeGraph.Shared\MoAI.KnowledgeGraph.Shared.csproj" />
-		<!-- base64_decode 插件把解码出的图片/二进制经 IStorageService 转存为公开可访问文件 -->
-		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

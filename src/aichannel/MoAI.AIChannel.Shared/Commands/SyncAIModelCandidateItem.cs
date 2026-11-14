@@ -13,7 +13,7 @@ public class SyncAIModelCandidateItem
     public AIChannelModelMeta Meta { get; init; } = default!;
 
     /// <summary>
-    /// 是否命中内置模型目录（models.json），命中时元数据完整.
+    /// 是否命中当前同步的模型目录（models.json），命中时元数据完整.
     /// </summary>
     public bool Recognized { get; init; }
 

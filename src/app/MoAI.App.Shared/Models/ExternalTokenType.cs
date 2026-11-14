@@ -14,8 +14,15 @@ public enum ExternalTokenType
     App = 0,
 
     /// <summary>
-    /// 用户 token，绑定一个外部用户 id 且仅授权单个应用.
+    /// 用户 token，绑定一个外部用户 id 且仅授权单个应用（外部应用匿名身份）.
     /// </summary>
     [JsonPropertyName("user")]
     User = 1,
+
+    /// <summary>
+    /// 访问用户 token（内部应用访问点身份穿透）：经系统接口按第三方登录绑定换发，
+    /// sub = 真实站内用户 id，仅授权单个内部应用，会话与站内账号合并.
+    /// </summary>
+    [JsonPropertyName("accessuser")]
+    AccessUser = 2,
 }

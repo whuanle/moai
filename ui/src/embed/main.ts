@@ -4,10 +4,10 @@ import { MoaiWidget, type WidgetOptions } from './widget'
  * 悬浮对话组件入口（IIFE 单文件，构建后全局变量 MoaiWidget 即此默认导出）.
  *
  * 两种接入方式：
- * 1. 标准嵌入（免改造）：script 标签携带 data-* 自动初始化；
- * 2. 自托管改造（需授权应用推荐）：把 moai-widget.js 下载放到业务系统自己的站点（或直接引用），
- *    再调 MoaiWidget.mount(options) 编程挂载，通过 tokenProvider 注入业务后端签发的外部用户
- *    token（业务后端持应用接入 key 调 POST {server}/api/teamres/token），key 不落前端；
+ * 1. 标准嵌入（免改造）：script 标签携带 data-* 自动初始化（外部应用匿名开放，is_auth 已退役）；
+ * 2. 自托管改造（内部应用访问点必须）：把 moai-widget.js 下载放到业务系统自己的站点（或直接引用），
+ *    再调 MoaiWidget.mount(options) 编程挂载，通过 tokenProvider 注入业务后端颁发的访问用户
+ *    token（业务后端持系统级接入凭据调 POST {server}/api/subsys/system/app-tokens），key 不落前端；
  *    onRequest 请求中间件可改写组件发出的全部 API 请求（加头/代理）.
  */
 const api = {
@@ -37,7 +37,6 @@ export default api
  * <script src="https://<site>/embed/moai-widget.js"
  *         data-app-id="<appId>"
  *         data-server="<可选，后端地址，默认同 script 源>"
- *         data-key="<应用接入key，is_auth=true 时快速验证用；生产建议 tokenProvider>"
  *         data-external-user-id="<可选>"
  *         data-nickname="<可选>"
  *         data-mode="<可选，floating/inline，覆盖服务端配置>"
@@ -70,7 +69,6 @@ function bootstrap(): void {
     const options: WidgetOptions = {
       appId,
       server: server.replace(/\/+$/, ''),
-      accessAppKey: script.dataset.key,
       externalUserId: script.dataset.externalUserId,
       nickname: script.dataset.nickname,
       mode,

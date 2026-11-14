@@ -49,15 +49,27 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
     /// <inheritdoc/>
     public async Task<SystemUpsertUserCommandResponse> Handle(SystemUpsertUserCommand request, CancellationToken cancellationToken)
     {
-        var user = await _databaseContext.Users
-            .FirstOrDefaultAsync(x => x.UserName == request.UserName, cancellationToken);
-
-        if (user != null)
+        await using var transaction = await _databaseContext.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            return await UpdateAsync(user, request, cancellationToken);
-        }
+            var user = await _databaseContext.Users
+                .FirstOrDefaultAsync(x => x.UserName == request.UserName, cancellationToken);
 
-        return await CreateAsync(request, cancellationToken);
+            // 先校验第三方绑定可行性再落用户：绑定冲突（已绑他人/同渠道换绑）不应留下半成品用户或半更新状态
+            await EnsureOauthBindingAvailableAsync(user?.Id, request, cancellationToken);
+
+            var result = user != null
+                ? await UpdateAsync(user, request, cancellationToken)
+                : await CreateAsync(request, cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 
     private async Task<SystemUpsertUserCommandResponse> UpdateAsync(Database.Entities.UserEntity user, SystemUpsertUserCommand request, CancellationToken cancellationToken)
@@ -105,7 +117,9 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
         await _databaseContext.SaveChangesAsync(cancellationToken);
         await _userAccountService.RemoveUserStateAsync(user.Id, cancellationToken);
 
-        return new SystemUpsertUserCommandResponse { UserId = user.Id, Created = false };
+        var oauthBound = await UpsertOauthBindingAsync(user.Id, request, cancellationToken);
+
+        return new SystemUpsertUserCommandResponse { UserId = user.Id, Created = false, OauthBound = oauthBound };
     }
 
     private async Task<SystemUpsertUserCommandResponse> CreateAsync(SystemUpsertUserCommand request, CancellationToken cancellationToken)
@@ -174,7 +188,89 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
             UserId = user.Id,
             Created = true,
             InitialPassword = generated ? initialPassword : null,
+            OauthBound = await UpsertOauthBindingAsync(user.Id, request, cancellationToken),
         };
+    }
+
+    /// <summary>
+    /// 校验第三方绑定可行性（写用户前执行）：渠道存在 → (渠道, sub) 已绑他人 409 →
+    /// 同用户同渠道其它身份 409（拒绝覆盖）。<paramref name="userId"/> 为空表示即将新建用户。
+    /// </summary>
+    private async Task EnsureOauthBindingAvailableAsync(long? userId, SystemUpsertUserCommand request, CancellationToken cancellationToken)
+    {
+        if (request.OauthProviderId == null || string.IsNullOrEmpty(request.OauthSub))
+        {
+            return;
+        }
+
+        var providerExists = await _databaseContext.OauthConnections
+            .AnyAsync(x => x.Id == request.OauthProviderId.Value, cancellationToken);
+        if (!providerExists)
+        {
+            throw new BusinessException("第三方登录渠道不存在.") { StatusCode = 400 };
+        }
+
+        var existing = await _databaseContext.UserOauthConnections
+            .FirstOrDefaultAsync(x => x.ProviderId == request.OauthProviderId.Value && x.Sub == request.OauthSub, cancellationToken);
+        if (existing != null)
+        {
+            if (userId == null || existing.UserId != userId.Value)
+            {
+                throw new BusinessException("该第三方身份已绑定其他用户.") { StatusCode = 409 };
+            }
+
+            return;
+        }
+
+        // 同一用户在同一渠道下不允许出现两个身份（与站内绑定同口径），避免同步错乱覆盖
+        if (userId != null)
+        {
+            var sameProviderOtherSub = await _databaseContext.UserOauthConnections
+                .AnyAsync(x => x.UserId == userId.Value && x.ProviderId == request.OauthProviderId.Value && x.Sub != request.OauthSub, cancellationToken);
+            if (sameProviderOtherSub)
+            {
+                throw new BusinessException("该用户在此渠道已绑定其它第三方身份，拒绝覆盖.") { StatusCode = 409 };
+            }
+        }
+    }
+
+    /// <summary>
+    /// 幂等绑定第三方身份：已存在同用户绑定则补写 unionId，否则新建（可行性已由
+    /// <see cref="EnsureOauthBindingAvailableAsync"/> 前置校验）.
+    /// </summary>
+    /// <returns>是否发生了绑定（含幂等复用），未携带绑定字段时为 false.</returns>
+    private async Task<bool> UpsertOauthBindingAsync(long userId, SystemUpsertUserCommand request, CancellationToken cancellationToken)
+    {
+        if (request.OauthProviderId == null || string.IsNullOrEmpty(request.OauthSub))
+        {
+            return false;
+        }
+
+        var existing = await _databaseContext.UserOauthConnections
+            .FirstOrDefaultAsync(x => x.ProviderId == request.OauthProviderId.Value && x.Sub == request.OauthSub, cancellationToken);
+        if (existing != null)
+        {
+            // 幂等复用：同一绑定补写 unionId
+            if (!string.IsNullOrEmpty(request.OauthUnionId) && existing.UnionId != request.OauthUnionId)
+            {
+                existing.UnionId = request.OauthUnionId;
+                await _databaseContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return true;
+        }
+
+        var oauthEntity = new Database.Entities.UserOauthConnectionEntity
+        {
+            UserId = userId,
+            ProviderId = request.OauthProviderId.Value,
+            Sub = request.OauthSub,
+            UnionId = request.OauthUnionId,
+        };
+
+        await _databaseContext.UserOauthConnections.AddAsync(oauthEntity, cancellationToken);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     private async Task EnsureEmailAvailableAsync(string email, long userId, CancellationToken cancellationToken)

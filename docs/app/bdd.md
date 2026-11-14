@@ -323,16 +323,16 @@ Scenario: 插件下拉按来源分组展示团队与系统插件
 
 ```gherkin
 @AP-S20 @auto:e2e @auto:unit
-Scenario: 外部应用隔离与创建
-  When Admin 创建外部应用并设置需要授权
-  Then 返回应用 id，详情返回 isExternal/isAuth 为真
+Scenario: 外部应用隔离与创建（is_auth 已退役）
+  When Admin 创建外部应用并携带退役字段 isAuth=true
+  Then 返回应用 id，详情返回 isExternal=true 且 isAuth=false（字段接收后忽略，外部应用一律匿名开放）
   And 团队内部应用列表不包含该外部应用
   When Admin 查询外部应用列表
   Then 返回 200 且包含该应用
   When Member / 非成员查询外部应用列表
   Then 分别返回禁止 / 不存在
-  When 为内部应用设置需要授权
-  Then 返回参数错误
+  When 为内部应用携带退役字段 isAuth=true 创建
+  Then 创建成功且详情 isAuth=false（不再做内外组合校验）
   And 公开（is_public）只能经上架审核设置，创建/更新接口不再提供该字段（见 @AP-S14）
 
 @AP-S21 @auto:e2e @auto:unit
@@ -349,7 +349,7 @@ Scenario: 平台公开应用可被平台内非成员使用
 @AP-S22 @auto:unit
 Scenario: 前端外部应用分区与应用广场
   When 团队管理员打开「外部应用」分区
-  Then 可新建外部应用并看到 发布状态 与 需授权/免授权 标签
+  Then 可新建外部应用并看到 发布状态 标签（需授权/免授权标签随 is_auth 退役移除）
   And 卡片右上「管理」按钮下方为发布开关（小号 Switch）：开启=发布，关闭弹「确定停用该应用？」二次确认（取消不降级），流程应用不展示开关
   And 普通成员看不到「外部应用」分区
   When 任意登录用户打开「应用广场」
@@ -360,14 +360,12 @@ Scenario: 前端外部应用分区与应用广场
 
 ```gherkin
 @AP-S23 @auto:e2e @auto:unit
-Scenario: 应用接入增删改查与授权校验
-  When 团队管理员创建应用接入并授权本团队的外部应用
-  Then 返回接入 id 与 key 原文
-  And 列表回显完整 key（可再次查看）
+Scenario: 应用接入增删改查（去范围化）
+  When 团队管理员创建应用接入（无需勾选访问范围/授权应用）
+  Then 返回接入 id 与 key 原文（moai-ac-）
+  And 列表回显完整 key（可再次查看），列表项无 scopes 字段
   When 以含特殊字符（非中文/英文/数字/下划线）的名称创建接入
   Then 返回参数错误（名称仅允许中文、英文、数字和下划线）
-  When 授权列表包含非本团队或非外部的应用
-  Then 返回参数错误
   When 普通成员 / 非成员查询或创建应用接入
   Then 分别返回禁止 / 不存在
   When 管理员删除该应用接入
@@ -397,7 +395,7 @@ Scenario: 应用接入 key 换取应用 token
   When 第三方应用仅凭应用接入 key 请求外部 token
   Then 返回 access_token、refresh_token、有效期与类型为「应用」
   When 以该应用 token 查询外部授权应用列表
-  Then 返回该接入授权的全部已发布外部应用，不含授权范围外的应用
+  Then 返回该接入所在团队的全部已发布外部应用
 
 @EA-S3 @auto:e2e
 Scenario: 外部 token 不能访问内部接口
@@ -405,27 +403,29 @@ Scenario: 外部 token 不能访问内部接口
   Then 返回未认证
 
 @EA-S4 @auto:e2e
-Scenario: 凭 key 为外部用户签发用户 token（绑定单应用）
+Scenario: 外部应用授权退役：key 不再换用户 token
   When 第三方应用凭 key、目标应用 id 与外部用户标识请求外部 token
-  Then 返回类型为「用户」的 token 对与外部用户 id
-  When 同一接入下用相同外部用户标识再次申请
-  Then 复用同一外部用户 id（继承同一身份）
-  When 以该用户 token 查询外部授权应用列表
-  Then 仅返回其绑定的单个应用
+  Then 返回参数错误，提示外部应用授权已退役并指向内部应用访问点颁发端点
+  When 仅凭 key 请求外部 token
+  Then 返回类型为「应用」的 token 对（应用级团队授权保留）
+  When 以上述应用 token 查询外部授权应用列表
+  Then 返回接入所在团队授权的全部已发布外部应用
 
 @EA-S5 @auto:e2e
-Scenario: 授权范围与请求校验
-  When 用户 token 的目标应用不在接入授权范围内
-  Then 返回禁止
-  When 凭 key 换用户 token 但缺少应用 id 或外部用户标识等必要参数
+Scenario: 外部 token 参数组合校验
+  When 凭 key 携带应用 id 但不携带外部用户标识
+  Then 返回类型为「应用」的 token（应用 id 字段忽略）
+  When 既无 key 也无应用 id
   Then 返回参数错误
-  When 不带 key 直接换取需授权应用的外部 token，或使用无效 key
-  Then 分别返回禁止与未认证
+  When 使用无效 key
+  Then 返回未认证
 
 @EA-S6 @auto:e2e
-Scenario: 免授权外部应用匿名换取 token
-  When 仅凭应用 id 请求外部 token，且该应用为需授权=false 的外部应用
+Scenario: 外部应用一律匿名换取 token
+  When 仅凭外部应用 id 请求外部 token（无论历史 is_auth 取值）
   Then 返回类型为「用户」的 token 对与随机临时外部用户标识
+  When 相同应用与相同外部用户标识再次申请
+  Then 复用同一外部用户 id（继承同一身份）
 
 @EA-S7 @auto:e2e
 Scenario: 外部 token 刷新
@@ -436,12 +436,14 @@ Scenario: 外部 token 刷新
   When 以 access_token 冒充 refresh_token 刷新
   Then 返回未认证
   When 刷新应用 token
-  Then 返回类型为「应用」的 token 对，授权范围以接入当前配置为准
+  Then 返回类型为「应用」的 token 对，接入须仍存在（删除即吊销）
 
 @EA-S8 @auto:e2e
-Scenario: 删除应用接入即吊销其全部外部 token
-  When 管理员删除应用接入后，其应用 token 与用户 token 分别请求刷新
-  Then 均返回未认证
+Scenario: 删除应用接入吊销应用 token，匿名 token 与接入解耦
+  When 管理员删除应用接入后，其应用 token 请求刷新
+  Then 返回未认证
+  When 已删除接入的匿名 token 请求刷新
+  Then 返回 200（匿名身份不依赖接入）
   When 以已删除接入的 key 再次换取 token
   Then 返回未认证
 ```
@@ -451,7 +453,7 @@ Scenario: 删除应用接入即吊销其全部外部 token
 ```gherkin
 @EA-S9 @auto:e2e
 Scenario: 外部用户创建并查看自己的会话
-  When 外部用户 token 对其授权范围内已发布的 Agent 外部应用创建会话
+  When 外部用户 token 对其所属团队已发布的 Agent 外部应用创建会话
   Then 返回会话 id
   When 查询该应用的会话列表
   Then 返回 200 且包含该会话
@@ -459,16 +461,16 @@ Scenario: 外部用户创建并查看自己的会话
   Then 返回 200 且消息列表为空
 
 @EA-S10 @auto:e2e
-Scenario: 外部会话与对话端点的鉴权与范围
+Scenario: 外部会话与对话端点的鉴权与团队隔离
   When 应用 token（无用户身份）创建会话
   Then 返回禁止
-  When 外部用户 token 对授权范围外的应用创建会话
+  When 外部用户 token 对跨团队应用创建会话
   Then 返回禁止
   When 无 token、无效 token 或内部用户 token 访问外部会话/对话端点
   Then 返回未认证
   When 其他外部用户查询该会话的消息
   Then 返回不存在（不泄露会话存在性）
-  When 外部用户 token 对授权范围外的应用发起对话
+  When 外部用户 token 对跨团队应用发起对话
   Then 返回禁止
   When 外部用户 token 以会话 id 发起对话
   Then 请求被受理（会话归属校验通过，进入派发链路）
@@ -484,20 +486,147 @@ Scenario: 应用接入 key 直访团队资源
   But 伪造 key 返回未认证
 
 @EA-S16 @auto:e2e
-Scenario: 需授权应用的会话面仅限外部用户 token
-  When 应用接入 key 直连或应用 token 访问需授权外部应用的建会话/会话列表端点
-  Then 返回禁止并提示先经 /api/teamres/token 换取外部用户 token
-  But 外部用户 token 不受影响
+Scenario: key 直连会话面不再区分历史授权标记
+  When 应用接入 key 直连任意外部应用创建会话、查询会话列表
+  Then 返回 200（is_auth 已退役，无授权门禁）
+  But 应用 token 无用户身份，建会话仍返回禁止
 
 @EA-S17 @auto:e2e
-Scenario: 免授权应用 key 直连会话
-  When 应用接入 key 直连对免授权外部应用创建会话、查询会话列表、读取消息并发起对话
+Scenario: key 直连身份承载会话归属
+  When 应用接入 key 直连对外部应用创建会话、查询会话列表、读取消息并发起对话
   Then 系统以接入「直连会话身份」承载会话归属，各端点放行且归属校验通过
 
 @EA-S19 @auto:e2e
 Scenario: 已下线团队接入 key 前缀拒绝
   When 以 moai- 前缀（非 moai-ac-）凭证访问 /api/teamres 或网关
   Then 返回未认证（团队接入 key 已下线，接入统一走应用接入 key）
+```
+
+## Feature: 内部应用访问点身份穿透（/api/subsys/system/app-tokens）
+
+```gherkin
+@IA-S1 @auto:e2e
+Scenario: 内网网站以系统级接入凭据换取机器 token
+  Given 已创建应用接入（moai-sa-）并取回密钥
+  When 以其 appid 与密钥换取系统机器 token
+  Then 返回 access_token，可调用系统资源协作面
+
+@IA-S2 @auto:e2e
+Scenario: 访问用户 token 颁发端点门禁
+  When 无凭据调用颁发端点
+  Then 返回未认证
+  When 以团队级应用接入 key（moai-ac-）调用颁发端点
+  Then 返回未认证（团队资源面与系统协作面凭据不可混用）
+
+@IA-S4 @auto:e2e
+Scenario: 系统同步用户并绑定第三方身份
+  When 系统接口按用户名 upsert 新用户并携带渠道 id / 第三方标识 / union_id
+  Then 返回 created=true、oauthBound=true 与一次性初始密码
+  When 相同请求重复推送
+  Then 返回 created=false、oauthBound=true 且 userId 不变（幂等复用绑定）
+  And appid 直连双轨可读取该用户
+
+@IA-S5 @auto:e2e
+Scenario: 第三方绑定冲突与参数校验
+  When 同一渠道同一第三方标识绑定到另一用户
+  Then 返回冲突，且不留下半成品用户
+  When 同一用户在同一渠道更换第三方标识
+  Then 返回冲突（拒绝覆盖）
+  When 渠道不存在或缺少第三方标识
+  Then 返回参数错误
+
+@IA-S6 @auto:e2e
+Scenario: 内部应用访问点公开配置下发 API 地址
+  When 匿名查询已发布内部应用的访问点公开配置
+  Then 返回 authMode=token
+  And 端点含对话（AG-UI SSE）、会话创建/列表、会话消息与访问用户 token 颁发地址
+  When 匿名查询外部应用的访问点公开配置
+  Then 返回 authMode=open 且颁发地址为空串
+
+@IA-S7 @auto:e2e
+Scenario: 第三方身份换算站内用户
+  When 第三方身份未绑定站内用户
+  Then 在一次颁发请求中自动创建 MoAI 用户、绑定第三方身份并返回访问用户 token
+  And 返回 userCreated=true、userId 与 userName
+  When 使用相同第三方身份再次颁发
+  Then 幂等复用同一 MoAI 用户并返回 userCreated=false
+  When 渠道不存在
+  Then 返回不存在
+  When 请求缺少应用或第三方标识
+  Then 返回参数错误
+  When union_id 命中多个站内用户
+  Then 返回冲突并拒绝颁发
+
+@IA-S8 @auto:e2e
+Scenario: 颁发目标校验与成功换发
+  When 目标为外部应用
+  Then 返回参数错误（外部应用走匿名 token）
+  When 目标内部应用未发布
+  Then 返回禁止
+  When 目标为已发布且访问点开启的内部应用
+  Then 返回访问用户 token，并回显换算出的站内用户 id 与应用 id
+
+@IA-S18 @auto:e2e
+Scenario: 访问用户 token 目标门禁失败不自动建户
+  When 以全新第三方身份向未发布或访问点关闭的内部应用申请访问用户 token
+  Then 请求被拒且不会创建用户或 OAuth 绑定
+  When 目标应用恢复可用后以相同第三方身份再次申请
+  Then 本次自动创建用户、完成绑定并返回 userCreated=true
+
+@IA-S9 @auto:e2e
+Scenario: 访问点关闭即拒绝
+  When 关闭内部应用访问点
+  Then 颁发返回禁止
+  And 已颁发的访问用户 token 建会话返回禁止（access_point_disabled）
+  When 重新开启访问点
+  Then 颁发恢复
+
+@IA-S10 @auto:e2e
+Scenario: 访问用户 token 响应形态
+  Then 返回 accessToken、refreshToken、expiresIn、userId、userName
+  And 不返回外部用户 id（访问用户即真实站内用户）
+
+@IA-S11 @auto:e2e
+Scenario: 访问用户 token 创建与读取会话
+  When 以访问用户 token 创建会话、查询会话列表与消息
+  Then 各端点返回 200，会话 id 为 Guid
+  And 会话归属为该站内用户（CreateUserId=真实用户 id）
+
+@IA-S12 @auto:e2e
+Scenario: 访问用户 token 直连 AG-UI 对话
+  When 以访问用户 token 按 AG-UI 协议向内部应用对话端点发起请求
+  Then 请求被受理（会话归属校验通过，进入派发链路）
+
+@IA-S13 @auto:e2e
+Scenario: 访问点会话与站内账号合并
+  When 被同步的用户凭初始密码登录站内并加入团队
+  Then 站内会话列表包含此前经访问点创建的同一会话（聊天记录对上）
+
+@IA-S15 @auto:e2e
+Scenario: 访问用户 token 的受众隔离与单应用绑定
+  When 以访问用户 token 调用站内接口
+  Then 返回未认证（audience 隔离）
+  When 以站内 JWT 调用团队资源接口
+  Then 返回未认证
+  When 以绑定应用 A 的 token 创建应用 B 的会话
+  Then 返回禁止；读取应用 B 的会话消息返回不存在
+  When 无 token 或无效 token 访问
+  Then 返回未认证
+
+@IA-S16 @auto:e2e
+Scenario: 访问用户 token 刷新轮换
+  When 以 refresh_token 请求刷新
+  Then 返回新的 token 对并回显站内用户 id
+  And 新 access_token 可继续访问团队资源
+
+@IA-S17 @auto:e2e
+Scenario: 禁用用户即时吊销访问用户 token
+  When 站内用户被禁用
+  Then 再次颁发返回禁止
+  And 其访问用户 token 刷新返回禁止（已吊销）
+  And 站内账号登录被拒
+  When 用户被重新启用
+  Then 刷新恢复成功
 ```
 
 ## Feature: 应用工作台与调试会话
@@ -693,35 +822,39 @@ Scenario: 开场白的权限、开关与校验
 
 ```gherkin
 @EA-S11 @auto:e2e
-Scenario: 团队管理员维护外部应用的访问点配置
-  When 未保存过配置时查询访问点配置
+Scenario: 团队管理员维护访问点配置（外部应用 / 内部应用）
+  When 外部应用未保存过配置时查询访问点配置
   Then 返回默认值（面板宽 380、高 560、启用）而不返回不存在
   When 管理员保存标题/主题色/位置/面板尺寸/启用等配置
   Then 保存成功且回读一致
   When 主题色不是 #RRGGBB 或面板尺寸越界
   Then 返回参数错误
+  When 对内部应用首次查询访问点配置
+  Then 返回默认关闭（身份穿透入口须显式开启，开启即授权动作）
   When 对内部应用保存访问点配置
-  Then 返回参数错误
+  Then 保存成功且回读一致
 
 @EA-S12 @auto:e2e
-Scenario: 悬浮组件的公开配置与脚本托管
+Scenario: 访问点公开配置与脚本托管
   When 匿名查询外部应用的访问点公开配置
-  Then 返回 200 且包含应用名、生效后的标题/位置/尺寸与 isAuth/enabled
-  When 应用不存在或非外部应用
-  Then 返回不存在
+  Then 返回 200 且包含应用名、生效后的标题/位置/尺寸、authMode=open、enabled 与 AG-UI 端点地址
+  When 匿名查询已发布内部应用的访问点公开配置
+  Then 返回 200 且 authMode=token，端点含访问用户 token 颁发地址
+  When 应用不存在，或内部应用未发布/已禁用
+  Then 返回不存在（不泄露内部应用存在性）
   When 匿名请求 /embed/moai-widget.js
   Then 返回 200 的 JavaScript 脚本
 
 @EA-S20 @auto:unit @auto:e2e
-Scenario: 悬浮组件 token 拦截器与请求中间件（需授权应用自托管接入）
-  When 需授权应用（is_auth=true）由业务系统自托管组件 JS 并配置 tokenProvider
-  Then 组件经 tokenProvider 获取业务后端签发的外部用户 token（业务后端持应用接入 key 调 /api/teamres/token），组件不再自己换 token、不需要也不发送应用接入 key
+Scenario: 悬浮组件 token 拦截器与请求中间件
+  When 业务系统自托管组件 JS 并配置 tokenProvider
+  Then 组件经 tokenProvider 获取业务后端签发的 token（外部应用可匿名换 token；内部应用必须为访问用户 token），组件不再自己换 token、也不携带应用接入 key
   When 组件发出换 token、建会话或对话请求
   Then 请求先经 onRequest 中间件改写（url/headers/body 可替换，可整体代理到业务后端）
   When 缓存的 access token 临近过期
   Then 优先重新调用 tokenProvider 获取新 token，否则以 refresh_token 调 /api/teamres/token/refresh 换新后继续使用，生效期内不重复刷新
-  When 需授权应用未提供 key 与 tokenProvider 且无中间件接管换 token
-  Then 换 token 失败，组件提示需要配置 key 或接入 tokenProvider
+  When 内部应用（authMode=token）未接入 tokenProvider
+  Then 组件直接提示需由业务后端颁发访问用户 token，不发起匿名换 token
   And 组件暴露全局 MoaiWidget.mount（window.MoaiWidget = { mount, MoaiWidget }）供下载后的 JS 在业务站点编程挂载；无 data-app-id 的 script 引入静默跳过自动引导
 
 @EA-S21 @auto:e2e
@@ -1375,10 +1508,11 @@ Scenario: 应用接入 key 全量访问（去范围化改写）
 
 ```gherkin
 @AP-S74 @auto:e2e
-Scenario: 应用对话范围门禁（已退役改写：无资格位）
-  When 以应用接入 key 换取外部用户 token
+Scenario: 应用对话范围门禁（已退役改写：无资格位；用户 token 退役）
+  When 以应用接入 key 换取应用 token
   Then 直接签发放行（app_chat 资格位随 scope 体系删除，无需任何勾选）
-  And 会话面门禁保留「需授权（is_auth）应用仅外部用户 token」与 appId 归属团队校验
+  And key + externalUserId 换外部用户 token 随外部应用授权退役返回 400，按用户身份访问改走内部应用访问点访问用户 token
+  And 会话面保留 appId 归属团队校验
 ```
 
 ## Feature: 应用 ACP（agent-to-agent 协议接入）

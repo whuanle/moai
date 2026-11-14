@@ -9,12 +9,13 @@ namespace MoAI.App.Models;
 public class ExternalTokenContext
 {
     /// <summary>
-    /// 主体类型：应用接入 = <see cref="UserType.ExternalApp"/>，外部用户 = <see cref="UserType.External"/>.
+    /// 主体类型：应用接入 = <see cref="UserType.ExternalApp"/>，外部用户 = <see cref="UserType.External"/>，
+    /// 访问用户（内部应用访问点身份穿透）= <see cref="UserType.Normal"/>.
     /// </summary>
     public UserType SubjectType { get; init; }
 
     /// <summary>
-    /// token sub 原文：应用 token 为接入 id，用户 token 为外部用户 id.
+    /// token sub 原文：应用 token 为接入 id，用户 token 为外部用户 id，访问用户 token 为站内用户 id.
     /// </summary>
     public string SubjectId { get; init; } = default!;
 
@@ -22,6 +23,11 @@ public class ExternalTokenContext
     /// 外部用户 id（仅用户 token 有值，其余为 0）.
     /// </summary>
     public long ExternalId { get; init; }
+
+    /// <summary>
+    /// 站内用户 id（仅访问用户 token 有值，其余为 0）.
+    /// </summary>
+    public long UserId { get; init; }
 
     /// <summary>
     /// 归属团队 id.

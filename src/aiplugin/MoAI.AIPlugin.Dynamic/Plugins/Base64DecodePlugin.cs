@@ -1,13 +1,11 @@
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using MoAI.AIPlugin.Attributes;
 using MoAI.AIPlugin.Contracts;
 using MoAI.AIPlugin.Dynamic.Models;
+using MoAI.AIPlugin.Models;
+using MoAI.AIPlugin.Services;
 using MoAI.Infra.Exceptions;
-using MoAI.Storage.Commands;
-using MoAI.Storage.Helpers;
-using MoAI.Storage.Services;
 
 namespace MoAI.AIPlugin.Dynamic.Plugins;
 
@@ -18,7 +16,7 @@ namespace MoAI.AIPlugin.Dynamic.Plugins;
 /// 内容形态三分：严格 UTF-8 文本直接回填 <c>Text</c>（超长按配置截断）；
 /// 图片（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF 魔数与 SVG 文本）转存文件存储并返回公开地址与 Markdown 引用，可直接在对话中渲染；
 /// 其它二进制同样转存并返回下载链接。输入支持 data URL 前缀（<c>data:image/png;base64,xxxx</c>），允许含空白与换行。
-/// 转存走 <see cref="IStorageService"/>，按 SHA-256 内容寻址幂等去重。
+/// 转存走 <see cref="IPluginFileStorageService"/>，按 SHA-256 内容寻址幂等去重。
 /// </remarks>
 [AiPlugin(
     key: "base64_decode",
@@ -38,16 +36,16 @@ public class Base64DecodePlugin : IDynamicPluginRuntime<Base64DecodeRequest, Bas
     /// <summary>文本输出字符数上限.</summary>
     private const int MaxTextMaxLength = 200000;
 
-    private readonly IStorageService _storageService;
+    private readonly IPluginFileStorageService _fileStorageService;
     private Base64DecodeConfig _config = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Base64DecodePlugin"/> class.
     /// </summary>
-    /// <param name="storageService">存储领域服务，用于把图片/二进制转存为公开可访问文件.</param>
-    public Base64DecodePlugin(IStorageService storageService)
+    /// <param name="fileStorageService">插件文件存储服务，用于把图片/二进制转存为可访问文件.</param>
+    public Base64DecodePlugin(IPluginFileStorageService fileStorageService)
     {
-        _storageService = storageService;
+        _fileStorageService = fileStorageService;
     }
 
     /// <inheritdoc/>
@@ -167,24 +165,22 @@ public class Base64DecodePlugin : IDynamicPluginRuntime<Base64DecodeRequest, Bas
     /// <returns>带公开地址与 Markdown 引用的响应.</returns>
     private async Task<Base64DecodeResponse> StoreAsFileAsync(byte[] bytes, string contentType, string extension, string requestFileName, CancellationToken cancellationToken)
     {
-        var sha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var isImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+        var fileName = ResolveFileName(requestFileName, extension);
 
-        // 请求文件名仅取其扩展名参与 ObjectKey；内容按 SHA-256 寻址，同内容天然幂等去重。
-        var objectKey = FileStoreHelper.ToPublicObjectKey(
-            FileStoreHelper.GetObjectKey(sha256, $"decoded{extension}", isImage ? "images" : "files"));
-
-        using var fileStream = new MemoryStream(bytes);
-        await _storageService.UploadStreamAsync(new UploadStreamFileCommand
+        // 内容按 SHA-256 寻址，同内容天然幂等去重；插件侧只需依赖插件共享层的文件存储服务.
+        var fileId = await _fileStorageService.SaveAsync(bytes, new PluginFileSaveOptions
         {
-            FileStream = fileStream,
+            FileName = $"decoded{extension}",
             ContentType = contentType,
-            FileSize = bytes.Length,
-            SHA256 = sha256,
-            ObjectKey = objectKey,
+            IsPublic = true,
+            Prefix = isImage ? "images" : "files",
         }, cancellationToken).ConfigureAwait(false);
 
-        var url = _storageService.GetPublicFileUrl(objectKey).ToString();
+        var publicUrl = await _fileStorageService.GetPublicUrlAsync(fileId, cancellationToken).ConfigureAwait(false);
+        var url = publicUrl?.ToString()
+            ?? (await _fileStorageService.GetDownloadUrlAsync(fileId, fileName, cancellationToken).ConfigureAwait(false)).ToString();
+
         return new Base64DecodeResponse
         {
             Kind = isImage ? "image" : "binary",
@@ -192,7 +188,7 @@ public class Base64DecodePlugin : IDynamicPluginRuntime<Base64DecodeRequest, Bas
             SizeBytes = bytes.Length,
             Url = url,
             Markdown = isImage ? $"![image]({url})" : $"[file]({url})",
-            FileName = ResolveFileName(requestFileName, extension),
+            FileName = fileName,
         };
     }
 

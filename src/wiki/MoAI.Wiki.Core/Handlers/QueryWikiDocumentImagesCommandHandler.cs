@@ -66,8 +66,8 @@ public class QueryWikiDocumentImagesCommandHandler : IRequestHandler<QueryWikiDo
         {
             files.TryGetValue(image.FileId, out var file);
 
-            // 预签名地址有效期 2 分钟，与文档下载一致
-            var url = await _storageService.GetDownloadUrlAsync(image.ObjectKey, image.FileName, TimeSpan.FromMinutes(2), cancellationToken);
+            // 预签名地址有效期统一为 1 分钟
+            var url = await _storageService.GetDownloadUrlAsync(image.ObjectKey, image.FileName, TimeSpan.FromMinutes(1), cancellationToken);
             items.Add(new WikiDocumentImageItem
             {
                 ImageId = image.Id,

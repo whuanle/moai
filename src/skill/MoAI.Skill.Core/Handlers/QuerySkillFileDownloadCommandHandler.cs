@@ -19,7 +19,7 @@ public class QuerySkillFileDownloadCommandHandler : IRequestHandler<QuerySkillFi
     /// <summary>
     /// 下载地址有效期.
     /// </summary>
-    private static readonly TimeSpan Expiry = TimeSpan.FromHours(1);
+    private static readonly TimeSpan Expiry = TimeSpan.FromMinutes(1);
 
     private readonly DatabaseContext _databaseContext;
     private readonly IStorageService _storageService;

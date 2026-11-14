@@ -108,6 +108,40 @@ MoAI.AIPlugin.Core/Services/PluginExecutor.cs              ExecuteAsync 增加 c
 4. **未传上下文的历史路径兼容**：context 为 null 时插件读到 null，`static_current_user` 以 `IsContextInjected=false` 降级，不失败。
 5. agent 来源 `UserType` 恒为 `none`（`AppAgentBuildContext` 不携带用户类型）；如需精确类型须先扩展 build context。
 
+## 插件文件存储服务（2026-11-14）
+
+插件产物（图片、导出的 PDF/Word 等）需要落文件存储，但插件包不应直接依赖 `MoAI.Storage.Shared`，更不能依赖 S3 实现模块。为此在 `MoAI.AIPlugin.Shared` 提供领域服务契约，由 `MoAI.AIPlugin.Core` 适配底层 `IStorageService`：
+
+```
+MoAI.AIPlugin.Shared/
+├── Services/IPluginFileStorageService.cs   保存流/字节/公网文件 → 文件 id；按 id 取下载/公开地址
+└── Models/PluginFileSaveOptions.cs          FileName/ContentType/IsPublic/Prefix
+    Models/PluginStoredFile.cs                FileId/类型/大小/SHA-256/IsPublic/PublicUrl
+MoAI.AIPlugin.Core/
+└── Services/PluginFileStorageService.cs     适配 IStorageService + IPutClient，Scoped 注册
+```
+
+API 契约：
+
+| 方法 | 说明 |
+|---|---|
+| `SaveAsync(Stream, PluginFileSaveOptions)` | 保存流并返回文件 id；按 SHA-256 内容寻址，同内容幂等 |
+| `SaveAsync(byte[], PluginFileSaveOptions)` | 保存字节内容并返回文件 id |
+| `SaveFromUrlAsync(url, options)` | 下载 http/https 公网文件并转存，文件名留空时从响应头/地址识别 |
+| `GetFileInfoAsync(fileId)` | 返回文件元数据与公开地址（私有文件 `PublicUrl=null`） |
+| `GetDownloadUrlAsync(fileId, fileName?)` | 预签名下载地址（有效期由存储层统一控制，适合导出文件） |
+| `GetPublicUrlAsync(fileId)` | 公开静态地址 `/static/...`，不会过期，仅公开文件可用 |
+
+关键决策：
+
+1. **插件只依赖共享层**：契约与模型位于 `MoAI.AIPlugin.Shared`，实现位于 Core；插件包不引用 `MoAI.Storage.Shared`/`MoAI.Storage.S3`。
+2. **内容寻址**：ObjectKey 为 `{Prefix}/{sha256}.{ext}`，公开文件自动补 `public/` 前缀；同内容重复保存复用同一条 file 记录。
+3. **公开/私有分离**：图片等需在对话中直接渲染的产物设 `IsPublic=true` 走不过期的公开静态地址；敏感导出文件保持私有，按 id 现取预签名地址，不长期缓存。
+4. **非可定位流**：先落临时文件计算 SHA-256/大小再上传，避免把大文件整体读入内存；单文件上限 2GB（底层 `FileSize` 为 int）。
+5. **存储按 id 查询**：为支持按文件 id 取地址，`IStorageService` 增加 `GetFileInfoByIdAsync(fileId)`，只返回已上传完成的 file 记录。
+
+参考实现：`MoAI.AIPlugin.Dynamic/Plugins/Base64DecodePlugin.cs` 已改为注入该服务。
+
 ## 已知问题
 
 - 动态插件（dynamic）的本轮不做，仅静态；动态实例管理（多实例、key 唯一、配置编辑）后续迭代。

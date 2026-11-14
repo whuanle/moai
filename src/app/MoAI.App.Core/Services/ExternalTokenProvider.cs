@@ -71,6 +71,20 @@ public class ExternalTokenProvider : IExternalTokenProvider
     }
 
     /// <inheritdoc/>
+    public (string AccessToken, string RefreshToken, int ExpiresIn) GenerateAccessUserTokens(UserEntity user, AppEntity app)
+    {
+        return GenerateTokens(
+            UserType.Normal,
+            user.Id.ToString(),
+            app.TeamId,
+            string.IsNullOrEmpty(user.NickName) ? user.UserName : user.NickName,
+            accessAppId: null,
+            appId: app.Id,
+            externalUserId: null,
+            nickname: string.IsNullOrEmpty(user.NickName) ? user.UserName : user.NickName);
+    }
+
+    /// <inheritdoc/>
     public bool TryValidateAccessToken(string token, out ExternalTokenContext? context)
     {
         context = null;
@@ -123,12 +137,14 @@ public class ExternalTokenProvider : IExternalTokenProvider
 
         long teamId = claimMap.TryGetValue(ExternalAuthDefaults.ClaimTeamId, out var teamIdValue) && long.TryParse(teamIdValue, out var teamIdParsed) ? teamIdParsed : 0;
         long externalId = subjectType == UserType.External && long.TryParse(subjectId, out var externalIdParsed) ? externalIdParsed : 0;
+        long userId = subjectType == UserType.Normal && long.TryParse(subjectId, out var userIdParsed) ? userIdParsed : 0;
 
         return new ExternalTokenContext
         {
             SubjectType = subjectType,
             SubjectId = subjectId,
             ExternalId = externalId,
+            UserId = userId,
             TeamId = teamId,
             AccessAppId = accessAppId,
             AppId = appId,
@@ -221,7 +237,8 @@ public class ExternalTokenProvider : IExternalTokenProvider
         };
         var accessToken = _tokenHandler.CreateToken(accessTokenDescriptor);
 
-        // refresh token 仅保留主体信息，授权在访问时按数据库当前配置校验
+        // refresh token 仅保留主体信息，授权在访问时按数据库当前配置校验；
+        // 访问用户 token（UserType.Normal）无库表承载「绑定应用」，刷新分支依赖 appid claim 重建授权
         var refreshClaims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, subjectId),
@@ -229,6 +246,10 @@ public class ExternalTokenProvider : IExternalTokenProvider
             new(JwtRegisteredClaimNames.Typ, subjectType.ToJsonString()),
             new(ExternalAuthDefaults.ClaimTokenType, ExternalAuthDefaults.TokenTypeRefresh),
         };
+        if (appId != null)
+        {
+            refreshClaims.Add(new Claim(ExternalAuthDefaults.ClaimAppId, appId.Value.ToString()));
+        }
         var refreshTokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(refreshClaims),

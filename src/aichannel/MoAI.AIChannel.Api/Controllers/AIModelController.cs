@@ -89,7 +89,7 @@ public class AIModelController : ControllerBase
     }
 
     /// <summary>
-    /// 从 models.opencode.ai 下载最新模型目录（models.json）保存到 configs 目录（仅管理员可访问），
+    /// 从 MoPlatform 下载最新模型目录（models.json）保存到 configs 目录（仅管理员可访问），
     /// 保存后立即生效，渠道同步与导入即按最新目录匹配模型元数据，无需重启或手动上传.
     /// </summary>
     /// <param name="ct">取消令牌.</param>

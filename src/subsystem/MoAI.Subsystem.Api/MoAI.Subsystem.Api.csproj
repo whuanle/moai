@@ -8,6 +8,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+		<ProjectReference Include="..\..\app\MoAI.App.Shared\MoAI.App.Shared.csproj" />
 		<ProjectReference Include="..\..\org\MoAI.Org.Shared\MoAI.Org.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.Subsystem.Shared\MoAI.Subsystem.Shared.csproj" />

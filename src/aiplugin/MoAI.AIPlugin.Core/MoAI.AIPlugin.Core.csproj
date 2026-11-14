@@ -7,7 +7,9 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\statistics\MoAI.Statistics.Shared\MoAI.Statistics.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIPlugin.Api\MoAI.AIPlugin.Api.csproj" />
 	</ItemGroup>
@@ -16,6 +18,11 @@
 		<Folder Include="Services\" />
 		<Folder Include="Commands\" />
 		<Folder Include="Queries\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="MoAI.AIPlugin.Dynamic.Tests" />
+		<InternalsVisibleTo Include="MoAI.AIPlugin.Custom" />
 	</ItemGroup>
 
 </Project>

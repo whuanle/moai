@@ -19,6 +19,8 @@ export interface ExternalAccessPointResponse {
   defaultOpen?: boolean | null
   /** 对话开场白（未启用为 null） */
   openingStatement?: string | null
+  /** open 匿名开放（外部应用）/ token 需访问用户 token（内部应用访问点） */
+  authMode?: string | null
   enabled?: boolean | null
 }
 

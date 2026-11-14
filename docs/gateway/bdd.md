@@ -22,13 +22,15 @@ Scenario: 模型网关端点已下线
 Scenario: 应用接入 key 全量访问（去范围化改写）
   When 以 moai-ac- key 直连知识库读接口与写接口
   Then 读写均放行（无范围分档）
-  When 以 moai-ac- key 查询知识图谱列表或换取应用/用户 token
-  Then 均放行（用户 token 不再要求 app_chat 资格）
+  When 以 moai-ac- key 查询知识图谱列表或换取应用 token
+  Then 均放行
+  When 以 moai-ac- key 携带 externalUserId 换用户 token
+  Then 返回 400（外部应用授权已退役，身份穿透改走内部应用访问点）
   And 接入列表项不回显 scopes 字段（列已退役）
 
 @GW-S10 @auto:e2e
-Scenario: 授权状态变化的即时性
-  When 管理端修改接入授权应用、停用或删除接入
+Scenario: 凭据状态变化的即时性
+  When 管理端停用、删除或重置接入
   Then key 直连访问在下一请求即按新状态判定（直连每请求直查数据库，无缓存等待）
 ```
 

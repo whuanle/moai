@@ -8,7 +8,7 @@
 |---|---|---|
 | L0 导航 | 本页 | — |
 | L1 全局规范 | 后端 CQRS / 文档标准 / 前端约定 / 设计系统 | 见下「全局规范」 |
-| L2 领域四件套 | 38 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
+| L2 领域四件套 | 40 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
 | L3 证据 | 可执行验收脚本 / 单测 / 回归命令 | 见下「回归入口」 |
 
 ## 全局规范（L1）
@@ -16,13 +16,13 @@
 - [DOC-STANDARD.md](./DOC-STANDARD.md) — 文档分层、四件套契约、Gherkin（小黄瓜）规范、相互引用规则
 - [api_interface.md](./api_interface.md) — 前后端对接：后端 OpenAPI → 前端 `npm run syncapi` 生成客户端
 - [cqrs-conventions.md](./cqrs-conventions.md) — 后端 CQRS 三层与 `IModelValidator` 硬约束
-- [aiplugin-authoring.md](./aiplugin-authoring.md) — 静态/动态插件编写规范（发现机制、运行时接口、配置校验、流程）
+- [aiplugin-authoring.md](./aiplugin-authoring.md) — 静态插件与 MoPlatform 动态插件包编写规范（发现机制、运行时接口、配置校验、流程）
 - [settings.md](./settings.md) — setting 表机制（接口层权限模式范例）
 - [storage-file-layout.md](./storage-file-layout.md) — 对象存储路径布局
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
 - [ui/docs/design-system/](../ui/docs/design-system/README.md) — 设计系统规范
 
-## 模块地图（L2，38 个四件套）
+## 模块地图（L2，40 个四件套）
 
 缩写列 = BDD 场景编号前缀（见各模块 bdd.md）。
 
@@ -40,12 +40,14 @@
 | [org](./org/) | ORG | 组织（**通讯录层级·授权维度，不隔离资源**；全局层级组织树 + path 物化路径前缀匹配 + 用户组织分配，仅管理员；非 OA/ERP 轻量定位）；统一组织授权已落地（org_grant 跨资源表 + IOrgGrantService + Redis 三 key 缓存，self/up/down 定向放通，管理面 /org/grant/*；子系统已接入，应用发布等消费方后续接入） |
 | [classify](./classify/) | CLS | 分类管理（plugin/app/kb 三类，仅管理员） |
 | [aiplugin-static](./aiplugin-static/) | STP | 静态插件（列表合并去重、运行抽屉、编辑写回） |
-| [aiplugin-dynamic](./aiplugin-dynamic/) | DYN | 动态插件（实例创建/编辑/删除、模板+配置、运行实例） |
+| [aiplugin-dynamic](./aiplugin-dynamic/) | DYN | 动态插件实例与在线包（实例配置、MoPlatform 安装、启动加载、上/下架） |
+| [aiplugin-marketplace](./aiplugin-marketplace/) | PLGM | MoPlatform 在线插件目录与安装（稳定指纹限频、包摘要校验、安全解压、本地运行时加载，并从 semantic.json 导入插件语义规则；管理员上/下架、不支持在线覆盖/卸载） |
+| [aichannel](./aichannel/) | MC | AI 渠道与模型目录（渠道模型探测 + 从 MoPlatform 同步 schema v1 目录） |
 | [common](./common/) | COM | serverinfo / build_guid |
 | [storage](./storage/) | STO | S3/MinIO 三段式上传与 /static 中转 |
 | [hangfire](./hangfire/) | HF | 定时任务与 recurring job 扩展点 |
 | [statistics](./statistics/) | ST | 资源使用统计（**全站唯一入口**：业务模块经 `IResourceUsageService` 领域服务/`IResourceUsageCollector` 对话轮次收集器 → Redis `counter:{name}` 原子增减 → 每分钟批量取出分发给 `IResourceUsageWriter` 写资源自身表 + 统一 `resource_usage_daily`/`resource_usage_total` upsert 累加；覆盖 plugin/app/skill/wiki/ai-model/prompt 六类；粒度按天/按小时管理员可配（STATISTICS_GRANULARITY）；管理查询 /api/statistics/usage/*；**新模块做统计先读 [sop](./statistics/sop.md)**） |
-| [infra](./infra/) | INF | 配置加载/RSA/异常/模块框架 |
+| [infra](./infra/) | INF | 配置加载/RSA/异常/模块框架/MoPlatform 插件分发客户端与持久安装指纹 |
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
 | [team](./team/) | TM | 团队（**协作与资源隔离单元**）/成员/角色（Owner/Admin/Member）、所有权转让；团队不可解散，仅平台管理员可禁用 |

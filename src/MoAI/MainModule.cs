@@ -5,7 +5,6 @@ using MoAI.AI;
 using MoAI.AIChannel;
 using MoAI.AIPlugin;
 using MoAI.AIPlugin.Custom;
-using MoAI.AIPlugin.Dynamic;
 using MoAI.AIPlugin.Static;
 using MoAI.App;
 using MoAI.Auth;
@@ -78,7 +77,6 @@ namespace MoAI;
 [InjectModule<PromptCoreModule>]
 [InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]
-[InjectModule<DynamicPluginsModule>]
 [InjectModule<CustomPluginModule>]
 [InjectModule<StatisticsCoreModule>]
 [InjectModule<LoginSafetyCoreModule>]

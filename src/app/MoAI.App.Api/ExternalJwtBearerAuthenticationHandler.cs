@@ -60,11 +60,16 @@ public class ExternalJwtBearerAuthenticationHandler : AuthenticationHandler<Auth
             new(ClaimTypes.Name, tokenContext.Nickname ?? tokenContext.SubjectId),
         };
 
-        // 携带内部解析所需的 claims：用户 token 的 external_user.id 落入 NameIdentifier（UserContextProvider 可解析，
-        // AppAgentDispatcher 等内部组件据此校验会话归属）；应用 token 无数值主体，固定 0（匿名语义）
+        // 携带内部解析所需的 claims：访问用户 token 的真实站内用户 id / 用户 token 的 external_user.id
+        // 落入 NameIdentifier（UserContextProvider 可解析，AppAgentDispatcher 等内部组件据此校验会话归属）；
+        // 应用 token 无数值主体，固定 0（匿名语义）
         if (tokenContext.SubjectType == UserType.External)
         {
             claims.Add(new Claim(ClaimTypes.NameIdentifier, tokenContext.ExternalId.ToString()));
+        }
+        else if (tokenContext.SubjectType == UserType.Normal)
+        {
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, tokenContext.UserId.ToString()));
         }
         else
         {

@@ -57,13 +57,13 @@ describe('TeamExternalApps（团队外部应用分区）', () => {
     })
   })
 
-  it('按团队加载并以卡片展示外部应用与授权状态', async () => {
+  it('按团队加载并以卡片展示外部应用（is_auth 已退役，不再展示授权状态标签）', async () => {
     renderSection(true)
 
     expect(await screen.findByText('对外助手')).toBeTruthy()
     expect(screen.getByText('匿名问答')).toBeTruthy()
-    expect(screen.getByText('需授权')).toBeTruthy()
-    expect(screen.getByText('免授权')).toBeTruthy()
+    expect(screen.queryByText('需授权')).toBeNull()
+    expect(screen.queryByText('免授权')).toBeNull()
     await waitFor(() => expect(getExternalApps).toHaveBeenCalledWith(1))
   })
 
@@ -104,12 +104,13 @@ describe('TeamExternalApps（团队外部应用分区）', () => {
     expect(screen.queryByText(/确定停用该应用/)).toBeNull()
   })
 
-  it('创建外部应用时带上 isExternal', async () => {
+  it('创建外部应用时带上 isExternal（is_auth 已退役，创建弹窗无授权开关）', async () => {
     renderSection(true)
     await screen.findByText('对外助手')
 
     fireEvent.click(screen.getByRole('button', { name: /新建外部应用/ }))
-    await screen.findByText('需要授权访问')
+    await screen.findByPlaceholderText('请输入应用名称')
+    expect(screen.queryByText('需要授权访问')).toBeNull()
 
     fireEvent.change(screen.getByPlaceholderText('请输入应用名称'), { target: { value: '新外部应用' } })
     fireEvent.click(screen.getByRole('button', { name: /确\s*定/ }))

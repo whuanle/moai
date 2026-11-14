@@ -264,11 +264,11 @@ async function main() {
     const r = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name } })
     return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? ''), secret: String(r.json?.secret ?? '') }
   }
-  const K1 = await mkKey(`acp-k1-${TS}`)
-  const K2 = await mkKey(`acp-k2-${TS}`)
-  const K3 = await mkKey(`acp-k3-${TS}`)
+  const K1 = await mkKey(`acp_k1_${TS}`)
+  const K2 = await mkKey(`acp_k2_${TS}`)
+  const K3 = await mkKey(`acp_k3_${TS}`)
   const owner2 = await mkuser('bo')
-  const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `acp-team2-${TS}` } })).json.value)
+  const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `acp_team2_${TS}` } })).json.value)
   const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `acp_k4_${TS}` } })
   const K4 = { id: String(K4r.json?.accessAppId ?? ''), key: String(K4r.json?.key ?? '') }
 
@@ -334,14 +334,14 @@ async function main() {
   const userMsgs = (msgs.json?.items ?? []).filter((m) => m.role === 'user')
   check('ACP-S10b 会话消息落库（两轮用户消息）', msgs.status === 200 && userMsgs.length === 2, `status=${msgs.status} items=${(msgs.json?.items ?? []).length}`)
 
-  // ===== ACP-S11 用户 token 路径（外部应用 A3：用户 token 换取要求 IsExternal） =====
+  // ===== ACP-S11 外部应用用户面（用户 token 随授权退役改匿名 token，语义改写编号不复用） =====
   const EXT_UID = `acp-user-${TS}`
-  const tok = await api('POST', '/api/teamres/token', { body: { accessAppKey: K1.key, secret: K1.secret, appId: A3, externalUserId: EXT_UID, nickname: 'acp用户' } })
+  const tok = await api('POST', '/api/teamres/token', { body: { appId: A3, externalUserId: EXT_UID } })
   const userToken = String(tok.json?.accessToken ?? '')
   const snU = await acp({ token: userToken }, A3, { jsonrpc: '2.0', id: 9, method: 'session/new', params: {} })
   const SIDU = String(snU.json?.result?.sessionId ?? '')
   const pU = await acpPrompt({ token: userToken }, A3, { jsonrpc: '2.0', id: 10, method: 'session/prompt', params: { sessionId: SIDU, prompt: [{ type: 'text', text: `用户token${TS}` }] } })
-  check('ACP-S11 用户 token 会话与对话 end_turn',
+  check('ACP-S11 匿名 token 外部应用 ACP 会话与对话 end_turn',
     tok.status === 200 && isGuid(SIDU) && pU.final?.result?.stopReason === 'end_turn', `tok=${tok.status} final=${JSON.stringify(pU.final).slice(0, 140)}`)
 
   // ===== ACP-S12 会话隔离：同团队另一把 key 不能续聊他人会话 =====

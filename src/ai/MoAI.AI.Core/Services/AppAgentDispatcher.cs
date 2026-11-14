@@ -204,6 +204,16 @@ public sealed class AppAgentDispatcher : DelegatingAIAgent
                 throw new BusinessException("会话不存在.") { StatusCode = 404 };
             }
 
+            // 外部面访问用户/用户 token 绑定单应用：token 应用与会话应用不一致按不存在处理（内部面无 token 上下文，不受影响）
+            var http = serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+            if (http?.Items.TryGetValue(MoAI.App.Services.ExternalAuthDefaults.TokenContextItemKey, out var tokenValue) == true
+                && tokenValue is MoAI.App.Models.ExternalTokenContext tokenContext
+                && tokenContext.AppId != null
+                && row.AppId != tokenContext.AppId.Value)
+            {
+                throw new BusinessException("会话不存在.") { StatusCode = 404 };
+            }
+
             return await factory.CreateAsync(row.AppId, row.TeamId, userId, sessionId, false, row.PromptId, cancellationToken, ResolveApprovalMode(serviceProvider), ResolveWorkflowDraft(serviceProvider), ResolveUiToolsEnabled(serviceProvider), ResolveRequestedModelId(serviceProvider), ResolveRequestedTeamAgentId(serviceProvider)).ConfigureAwait(false);
         }
 

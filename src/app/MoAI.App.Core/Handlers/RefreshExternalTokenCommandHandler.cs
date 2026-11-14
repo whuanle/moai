@@ -47,7 +47,53 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
             return await RefreshUserTokenAsync(tokenContext, cancellationToken);
         }
 
+        if (tokenContext.SubjectType == UserType.Normal)
+        {
+            return await RefreshAccessUserTokenAsync(tokenContext, cancellationToken);
+        }
+
         throw new BusinessException("refresh token 无效.") { StatusCode = 401 };
+    }
+
+    /// <summary>
+    /// 访问用户 token 刷新：按数据库重建授权——用户须仍存在未禁用，目标内部应用可用且访问点仍开启.
+    /// </summary>
+    private async Task<ExternalTokenCommandResponse> RefreshAccessUserTokenAsync(Models.ExternalTokenContext tokenContext, CancellationToken cancellationToken)
+    {
+        if (!long.TryParse(tokenContext.SubjectId, out var userId) || tokenContext.AppId == null)
+        {
+            throw new BusinessException("refresh token 无效.") { StatusCode = 401 };
+        }
+
+        var user = await _databaseContext.Users
+            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+        if (user == null)
+        {
+            throw new BusinessException("用户不存在，token 已吊销.") { StatusCode = 401 };
+        }
+
+        if (user.IsDisable)
+        {
+            throw new BusinessException("用户已被禁用，token 已吊销.") { StatusCode = 403 };
+        }
+
+        var app = await _databaseContext.Apps
+            .FirstOrDefaultAsync(x => x.Id == tokenContext.AppId.Value, cancellationToken);
+        var accessPointEnabled = await _databaseContext.AppAccessPoints
+            .AnyAsync(x => x.AppId == tokenContext.AppId.Value && x.Enabled, cancellationToken);
+        ExternalAppAccessValidator.EnsureInternalUsable(app, accessPointEnabled);
+
+        var tokens = _externalTokenProvider.GenerateAccessUserTokens(user, app!);
+        return new ExternalTokenCommandResponse
+        {
+            AccessToken = tokens.AccessToken,
+            RefreshToken = tokens.RefreshToken,
+            ExpiresIn = tokens.ExpiresIn,
+            TokenType = Models.ExternalTokenType.AccessUser,
+            UserId = user.Id,
+            UserName = user.UserName,
+            NickName = user.NickName,
+        };
     }
 
     private async Task<ExternalTokenCommandResponse> RefreshAppTokenAsync(Models.ExternalTokenContext tokenContext, CancellationToken cancellationToken)
@@ -103,9 +149,7 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
         {
             var app = await _databaseContext.Apps
                 .FirstOrDefaultAsync(x => x.Id == external.AppId, cancellationToken);
-
-            // 匿名身份（无接入）刷新时要求应用仍无需授权；有接入的身份保留原授权
-            ExternalAppAccessValidator.EnsureUsable(app, requireNoAuth: accessApp == null);
+            ExternalAppAccessValidator.EnsureUsable(app);
         }
 
         var tokens = _externalTokenProvider.GenerateUserTokens(external, accessApp);

@@ -26,6 +26,15 @@ public interface IExternalTokenProvider
     (string AccessToken, string RefreshToken, int ExpiresIn) GenerateUserTokens(ExternalUserEntity external, AccessAppEntity? accessApp);
 
     /// <summary>
+    /// 为访问用户（内部应用访问点身份穿透）签发 token：sub = 真实站内用户 id，
+    /// 仅授权单个内部应用，会话归属该用户（与站内账号合并）.
+    /// </summary>
+    /// <param name="user">站内用户实体.</param>
+    /// <param name="app">目标内部应用实体.</param>
+    /// <returns>返回 access token、refresh token 与 access token 有效秒数.</returns>
+    (string AccessToken, string RefreshToken, int ExpiresIn) GenerateAccessUserTokens(UserEntity user, AppEntity app);
+
+    /// <summary>
     /// 校验外部 access token（签名、issuer、audience、有效期、token 类型），并解析为 <see cref="ExternalTokenContext"/>.
     /// </summary>
     /// <param name="token">access token.</param>

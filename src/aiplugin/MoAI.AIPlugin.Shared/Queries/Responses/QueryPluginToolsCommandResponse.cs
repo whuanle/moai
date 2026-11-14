@@ -16,7 +16,7 @@ public class QueryPluginToolsCommandResponse
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// 插件描述.
+    /// AI 使用提示，供模型理解插件的能力与调用方式.
     /// </summary>
     public string Description { get; init; } = string.Empty;
 

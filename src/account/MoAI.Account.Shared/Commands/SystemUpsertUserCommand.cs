@@ -43,6 +43,22 @@ public class SystemUpsertUserCommand : IRequest<SystemUpsertUserCommandResponse>
     /// </summary>
     public bool? IsDisable { get; init; }
 
+    /// <summary>
+    /// 第三方登录渠道 id（oauth_connection.id），可选；与 <see cref="OauthSub"/> 成对出现时，
+    /// upsert 用户后幂等绑定第三方身份（后续经 /api/subsys/system/app-tokens 按 oauth 身份换发访问用户 token）.
+    /// </summary>
+    public Guid? OauthProviderId { get; init; }
+
+    /// <summary>
+    /// 第三方用户唯一标识（open_id / unionId / userid），可选；与 <see cref="OauthProviderId"/> 成对出现.
+    /// </summary>
+    public string? OauthSub { get; init; }
+
+    /// <summary>
+    /// 第三方 union_id，可选（飞书场景；与 Sub 一并落库便于按 unionId 匹配）.
+    /// </summary>
+    public string? OauthUnionId { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<SystemUpsertUserCommand> validate)
     {
@@ -54,5 +70,9 @@ public class SystemUpsertUserCommand : IRequest<SystemUpsertUserCommandResponse>
         validate.RuleFor(x => x.Email).EmailAddress().WithMessage("邮箱格式不正确.").MaximumLength(255).WithMessage("邮箱最长 255 字符.")
             .When(x => !string.IsNullOrEmpty(x.Email));
         validate.RuleFor(x => x.Password).MaximumLength(128).WithMessage("密码过长.");
+        validate.RuleFor(x => x.OauthSub).NotEmpty().WithMessage("携带 oauthProviderId 时必须提供 oauthSub.")
+            .MaximumLength(128).WithMessage("第三方用户标识最长 128 个字符.")
+            .When(x => x.OauthProviderId != null);
+        validate.RuleFor(x => x.OauthUnionId).MaximumLength(128).WithMessage("第三方 union_id 最长 128 个字符.");
     }
 }

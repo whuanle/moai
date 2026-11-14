@@ -28,7 +28,12 @@ public sealed class AiPluginAttribute : Attribute
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// 插件描述/注释.
+    /// 面向 AI 的使用提示，说明能力、参数、约束和调用方式.
     /// </summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 面向管理员和用户的用途简介，用于插件列表展示.
+    /// </summary>
+    public string HumanDescription { get; init; } = string.Empty;
 }

@@ -3,7 +3,11 @@
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/jina-search-e2e.mjs](../../local-dev/jina-search-e2e.mjs) ｜ [local-dev/yahoo-finance-e2e.mjs](../../local-dev/yahoo-finance-e2e.mjs) ｜ [local-dev/metaso-search-e2e.mjs](../../local-dev/metaso-search-e2e.mjs) ｜ [local-dev/hot-board-e2e.mjs](../../local-dev/hot-board-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。场景复述见 BDD，本文只做编号→验证物映射。
 
-## 后端 E2E
+> 生命周期说明（2026-11-14）：MoAI 不再从宿主程序集加载内置动态模板；旧模板单测/E2E 为移植前历史证据，新包分发场景见 @DYN-S159~S164。
+
+> 本文列出的 `dynamic-plugin-e2e.mjs` 与各旧模板桩 E2E 均为迁移前证据，不应作为当前 MoAI 宿主的回归命令；只有安装相应 MoPlatform 在线包后，才可对该包执行运行时验收。当前在线安装、重启加载与下架以 @DYN-S159~S164 的手工联调场景为准。
+
+## 迁移前后端 E2E（历史证据）
 
 三个脚本分工：`dynamic-plugin-e2e.mjs` 针对**已运行的真实后端**做实例管理与失败路径断言；`bocha-search-e2e.mjs`
 自带 BoCha 桩服务并拉起一个独立后端（`MoAI__BoCha__Endpoint` 指向桩），覆盖**成功路径与响应解析**，无需真实 API Key、不消耗额度；
@@ -137,6 +141,14 @@ node local-dev/hot-board-e2e.mjs
 | @DYN-S114 | local-dev/hot-board-e2e.mjs（`S114a` 全来源不可达归一「全部来源抓取失败」） | PASS 29/0（2026-10-13） |
 | @DYN-S115 | local-dev/hot-board-e2e.mjs（`S115a` 非法 Gateway 被 InitAsync 拦截） | PASS 29/0（2026-10-13） |
 | @DYN-S116 | local-dev/hot-board-e2e.mjs（`S116a` 删除实例后运行 404） | PASS 29/0（2026-10-13） |
+| @DYN-S160 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageArchiveTests.cs（包裹目录展平、ZIP 越界路径拒绝、plugin.json key 冲突拒绝） | PASS（2026-11-14） |
+| @DYN-S161 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginRegistryAvailabilityTests.cs（下架后 Get/GetAll 隐藏，注册仍保留且可重新上架） | PASS（2026-11-14） |
+| @DYN-S163 | ui/src/pages/plugins/__tests__/PluginMarketplacePanel.test.tsx（在线安装、下架确认与无卸载按钮） | PASS 2/2（2026-11-14） |
+| @DYN-S159 | @manual（MoPlatform 联调：目录/包/图标下载与 DB/OSS 快照，见 sop.md） | 待执行 |
+| @DYN-S162 | @manual（重启后加载 package ALC 与故障隔离，见 sop.md） | 待执行 |
+| @DYN-S164 | @manual（下架刷新后复用 DB 描述/OSS 图标且不访问 MoPlatform，见 sop.md） | 待执行 |
+| @DYN-S165 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageRuntimeLoaderTests.cs（camelCase 安装快照字段正确反序列化） | PASS 1/1（2026-11-14） |
+| @DYN-S166 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageRuntimeLoaderTests.cs（启动目录扫描发现插件目录并跳过隐藏暂存目录） | PASS 1/1（2026-11-14） |
 
 ## 前端测试
 
@@ -350,9 +362,9 @@ node local-dev/clickstack-e2e.mjs                             # ClickStack 查�
 
 ### 2026-10-13 Base64 解码内置模板（@DYN-S117~S120）
 
-- `dotnet build src/MoAI/MoAI.csproj -o .builds/base64` → **0 error**（用户后端运行中 + VS 双锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **381/381**（新增 `Base64DecodePluginTests` 17 例：数据 URL 前缀剥离、图片魔数/SVG 判定、文本截断、转存路径与 ObjectKey 幂等、校验拒绝零转存、解码前粗估、InitAsync 钳制）。
-- 新文件：插件侧 `Base64ContentDetector.cs`、`Models/Base64Decode{Config,Request,Response}.cs`、`Plugins/Base64DecodePlugin.cs`；`MoAI.AIPlugin.Dynamic.csproj` 增 `MoAI.Storage.Shared` 引用（构造注入 `IStorageService`）；单测 `tests/.../Base64DecodePluginTests.cs`（内置 `StubStorageService` 桩，零后端可跑）。纯本地解码无需外部依赖，不设 E2E（实例管理/失败路径由 `dynamic-plugin-e2e.mjs` 的通用链路覆盖）。
-- 设计取舍：①解码产物形态三分——严格 UTF-8 文本（解码失败或含 NUL 等控制字符即非文本）直接回填 `Text`，图片（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF 魔数 + SVG 文本特判：SVG 是文本但按图片处理才能渲染）与其它二进制经 `IStorageService.UploadStreamAsync` 转存 `public/images|files` 回 `/static` 公开地址；②**不回传 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL（仅放行 http/https 等），图片必须落公开 http 地址才能在对话里渲染，且小响应不吃模型上下文；③转存按 SHA-256 内容寻址（`FileStoreHelper.ToPublicObjectKey(GetObjectKey(...))`），同内容幂等去重；`FileName` 仅取扩展名参与 ObjectKey 与结果回显；④二进制形态有 `data:<mime>;base64,` 类型声明时信任声明定扩展名（如 application/pdf → .pdf），无声明按 octet-stream/.bin；⑤解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数，不会低估故不会误杀），超大输入不解码不占内存。
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/plugin-file-service` → **0 error**（用户后端运行中 + VS 双锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **402/402**（`Base64DecodePluginTests` 17 例 + 新增 `PluginFileStorageServiceTests` 5 例：内容寻址、非可定位流、按 id 取下载地址、私有文件无公开地址、公网转存；旧 `StubStorageService` 桩替换为 `StubPluginFileStorageService`）。
+- 新文件：插件侧 `Base64ContentDetector.cs`、`Models/Base64Decode{Config,Request,Response}.cs`、`Plugins/Base64DecodePlugin.cs`；`MoAI.AIPlugin.Dynamic.csproj` **不再引用** `MoAI.Storage.Shared`，改为构造注入 `IPluginFileStorageService`（契约在 `MoAI.AIPlugin.Shared`）；单测 `tests/.../Base64DecodePluginTests.cs`（内置 `StubPluginFileStorageService` 桩，零后端可跑）。纯本地解码无需外部依赖，不设 E2E（实例管理/失败路径由 `dynamic-plugin-e2e.mjs` 的通用链路覆盖）。
+- 设计取舍：①解码产物形态三分——严格 UTF-8 文本（解码失败或含 NUL 等控制字符即非文本）直接回填 `Text`，图片（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF 魔数 + SVG 文本特判：SVG 是文本但按图片处理才能渲染）与其它二进制经 `IPluginFileStorageService.SaveAsync` 转存 `public/images|files` 回 `/static` 公开地址；②**不回传 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL（仅放行 http/https 等），图片必须落公开 http 地址才能在对话里渲染，且小响应不吃模型上下文；③转存按 SHA-256 内容寻址，同内容幂等去重；`FileName` 仅取扩展名参与 ObjectKey 与结果回显；④二进制形态有 `data:<mime>;base64,` 类型声明时信任声明定扩展名（如 application/pdf → .pdf），无声明按 octet-stream/.bin；⑤解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数，不会低估故不会误杀），超大输入不解码不占内存。
 
 ### 2026-11-01 插件管理页重构与使用量统计（@DYN-S121~S124）
 

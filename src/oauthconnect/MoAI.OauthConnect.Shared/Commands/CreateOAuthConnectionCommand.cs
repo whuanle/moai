@@ -45,6 +45,11 @@ public class CreateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     /// </summary>
     public string? AgentId { get; init; }
 
+    /// <summary>
+    /// 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用，仅供系统接口绑定第三方 id 与换发访问用户 token）.
+    /// </summary>
+    public bool IsVisible { get; init; } = true;
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<CreateOAuthConnectionCommand> validate)
     {

@@ -164,12 +164,12 @@ async function main() {
   const wikiList = await api('POST', TEAM_WIKI_LIST, { token: ACCESS_KEY, body: {} })
   check('TR-S7 moai-ac- key 直连 wiki 团队级 list 放行且含库', wikiList.status === 200 && (wikiList.json?.items ?? []).some((x) => Number(x.wikiId) === W1) && (wikiList.json?.items ?? []).some((x) => Number(x.wikiId) === W2), `${wikiList.status}`)
 
-  // ===== TR-S8~S9 token 兑换（app token / 用户 token 无 app_chat 门禁）=====
+  // ===== TR-S8~S9 token 兑换（app token；用户 token 随外部应用授权退役，TR-S9 语义改写编号不复用）=====
   const appTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: ACCESS_KEY, secret: ACCESS_SECRET } })
   check('TR-S8 换 app token 200', appTok.status === 200 && appTok.json?.tokenType === 'app', `${appTok.status}`)
 
-  const userTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: ACCESS_KEY, secret: ACCESS_SECRET, appId: A, externalUserId: `tr-user-${TS}` } })
-  check('TR-S9 换用户 token 无需 app_chat（范围退役）200', userTok.status === 200 && userTok.json?.tokenType === 'user', `${userTok.status} ${userTok.text.slice(0, 120)}`)
+  const retireUserTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: ACCESS_KEY, secret: ACCESS_SECRET, appId: A, externalUserId: `tr-user-${TS}` } })
+  check('TR-S9 key+externalUserId 换用户 token 400（外部应用授权已退役，身份穿透改走 /api/subsys/system/app-tokens）', retireUserTok.status === 400 && retireUserTok.text.includes('/api/subsys/system/app-tokens'), `${retireUserTok.status} ${retireUserTok.text.slice(0, 140)}`)
 
   // ===== TR-S32~S33 未开启对外功能时手动建 key 400（key 唯一生成时机 = 功能开关）=====
   const kW2Fail = await createKey({ teamId: T, resourceType: 'wiki', resourceId: String(W2) })

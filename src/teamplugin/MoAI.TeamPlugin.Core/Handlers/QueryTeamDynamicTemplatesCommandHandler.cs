@@ -44,7 +44,7 @@ public class QueryTeamDynamicTemplatesCommandHandler : IRequestHandler<QueryTeam
             {
                 Key = x.Key,
                 Name = x.Name,
-                Description = x.Description,
+                Description = string.IsNullOrWhiteSpace(x.HumanDescription) ? x.Description : x.HumanDescription,
                 IsDynamic = x.IsDynamic,
                 // 多工具插件（text_toolkit 等）无插件级 Request/Response，类型在 Tools 各项上
                 RequestType = x.Request?.FullName,

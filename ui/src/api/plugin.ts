@@ -1,4 +1,4 @@
-import { getAiPluginClient, getApiClient } from '@/api/kiota'
+import { createAiPluginRequestAdapter, getAiPluginClient, getApiClient } from '@/api/kiota'
 import type {
   QueryPluginTeamAuthorizationCommandResponse,
   UpdatePluginTeamAuthorizationCommand,
@@ -32,6 +32,8 @@ import type {
   UpdateMcpServerPluginCommand,
   UpdateOpenApiPluginCommand,
 } from '@/api/aiplugin-client/models'
+import { Env } from '@/config/env'
+import { HttpMethod, RequestInformation } from '@microsoft/kiota-abstractions'
 /** 插件管理项（Kiota 生成类型别名）. */
 export type PluginManageItem = QueryPluginManageListCommandResponseItem
 
@@ -585,4 +587,81 @@ export const pluginApi = {
   getPluginToolExample,
   getPluginSemantic,
   savePluginSemantic,
+}
+
+/** 在线插件市场摘要（ID 按 MoPlatform 的 long 字符串契约回传）. */
+export interface OnlinePluginItem {
+  pluginId: string
+  key: string
+  name: string
+  summary: string
+  iconUrl: string
+  latestVersion: string
+  downloadCount: string
+  isInstalled: boolean
+  categoryId?: string
+  categoryName?: string
+  categoryEmoji?: string
+}
+
+/** MoPlatform 在线插件分类. */
+export interface OnlinePluginCategory {
+  id: string
+  name: string
+  emoji: string
+}
+
+/** 本地已安装插件快照. */
+export interface InstalledOnlinePlugin {
+  pluginKey: string
+  name: string
+  summary: string
+  description: string
+  avatarPath: string
+  version: string
+  packageSha256: string
+  enabled: boolean
+  createTime?: string
+  createUserId?: string | number
+  createUserName?: string
+  updateTime?: string
+  updateUserId?: string | number
+  updateUserName?: string
+}
+
+async function marketplaceRequest<T>(
+  path: string,
+  method: HttpMethod,
+  query?: Record<string, string | number | boolean | undefined>,
+  body?: unknown,
+): Promise<T> {
+  const adapter = createAiPluginRequestAdapter()
+  const request = new RequestInformation()
+  request.URL = new URL(`/api/ai/plugin/online/${path}`, Env.serverUrl).toString()
+  request.httpMethod = method
+  request.headers.add('Accept', 'application/json')
+  if (query) request.setQueryStringParametersFromRawObject(query)
+  if (body !== undefined) {
+    const bytes = new TextEncoder().encode(JSON.stringify(body))
+    request.setStreamContent(bytes.buffer as ArrayBuffer, 'application/json')
+  }
+  const response = await adapter.sendPrimitive<ArrayBuffer>(request, 'ArrayBuffer', undefined)
+  if (!response) throw new Error('Empty plugin marketplace response')
+  return JSON.parse(new TextDecoder().decode(response)) as T
+}
+
+/** MoPlatform 在线插件目录与 MoAI 本地安装管理（请求经 Kiota adapter 和统一鉴权/错误中间件）. */
+export const pluginMarketplaceApi = {
+  getCatalog: (keyword = '', pageNo = 1, pageSize = 20, categoryId = '') =>
+    marketplaceRequest<{ items: OnlinePluginItem[]; total: string | number }>(
+      'catalog',
+      HttpMethod.GET,
+      { keyword: keyword || undefined, pageNo, pageSize, categoryId: categoryId || undefined },
+    ),
+  getCategories: () => marketplaceRequest<OnlinePluginCategory[]>('categories', HttpMethod.GET),
+  getInstalled: () => marketplaceRequest<InstalledOnlinePlugin[]>('installed', HttpMethod.GET),
+  install: (platformPluginId: string) =>
+    marketplaceRequest<InstalledOnlinePlugin>('install', HttpMethod.POST, undefined, { platformPluginId }),
+  setEnabled: (pluginKey: string, enabled: boolean) =>
+    marketplaceRequest<InstalledOnlinePlugin>('status', HttpMethod.POST, undefined, { pluginKey, enabled }),
 }

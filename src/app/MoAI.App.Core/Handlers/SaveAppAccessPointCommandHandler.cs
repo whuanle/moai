@@ -42,10 +42,8 @@ public class SaveAppAccessPointCommandHandler : IRequestHandler<SaveAppAccessPoi
             throw new BusinessException("应用不存在.") { StatusCode = 404 };
         }
 
-        if (!app.IsExternal)
-        {
-            throw new BusinessException("只有外部应用可以配置访问点.") { StatusCode = 400 };
-        }
+        // 外部应用与内部应用均可配置访问点：外部=匿名开放入口（is_auth 已退役），
+        // 内部=身份穿透入口（须搭配访问用户 token，开启访问点即授权动作）
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)

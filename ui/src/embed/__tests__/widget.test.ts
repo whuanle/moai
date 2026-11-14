@@ -35,15 +35,15 @@ afterEach(() => {
 })
 
 describe('MoaiWidget token 拦截器与请求中间件', () => {
-  it('配置 tokenProvider 时由业务后端签发 token，组件不再自己换 token 也不发送 key', async () => {
+  it('配置 tokenProvider 时由业务后端签发 token，组件不再自己换 token', async () => {
     const provider = vi.fn(async () => 'tok-from-backend')
     const fetchMock = installFetch(async (url) => {
-      if (url.includes('/access-point')) return jsonResponse(accessPoint({ isAuth: true, defaultOpen: true }))
+      if (url.includes('/access-point')) return jsonResponse(accessPoint({ authMode: 'token', defaultOpen: true }))
       if (url.includes('/session')) return jsonResponse({ value: 'sess-1' })
       throw new Error(`unexpected fetch: ${url}`)
     })
 
-    const widget = new MoaiWidget({ appId: APP_ID, server: SERVER, accessAppKey: 'moai-ac-should-not-be-used', tokenProvider: provider })
+    const widget = new MoaiWidget({ appId: APP_ID, server: SERVER, tokenProvider: provider })
     await widget.init()
 
     // 打开面板即取 token（会话懒创建到首次发送）
@@ -72,7 +72,7 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
     }))
     const fetchMock = installFetch(async (url, init) => {
       expect((init?.headers as Record<string, string>)['X-Biz-Trace']).toBe('trace-1')
-      if (url.includes('/access-point')) return jsonResponse(accessPoint({ isAuth: true, defaultOpen: true }))
+      if (url.includes('/access-point')) return jsonResponse(accessPoint({ defaultOpen: true }))
       if (url.includes('/teamres/token')) return jsonResponse({ accessToken: 'tok-1', refreshToken: 'r1', expiresIn: 3600, tokenType: 'user' })
       if (url.includes('/session')) return jsonResponse({ value: 'sess-2' })
       throw new Error(`unexpected fetch: ${url}`)
@@ -133,10 +133,9 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
     expect(provider).toHaveBeenCalledTimes(1)
   })
 
-  it('需授权应用无 key 且无 tokenProvider 时换 token 失败并提示接入方式', async () => {
-    installFetch(async (url) => {
-      if (url.includes('/access-point')) return jsonResponse(accessPoint({ isAuth: true, defaultOpen: true }))
-      if (url.includes('/teamres/token')) return jsonResponse({ message: '该应用需要通过应用接入 key 授权访问.' }, 403)
+  it('内部应用访问点（authMode=token）无 tokenProvider 时直接提示接入方式，不发起匿名换 token', async () => {
+    const fetchMock = installFetch(async (url) => {
+      if (url.includes('/access-point')) return jsonResponse(accessPoint({ authMode: 'token', defaultOpen: true }))
       throw new Error(`unexpected fetch: ${url}`)
     })
 
@@ -145,6 +144,9 @@ describe('MoaiWidget token 拦截器与请求中间件', () => {
 
     const messages = document.querySelector('.moai-widget-root')!.shadowRoot!.querySelector('.messages')!
     expect(messages.textContent).toContain('tokenProvider')
+    // 不应尝试匿名换 token
+    const tokenUrls = fetchMock.mock.calls.map((call) => call[0] as string).filter((url) => url.includes('/teamres/token'))
+    expect(tokenUrls).toEqual([])
   })
 })
 

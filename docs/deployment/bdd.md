@@ -135,4 +135,13 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Given 已 docker login（免密推送）
     When 执行 bash deploy/publish.sh
     Then 推送 whuanle/moai:<tag> 与 whuanle/moai:latest
+
+  @DEP-S20 @manual
+  Scenario: 检测共享网络并创建独立数据库
+    Given Docker 网络 moai 已存在且 PostgreSQL、Redis、RabbitMQ、RustFS 服务运行
+    And .env 中共享中间件账号密码与已运行服务一致
+    When 执行 bash deploy/deploy-compose.sh
+    Then 部署脚本复用共享服务，仅启动 MoAI 专属服务
+    And 共享 PostgreSQL 中存在独立的 POSTGRES_DB 数据库及所需扩展
+    And MoAI 使用生成并挂载的 configs/system.json 连接共享基础设施
 ```

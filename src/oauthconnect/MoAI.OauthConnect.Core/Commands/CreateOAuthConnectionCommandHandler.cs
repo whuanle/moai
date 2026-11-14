@@ -78,6 +78,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             IconUrl = request.IconUrl,
             WellKnown = request.WellKnown.ToString(),
             AuthorizeUrl = oauthRedirectUrl,
+            IsVisible = request.IsVisible,
         };
 
         _databaseContext.OauthConnections.Add(connection);
@@ -95,6 +96,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             IconUrl = request.IconUrl,
             AuthorizeUrl = "https://accounts.feishu.cn/open-apis/authen/v1/authorize",
             WellKnown = request.WellKnown?.ToString() ?? "https://open.feishu.cn",
+            IsVisible = request.IsVisible,
         };
 
         _databaseContext.OauthConnections.Add(connection);
@@ -113,6 +115,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             IconUrl = request.IconUrl,
             AuthorizeUrl = "https://login.dingtalk.com/oauth2/auth",
             WellKnown = request.WellKnown?.ToString() ?? "https://login.dingtalk.com/oauth2/auth",
+            IsVisible = request.IsVisible,
         };
 
         _databaseContext.OauthConnections.Add(connection);
@@ -132,6 +135,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
             AgentId = request.AgentId,
             AuthorizeUrl = "https://login.work.weixin.qq.com/wwlogin/sso/login",
             WellKnown = request.WellKnown?.ToString() ?? "https://work.weixin.qq.com",
+            IsVisible = request.IsVisible,
         };
 
         _databaseContext.OauthConnections.Add(connection);

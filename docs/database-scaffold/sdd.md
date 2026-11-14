@@ -69,7 +69,7 @@ init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker ini
 
 ## 本地环境
 
-docker-compose `postgres` 服务：镜像 `pgvector/pgvector:pg16`，容器 `moai-postgres`，5432、用户 postgres、密码 moai123456、库 moai；`init-pgvector.sql` 只读挂载 `/docker-entrypoint-initdb.d/`（仅首次建卷执行）。`HasPostgresExtension("vector")/("uuid-ossp")` 使 EnsureCreated 亦会补建扩展（双保险）。
+docker-compose `postgres` 服务：镜像 `pgvector/pgvector:pg16`，容器 `moai-postgres`，5432、用户 `POSTGRES_USER`（默认 postgres）、密码 `POSTGRES_PASSWORD`（与 Mo 系列共享部署默认 `mopl123456`）、库 `moai`；`init-pgvector.sql` 只读挂载 `/docker-entrypoint-initdb.d/`（仅首次建卷执行）。复用已有 `moai` 网络时，`postgres-init` 在共享 PostgreSQL 中幂等创建独立 `moai` 库及扩展。`HasPostgresExtension("vector")/("uuid-ossp")` 使 EnsureCreated 亦会补建扩展（双保险）。
 
 ## 已知问题
 

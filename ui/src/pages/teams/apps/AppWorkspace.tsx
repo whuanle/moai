@@ -111,8 +111,8 @@ export function AppWorkspace() {
         menuItems.push({ key: 'channels', icon: <ShareAltOutlined />, label: t('appWorkspace.menuChannels') })
       }
     }
-    // 外部应用：访问点菜单项
-    if (canManage && isExternal) {
+    // 访问点菜单项：外部应用=匿名开放入口；内部应用=身份穿透入口（访问用户 token）
+    if (canManage) {
       menuItems.push({ key: 'access', icon: <ApiOutlined />, label: t('appWorkspace.menuAccess') })
     }
   }
@@ -132,7 +132,7 @@ export function AppWorkspace() {
     workflowSectionKeys.add('channels')
     workflowSectionKeys.add('publication')
   }
-  if (canManage && isExternal) {
+  if (canManage) {
     workflowSectionKeys.add('access')
   }
 
@@ -247,7 +247,6 @@ export function AppWorkspace() {
         <AppAccessSection
           appId={appId}
           isExternal={detail?.isExternal ?? false}
-          isAuth={detail?.isAuth ?? false}
           canManage={canManage}
           userRole={detail?.myRole ?? -1}
         />

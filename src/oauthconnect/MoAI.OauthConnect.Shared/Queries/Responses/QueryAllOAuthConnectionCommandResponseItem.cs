@@ -46,4 +46,9 @@ public class QueryAllOAuthConnectionCommandResponseItem : AuditsInfo
     /// 登录跳转地址.
     /// </summary>
     public string AuthorizeUrl { get; set; } = default!;
+
+    /// <summary>
+    /// 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用）.
+    /// </summary>
+    public bool IsVisible { get; set; } = true;
 }

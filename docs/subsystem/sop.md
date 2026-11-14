@@ -77,7 +77,8 @@ cd ui && npm run typecheck && npx vitest run src/pages/admin/__tests__/AdminAcce
    - 换取：`POST /api/subsys/token`（匿名）body `{"appId":"moai-sa-...","secret":"..."}` → access（默认 2h）+ refresh（7d）；续期 `POST /api/subsys/token/refresh`；
    - 直连：`Authorization: Bearer moai-sa-...` 直接调协作面（长期凭证，建议仅探测/低频场景）。
 3. **全量资源访问**（资源范围分档已下线，无需选择范围）：
-   - 用户治理：`POST /api/subsys/system/users`（**按 userName 幂等 upsert**，ERP 定时推送主入口；未带密码自动生成一次性初始密码）、`GET /users/list`、`GET /users/{id}`、`PUT /users/{id}/disable`（root 受保护）；
+   - 用户治理：`POST /api/subsys/system/users`（**按 userName 幂等 upsert**，ERP 定时推送主入口；未带密码自动生成一次性初始密码；可选携带 `oauthProviderId/oauthSub/oauthUnionId` 幂等绑定第三方身份，响应 `oauthBound`）、`GET /users/list`、`GET /users/{id}`、`PUT /users/{id}/disable`（root 受保护）；
+   - 内部应用访问用户 token：`POST /api/subsys/system/app-tokens`（`{appId, oauthProviderId, oauthSub, oauthUnionId?, nickName?}` → 按第三方绑定换算站内用户并颁发绑定单应用的 token；未绑定时在本次请求内自动建户并绑定，返回 `userCreated=true`，重复请求返回 `userCreated=false`）；
    - 组织：`GET|POST /api/subsys/system/org/roles`、`PUT|DELETE /org/roles/{id}`、`GET /org/roles/{id}/users`、`GET|PUT /org/users/{userId}/roles`；
    - 团队：`GET /api/subsys/system/teams/list`、`POST /teams`、`PUT /teams/{id}`、`POST /teams/{id}/users`（成员幂等 upsert）、`DELETE /teams/{id}/users/{userId}`（Owner 受保护）。
 4. `GET /api/subsys/info` 自省（身份/类型/状态/在线实例数，可用性探测）；可选心跳接入同一 `/api/subsys/heartbeat`。

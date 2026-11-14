@@ -66,8 +66,19 @@ public class MyService(SubsysClient client)
         });
 
     // 系统资源：用户 upsert / 组织角色 / 团队治理（api/subsys/system/**）
+    // 可携带 OauthProviderId/OauthSub/OauthUnionId 幂等绑定第三方身份（响应 OauthBound）
     public async Task<SystemUpsertUserCommandResponse?> UpsertUserAsync()
         => await client.Api.Subsys.System.Users.PostAsync(new SystemUpsertUserCommand { /* ... */ });
+
+    // 内部应用访问点：按第三方登录绑定换算站内用户，颁发绑定单应用的访问用户 token
+    // （未绑定用户返回 404，需先 UpsertUserAsync 携带 oauth 绑定）
+    public async Task<SystemIssueAppAccessTokenCommandResponse?> IssueAccessTokenAsync(Guid appId, Guid providerId, string sub)
+        => await client.Api.Subsys.System.AppTokens.PostAsync(new SystemIssueAppAccessTokenCommand
+        {
+            AppId = appId,
+            OauthProviderId = providerId,
+            OauthSub = sub,
+        });
 }
 ```
 

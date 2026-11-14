@@ -71,7 +71,7 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
             ContentType = request.ContentType,
             FileSize = request.FileSize,
             ObjectKey = objectKey,
-            Expiration = TimeSpan.FromMinutes(2)
+            Expiration = TimeSpan.FromMinutes(1)
         }, cancellationToken);
 
         if (result.IsExist)

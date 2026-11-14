@@ -45,6 +45,7 @@ src/subsystem/
                             SubsysAccessMiddleware（守护 /api/subsys/**：moai-sa- 直连 或 机器 token，实时回库校验）
                             SystemFaceGuard（资源面身份守卫，无 scope 分档）
                             SystemUserController/SystemOrgController/SystemTeamController（/subsys/system/* 资源接口，任一接入全量可用）
+                             SystemAppAccessController（/subsys/system/app-tokens：系统级 moai-sa- 接入可按第三方登录绑定换发内部应用访问用户 token）
                             SubsystemSsoController（/subsystem/sso/code 用户面）、TeamSubsystemController（/team/{teamId}/subsystem/list 团队面）
 ui/src/                      api/subsystem.ts、pages/admin/AdminAccessApps.tsx（/admin/integrations 单列表，root）
 tests/MoAI.Subsystem.Tests/  Handler 单测（sqlite 内存库，40 例）
@@ -56,7 +57,7 @@ ui/src/pages/sso/SsoAuthorize.tsx（/sso/authorize 公开跳转页）
 - 匿名放行仅 `POST /api/subsys/token`、`POST /api/subsys/token/refresh`。
 - 双轨凭据：① Bearer `moai-sa-` appid 直连（仅应用接入行可命中；子系统自填 appid 可读性高**不允许直连**；按格式三分派：结构化 35 字符本地 HMAC 校验通过才按 Id 点查 / 存量 40 字符随机格式 Key 等值点查 / 其余直接 401 不打数据库——公网扫描与伪造请求不消耗数据库）；② Bearer JWT（`appId+secret` 经统一 `POST /api/subsys/token` 换取，typ=access_token/machine_refresh）。
 - 每请求回库实时解析（停用 403/删除或 appid 不匹配 401），解析结果写统一 `SubsysCallerContext`（Id/Key/AppType/Status/CallbackUrl）。
-- 资源面 `/api/subsys/system/*`（用户/组织/团队治理）经 `SystemFaceGuard` 仅做身份校验，**无 scope 分档**；子系统专属端点（teams/org-grants/SSO 签发）按 AppType 过滤，应用接入行 404。
+- 资源面 `/api/subsys/system/*`（用户/组织/团队治理 + 内部应用访问用户 token 颁发）经 `SystemFaceGuard` 仅做身份校验，**无 scope 分档**；子系统专属端点（teams/org-grants/SSO 签发）按 AppType 过滤，应用接入行 404。
 
 ## 存活探针：多实例心跳 v2
 
@@ -77,6 +78,11 @@ ui/src/pages/sso/SsoAuthorize.tsx（/sso/authorize 公开跳转页）
 8. **委托 SSO**：MoAI 当简化 IdP——登录用户 `POST /api/subsystem/sso/code` 换一次性委托码（Redis 60s 原子消费）；机器面 `POST /api/subsys/sso/exchange` 兑换用户委托 token（access 2h/refresh 7d，typ=subsystem_user_*）；签发前置校验「团队∪组织授权并集」，兑换/刷新不复查授权。**仅子系统行可参与**（应用接入行 appType 过滤 404，且 CallbackUrls 恒空）。**多回调地址白名单**：子系统可注册多个入口（测试/生产等，≤10 个），引导跳转 `/sso/authorize?client=<appid>&redirect_uri=<可选>` 指定本次入口——传入须精确命中注册列表（否则 403），缺省取列表第一个。
 9. **前端单列表**：`/admin/integrations` 一个列表承载两类接入（类型列区分），新建时类型 Radio（编辑锁定）；应用接入新建即用，子系统展开回调与授权配置。
 10. **接入头像**（子系统与应用接入通用，[@SUB-S67](./bdd.md#sub-s67)~[@SUB-S70](./bdd.md#sub-s70)）：照插件/应用头像同款模式——前端 `AvatarUpload` 选图即压缩直传存储（pre_upload_image→PUT→complate_url），弹窗内暂存 objectKey，**随 Create/Update 命令一并登记**（无独立 avatar 端点，取消弹窗即放弃）；Handler 经 `SubsysAvatarGuard` 校验 objectKey 已完成上传登记（伪造/未完成 404）；Update 语义 null=不修改（停用切换等调用不受影响）、非空=校验后替换。列表名称列 36px 头像展示，`SubsysAppItem.avatarPath` 回显。存量库补列：[asserts/access_app_avatar.sql](../../asserts/access_app_avatar.sql) + 启动幂等 DDL。
+11. **访问用户 token 颁发（2026-11-13，[../app/sdd.md](../app/sdd.md) 决策 D57）**：新增 `POST /api/subsys/system/app-tokens`（`SystemAppAccessController`，`SystemFaceGuard` 门禁，任一系统级接入可用）——入参 `{appId, oauthProviderId, oauthSub, oauthUnionId?, nickName?}`，按 `user_oauth_connection`（同渠道 sub 或 unionId 任一命中）换算站内用户：未绑定时本次请求自动建户并绑定（响应 `userCreated=true`，已绑定返回 `userCreated=false`）、多匹配 409、用户禁用 403、目标非内部应用 400、未发布/访问点关闭 403。签发 `typ=normal` 外部 JWT（sub=站内用户 id、claim appid 绑定单应用、`tokenType=accessuser`），响应回显 `userId/userName/nickName/appId`；刷新按库重验用户未禁用 + 应用发布 + 访问点开启。**注意 404 是业务拒绝不是资源不存在泄露**（不绑定即拒绝，符合「没有用户必须先建用户」的产品语义）。用户 upsert 同步扩展 `oauthProviderId/oauthSub/oauthUnionId` 与响应 `oauthBound`，绑定冲突在写用户前校验。
+
+### 11.1 访问用户 token 的调用方边界（2026-11-13）
+
+`POST /api/subsys/system/app-tokens` 不是团队级接入能力：`access_app.level=system` 的两种接入类型（`AppType=app` 系统级应用接入、`AppType=subsystem` 系统级第三方系统）均可自动创建 MoAI 用户、绑定第三方身份并颁发内部应用访问用户 token，接口和权限一致，仅业务用途不同。团队级 `moai-ac-` 接入在 `/api/subsys/**` 层即被拒绝。
 
 ## 后续规划（本期不做）
 

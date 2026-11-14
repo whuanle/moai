@@ -1,4 +1,4 @@
-import { Alert, Button, Col, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Tabs, Typography } from 'antd'
+import { Button, Col, Form, Input, InputNumber, Row, Select, Space, Spin, Switch, Typography } from 'antd'
 import { CopyOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +14,6 @@ const ROLE_MEMBER = 0
 interface AppAccessSectionProps {
   appId: string
   isExternal?: boolean
-  isAuth?: boolean
   canManage: boolean
   userRole?: number
 }
@@ -34,19 +33,17 @@ interface AccessPointFormValues {
   enabled: boolean
 }
 
-export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRole }: AppAccessSectionProps) {
+export function AppAccessSection({ appId, isExternal, canManage, userRole }: AppAccessSectionProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<AccessPointFormValues>()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState<AppAccessPointConfig | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [embedTab, setEmbedTab] = useState<'backend' | 'quickKey'>('backend')
 
   const isAdmin = (userRole ?? -1) > ROLE_MEMBER
 
   const load = useCallback(async () => {
-    if (!isExternal) return
     setLoading(true)
     try {
       const res = await getAppAccessPoint(appId)
@@ -68,14 +65,13 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
     } finally {
       setLoading(false)
     }
-  }, [appId, form, isExternal])
+  }, [appId, form])
 
   useEffect(() => {
     load()
   }, [load])
 
   const serverUrl = Env.serverUrl.replace(/\/+$/, '')
-  const chatEndpoint = `POST ${serverUrl}/api/teamres/agent/${appId}/chat`
   // 嵌入代码用站点自身源（开发期即前端 dev server，生产为同源部署）；widget 默认以 script 源调用 API，
   // 开发期由 Vite 代理 /api 到后端，分离部署可在 script 上加 data-server 指向后端
   const siteOrigin = window.location.origin
@@ -88,6 +84,7 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
     ? [`<div id="moai-chat" style="height:${typeof panelHeight === 'number' ? panelHeight : 620}px"></div>`]
     : []
   const inlineAttr = isInline ? `\n        data-mode="inline"\n        data-target="#moai-chat"` : ''
+  const inlineMountAttr = isInline ? `,\n    mode: 'inline',\n    target: '#moai-chat'` : ''
   const preStyle: CSSProperties = {
     margin: 0,
     padding: spacing.sm,
@@ -97,6 +94,8 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-all',
   }
+
+  // 外部应用：匿名开放的悬浮组件嵌入片段（is_auth 已退役，匿名换 token 即可）
   const basicSnippet = [
     `<!-- 可选：data-external-user-id 绑定外部身份以继承会话；data-nickname 外部用户显示名；data-server 后端地址（分离部署时） -->`,
     ...inlineTargetAttrs,
@@ -104,31 +103,41 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
     `        data-app-id="${appId}"${inlineAttr}`,
     `></script>`,
   ].join('\n')
-  // 需授权应用推荐接入：业务后端持 key 签发外部用户 token，组件经 tokenProvider 注入，key 不落前端
-  const backendIssuedSnippet = [
+
+  const chatEndpoint = `POST ${serverUrl}/api/teamres/agent/${appId}/chat`
+
+  // 内部应用：身份穿透接入——业务后端颁发访问用户 token，前端按 AG-UI 协议直连（免组件）
+  const aguiSnippet = [
+    `# 1) 业务后端为用户颁发访问用户 token（系统级接入凭据调用，key 不落前端）`,
+    `POST ${serverUrl}/api/subsys/system/app-tokens`,
+    `{ "appId": "${appId}", "oauthProviderId": "<第三方登录渠道id>", "oauthSub": "<第三方用户id>" }`,
+    `# → { accessToken, refreshToken, expiresIn, userId }`,
+    `# 未绑定第三方身份时返回 404：请先经 POST /api/subsys/system/users 建用户并携带 oauth 绑定`,
+    ``,
+    `# 2) 前端持 token 直连（AG-UI 协议，SSE；token 存业务站点的浏览器存储，与其域名绑定）`,
+    `POST ${serverUrl}/api/teamres/agent/${appId}/chat          # 对话（SSE）`,
+    `POST/GET ${serverUrl}/api/teamres/agent/${appId}/session   # 创建/列表会话`,
+    `GET ${serverUrl}/api/teamres/session/{sessionId}/messages  # 会话消息`,
+    `POST ${serverUrl}/api/teamres/token/refresh                # 刷新轮换`,
+    ``,
+    `Authorization: Bearer <accessToken>`,
+  ].join('\n')
+
+  // 内部应用：悬浮组件 + tokenProvider（token 由业务后端签发注入，key 不落前端）
+  const widgetTokenSnippet = [
     ...inlineTargetAttrs,
     `<script src="${serverUrl}/embed/moai-widget.js"></script><!-- 可下载后自托管到业务站点 -->`,
     `<script>`,
     `  MoaiWidget.mount({`,
     `    appId: '${appId}',`,
-    `    server: '${serverUrl}',${isInline ? `\n    mode: 'inline',\n    target: '#moai-chat',` : ''}`,
+    `    server: '${serverUrl}'${inlineMountAttr},`,
     `    tokenProvider: function () {`,
-    `      // 业务后端持应用接入 key 调 POST ${serverUrl}/api/teamres/token 签发外部用户 token`,
-    `      return fetch('/your-backend/moai-token').then(function (r) { return r.json() })`,
-    `        .then(function (d) { return d.accessToken })`,
+    `      // 向你的业务后端索取已颁发的访问用户 token`,
+    `      return fetch('/your-backend/moai-access-token').then(function (r) { return r.json() })`,
     `    }`,
     `  })`,
     `</script>`,
   ].join('\n')
-  const quickKeySnippet = [
-    `<!-- key 暴露在宿主页 HTML 中，仅快速验证使用 -->`,
-    ...inlineTargetAttrs,
-    `<script src="${siteOrigin}/embed/moai-widget.js"`,
-    `        data-app-id="${appId}"${inlineAttr}`,
-    `        data-key="<应用接入key>"`,
-    `></script>`,
-  ].join('\n')
-  const activeSnippet = isAuth ? (embedTab === 'quickKey' ? quickKeySnippet : backendIssuedSnippet) : basicSnippet
 
   const copyText = async (text: string, message: string) => {
     await navigator.clipboard.writeText(text)
@@ -169,10 +178,6 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
     } finally {
       setUploadingAvatar(false)
     }
-  }
-
-  if (!isExternal) {
-    return <Alert type="info" showIcon message={t('accessPoint.internalAppHint')} />
   }
 
   return (
@@ -279,44 +284,82 @@ export function AppAccessSection({ appId, isExternal, isAuth, canManage, userRol
         </Col>
         <Col xs={24} lg={9} xxl={8}>
           <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-            <DSCard title={t('accessPoint.endpointTitle')}>
-              <Typography.Paragraph copyable={{ text: chatEndpoint }} style={{ marginBottom: 0, wordBreak: 'break-all' }}>
-                {chatEndpoint}
-              </Typography.Paragraph>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {t('accessPoint.endpointHint')}
-              </Typography.Text>
-            </DSCard>
-            <DSCard title={t('accessPoint.embedTitle')}>
-              {isAdmin && config ? (
-                <>
-                  {isAuth && <Alert type="warning" showIcon message={t('accessPoint.keyHint')} style={{ marginBottom: spacing.md }} />}
-                  {isAuth ? (
-                    <Tabs
-                      size="small"
-                      activeKey={embedTab}
-                      onChange={(key) => setEmbedTab(key as 'backend' | 'quickKey')}
-                      items={[
-                        { key: 'backend', label: t('accessPoint.embedTabBackend'), children: <pre style={preStyle}>{backendIssuedSnippet}</pre> },
-                        { key: 'quickKey', label: t('accessPoint.embedTabQuickKey'), children: <pre style={preStyle}>{quickKeySnippet}</pre> },
-                      ]}
-                    />
+            {isExternal ? (
+              <>
+                <DSCard title={t('accessPoint.endpointTitle')}>
+                  <Typography.Paragraph copyable={{ text: chatEndpoint }} style={{ marginBottom: 0, wordBreak: 'break-all' }}>
+                    {chatEndpoint}
+                  </Typography.Paragraph>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {t('accessPoint.endpointHint')}
+                  </Typography.Text>
+                </DSCard>
+                <DSCard title={t('accessPoint.embedTitle')}>
+                  {isAdmin ? (
+                    <>
+                      <pre style={preStyle}>{basicSnippet}</pre>
+                      <Space style={{ marginTop: spacing.sm }}>
+                        <Button icon={<CopyOutlined />} onClick={() => copyText(basicSnippet, t('accessPoint.copied'))}>
+                          {t('accessPoint.copySnippet')}
+                        </Button>
+                        <Button icon={<DownloadOutlined />} href={`${serverUrl}/embed/moai-widget.js`} download="moai-widget.js">
+                          {t('accessPoint.downloadJs')}
+                        </Button>
+                      </Space>
+                    </>
                   ) : (
-                    <pre style={preStyle}>{basicSnippet}</pre>
+                    <Typography.Text type="secondary">{t('accessPoint.adminOnly')}</Typography.Text>
                   )}
-                  <Space style={{ marginTop: spacing.sm }}>
-                    <Button icon={<CopyOutlined />} onClick={() => copyText(activeSnippet, t('accessPoint.copied'))}>
-                      {t('accessPoint.copySnippet')}
-                    </Button>
-                    <Button icon={<DownloadOutlined />} href={`${serverUrl}/embed/moai-widget.js`} download="moai-widget.js">
-                      {t('accessPoint.downloadJs')}
-                    </Button>
-                  </Space>
-                </>
-              ) : (
-                <Typography.Text type="secondary">{t('accessPoint.adminOnly')}</Typography.Text>
-              )}
-            </DSCard>
+                </DSCard>
+              </>
+            ) : (
+              <>
+                <DSCard title={t('accessPoint.internalHintTitle')}>
+                  <Typography.Paragraph style={{ marginBottom: spacing.sm }}>
+                    {t('accessPoint.internalHint')}
+                  </Typography.Paragraph>
+                  {isAdmin && (
+                    <>
+                      <Typography.Text strong style={{ fontSize: 12 }}>{t('accessPoint.tokenEndpointLabel')}</Typography.Text>
+                      <Typography.Paragraph copyable={{ text: `${serverUrl}/api/subsys/system/app-tokens` }} style={{ marginBottom: 0, wordBreak: 'break-all' }}>
+                        {`POST ${serverUrl}/api/subsys/system/app-tokens`}
+                      </Typography.Paragraph>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {t('accessPoint.tokenEndpointHint')}
+                      </Typography.Text>
+                    </>
+                  )}
+                </DSCard>
+                {isAdmin && config && (
+                  <>
+                    <DSCard title={t('accessPoint.aguiTitle')}>
+                      <pre style={preStyle}>{aguiSnippet}</pre>
+                      <Space style={{ marginTop: spacing.sm }}>
+                        <Button icon={<CopyOutlined />} onClick={() => copyText(aguiSnippet, t('accessPoint.copied'))}>
+                          {t('accessPoint.copySnippet')}
+                        </Button>
+                      </Space>
+                    </DSCard>
+                    <DSCard title={t('accessPoint.widgetTokenTitle')}>
+                      <pre style={preStyle}>{widgetTokenSnippet}</pre>
+                      <Space style={{ marginTop: spacing.sm }}>
+                        <Button icon={<CopyOutlined />} onClick={() => copyText(widgetTokenSnippet, t('accessPoint.copied'))}>
+                          {t('accessPoint.copySnippet')}
+                        </Button>
+                        <Button icon={<DownloadOutlined />} href={`${serverUrl}/embed/moai-widget.js`} download="moai-widget.js">
+                          {t('accessPoint.downloadJs')}
+                        </Button>
+                      </Space>
+                    </DSCard>
+                  </>
+                )}
+                {!isAdmin && (
+                  <DSCard title={t('accessPoint.aguiTitle')}>
+                    <Typography.Text type="secondary">{t('accessPoint.adminOnly')}</Typography.Text>
+                  </DSCard>
+                )}
+              </>
+            )}
           </Space>
         </Col>
       </Row>

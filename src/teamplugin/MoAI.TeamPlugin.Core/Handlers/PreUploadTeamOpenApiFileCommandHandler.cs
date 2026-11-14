@@ -66,7 +66,7 @@ public class PreUploadTeamOpenApiFileCommandHandler : IRequestHandler<PreUploadT
             ContentType = request.ContentType,
             FileSize = request.FileSize,
             ObjectKey = objectKey,
-            Expiration = TimeSpan.FromMinutes(2),
+            Expiration = TimeSpan.FromMinutes(1),
         }, cancellationToken);
 
         return new PreUploadOpenApiFilePluginCommandResponse

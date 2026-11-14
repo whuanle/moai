@@ -23,6 +23,8 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public string InitialPassword { get; set; }
 #endif
+        /// <summary>本次是否完成第三方身份绑定（true=新建绑定或幂等复用已有绑定；未携带 oauth 绑定字段时恒为 false）.</summary>
+        public bool? OauthBound { get; set; }
         /// <summary>用户 id.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -51,6 +53,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             {
                 { "created", n => { Created = n.GetBoolValue(); } },
                 { "initialPassword", n => { InitialPassword = n.GetStringValue(); } },
+                { "oauthBound", n => { OauthBound = n.GetBoolValue(); } },
                 { "userId", n => { UserId = n.GetStringValue(); } },
             };
         }
@@ -63,6 +66,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             _ = writer ?? throw new ArgumentNullException(nameof(writer));
             writer.WriteBoolValue("created", Created);
             writer.WriteStringValue("initialPassword", InitialPassword);
+            writer.WriteBoolValue("oauthBound", OauthBound);
             writer.WriteStringValue("userId", UserId);
         }
     }

@@ -8,7 +8,7 @@ using MoAI.Infra.Models;
 namespace MoAI.AIChannel.Commands;
 
 /// <summary>
-/// 批量导入模型列表（前端从 opencode models.json 解析后提交）.
+/// 批量导入模型列表（前端提交用户确认后的模型元数据）.
 /// </summary>
 public class ImportAIModelCommand : IRequest<EmptyCommandResponse>, IModelValidator<ImportAIModelCommand>
 {

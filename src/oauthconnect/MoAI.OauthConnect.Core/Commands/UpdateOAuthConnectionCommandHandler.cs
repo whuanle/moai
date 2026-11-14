@@ -56,6 +56,10 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
         connection.IconUrl = request.IconUrl;
         connection.Provider = TextToJsonExtensions.ToJsonString(request.Provider);
         connection.AgentId = request.Provider == OAuthPrivider.WeixinWork ? request.AgentId : null;
+        if (request.IsVisible.HasValue)
+        {
+            connection.IsVisible = request.IsVisible.Value;
+        }
 
         if (!string.IsNullOrEmpty(request.Secret))
         {

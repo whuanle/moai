@@ -12,6 +12,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 [AiPlugin(
     key: "static_current_user",
     Name = "获取当前用户信息",
+    HumanDescription = "用于读取当前调用者的身份资料，帮助 AI 按用户或团队信息个性化回复。适合需要识别当前会话对象，或在自动化流程中按身份进行判断的场景。",
     Description = "获取当前调用者的用户身份信息（用户名/昵称/邮箱/团队等），信息由执行上下文注入，无需传参")]
 public class CurrentUserPlugin : IStaticPluginRuntime<CurrentUserRequest, CurrentUserResponse>
 {

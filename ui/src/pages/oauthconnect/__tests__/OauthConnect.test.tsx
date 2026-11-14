@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { OauthConnect } from '../OauthConnect'
 import { useAppStore } from '@/store/app'
-import { getOAuthConnections } from '@/api/oauthconnect'
+import { getOAuthConnections, updateOAuthConnection } from '@/api/oauthconnect'
 
 vi.mock('@/api/oauthconnect', () => ({
   getOAuthConnections: vi.fn().mockResolvedValue({
@@ -27,6 +27,7 @@ vi.mock('@/api/oauthconnect', () => ({
         key: '4d29ccea',
         iconUrl: '',
         wellKnown: 'https://casdoor.example.com/.well-known/openid-configuration',
+        isVisible: false,
         createTime: '2026-09-02T09:53:00Z',
         createUserName: 'admin',
         updateTime: '2026-10-27T10:13:00Z',
@@ -69,6 +70,9 @@ describe('OauthConnect', () => {
     })
     expect(await screen.findByText('飞书登录')).toBeInTheDocument()
     expect(screen.getByText('casdoor')).toBeInTheDocument()
+    // 可见性由独立状态列显示
+    expect(screen.getAllByRole('switch')).toHaveLength(2)
+    expect(screen.getAllByRole('switch').some((toggle) => toggle.getAttribute('aria-checked') === 'false')).toBe(true)
     // 每行展示回调地址而非授权端点
     expect(screen.getAllByText('http://127.0.0.1:4000/oauth_login').length).toBeGreaterThan(0)
 
@@ -97,6 +101,46 @@ describe('OauthConnect', () => {
       expect(screen.queryByText('飞书登录')).not.toBeInTheDocument()
     })
     expect(screen.getByText('casdoor')).toBeInTheDocument()
+  })
+
+  it('可在列表独立状态列直接切换登录页显示状态', async () => {
+    renderPage()
+    expect(await screen.findByText('casdoor')).toBeInTheDocument()
+
+    const row = Array.from(document.querySelectorAll('table tr')).find((r) =>
+      r.textContent?.includes('casdoor'),
+    )
+    const visibilitySwitch = within(row as HTMLElement).getByRole('switch', { name: '登录页显示' })
+    expect(visibilitySwitch).not.toBeChecked()
+
+    vi.mocked(getOAuthConnections).mockResolvedValueOnce({
+      redirectUri: 'http://127.0.0.1:4000/oauth_login',
+      items: [{
+        id: '2',
+        name: 'casdoor',
+        provider: 'custom',
+        key: '4d29ccea',
+        iconUrl: '',
+        wellKnown: 'https://casdoor.example.com/.well-known/openid-configuration',
+        isVisible: true,
+      }],
+    })
+    fireEvent.click(visibilitySwitch)
+
+    await waitFor(() => {
+      expect(updateOAuthConnection).toHaveBeenCalledWith('2', expect.objectContaining({
+        name: 'casdoor',
+        isVisible: true,
+      }))
+      expect(visibilitySwitch).toBeChecked()
+    })
+
+    const updatedRow = Array.from(document.querySelectorAll('table tr')).find((r) =>
+      r.textContent?.includes('casdoor'),
+    )
+    fireEvent.click(within(updatedRow as HTMLElement).getByRole('button', { name: '编辑' }))
+    const editDialog = await screen.findByRole('dialog')
+    expect(within(editDialog).queryByText('登录页显示')).not.toBeInTheDocument()
   })
 
   it('查看打开详情弹窗展示连接信息', async () => {

@@ -23,10 +23,10 @@ cd ui && npm run dev
 两种形态（[@DEP-S13](./bdd.md#dep-s13) / [@DEP-S17](./bdd.md#dep-s17)）：
 
 ```bash
-# 形态 B：Compose 一体（postgres+pgvector / redis / rabbitmq / rustfs / opensandbox-server / moai）
-cp .env.example .env          # 唯一配置来源：账号/端口/对外地址/S3 自定义域名等
-bash deploy/deploy-compose.sh # 按 .env 生成 configs/system.json → 预拉沙箱镜像 → 拉取/构建 → 启动
-curl http://localhost:8080/api/common/serverinfo   # 冒烟
+# 形态 B：Compose 部署（自动判断独立部署或复用 moai 网络）
+cp .env.example .env          # 共享基础设施账号密码必须对齐
+bash deploy/deploy-compose.sh # 生成配置、自动选择 Compose 文件并启动
+curl http://localhost:8080/api/common/serverinfo   # 独立模式默认端口；复用模式默认 8081
 
 # 形态 A：Docker 单容器（仅前后端，外部提供 PG/Redis/MQ/OSS）
 cp configs/system.example.json configs/system.json   # 再按外部服务改 host
@@ -37,7 +37,7 @@ docker run -d --name moai -p 8080:8080 \
   whuanle/moai:latest
 ```
 
-要点：Compose 以 `.env` 为唯一来源生成 `configs/system.json`（挂载路径由 `MOAI_CONFIG_FILE` 指定），无需手写；存储为纯 S3 实现，`Storage.Endpoint` 须浏览器可达（可用 `.env` 的 `S3_ENDPOINT` 配自定义域名，见 [docker.md 3.1](./docker.md)）；`rustfs-init` 自动建桶；OpenSandbox 为独立容器、沙箱镜像只拉不部署；图数据库按需接入（[docker.md 第 7 节](./docker.md)）。
+要点：Compose 以 `.env` 为唯一来源生成 `configs/system.json`（挂载路径由 `MOAI_CONFIG_FILE` 指定）；存在网络 `moai` 时脚本复用 PostgreSQL/Redis/RabbitMQ/RustFS，不再启动第二套基础设施，并在共享 PostgreSQL 中自动创建独立 `moai` 数据库、在共享 RustFS 中幂等建 `S3_BUCKET`；各服务的数据库、桶和 Redis 前缀独立。共享账号凭据需一致。存储端点须浏览器可达；OpenSandbox 独立部署；详见 [docker.md](./docker.md)。
 
 ## 3. 升级 / 回滚
 

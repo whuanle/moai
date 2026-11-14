@@ -69,7 +69,6 @@ describe('AppInfoSection（应用信息分区）', () => {
         name: '售前助手',
         description: '售前售后问答',
         isExternal: false,
-        isAuth: false,
         classifyId: 0,
       })
       expect(onReload).toHaveBeenCalled()
@@ -106,9 +105,10 @@ describe('AppInfoSection（应用信息分区）', () => {
     expect(screen.queryByRole('button', { name: /申请上架/ })).toBeNull()
   })
 
-  it('外部应用展示访问授权开关', async () => {
+  it('is_auth 已退役：外部应用不再展示访问授权开关', async () => {
     renderSection({ ...DETAIL, isExternal: true })
 
-    expect(await screen.findByText('需要授权访问')).toBeTruthy()
+    await screen.findByLabelText('应用名称')
+    expect(screen.queryByText('需要授权访问')).toBeNull()
   })
 })

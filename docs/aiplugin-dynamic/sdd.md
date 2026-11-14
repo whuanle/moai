@@ -5,7 +5,7 @@
 
 ## 目标
 
-在已有 `aiplugin` 插件引擎（`PluginRegistry` + `PluginExecutor`）与静态插件能力之上，落地**动态插件**实例化管理。动态插件模板（如 `dynamic_greet`）存在于内存注册表，无实例时不可直接运行；需**先创建实例并填入配置**，一个模板可创建多个实例，实例 key 全局唯一。
+MoAI 不再在宿主中内置动态插件模板；插件实现统一由 `F:\workspace\mo_plugins` 制作并发布到 MoPlatform。管理员可在 MoAI 插件页浏览在线目录并安装包；MoAI 校验摘要与包路径、保存元数据和图标、将包落在 `configs/plugins/{key}`，启动时用共享契约隔离加载上下文自动发现。动态插件包仍可作为模板供现有实例配置流程使用，实例 key 全局唯一。
 
 需要实现：
 1. **动态插件实例列表**：查询已创建的实例（DB `plugin_dynamic ⋈ plugin`），展示实例 key、模板 key、标题、分类、配置。
@@ -22,10 +22,14 @@ src/aiplugin/
 │   ├── Commands/DeleteDynamicPluginCommand.cs       {pluginKey} → EmptyCommandResponse
 │   ├── Commands/UpdatePluginAvatarCommand.cs        {pluginId(路由回填),objectKey} → EmptyCommandResponse
 │   └── Queries/Responses/QueryPluginManageListCommandResponseItem.cs  （增强：+TempleteKey,+Config,+ConfigExample,+AvatarPath）
-├── MoAI.AIPlugin.Dynamic/                            内置模板宿主（Models/ 各模板模型 + Plugins/ 模板实现）
+├── MoAI.AIPlugin.Dynamic/                            历史内置模板源码（不再被 MoAI 宿主引用）
 ├── MoAI.AIPlugin.Core/
 │   ├── Commands/RunPluginCommandHandler.cs          （增强：key 未命中注册表时走实例解析器）
 │   └── Services/IDynamicInstanceResolver.cs         {Resolve(instanceKey) → (Template,ConfigJson)}
+│   ├── Services/PluginMarketplaceService.cs          MoPlatform 目录、安装、上架/下架
+│   ├── Services/PluginPackageArchive.cs              SHA-256 后安全解压、rootPath 与包内信息检查
+│   ├── Services/PluginPackageRuntimeLoader.cs        非可回收 ALC、共享契约复用默认加载上下文
+│   └── Services/PluginPackageStartupLoader.cs        启动扫描安装记录并逐包加载，故障隔离
 ├── MoAI.AIPlugin.Custom/
 │   ├── Commands/SaveDynamicPluginCommandHandler.cs  校验 + 创建/更新实例
 │   ├── Commands/DeleteDynamicPluginCommandHandler.cs 软删除
@@ -59,6 +63,10 @@ ui/src/
 | GET | `/api/ai/plugin`（`QueryAll`） | admin | 返回注册表模板列表，含 `configExample/paramsExample/isDynamic`（前端模板下拉） |
 | GET | `/api/ai/plugin/manage/list` | admin | 动态实例列表（`kind=dynamic`），带 `templeteKey/config/configExample`；**仅系统侧记录**（`team_id=0`），团队自有实例不进此列表（@DYN-S70） |
 | POST | `/api/ai/plugin/manage/{id}/avatar` | admin | `{objectKey}` → `EmptyCommandResponse`，设置插件头像（`plugin.avatar_path`，custom/dynamic/static 共用） |
+| GET | `/api/ai/plugin/online/catalog` | admin | 服务端以稳定安装指纹查询 MoPlatform 已上架目录；不向浏览器暴露平台调用 |
+| POST | `/api/ai/plugin/online/install` | admin | `{platformPluginId}` → 校验 manifest/SHA-256/ZIP，保存描述和版本快照到 `plugin_package`，图标上传 MoAI OSS，包写入 `configs/plugins/{key}` |
+| GET | `/api/ai/plugin/online/installed` | admin | 本地已安装包、版本、SHA-256、图标与启停状态 |
+| POST | `/api/ai/plugin/online/status` | admin | `{pluginKey,enabled}` 上架/下架；无卸载端点，文件与已加载程序集保留 |
 
 > 控制器 `[Route("/ai/plugin/...")]` 之上还有全局 `/api` 路由前缀，实际路径以 `/api/ai/plugin/...` 为准（早期文档漏写 `/api`，2026-09-11 依 OpenAPI 实测修正）。
 
@@ -80,8 +88,23 @@ ui/src/
 8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 系统侧实例、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
 9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
 10. **创建态头像**：插件记录保存前无 id 可登记，保存命令带可选 `avatarPath`（创建直接落库；更新仅传了才覆盖，不传不改动），Handler 同样校验 `Files` 表已登记（404 防伪造，校验先于任何写入，失败不建实例）。前端共享模态在系统侧新建态渲染 `PluginAvatarPendingUpload`（仅直传暂存 objectKey，随保存提交），编辑态保留 `PluginAvatarUpload`（选图即登记）；团队侧保存命令无此字段、暂不开放（团队列表亦未展示头像）。
+11. **在线目录隔离**：MoAI 后端通过 `MoPlatformPluginClient` 调用 MoPlatform `/api/client/plugin/*`，每次带 `X-MoAI-Client-Fingerprint`；指纹由 Infra 单例持久化到 `configs/mo-platform-client.fingerprint`，不使用管理员密码、PAT 或 JWT。指纹只用于 Redis 配额归并，不作为密码学认证。
+12. **安装快照与存储**：`plugin_package` 保存平台插件/版本 id、版本、包 SHA-256、兼容清单、本地描述、启用状态与 MoAI OSS 图标 key；完整包与 `moai.plugin.json` 写在 `configs/plugins/{key}`。MoAI 不在展示时重拉平台图片/描述。
+13. **加载和下架**：启动扫描 `configs/plugins` 下每个非隐藏子目录，以 `moai.plugin.json` 中的入口路径加载主程序集；DB 安装记录用于校验摘要并提供启停状态，但不限制目录发现。入口由 `AssemblyDependencyResolver` 解析私有依赖，`MoAI.*`/`Maomi.*`/MediatR 共用默认加载上下文，包故障隔离且不阻断宿主。在线安装落盘并提交 DB 后立即动态加载当前进程；下架不删除包、不卸载 ALC，也不提供在线覆盖/卸载。
+14. **内置动态模板退役**：`MainModule` 不再注册 `DynamicPluginsModule`，历史模板源码与回归材料保留但不进入宿主；从 MoPlatform 安装的动态包通过同一插件契约进入模板/运行时。
 
-## 内置动态模板
+## MoPlatform 在线插件分发
+
+- MoAI 服务端用 `MoAI:MoPlatform:Endpoint` + `configs/plugins/.client-fingerprint` 持久化指纹访问 MoPlatform 的独立 client 区；Docker 部署持久化挂载整个 `configs/plugins`，浏览器只请求 MoAI API。在线包安装固定 manifest 版本，先校验版本、TFM、宿主依赖、下载 authority、大小与 SHA-256，再安全解压到 `configs/plugins/{key}`。
+- `plugin_package` 保存包版本/摘要/清单/平台来源/本地描述与 OSS 图标 key；包目录的 `moai.plugin.json` 是启动扫描快照。插件包是进程内代码，安装前必须信任发布者；MoPlatform 静态分析不代表恶意代码沙箱。
+- 每个包由不可回收的 `AssemblyLoadContext` 加载；MoAI/AiPlugin/Maomi/MediatR 契约从默认上下文共享，私有依赖由包目录的 `.deps.json` 解析。`CustomPluginModule` 注册的启动服务扫描 `configs/plugins` 下每个非隐藏子目录，以 `moai.plugin.json` 中的入口路径加载主程序集；DB 安装记录用于校验摘要并提供启停状态，但不限制目录发现。单包错误只隔离该包。
+- 在线安装在包目录落盘并提交 DB 后，立即在当前进程创建独立 `AssemblyLoadContext`、加载入口程序集并注册插件；无需重启。运行时下架只禁用注册态，不卸载程序集或删除目录。
+- 本地 `moai.plugin.json` 由 Web JSON 选项序列化为 camelCase；运行时读取必须使用同一选项，避免 key 等必需字段被默认的大小写敏感反序列化静默置空。
+- 上架/下架切换注册表可用态并同步数据库，不卸载程序集、不删除文件。在线覆盖与卸载不开放；同 key 已安装时需先下架或保持现状，包升级流程后续另行定义。
+
+## 历史内置动态模板（已退役）
+
+> 历史实现清单，仅供旧实例配置迁移与代码审阅；`DynamicPluginsModule` 已从 MoAI 宿主移除，表内源码不会随宿主发布。新的插件能力从 MoPlatform 安装，见本 SDD「MoPlatform 在线插件分发」。
 
 模板 key 全局唯一、发布后不可变；「模板」只描述代码能力，「实例」才承载 API Key 等敏感配置（存 `plugin_dynamic.config`）。
 
@@ -298,7 +321,7 @@ ui/src/
 `base64_decode` 细节（Base64 解码模板，证据 `tests/MoAI.AIPlugin.Dynamic.Tests/Base64DecodePluginTests.cs`，@DYN-S117~S120）：
 
 1. **形态三分**（`Base64ContentDetector`）：严格 UTF-8 判定（解码失败或含 NUL 等控制字符即非文本）→ 文本直接回填 `Text`；图片魔数（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF）与 SVG 文本特判（SVG 是文本但按图片处理才能在对话渲染）→ 转存 `public/images`；其余二进制 → 转存 `public/files`，`Kind` 标记 text/image/binary。
-2. **图片/二进制不回 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL，且大负载直接撑爆模型上下文——统一经 `IStorageService.UploadStreamAsync` 按 SHA-256 内容寻址转存（同内容幂等去重），响应回 `/static` 公开地址与 `Markdown` 引用（图片 `![image](url)`、其它 `[file](url)`）。这是动态插件首个构造注入 `IStorageService` 的模板（csproj 增 `MoAI.Storage.Shared` 引用）。
+2. **图片/二进制不回 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL，且大负载直接撑爆模型上下文——统一经 `IPluginFileStorageService.SaveAsync` 按 SHA-256 内容寻址转存（同内容幂等去重），响应回 `/static` 公开地址与 `Markdown` 引用（图片 `![image](url)`、其它 `[file](url)`）。插件只依赖 `MoAI.AIPlugin.Shared`；文件服务契约由 Core 适配 `IStorageService`，插件包不再引用存储模块（2026-11-14 起，见 [静态插件 SDD 插件文件存储服务](../aiplugin-static/sdd.md#插件文件存储服务2026-11-14)）。
 3. **输入宽容**：允许空白与换行（`Convert.FromBase64String` 语义）、自动剥离 `data:<mime>;base64,` 前缀；二进制形态有类型声明时信任声明定扩展名（application/pdf → .pdf 等白名单），无声明按 octet-stream/.bin；`FileName` 仅取扩展名参与 ObjectKey 与回显，不进地址。
 4. **护栏**：解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数不会低估，杜绝超大输入先占内存）；解码后精确比对 `MaxDecodeBytes`（`InitAsync` 钳制 1024-32MB）；文本按 `TextMaxLength` 截断（100-200000）置 `TextTruncated`；空白/非法 Base64/超限均 `BusinessException(400)` 归一且不发生转存。
 

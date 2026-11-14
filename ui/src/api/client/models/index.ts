@@ -1675,7 +1675,7 @@ export interface CreateAppCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
+     * 【已退役，仅兼容接收后忽略】外部应用一律匿名开放；按用户身份访问请改用内部应用访问点（访问用户 token）.
      */
     isAuth?: boolean | null;
     /**
@@ -3294,6 +3294,10 @@ export interface CreateOAuthConnectionCommand extends Parsable {
      * 图标地址.
      */
     iconUrl?: string | null;
+    /**
+     * 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用，仅供系统接口绑定第三方 id 与换发访问用户 token）.
+     */
+    isVisible?: boolean | null;
     /**
      * 应用 key.
      */
@@ -8492,6 +8496,7 @@ export function deserializeIntoCreateOAuthConnectionCommand(createOAuthConnectio
     return {
         "agentId": n => { createOAuthConnectionCommand.agentId = n.getStringValue(); },
         "iconUrl": n => { createOAuthConnectionCommand.iconUrl = n.getStringValue(); },
+        "isVisible": n => { createOAuthConnectionCommand.isVisible = n.getBooleanValue(); },
         "key": n => { createOAuthConnectionCommand.key = n.getStringValue(); },
         "name": n => { createOAuthConnectionCommand.name = n.getStringValue(); },
         "provider": n => { createOAuthConnectionCommand.provider = n.getEnumValue<OAuthPrivider>(OAuthPrividerObject); },
@@ -10284,6 +10289,7 @@ export function deserializeIntoQueryAllOAuthConnectionCommandResponseItem(queryA
         "authorizeUrl": n => { queryAllOAuthConnectionCommandResponseItem.authorizeUrl = n.getStringValue(); },
         "iconUrl": n => { queryAllOAuthConnectionCommandResponseItem.iconUrl = n.getStringValue(); },
         "id": n => { queryAllOAuthConnectionCommandResponseItem.id = n.getGuidValue(); },
+        "isVisible": n => { queryAllOAuthConnectionCommandResponseItem.isVisible = n.getBooleanValue(); },
         "key": n => { queryAllOAuthConnectionCommandResponseItem.key = n.getStringValue(); },
         "name": n => { queryAllOAuthConnectionCommandResponseItem.name = n.getStringValue(); },
         "provider": n => { queryAllOAuthConnectionCommandResponseItem.provider = n.getStringValue(); },
@@ -14207,6 +14213,7 @@ export function deserializeIntoUpdateOAuthConnectionCommand(updateOAuthConnectio
     return {
         "agentId": n => { updateOAuthConnectionCommand.agentId = n.getStringValue(); },
         "iconUrl": n => { updateOAuthConnectionCommand.iconUrl = n.getStringValue(); },
+        "isVisible": n => { updateOAuthConnectionCommand.isVisible = n.getBooleanValue(); },
         "key": n => { updateOAuthConnectionCommand.key = n.getStringValue(); },
         "name": n => { updateOAuthConnectionCommand.name = n.getStringValue(); },
         "oAuthConnectionId": n => { updateOAuthConnectionCommand.oAuthConnectionId = n.getGuidValue(); },
@@ -17650,6 +17657,10 @@ export interface QueryAllOAuthConnectionCommandResponseItem extends AuditsInfo, 
      * id.
      */
     id?: Guid | null;
+    /**
+     * 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用）.
+     */
+    isVisible?: boolean | null;
     /**
      * 应用 key.
      */
@@ -23397,6 +23408,7 @@ export function serializeCreateOAuthConnectionCommand(writer: SerializationWrite
     if (createOAuthConnectionCommand) {
         writer.writeStringValue("agentId", createOAuthConnectionCommand.agentId);
         writer.writeStringValue("iconUrl", createOAuthConnectionCommand.iconUrl);
+        writer.writeBooleanValue("isVisible", createOAuthConnectionCommand.isVisible);
         writer.writeStringValue("key", createOAuthConnectionCommand.key);
         writer.writeStringValue("name", createOAuthConnectionCommand.name);
         writer.writeEnumValue<OAuthPrivider>("provider", createOAuthConnectionCommand.provider);
@@ -25189,6 +25201,7 @@ export function serializeQueryAllOAuthConnectionCommandResponseItem(writer: Seri
         writer.writeStringValue("authorizeUrl", queryAllOAuthConnectionCommandResponseItem.authorizeUrl);
         writer.writeStringValue("iconUrl", queryAllOAuthConnectionCommandResponseItem.iconUrl);
         writer.writeGuidValue("id", queryAllOAuthConnectionCommandResponseItem.id);
+        writer.writeBooleanValue("isVisible", queryAllOAuthConnectionCommandResponseItem.isVisible);
         writer.writeStringValue("key", queryAllOAuthConnectionCommandResponseItem.key);
         writer.writeStringValue("name", queryAllOAuthConnectionCommandResponseItem.name);
         writer.writeStringValue("provider", queryAllOAuthConnectionCommandResponseItem.provider);
@@ -29112,6 +29125,7 @@ export function serializeUpdateOAuthConnectionCommand(writer: SerializationWrite
     if (updateOAuthConnectionCommand) {
         writer.writeStringValue("agentId", updateOAuthConnectionCommand.agentId);
         writer.writeStringValue("iconUrl", updateOAuthConnectionCommand.iconUrl);
+        writer.writeBooleanValue("isVisible", updateOAuthConnectionCommand.isVisible);
         writer.writeStringValue("key", updateOAuthConnectionCommand.key);
         writer.writeStringValue("name", updateOAuthConnectionCommand.name);
         writer.writeGuidValue("oAuthConnectionId", updateOAuthConnectionCommand.oAuthConnectionId);
@@ -31473,7 +31487,7 @@ export interface UpdateAppCommand extends Parsable {
      */
     description?: string | null;
     /**
-     * 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
+     * 【已退役，仅兼容接收后忽略】外部应用一律匿名开放；按用户身份访问请改用内部应用访问点（访问用户 token）.
      */
     isAuth?: boolean | null;
     /**
@@ -31919,6 +31933,10 @@ export interface UpdateOAuthConnectionCommand extends Parsable {
      * 图标地址.
      */
     iconUrl?: string | null;
+    /**
+     * 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用）。null=不修改（旧客户端未携带时保持原值），避免编辑时把隐藏连接器意外改为显示.
+     */
+    isVisible?: boolean | null;
     /**
      * 应用 key.
      */
