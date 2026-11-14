@@ -84,9 +84,12 @@ public class RefreshTeamMcpPluginCommandHandler : IRequestHandler<RefreshTeamMcp
         // 连接前对 Header/Query 做团队变量插值（数据库中保存的是原始占位符）
         var interpolatedOptions = await BuildInterpolatedConnectionOptionsAsync(connectionOptions, request.TeamId, cancellationToken);
 
+        IReadOnlyDictionary<string, McpToolHints> toolHints;
         try
         {
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(interpolatedOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            var syncResult = await McpServerConnector.GetPluginFunctionsAsync(interpolatedOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            pluginFunctionEntities = syncResult.Functions;
+            toolHints = syncResult.Hints;
         }
         catch (Exception ex)
         {
@@ -100,6 +103,9 @@ public class RefreshTeamMcpPluginCommandHandler : IRequestHandler<RefreshTeamMcp
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // MCP 工具注解（readOnlyHint/destructiveHint）同步到工具元数据表（只回写注解位，保留管理员配置）
+        await McpToolHintsSyncHelper.UpsertAsync(_databaseContext, pluginEntity.Id, toolHints, cancellationToken);
 
         transactionScope.Complete();
 

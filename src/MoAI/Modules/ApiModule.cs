@@ -7,6 +7,7 @@ namespace MoAI.Modules;
 /// </summary>
 [InjectModule<ConfigureLoggerModule>]
 [InjectModule<ConfigureAuthorizaModule>]
+[InjectModule<ConfigureSignalRModule>]
 [InjectModule<ConfigureMVCModule>]
 [InjectModule<OpenApiModule>]
 [InjectModule<ConfigureMediatRModule>]

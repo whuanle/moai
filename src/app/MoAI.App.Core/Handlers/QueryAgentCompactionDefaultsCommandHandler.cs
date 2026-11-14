@@ -1,4 +1,5 @@
 using MediatR;
+using MoAI.AI;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
 
@@ -12,13 +13,18 @@ public class QueryAgentCompactionDefaultsCommandHandler : IRequestHandler<QueryA
     /// <inheritdoc/>
     public Task<QueryAgentCompactionDefaultsResponse> Handle(QueryAgentCompactionDefaultsCommand request, CancellationToken cancellationToken)
     {
-        // 内置默认值与 MoAI.AI.Models.AppAgentExecutionSettings 属性初始值一致（应用未显式配置字段时的运行时合并基线）
+        // 内置默认值与 MoAI.AI.Models.AppAgentExecutionSettings 属性初始值一致（应用未显式配置字段时的运行时合并基线）；
+        // 模式与比例常量统一取自 AppCompactionPolicy（运行时 AppCompactionStrategyFactory 同源）
         return Task.FromResult(new QueryAgentCompactionDefaultsResponse
         {
-            ToolResultTriggerMessages = 16,
-            SummarizeTriggerTokens = 16000,
-            PreserveTurns = 8,
-            HardTokenLimit = 64000,
+            CompactionMode = AppCompactionPolicy.ModeAuto,
+            ToolEvictionRatio = AppCompactionPolicy.ToolEvictionRatio,
+            SummarizeTriggerRatio = AppCompactionPolicy.SummarizeTriggerRatio,
+            SummarizeTargetRatio = AppCompactionPolicy.SummarizeTargetRatio,
+            TruncationRatio = AppCompactionPolicy.TruncationRatio,
+            ToolResultTriggerMessages = AppCompactionPolicy.FallbackToolResultTriggerMessages,
+            SummarizeTriggerTokens = AppCompactionPolicy.FallbackSummarizeTriggerTokens,
+            HardTokenLimit = AppCompactionPolicy.FallbackHardTokenLimit,
             EnableSummarization = false,
             SummarizerModelId = string.Empty,
         });

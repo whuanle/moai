@@ -4,7 +4,7 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createCreateAccessAppCommandResponseFromDiscriminatorValue, serializeCreateAccessAppCommand, serializeCreateAccessAppCommandResponse, type BusinessValidationResult, type CreateAccessAppCommand, type CreateAccessAppCommandResponse } from '../../models/index.js';
 // @ts-ignore
-import { AccessAppItemRequestBuilderRequestsMetadata, type AccessAppItemRequestBuilder } from './item/index.js';
+import { AccessAppItemRequestBuilderNavigationMetadata, AccessAppItemRequestBuilderRequestsMetadata, type AccessAppItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
@@ -26,7 +26,7 @@ export interface AccessAppRequestBuilder extends BaseRequestBuilder<AccessAppReq
      byId(id: Guid) : AccessAppItemRequestBuilder;
     /**
      * 创建应用接入，key 原文仅在创建响应返回一次；需要团队 Admin 及以上角色.
-     * @param body 创建应用接入（团队下的 key，应用 token 可访问其所属团队的资源），需要团队 Admin 及以上角色.
+     * @param body 创建应用接入（团队下的 key，moai-ac-，可全量访问 /api/teamres），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<CreateAccessAppCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -38,7 +38,7 @@ export interface AccessAppRequestBuilder extends BaseRequestBuilder<AccessAppReq
      post(body: CreateAccessAppCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<CreateAccessAppCommandResponse | undefined>;
     /**
      * 创建应用接入，key 原文仅在创建响应返回一次；需要团队 Admin 及以上角色.
-     * @param body 创建应用接入（团队下的 key，应用 token 可访问其所属团队的资源），需要团队 Admin 及以上角色.
+     * @param body 创建应用接入（团队下的 key，moai-ac-，可全量访问 /api/teamres），需要团队 Admin 及以上角色.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -54,6 +54,7 @@ export const AccessAppRequestBuilderUriTemplate = "{+baseurl}/api/access-app";
 export const AccessAppRequestBuilderNavigationMetadata: Record<Exclude<keyof AccessAppRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     byId: {
         requestsMetadata: AccessAppItemRequestBuilderRequestsMetadata,
+        navigationMetadata: AccessAppItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["id"],
     },
     list: {

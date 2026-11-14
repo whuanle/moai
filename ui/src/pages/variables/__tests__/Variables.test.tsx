@@ -74,7 +74,8 @@ describe('Variables', () => {
     renderVariables()
     expect(await screen.findByText(/WIKI_NAME/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '新建变量' })).toBeInTheDocument()
-    expect(screen.getAllByLabelText('编辑').length).toBeGreaterThan(0)
+    // 操作按钮已统一为「图标 + 文字」link 形态
+    expect(screen.getAllByRole('button', { name: /编辑$/ }).length).toBeGreaterThan(0)
   })
 
   it('Member 角色只读（无新建/操作列）', async () => {

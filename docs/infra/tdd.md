@@ -23,6 +23,7 @@
 | @INF-S19、@INF-S20 | 代码走查（Yitter/AESProvider） | PASS（2026-09-01） |
 | @INF-S21 | 代码走查 `PBKDF2Helper`（10000 迭代/128B）+ auth 轮登录 E2E 互证 | PASS（2026-09-01） |
 | @INF-S22 | 对照 `configs/system.json` 与运行实例（amqp://127.0.0.1:5672，容器 moai-rabbitmq healthy）+ `AddMaomiMQ` 参数走查 | PASS（2026-09-01） |
+| @INF-S23 | `tests/MoAI.Infra.Tests/MoPlatformClientFingerprintTests#LoadOrCreate_ShouldPersistAndReuseFingerprint / LoadOrCreate_ShouldReplaceMalformedFingerprint` | PASS 2/2（2026-11-14） |
 | 构建 | `dotnet build src/MoAI/MoAI.csproj`（仓库根） | PASS（2026-09-01，0 错误；58 个存量 NU1507 警告与 infra 无关，耗时 3.39s） |
 | 模块图 | `grep -n "InjectModule" src/MoAI/MainModule.cs src/infra/MoAI.Infra.Core/InfraCoreModule.cs` | PASS（2026-09-01，MainModule→InfraCoreModule→Configuration+ExternalHttp） |
 

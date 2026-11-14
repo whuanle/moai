@@ -10,6 +10,12 @@ vi.mock('@/api/plugin', () => ({
   pluginApi: {
     getManagePlugins: vi.fn(),
   },
+  pluginMarketplaceApi: {
+    getCatalog: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+    getInstalled: vi.fn().mockResolvedValue([]),
+    install: vi.fn(),
+    setEnabled: vi.fn(),
+  },
   customPluginApi: {
     getCustomPlugins: vi.fn().mockResolvedValue([]),
     getCustomPluginDetail: vi.fn(),

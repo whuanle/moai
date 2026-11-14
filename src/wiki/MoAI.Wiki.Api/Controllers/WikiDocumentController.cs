@@ -125,6 +125,33 @@ public class WikiDocumentController : ControllerBase
     }
 
     /// <summary>
+    /// 查询知识库文档的内嵌图片附件列表（文档提取 pdf/word/excel/ppt 时落出的图片资产），仅团队成员可访问.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="documentId">文档 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiDocumentImagesCommandResponse"/>.</returns>
+    [HttpGet("{documentId}/images")]
+    public Task<QueryWikiDocumentImagesCommandResponse> QueryImages(long wikiId, long documentId, CancellationToken ct)
+    {
+        return _mediator.Send(new QueryWikiDocumentImagesCommand { WikiId = wikiId, DocumentId = documentId }, ct);
+    }
+
+    /// <summary>
+    /// 下载知识库文档的内嵌图片附件，仅团队成员可访问.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="documentId">文档 id.</param>
+    /// <param name="imageId">图片附件 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="SimpleString"/> 包含下载地址.</returns>
+    [HttpGet("{documentId}/images/{imageId}/download")]
+    public Task<SimpleString> DownloadImage(long wikiId, long documentId, long imageId, CancellationToken ct)
+    {
+        return _mediator.Send(new DownloadWikiDocumentImageCommand { WikiId = wikiId, DocumentId = documentId, ImageId = imageId }, ct);
+    }
+
+    /// <summary>
     /// 读取知识库文档已提取的完整内容（markdown），仅团队成员可访问；用于内容区「全部加载」.
     /// </summary>
     /// <param name="wikiId">知识库 id.</param>

@@ -50,6 +50,12 @@ public class UpdateOAuthConnectionCommand : IRequest<EmptyCommandResponse>, IMod
     /// </summary>
     public string? AgentId { get; init; }
 
+    /// <summary>
+    /// 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用）。
+    /// null=不修改（旧客户端未携带时保持原值），避免编辑时把隐藏连接器意外改为显示.
+    /// </summary>
+    public bool? IsVisible { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<UpdateOAuthConnectionCommand> validate)
     {

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>MoAI.Subsystem.Client</RootNamespace>
+		<!-- 生成代码（Generated/）缺 XML 注释，经 .editorconfig generated_code=true 豁免分析器后仅剩 CS1591，这里兜底 -->
+		<NoWarn>$(NoWarn);CS1591</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Http" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+		<PackageReference Include="Microsoft.Kiota.Bundle" />
+	</ItemGroup>
+
+</Project>

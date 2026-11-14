@@ -43,7 +43,7 @@ public class GraphSearchService : IGraphSearchService
     }
 
     /// <inheritdoc/>
-    public async Task<GraphSearchResult> SearchAsync(IReadOnlyCollection<long> graphIds, string query, int topPerGraph = 5, double? minScore = null, CancellationToken cancellationToken = default)
+    public async Task<GraphSearchResult> SearchAsync(IReadOnlyCollection<long> graphIds, string query, int topPerGraph = 5, double? minScore = null, int neighborTopK = 10, CancellationToken cancellationToken = default)
     {
         if (graphIds == null || graphIds.Count == 0 || string.IsNullOrWhiteSpace(query) || topPerGraph <= 0)
         {
@@ -55,6 +55,9 @@ public class GraphSearchService : IGraphSearchService
         {
             return new GraphSearchResult([], [], string.Empty, []);
         }
+
+        // 邻居数钳制（B3：度数优先取 Top）
+        var neighborLimit = neighborTopK <= 0 ? NeighborLimit : Math.Min(neighborTopK, 30);
 
         var graphs = await _databaseContext.KnowledgeGraphs
             .AsNoTracking()
@@ -126,7 +129,7 @@ public class GraphSearchService : IGraphSearchService
                     continue;
                 }
 
-                hits.Add(await BuildHitAsync(graph.Id, result, entityTypeNames, relationTypeNames, cancellationToken));
+                hits.Add(await BuildHitAsync(graph.Id, result, entityTypeNames, relationTypeNames, neighborLimit, cancellationToken));
             }
         }
 
@@ -140,49 +143,42 @@ public class GraphSearchService : IGraphSearchService
             .Take(topPerGraph * searchedGraphCount)
             .ToList();
 
-        return new GraphSearchResult(ordered, BuildContents(ordered), BuildText(ordered), skippedHints);
+        // B3 预算组装：整段填充、低分命中优先被裁、携带截断标记
+        var (text, textTruncated) = GraphSearchTextHelper.BuildHitsText(ordered);
+        return new GraphSearchResult(ordered, BuildContents(ordered), text, skippedHints, textTruncated);
     }
 
     /// <summary>
-    /// 组装单个命中：一跳邻居按边补方向与关系类型名，实体类型名由 PG 类型表补齐.
+    /// 组装单个命中：一跳邻居按度数降序取 Top（B3：枢纽邻居优先），按边补方向与关系类型名，实体类型名由 PG 类型表补齐.
     /// </summary>
     private async Task<GraphSearchHit> BuildHitAsync(
         long kgId,
         KgEmbeddingSearchResult result,
         Dictionary<long, string> entityTypeNames,
         Dictionary<long, string> relationTypeNames,
+        int neighborLimit,
         CancellationToken cancellationToken)
     {
         var record = result.Record;
-        // 第三返回值 Truncated 被丢弃：邻居超 10 有意截断，不做文本提示（LLM 上下文成本考量）
-        var (neighborNodes, edges, _) = await _store.GetNeighborsAsync(kgId, record.NodeId, NeighborLimit, cancellationToken);
+        var (neighborNodes, edges, _) = await _store.GetNeighborsByDegreeAsync(kgId, record.NodeId, neighborLimit, cancellationToken);
 
-        // 邻居节点按 id 建字典（同 id 多次返回取首个）
+        // 邻居节点按 id 建字典（同 id 多次返回取首个；节点序即度数降序）
         var nodeMap = new Dictionary<string, KnowledgeGraphNodeRecord>();
         foreach (var node in neighborNodes)
         {
             nodeMap.TryAdd(node.Id, node);
         }
 
+        // 邻居按度数降序进入上下文；同一邻居的多条关系逐边成行（保留既有语义：每边一行）
         var neighbors = new List<GraphNeighbor>();
-        foreach (var edge in edges)
+        foreach (var node in neighborNodes)
         {
-            var isOut = string.Equals(edge.SourceNodeId, record.NodeId, StringComparison.Ordinal);
-            var isIn = string.Equals(edge.TargetNodeId, record.NodeId, StringComparison.Ordinal);
-            if (!isOut && !isIn)
+            foreach (var edge in edges.Where(e => e.SourceNodeId == node.Id || e.TargetNodeId == node.Id))
             {
-                // 不与命中节点相连的边（理论上不会出现）直接跳过
-                continue;
+                var isOut = string.Equals(edge.SourceNodeId, record.NodeId, StringComparison.Ordinal);
+                relationTypeNames.TryGetValue(edge.RelationTypeId, out var relationName);
+                neighbors.Add(new GraphNeighbor(relationName, isOut ? "out" : "in", node.Name, node.Description, node.Degree));
             }
-
-            var neighborId = isOut ? edge.TargetNodeId : edge.SourceNodeId;
-            if (!nodeMap.TryGetValue(neighborId, out var neighborNode))
-            {
-                continue;
-            }
-
-            relationTypeNames.TryGetValue(edge.RelationTypeId, out var relationName);
-            neighbors.Add(new GraphNeighbor(relationName, isOut ? "out" : "in", neighborNode.Name, neighborNode.Description));
         }
 
         entityTypeNames.TryGetValue(record.EntityTypeId, out var entityTypeName);
@@ -209,27 +205,6 @@ public class GraphSearchService : IGraphSearchService
         => hits.Select(x => $"{x.Name}：{x.Description}").ToList();
 
     /// <summary>
-    /// 子图文本化：每命中实体一段（首行节点 + 邻居行），段间空行，总长超限截断.
-    /// 行格式由 <see cref="GraphSearchTextHelper"/> 统一提供（与工作流 kgSearch 节点共享，保证两侧同源同形）.
-    /// </summary>
-    private static string BuildText(IReadOnlyList<GraphSearchHit> hits)
-    {
-        var builder = new StringBuilder();
-        foreach (var hit in hits)
-        {
-            builder.AppendLine(GraphSearchTextHelper.BuildHitHeader(hit));
-            foreach (var neighbor in hit.Neighbors)
-            {
-                builder.AppendLine(GraphSearchTextHelper.BuildNeighborLine(neighbor));
-            }
-
-            builder.AppendLine();
-        }
-
-        return GraphSearchTextHelper.Truncate(builder.ToString().TrimEnd());
-    }
-
-    /// <summary>
     /// 解析团队可用的向量化模型；与 WikiEmbeddingService/KgEmbeddingService 保持语义同步.
     /// </summary>
     private async Task<(AiModelEntity Model, AiChannelEntity Channel)?> ResolveModelAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
@@ -240,7 +215,7 @@ public class GraphSearchService : IGraphSearchService
                     select new { m, c };
 
         var candidates = await query.ToListAsync(cancellationToken);
-        var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+        var model = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (model == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

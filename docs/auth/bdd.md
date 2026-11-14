@@ -159,4 +159,217 @@ Feature: 前端登录链路
   Scenario: 注册页前端校验
     When 用户在注册页提交两次密码不一致或必填缺失
     Then 表单就地提示错误且不发起请求
+
+Feature: 邮箱验证码（注册与找回密码）
+  Background:
+    Given SMTP 邮件服务与注册验证码开关由超级管理员在系统设置中控制
+    And 客户端可匿名查询服务器信息获取两个能力开关
+
+  @AUTH-S26 @auto:e2e
+  Scenario: 找回密码入口随 SMTP 启用而开放
+    When 匿名查询服务器信息
+    Then SMTP 邮件服务启用时 passwordResetEnabled 为真，登录页展示忘记密码入口
+    And SMTP 邮件服务停用后该开关复位为假
+
+  @AUTH-S27 @auto:e2e
+  Scenario: 未启用 SMTP 邮件服务时不可自助找回密码
+    Given SMTP 邮件服务未启用
+    When 请求发送找回密码验证码或提交重置密码
+    Then 均返回请求错误（400）提示联系管理员重置（管理员可在用户管理中重置用户密码）
+
+  @AUTH-S28 @auto:e2e
+  Scenario: 找回密码发送验证码
+    When 对未注册邮箱请求找回密码验证码
+    Then 返回资源不存在（404）提示邮箱未注册
+    When 对已注册邮箱请求找回密码验证码
+    Then 6 位数字验证码邮件经 SMTP 服务发出，10 分钟内有效
+
+  @AUTH-S29 @auto:e2e
+  Scenario: 验证码发送冷却
+    When 同一邮箱同一用途 60 秒内再次请求发送验证码
+    Then 返回请求过多（429）提示发送过于频繁；发送失败时不占用冷却可立即重试
+
+  @AUTH-S30 @auto:e2e
+  Scenario: 验证码一次性与错误上限
+    When 验证码被成功消费一次后再次使用
+    Then 返回请求错误（400）提示已过期或未发送
+    When 同一验证码连续 5 次输入错误
+    Then 验证码作废，后续即使输入正确也返回请求错误（400）提示次数过多
+
+  @AUTH-S31 @auto:e2e
+  Scenario: 验证码邮件模板渲染
+    When 发送验证码邮件
+    Then 主题与正文按系统设置绑定的通知中心模板渲染（{{code}}/{{siteName}}/{{expireMinutes}} 双花括号占位符替换为实际值，HTML 模板按 HTML 邮件发送）
+    And 绑定为空时按用途回退内置模板（注册/登录/找回密码验证码邮件，HTML），绑定模板缺失或渲染失败时同样回退
+    And 无内置模板可用时使用代码内置纯文本模板兜底，模板中未知变量按字面保留
+
+  @AUTH-S32 @auto:e2e
+  Scenario: 验证码重置密码
+    When 携带错误验证码提交重置
+    Then 返回请求错误（400）
+    When 携带正确验证码与 RSA 加密新密码提交重置
+    Then 密码更新成功，旧密码登录被拒（401）且新密码可登录
+
+  @AUTH-S33 @auto:e2e
+  Scenario: 注册验证码开关回显
+    When 匿名查询服务器信息
+    Then 仅 SMTP 邮件服务启用且注册验证码开关开启时 registerEmailCodeRequired 为真，注册页展示验证码输入与发送按钮
+    And 关闭开关或停用 SMTP 后该标记为假
+
+  @AUTH-S34 @auto:e2e
+  Scenario: 开启后注册必须携带验证码
+    When 注册验证码开关开启后提交注册
+    Then 缺少验证码或验证码错误均返回请求错误（400）
+    And 携带正确验证码注册成功并可正常登录
+
+  @AUTH-S35 @auto:e2e
+  Scenario: 未开启注册验证码时直接注册
+    When 注册验证码开关关闭
+    Then 注册无需验证码（存量注册链路行为不变）
+
+  @AUTH-S36 @auto:e2e
+  Scenario: 登录安全策略基线
+    When 登录邮箱验证码策略为 off 且未开启强制两步验证
+    Then 用户名密码校验通过后直接颁发令牌（secondFactor=none、mfaPending=false）
+
+  @AUTH-S37 @auto:e2e
+  Scenario: 两步验证（TOTP）绑定全流程
+    When 登录用户查询两步验证状态
+    Then 返回 enabled/forced 与系统强制开关一致
+    When 调 setup 生成密钥
+    Then 返回 base32 密钥与 otpauth:// URI（issuer 为站点名），密钥 AES 加密落库但未启用
+    When 携带错误或非 6 位动态码调 enable
+    Then 返回请求错误（400）提示动态码错误
+    When 携带认证器当前动态码调 enable
+    Then 绑定激活（enabled=true），重复 setup 返回 400，改用户数据后用户态缓存失效
+
+  @AUTH-S38 @auto:e2e
+  Scenario: 登录 TOTP 挑战与一次性票据
+    When 已绑定两步验证的用户提交正确用户名密码
+    Then 不颁发令牌，返回 secondFactor=totp 与 5 分钟有效的一次性登录票据
+    When 携带错误动态码或已消费票据调 login/verify
+    Then 分别返回请求错误（400）与登录会话过期（401）
+    When 携带正确动态码调 login/verify
+    Then 颁发令牌；同一时间步长的动态码再次使用被拒（防重放），下一时间步动态码可用
+
+  @AUTH-S39 @auto:e2e
+  Scenario: 关闭两步验证
+    When 携带错误动态码调 disable
+    Then 返回请求错误（400）
+    When 携带当前动态码调 disable
+    Then 解绑成功（密钥与启用标记清空），后续登录直达不再挑战
+    When 未启用时调 disable
+    Then 返回请求错误（400）提示尚未开启
+
+  @AUTH-S40 @auto:e2e
+  Scenario: 强制两步验证
+    When 系统开启强制 2FA 后未绑定用户登录
+    Then 照常颁发令牌但 mfaPending=true（token 携带 mfa_pending 声明）
+    When 该令牌访问绑定流程外接口
+    Then 返回 403 提示请先绑定两步验证
+    When 访问白名单接口（/auth/two_factor/*、/account/userinfo）
+    Then 正常可用，userinfo 回显 mfaPending=true
+    When 完成绑定后用原令牌再访问业务接口
+    Then 立即恢复完整访问（用户态缓存已失效重查），无需重新登录
+    When 强制期间调 disable
+    Then 返回请求错误（400）提示系统已强制开启
+
+  @AUTH-S41 @auto:e2e
+  Scenario: 管理员重置用户两步验证
+    When 管理员对目标用户调 reset_2fa
+    Then 清空其 TOTP 绑定，用户下次登录回到强制绑定流程
+    When 对 root 自身或未绑定用户调 reset_2fa
+    Then 分别返回 400（root 受保护 / 尚未绑定）
+    When 非管理员调 reset_2fa
+    Then 返回 403
+
+  # @AUTH-S42（登录邮箱验证码两段式票据流程）已随 2026-11-03 登录一体化改造退役：邮箱验证码并入 /auth/login 一体提交，
+  # 不再签发 emailCode 票据、login/verify 仅服务 TOTP 票据；编号永久退役不复用，现行行为见 @AUTH-S43 ~ @AUTH-S46。
+
+  @AUTH-S43 @auto:e2e
+  Scenario: 登录一体化（邮箱验证码随登录请求一体提交）
+    When 策略为 always 且 SMTP 已启用，查询 challenge_policy（purpose=login）
+    Then 回显 captchaRequired=false / emailCodeRequired=true（off 模式下两者均 false）
+    When 登录页按用户名调 login_code/send
+    Then 向该账号邮箱发送验证码（60 秒冷却内重发 429；账号不存在或未绑定邮箱时静默成功且不发邮件，防枚举）
+    When 以账号 + 密码 + 邮箱验证码一体提交登录
+    Then 缺码 400 / 错码 400（错码不计登录失败）；全部正确直接颁发令牌（secondFactor=none，不再有 emailCode 票据）
+    When 匿名公共发码端点收到 purpose=login
+    Then 拒绝（400）
+
+  @AUTH-S44 @auto:e2e
+  Scenario: TOTP 优先于邮箱验证码
+    Given 用户已绑定两步验证且邮箱验证码策略为 always
+    When 查询 challenge_policy
+    Then emailCodeRequired=false（认证器优先）
+    When 提交登录
+    Then 返回 secondFactor=totp 挑战与一次性票据且不发邮件；凭票据验证动态码后颁发令牌
+
+  @AUTH-S45 @auto:e2e
+  Scenario: after_fail 分级递进（图形验证码先行）
+    Given 图形验证码与邮箱验证码策略均为 after_fail（邮箱码阈值 1）
+    When 无失败记录时提交登录
+    Then 直接颁发令牌
+    When 密码错误一次后再查询 challenge_policy
+    Then 回显 captchaRequired=true / emailCodeRequired=true（分级同现）
+    When 提交缺图形验证码 / 错误图形验证码的登录
+    Then 均返回 400（图形验证码在密码校验前消费，错误不计登录失败计数）
+    When 以正确图形验证码提交但缺邮箱验证码
+    Then 返回 400 提示请输入邮箱验证码（失败计数保留，策略不降级）
+    When 发码端点缺图形验证码 / 过图形验证码后发码
+    Then 前者 400；后者成功且图形验证码不消费（答对可继续用于登录提交）
+    When 以图形验证码 + 邮箱验证码一体提交登录
+    Then 颁发令牌并清除失败计数，下次直接登录
+    And 同一图形验证码消费后复用返回 400（一码一登录）
+
+  @AUTH-S46 @auto:e2e
+  Scenario: SMTP 未启用时邮箱验证码策略失效
+    When SMTP 邮件服务关闭后提交正确账号密码
+    Then 直接颁发令牌（不发邮件）
+
+  Feature: 图形验证码
+  @AUTH-S48 @auto:e2e
+  Scenario: 生成与策略回显
+    When 请求 captcha/new
+    Then 返回 captchaId 与自绘 SVG 图片（base64）及 5 分钟有效期
+    When 查询 challenge_policy（purpose=login/register/forgot，模式 off）
+    Then 三个目的均回显 captchaRequired=false
+
+  @AUTH-S49 @auto:e2e
+  Scenario: 校验语义
+    Given 图形验证码策略为 always
+    When 缺图形验证码提交登录
+    Then 返回 400
+    When 同一验证码连续答错 3 次
+    Then 每次均 400 且第 4 次即使答案正确也失效（作废）
+    When 以正确答案（不区分大小写）提交登录
+    Then 登录成功且该验证码被消费，复用返回 400（一码一登录）
+
+  @AUTH-S50 @auto:e2e
+  Scenario: 图形验证码错误不计登录失败
+    When 图形验证码答错两次（密码正确）
+    Then 登录均返回 400 且 challenge_policy 不升级（用户名失败计数不变）
+
+  @AUTH-S51 @auto:e2e
+  Scenario: 分级递进阈值
+    Given 邮箱验证码 after_fail 且阈值为 3，图形验证码 after_fail
+    When 密码失败次数不足阈值（fail<3）时查询 challenge_policy
+    Then 仅要求图形验证码（emailCodeRequired=false），图形码+密码即可登录
+    When 密码失败达到阈值（fail≥3）
+    Then 升级为图形验证码+邮箱验证码同时要求；发码端点亦需过图形验证码
+    When 过码发码后以图形验证码 + 邮箱验证码一体登录
+    Then 颁发令牌并清除失败计数，下次直接登录
+
+  @AUTH-S52 @auto:e2e
+  Scenario: 注册与找回密码发码面
+    Given 图形验证码策略为 after_fail
+    When 同一 IP 首次发码（注册或找回）
+    Then 免图形验证码；发码一次后 challenge_policy 对该目的升级
+    When 再次发码缺图形验证码
+    Then 返回 400；过码后发码成功且同码可重复用于发码（发码只验不消费）
+
+  @AUTH-S53 @auto:e2e
+  Scenario: 验证码图片生成限流
+    When 同一 IP 一分钟内请求 captcha/new 超过 20 次
+    Then 超限请求返回 429
 ```

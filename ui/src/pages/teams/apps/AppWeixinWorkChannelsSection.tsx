@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CopyOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag } from 'antd'
+import { CheckCircleOutlined, CopyOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
 import { AppChannelGuide } from './AppChannelGuide'
 import {
   createWeixinWorkApp,
@@ -19,7 +18,6 @@ interface AppWeixinWorkChannelsSectionProps {
   teamId: number
   appId: string
   canManage: boolean
-  isPublished: boolean
 }
 
 interface FormValues {
@@ -44,7 +42,7 @@ function buildCallbackUrl(weixinWorkAppId: string): string {
  * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、编辑（名称/企业 ID/AgentId/Secret/回调配置，密钥留空保持不变）、
  * 停用/启用、删除；删除即彻底移除连接，不保留可复用的连接。
  */
-export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPublished }: AppWeixinWorkChannelsSectionProps) {
+export function AppWeixinWorkChannelsSection({ teamId, appId, canManage }: AppWeixinWorkChannelsSectionProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(true)
@@ -187,17 +185,16 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
       },
     },
     {
-      title: t('appWeixinWorkChannels.columnBindTime'),
-      dataIndex: 'bindTime',
-      width: 170,
-      render: (value: string | null) => (value ? formatDateTime(value) : '-'),
+      title: t('appWeixinWorkChannels.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.bindTime} />,
     },
     {
-      title: t('appWeixinWorkChannels.columnCreator'),
-      dataIndex: 'createUserName',
-      width: 120,
-      ellipsis: true,
-      render: (value: string | null) => value || '-',
+      title: t('appWeixinWorkChannels.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
     },
   ]
 
@@ -205,16 +202,17 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
     columns.push({
       title: t('appWeixinWorkChannels.columnActions'),
       key: 'actions',
-      width: 190,
+      width: 250,
       render: (_, record) => (
         <Space size={spacing.sm}>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
             {t('appWeixinWorkChannels.edit')}
           </Button>
           {record.isDisable ? (
             <Button
               type="link"
               size="small"
+              icon={<CheckCircleOutlined />}
               loading={actionKey === `enable:${record.weixinWorkAppId}`}
               onClick={() => void runAction(`enable:${record.weixinWorkAppId}`, () => updateWeixinWorkApp(record.weixinWorkAppId, { name: record.name, description: record.description ?? undefined, corpId: record.corpId, agentId: record.agentId, isDisable: false }))}
             >
@@ -227,7 +225,7 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
               cancelText={t('appManage.cancel')}
               onConfirm={() => void runAction(`disable:${record.weixinWorkAppId}`, () => updateWeixinWorkApp(record.weixinWorkAppId, { name: record.name, description: record.description ?? undefined, corpId: record.corpId, agentId: record.agentId, isDisable: true }))}
             >
-              <Button type="link" size="small" loading={actionKey === `disable:${record.weixinWorkAppId}`}>
+              <Button type="link" size="small" icon={<StopOutlined />} loading={actionKey === `disable:${record.weixinWorkAppId}`}>
                 {t('appWeixinWorkChannels.disable')}
               </Button>
             </Popconfirm>
@@ -238,7 +236,7 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
             cancelText={t('appManage.cancel')}
             onConfirm={() => void runAction(`delete:${record.weixinWorkAppId}`, () => deleteWeixinWorkApp(record.weixinWorkAppId))}
           >
-            <Button type="link" size="small" danger loading={actionKey === `delete:${record.weixinWorkAppId}`}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} loading={actionKey === `delete:${record.weixinWorkAppId}`}>
               {t('appWeixinWorkChannels.delete')}
             </Button>
           </Popconfirm>
@@ -258,7 +256,6 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      {!isPublished && <Alert type="warning" showIcon message={t('appWeixinWorkChannels.unpublishedHint')} />}
       <DSCard
         title={t('appWeixinWorkChannels.cardTitle')}
         extra={
@@ -297,7 +294,9 @@ export function AppWeixinWorkChannelsSection({ teamId, appId, canManage, isPubli
               <Form.Item label={t('appWeixinWorkChannels.fieldCallbackUrl')}>
                 <Space.Compact style={{ width: '100%' }}>
                   <Input readOnly value={buildCallbackUrl(editing.weixinWorkAppId)} />
-                  <Button icon={<CopyOutlined />} onClick={() => void copyCallbackUrl()} aria-label={t('common.copy')} />
+                  <Tooltip title={t('common.copy')}>
+                    <Button icon={<CopyOutlined />} onClick={() => void copyCallbackUrl()} aria-label={t('common.copy')} />
+                  </Tooltip>
                 </Space.Compact>
               </Form.Item>
             )}

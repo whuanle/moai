@@ -155,17 +155,19 @@ export function ChatSidePanel({ items, activeKey, onSelect, onCloseTab, onClose 
               >
                 <Icon className="moai-chat__panel-tab-icon" />
                 <span className="moai-chat__panel-tab-title">{title}</span>
-                <button
-                  type="button"
-                  className="moai-chat__panel-tab-close"
-                  aria-label={t('appChat.uiTabClose')}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCloseTab(item.key)
-                  }}
-                >
-                  <CloseOutlined />
-                </button>
+                <Tooltip title={t('appChat.uiTabClose')}>
+                  <button
+                    type="button"
+                    className="moai-chat__panel-tab-close"
+                    aria-label={t('appChat.uiTabClose')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onCloseTab(item.key)
+                    }}
+                  >
+                    <CloseOutlined />
+                  </button>
+                </Tooltip>
               </div>
             )
           })}

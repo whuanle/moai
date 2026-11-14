@@ -29,6 +29,11 @@ public class TeamPluginItem
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
+    /// 插件头像存储路径（plugin.avatar_path），内存静态插件与未设置头像时为 null.
+    /// </summary>
+    public string? AvatarPath { get; init; }
+
+    /// <summary>
     /// 插件类型：mcp|openapi|native|tool.
     /// </summary>
     public PluginType Type { get; set; }

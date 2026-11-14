@@ -32,7 +32,7 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
     public bool IsExternal { get; init; }
 
     /// <summary>
-    /// 是否需要授权访问；仅外部应用有效，内部应用必须为 false.
+    /// 【已退役，仅兼容接收后忽略】外部应用一律匿名开放；按用户身份访问请改用内部应用访问点（访问用户 token）.
     /// </summary>
     public bool IsAuth { get; init; }
 
@@ -53,10 +53,11 @@ public class UpdateAppCommand : IRequest<EmptyCommandResponse>, IUserIdContext, 
     public static void Validate(AbstractValidator<UpdateAppCommand> validate)
     {
         // AppId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("应用名称不能为空.").MaximumLength(20).WithMessage("应用名称最长 20 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("应用名称不能为空.").MaximumLength(20).WithMessage("应用名称最长 20 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("应用名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("应用描述最长 255 个字符.");
         validate.RuleFor(x => x.ClassifyId).GreaterThanOrEqualTo(0).WithMessage("分类 id 不正确.");
-        validate.RuleFor(x => x.IsAuth).Must((cmd, isAuth) => !isAuth || cmd.IsExternal)
-            .WithMessage("只有外部应用可以设置需要授权访问.");
+
+        // is_auth 已退役：字段仍接收但完全忽略（外部应用一律匿名开放）.
     }
 }

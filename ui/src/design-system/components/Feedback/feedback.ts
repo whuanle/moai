@@ -22,6 +22,9 @@ export interface FeedbackNotificationOptions {
   placement?: NotificationPlacement
   onClick?: () => void
   closable?: boolean
+  /** 自定义卡片样式（透传 antd notification），如强调色底/描边提升辨识度 */
+  style?: React.CSSProperties
+  className?: string
 }
 
 /**

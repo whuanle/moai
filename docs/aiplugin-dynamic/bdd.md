@@ -2,6 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 上游：[../aiplugin-static/bdd.md](../aiplugin-static/bdd.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/ops-p1-plugins-e2e.mjs](../../local-dev/ops-p1-plugins-e2e.mjs) ｜ [local-dev/ops-p2-plugins-e2e.mjs](../../local-dev/ops-p2-plugins-e2e.mjs) ｜ [local-dev/ops-p0-plugins-e2e.mjs](../../local-dev/ops-p0-plugins-e2e.mjs) ｜ [local-dev/hot-board-e2e.mjs](../../local-dev/hot-board-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。标签：`@DYN-S<n>` 为场景主键（永久不复用）；`@auto:e2e` 由脚本验证（默认 `local-dev/dynamic-plugin-e2e.mjs`，博查成功路径与响应解析为 `local-dev/bocha-search-e2e.mjs`，墨迹天气为 `local-dev/moji-weather-e2e.mjs`），`@manual` 人工走查。
+> 生命周期说明（2026-11-14）：MoAI 宿主已停止注册仓库内置动态模板；旧内置模板成功路径为历史场景，其实现迁往 `mo_plugins` 并通过 MoPlatform 在线包分发。动态实例配置与团队插件行为仍按本文件有效。
 
 ## Feature: 动态插件实例列表
 
@@ -1072,4 +1073,262 @@
     Then 均归一为 400 可读失败且不发生任何转存
     And 超大输入在解码前即按长度粗估拒绝（不先占内存）
     And 实例配置越界时 InitAsync 钳制（字节数与文本长度各归其界）
+```
+
+## Feature: 插件管理页重构与使用量统计（rounds 273）
+
+```gherkin
+  @DYN-S121 @auto:vitest
+  Scenario: 管理页工具栏规范化
+    When 管理员进入插件管理页任意列表页签
+    Then 页签下方一行工具栏：搜索与类型/可见性筛选在前、刷新居中、视图切换与导入/新建操作在竖线右侧
+    And 不再有「查询/重置」按钮，搜索输入防抖后即时过滤（自定义页签走服务端、动态/静态页签前端过滤）
+    And 分类筛选以 CheckableTag 行独立展示在工具栏下方
+
+  @DYN-S122 @auto:vitest
+  Scenario: 卡片与列表双视图
+    Given 默认为卡片视图：每插件一卡（头像+标题+名称、类型徽标、两行描述、分类/可见性/模板标签、使用量与更新时间）
+    When 点击工具栏「列表」
+    Then 切换为 DataTable：插件、类型、分类、描述、可见性、使用量、创建/更新审计列（AuditCell）与操作列
+    And 高频操作内联（查看函数/编辑/运行），低频操作收进「更多」下拉（刷新函数/授权团队），删除保持 Popconfirm 内联
+
+  @DYN-S123 @auto:vitest
+  Scenario: 统计页签
+    Given 管理页新增「统计」页签
+    When 打开统计页签
+    Then 展示概览卡（插件总数/MCP/OpenAPI/累计调用）、类型构成、分类分布与调用量 TOP5，数据取自管理列表聚合（counter/functionCount）
+    And 调用趋势因按日统计未上线展示空态占位
+
+  @DYN-S124 @manual
+  Scenario: 插件运行累加使用量
+    When 插件经管理端运行、团队运行或 Agent 会话工具调用执行
+    Then 按插件记录 id 累加一次使用量（Redis 缓冲、Hangfire 定时落库 plugins.counter），列表与统计页可见
+```
+
+## Feature: 插件使用统计（全团队汇总，2026-11-02）
+
+```gherkin
+  @DYN-S125 @auto:e2e
+  Scenario: 系统插件统计端点门禁
+    Given 已登录用户与普通用户
+    When 无 token 访问 GET /api/ai/plugin/manage/stats
+    Then 返回 401
+    When 普通用户访问
+    Then 返回 403（只有管理员可以管理插件）
+    When 管理员访问
+    Then 返回 200 且概览结构齐全（totalPlugins/mcpCount/openApiCount/totalCalls/totalFunctions/top/classifies）
+
+  @DYN-S126 @auto:e2e
+  Scenario: 系统统计为全团队汇总口径，TOP 名称携带团队维度
+    Given 系统侧插件与团队自有插件并存，且已创建团队插件「统计样本插件」
+    When 管理员查询插件统计
+    Then TOP 项均带团队维度字段（teamId 必带；团队自有插件 teamName 为团队名称，系统侧为空省略）
+    And 分类分布项带 classifyId/count（未分类 classifyName 省略）
+    And 近 30 天趋势逐日补 0（items 长度 30）
+    And 团队统计口径的插件总数不超过本端点（全团队汇总 ⊇ 单团队）
+```
+
+## Feature: 多工具动态插件（2026-11-04）
+
+```gherkin
+  @DYN-S127 @auto:e2e
+  Scenario: 多工具模板经工具清单字段暴露工具与参数示例
+    Given 内置多工具模板 text_toolkit（slugify/word_count/reverse）
+    When 管理员查询模板清单 GET /api/ai/plugin
+    Then text_toolkit 项带 3 个工具（key/title/description/paramsExample）且 toolCount=3
+    And 每个工具的参数运行示例（带注释原文）随清单返回
+
+  @DYN-S128 @auto:e2e
+  Scenario: 实例工具清单接口按实例 key 返回全部工具
+    Given 已创建 text_toolkit 模板的实例
+    When 管理员访问 GET /api/ai/plugin/tools?key=实例key
+    Then 返回 3 个工具且每个工具带参数示例
+
+  @DYN-S129 @auto:e2e
+  Scenario: 实例配置注释原文透传保留
+    Given 实例配置 JSON 含注释与换行（Monaco 原文）
+    When 保存实例后回读管理列表
+    Then 配置原文与保存内容一致（注释未剥离、换行保留）
+
+  @DYN-S130 @auto:e2e
+  Scenario: 存量单工具模板兼容（tools 固定 run 项）
+    Given 单工具模板（如 dynamic_greet）
+    When 查询模板清单
+    Then 该模板 tools 固定一个 key=run 的项且 toolCount=1
+
+  @DYN-S131 @auto:e2e
+  Scenario: 单工具参数示例接口
+    When 管理员访问 GET /api/ai/plugin/tool/example?key=实例key&toolKey=reverse
+    Then 返回该工具的参数运行示例
+    When toolKey 不存在
+    Then 返回 404
+
+  @DYN-S132 @auto:e2e
+  Scenario: 按 toolKey 运行工具（独立调试）
+    When 运行实例并指定 function=slugify 与参数
+    Then 仅执行 slugify 工具并返回其结果（slug 化文本）
+
+  @DYN-S133 @auto:e2e
+  Scenario: 按 toolKey 运行另一工具互不干扰
+    When 运行实例并指定 function=word_count
+    Then 仅执行 word_count 并返回字符/词/行统计
+
+  @DYN-S134 @auto:e2e
+  Scenario: 未知 toolKey 运行被拒
+    When 运行实例指定不存在的 toolKey
+    Then 运行结果失败且错误信息包含「工具不存在」与可用工具清单
+    When 不带 toolKey 运行多工具插件
+    Then 同样失败并提示可用工具
+
+  @DYN-S135 @auto:e2e
+  Scenario: 存量单工具实例运行行为不变
+    Given dynamic_greet 模板的实例
+    When 不带 toolKey 运行
+    Then 运行成功返回问候结果
+
+  @DYN-S136 @auto:e2e
+  Scenario: 存量实例工具清单固定 run 项
+    Given dynamic_greet 实例
+    When 查询实例工具清单
+    Then 固定返回一个 key=run 的项
+```
+
+## Feature: 插件语义配置（使用须知/语义条目/工具元数据，2026-11-04）
+
+```gherkin
+  Background:
+    Given 已创建的插件（系统动态插件实例）与其 plugin.id
+
+  @DYN-S137 @auto:e2e
+  Scenario: 语义配置保存与回显
+    When 管理员保存插件语义配置（使用须知 + 插件级常驻条目 + 工具级按需条目 + 工具元数据含补充说明/调用策略/只读注解）
+    Then 保存成功
+    When 查询语义配置
+    Then 使用须知、条目（标题/内容/注入方式/关联工具）、工具元数据与策略 JSON、工具清单全部回显一致
+
+  @DYN-S138 @auto:e2e
+  Scenario: 保存为整体覆盖语义
+    Given 已保存 2 条语义条目
+    When 提交仅含其中 1 条的新列表
+    Then 不在提交列表内的旧条目被删除
+
+  @DYN-S139 @auto:e2e
+  Scenario: 调用策略 action 非法被拒
+    When 提交工具元数据 callPolicy.action 不在 block/confirm/audit 内
+    Then 返回 400
+
+  @DYN-S140 @auto:e2e
+  Scenario: 调用策略正则不合法被拒
+    When 提交 denyPatterns 含无法编译的正则
+    Then 返回 400
+
+  @DYN-S141 @auto:e2e
+  Scenario: 使用须知超限被拒
+    When 提交超过 2000 字符的使用须知
+    Then 返回 400
+
+  @DYN-S142 @auto:e2e
+  Scenario: 条目内容超限被拒
+    When 提交常驻条目内容超过 4000 字符
+    Then 返回 400
+
+  @DYN-S143 @auto:e2e
+  Scenario: 非管理员无语义配置与工具清单访问权
+    When 普通用户访问 GET /api/ai/plugin/manage/{id}/semantic 与 GET /api/ai/plugin/tools
+    Then 均返回 403
+
+  @DYN-S144 @auto:e2e
+  Scenario: 插件不存在返回 404
+    When 管理员访问不存在的插件 id 语义配置
+    Then 返回 404
+```
+
+## Feature: 团队插件语义配置（2026-11-04）
+
+```gherkin
+  @DYN-S154 @auto:e2e
+  Scenario: 非团队成员无法访问团队插件语义配置
+    Given 团队自有插件与其 plugin.id
+    When 非团队成员访问 GET /api/team/{teamId}/plugin/{id}/semantic
+    Then 返回 404（团队维度隔离）
+
+  @DYN-S155 @auto:e2e
+  Scenario: 团队成员可读语义配置
+    When 团队成员访问语义配置
+    Then 返回 200 且工具清单可见（单工具固定 run 项）
+
+  @DYN-S156 @auto:e2e
+  Scenario: 团队成员不可保存语义配置
+    When 团队成员（Member）提交 PUT 语义配置
+    Then 返回 403（只有团队管理员可以管理插件）
+
+  @DYN-S157 @auto:e2e
+  Scenario: 团队 Owner/Admin 保存并回显
+    When 团队 Owner 保存语义配置（使用须知 + 按需条目 + 工具元数据含调用策略与只读注解）
+    Then 保存成功且回显一致（语义数据仅落在团队自有插件上）
+
+  @DYN-S158 @auto:e2e
+  Scenario: 团队侧保存与系统侧同一校验
+    When 提交调用策略 action 非法的工具元数据
+    Then 返回 400
+```
+
+## Feature: MoPlatform 在线插件分发与本地包生命周期
+
+```gherkin
+  @DYN-S159 @manual
+  Scenario: 管理员安装在线插件并本地化展示资源
+    Given MoPlatform 插件目录存在已上架且兼容的插件包
+    When 管理员在在线插件页搜索并安装该插件
+    Then MoAI 校验清单与下载包 SHA-256 后将包保存到本地插件目录
+    And 插件描述快照写入数据库且图标上传到 MoAI OSS
+
+  @DYN-S160 @auto:unit
+  Scenario: 不安全插件包路径或描述冲突被拒
+    Given 管理员正在安装在线插件包
+    When ZIP 含越界路径或包内 key 与平台清单不一致
+    Then 安装失败且不注册该插件
+    And 解压不会在暂存目录之外写入文件
+
+  @DYN-S161 @auto:unit
+  Scenario: 下架只禁用插件而不卸载已加载程序集
+    Given 在线插件已加载并出现在注册表
+    When 管理员下架该插件
+    Then 插件从可发现列表移除且后续运行被拒
+    And 插件仍保持已注册并保留本地包目录
+
+  @DYN-S162 @manual
+  Scenario: 重启后自动发现已安装插件包
+    Given configs/plugins 下包含有效插件目录与本地元数据
+    When MoAI 服务重新启动
+    Then 插件目录中的主程序集自动载入且已上架插件可被应用工具发现
+    And 单个包加载失败不会阻断其它插件或宿主启动
+
+  @DYN-S163 @auto:vitest
+  Scenario: 管理员只能上架或下架而不能卸载
+    Given 管理员打开在线插件页并查看已安装插件
+    When 管理员下架某插件
+    Then 界面展示下架状态与可恢复上架操作
+    And 界面不提供删除或卸载操作
+
+  @DYN-S164 @manual
+  Scenario: 已下架插件保留描述、图标与包文件
+    Given 在线插件已安装并上传图标到 MoAI OSS
+    When 管理员将其下架并刷新页面
+    Then 插件仍在已安装列表且使用本地描述与图标
+    And MoAI 不再依赖 MoPlatform 的实时图片或描述地址
+
+  @DYN-S165 @auto:unit
+  Scenario: 在线插件安装快照可被运行时加载器读取
+    Given 安装流程已将插件元数据以 camelCase 写入本地快照
+    When 加载器读取该插件快照
+    Then 插件 key、包摘要与入口程序集均被正确读取
+    And 有效插件不会因元数据字段大小写不匹配而自动下架
+
+  @DYN-S166 @auto:unit
+  Scenario: 启动扫描发现插件目录并跳过暂存目录
+    Given configs/plugins 下有多个插件目录与一个中断安装留下的隐藏暂存目录
+    When 插件模块枚举启动时需要加载的插件目录
+    Then 每个插件目录都进入加载流程
+    And 隐藏暂存目录不会被当成已安装插件
 ```

@@ -14,6 +14,9 @@ export interface UserListItem {
   isRoot?: boolean | null
   isDisable?: boolean | null
   createTime?: string | null
+  createUserName?: string | null
+  updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface UserListResult {
@@ -60,4 +63,10 @@ export async function resetUserPassword(id: number, newPassword: string): Promis
   await client.api.usermanage.user
     .byId(String(id))
     .password.put({ newPassword: rsaEncrypt(info.rsaPublic, newPassword) })
+}
+
+/** 重置用户两步验证（管理员）：清空 TOTP 绑定，用户下次登录后需重新绑定 */
+export async function resetUserTwoFactor(id: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.usermanage.user.byId(String(id)).reset_2fa.put()
 }

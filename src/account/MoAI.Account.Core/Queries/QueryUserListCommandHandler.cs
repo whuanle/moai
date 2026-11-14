@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Account.Queries;
 using MoAI.Account.Queries.Responses;
+using MoAI.Account.Services;
 using MoAI.Storage.Services;
 
 namespace MoAI.Account.Queries;
@@ -14,16 +15,19 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IStorageService _storageService;
+    private readonly IUserInfoFillService _userInfoFillService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryUserListCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="storageService"></param>
-    public QueryUserListCommandHandler(DatabaseContext databaseContext, IStorageService storageService)
+    /// <param name="userInfoFillService">用户信息填充服务.</param>
+    public QueryUserListCommandHandler(DatabaseContext databaseContext, IStorageService storageService, IUserInfoFillService userInfoFillService)
     {
         _databaseContext = databaseContext;
         _storageService = storageService;
+        _userInfoFillService = userInfoFillService;
     }
 
     /// <inheritdoc/>
@@ -62,7 +66,10 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
                 u.AvatarPath,
                 u.IsAdmin,
                 u.IsDisable,
-                u.CreateTime
+                u.CreateTime,
+                u.CreateUserId,
+                u.UpdateTime,
+                u.UpdateUserId
             })
             .ToListAsync(cancellationToken);
 
@@ -79,8 +86,13 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
             IsAdmin = u.IsAdmin,
             IsRoot = u.Id.ToString() == rootValue,
             IsDisable = u.IsDisable,
-            CreateTime = u.CreateTime
+            CreateTime = u.CreateTime,
+            CreateUserId = (int)u.CreateUserId,
+            UpdateTime = u.UpdateTime,
+            UpdateUserId = (int)u.UpdateUserId
         }).ToList();
+
+        await _userInfoFillService.FillAsync(items, cancellationToken);
 
         return new QueryUserListCommandResponse
         {

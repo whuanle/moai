@@ -89,6 +89,10 @@ internal partial class PluginConfiguration : IEntityTypeConfiguration<PluginEnti
         entity.Property(e => e.UpdateUserId)
             .HasComment("最后修改人")
             .HasColumnName("update_user_id");
+        entity.Property(e => e.UsageNotes)
+            .HasDefaultValueSql("''::text")
+            .HasComment("使用须知/领域背景（管理员维护，随工具清单注入模型系统提示）")
+            .HasColumnName("usage_notes");
 
         OnConfigurePartial(entity);
     }

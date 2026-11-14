@@ -38,6 +38,16 @@ public sealed class McpToolDescriptor
     /// 入参 JSON Schema（MCP 提供，可能为 null）.
     /// </summary>
     public string? InputSchema { get; init; }
+
+    /// <summary>
+    /// MCP readOnlyHint（工具声明只读），未声明为 null.
+    /// </summary>
+    public bool? ReadOnlyHint { get; init; }
+
+    /// <summary>
+    /// MCP destructiveHint（工具声明可能有破坏性），未声明为 null.
+    /// </summary>
+    public bool? DestructiveHint { get; init; }
 }
 
 /// <summary>
@@ -74,12 +84,18 @@ public sealed class McpToolCallService
 
         var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
 
-        return tools.Select(tool => new McpToolDescriptor
+        return tools.Select(tool =>
         {
-            Name = tool.Name,
-            Title = tool.Title ?? tool.Name,
-            Description = tool.Description ?? string.Empty,
-            InputSchema = tool.JsonSchema.ValueKind == JsonValueKind.Undefined ? null : tool.JsonSchema.GetRawText(),
+            var annotations = tool.ProtocolTool.Annotations;
+            return new McpToolDescriptor
+            {
+                Name = tool.Name,
+                Title = tool.Title ?? tool.Name,
+                Description = tool.Description ?? string.Empty,
+                InputSchema = tool.JsonSchema.ValueKind == JsonValueKind.Undefined ? null : tool.JsonSchema.GetRawText(),
+                ReadOnlyHint = annotations?.ReadOnlyHint,
+                DestructiveHint = annotations?.DestructiveHint,
+            };
         }).ToList();
     }
 

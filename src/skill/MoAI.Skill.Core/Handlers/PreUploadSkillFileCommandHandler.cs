@@ -40,7 +40,7 @@ public class PreUploadSkillFileCommandHandler : IRequestHandler<PreUploadSkillFi
             ContentType = request.ContentType,
             FileSize = request.FileSize,
             ObjectKey = objectKey,
-            Expiration = TimeSpan.FromMinutes(2)
+            Expiration = TimeSpan.FromMinutes(1)
         }, cancellationToken);
 
         return new PreUploadSkillFileCommandResponse

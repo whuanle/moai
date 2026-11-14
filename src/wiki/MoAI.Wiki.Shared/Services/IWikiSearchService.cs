@@ -11,14 +11,16 @@ namespace MoAI.Wiki.Services;
 public interface IWikiSearchService
 {
     /// <summary>
-    /// 在指定知识库集合内检索与查询最相似的切片.
+    /// 在指定知识库集合内检索与查询最相似的切片（向量召回 + 关键词混合检索融合排序）.
     /// </summary>
     /// <param name="wikiIds">知识库 id 集合.</param>
     /// <param name="query">查询文本.</param>
     /// <param name="top">每个知识库返回条数.</param>
+    /// <param name="isKeywordSearch">是否启用关键词混合检索（默认开启，关闭则退化为纯向量召回）.</param>
+    /// <param name="contextWindow">相邻上下文窗口大小（1-3，默认 1：命中片段的前一片段与后一片段）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>按相似度降序的命中项.</returns>
-    Task<IReadOnlyList<WikiSearchHit>> SearchAsync(IReadOnlyCollection<long> wikiIds, string query, int top, CancellationToken cancellationToken = default);
+    /// <returns>按融合相关性降序的命中项.</returns>
+    Task<IReadOnlyList<WikiSearchHit>> SearchAsync(IReadOnlyCollection<long> wikiIds, string query, int top, bool isKeywordSearch = true, int contextWindow = 1, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 在单个知识库内检索（召回测试）：支持文档范围过滤与相似度阈值，命中项含元数据类型.
@@ -26,11 +28,13 @@ public interface IWikiSearchService
     /// <param name="wikiId">知识库 id.</param>
     /// <param name="query">查询文本.</param>
     /// <param name="top">返回条数（1-50）.</param>
-    /// <param name="minScore">相似度阈值（0-1，含），null 表示不过滤.</param>
+    /// <param name="minScore">相似度阈值（0-1，含），仅作用于向量召回路径；设置大于 0 的阈值时本次检索退化为纯向量召回（关键词命中不带相似度分，不受阈值约束），null 表示不过滤.</param>
     /// <param name="documentIds">文档范围过滤；null 或空表示全部文档.</param>
+    /// <param name="isKeywordSearch">是否启用关键词混合检索（默认开启，关闭则退化为纯向量召回）.</param>
+    /// <param name="contextWindow">相邻上下文窗口大小（1-3，默认 1）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>按相似度降序的命中项.</returns>
-    Task<IReadOnlyList<WikiSearchHit>> SearchInWikiAsync(int wikiId, string query, int top, double? minScore = null, IReadOnlyCollection<long>? documentIds = null, CancellationToken cancellationToken = default);
+    /// <returns>按融合相关性降序的命中项.</returns>
+    Task<IReadOnlyList<WikiSearchHit>> SearchInWikiAsync(int wikiId, string query, int top, double? minScore = null, IReadOnlyCollection<long>? documentIds = null, bool isKeywordSearch = true, int contextWindow = 1, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 按文档 id 与切片序号批量获取原文切片（供 AI 在检索命中片段上下文不足时继续读取同一文档的其它片段）.

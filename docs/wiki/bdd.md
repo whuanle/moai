@@ -18,6 +18,8 @@ Scenario: 未登录不能访问
 Scenario: 参数校验
   When 以空名称/超长名称/非法 teamId 创建
   Then 返回参数错误
+  When 以含特殊字符（非中文/英文/数字/下划线）的名称创建
+  Then 返回参数错误（名称仅允许中文、英文、数字和下划线）
 
 @WK-S3 @auto:e2e
 Scenario: 角色权限
@@ -107,7 +109,7 @@ Scenario: 详情页新增 MCP 菜单并展示接入地址
   Given 团队成员打开知识库详情页
   Then 左侧菜单包含「MCP」入口
   When 进入 MCP 页
-  Then 页面展示该知识库的 MCP 服务器地址（服务对外地址 + /api/external/wiki/{wikiId}/mcp）且可一键复制
+  Then 页面展示该知识库的 MCP 服务器地址（服务对外地址 + /api/teamres/wiki/{wikiId}/mcp）且可一键复制
   And 页面提示鉴权方式（携带勾选「知识库 MCP」范围的接入 key）
 ```
 
@@ -126,6 +128,28 @@ Scenario: 管理入口按角色
   When 访问 /wiki
   Then 该团队卡片显示编辑/删除
   And 无可管理团队时不显示「新建」
+```
+
+## Feature: 团队知识库列表工具栏搜索
+
+```gherkin
+@WK-S46 @auto:vitest
+Scenario: 工具栏关键字搜索过滤卡片
+  Given 团队下已有多个知识库
+  When 在工具栏搜索框输入关键字（名称/描述子串，不区分大小写）并点「查询」或回车
+  Then 卡片仅保留命中项，「共 N 条」按过滤后数量回显
+  And 无命中时展示筛选空态（区别于完全无数据的空态）
+  And 输入未触发查询（未回车/未点查询）前列表不过滤
+
+@WK-S47 @auto:e2e
+Scenario: 跨知识库文件名搜索
+  Given 团队下多个知识库各自有文档
+  When 团队成员在列表页工具栏输入文件名关键字并触发查询
+  Then 后端按「前缀命中（同档按更新时间倒序）> 包含命中」排序返回命中文件（含所属库名），默认截断前 50 条
+  And 前端出现「知识库 N | 文件 M」视图切换：知识库有命中落知识库卡片视图，否则文件有命中自动落文件视图
+  And 文件行展示 文件名 + 所属知识库 + 更新时间，点击直达该文档详情页
+  And 软删文档与已删知识库的文档不出现
+  And 非团队成员 404、未登录 401、空关键字与非法 limit 400
 ```
 
 ## Feature: 向量化配置
@@ -213,10 +237,11 @@ Scenario: 上传完成后 markdown 自动入库
 
 @WK-S20 @auto:vitest
 Scenario: 不支持的文件类型自动提取被拒
-  Given 文档后缀不在 Maomi.ToMarkdown 支持范围
+  Given 文档后缀不在 Maomi.ToMarkdown 支持范围且不在纯文本兜底范围（二进制文件，起始 8KB 含 NUL 字节）
   When 上传完成触发自动提取
   Then 自动提取抛错被捕获，文档创建不受影响（isContentExtracted = false）
   And 操作页展示「内容未提取」，可手动重试
+  But 管理员放开的未知文本类扩展名（.csv/.sh/.cs 等）按纯文本兜底提取成功（见 @WK-S43）
 
 @WK-S21 @auto:e2e
 Scenario: 向量化前置校验
@@ -242,6 +267,73 @@ Scenario: 超管设置知识库最大文件大小并全局生效
   Then 返回 400（文件大小超过知识库上限）
   When 预上传恰好等于上限或恢复默认 50（或设为 0 不限制）后的文件
   Then 预上传通过（平台硬上限 1GB 仍然生效）
+```
+
+## Feature: 系统设置：知识库允许上传的文件类型（v2）
+
+> 设置项定义与保存校验见 [@SET-S44](../settings/bdd.md#set-s44)~[@SET-S46](../settings/bdd.md#set-s46)。
+
+```gherkin
+@WK-S43 @auto:e2e
+Scenario: 超管设置知识库允许上传的文件类型并全局生效
+  When 超管保存设置项 WIKI_ALLOWED_FILE_TYPES（逗号分隔扩展名，默认与文档/文本提取能力对齐共 42 种，图片暂不支持）
+  Then 团队成员访问 upload-limit 查询接口返回 allowedFileTypes（供上传控件 accept 与前端预检）
+  When 团队成员预上传不在允许类型内的文件（网页端与外部开放接口同一入口）
+  Then 返回 400 且错误信息携带允许类型清单
+  When 超管恢复默认允许类型
+  Then 原被拒绝的类型预上传通过
+  And 管理员放开的未知文本类扩展名（如 .sh）上传后按纯文本兜底提取入库，二进制文件提取失败不产出乱码
+  And 存量库中仍存历史默认值（10 种）且未被自定义过的部署，读取时自动按新默认 42 种返回
+```
+
+## Feature: 知识库 42 种格式上传与提取（代码/配置文本兜底 + EPUB/ODT/RTF 自研提取）
+
+> 提取路由与自研提取器设计见 [sdd.md](./sdd.md)「文档文本提取分层」；设置默认值见 [@WK-S43](#wk-s43) 与 [@SET-S44](../settings/bdd.md#set-s44)。
+
+```gherkin
+@WK-S56 @auto:e2e
+Scenario: 默认白名单内的各类文件上传后均可提取出正文
+  Given 默认允许类型为 42 种（Office/PDF/HTML/Markdown 之外含代码、配置与 EPUB/ODT/RTF）
+  When 团队成员上传代码文本文件（.py）并完成提取
+  Then 正文包含源码原文（纯文本兜底，保留代码行）
+  When 上传配置文件（.yaml）并完成提取
+  Then 正文保留键值行
+  When 上传 EPUB 电子书（zip 容器）
+  Then 按 container.xml 定位 OPF spine 顺序抽取章节，正文含章节标题与段落
+  When 上传 ODT 文档（zip 容器）
+  Then 按 content.xml 逐段抽取，正文含标题与段落
+  When 上传 RTF 文档（含 Unicode 转义与字体表）
+  Then 控制词剥离后正文含 Unicode 中文与换行，且不残留字体表内容
+  When 上传内容含 NUL 字节的二进制文件（伪装 .py）
+  Then 提取明确拒绝，文档不产出乱码正文
+  And 非常规扩展名（.mdx/.textpack）在白名单内预上传放行
+```
+
+## Feature: 文档内嵌图片附件（提取 pdf/word/excel/ppt 落出的图片资产，先存后用、不做 OCR）
+
+```gherkin
+@WK-S44 @auto:e2e
+Scenario: 提取文档时内嵌图片作为附件登记并可下载
+  When 团队成员上传含 2 张内嵌图片的 word 文档（上传完成即自动提取）
+  Then 文档图片列表返回 2 项，按文档内序号排列且含文件名/扩展名/大小/预签名下载地址
+  And 已提取正文不含图片引用（失效临时路径不进入切割与向量化），文本内容保留
+  When 逐张下载图片附件
+  Then 返回字节与文档内原始图片完全一致
+  When 上传含 1 张内嵌图片的 pdf 文档并提取
+  Then 图片列表返回 1 项且页码解析为 1
+```
+
+```gherkin
+@WK-S45 @auto:e2e
+Scenario: 图片附件的生命周期与共享保护
+  When 对含图文档重新执行提取
+  Then 图片列表仍为原有项数（替换登记不重复）
+  When 另一份不同文档包含同一批图片（图片按内容寻址共享）后删除原文档
+  Then 另一文档的图片仍可下载且字节一致，被删文档的图片列表返回 404
+  When 非团队成员访问图片列表、伪造图片 id 下载
+  Then 一律返回 404
+  When 上传不含图片的纯文本文档并提取
+  Then 图片列表返回空数组
 ```
 
 ## Feature: 默认工作流与批量处理（多选文件一键执行）
@@ -318,7 +410,7 @@ Scenario: 多选生成策略
   And 任务仅按所选策略生成对应元数据类型，未勾选策略不生成
 ```
 
-> 外部开放接口（`/api/external/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-10），不复用 WK-\*。授权模型：应用 token 即团队级授权，端点清单见 [../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)。
+> 外部开放接口（`/api/teamres/wiki`）场景编号沿用证据脚本 `wiki-external-e2e.mjs` 的 WX-\* 体系（WX-01~WX-12），不复用 WK-\*。授权模型：moai-ac- 接入 key/token 即团队级授权（scope 分档已退役），moai-tr- 库资源 key 受包围圈约束，端点清单见 [../gateway/external-api-scope-system.md](../gateway/external-api-scope-system.md)。
 
 ## Feature: 召回测试（文档范围过滤 + AI 优化问题 + AI 生成回答）
 
@@ -368,6 +460,107 @@ Scenario: 重排序接入、渠道故障降级与相邻片段上下文
   When 解绑重排序模型后再次召回
   Then 命中项不含重排序得分且顺序恢复为向量序
 ```
+
+## Feature: 向量生命周期与检索增强（WK-S48~S52）
+
+```gherkin
+@WK-S48 @auto:e2e
+Scenario: 删除文档/知识库的向量生命周期闭环
+  Given 知识库已有文档完成向量化且可召回
+  When 删除已完成向量化的文档
+  Then 向量集合中该文档的向量被同步删除，召回不再出现该文档命中（含 pgvector 直接删除与召回侧软删过滤双保险）
+  And 文档的提取正文（wiki_document_content）与外部源映射（wiki_source_document）一并清理，OSS 文件与内嵌图片同步删除
+  When 删除后重建同内容文档并重新向量化
+  Then 召回命中指向新文档的新切片
+  When 删除整个知识库
+  Then 级联软删全部文档（逐批走文档删除链路）并 DROP 整库向量集合（__wiki_{id}）
+
+@WK-S48b @auto:e2e
+Scenario: 外部源删除同步（源中已消失的文档随同步下线）
+  Given 外部源（爬虫/飞书）已同步入库若干文档
+  When 一轮同步完整遍历（未截断、未熔断、无深度/页数静默放弃）且源中部分文档已消失
+  Then 消失文档连同向量/切片/元数据/OSS 全链路下线，同步结果回显 removed 数量
+  When 本轮遍历被截断或存在深度钳制/页数丢弃（覆盖不完整）
+  Then 不执行删除同步（防止把尚未抓到的页面误删），已入库文档保留
+
+@WK-S49 @auto:e2e
+Scenario: 召回按 ChunkId 去重（信噪比）
+  Given 文档已生成元数据且原文切片与元数据（大纲/问题/关键词/摘要/聚合段）均向量化
+  When 执行召回使同一切片的多条 MetadataType 变体进入候选
+  Then 同一 ChunkId 只保留得分最高的一条命中，结果集中切片不重复
+
+@WK-S50 @auto:e2e
+Scenario: 向量化模型迁移（临时集合 + 事务换名）
+  Given 知识库已绑定 embedding 模型 A（1024 维）且已有向量与召回基线
+  When 团队 Member 发起迁移
+  Then 返回 403
+  When 目标与当前模型/维度一致或目标模型不可用
+  Then 返回 400
+  When 管理员发起迁移到模型 B（256 维）
+  Then 返回 200 与任务 id；同一知识库并发二次发起返回 409
+  And 迁移进行中该库的切割与向量化命令返回 409（写阻断）
+  And 状态接口回显活跃任务（等待/处理中）与进度（migratedCount/totalCount）
+  When 迁移完成
+  Then 任务终态成功且重建条数与向量总数一致；知识库配置切到模型 B/256 维且 IsLock 保持 true
+  And 迁移后按新维度召回有命中；锁定态保存 embedding 配置返回 409 并提示走迁移端点
+  When 目标渠道不可达（死渠道）发起迁移
+  Then 任务终态失败且消息含「已回滚」，知识库配置保持不变，原向量仍可召回
+
+@WK-S51 @auto:e2e
+Scenario: 关键词混合检索（多路先验）
+  Given 知识库切片含仅靠向量相似度难以稳定命中的独特词内容（pg_trgm 索引加速 ILIKE）
+  When 以包含独特词的查询执行召回
+  Then 命中该切片且标记 isKeywordHit=true（切片原文或关键词/问题元数据与查询探针匹配）
+  And 最终返回条数不超过 top（向量精确度排序在前，关键词补充命中追加在后；配置重排序时重排分为最终序）
+  When 显式设置相似度阈值（minScore>0）
+  Then 本次检索退化为纯向量召回（关键词命中不带相似度分，不受阈值约束）
+
+@WK-S52 @auto:e2e
+Scenario: 过期索引检测（IsUpdate 生命周期）
+  Given 文档已完成向量化且可召回
+  When 重新切割文档（切片重建、旧向量删除）但尚未重新向量化
+  Then 召回（关键词兜底路径）仍可命中该文档且命中带 isStale=true（内容已更新、重嵌未完成）
+  When 重新向量化完成
+  Then IsUpdate 清零，后续命中 isStale=false
+  And 已软删文档/切片的命中在回填阶段被剔除（存量孤儿向量兜底）
+
+@WK-S53 @auto:e2e
+Scenario: 检索经验沉淀与复用（同查询免 embedding 快速路径）
+  Given 知识库可召回且已有向量化内容
+  When 首次以查询 Q 检索
+  Then 走完整链路（embedding 模型被调用）且命中非空，结果异步沉淀为经验聚类
+  When 再次以相同查询 Q 检索（等待聚类落库后）
+  Then 直接复用聚类命中返回（命中与首次一致），embedding 模型不再被调用（快速路径生效）
+  When 以未沉淀过的新查询检索
+  Then 走完整链路（embedding 被调用）
+  And 显式传 isKeywordSearch=false 时退化为纯向量召回且不走经验缓存
+  When 主要命中文档被删除（索引纪元推进）
+  Then 聚类失效自愈（纪元不匹配即删除）并回落完整检索（embedding 被调用），命中不再包含已删文档
+  And 范围过滤（documentIds）与严格阈值（minScore>0）查询不复用缓存
+  And 该库文档/切片/向量集合发生任何变更（删除、重切割、向量化成功）都会推进索引纪元使全部聚类失效
+  And 超过 30 天未命中的聚类由 Hangfire 周期任务清理
+
+@WK-S54 @auto:e2e
+Scenario: 入库管线并行化与内容级兜底检索（上传提取后即可查）
+  Given 批量工作流对多文档并行提取/切割（每任务独立 scope，有界并发 4）
+  And 元数据生成按批并行调用对话模型（并发 4，单 chunk 失败收集不中断）
+  And 向量化 MQ 消费 Qos=4 多文档并行（同库首嵌建表互斥，无 pg_type 竞态）
+  When 文档已提取但尚未切割时执行召回
+  Then 内容级兜底命中该文档：isContentFallback=true、isKeywordHit=true、片段含探针词（首个命中窗口前 200/后 700 字符）且无切片序号
+  When 文档完成切割后再次召回
+  Then 切片候选非空，兜底不再触发，命中带正常切片序号（切片命中接管）
+  And 兜底命中不沉淀检索经验聚类（ChunkId=0）
+  And 同库并发首嵌无建表唯一约束冲突（按 wiki 建表互斥 + 23505 重试兜底）
+```
+
+@WK-S55 @auto:e2e
+Scenario: 切片标题锚点与自适应证据窗口
+  Given 含多级标题的文档已完成切割与向量化（切割时提取所在章节标题面包屑）
+  When 召回命中该文档切片
+  Then 每个命中携带非空标题锚点（anchor 含文档标题，面包屑形如「标题A > 标题B」）
+  When 以 contextWindow=2 召回且窗口内存在距离 ±2 的切片
+  Then 命中的上下文出现距离 ±2 的相邻片段且不超过 ±2（默认窗口 1 仍只有 ±1）
+  And AI 切割切片按文本回原文定位取锚点（定位失败留空）
 
 ## Feature: 外部开放接口（应用 token，WX-*）
 
@@ -419,15 +612,10 @@ Scenario: 外部接口仅接受应用 token
   Then 分别返回未认证/未认证/未认证或禁止
 
 @WX-07 @auto:e2e
-Scenario: 知识库读/写功能范围
-  When 以未勾选 wiki_read 的接入 key token 查询知识库或文档
-  Then 返回禁止
-  When 以勾选 wiki_read 未勾选 wiki_write 的 token 上传文档
-  Then 返回禁止
-  When 以勾选读写的 token 三段式上传
-  Then 成功入库
-  When 以旧应用接入 key 的 token 读写
-  Then 按接入勾选范围放行（存量接入默认读写全量）
+Scenario: 知识库读/写功能范围（已退役改写：无范围分档）
+  When 以 moai-ac- 接入 key token 或 key 直连查询、上传知识库文档
+  Then 读写均放行（wiki_read/wiki_write 分档随 scope 体系退役，团队归属即授权）
+  And 接入创建/更新不再接收范围字段（传入被忽略）
 
 @WX-08 @auto:e2e
 Scenario: 原文件下载
@@ -445,8 +633,8 @@ Scenario: 向量召回检索
   Then 结果条数与范围受参数约束
   When 提交非法参数（条数越界或空查询）
   Then 返回参数错误
-  When 以只读范围 key 召回或以只写范围 key 召回
-  Then 分别放行与禁止（召回属读档）
+  When 以 moai-ac- 全量 key 直连召回与写操作
+  Then 读写均放行（原只读/只写 key 分档断言随 scope 退役改写为全量正向）
 
 @WX-10 @auto:e2e
 Scenario: 切片元数据生成
@@ -459,6 +647,17 @@ Scenario: 切片元数据生成
   Then 保留已有元数据并累计
   When 对未切割文档生成元数据或选用非对话模型或不存在的模型
   Then 分别返回参数错误、参数错误与不存在
+
+@WX-12 @auto:e2e
+Scenario: 库资源 key（moai-tr-）包围圈
+  When 团队管理员为本库生成资源 key
+  Then 返回 moai-tr- 前缀 key（get-or-create 幂等）
+  When 以资源 key 直连本库 REST 读接口与写接口
+  Then 放行
+  But 访问同团队其它知识库返回 403 insufficient_scope
+  And 团队级知识库列表返回 200 且仅含绑定库（越 KG 端点 403）
+  When 管理端重置资源 key
+  Then 行 id 不变，旧 key 直连下一请求 401
 ```
 
 ## Feature: 外部源（飞书文档 / 网页爬虫）
@@ -486,7 +685,7 @@ Scenario: 管理员创建时的参数校验
   Then 返回参数错误
   When 爬虫源缺少配置、起始地址不是 http(s)、单轮页数超上限
   Then 返回参数错误
-  When 飞书文档源未选择任何绑定方式、同时给了两种绑定方式、或缺少节点 token
+  When 飞书文档源缺连接名称/AppID/AppSecret 任一项、或缺少节点 token（已有连接 id 方式已下线，仅按新凭证新建连接）
   Then 返回参数错误
 
 @WS-S4 @auto:e2e
@@ -607,12 +806,17 @@ Scenario: 连续失败时提前熔断
 Scenario: MCP 端点鉴权门禁
   When 未携带凭证或伪造 key 连接 MCP 端点
   Then 返回未认证
-  When 以勾选 wiki_mcp 的应用接入 key 连接
+  When 以 moai-ac- 应用接入 key（范围概念已退役）或本库 moai-tr- 资源 key 连接
   Then MCP 初始化成功并返回服务器信息（两种 key 均可直连，Bearer 与 x-api-key 头均支持）
-  When 以未勾选 wiki_mcp 范围的凭证连接
-  Then 返回禁止（范围不足）
+  When 以其它库的 moai-tr- 资源 key 连接
+  Then 返回 403 insufficient_scope（资源 key 包围圈）
   When 连接的知识库 id 不存在或属于其他团队
   Then 返回不存在（不泄露存在性）
+
+@WM-S8 @auto:e2e
+Scenario: 绑定库资源 key 访问本库 MCP
+  When 以本库的 moai-tr- 资源 key 对本库 MCP 端点 initialize
+  Then 握手成功并返回服务器信息
 
 @WM-S2 @auto:e2e
 Scenario: 工具清单仅含三个只读工具

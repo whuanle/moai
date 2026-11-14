@@ -34,7 +34,7 @@ public class ImportAIModelCommandHandler : IRequestHandler<ImportAIModelCommand,
         }
 
         var channelExist = await _databaseContext.AiChannels
-            .AnyAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0, cancellationToken);
+            .AnyAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);
 
         if (!channelExist)
         {

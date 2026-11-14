@@ -1,5 +1,6 @@
 // 应用使用次数计数 E2E（场景 @AU-Sn）
-// 验证：会话创建推 Redis 计数、每分钟批量累加到 app.use_count、删除会话不回退、累计口径与存活会话口径区分。
+// 验证：会话创建推 Redis 计数、每分钟批量累加到 app.use_count、删除会话不回退、累计口径与存活会话口径区分、
+//       使用分析趋势端点（近 N 天使用次数/消息条数按日聚合，AU-07）。
 // 用法：node local-dev/app-usecount-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 APP_BASE 覆盖）
 // 前置：后端运行中。计数器为每分钟批量落库，用例含轮询等待（最长约 2 分钟）。
 import crypto from 'node:crypto'
@@ -96,6 +97,23 @@ async function main() {
   const dbg = await api('POST', `/api/app/${APP_ID}/debug/session`, { token: owner.token })
   check('AU-06a 创建调试会话 200', dbg.status === 200 && isGuid(dbg.json?.value), `${dbg.status} ${dbg.text.slice(0, 120)}`)
   check('AU-06b 调试会话不进正式会话列表', ((await api('GET', `/api/app/${APP_ID}/session/list`, { token: owner.token })).json?.items ?? []).every((s) => String(s.sessionId) !== String(dbg.json?.value)))
+
+  // AU-07 使用趋势端点（近 N 天使用次数/消息条数按日聚合，来自统计日表）
+  const trend = await api('GET', `/api/app/${APP_ID}/usage/trend`, { token: owner.token })
+  const trendItems = trend.json?.items ?? []
+  const today = new Date().toISOString().slice(0, 10)
+  check('AU-07a 趋势 200 且默认 30 天升序含今日', trend.status === 200 && Array.isArray(trendItems) && trendItems.length === 30 && trendItems.some((x) => String(x.date).startsWith(today)), `${trend.status} items=${trendItems.length}`)
+  check('AU-07b 趋势项含日期/使用次数/消息条数字段', trendItems.length > 0 && trendItems.every((x) => x.date != null && x.useCount !== undefined && x.messageCount !== undefined), JSON.stringify(trendItems[0] ?? {}).slice(0, 120))
+  const todayItem = trendItems.find((x) => String(x.date).startsWith(today))
+  check('AU-07c 今日使用次数为 3（日表已落库）', Number(todayItem?.useCount) === 3, `useCount=${todayItem?.useCount}`)
+  check('AU-07d 今日消息条数为 0（本用例未对话）', Number(todayItem?.messageCount) === 0, `messageCount=${todayItem?.messageCount}`)
+  const trend7 = await api('GET', `/api/app/${APP_ID}/usage/trend?days=7`, { token: owner.token })
+  check('AU-07e days=7 返回 7 天', trend7.status === 200 && (trend7.json?.items ?? []).length === 7, `${trend7.status} items=${(trend7.json?.items ?? []).length}`)
+  check('AU-07f days=0 参数非法 400', (await api('GET', `/api/app/${APP_ID}/usage/trend?days=0`, { token: owner.token })).status === 400)
+  check('AU-07g days=91 超上限 400', (await api('GET', `/api/app/${APP_ID}/usage/trend?days=91`, { token: owner.token })).status === 400)
+  check('AU-07h 未登录 401', (await api('GET', `/api/app/${APP_ID}/usage/trend`)).status === 401)
+  check('AU-07i 不存在应用 404', (await api('GET', `/api/app/01924f5e-0000-7000-8000-00000000ffff/usage/trend`, { token: owner.token })).status === 404)
+  check('AU-07j 趋势含 modelTokenSeries 字段（未对话应用为空数组）', Array.isArray(trend.json?.modelTokenSeries) && trend.json.modelTokenSeries.length === 0, JSON.stringify(trend.json?.modelTokenSeries ?? null))
 
   console.log(`\n结果：PASS=${PASS} FAIL=${FAIL}`)
   process.exit(FAIL > 0 ? 1 : 0)

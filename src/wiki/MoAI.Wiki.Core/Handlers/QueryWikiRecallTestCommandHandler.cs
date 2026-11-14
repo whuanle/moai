@@ -104,7 +104,9 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
             request.Top,
             request.MinScore,
             request.DocumentIds.Count > 0 ? request.DocumentIds : null,
-            cancellationToken);
+            isKeywordSearch: request.IsKeywordSearch ?? true,
+            contextWindow: request.ContextWindow ?? 1,
+            cancellationToken: cancellationToken);
 
         var answer = string.Empty;
         if (request.IsAnswer && hits.Count > 0)
@@ -136,6 +138,7 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
             {
                 DocumentId = x.DocumentId,
                 DocumentName = x.DocumentName,
+                Anchor = x.Anchor,
                 ChunkId = x.ChunkId,
                 MetadataType = x.MetadataType,
                 ChunkIndex = x.ChunkIndex,
@@ -143,6 +146,9 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
                 Content = x.Content,
                 Score = x.Score ?? 0,
                 RerankScore = x.RerankScore,
+                IsKeywordHit = x.IsKeywordHit,
+                IsContentFallback = x.IsContentFallback,
+                IsStale = x.IsStale,
                 Context = x.Context,
             }).ToList(),
         };
@@ -156,7 +162,7 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
                     select new { m, c };
 
         var candidates = await query.ToListAsync(cancellationToken);
-        var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+        var model = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (model == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

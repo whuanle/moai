@@ -51,9 +51,9 @@ ui/src/utils/storage.ts    resolveStorageUrl / uploadImageWithKey / uploadImage
 1. **状态机**（[@STO-S1](./bdd.md#sto-s1)、[@STO-S7](./bdd.md#sto-s7)）：IsUploaded=true → 秒传不签 URL；无记录 → 登记 IsUploaded=false；记录超 5 分钟未完成 → 废弃（删对象+删行）重建；未超时 → 复用记录刷新 UpdateTime。
 2. **完成校验**：fileId 不存在 404；已完成幂等返回；非本人未过期 409「其他用户正在上传此文件」、已过期废弃后 409「上传已过期，请重新上传」；isSuccess=false 清理；对象缺失或**大小**与登记不符 409「上传的文件已损坏」并清理。
 3. **SHA-256 仅作 ObjectKey 组成与登记值**，完成校验比对 S3 侧文件大小而非哈希。
-4. 预上传地址与记录有效期均 **5 分钟**（Handler 固定 Expiration；`PreUploadTimeout`=5 分钟）。
+4. 所有 S3 预签名上传与下载地址由 `S3Client` 强制固定 **1 分钟**（[@STO-S26](./bdd.md#sto-s26)、[@STO-S27](./bdd.md#sto-s27)），忽略调用方传入的有效期，防止长期持有的链接被盗用；预上传 API 返回的 `expiration` 与链接有效期一致。未完成上传记录的废弃窗口仍为 **5 分钟**（`PreUploadTimeout`），与签名 URL 有效期独立。公开 `/static/` 地址不属于 S3 预签名 URL，继续按公开资源策略访问。
 5. `/static` 中转：仅 GET/HEAD（405）；仅放行 `public/` 前缀（其余 404，安全边界）；读要求 IsUploaded=true；ContentType 用登记值（兜底 octet-stream）、`Cache-Control: public,max-age=86400`、ETag=ObjectKey 的 SHA-256；IO 异常按 404、其他 500。
-6. 领域服务：`PreUploadAsync` / `UploadStreamAsync`（流式直传+直接标记完成，幂等）/ `CompleteAsync` / `DeleteFilesAsync` / `GetDownloadUrl(s)Async` / `FileExistsAsync` / `ReadAsync` / `GetPublicFileUrl` / `GetFileInfoAsync`。
+6. 领域服务：`PreUploadAsync` / `UploadStreamAsync`（流式直传+直接标记完成，幂等）/ `CompleteAsync` / `DeleteFilesAsync` / `GetDownloadUrl(s)Async` / `FileExistsAsync` / `ReadAsync` / `GetPublicFileUrl` / `GetFileInfoAsync` / `GetFileInfoByIdAsync`（按 id 查询已上传文件，供插件文件服务等上层按 id 取地址）。
 7. 前端 `uploadImageWithKey`：WebCrypto 算 SHA-256 → 预上传 → 非秒传 `fetch PUT` 直传（带 Content-Type）→ 完成 → 返回 `{objectKey,url}`；数据库只存 ObjectKey，展示经 `resolveStorageUrl`（绝对 URL 原样，否则拼 `{serviceUrl}/static/{objectKey}`）。头像（account）与 OAuth 图标（[../oauthconnect/sdd.md](../oauthconnect/sdd.md)）共用此链路。
 
 ## 已知问题

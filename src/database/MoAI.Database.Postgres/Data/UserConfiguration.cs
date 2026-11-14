@@ -65,6 +65,9 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
         entity.Property(e => e.IsDisable)
             .HasComment("禁用")
             .HasColumnName("is_disable");
+        entity.Property(e => e.IsTotpEnabled)
+            .HasComment("是否启用两步验证")
+            .HasColumnName("is_totp_enabled");
         entity.Property(e => e.NickName)
             .HasMaxLength(50)
             .HasComment("昵称")
@@ -81,6 +84,10 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
             .HasMaxLength(20)
             .HasComment("手机号")
             .HasColumnName("phone");
+        entity.Property(e => e.TotpSecret)
+            .HasMaxLength(200)
+            .HasComment("两步验证密钥（AES 加密后的 base32，未绑定为空）")
+            .HasColumnName("totp_secret");
         entity.Property(e => e.UpdateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("更新时间")

@@ -1,7 +1,7 @@
 namespace MoAI.AIChannel.Models;
 
 /// <summary>
-/// 模型元数据，映射自 opencode models.json 中的模型对象.
+/// 模型元数据，映射自 MoPlatform models.json 中的模型对象.
 /// </summary>
 public class AIChannelModelMeta
 {

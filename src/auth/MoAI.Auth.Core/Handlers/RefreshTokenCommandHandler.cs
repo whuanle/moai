@@ -16,6 +16,7 @@ namespace MoAI.User.Core.Handlers;
 public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, RefreshTokenCommandResponse>
 {
     private readonly ITokenProvider _tokenProvider;
+    private readonly ILoginSecurityService _loginSecurityService;
     private readonly DatabaseContext _databaseContext;
     private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
@@ -23,11 +24,13 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     /// Initializes a new instance of the <see cref="RefreshTokenCommandHandler"/> class.
     /// </summary>
     /// <param name="tokenProvider"></param>
+    /// <param name="loginSecurityService">登录安全策略服务.</param>
     /// <param name="dbContext"></param>
     /// <param name="logger"></param>
-    public RefreshTokenCommandHandler(ITokenProvider tokenProvider, DatabaseContext dbContext, ILogger<RefreshTokenCommandHandler> logger)
+    public RefreshTokenCommandHandler(ITokenProvider tokenProvider, ILoginSecurityService loginSecurityService, DatabaseContext dbContext, ILogger<RefreshTokenCommandHandler> logger)
     {
         _tokenProvider = tokenProvider;
+        _loginSecurityService = loginSecurityService;
         _databaseContext = dbContext;
         _logger = logger;
     }
@@ -77,6 +80,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             roles.Add("admin");
         }
 
+        // 刷新从 DB 重查用户，强制 2FA 状态在此重估：绑定后新 token 不再携带 mfa_pending
+        var mfaPending = await _loginSecurityService.IsForced2faAsync(cancellationToken) && !user.IsTotpEnabled;
+
         var userContext = new DefaultUserContext
         {
             UserId = user.Id,
@@ -84,7 +90,10 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             NickName = user.NickName,
             Email = user.Email,
             // 刷新走内部认证体系，签发的 token 必须携带用户类型；缺失会话/日志会把内部用户当外部用户（如 app_agent_session.user_type 落 none）
-            UserType = Infra.Models.UserType.Normal
+            UserType = Infra.Models.UserType.Normal,
+            Properties = mfaPending
+                ? new Dictionary<string, string> { ["mfa_pending"] = "true" }
+                : new Dictionary<string, string>()
         };
 
         var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
@@ -96,6 +105,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             UserId = user.Id,
             UserName = user.UserName,
             ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds(),
+            MfaPending = mfaPending
         };
 
         _logger.LogInformation("User refresh token.{@Message}", new { user.Id, user.UserName, user.NickName });

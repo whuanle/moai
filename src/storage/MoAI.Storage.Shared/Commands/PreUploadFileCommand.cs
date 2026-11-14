@@ -26,7 +26,7 @@ public class PreUploadFileCommand
     public string ObjectKey { get; set; } = default!;
 
     /// <summary>
-    /// 预签名上传地址有效期.
+    /// 兼容字段；预签名上传地址有效期由存储层统一固定为 1 分钟.
     /// </summary>
-    public TimeSpan Expiration { get; set; } = TimeSpan.FromMinutes(2);
+    public TimeSpan Expiration { get; set; } = TimeSpan.FromMinutes(1);
 }

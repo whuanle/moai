@@ -33,6 +33,8 @@ ui/src/api/publication.ts         手写封装层（Kiota 生成物之外）
 | team_id | 资源所属团队（冗余存储，供团队侧列表与管理员展示） |
 | apply_reason / review_comment / review_time | 申请说明、审批意见、审批时间 |
 | state | int，见 `PublicationState`（pending=0，approved=1，rejected=2） |
+| visible_scope | smallint，见 `AppVisibleScope`（全员=0，按组织=1），仅应用类型使用，其他资源恒 0 |
+| visible_org_grants | varchar(2000)，可视范围组织授权快照 JSON `[{"orgRoleId":3,"scope":"down"}]`，仅按组织限定时有值 |
 | create_user_id / update_user_id | 审计自动注入：申请人 / 审批人（无需单独 reviewer 列） |
 
 - **列表展示**：响应项继承 `AuditsInfo` 并经 `IUserInfoFillService.FillAsync` 填充申请人/审批人姓名，团队名称批量查询补齐；管理员列表 `/api/publication/list`、团队列表 `/api/publication/team_list`（复用同一响应模型）。2026-10-26 起响应含 `resourceAvatar`（按资源类型批量查 Apps.Avatar / Prompts.AvatarPath / Skills.AvatarPath，审批页资源列展示头像）。
@@ -41,7 +43,11 @@ ui/src/api/publication.ts         手写封装层（Kiota 生成物之外）
 
 列表排序（2026-10-26）：待审核恒排最前，组内按申请时间倒序（管理员列表与团队列表同规则，见 [@PB-S17](./bdd.md#pb-s17)）。
 
+**待审核数量角标**（2026-11-04，[@PB-S23](./bdd.md#pb-s23)）：`GET /publication/pending-count` 仅系统管理员，返回 `state=pending` 记录数；前端 `useMenuBadges` 60s 轮询写入 badge store，管理员侧边栏「审批上架」菜单显示未处理数量（与「日志事件」角标同一机制）。
+
 约束：`ux_publication_review_resource_pending (resource_type, resource_id) WHERE is_deleted = 0 AND state = 0` —— 同一资源同时只有一条待审核申请；撤回走软删除即释放该约束，驳回保留记录、可重新申请。
+
+**应用上架可视范围**（2026-11-04，[@PB-S14](./bdd.md#pb-s14)~[@PB-S22](./bdd.md#pb-s22)）：申请时快照留痕（上两列），审批通过后由 `ReviewPublicationCommandHandler` 经 `IOrgGrantService.ReplaceGrantsAsync` **整体覆盖**物化到 `org_grant`（资源类型 `OrgGrantResourceType.PublicApp=6`，与 `App=0` 分离——后者留给资源协作授权）；下架（takedown）与停用（`UnpublishAppCommandHandler`）同步清空授权。**无授权记录 = 全员可见**（存量已上架应用天然兼容）；广场列表 `QueryPublicAppsCommandHandler` 按「已授权资源集合 ∪ 用户允许集合」过滤，使用侧门禁（建会话/详情/用户配置/会话列表）经 `PublicAppScopeService.IsAllowedAsync` 判定（团队成员不受限）。**时序约束**：授权物化/清空必须在校验与 `SaveChangesAsync` 之后执行——授权服务内部保存会连带持久化同一 DbContext 上的中间状态（E2E PB-17 踩坑：清授权放在角色校验前导致 403/404 调用把应用下架）。
 
 ## 关键决策
 
@@ -49,10 +55,11 @@ ui/src/api/publication.ts         手写封装层（Kiota 生成物之外）
 - **resource_id 用字符串**：AppEntity.Id 是 Guid、PromptEntity.Id 是 int，Handler 内按资源类型解析并校验，避免两列或触发器。
 - **管理员门禁在 Controller**：`PublicationController.EnsureAdminAsync`（`IUserAccountService.GetUserStateAsync().IsAdmin`，403），Handler 只做团队角色与状态机校验，符合 CQRS 约定。
 - **审批终态校验**：非 pending 记录审批/撤回返回 409；通过时目标资源已被删除返回 404（引导管理员改走驳回）。
-- **前端**：管理页在 `adminNav` 一级菜单（仅 isAdmin 可见，页面内再校验）；应用侧入口 2026-10-26 起自应用「信息」分区拆至工作台独立「上架管理」分区（`AppPublicationSection.tsx`：申请/撤回/重新申请入口 + 状态标签 + 历次申请记录与拒绝原因，见 [@AP-S92](../app/bdd.md#ap-s92)）。
+- **前端**：管理页在 `adminNav` 一级菜单（仅 isAdmin 可见，页面内再校验）；应用侧入口 2026-10-26 起自应用「信息」分区拆至工作台独立「上架管理」分区（`AppPublicationSection.tsx`：申请/撤回/重新申请入口 + 状态标签 + 历次申请记录与拒绝原因，见 [@AP-S92](../app/bdd.md#ap-s92)）。2026-10-31 审批列表页按最新前端规范改造：刷新按钮归位工具行查询类插槽（`PageToolbar queries`）、审批人/时间列复用 `AuditCell`、列表改剩余高度布局（`DataTable scroll.y` 计入 `tableCardChromeHeight`）。2026-11-01 继续对齐表格规范：工具行加关键字筛选（资源/团队/申请人，客户端过滤）、「审批人 / 时间」语义列改标准「更新」审计列（`AuditCell`，审批即记录最后一次更新，语义不变）、刷新按钮改图标+文字（`ds.table.refresh`）。
 
 ## 已知问题
 
 - 提示词尚无 CRUD 业务层（[classify/sop](../classify/sop.md) 注释同），申请/审批链路就绪但无法从 API 创建提示词；E2E 覆盖 404 分支。
 - 资源被删除后已有 approved 记录不回滚 is_public（记录保留历史）；驳回/撤回不受影响。
 - 审批列表暂不分页（按创建时间倒序全量返回，前端分页），量大时再补 pageNo/pageSize。
+- 可视范围组织节点被删除时按组织模块级联语义清掉该组织的授权记录（[@ORG-S52](../org/bdd.md#org-s52)）：应用范围授权被全部级联清空后回到「无记录=全员可见」，存在权限扩大的边缘可能（与子系统组织授权行为一致，管理员删组织时需知晓）。

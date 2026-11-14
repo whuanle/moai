@@ -36,7 +36,7 @@ public static class SkillSeed
             {
                 Id = DocxWriterId,
                 Key = "docx_writer",
-                Name = "Word 文档生成",
+                Name = "Word文档生成",
                 Description = "根据用户提供的大纲和内容要求，在沙箱中生成排版良好的 .docx Word 文档（报告/方案/合同等），并返回下载链接。",
                 Instructions = DocxWriterInstructions,
                 Files = "[]",
@@ -53,7 +53,7 @@ public static class SkillSeed
             {
                 Id = PptWriterId,
                 Key = "ppt_writer",
-                Name = "PPT 演示文稿生成",
+                Name = "PPT演示文稿生成",
                 Description = "根据用户提供的大纲和内容要求，在沙箱中生成 .pptx 演示文稿（标题页+内容页），并返回下载链接。",
                 Instructions = PptWriterInstructions,
                 Files = "[]",

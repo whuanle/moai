@@ -33,7 +33,7 @@ public class PreUploadImageCommandHandler : IRequestHandler<PreUploadImageComman
             ContentType = request.ContentType,
             FileSize = request.FileSize,
             ObjectKey = objectKey,
-            Expiration = TimeSpan.FromMinutes(5)
+            Expiration = TimeSpan.FromMinutes(1)
         }, cancellationToken);
 
         return new PreUploadFileCommandResponse

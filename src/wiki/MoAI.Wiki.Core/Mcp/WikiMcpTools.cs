@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using MoAI.App.Models;
 using MoAI.App.Services;
 using MoAI.Database.Entities;
+using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Wiki.External;
 using MoAI.Wiki.Queries;
@@ -148,6 +149,7 @@ public class WikiMcpTools
         [Description("返回条数，1-50，默认 5")] int? top = null,
         [Description("相似度阈值（0-1，含），低于阈值的命中项被丢弃")] double? minScore = null,
         [Description("限定检索的文档 id 集合（可先用 search_knowledge_base_files 查询），不传表示全部文档")] IReadOnlyCollection<long>? documentIds = null,
+        [Description("相邻上下文窗口大小，1-3，默认 1：每个命中片段附前一片段与后一片段")] int? contextWindow = null,
         CancellationToken cancellationToken = default)
     {
         return await ExecuteAsync(async () =>
@@ -162,6 +164,11 @@ public class WikiMcpTools
                 throw new BusinessException("相似度阈值必须在 0-1 之间.") { StatusCode = 400 };
             }
 
+            if (contextWindow.HasValue && (contextWindow < 1 || contextWindow > 3))
+            {
+                throw new BusinessException("上下文窗口必须在 1-3 之间.") { StatusCode = 400 };
+            }
+
             var wiki = await RequireWikiAsync(wikiId, cancellationToken);
             var caller = RequireCaller();
 
@@ -173,6 +180,7 @@ public class WikiMcpTools
                 Top = Math.Clamp(top ?? 5, 1, MaxPageSize),
                 MinScore = minScore,
                 DocumentIds = documentIds ?? Array.Empty<long>(),
+                ContextWindow = contextWindow,
             }, cancellationToken);
 
             return new WikiMcpRecallResult
@@ -184,6 +192,7 @@ public class WikiMcpTools
                 {
                     DocumentId = x.DocumentId,
                     DocumentName = x.DocumentName,
+                    Anchor = x.Anchor,
                     ChunkId = x.ChunkId,
                     ChunkIndex = x.ChunkIndex,
                     DocumentChunkCount = x.DocumentChunkCount,
@@ -191,6 +200,9 @@ public class WikiMcpTools
                     Content = x.Content,
                     Score = x.Score,
                     RerankScore = x.RerankScore,
+                    IsKeywordHit = x.IsKeywordHit,
+                    IsContentFallback = x.IsContentFallback,
+                    IsStale = x.IsStale,
                     Context = x.Context.Select(c => new WikiMcpRecallContextChunk
                     {
                         ChunkIndex = c.ChunkIndex,
@@ -229,7 +241,7 @@ public class WikiMcpTools
     }
 
     /// <summary>
-    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成 key/token 鉴权并写入 HttpContext）.
+    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成 key/token 鉴权与资源 key 包围圈判定）.
     /// </summary>
     private ExternalWikiCaller RequireCaller()
     {
@@ -237,10 +249,15 @@ public class WikiMcpTools
         var tokenContext = httpContext.Items.TryGetValue(ExternalAuthDefaults.TokenContextItemKey, out var value) ? value as ExternalTokenContext : null;
         if (tokenContext == null)
         {
-            throw new McpException("接入凭证无效，请在请求头携带团队/应用接入 key.");
+            throw new McpException("接入凭证无效，请在请求头携带接入 key（moai-ac-/moai-tr-）.");
         }
 
-        return new ExternalWikiCaller { TeamId = tokenContext.TeamId, AccessAppId = tokenContext.AccessAppId };
+        return new ExternalWikiCaller
+        {
+            TeamId = tokenContext.TeamId,
+            AccessAppId = tokenContext.AccessAppId,
+            OnlyWikiId = tokenContext.IsResourceKey && tokenContext.ResourceKeyType == TeamResourceType.Wiki && long.TryParse(tokenContext.ResourceKeyId, out var onlyWikiId) ? onlyWikiId : null,
+        };
     }
 
     /// <summary>

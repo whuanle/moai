@@ -5,8 +5,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Alibaba.OpenSandbox" Version="0.1.5" />
-    <PackageVersion Include="Alibaba.OpenSandbox.CodeInterpreter" Version="0.1.0" />
+    <PackageVersion Include="Alibaba.OpenSandbox" Version="1.2.0" />
+    <PackageVersion Include="Alibaba.OpenSandbox.CodeInterpreter" Version="1.2.0" />
     <PackageVersion Include="AngleSharp" Version="1.5.2" />
     <PackageVersion Include="AngleSharp.Js" Version="1.0.0-beta.45" />
     <PackageVersion Include="Anthropic" Version="12.0.1" />
@@ -52,8 +52,7 @@
     <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.Redis" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.MemoryDb.SQLServer" Version="0.98.250508.3" />
     <PackageVersion Include="Microsoft.KernelMemory.SemanticKernelPlugin" Version="0.98.250508.3" />
-    <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.24" />
-    <!--<PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="2.0.0-preview.31" />-->
+    <PackageVersion Include="Microsoft.OpenApi.YamlReader" Version="3.11.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Abstractions" Version="1.68.0" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.68.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.68.0" />
@@ -92,6 +91,7 @@
     <PackageVersion Include="Maomi.MQ.RabbitMQ.MediatR" Version="2.0.1" />
     <PackageVersion Include="MailKit" Version="4.18.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.11" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
     <PackageVersion Include="RecursiveTextSplitter" Version="1.0.2" />
     <PackageVersion Include="Refit" Version="15.2.0" />
@@ -105,6 +105,8 @@
     <PackageVersion Include="StackExchange.Redis" Version="3.1.31" />
     <PackageVersion Include="Stef.ModelContextProtocol.SemanticKernel" Version="0.6.1" />
     <PackageVersion Include="System.Linq.Async" Version="7.0.0" />
+    <!-- 钉住 MimeKit/MailKit/Microsoft.Data.SqlClient 的传递依赖（CVE-2026-84008，>=10.0.0 <=10.0.12 受影响） -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
     <PackageVersion Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
     <PackageVersion Include="StackExchange.Redis.Extensions.Core" Version="13.0.1" />
@@ -114,6 +116,8 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Kiota.Bundle" Version="1.17.4" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.8.2" />
     <PackageVersion Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />

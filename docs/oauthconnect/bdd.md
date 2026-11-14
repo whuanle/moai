@@ -199,4 +199,41 @@ Feature: 前端连接器页（/oauthconnect）
     Then 弹出正方形裁剪窗（初始完整显示并居中，全向拖动定位，滑块/滚轮缩放：放大可铺满视口、缩小查看全图）
     And 确认后按视口内容导出正方形 PNG（未铺满处留白透明）并上传，回填图标地址
     And 取消/关闭裁剪窗时不产生上传
-```
+
+Feature: 渠道用户识别联动（绑定记录增强与企微原生登录）
+  渠道对话反查 user_oauth_connection 归属用户的前提：绑定记录尽量多存跨应用一致的标识。飞书绑定时同时记录 union_id（租户级唯一，跨应用一致）；企业微信连接器登录改走原生接口（sub=userid，与渠道回调 FromUserName 同源）。
+
+  @OC-S29 @manual
+  Scenario: 飞书绑定记录 union_id
+    Given 用户以飞书第三方登录注册或绑定账号
+    When 换取用户资料成功（资料含 open_id 与 union_id）
+    Then 绑定记录同时落 sub=open_id 与 union_id
+    And 同一绑定再次登录仍按 sub 匹配（登录匹配逻辑不变）
+
+  @OC-S30 @manual
+  Scenario: 企业微信连接器走原生登录
+    Given 存在 provider=weixinWork 的连接器
+    When 用户以该连接器发起第三方登录并携带有效 code
+    Then 平台调企业微信接口换取 userid（sub=userid），与机器人回调的 FromUserName 同源
+    And 渠道对话可凭 userid 反查绑定归属其账号
+
+Feature: 隐藏连接器（纯身份映射）
+  内网网站需要把自家用户映射到 MoAI 用户并换发访问用户 token，但不希望连接器出现在登录页。隐藏连接器只服务系统接口的身份绑定，不参与界面露出。
+
+  @OC-S31 @auto:e2e
+  Scenario: 隐藏连接器不在登录页与个人中心露出
+    Given 管理员创建第三方登录连接器并关闭「登录页显示」
+    When 查询登录页第三方登录列表
+    Then 不包含该隐藏连接器，可见连接器照常返回
+    And 管理端连接器列表以关闭状态回显该连接器
+    When 用户已被系统接口绑定到该隐藏连接器
+    Then 个人中心第三方账号绑定列表不露出该连接器（系统托管，防误解绑）
+    And 其绑定关系仍可被系统接口用于身份换算与访问用户 token 颁发
+
+  @OC-S32 @auto:vitest
+  Scenario: 管理员在连接器列表直接切换登录页显示
+    Given 管理员进入连接器列表且某连接器当前处于隐藏状态
+    When 管理员在独立的「登录页显示」列打开开关
+    Then 连接器立即切换为显示状态并保存成功
+    And 刷新列表后仍显示为开启状态
+    And 管理员无需打开编辑表单即可完成切换

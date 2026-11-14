@@ -7,7 +7,7 @@ namespace MoAI.KnowledgeGraph.Mcp;
 
 /// <summary>
 /// MCP 端点工具门禁：宿主共用一个 McpServerOptions（知识库与知识图谱工具注册在同一 server），
-/// 但 /api/external/wiki/{wikiId}/mcp 与 /api/external/knowledge-graph/{kgId}/mcp 两个端点各自只应暴露本域工具——
+/// 但 /api/teamres/wiki/{wikiId}/mcp 与 /api/teamres/knowledge-graph/{kgId}/mcp 两个端点各自只应暴露本域工具——
 /// 通过 ListTools/CallTool 过滤器按请求路径分域（tools/list 收敛列表、tools/call 拒绝跨域调用）。
 /// HttpContext 经静态 IHttpContextAccessor 读取（宿主 Program.cs 启动时 Initialize 一次）；
 /// streamable HTTP 无状态模式下每个 JSON-RPC 请求都是独立 HTTP POST，AsyncLocal 上下文可靠.
@@ -47,12 +47,12 @@ public static class KnowledgeGraphMcpToolGate
     public static string? CurrentDomain()
     {
         var path = _accessor?.HttpContext?.Request.Path.Value ?? string.Empty;
-        if (path.StartsWith("/api/external/wiki", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/mcp", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/api/teamres/wiki", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/mcp", StringComparison.OrdinalIgnoreCase))
         {
             return WikiDomain;
         }
 
-        if (path.StartsWith("/api/external/knowledge-graph", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/mcp", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/api/teamres/knowledge-graph", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/mcp", StringComparison.OrdinalIgnoreCase))
         {
             return KgDomain;
         }

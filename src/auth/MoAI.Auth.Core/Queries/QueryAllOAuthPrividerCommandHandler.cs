@@ -34,7 +34,7 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
     public async Task<QueryAllOAuthPrividerCommandResponse> Handle(QueryAllOAuthPrividerCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.OauthConnections
-            .Where(c => c.IsDeleted == 0)
+            .Where(c => c.IsDeleted == 0 && c.IsVisible)
             .Select(c => new
             {
                 Key = c.Key,

@@ -44,13 +44,16 @@ public class QueryTeamDynamicTemplatesCommandHandler : IRequestHandler<QueryTeam
             {
                 Key = x.Key,
                 Name = x.Name,
-                Description = x.Description,
+                Description = string.IsNullOrWhiteSpace(x.HumanDescription) ? x.Description : x.HumanDescription,
                 IsDynamic = x.IsDynamic,
-                RequestType = x.Request.FullName,
-                ResponseType = x.Response.FullName,
+                // 多工具插件（text_toolkit 等）无插件级 Request/Response，类型在 Tools 各项上
+                RequestType = x.Request?.FullName,
+                ResponseType = x.Response?.FullName,
                 ConfigType = x.ConfigType?.FullName,
                 ParamsExample = PluginTypeHelper.GetStaticExample(x.PluginType, "GetParamsExampleValue"),
                 ConfigExample = PluginTypeHelper.GetStaticExample(x.PluginType, "GetConfigExampleValue"),
+                ToolCount = x.IsMultiTool ? x.Tools.Count : 1,
+                Tools = PluginTypeHelper.BuildToolItems(x),
             })
             .ToList();
 

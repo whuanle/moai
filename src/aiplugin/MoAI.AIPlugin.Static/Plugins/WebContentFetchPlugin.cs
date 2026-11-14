@@ -15,7 +15,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 /// <summary>
 /// 网页内容抓取（静态插件）：抓取指定网页，可选择返回纯文本或原始 HTML.
 /// </summary>
-[AiPlugin(key: "static_web_content_fetch", Name = "网页内容抓取", Description = "获取指定网页链接的内容，默认提取纯文本")]
+[AiPlugin(key: "static_web_content_fetch", Name = "网页内容抓取", HumanDescription = "用于读取用户提供的网页并提取主要文本，帮助快速了解链接内容。适合摘要、问答和资料整理；网页可能包含无关或不可信信息，回答时应以来源内容为准。", Description = "获取指定网页链接的内容，默认提取纯文本")]
 public class WebContentFetchPlugin : IStaticPluginRuntime<WebContentFetchRequest, WebContentFetchResponse>
 {
     /// <summary>

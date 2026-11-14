@@ -101,6 +101,18 @@ public class PublicationController : ControllerBase
     }
 
     /// <summary>
+    /// 查询待审核上架申请数量（前端菜单「审批上架」角标数据源），仅系统管理员可访问.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回待审核数量.</returns>
+    [HttpGet("pending-count")]
+    public async Task<QueryPublicationPendingCountCommandResponse> QueryPendingCount(CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        return await _mediator.Send(new QueryPublicationPendingCountCommand(), ct);
+    }
+
+    /// <summary>
     /// 查询团队的上架审核列表（团队侧查看申请与审批状态），团队成员可访问.
     /// </summary>
     /// <param name="req">查询参数.</param>

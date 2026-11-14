@@ -9,7 +9,8 @@ namespace MoAI.KnowledgeGraph.Models;
 /// <param name="Direction">out（出边）/ in（入边）.</param>
 /// <param name="Name">邻居节点名.</param>
 /// <param name="Description">邻居描述.</param>
-public sealed record GraphNeighbor(string? RelationName, string Direction, string Name, string Description);
+/// <param name="Degree">邻居节点度数（邻接边总数；度数排序取 Top 用，无度数信息时为 0）.</param>
+public sealed record GraphNeighbor(string? RelationName, string Direction, string Name, string Description, int Degree = 0);
 
 /// <summary>
 /// 图检索命中.
@@ -39,8 +40,10 @@ public sealed record GraphSearchHit(
 /// <param name="Contents">命中节点文本列表（与 Hits 同序）.</param>
 /// <param name="Text">文本化拼接结果（供 LLM 上下文，超长截断）.</param>
 /// <param name="SkippedHints">被跳过的图谱及原因（未配置向量化/模型不可用等）.</param>
+/// <param name="TextTruncated">文本化结果是否因超出预算截断（截断自尾部低分命中开始）.</param>
 public sealed record GraphSearchResult(
     IReadOnlyList<GraphSearchHit> Hits,
     IReadOnlyList<string> Contents,
     string Text,
-    IReadOnlyList<string> SkippedHints);
+    IReadOnlyList<string> SkippedHints,
+    bool TextTruncated = false);

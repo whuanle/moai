@@ -15,7 +15,7 @@ import {
   saveAppUserConfig,
   updateAppSessionPrompt,
 } from '@/api/app'
-import { getMyPrompts, getTeamPrompts, getTopUsedPrompts } from '@/api/prompt'
+import { getTeamAvailableModels } from '@/api/aichannel'
 import { abortAppChat, createAppChatAgent, runAppChat, type AgentChatHandlers } from '@/api/agentChat'
 import { uploadChatFile } from '@/utils/storage'
 
@@ -33,10 +33,8 @@ vi.mock('@/api/app', () => ({
   extractChatAttachment: vi.fn(),
 }))
 
-vi.mock('@/api/prompt', () => ({
-  getMyPrompts: vi.fn(),
-  getTeamPrompts: vi.fn(),
-  getTopUsedPrompts: vi.fn(),
+vi.mock('@/api/aichannel', () => ({
+  getTeamAvailableModels: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('@/api/agentChat', () => ({
@@ -92,8 +90,18 @@ describe('AppChat（Agent 应用对话页）', () => {
     })
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      // 可选专家池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（后端聚合下发；客服专家为绑定的团队提示词）
+      promptOptions: [
+        { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0, useCount: 3 },
+        { promptId: 22, name: '客服专家', description: '售后话术', teamId: 3, useCount: 8 },
+      ],
       toolApprovalMode: 'auto',
       toolApprovalExemptNames: ['search_knowledge_base'],
       toolApprovalExemptPrefixes: ['skill_'],
@@ -101,17 +109,9 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
-    vi.mocked(getMyPrompts).mockResolvedValue([
-      { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0 },
-    ] as never)
-    vi.mocked(getTeamPrompts).mockResolvedValue([
-      { promptId: 22, name: '客服专家', description: '售后话术', teamId: 3 },
-    ] as never)
-    vi.mocked(getTopUsedPrompts).mockResolvedValue([
-      { promptId: 22, name: '客服专家', description: '售后话术', teamId: 3, useCount: 8 },
-      { promptId: 11, name: '写作专家', description: '文案润色', teamId: 0, useCount: 3 },
-    ] as never)
     vi.mocked(updateAppSessionPrompt).mockResolvedValue(undefined)
     vi.mocked(decideAppSessionToolApproval).mockResolvedValue('approved')
   })
@@ -127,7 +127,7 @@ describe('AppChat（Agent 应用对话页）', () => {
     // 快捷输入来自应用配置（管理员自定义），不再使用写死的默认建议
     expect(screen.getByText('帮我总结一份文档的核心要点')).toBeInTheDocument()
     expect(screen.getByText('根据知识库回答一个业务问题')).toBeInTheDocument()
-    // 输入框下方展示热门专家（含使用次数）；专家列表在应用详情确认非流程应用后加载，异步到达
+    // 输入框下方展示热门专家（可选池内被选用次数最多的前 10，含使用次数）；随 userconfig 异步到达
     await waitFor(() => expect(screen.getByText('热门专家')).toBeInTheDocument())
     expect(screen.getByText('8 次使用')).toBeInTheDocument()
     expect(screen.queryByText(/输入问题开始对话/)).not.toBeInTheDocument()
@@ -136,6 +136,39 @@ describe('AppChat（Agent 应用对话页）', () => {
     expect(screen.queryByText('应用对话')).not.toBeInTheDocument()
     expect(document.querySelector('.ant-breadcrumb')).toBeNull()
     expect(document.querySelector('.moai-chat__main.is-landing')).not.toBeNull()
+  })
+
+  it('模型切换器初始选中应用默认模型：defaultModelId 优先于可用列表第一项（@AP-S146）', async () => {
+    // 可用列表第一项是模型A，应用默认模型是模型B：初始应选中 B 而非回落第一项
+    vi.mocked(getAppUserConfig).mockResolvedValue({
+      promptId: 0,
+      defaultModelId: 'm-b',
+      modelIds: ['m-a', 'm-b'],
+      teamAgents: [],
+      defaultTeamAgentId: '',
+      skills: [],
+      defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
+      toolApprovalMode: 'auto',
+      toolApprovalExemptNames: [],
+      toolApprovalExemptPrefixes: [],
+      toolApprovalAutoApprovedNames: [],
+      toolApprovalAutoApprovedPrefixes: [],
+      memoryMode: 0,
+      memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
+    } as never)
+    vi.mocked(getTeamAvailableModels).mockResolvedValue([
+      { aiModelId: 'm-a', name: '模型A', modelKind: 'conversation', channelName: '渠道A' },
+      { aiModelId: 'm-b', name: '模型B', modelKind: 'conversation', channelName: '渠道B' },
+    ] as never)
+
+    renderPage()
+    // 切换器关闭态显示纯模型名（triggerLabel 承载），默认选中=模型B
+    await waitFor(() => expect(screen.getByText('模型B')).toBeInTheDocument())
+    expect(screen.queryByText('模型A')).not.toBeInTheDocument()
   })
 
   it('删除会话：悬浮显示删除入口，确认后删除当前会话并回到欢迎态', async () => {
@@ -363,8 +396,14 @@ describe('AppChat（Agent 应用对话页）', () => {
   it('审批模式：call_tool 触及沙箱工具时展示审批卡，批准后调用决策接口', async () => {
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'approval',
       toolApprovalAutoApprovedNames: [],
       toolApprovalAutoApprovedPrefixes: [],
@@ -372,6 +411,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     let finishRun: (() => void) | undefined
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
@@ -415,8 +456,14 @@ describe('AppChat（Agent 应用对话页）', () => {
   it('审批模式：知识库检索为豁免工具，不展示审批按钮', async () => {
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'approval',
       toolApprovalAutoApprovedNames: [],
       toolApprovalAutoApprovedPrefixes: [],
@@ -424,6 +471,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
       handlers.onToolCallEnd?.({
@@ -455,8 +504,14 @@ describe('AppChat（Agent 应用对话页）', () => {
     // 应用审批策略：白名单插件（weather 工具名精确命中）+ 沙箱自动放行（sandbox_ 前缀命中）
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'approval',
       toolApprovalAutoApprovedNames: ['weather'],
       toolApprovalAutoApprovedPrefixes: ['sandbox_'],
@@ -464,6 +519,8 @@ describe('AppChat（Agent 应用对话页）', () => {
       toolApprovalExemptPrefixes: ['skill_'],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     vi.mocked(runAppChat).mockImplementation(async (_agent, _text, handlers) => {
       handlers.onToolCallEnd?.({
@@ -665,9 +722,6 @@ describe('AppChat（Agent 应用对话页）', () => {
     // 后端流程分支不装配专家/技能/审批：对应请求不应发起
     await waitFor(() => expect(getAppDetail).toHaveBeenCalled())
     expect(getAppUserConfig).not.toHaveBeenCalled()
-    expect(getMyPrompts).not.toHaveBeenCalled()
-    expect(getTeamPrompts).not.toHaveBeenCalled()
-    expect(getTopUsedPrompts).not.toHaveBeenCalled()
   })
 
   it('流程应用：发送消息创建会话（不绑定专家）并流式接收回复', async () => {

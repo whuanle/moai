@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Notification</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Hangfire.Core" />
+		<PackageReference Include="MailKit" />
+		<!-- 钉住 MailKit→MimeKit 的传递依赖，规避 CVE-2026-84008（NU1903） -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" />
+		<PackageReference Include="Microsoft.Extensions.Http" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\message\MoAI.Message.Shared\MoAI.Message.Shared.csproj" />
+		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Notification.Api\MoAI.Notification.Api.csproj" />
+		<ProjectReference Include="..\MoAI.Notification.Shared\MoAI.Notification.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

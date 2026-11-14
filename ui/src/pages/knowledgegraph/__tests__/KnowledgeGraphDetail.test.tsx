@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import '@/i18n'
 import { KnowledgeGraphDetail } from '../KnowledgeGraphDetail'
@@ -32,6 +32,26 @@ vi.mock('@/api/knowledgeGraph', () => ({
 }))
 
 vi.mock('@/api/kiota', () => ({ getApiClient: vi.fn(() => ({})) }))
+
+// jsdom 无 canvas 2d 上下文，G6 渲染管线无法启动：以命令式句柄桩替换（画布交互另有组件级验证）
+vi.mock('@antv/g6', () => {
+  class GraphStub {
+    on() { return this }
+    off() { return this }
+    async render() {}
+    destroy() {}
+    setSize() {}
+    setData() {}
+    focusElement() {}
+    fitView() {}
+    zoomBy() {}
+    setElementState() {}
+    getElementState() { return [] }
+    getNodeData() { return [] }
+    getEdgeData() { return [] }
+  }
+  return { Graph: GraphStub }
+})
 
 function renderShell(initialEntry = '/team/7/kg/1/maintenance?step=entities') {
   return render(
@@ -73,6 +93,10 @@ describe('KnowledgeGraphDetail', () => {
     renderShell('/team/7/kg/1/maintenance?step=relations')
     expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
     expect(getKnowledgeGraphDetail).toHaveBeenCalledWith(1)
+    // 侧栏顶部身份区收进左侧菜单栏（aside）：上段头像+图名、下段返回按钮（SiderHeader，仿首页侧边栏头部）
+    const sider = screen.getByRole('complementary')
+    expect(within(sider).getByRole('button', { name: /返回知识图谱/ })).toBeInTheDocument()
+    expect(within(sider).getByText('支付域图谱')).toBeInTheDocument()
   })
 
   it('旧独立菜单路径（/entities）重定向到维护页对应步骤', async () => {

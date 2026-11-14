@@ -22,20 +22,12 @@ public class AiCoreModule : IModule
         // AG-UI 服务端（JSON 选项/SSE 管线）
         context.Services.AddAGUIServer();
 
-        // 流程执行过程内容（DataContent，媒体类型标记）→ AG-UI CustomEvent；
-        // 仅流程应用对话产生该内容类型，Agent 应用流不受影响
+        // 过程内容（DataContent，媒体类型标记）→ AG-UI CustomEvent：
+        // moai.workflow = 流程应用执行过程；moai.subagent = 子智能体派发过程（AppAgentDispatcher 旁路合并注入）
         context.Services.Configure<AGUI.Server.AGUIStreamOptions>(options =>
         {
             options.MapContent(content => content is Microsoft.Extensions.AI.DataContent data
-                    && data.MediaType == MoAI.AI.Services.WorkflowChatStreamContract.DataMediaType
-                ? new[]
-                {
-                    new AGUI.Abstractions.CustomEvent
-                    {
-                        Name = MoAI.AI.Services.WorkflowChatStreamContract.EventName,
-                        Value = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(data.Data.Span),
-                    },
-                }
+                ? MapProcessContent(data)
                 : null);
         });
 
@@ -80,5 +72,39 @@ public class AiCoreModule : IModule
 
         // 应用渠道的企业微信消息处理器（单聊/群聊消息 → 应用 Agent → 回复）；单例：内部按会话 key 加锁串行
         context.Services.AddSingleton<IWeixinWorkEventHandler, AppWeixinWorkMessageHandler>();
+    }
+
+    /// <summary>
+    /// 把过程类 DataContent 映射为对应命名的 AG-UI CustomEvent；非过程媒体类型返回 null（走默认映射）.
+    /// </summary>
+    /// <param name="data">数据内容.</param>
+    /// <returns>自定义事件数组，或 null.</returns>
+    private static AGUI.Abstractions.CustomEvent[]? MapProcessContent(Microsoft.Extensions.AI.DataContent data)
+    {
+        if (data.MediaType == WorkflowChatStreamContract.DataMediaType)
+        {
+            return
+            [
+                new AGUI.Abstractions.CustomEvent
+                {
+                    Name = WorkflowChatStreamContract.EventName,
+                    Value = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(data.Data.Span),
+                },
+            ];
+        }
+
+        if (data.MediaType == SubAgentChatStreamContract.DataMediaType)
+        {
+            return
+            [
+                new AGUI.Abstractions.CustomEvent
+                {
+                    Name = SubAgentChatStreamContract.EventName,
+                    Value = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(data.Data.Span),
+                },
+            ];
+        }
+
+        return null;
     }
 }

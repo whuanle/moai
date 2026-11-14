@@ -38,7 +38,8 @@ public class QueryExternalWikiRecallCommandHandler : IRequestHandler<QueryExtern
             request.Top,
             request.MinScore,
             request.DocumentIds.Count > 0 ? request.DocumentIds : null,
-            cancellationToken);
+            contextWindow: request.ContextWindow ?? 1,
+            cancellationToken: cancellationToken);
 
         return new QueryExternalWikiRecallCommandResponse
         {
@@ -49,6 +50,7 @@ public class QueryExternalWikiRecallCommandHandler : IRequestHandler<QueryExtern
             {
                 DocumentId = x.DocumentId,
                 DocumentName = x.DocumentName,
+                Anchor = x.Anchor,
                 ChunkId = x.ChunkId,
                 MetadataType = x.MetadataType,
                 ChunkIndex = x.ChunkIndex,
@@ -56,6 +58,9 @@ public class QueryExternalWikiRecallCommandHandler : IRequestHandler<QueryExtern
                 Content = x.Content,
                 Score = x.Score ?? 0,
                 RerankScore = x.RerankScore,
+                IsKeywordHit = x.IsKeywordHit,
+                IsContentFallback = x.IsContentFallback,
+                IsStale = x.IsStale,
                 Context = x.Context,
             }).ToList(),
         };

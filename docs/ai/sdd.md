@@ -76,7 +76,9 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
 
 ### 4.2 沙箱（OpenSandbox）
 
-- **配置存 JSON**：全局 `SystemOptions.OpenSandBox`（二级对象 `SystemOptionSandBox`：`Address/ApiKey/Image/TimeoutSeconds/RenewThresholdSeconds`，**镜像属系统设置，应用不可改**）；应用级写 `app_agent_config.execution_settings.sandbox`（`enabled/timeoutSeconds/renewOnAccess/resource{cpu,memory}/network{defaultAction,egress[]}`），**不改表结构**。
+- **配置存 JSON**：全局 `SystemOptions.OpenSandBox`（二级对象 `SystemOptionSandBox`：`Address/ApiKey/Image/TimeoutSeconds/RenewThresholdSeconds`，**镜像属系统设置，应用不可改**）；应用级写 `app_agent_config.execution_settings.sandbox`（`enabled/timeoutSeconds/renewOnAccess/resource{cpu,memory}/network{defaultAction, rules[{action,target,ports?}]}`，旧 `egress` 字符串数组只读兼容），**不改表结构**。
+- **出站网络策略下发**：创建沙箱时经 `SandboxNetworkPolicyBuilder`（AI.Core/Sandbox）把应用策略与平台管控模式（`SandboxLimitsSettings.NetworkMode/IntranetCidrs`）归一为 OpenSandbox `NetworkPolicy`——deny/intranet 强制默认拒绝、intranet 注入内网网段放行、defaultAction 留空且有规则显式按 allow（黑名单）；策略仅创建时下发，改配置对已存活沙箱不回溯（随 TTL 收敛）。语义见 [app/sdd 决策 48](../app/sdd.md)。
+- **命令过滤拦截**：`sandbox_run_shell`/`sandbox_run_code` 执行前经 `SandboxCommandGuard`（AI.Core/Sandbox）按平台级 ∪ 应用级禁用清单匹配（全词边界 / `regex:` 原生正则；shell 按操作符拆段+首词剥 sudo、code 整段文本），命中即拦截并返回说明给模型（对话不断）；挂点在 `SandboxAppToolProvider` 执行闭包，文件类工具与技能装载（只写文件）不拦。语义与双层清单见 [app/sdd 决策 49](../app/sdd.md)。
 - **每会话一沙箱**：Redis `appagent:sandbox:{sessionId}` 记录 `{sandboxId, expiresAt}`；首次沙箱工具调用惰性 `Sandbox.CreateAsync`（镜像 + entrypoint `/opt/code-interpreter/code-interpreter.sh` + 元数据 `moai.session/app/team`），后续调用 `Sandbox.ConnectAsync` 复用；剩余存活时间低于阈值且 `renewOnAccess` 时自动续期。
 - **工具**（经 `list_tools`/`call_tool` 渐进披露）：`sandbox_run_code`（Jupyter，python/java/go/typescript/javascript/bash）、`sandbox_run_shell`、`sandbox_write_file`、`sandbox_read_file`、`sandbox_list_dir`、`sandbox_delete_file`、`sandbox_search_files`；执行结果统一映射为 `{success,stdout,stderr,results,exitCode,error}`。
 - **回收**：会话/应用删除时尽力 `KillSessionAsync`；沙箱自身 TTL + Hangfire `SandboxReaperJob`（按 `moai.` 元数据对账，清理无主沙箱）兜底。
@@ -89,7 +91,7 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
 - **D2 threadId = 会话 id**：AG-UI 续聊标识直接复用 `app_agent_session.id`，前端每轮仅发最新消息。
 - **D3 热态 Redis + 冷快照**：运行期只写 Redis 提升多轮性能；完成后一次性刷 Postgres；`AgentSession.StateBag`（含压缩索引）随会话写入 Redis 与 `app_agent_session.state`。
 - **D4 落库即压缩**：flush 用 `CompactionProvider.CompactAsync` 对全量消息压缩后物理替换 `app_agent_message`；**被压缩行原文丢弃、不可回看**（用户确认）。
-- **D5 默认无损压缩**：`ToolResult + SlidingWindow + Truncation`；`execution_settings.enableSummarization=true` 时才引入 LLM 摘要（多一次模型调用）。
+- **D5 压缩管线按模型窗口自适应（2026-11-03 修订）**：`AppCompactionStrategyFactory` 按 `execution_settings.compactionMode` 组装——**auto（缺省）**：阈值按所选对话模型动态推导，input budget = `ContextWindow − MaxOutput`（与库内 `ContextWindowCompactionStrategy` 同口径），`ToolResult`（折叠旧工具结果，零 LLM）在 50% 预算触发 → `Summarization`（仅 `enableSummarization=true` 且摘要模型可用）在 80% 触发、`TokensBelow(50%)` 压回（大步长低频，保持 prompt cache 前缀稳定）→ `Truncation` 95% 兜底；窗口元数据缺失回落固定值管线（16 条/16K/64K，与历史一致）。**custom**：按绝对值运行（`AppCompactionPolicy` 限幅校验）。旧 `SlidingWindow` 滑窗策略退役（`preserveTurns` 读取容忍不生效）。比例常量收口在 `MoAI.AI.Shared/AppCompactionPolicy`（App.Core 默认值端点同源）。行为见 [@AP-S115](../app/bdd.md#ap-s115)~[@AP-S120](../app/bdd.md#ap-s120)。
 - **D6 Provider 来源归因**：历史 Provider 仅存 External 请求消息，避免 RAG/压缩注入被重复落库。
 - **D7 会话越权防护**：派发与会话 REST 均校验 `create_user_id`，非归属按 404（不泄露存在性）。
 - **D8 发布状态落库**：`app.publish_status`（0 草稿 / 1 已发布）+ `publish_time`；仅 Admin+ 可发布，仅 Agent 应用可发布，Member 仅能对已发布应用建会话。
@@ -115,7 +117,7 @@ src/wiki IWikiSearchService(RAG) ◄──────┘
 - **工具执行无审批与超时细粒度控制**：MCP 连接沿用服务默认超时；写操作类工具未接人工审批（Human-in-the-loop）。
 - **沙箱无跨实例分布式锁**：创建锁为进程内 `SemaphoreSlim`，多实例部署需换分布式锁。
 - **沙箱删除联动未硬保证**：`src/app` 不反向依赖 `src/ai`，会话/应用删除的沙箱销毁依赖 reaper 与 TTL 兜底。
-- **沙箱出站网络策略未在 UI 暴露**：可在 sandbox 配置中扩展 `networkPolicy`（服务端支持）。
+- **出站网络策略的强制依赖部署层**：MoAI 侧策略经 egress sidecar 下发，`dns` 模式下 CIDR/IP 规则不被强制（直连 IP 绕过），须 `dns+nft`（见 [deployment/docker.md](../deployment/docker.md)）；平台级不可覆盖黑名单需加固镜像 `deny.always`。
 - **沙箱镜像拉取首次较慢**：已把 SDK 请求超时放宽到 600s、就绪等待 300s；镜像建议在沙箱服务端预热。
 - 摘要模型配置入口、Rerank、外部用户使用、并发同一会话的锁、MCP/OpenAPI/沙箱 E2E 自动化仍可补强。
 - 会话列表仅返回当前用户自己的会话；管理员查看他人会话未开放。

@@ -18,10 +18,10 @@
 
 ## 数据模型
 
-- `oauth_connection`（`OauthConnectionEntity`，IFullAudited 软删除）：Id(Guid)/Name(唯一性由 Handler 查重)/Provider/Key/Secret/IconUrl/AuthorizeUrl/WellKnown/AgentId(可空，仅企业微信存应用 agentid)。无种子数据（空表起步）。AuthorizeUrl 是**提供方授权端点**（auth 模块拼跳转地址用），对管理员无配置价值；列表展示的是**回调地址** `{WebUI}/oauth_login`（`QueryAllOAuthConnectionCommandResponse.RedirectUri`，来自 SystemOptions），管理员把它填到提供方后台放通。实际登录时回调地址跟随登录页来源（见 [../auth/sdd.md](../auth/sdd.md) 关键决策 4），内网穿透等前端域名 ≠ WebUI 的场景无需改后端配置。
-- `user_oauth_connection`：用户绑定（UserId + ProviderId→oauth_connection.Id + Sub），由 auth 模块写入，本模块不操作。
+- `oauth_connection`（`OauthConnectionEntity`，IFullAudited 软删除）：Id(Guid)/Name(唯一性由 Handler 查重)/Provider/Key/Secret/IconUrl/AuthorizeUrl/WellKnown/AgentId(可空，仅企业微信存应用 agentid)/IsVisible(默认 true，false=隐藏连接器，仅作第三方身份映射不在登录页与个人中心露出)。无种子数据（空表起步）。AuthorizeUrl 是**提供方授权端点**（auth 模块拼跳转地址用），对管理员无配置价值；列表展示的是**回调地址** `{WebUI}/oauth_login`（`QueryAllOAuthConnectionCommandResponse.RedirectUri`，来自 SystemOptions），管理员把它填到提供方后台放通。实际登录时回调地址跟随登录页来源（见 [../auth/sdd.md](../auth/sdd.md) 关键决策 4），内网穿透等前端域名 ≠ WebUI 的场景无需改后端配置。
+- `user_oauth_connection`：用户绑定（UserId + ProviderId→oauth_connection.Id + Sub + UnionId(可空)）。由 auth/account 模块在注册/绑定时写入：飞书记 Sub=open_id 且 UnionId=union_id（租户级跨应用一致，供渠道对话跨应用识别归属，见 [../feishu/sdd.md](../feishu/sdd.md)）；钉钉记 Sub=union_id；企业微信连接器原生登录记 Sub=userid。唯一键 (provider_id, sub, is_deleted)，附 (provider_id, union_id) 普通索引。
 - 枚举 `OAuthPrivider`（历史拼写）：Custom=0、Feishu=1、DingTalk=2、WeixinWork=3。**wire 值由全局 `JsonStringEnumConverter(CamelCase)` 决定**（custom/feishu/dingTalk/weixinWork），成员上的 `[JsonPropertyName]` 对枚举不生效，仅作标注。
-- 存量库升级：`EnsureCreated` 不为已存在的表补列，`DatabasPostgresModule` 启动时执行幂等 `ALTER TABLE oauth_connection ADD COLUMN IF NOT EXISTS agent_id`（2026-10-27 后加列）。
+- 存量库升级：`EnsureCreated` 不为已存在的表补列，`DatabasPostgresModule` 启动时执行幂等 `ALTER TABLE oauth_connection ADD COLUMN IF NOT EXISTS agent_id`（2026-10-27 后加列）、`ALTER TABLE user_oauth_connection ADD COLUMN IF NOT EXISTS union_id` + union_id 索引（2026-10-28 后加列）、`ALTER TABLE oauth_connection ADD COLUMN IF NOT EXISTS is_visible boolean NOT NULL DEFAULT true`（2026-11-13 后加列，存量连接器默认可见，脚本 [asserts/oauth-connection-visible.sql](../../asserts/oauth-connection-visible.sql)）。存量绑定无 union_id（无法离线回填），重新绑定一次即获得。
 
 ## 组件
 
@@ -43,11 +43,14 @@ ui/src/                          api/oauthconnect.ts、pages/oauthconnect/OauthC
 4. **Update 语义**：Secret 为空保持原值；切换内置 Provider 重置内置 WellKnown/AuthorizeUrl；路由 id 回填 `OAuthConnectionId`（其校验规则已移除，见修复史）。
 5. **Delete 软删除**：保留 `user_oauth_connection` 历史绑定；记录不存在 400。
 6. **Query 全量**：返回 `IsDeleted==0`，不分页。
+7. **登录取资料按 Provider 分发**（auth 侧 `OAuthUserProfileService`）：Feishu 走 authen 接口（Sub=open_id，同时带出 union_id）、DingTalk 走 contact 接口（Sub=union_id）、**WeixinWork 走原生 qyapi 接口（Sub=userid）**——企微原生路由 2026-10-28 前未接线（落入 custom OIDC 分支而企业微信无标准 OIDC 发现端点，登录实际不可用），接线后绑定标识与渠道回调 FromUserName 同源；Custom 走 WellKnown OIDC。Sub 语义见数据节。
 7. 前端：非 admin 重定向 /apps 应用广场；Provider 编辑锁定；飞书/钉钉隐藏发现端点并自动填充默认图标；企业微信隐藏发现端点、展示 AgentId 必填项（无稳定公共图标源，不做默认图标，管理员上传）；列表「回调地址」列与新建/编辑弹窗提供商下方常驻回调提示——企微「授权回调域」提示只填域名部分（复制仅复制域名），其余提供商提示完整 `{WebUI}/oauth_login`；图标经 `IconPicker`（URL 或上传 ObjectKey，见 [../storage/sdd.md](../storage/sdd.md)）。登录页第三方图标按正方形展示：图标项右侧常驻方形提示，上传本地图片先经 `ImageSquareCropModal`（`ui/src/components/`）正方形裁剪——初始完整显示并居中，全向拖动 + 滑块/滚轮缩放（放大铺满视口紧致裁剪、缩小查看全图，未铺满处导出透明留白），Canvas 导出 ≤512px PNG 后走 `uploadImage`，手动填 URL 不裁剪（[@OC-S25](./bdd.md#oc-s25)）。
+8. **隐藏连接器（2026-11-13）**：`is_visible=false` 时连接器不进入 `GET /auth/oauth_prividers`（登录页）与个人中心 `bound_accounts` 列表，管理端列表正常回显；绑定关系与 `user_oauth_connection` 不变，仍参与登录匹配、渠道用户归因（`ChannelUserMatchService`）与系统接口身份换算（内部应用访问点按渠道 + sub/unionId 换发访问用户 token）。用途：内网网站把自家用户映射为 MoAI 用户并绑定第三方 id，但不希望该连接器成为面向用户的登录入口。隐藏只影响露出面，不构成安全边界——知道连接器 id 仍可发起 OAuth 登录。
+9. **列表快速切换可见性（2026-11-14）**：管理端列表提供独立「登录页显示」状态列，开关直接调用连接器更新并保留其它配置；编辑表单不再承载该字段，新建默认显示。详情继续回显状态。验收见 [@OC-S32](./bdd.md#oc-s32)。
 
 ## 与 auth 的关系（消费方契约）
 
-- `GET /auth/oauth_prividers`：按提供商拼跳转地址，`state={OAuthId}`、`redirect_uri={WebUI}/oauth_login`；默认 OAuth 用 `client_id/response_type/scope`；企业微信用 `login_type=CorpApp&appid={Key}&agentid={AgentId}`（企业微信 Web 登录要求 redirect_uri 域名在应用可信域名内，不要求精确回跳匹配）；redirectUri 须与 `SystemOptions.WebUI` 同 Host。
+- `GET /auth/oauth_prividers`：仅返回 `is_visible=true` 的连接器（隐藏连接器不露出）；按提供商拼跳转地址，`state={OAuthId}`、`redirect_uri={WebUI}/oauth_login`；默认 OAuth 用 `client_id/response_type/scope`；企业微信用 `login_type=CorpApp&appid={Key}&agentid={AgentId}`（企业微信 Web 登录要求 redirect_uri 域名在应用可信域名内，不要求精确回跳匹配）；redirectUri 须与 `SystemOptions.WebUI` 同 Host。
 - `POST /auth/oauth_login`：按 OAuthId 找连接器 → 换取 Sub → 无绑定则资料写 Redis `oauth:bind:{guid}`（10 分钟）返回 `TempOAuthBindId`。
 - `POST /auth/oauth_register`：消费临时绑定建号并写 `user_oauth_connection`；同 Sub 重复注册 409。
 - 删除连接器：渠道立即从登录页消失、无法再发起登录；已绑定用户历史保留（[@OC-S19](./bdd.md#oc-s19)）。

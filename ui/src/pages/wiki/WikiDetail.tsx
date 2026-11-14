@@ -7,16 +7,25 @@ import {
   GlobalOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
-import { Alert, AutoComplete, Button, Form, Input, Layout, Menu, Select, Space, Spin, Typography } from 'antd'
+import { Alert, AutoComplete, Button, Form, Input, Layout, Menu, Popconfirm, Progress, Select, Space, Spin, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { AvatarUpload, Card, feedback, Page } from '@/design-system'
+import { useNavigate, useParams } from 'react-router'
+import { AvatarUpload, Card, feedback, Page, SiderHeader } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { getWikiDetail, getWikiModelOptions, updateWiki, updateWikiEmbeddingConfig, updateWikiRerankModel, uploadWikiAvatar } from '@/api/wiki'
-import { getTeamDetail } from '@/api/team'
+import {
+  getWikiDetail,
+  getWikiModelMigrationStatus,
+  getWikiModelOptions,
+  startWikiModelMigration,
+  updateWiki,
+  updateWikiEmbeddingConfig,
+  updateWikiRerankModel,
+  uploadWikiAvatar,
+  type WikiModelMigrationStatus,
+} from '@/api/wiki'
 import { resolveStorageUrl } from '@/utils/storage'
-import { useAppStore } from '@/store/app'
+import { NAME_PATTERN } from '@/utils/validation'
 import { WikiDocuments } from './WikiDocuments'
 import { WikiMcp } from './WikiMcp'
 import { WikiRecallTest } from './WikiRecallTest'
@@ -93,6 +102,8 @@ export function WikiDetail() {
   const [modelOptionsLoaded, setModelOptionsLoaded] = useState(false)
   const [dimensionsOpen, setDimensionsOpen] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [migrationStatus, setMigrationStatus] = useState<WikiModelMigrationStatus | null>(null)
+  const [startingMigration, setStartingMigration] = useState(false)
   const [settingsForm] = Form.useForm<SettingsFormValues>()
   const [embeddingForm] = Form.useForm<EmbeddingFormValues>()
   const [rerankForm] = Form.useForm<RerankFormValues>()
@@ -103,21 +114,21 @@ export function WikiDetail() {
   // 重排序模型与向量化配置解耦：知识库锁定后仍可修改
   const rerankDisabled = modelOptionsLoading || modelOptionsFailed
 
-  const myTeams = useAppStore((state) => state.myTeams)
-  const [teamName, setTeamName] = useState('')
-
-  useEffect(() => {
-    const fromStore = myTeams.find((team) => String(team.teamId) === String(teamId))?.name
-    if (fromStore) {
-      setTeamName(fromStore)
-      return
-    }
-    // 直接进入（未经过侧边栏团队上下文）时，回退查询团队信息
-    if (!Number.isFinite(teamId) || teamId <= 0) return
-    getTeamDetail(teamId)
-      .then((res) => setTeamName(res?.name ?? ''))
-      .catch(() => undefined)
-  }, [myTeams, teamId])
+  const migrationTask = migrationStatus?.activeMigration ?? null
+  // 1 等待 / 2 处理中视为迁移进行中
+  const wikiMigrating = migrationTask?.state === 1 || migrationTask?.state === 2
+  const migrationPercent =
+    migrationTask == null
+      ? 0
+      : migrationTask.state === 4
+        ? 100
+        : (migrationTask.totalCount ?? 0) > 0
+          ? Math.min(100, Math.round(((migrationTask.migratedCount ?? 0) / (migrationTask.totalCount ?? 1)) * 100))
+          : 0
+  /** 迁移要求表单中的目标模型/维度与当前生效配置不同 */
+  const migrationTargetChanged =
+    embeddingForm.getFieldValue('embeddingModelId') !== (wiki?.embeddingModelId ?? '') ||
+    embeddingForm.getFieldValue('embeddingDimensions') !== (wiki?.embeddingDimensions ?? undefined)
 
   const load = useCallback(async () => {
     if (!Number.isFinite(wikiId) || wikiId <= 0) return
@@ -167,6 +178,44 @@ export function WikiDetail() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // 锁定状态下加载迁移状态（最近任务进度），供设置页展示与轮询
+  useEffect(() => {
+    if (!isAdminPlus || !embeddingLocked) return
+    let cancelled = false
+    getWikiModelMigrationStatus(wikiId)
+      .then((status) => {
+        if (!cancelled) setMigrationStatus(status)
+      })
+      .catch(() => {
+        // 状态加载失败不影响其余设置展示
+        if (!cancelled) setMigrationStatus(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isAdminPlus, embeddingLocked, wikiId])
+
+  // 迁移进行中每 3s 轮询一次进度，终态提示并刷新知识库配置（模型/维度已由服务端切换）
+  useEffect(() => {
+    if (!wikiMigrating) return
+    const timer = window.setInterval(async () => {
+      try {
+        const status = await getWikiModelMigrationStatus(wikiId)
+        setMigrationStatus(status)
+        const state = status.activeMigration?.state
+        if (state === 4) {
+          feedback.success(t('wiki.migration.success'))
+          void reload()
+        } else if (state === 5) {
+          feedback.error(t('wiki.migration.failed'))
+        }
+      } catch {
+        // 轮询失败忽略，下一轮重试
+      }
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [wikiMigrating, wikiId, t, reload])
 
   useEffect(() => {
     if (!isAdminPlus) return
@@ -259,6 +308,29 @@ export function WikiDetail() {
     }
   }
 
+  /** 发起向量化模型迁移：以表单当前选择的模型/维度重建该库全部向量 */
+  const handleStartMigration = async () => {
+    const values = embeddingForm.getFieldsValue()
+    if (!values.embeddingModelId) {
+      feedback.error(t('wiki.embedding.modelRequired'))
+      return
+    }
+    setStartingMigration(true)
+    try {
+      const taskId = await startWikiModelMigration(wikiId, values.embeddingModelId, Number(values.embeddingDimensions))
+      if (!taskId) {
+        feedback.error(t('wiki.migration.failed'))
+        return
+      }
+      feedback.success(t('wiki.migration.started'))
+      setMigrationStatus(await getWikiModelMigrationStatus(wikiId))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    } finally {
+      setStartingMigration(false)
+    }
+  }
+
   const avatarSrc = wiki?.avatarPath?.trim() ? resolveStorageUrl(wiki.avatarPath) : undefined
 
   /** 校验并上传知识库头像；非法文件直接忽略 */
@@ -300,15 +372,17 @@ export function WikiDetail() {
   }
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to={`/team/${teamId}`}>{teamName || t('wiki.title')}</Link> },
-        { title: <Link to={`/team/${teamId}/knowledge`}>{t('wiki.title')}</Link> },
-        { title: wiki.name ?? '' },
-      ]}
-    >
+    <Page>
       <Layout style={{ background: 'transparent', gap: spacing.md }}>
         <Sider width={200} style={{ background: 'transparent' }}>
+          {/* 侧栏顶部身份区：上段「库头像 + 库名」、下段「← 返回知识库」整宽按钮（与团队/应用工作台同构，仿首页侧边栏头部） */}
+          <SiderHeader
+            name={wiki?.name}
+            avatarSrc={avatarSrc}
+            avatarFallback={<BookOutlined />}
+            backTo={`/team/${teamId}/knowledge`}
+            backLabel={t('wiki.backToKnowledge')}
+          />
           <Menu
             mode="inline"
             items={menuItems}
@@ -318,21 +392,18 @@ export function WikiDetail() {
           />
         </Sider>
         <Content>
+          {/* 文件列表/外部源：工具行与表格分体（PageToolbar 裸排 + DataTable 自带卡片），不再包一层 Card */}
           {section === 'files' ? (
-            <Card styles={{ body: { padding: spacing.lg } }}>
-              <WikiDocuments wikiId={wikiId} teamId={teamId} />
-            </Card>
+            <WikiDocuments wikiId={wikiId} teamId={teamId} />
           ) : section === 'sources' ? (
-            <Card styles={{ body: { padding: spacing.lg } }}>
-              <WikiSources wikiId={wikiId} myRole={wiki.myRole} />
-            </Card>
+            <WikiSources wikiId={wikiId} myRole={wiki.myRole} />
           ) : section === 'recall' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
               <WikiRecallTest wikiId={wikiId} teamId={teamId} />
             </Card>
           ) : section === 'mcp' ? (
             <Card styles={{ body: { padding: spacing.lg } }}>
-              <WikiMcp wikiId={wikiId} />
+              <WikiMcp wikiId={wikiId} teamId={teamId} canManage={isAdminPlus} />
             </Card>
           ) : (
             // 设置表单按设计系统 FormPage 同款 720 阅读宽度收口，输入框不铺满整屏
@@ -359,6 +430,7 @@ export function WikiDetail() {
                     rules={[
                       { required: true, message: t('wiki.namePlaceholder') },
                       { max: 50, message: `${t('wiki.name')} ≤ 50` },
+                      { pattern: NAME_PATTERN, message: t('validation.nameChars') },
                     ]}
                   >
                     <Input placeholder={t('wiki.namePlaceholder')} maxLength={50} />
@@ -384,6 +456,31 @@ export function WikiDetail() {
                   )}
                   {embeddingLocked && (
                     <Alert type="warning" showIcon message={t('wiki.embedding.locked')} style={{ marginBottom: spacing.md }} />
+                  )}
+                  {/* 向量化模型迁移：锁定后更换模型/维度的唯一通道，以表单当前选择为目标重建全部向量 */}
+                  {embeddingLocked && (
+                    <div style={{ marginBottom: spacing.md }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+                        <Popconfirm
+                          title={t('wiki.migration.confirm')}
+                          okText={t('common.ok')}
+                          cancelText={t('common.cancel')}
+                          onConfirm={() => void handleStartMigration()}
+                          disabled={startingMigration || wikiMigrating || !migrationTargetChanged}
+                        >
+                          <Button danger loading={startingMigration} disabled={wikiMigrating || !migrationTargetChanged}>
+                            {t('wiki.migration.start')}
+                          </Button>
+                        </Popconfirm>
+                        {migrationTask && (wikiMigrating || migrationTask.state === 4 || migrationTask.state === 5) && (
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Progress percent={migrationPercent} size="small" status={wikiMigrating ? 'active' : migrationTask.state === 5 ? 'exception' : 'success'} />
+                            <Text type="secondary">{migrationTask.message}</Text>
+                          </div>
+                        )}
+                      </div>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.migration.desc')}</Text>
+                    </div>
                   )}
                   <Form.Item name="embeddingModelId" label={t('wiki.embedding.model')} rules={[{ required: true, message: t('wiki.embedding.modelRequired') }]}>
                     <Select

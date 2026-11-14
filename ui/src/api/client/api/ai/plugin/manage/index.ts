@@ -6,6 +6,8 @@ import { ManageItemRequestBuilderNavigationMetadata, type ManageItemRequestBuild
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { StatsRequestBuilderRequestsMetadata, type StatsRequestBuilder } from './stats/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type Guid, type KeysToExcludeForNavigationMetadata, type NavigationMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -16,6 +18,10 @@ export interface ManageRequestBuilder extends BaseRequestBuilder<ManageRequestBu
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The stats property
+     */
+    get stats(): StatsRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.ai.plugin.manage.item collection
      * @param id 插件记录 id.
@@ -37,6 +43,9 @@ export const ManageRequestBuilderNavigationMetadata: Record<Exclude<keyof Manage
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    stats: {
+        requestsMetadata: StatsRequestBuilderRequestsMetadata,
     },
 };
 /* tslint:enable */

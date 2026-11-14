@@ -8,6 +8,8 @@ import { type WithNodeItemRequestBuilder, WithNodeItemRequestBuilderNavigationMe
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { MergeRequestBuilderRequestsMetadata, type MergeRequestBuilder } from './merge/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -18,6 +20,10 @@ export interface NodesRequestBuilder extends BaseRequestBuilder<NodesRequestBuil
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The merge property
+     */
+    get merge(): MergeRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.knowledgeGraph.item.nodes.item collection
      * @param nodeId 节点 id.
@@ -59,6 +65,9 @@ export const NodesRequestBuilderNavigationMetadata: Record<Exclude<keyof NodesRe
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    merge: {
+        requestsMetadata: MergeRequestBuilderRequestsMetadata,
     },
 };
 /**

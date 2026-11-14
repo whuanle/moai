@@ -88,6 +88,7 @@ Feature: 技能归属与三级权限
     When Alice 创建个人技能（teamId=0）
     Then 创建成功，Alice 的技能选项（includePersonal）包含该技能
     And Bob 的技能选项不包含 Alice 的个人技能
+    And 技能选项项携带头像路径（avatarPath，未设置为空，2026-10-30 增补）
 
   @SKL-S2 @auto:e2e
   Scenario: 团队技能仅团队管理员可创建
@@ -174,6 +175,8 @@ Feature: 技能市场与个人/团队自助维护
     When Alice 创建个人技能并上传包文件
     Then Alice 的 my_list 含该技能（未公开、无待审、文件数正确）
     And Bob 的 my_list 不含 Alice 的个人技能
+    When 以含特殊字符（非中文/英文/数字/下划线）的名称创建技能
+    Then 400 拒绝（名称仅允许中文、英文、数字和下划线）
 
   @SKM-S2 @auto:e2e
   Scenario: 团队技能列表

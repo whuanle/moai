@@ -1,0 +1,34 @@
+{
+  "descriptionHash": "6D8A048C6738851100D613EC5E7F8C018B1EF242A08C4A8363D98F64A6045E8C13ECEBEAEEE1EBAF6E704A24AB5A67AA9108E1CE97DFFD4A9694144E680D869C",
+  "descriptionLocation": "http://127.0.0.1:5000/openapi/subsys.json",
+  "lockFileVersion": "1.0.0",
+  "kiotaVersion": "1.27.0",
+  "clientClassName": "SubsysClient",
+  "typeAccessModifier": "Public",
+  "clientNamespaceName": "MoAI.Subsystem.Client.ApiSdk",
+  "language": "CSharp",
+  "usesBackingStore": false,
+  "excludeBackwardCompatible": false,
+  "includeAdditionalData": false,
+  "disableSSLValidation": false,
+  "serializers": [
+    "Microsoft.Kiota.Serialization.Json.JsonSerializationWriterFactory",
+    "Microsoft.Kiota.Serialization.Text.TextSerializationWriterFactory",
+    "Microsoft.Kiota.Serialization.Form.FormSerializationWriterFactory",
+    "Microsoft.Kiota.Serialization.Multipart.MultipartSerializationWriterFactory"
+  ],
+  "deserializers": [
+    "Microsoft.Kiota.Serialization.Json.JsonParseNodeFactory",
+    "Microsoft.Kiota.Serialization.Text.TextParseNodeFactory",
+    "Microsoft.Kiota.Serialization.Form.FormParseNodeFactory"
+  ],
+  "structuredMimeTypes": [
+    "application/json",
+    "text/plain;q=0.9",
+    "application/x-www-form-urlencoded;q=0.2",
+    "multipart/form-data;q=0.1"
+  ],
+  "includePatterns": [],
+  "excludePatterns": [],
+  "disabledValidationRules": []
+}

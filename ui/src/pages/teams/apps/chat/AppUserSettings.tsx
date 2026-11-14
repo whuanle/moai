@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { CheckOutlined, CloseOutlined, SafetyCertificateOutlined, ThunderboltFilled } from '@ant-design/icons'
 import { Button, Input, Spin, Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router'
 import { feedback } from '@/design-system'
 import { getAppUserConfig, saveAppUserConfig, type AppUserSkillOption } from '@/api/app'
 import type { ToolApprovalMode } from '@/api/agentChat'
@@ -13,9 +12,13 @@ import { resolveStorageUrl } from '@/utils/storage'
 const MEMORY_MODE_OFF = 1
 const MEMORY_MODE_APP_ONLY = 2
 
+/** 用户全局记忆接入模式（对齐后端 AgentMemorySettings.UserGlobalMode*）：仅 接入（0）/ 不接入（1）两态 */
+const MEMORY_GLOBAL_ON = 0
+const MEMORY_GLOBAL_OFF = 1
+
 /** 面板宽度持久化键与取值范围 */
 const PANEL_WIDTH_KEY = 'moai:chat:settings-width'
-const DEFAULT_PANEL_WIDTH = 460
+const DEFAULT_PANEL_WIDTH = 520
 const MIN_PANEL_WIDTH = 360
 const clampPanelWidth = (width: number) => {
   const max = Math.max(MIN_PANEL_WIDTH, Math.min(760, Math.round(window.innerWidth * 0.7)))
@@ -24,8 +27,6 @@ const clampPanelWidth = (width: number) => {
 
 interface AppUserSettingsProps {
   open: boolean
-  /** 团队 id（「管理记忆」跳转用） */
-  teamId: number
   appId: string
   experts: PromptItem[]
   /** 当前生效的专家提示词 id（无会话为新会话默认，有会话为会话绑定值），作为面板草稿初始值 */
@@ -37,14 +38,13 @@ interface AppUserSettingsProps {
 
 /**
  * 应用设置面板（右侧滑出）：用户对该应用的个性化定制，跨会话复用。
- * 专家=提示词（本人个人 + 本团队），保存后作为新会话默认并在会话中即时切换；
- * 技能只能从管理员配置的默认技能目录中勾选/取消（默认全部启用），范围外内容不展示也不可提交；
+ * 专家=提示词，候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（不含团队提示词），保存后作为新会话默认并在会话中即时切换；
+ * 技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人，默认技能（应用绑定）未保存过配置时全部启用，可自由勾选/取消；
  * 工具审批模式控制重要工具是否需人工批准；
- * 长期记忆偏好（应用开启记忆时展示）：模式选择 + 本人记忆管理（单条删除/清空本应用/清空全部）。
+ * 长期记忆偏好（应用开启记忆时展示）：开启/关闭 两态分段选择。
  */
-export function AppUserSettings({ open, teamId, appId, experts, currentPromptId, onClose, onSaved }: AppUserSettingsProps) {
+export function AppUserSettings({ open, appId, experts, currentPromptId, onClose, onSaved }: AppUserSettingsProps) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
@@ -56,6 +56,9 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
   // 长期记忆偏好（仅 开启/关闭 两态；明细管理在「管理记忆」页）
   const [memoryEnabled, setMemoryEnabled] = useState(false)
   const [draftMemoryMode, setDraftMemoryMode] = useState(MEMORY_MODE_APP_ONLY)
+  // 全局记忆接入偏好（应用 allowGlobalMemory 时展示；仅 接入/不接入 两态）
+  const [memoryGlobalAllowed, setMemoryGlobalAllowed] = useState(false)
+  const [draftMemoryGlobalMode, setDraftMemoryGlobalMode] = useState(MEMORY_GLOBAL_ON)
   // 面板宽度：左缘手柄拖拽调整，localStorage 持久化
   const [panelWidth, setPanelWidth] = useState(() => {
     const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY))
@@ -97,11 +100,14 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
     getAppUserConfig(appId)
       .then((cfg) => {
         setDraftSkills(cfg.skills)
-        setSkillOptions(cfg.defaultSkills)
+        // 可选技能池 = 应用默认 ∪ 市场公开 ∪ 本人个人；存量后端未返回池时回退默认目录
+        setSkillOptions(cfg.skillOptions.length > 0 || cfg.defaultSkills.length === 0 ? cfg.skillOptions : cfg.defaultSkills)
         setDraftApprovalMode(cfg.toolApprovalMode)
         setMemoryEnabled(cfg.memoryEnabled)
         // 未设置（0）按开启生效；面板只呈现 开启/关闭 两态
         setDraftMemoryMode(cfg.memoryMode === 1 ? MEMORY_MODE_OFF : MEMORY_MODE_APP_ONLY)
+        setMemoryGlobalAllowed(cfg.memoryGlobalAllowed)
+        setDraftMemoryGlobalMode(cfg.memoryGlobalMode === 1 ? MEMORY_GLOBAL_OFF : MEMORY_GLOBAL_ON)
       })
       .catch(() => undefined)
       .finally(() => setLoading(false))
@@ -175,6 +181,10 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
         skills: draftSkills,
         toolApprovalMode: draftApprovalMode,
         ...(memoryEnabled ? { memoryMode: draftMemoryMode } : {}),
+        // 全局接入偏好仅应用允许且记忆未关闭时提交
+        ...(memoryEnabled && memoryGlobalAllowed && draftMemoryMode !== MEMORY_MODE_OFF
+          ? { memoryGlobalMode: draftMemoryGlobalMode }
+          : {}),
       })
       feedback.success(t('appChat.settingsSaved'))
       onSaved(draftPromptId, draftApprovalMode)
@@ -184,13 +194,18 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
     } finally {
       setSaving(false)
     }
-  }, [appId, draftApprovalMode, draftMemoryMode, draftPromptId, draftSkills, memoryEnabled, onClose, onSaved, t])
+  }, [appId, draftApprovalMode, draftMemoryGlobalMode, draftMemoryMode, draftPromptId, draftSkills, memoryEnabled, memoryGlobalAllowed, onClose, onSaved, t])
 
   const skills = visibleSkills()
 
   const memoryModeOptions = [
     { value: MEMORY_MODE_APP_ONLY, label: t('appChat.memoryModeOn'), hint: t('appChat.memoryModeOnHint') },
     { value: MEMORY_MODE_OFF, label: t('appChat.memoryModeOff'), hint: t('appChat.memoryModeOffHint') },
+  ]
+
+  const memoryGlobalOptions = [
+    { value: MEMORY_GLOBAL_ON, label: t('appChat.memoryGlobalOn'), hint: t('appChat.memoryGlobalOnHint') },
+    { value: MEMORY_GLOBAL_OFF, label: t('appChat.memoryGlobalOff'), hint: t('appChat.memoryGlobalOffHint') },
   ]
 
   // 关闭时不渲染，避免与专家面板重复挂载同名列表项
@@ -210,9 +225,11 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
       />
       <div className="moai-chat__sidebar-head">
         <span className="moai-chat__sidebar-title">{t('appChat.userSettings')}</span>
-        <button type="button" className="moai-chat__experts-close" onClick={onClose} aria-label={t('appChat.close')}>
-          <CloseOutlined />
-        </button>
+        <Tooltip title={t('appChat.close')}>
+          <button type="button" className="moai-chat__experts-close" onClick={onClose} aria-label={t('appChat.close')}>
+            <CloseOutlined />
+          </button>
+        </Tooltip>
       </div>
       <div className="moai-chat__experts-hint">{t('appChat.userSettingsHint')}</div>
       {loading ? (
@@ -226,6 +243,7 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
             <div className="moai-chat__settings-search">
               <Input
                 allowClear
+                variant="filled"
                 size="small"
                 value={expertSearch}
                 onChange={(e) => setExpertSearch(e.target.value)}
@@ -259,8 +277,10 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
                             <span className="moai-chat__opt-card-name" title={item.name ?? ''}>
                               {item.name || t('appChat.untitled')}
                             </span>
-                            <Tag className={`moai-chat__expert-source${(item.teamId ?? 0) > 0 ? ' is-team' : ''}`}>
-                              {t((item.teamId ?? 0) > 0 ? 'appChat.expertTeam' : 'appChat.expertPersonal')}
+                            <Tag
+                              className={`moai-chat__expert-source${item.isPublic ? ' is-market' : (item.teamId ?? 0) > 0 ? ' is-team' : ''}`}
+                            >
+                              {t(item.isPublic ? 'appChat.expertMarket' : (item.teamId ?? 0) > 0 ? 'appChat.expertTeam' : 'appChat.expertPersonal')}
                             </Tag>
                             {active && <CheckOutlined className="moai-chat__opt-card-check" />}
                           </div>
@@ -281,6 +301,7 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
             <div className="moai-chat__settings-search">
               <Input
                 allowClear
+                variant="filled"
                 size="small"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -308,9 +329,11 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
                         <span className="moai-chat__opt-card-name" title={item.name || item.key || ''}>
                           {item.name || item.key}
                         </span>
-                        {!item.isSystem && (item.teamId ?? 0) > 0 && (
+                        {!item.isSystem && (item.isPublic ? (
+                          <Tag className="moai-chat__expert-source is-market">{t('appChat.skillMarket')}</Tag>
+                        ) : (item.teamId ?? 0) > 0 ? (
                           <Tag className="moai-chat__expert-source is-team">{t('appChat.skillTeam')}</Tag>
-                        )}
+                        ) : null)}
                         {checked && <CheckOutlined className="moai-chat__opt-card-check" />}
                       </div>
                       {item.description && (
@@ -364,18 +387,25 @@ export function AppUserSettings({ open, teamId, appId, experts, currentPromptId,
                     </Tooltip>
                   ))}
                 </div>
-                <div style={{ padding: '4px 12px 12px' }}>
-                  <Button
-                    size="small"
-                    block
-                    onClick={() => {
-                      onClose()
-                      navigate(`/team/${teamId}/app/${appId}/memory/mine`)
-                    }}
-                  >
-                    {t('myMemory.manage')}
-                  </Button>
-                </div>
+                {memoryGlobalAllowed && (
+                  <>
+                    <div className="moai-chat__settings-section">{t('appChat.memoryGlobalSection')}</div>
+                    <div className="moai-chat__settings-modes">
+                      {memoryGlobalOptions.map((option) => (
+                        <Tooltip key={option.value} title={draftMemoryMode === MEMORY_MODE_OFF ? t('appChat.memoryGlobalDisabledByOff') : option.hint} placement="top">
+                          <button
+                            type="button"
+                            disabled={draftMemoryMode === MEMORY_MODE_OFF}
+                            className={`moai-chat__settings-mode${draftMemoryMode !== MEMORY_MODE_OFF && draftMemoryGlobalMode === option.value ? ' is-active' : ''}`}
+                            onClick={() => setDraftMemoryGlobalMode(option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>

@@ -13,6 +13,7 @@ using MoAI.Infra.Services;
 using MoAI.Team.Services;
 using MoAI.Wiki.Commands;
 using MoAI.Wiki.Consumers.Events;
+using MoAI.Wiki.Services;
 using Npgsql;
 
 namespace MoAI.Wiki.Handlers;
@@ -29,6 +30,7 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
     private readonly ITeamService _teamService;
     private readonly IUserContextProvider _userContextProvider;
     private readonly IMessagePublisher _messagePublisher;
+    private readonly IWikiModelMigrationService _migrationService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EmbeddingDocumentCommandHandler"/> class.
@@ -37,12 +39,14 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="userContextProvider">用户上下文提供者.</param>
     /// <param name="messagePublisher">消息发布器.</param>
-    public EmbeddingDocumentCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider, IMessagePublisher messagePublisher)
+    /// <param name="migrationService">模型迁移守卫（迁移期间阻断向量化）.</param>
+    public EmbeddingDocumentCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IUserContextProvider userContextProvider, IMessagePublisher messagePublisher, IWikiModelMigrationService migrationService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
         _userContextProvider = userContextProvider;
         _messagePublisher = messagePublisher;
+        _migrationService = migrationService;
     }
 
     /// <inheritdoc/>
@@ -71,6 +75,9 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
         {
             throw new BusinessException("知识库未配置向量化模型或维度，请先完成配置.") { StatusCode = 409 };
         }
+
+        // 模型迁移期间阻断向量化，防止新旧维度数据错位
+        await _migrationService.EnsureNotMigratingAsync(wiki.Id, cancellationToken);
 
         var document = await _databaseContext.WikiDocuments
             .FirstOrDefaultAsync(x => x.Id == request.DocumentId && x.WikiId == request.WikiId && x.IsDeleted == 0, cancellationToken);

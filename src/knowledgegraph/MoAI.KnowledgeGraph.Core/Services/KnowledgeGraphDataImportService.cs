@@ -748,7 +748,7 @@ public class KnowledgeGraphDataImportService
                         where m.Id == modelId && m.Enabled && c.Enabled && m.IsDeleted == 0 && c.IsDeleted == 0
                         select new { m, c };
             var candidates = await query.ToListAsync(cancellationToken);
-            var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+            var model = candidates.FirstOrDefault(x => x.c.TeamId == graph.TeamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
             if (model == null)
             {
                 var authorized = await _databaseContext.AiModelAuthorizations

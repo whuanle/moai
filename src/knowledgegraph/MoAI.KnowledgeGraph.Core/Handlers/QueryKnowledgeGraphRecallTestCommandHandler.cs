@@ -90,7 +90,7 @@ public class QueryKnowledgeGraphRecallTestCommandHandler : IRequestHandler<Query
             }
         }
 
-        var result = await _graphSearchService.SearchAsync([graph.Id], searchQuery, request.Top, request.MinScore, cancellationToken);
+        var result = await _graphSearchService.SearchAsync([graph.Id], searchQuery, request.Top, request.MinScore, request.NeighborTopK, cancellationToken);
 
         var answer = string.Empty;
         if (request.IsAnswer && result.Hits.Count > 0)
@@ -133,6 +133,7 @@ public class QueryKnowledgeGraphRecallTestCommandHandler : IRequestHandler<Query
                     Direction = n.Direction,
                     Name = n.Name,
                     Description = n.Description,
+                    Degree = n.Degree,
                 }).ToList(),
             }).ToList(),
             SkippedHints = result.SkippedHints.ToList(),
@@ -150,7 +151,7 @@ public class QueryKnowledgeGraphRecallTestCommandHandler : IRequestHandler<Query
                     select new { m, c };
 
         var candidates = await query.ToListAsync(cancellationToken);
-        var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+        var model = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (model == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

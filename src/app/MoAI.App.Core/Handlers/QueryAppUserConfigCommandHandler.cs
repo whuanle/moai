@@ -6,8 +6,10 @@ using MoAI.App.Queries.Responses;
 using MoAI.Database;
 using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
+using MoAI.Database.Seed;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
+using MoAI.App.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -19,16 +21,19 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IPublicAppScopeService _publicAppScopeService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryAppUserConfigCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public QueryAppUserConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="publicAppScopeService">应用市场可视范围判定服务.</param>
+    public QueryAppUserConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IPublicAppScopeService publicAppScopeService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _publicAppScopeService = publicAppScopeService;
     }
 
     /// <inheritdoc/>
@@ -38,7 +43,9 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             ?? throw new BusinessException("应用不存在.") { StatusCode = 404 };
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
-        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        // 非团队成员仅在「已发布且公开到平台且在可视范围内」时可使用（团队成员不受市场可视范围限制）
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1
+            && (myRole != null || await _publicAppScopeService.IsAllowedAsync(app.Id, request.ContextUserId, cancellationToken));
         if (myRole == null && !canUseAsPublic)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
@@ -46,40 +53,73 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
 
         var config = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
-            .Select(x => new { x.Skills, x.ExecutionSettings, x.PublishedConfig })
+            .Select(x => new AppApprovalConfigRow(x.Skills, x.Prompts, x.ExecutionSettings, x.PublishedConfig, x.WikiIds, x.GraphIds, x.WorkflowApps, x.AgentApps, x.ModelId, x.ModelIds, x.TeamAgentIds, x.DefaultTeamAgentId, x.TeamAgentDefs))
             .FirstOrDefaultAsync(cancellationToken);
+
+        // 对话模型切换器数据源（与正式对话同一生效口径：已发布取快照，否则草稿）；
+        // 存量快照无 modelIds 或行内为空时归一为仅默认模型
+        var modelSnapshot = app.PublishStatus == 1 ? AppAgentConfigSnapshot.TryParse(config?.PublishedConfig) : null;
+        var defaultModelId = modelSnapshot?.ModelId ?? config?.ModelId ?? Guid.Empty;
+        var modelIds = ParseGuidList(modelSnapshot?.ModelIds ?? config?.ModelIds);
+        if (modelIds.Count == 0 && defaultModelId != Guid.Empty)
+        {
+            modelIds = new List<Guid> { defaultModelId };
+        }
+
+        // 团队智能体切换器数据源（同一生效口径）：已发布取快照内嵌定义，否则查实时行（仅启用项）
+        var teamAgentIds = ParseGuidList(modelSnapshot?.TeamAgentIds ?? config?.TeamAgentIds);
+        var defaultTeamAgentId = modelSnapshot?.DefaultTeamAgentId ?? config?.DefaultTeamAgentId;
+        var teamAgents = await ResolveTeamAgentOptionsAsync(app, modelSnapshot, teamAgentIds, cancellationToken);
 
         var defaultSkillIds = ParseGuidList(config?.Skills);
 
-        // 应用默认技能目录（按配置顺序）；技能被删除/禁用时目录静默缺失，用户勾选随之失效
-        var defaultSkills = new List<AppUserSkillOption>();
-        if (defaultSkillIds.Count > 0)
-        {
-            var rows = await _databaseContext.Skills.AsNoTracking()
-                .Where(x => defaultSkillIds.Contains(x.Id) && !x.IsDisable)
-                .Select(x => new { x.Id, x.Key, x.Name, x.Description, x.IsSystem, x.TeamId, x.UseCount })
-                .ToDictionaryAsync(x => x.Id, cancellationToken);
-            defaultSkills = defaultSkillIds
-                .Where(rows.ContainsKey)
-                .Select(id => new AppUserSkillOption
-                {
-                    Id = rows[id].Id,
-                    Key = rows[id].Key,
-                    Name = rows[id].Name,
-                    Description = rows[id].Description,
-                    IsSystem = rows[id].IsSystem,
-                    TeamId = rows[id].TeamId,
-                    UseCount = rows[id].UseCount,
-                })
-                .ToList();
-        }
+        // 可选技能候选池 = 应用默认 ∪ 市场公开 ∪ 本人个人（排除禁用；系统内置技能仅经绑定/市场入选），
+        // 排序：默认（配置顺序）→ 市场公开（使用次数倒序）→ 个人（使用次数倒序），按 id 去重
+        var skillRows = await _databaseContext.Skills.AsNoTracking()
+            .Where(x => !x.IsDisable
+                && (defaultSkillIds.Contains(x.Id)
+                    || x.IsPublic
+                    || (x.TeamId == 0 && !x.IsSystem && x.CreateUserId == request.ContextUserId)))
+            .Select(x => new AppUserSkillOption
+            {
+                Id = x.Id,
+                Key = x.Key,
+                Name = x.Name,
+                Description = x.Description,
+                IsSystem = x.IsSystem,
+                TeamId = x.TeamId,
+                IsPublic = x.IsPublic,
+                UseCount = x.UseCount,
+            })
+            .ToListAsync(cancellationToken);
+        var (skillOptions, defaultSkills) = OrderSkillPool(defaultSkillIds, skillRows);
 
-        var availableSkillIds = defaultSkills.Select(x => x.Id).ToHashSet();
+        // 可选专家候选池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（不含团队提示词：团队资源经管理员绑定才会进入候选），
+        // 排序同上（按被选用次数倒序）
+        var boundPromptIds = AppAgentConfigJson.ParseIntList(config?.Prompts);
+        var promptRows = await _databaseContext.Prompts.AsNoTracking()
+            .Where(x => boundPromptIds.Contains(x.Id)
+                || x.IsPublic
+                || (x.TeamId == 0 && x.CreateUserId == request.ContextUserId))
+            .Select(x => new AppUserPromptOption
+            {
+                PromptId = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                AvatarPath = x.AvatarPath,
+                TeamId = x.TeamId,
+                IsPublic = x.IsPublic,
+                UseCount = x.UseCount,
+            })
+            .ToListAsync(cancellationToken);
+        var promptOptions = OrderPromptPool(boundPromptIds, promptRows);
+
+        var availableSkillIds = skillOptions.Select(x => x.Id).ToHashSet();
 
         var userConfig = await _databaseContext.AppUserConfigs.AsNoTracking()
             .FirstOrDefaultAsync(x => x.AppId == request.AppId && x.UserId == request.ContextUserId, cancellationToken);
 
-        // 无用户配置行时默认技能全部启用；有配置行时勾选为默认技能与用户选择的交集（按默认技能顺序）
+        // 无用户配置行时默认技能（绑定目录）全部启用；有配置行时勾选=用户选择 ∩ 候选池（按池顺序）
         IReadOnlyList<Guid> selectedSkills;
         if (userConfig == null)
         {
@@ -88,15 +128,18 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         else
         {
             var userSkillSet = ParseGuidList(userConfig.Skills).ToHashSet();
-            selectedSkills = defaultSkillIds.Where(id => availableSkillIds.Contains(id) && userSkillSet.Contains(id)).ToList();
+            selectedSkills = skillOptions.Select(x => x.Id).Where(userSkillSet.Contains).ToList();
         }
 
-        // 审批策略按发布快照解析（与对话闸口一致）：白名单插件与沙箱在审批模式下自动放行，前端据此免展示审批卡
-        var (autoNames, autoPrefixes) = await ResolveAutoApprovedToolsAsync(app, config?.PublishedConfig, config?.ExecutionSettings, cancellationToken);
+        // 审批策略按发布快照解析（与对话闸口一致）：白名单资源与沙箱在审批模式下自动放行，前端据此免展示审批卡
+        var (autoNames, autoPrefixes) = await ResolveAutoApprovedToolsAsync(app, config, cancellationToken);
 
-        // 记忆偏好：按发布快照（已发布应用）解析应用记忆配置，返回用户存储模式与应用开启状态
+        // 记忆偏好：按发布快照（已发布应用）解析应用记忆配置，返回用户存储模式与应用开启状态；
+        // 跨应用共享（全局记忆）额外要求平台已开启跨应用记忆（MEMORY_GLOBAL_ENABLED）
         int memoryMode = userConfig?.MemoryMode ?? 0;
+        int memoryGlobalMode = userConfig?.MemoryGlobalMode ?? 0;
         var memoryEnabled = false;
+        var memoryGlobalAllowed = false;
         var memoryConfigRow = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
             .Select(x => new { x.ExecutionSettings, x.PublishedConfig })
@@ -106,14 +149,32 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             : memoryConfigRow?.ExecutionSettings;
         var memorySettings = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(memoryEffectiveSettings);
         memoryEnabled = memorySettings is { Enabled: true };
+        memoryGlobalAllowed = false;
+        if (memorySettings is { Enabled: true, AllowGlobalMemory: true })
+        {
+            var memoryGlobalSetting = await _databaseContext.Settings.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Key == SettingDefinitions.MemoryGlobalEnabledKey, cancellationToken);
+            var platformGlobalEnabled = !string.IsNullOrWhiteSpace(memoryGlobalSetting?.Value)
+                ? string.Equals(memoryGlobalSetting.Value.Trim(), "true", StringComparison.OrdinalIgnoreCase)
+                : string.Equals(SettingDefinitions.Find(SettingDefinitions.MemoryGlobalEnabledKey)?.DefaultValue?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+            memoryGlobalAllowed = platformGlobalEnabled;
+        }
 
         return new QueryAppUserConfigCommandResponse
         {
             PromptId = userConfig?.PromptId ?? 0,
+            DefaultModelId = defaultModelId,
+            ModelIds = modelIds,
+            TeamAgents = teamAgents,
+            DefaultTeamAgentId = defaultTeamAgentId,
             MemoryMode = memoryMode,
             MemoryEnabled = memoryEnabled,
+            MemoryGlobalMode = memoryGlobalMode,
+            MemoryGlobalAllowed = memoryGlobalAllowed,
             Skills = selectedSkills,
             DefaultSkills = defaultSkills,
+            SkillOptions = skillOptions,
+            PromptOptions = promptOptions,
             ToolApprovalMode = string.IsNullOrWhiteSpace(userConfig?.ToolApprovalMode)
                 ? MoAI.AI.AppToolApprovalContract.ModeAuto
                 : userConfig!.ToolApprovalMode,
@@ -125,16 +186,158 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
     }
 
     /// <summary>
+    /// 审批策略解析所需的配置行投影（草稿）：绑定列表 JSON 与执行参数/发布快照.
+    /// </summary>
+    private sealed record AppApprovalConfigRow(
+        string? Skills,
+        string? Prompts,
+        string? ExecutionSettings,
+        string? PublishedConfig,
+        string? WikiIds,
+        string? GraphIds,
+        string? WorkflowApps,
+        string? AgentApps,
+        Guid ModelId,
+        string? ModelIds,
+        string? TeamAgentIds,
+        Guid? DefaultTeamAgentId,
+        string? TeamAgentDefs);
+
+    /// <summary>
+    /// 组装可选技能候选池与默认技能目录：默认（配置顺序）→ 市场公开（使用次数倒序）→ 个人（使用次数倒序），按 id 去重；
+    /// 默认目录按配置 id 顺序返回（已删除/停用项静默缺失）.
+    /// </summary>
+    private static (List<AppUserSkillOption> Pool, List<AppUserSkillOption> DefaultSkills) OrderSkillPool(
+        IReadOnlyList<Guid> defaultSkillIds, List<AppUserSkillOption> rows)
+    {
+        var rowMap = rows.ToDictionary(x => x.Id);
+        var defaultSkills = defaultSkillIds.Where(rowMap.ContainsKey).Select(id => rowMap[id]).ToList();
+        var defaultIds = defaultSkills.Select(x => x.Id).ToHashSet();
+
+        var pool = new List<AppUserSkillOption>(defaultSkills);
+        var seen = defaultIds;
+        foreach (var item in rows.Where(x => x.IsPublic && !defaultIds.Contains(x.Id)).OrderByDescending(x => x.UseCount ?? 0))
+        {
+            if (seen.Add(item.Id))
+            {
+                pool.Add(item);
+            }
+        }
+
+        foreach (var item in rows.Where(x => !x.IsPublic && !defaultIds.Contains(x.Id)).OrderByDescending(x => x.UseCount ?? 0))
+        {
+            if (seen.Add(item.Id))
+            {
+                pool.Add(item);
+            }
+        }
+
+        return (pool, defaultSkills);
+    }
+
+    /// <summary>
+    /// 组装可选专家候选池：绑定（配置顺序）→ 市场公开（使用次数倒序）→ 个人（使用次数倒序），按 id 去重.
+    /// </summary>
+    private static List<AppUserPromptOption> OrderPromptPool(IReadOnlyList<int> boundPromptIds, List<AppUserPromptOption> rows)
+    {
+        var rowMap = rows.ToDictionary(x => x.PromptId);
+        var boundIds = boundPromptIds.ToHashSet();
+
+        var pool = new List<AppUserPromptOption>();
+        var seen = new HashSet<int>();
+        foreach (var id in boundPromptIds)
+        {
+            if (rowMap.TryGetValue(id, out var item) && seen.Add(id))
+            {
+                pool.Add(item);
+            }
+        }
+
+        foreach (var item in rows.Where(x => x.IsPublic && !boundIds.Contains(x.PromptId)).OrderByDescending(x => x.UseCount))
+        {
+            if (seen.Add(item.PromptId))
+            {
+                pool.Add(item);
+            }
+        }
+
+        foreach (var item in rows.Where(x => !x.IsPublic && !boundIds.Contains(x.PromptId)).OrderByDescending(x => x.UseCount))
+        {
+            if (seen.Add(item.PromptId))
+            {
+                pool.Add(item);
+            }
+        }
+
+        return pool;
+    }
+
+    /// <summary>
+    /// 解析团队智能体切换器选项：已发布且快照携带内嵌定义时按定义回显（Enabled 恒 true，发布后编辑不影响线上），
+    /// 否则按绑定 id 查实时行（仅启用项，顺序与绑定一致）.
+    /// </summary>
+    private async Task<IReadOnlyList<AppTeamAgentOption>> ResolveTeamAgentOptionsAsync(
+        AppEntity app,
+        AppAgentConfigSnapshot? snapshot,
+        IReadOnlyList<Guid> teamAgentIds,
+        CancellationToken cancellationToken)
+    {
+        if (teamAgentIds.Count == 0)
+        {
+            return new List<AppTeamAgentOption>();
+        }
+
+        var defs = SnapshotTeamAgent.TryParseDefs(snapshot?.TeamAgentDefs);
+        if (defs.Count > 0)
+        {
+            var defMap = defs.ToDictionary(x => x.Id);
+            return teamAgentIds
+                .Where(defMap.ContainsKey)
+                .Select(id => new AppTeamAgentOption
+                {
+                    Id = defMap[id].Id,
+                    Key = defMap[id].Key,
+                    Name = defMap[id].Name,
+                    Description = defMap[id].Description,
+                    AvatarObjectKey = defMap[id].AvatarObjectKey,
+                    Enabled = true,
+                })
+                .ToList();
+        }
+
+        var rows = await _databaseContext.TeamAgents.AsNoTracking()
+            .Where(x => teamAgentIds.Contains(x.Id) && x.Enabled && x.TeamId == app.TeamId)
+            .Select(x => new { x.Id, x.Key, x.Name, x.Description, x.AvatarObjectKey })
+            .ToListAsync(cancellationToken);
+
+        var rowMap = rows.ToDictionary(x => x.Id);
+        return teamAgentIds
+            .Where(rowMap.ContainsKey)
+            .Select(id => new AppTeamAgentOption
+            {
+                Id = rowMap[id].Id,
+                Key = rowMap[id].Key,
+                Name = rowMap[id].Name,
+                Description = rowMap[id].Description ?? string.Empty,
+                AvatarObjectKey = rowMap[id].AvatarObjectKey ?? string.Empty,
+                Enabled = true,
+            })
+            .ToList();
+    }
+
+    /// <summary>
     /// 解析审批策略自动放行的工具名/前缀：已发布应用按发布快照的执行参数（与闸口一致），未发布按实时草稿；
-    /// 白名单插件解析为工具名（原生=插件名，MCP/OpenAPI=插件名__函数名），沙箱开关解析为 sandbox_ 前缀.
+    /// 六类白名单解析为工具名——插件（原生=插件名，MCP/OpenAPI=插件名__函数名）、流程应用（workflow__{应用名}，
+    /// 同名加短 id 后缀，与闸口装配同一去重规则）、Agent 应用（agent__{应用名}，同上）、技能（skill_{key}）；
+    /// 知识库/知识图谱检索工具覆盖全部绑定资源，须全部绑定资源均命中白名单才下发工具名；沙箱开关解析为 sandbox_ 前缀.
     /// </summary>
     private async Task<(List<string> Names, List<string> Prefixes)> ResolveAutoApprovedToolsAsync(
-        AppEntity app, string? publishedConfig, string? draftExecutionSettings, CancellationToken cancellationToken)
+        AppEntity app,
+        AppApprovalConfigRow? config,
+        CancellationToken cancellationToken)
     {
-        var executionSettings = app.PublishStatus == 1
-            ? AppAgentConfigSnapshot.TryParse(publishedConfig)?.ExecutionSettings ?? draftExecutionSettings
-            : draftExecutionSettings;
-        var policy = MoAI.AI.AppToolApprovalPolicy.Parse(executionSettings);
+        var snapshot = app.PublishStatus == 1 ? AppAgentConfigSnapshot.TryParse(config?.PublishedConfig) : null;
+        var policy = MoAI.AI.AppToolApprovalPolicy.Parse(snapshot?.ExecutionSettings ?? config?.ExecutionSettings);
 
         var prefixes = new List<string>();
         if (policy.SandboxAutoApproved)
@@ -143,6 +346,8 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
         }
 
         var names = new List<string>();
+
+        // 插件：原生（静态/动态）一个插件一个工具，工具名即插件名；自定义（MCP/OpenAPI）按函数展开为 {插件名}__{函数名}
         if (policy.AutoApprovePlugins.Count > 0)
         {
             var ids = policy.AutoApprovePlugins;
@@ -151,12 +356,10 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
                 .Select(x => new { x.PluginId, x.PluginName, x.Type })
                 .ToListAsync(cancellationToken);
 
-            // 原生插件（静态/动态）一个插件一个工具，工具名即插件名
             names.AddRange(plugins
                 .Where(x => x.Type == (int)PluginType.NativePlugin)
                 .Select(x => x.PluginName));
 
-            // 自定义插件（MCP/OpenAPI）按函数展开为 {插件名}__{函数名}
             var customIds = plugins
                 .Where(x => x.Type == (int)PluginType.MCP || x.Type == (int)PluginType.OpenApi)
                 .ToList();
@@ -174,8 +377,68 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
             }
         }
 
+        // 流程应用与 Agent 应用：按生效绑定的全量应用复现闸口装配的同名去重命名，再保留白名单应用的工具名
+        await AddApprovedAppToolNamesAsync(names, AppAgentConfigJson.ParseGuidList(snapshot?.WorkflowApps ?? config?.WorkflowApps), policy.AutoApproveWorkflowApps, MoAI.AI.AppToolApprovalContract.WorkflowToolPrefix, cancellationToken);
+        await AddApprovedAppToolNamesAsync(names, AppAgentConfigJson.ParseGuidList(snapshot?.AgentApps ?? config?.AgentApps), policy.AutoApproveAgentApps, MoAI.AI.AppToolApprovalContract.AgentAppToolPrefix, cancellationToken);
+
+        // 技能：装载工具名 skill_{key}
+        if (policy.AutoApproveSkills.Count > 0)
+        {
+            var skillIds = policy.AutoApproveSkills;
+            var keys = await _databaseContext.Skills.AsNoTracking()
+                .Where(x => skillIds.Contains(x.Id))
+                .Select(x => x.Key)
+                .ToListAsync(cancellationToken);
+            names.AddRange(keys.Select(key => $"{MoAI.AI.AppToolApprovalContract.SkillToolPrefix}{key}"));
+        }
+
+        // 知识库/知识图谱：检索工具覆盖全部绑定资源，须全部命中白名单才免审批卡（与闸口判定一致）
+        if (IsAllBoundApproved(AppAgentConfigJson.ParseLongList(snapshot?.WikiIds ?? config?.WikiIds), policy.AutoApproveWikis))
+        {
+            names.Add(MoAI.AI.AppToolApprovalContract.WikiSearchToolName);
+            names.Add(MoAI.AI.AppToolApprovalContract.WikiChunkToolName);
+        }
+
+        if (IsAllBoundApproved(AppAgentConfigJson.ParseLongList(snapshot?.GraphIds ?? config?.GraphIds), policy.AutoApproveGraphs))
+        {
+            names.Add(MoAI.AI.AppToolApprovalContract.GraphSearchToolName);
+        }
+
         return (names, prefixes);
     }
+
+    /// <summary>
+    /// 按生效绑定全量应用复现闸口装配的去重命名（{prefix}{应用名}，同名加短 id 后缀），把白名单应用的工具名加入清单.
+    /// </summary>
+    private async Task AddApprovedAppToolNamesAsync(List<string> names, IReadOnlyList<Guid> boundAppIds, IReadOnlyList<Guid> approvedIds, string prefix, CancellationToken cancellationToken)
+    {
+        if (approvedIds.Count == 0)
+        {
+            return;
+        }
+
+        var apps = await _databaseContext.Apps.AsNoTracking()
+            .Where(x => boundAppIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.Name })
+            .ToListAsync(cancellationToken);
+
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in apps)
+        {
+            var toolName = MoAI.AI.AppResourceToolNaming.PrefixedToolName(prefix, row.Name, row.Id, usedNames);
+            if (toolName.Length > 0 && approvedIds.Contains(row.Id))
+            {
+                names.Add(toolName);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 多源检索工具放行判定：绑定列表非空且全部命中白名单.
+    /// </summary>
+    private static bool IsAllBoundApproved(IReadOnlyList<long> boundIds, IReadOnlyList<long> approvedIds)
+        => boundIds.Count > 0 && boundIds.All(approvedIds.Contains);
+
 
     private static IReadOnlyList<Guid> ParseGuidList(string? json)
     {

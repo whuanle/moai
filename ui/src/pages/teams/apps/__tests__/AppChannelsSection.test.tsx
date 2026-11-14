@@ -52,7 +52,7 @@ const ITEMS = [
 
 function renderSection(props?: Partial<Parameters<typeof AppChannelsSection>[0]>) {
   return render(
-    <AppChannelsSection teamId={3} appId="a1" canManage isPublished {...props} />,
+    <AppChannelsSection teamId={3} appId="a1" canManage {...props} />,
   )
 }
 
@@ -73,7 +73,6 @@ describe('AppChannelsSection（应用外部渠道）', () => {
     expect(screen.queryByText('闲置连接')).not.toBeInTheDocument()
     expect(screen.queryByText('其它应用渠道')).not.toBeInTheDocument()
     expect(screen.getByText('接入指引')).toBeInTheDocument()
-    expect(screen.queryByText(/应用尚未发布/)).not.toBeInTheDocument()
   })
 
   it('接入指引默认收缩，展开后按步骤逐条分行', async () => {
@@ -85,11 +84,6 @@ describe('AppChannelsSection（应用外部渠道）', () => {
     const items = await screen.findAllByRole('listitem')
     expect(items.length).toBeGreaterThanOrEqual(3)
     expect(items[0].textContent).toBe('在飞书开放平台创建企业自建应用并添加机器人能力')
-  })
-
-  it('应用未发布时提示消息不会被处理', async () => {
-    renderSection({ isPublished: false })
-    expect(await screen.findByText(/应用尚未发布/)).toBeInTheDocument()
   })
 
   it('不提供绑定已有连接与解绑入口', async () => {

@@ -5,6 +5,8 @@ using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
+using MoAI.Org.Queries;
+using MoAI.Org.Queries.Responses;
 using MoAI.Team.Commands;
 using MoAI.Team.Queries;
 using MoAI.Team.Queries.Responses;
@@ -185,6 +187,55 @@ public class TeamController : ControllerBase
 
         var cmd = new AddTeamUserCommand { TeamId = id, UserId = req.UserId, Role = req.Role };
         return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 批量添加团队成员，仅 Owner/Admin 可操作；授予 Admin 需要 Owner.
+    /// </summary>
+    /// <param name="id">团队 id.</param>
+    /// <param name="req">批量添加请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="AddTeamUsersCommandResponse"/>，含成功数与跳过明细.</returns>
+    [HttpPost("{id}/users/batch")]
+    public async Task<AddTeamUsersCommandResponse> AddTeamUsers(long id, [FromBody] AddTeamUsersCommand req, CancellationToken ct)
+    {
+        await EnsureTeamManagerAsync(id, "只有团队管理员可以添加成员.", ct);
+        if (req.Role == TeamRole.Admin)
+        {
+            await EnsureOwnerAsync(id, "只有团队所有者可以授予管理员角色.", ct);
+        }
+
+        var cmd = new AddTeamUsersCommand { TeamId = id, UserIds = req.UserIds, Role = req.Role };
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询组织角色全量平铺列表（团队侧只读视图，仅 Owner/Admin 可访问），供添加成员弹窗按组织批量选人，按 path 排序，前端按 parentId 组树.
+    /// </summary>
+    /// <param name="id">团队 id.</param>
+    /// <param name="search">按角色名称模糊搜索，可选.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryOrgRolesCommandResponse"/>.</returns>
+    [HttpGet("{id}/org/role/list")]
+    public async Task<QueryOrgRolesCommandResponse> QueryTeamOrgRoles(long id, [FromQuery] string? search, CancellationToken ct)
+    {
+        await EnsureTeamManagerAsync(id, "只有团队管理员可以查看组织架构.", ct);
+        return await _mediator.Send(new QueryOrgRolesCommand { Search = search }, ct);
+    }
+
+    /// <summary>
+    /// 查询某组织角色下的用户清单（团队侧只读视图，仅 Owner/Admin 可访问），供添加成员弹窗按组织批量选人.
+    /// </summary>
+    /// <param name="id">团队 id.</param>
+    /// <param name="roleId">角色 id.</param>
+    /// <param name="search">按用户名/昵称模糊搜索，可选.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryOrgRoleUsersCommandResponse"/>.</returns>
+    [HttpGet("{id}/org/role/{roleId}/users")]
+    public async Task<QueryOrgRoleUsersCommandResponse> QueryTeamOrgRoleUsers(long id, int roleId, [FromQuery] string? search, CancellationToken ct)
+    {
+        await EnsureTeamManagerAsync(id, "只有团队管理员可以查看组织架构.", ct);
+        return await _mediator.Send(new QueryOrgRoleUsersCommand { RoleId = roleId, Search = search }, ct);
     }
 
     /// <summary>

@@ -1,0 +1,67 @@
+/* 应用接入中心（AdminIntegrations）布局：
+   页面容器撑满视口内容区（高度 = 100vh - 布局上下 padding 24*2，由组件内联样式给定），
+   面板经 100% 链路填充，表格卡片 flex 撑满剩余高度——
+   表体内部滚动、分页固定在卡片底部（即视口底部）。 */
+
+/* 面板表格填充链：wrapper div → DataTable 卡片 div → .ant-table-wrapper → .ant-table → .ant-table-container
+   逐级 flex:1 撑开，表体吃掉剩余空间；scroll.y 的内联 max-height 被覆盖，交给 flex 分配。
+   分页行 flex:0 固定高度，永远钉在卡片底部。 */
+.admin-integrations-fill {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-integrations-fill > div {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-integrations-fill .ant-table-wrapper {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* loading 态 antd 会在 wrapper 内再包 Spin 两层，flex 链需要穿透它们 */
+.admin-integrations-fill .ant-table-wrapper .ant-spin-nested-loading,
+.admin-integrations-fill .ant-table-wrapper .ant-spin-container {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-integrations-fill .ant-table-wrapper .ant-spin-container > .ant-table {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-integrations-fill .ant-table-container {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-integrations-fill .ant-table-header {
+  flex: 0 0 auto;
+}
+
+.admin-integrations-fill .ant-table-body {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none !important; /* 压过 scroll.y 内联 max-height，高度由 flex 链分配 */
+  overflow-y: auto !important;
+}
+
+.admin-integrations-fill .ant-table-pagination.ant-pagination {
+  flex: 0 0 auto;
+  margin: 16px 0;
+}

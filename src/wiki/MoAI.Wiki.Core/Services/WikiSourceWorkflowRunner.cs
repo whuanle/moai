@@ -14,6 +14,7 @@ using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Wiki.Consumers.Events;
 using MoAI.Wiki.Models;
+using MoAI.AIChannel.Services;
 using Npgsql;
 
 namespace MoAI.Wiki.Services;
@@ -234,15 +235,9 @@ public class WikiSourceWorkflowRunner
             return (false, $"所选模型不是对话模型，无法用于{purpose}.");
         }
 
-        if (model.IsPublic)
-        {
-            return (true, string.Empty);
-        }
-
-        var authorized = await _databaseContext.AiModelAuthorizations
-            .AnyAsync(x => x.AiModelId == modelId && x.TeamId == teamId, cancellationToken);
-
-        return authorized ? (true, string.Empty) : (false, $"{purpose}模型未授权给你的团队使用.");
+        return await _databaseContext.IsTeamUsableModelAsync(teamId, modelId, cancellationToken)
+            ? (true, string.Empty)
+            : (false, $"{purpose}模型未授权给你的团队使用.");
     }
 
     private static bool IsActiveTaskUniqueConstraintViolation(DbUpdateException exception)

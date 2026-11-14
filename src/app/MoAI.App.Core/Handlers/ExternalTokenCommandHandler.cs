@@ -5,7 +5,9 @@ using MoAI.App.Models;
 using MoAI.App.Queries.Responses;
 using MoAI.App.Services;
 using MoAI.Database;
+using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
+using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
 
 namespace MoAI.App.Handlers;
@@ -37,10 +39,10 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
             return await HandleWithAccessAppKeyAsync(request, cancellationToken);
         }
 
-        // 匿名路径：is_auth=false 的外部应用直接换取 token
+        // 匿名路径：外部应用一律匿名开放（is_auth 已退役），直接换取 token
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId!.Value, cancellationToken);
-        ExternalAppAccessValidator.EnsureUsable(app, requireNoAuth: true);
+        ExternalAppAccessValidator.EnsureUsable(app);
 
         var externalUserId = string.IsNullOrWhiteSpace(request.ExternalUserId)
             ? $"ext-{Guid.CreateVersion7().ToString("N")[..16]}"
@@ -62,62 +64,34 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
     private async Task<ExternalTokenCommandResponse> HandleWithAccessAppKeyAsync(ExternalTokenCommand request, CancellationToken cancellationToken)
     {
         var accessApp = await _databaseContext.AccessApps
-            .FirstOrDefaultAsync(x => x.Key == request.AccessAppKey, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Level == AccessAppLevel.Team && x.Key == request.AccessAppKey, cancellationToken);
         if (accessApp == null)
         {
             throw new BusinessException("应用接入 key 无效.") { StatusCode = 401 };
         }
 
-        // 应用 token：以接入身份访问其所属团队的资源（团队级授权）
-        if (string.IsNullOrWhiteSpace(request.ExternalUserId))
+        // 接入已设密钥则兑换必须携带并校验通过（appid 单独泄露不再足以换 token）；存量未设密钥的接入行为不变
+        if (!string.IsNullOrEmpty(accessApp.Secret)
+            && (string.IsNullOrEmpty(request.Secret)
+                || !PBKDF2Helper.VerifyHash(request.Secret, accessApp.Secret, accessApp.SecretSalt ?? string.Empty)))
         {
-            if (request.AppId != null)
-            {
-                throw new BusinessException("获取用户 token 必须提供外部用户标识 externalUserId.") { StatusCode = 400 };
-            }
-
-            var appTokens = _externalTokenProvider.GenerateAppTokens(accessApp);
-            return new ExternalTokenCommandResponse
-            {
-                AccessToken = appTokens.AccessToken,
-                RefreshToken = appTokens.RefreshToken,
-                ExpiresIn = appTokens.ExpiresIn,
-                TokenType = ExternalTokenType.App,
-            };
+            throw new BusinessException("应用接入密钥无效.") { StatusCode = 401 };
         }
 
-        // 用户 token：绑定外部用户并仅授权单个应用
-        if (request.AppId == null)
+        // 应用 token：以接入身份访问其所属团队的资源（团队级授权）。
+        // 外部应用授权已退役：key 不再换取绑定外部用户的用户 token（身份穿透场景改走内部应用访问点）
+        if (!string.IsNullOrWhiteSpace(request.ExternalUserId))
         {
-            throw new BusinessException("获取用户 token 必须指定应用 id.") { StatusCode = 400 };
+            throw new BusinessException("外部应用授权已退役：外部应用一律匿名开放，如需按用户身份访问请改用内部应用访问点（POST /api/subsys/system/app-tokens）.") { StatusCode = 400 };
         }
 
-        // 应用对话范围：用户 token 用于外部应用会话/对话，接入未勾选 app_chat 时拒绝换取
-        if (!((Database.Enums.TeamApiKeyScopes)accessApp.Scopes).HasFlag(Database.Enums.TeamApiKeyScopes.AppChat))
-        {
-            throw new BusinessException("应用接入未勾选应用对话范围.") { StatusCode = 403 };
-        }
-
-        var targetApp = await _databaseContext.Apps
-            .FirstOrDefaultAsync(x => x.Id == request.AppId.Value, cancellationToken);
-        ExternalAppAccessValidator.EnsureUsable(targetApp);
-
-        // 团队级授权：应用必须属于接入点所在团队
-        if (targetApp!.TeamId != accessApp.TeamId)
-        {
-            throw new BusinessException("应用不属于该接入点所在团队.") { StatusCode = 403 };
-        }
-
-        var external = await UpsertExternalAsync(accessApp.TeamId, accessApp.Id, request.ExternalUserId!, request.AppId.Value, request.Nickname, cancellationToken);
-        var tokens = _externalTokenProvider.GenerateUserTokens(external, accessApp);
+        var appTokens = _externalTokenProvider.GenerateAppTokens(accessApp);
         return new ExternalTokenCommandResponse
         {
-            AccessToken = tokens.AccessToken,
-            RefreshToken = tokens.RefreshToken,
-            ExpiresIn = tokens.ExpiresIn,
-            TokenType = ExternalTokenType.User,
-            ExternalId = external.Id,
-            ExternalUserId = external.ExternalUserId,
+            AccessToken = appTokens.AccessToken,
+            RefreshToken = appTokens.RefreshToken,
+            ExpiresIn = appTokens.ExpiresIn,
+            TokenType = ExternalTokenType.App,
         };
     }
 

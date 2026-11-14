@@ -10,6 +10,12 @@ vi.mock('@/api/app', () => ({
   unpublishApp: vi.fn().mockResolvedValue(undefined),
 }))
 
+vi.mock('@/api/org', () => ({
+  getOrgRoles: vi.fn().mockResolvedValue([
+    { orgRoleId: 11, parentId: null, name: '研发部', path: '/11/', userCount: 3, hasChildren: false, sortOrder: 0 },
+  ]),
+}))
+
 vi.mock('@/api/publication', () => ({
   applyPublication: vi.fn().mockResolvedValue('9'),
   getTeamPublicationList: vi.fn().mockResolvedValue([]),
@@ -94,9 +100,29 @@ describe('AppPublicationSection（上架管理分区）', () => {
         resourceType: 'app',
         resourceId: 'a1',
         applyReason: '对外提供客服问答',
+        visibleScope: 'all',
+        visibleOrgGrants: undefined,
       })
       expect(onReload).toHaveBeenCalled()
     })
+  })
+
+  it('未发布：申请上架按钮禁用并提示先发布；按组织限定但未选组织时就地拦截', async () => {
+    const unpublished = renderSection({ ...DETAIL, publishStatus: 0, publishTime: undefined }, true, null)
+
+    expect(await screen.findByText('未发布')).toBeTruthy()
+    expect(await screen.findByText(/应用未发布，发布后可申请上架/)).toBeTruthy()
+    expect((screen.getByRole('button', { name: /申请上架/ }) as HTMLButtonElement).disabled).toBe(true)
+    unpublished.unmount()
+
+    // 已发布后打开申请弹窗：关闭全员可见且未选组织 → 提交被校验拦截
+    renderSection({ ...DETAIL }, true, 1)
+    fireEvent.click(await screen.findByRole('button', { name: /申请上架/ }))
+    fireEvent.click(await screen.findByRole('switch'))
+    fireEvent.click(screen.getByRole('button', { name: /提交申请/ }))
+
+    expect(await screen.findByText(/请至少添加一条组织授权/)).toBeTruthy()
+    expect(applyPublication).not.toHaveBeenCalled() // 校验拦截：未选组织不提交
   })
 
   it('团队应用卡未发布：提供「发布」按钮，弹窗自动预填下一版本号，确认后携带版本发布', async () => {
@@ -136,40 +162,40 @@ describe('AppPublicationSection（上架管理分区）', () => {
     expect(publishApp).not.toHaveBeenCalled()
   })
 
-  it('已发布：团队应用卡常驻提供「重新发布」与「撤回发布」（重新发布幂等，不依赖草稿状态）', async () => {
-    // 草稿有未发布变更（configStatus=0）与未知（null）/一致（1）均提供重新发布入口
+  it('已发布：团队应用卡常驻提供「发布」与「停用」（发布幂等，不依赖草稿状态）', async () => {
+    // 草稿有未发布变更（configStatus=0）与未知（null）/一致（1）均提供发布入口
     const r0 = renderSection({ ...DETAIL }, true, 0)
     expect(await screen.findByText('已发布')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /重新发布/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /撤回发布/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^发\s*布$/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /停\s*用/ })).toBeTruthy()
     r0.unmount()
 
     const r1 = renderSection({ ...DETAIL }, true, 1)
     expect(await screen.findByText('已发布')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /重新发布/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /撤回发布/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^发\s*布$/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /停\s*用/ })).toBeTruthy()
     r1.unmount()
 
     const r2 = renderSection({ ...DETAIL }, true, null)
     expect(await screen.findByText('已发布')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /重新发布/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /撤回发布/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^发\s*布$/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /停\s*用/ })).toBeTruthy()
     r2.unmount()
   })
 
-  it('外部应用：仅展示发布卡（发布带版本号/撤回发布），无上架审批与申请记录且不加载申请列表', async () => {
+  it('外部应用：仅展示发布卡（发布带版本号/停用），无上架审批与申请记录且不加载申请列表', async () => {
     const { onReload } = renderSection({ ...DETAIL, isExternal: true }, true, 1)
 
     expect(await screen.findByText(/外部应用直接发布即生效/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: /重新发布/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /撤回发布/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^发\s*布$/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /停\s*用/ })).toBeTruthy()
     // 外部应用不公开到平台：无上架管理（应用市场）卡与申请记录卡，也不请求申请列表
     expect(screen.queryByText('上架管理（应用市场）')).toBeNull()
     expect(screen.queryByText('申请记录')).toBeNull()
     expect(getTeamPublicationList).not.toHaveBeenCalled()
 
     // 发布弹窗仍带版本号：自动预填严格递增的下一版本（1.0.0 → 1.0.1），确认后携带版本发布
-    fireEvent.click(screen.getByRole('button', { name: /重新发布/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^发\s*布$/ }))
     const versionInput = await screen.findByLabelText('应用版本')
     expect((versionInput as HTMLInputElement).value).toBe('1.0.1')
     fireEvent.click(screen.getByRole('button', { name: /确\s*定/ }))
@@ -231,19 +257,19 @@ describe('AppPublicationSection（上架管理分区）', () => {
     expect(screen.getByText('版本未发布')).toBeTruthy()
   })
 
-  it('已发布：撤回发布确认后调用接口并刷新工作台', async () => {
+  it('已发布：停用确认后调用接口并刷新工作台', async () => {
     const onReload = vi.fn()
     render(
       <AppPublicationSection teamId={3} appId="a1" detail={DETAIL} canManage configStatus={1} onReload={onReload} />,
     )
 
-    fireEvent.click(await screen.findByRole('button', { name: /撤回发布/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /停\s*用/ }))
     // antd 两字按钮会插入空格（“确 定”），沿用仓库既有的 popconfirm 主按钮选择器
     fireEvent.click(document.querySelector('.ant-popconfirm-buttons .ant-btn-primary') as HTMLElement)
 
     await waitFor(() => {
       expect(unpublishApp).toHaveBeenCalledWith('a1')
-      // 撤回发布联动撤下待审申请：申请记录与工作台详情一并刷新
+      // 停用联动撤下待审申请并自动下架：申请记录与工作台详情一并刷新
       expect(getTeamPublicationList).toHaveBeenCalledTimes(2)
       expect(onReload).toHaveBeenCalled()
     })
@@ -287,9 +313,8 @@ describe('AppPublicationSection（上架管理分区）', () => {
 
     expect(await screen.findByText('已公开')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /下\s*架/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /撤回发布/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /停\s*用/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^发\s*布$/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /重新发布/ })).toBeNull()
   })
 
   it('版本与草稿：版本一致时不再重复提示未发布', async () => {
@@ -325,6 +350,24 @@ describe('AppPublicationSection（上架管理分区）', () => {
     expect(await screen.findByText('张三')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /撤回申请/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /申请上架/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /撤回发布/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /停\s*用/ })).toBeNull()
+  })
+
+  it('申请记录与已公开卡展示可视范围标签（全员可见/组织可见）', async () => {
+    vi.mocked(getTeamPublicationList).mockResolvedValue([
+      record({ state: 'approved', reviewComment: null, visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: 11, roleName: '研发部', scope: 'down' }] }),
+    ])
+    const orgScope = renderSection({ ...DETAIL, isPublic: true })
+
+    expect(await screen.findByText('已公开')).toBeTruthy()
+    // 已公开卡与申请记录行都出现「组织可见」标签
+    await waitFor(() => expect(screen.getAllByText('组织可见').length).toBeGreaterThanOrEqual(2))
+    orgScope.unmount()
+
+    vi.mocked(getTeamPublicationList).mockResolvedValue([
+      record({ state: 'approved', reviewComment: null, visibleScope: 'all' }),
+    ])
+    renderSection({ ...DETAIL, isPublic: true })
+    await waitFor(() => expect(screen.getAllByText('全员可见').length).toBeGreaterThanOrEqual(2))
   })
 })

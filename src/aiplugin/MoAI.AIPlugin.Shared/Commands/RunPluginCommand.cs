@@ -22,7 +22,8 @@ public class RunPluginCommand : IRequest<PluginRunResult>, IModelValidator<RunPl
     public string Key { get; init; } = string.Empty;
 
     /// <summary>
-    /// 自定义插件（MCP/OpenAPI）的函数名称；为空时插件仅有一个函数才可执行.
+    /// 工具标识：自定义插件（MCP/OpenAPI）为函数名称；多工具动态插件为 <c>[AiPluginTool]</c> 的工具 key；
+    /// 为空时单工具插件可执行.
     /// </summary>
     public string? Function { get; init; }
 

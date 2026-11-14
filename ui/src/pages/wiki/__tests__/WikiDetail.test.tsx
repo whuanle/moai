@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { WikiDetail } from '../WikiDetail'
 import { getWikiDetail, updateWiki, getWikiDocuments, getWikiModelOptions, updateWikiEmbeddingConfig, updateWikiRerankModel } from '@/api/wiki'
@@ -11,7 +11,9 @@ vi.mock('@/api/wiki', () => ({
   getWikiModelOptions: vi.fn(),
   updateWikiEmbeddingConfig: vi.fn().mockResolvedValue(undefined),
   updateWikiRerankModel: vi.fn().mockResolvedValue(undefined),
-  getWikiUploadLimit: vi.fn().mockResolvedValue(0),
+  getWikiUploadLimit: vi.fn().mockResolvedValue({ maxFileSizeMb: 0, allowedFileTypes: [] }),
+  getWikiModelMigrationStatus: vi.fn().mockResolvedValue({ activeMigration: null }),
+  startWikiModelMigration: vi.fn().mockResolvedValue('task-id'),
 }))
 
 vi.mock('@/api/kiota', () => ({
@@ -67,13 +69,17 @@ describe('WikiDetail', () => {
     expect(screen.getByText('召回测试')).toBeInTheDocument()
     expect(screen.getByText('MCP')).toBeInTheDocument()
     expect(screen.getByText('设置')).toBeInTheDocument()
+    // 侧栏顶部身份区收进左侧菜单栏（aside）：上段头像+库名、下段返回按钮（SiderHeader，仿首页侧边栏头部）
+    const sider = screen.getByRole('complementary')
+    expect(within(sider).getByRole('button', { name: /返回知识库/ })).toBeInTheDocument()
+    expect(within(sider).getByText('产品文档')).toBeInTheDocument()
   })
 
   it('MCP tab 展示知识库 MCP 接入地址', async () => {
     renderDetail('/team/3/wiki/7/mcp')
 
     expect(await screen.findByText('MCP 地址')).toBeInTheDocument()
-    expect(await screen.findByDisplayValue('http://demo:8080/api/external/wiki/7/mcp')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('http://demo:8080/api/teamres/wiki/7/mcp')).toBeInTheDocument()
   })
 
   it('文件列表 tab 展示文档表格与上传按钮', async () => {
@@ -82,6 +88,19 @@ describe('WikiDetail', () => {
     expect(await screen.findByText('文件列表')).toBeInTheDocument()
     expect(await screen.findByText('上传文档')).toBeInTheDocument()
     expect(getWikiDocuments).toHaveBeenCalled()
+  })
+
+  it('文件列表工具栏排序：筛选在左、查询按钮居中、无刷新按钮（查询自带刷新语义）', async () => {
+    renderDetail('/team/3/wiki/7/files')
+
+    expect(await screen.findByPlaceholderText('搜索文档名称')).toBeInTheDocument()
+    // antd 图标 aria-label 会拼进按钮可访问名称（如 loading查 询 / upload上传文档），用正则匹配尾缀
+    expect(screen.getByRole('button', { name: /查\s*询$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /上传文档$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /批量处理$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /批量删除$/ })).toBeInTheDocument()
+    // 查询按钮自带刷新语义，工具栏不再有独立刷新按钮
+    expect(screen.queryByRole('button', { name: /刷\s*新/ })).toBeNull()
   })
 
   it('召回测试 tab 展示召回测试表单', async () => {

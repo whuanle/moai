@@ -31,6 +31,11 @@ public class QueryKnowledgeGraphRecallTestCommand : IRequest<QueryKnowledgeGraph
     public double? MinScore { get; init; }
 
     /// <summary>
+    /// 每个命中实体按度数排序保留的邻居数（0=默认 10；1-30，度数高者优先）.
+    /// </summary>
+    public int NeighborTopK { get; init; }
+
+    /// <summary>
     /// AI 优化问题 / 生成回答使用的对话模型 id；开启优化或回答时必填.
     /// </summary>
     public Guid? AiModelId { get; init; }
@@ -63,6 +68,8 @@ public class QueryKnowledgeGraphRecallTestCommand : IRequest<QueryKnowledgeGraph
         validate.RuleFor(x => x.MinScore)
             .InclusiveBetween(0d, 1d).WithMessage("相似度阈值必须在 0-1 之间.")
             .When(x => x.MinScore.HasValue);
+        validate.RuleFor(x => x.NeighborTopK)
+            .InclusiveBetween(0, 30).WithMessage("邻居数必须在 0-30 之间.");
         validate.RuleFor(x => x.AiModelId)
             .NotEmpty().WithMessage("请选择 AI 对话模型.")
             .When(x => x.IsOptimizeQuery || x.IsAnswer);

@@ -10,6 +10,7 @@ using MoAI.Infra.Services;
 using MoAI.Team.Services;
 using MoAI.Wiki.Queries;
 using MoAI.Wiki.Queries.Responses;
+using MoAI.AIChannel.Services;
 
 namespace MoAI.Wiki.Handlers;
 
@@ -45,15 +46,12 @@ public class QueryWikiModelOptionsCommandHandler : IRequestHandler<QueryWikiMode
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
         }
 
-        var authorizedModelIds = await _databaseContext.AiModelAuthorizations
-            .Where(x => x.TeamId == request.TeamId)
-            .Select(x => x.AiModelId)
-            .ToListAsync(cancellationToken);
+        var usableModelIds = await _databaseContext.GetTeamUsableModelIdsAsync(request.TeamId, cancellationToken);
 
         var models = await (from m in _databaseContext.AiModels
                             join c in _databaseContext.AiChannels on m.ChannelId equals c.Id
                             where m.Enabled && c.Enabled && m.IsDeleted == 0 && c.IsDeleted == 0
-                                && (m.IsPublic || authorizedModelIds.Contains(m.Id))
+                                && usableModelIds.Contains(m.Id)
                             select new { m.Id, m.Name, m.ModelKind }).ToListAsync(cancellationToken);
 
         return new QueryWikiModelOptionsCommandResponse

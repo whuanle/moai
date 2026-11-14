@@ -10,9 +10,9 @@ MoAI 采用**前后端一体镜像**：前端编译为静态资源放入后端 `
 | 形态 | 部署内容 | 依赖 |
 |---|---|---|
 | **A. Docker 单容器** | 仅 `moai` 镜像（前端 + 后端） | 外部 PostgreSQL(pgvector)、Redis、RabbitMQ、OSS(S3)、OpenSandbox（可选） |
-| **B. Docker Compose 一体** | `moai` + `postgres` + `redis` + `rabbitmq` + `rustfs` + `opensandbox-server` | 全部由 compose 提供，开箱即用 |
+| **B. Docker Compose 自动部署** | 完整栈，或仅 `moai` + PostgreSQL 初始化 + RustFS 建桶 + `opensandbox-server` | 检测到共享 `moai` 网络时复用 PostgreSQL / Redis / RabbitMQ / RustFS，否则由 compose 提供 |
 
-两种形态的**唯一差异是外部依赖从哪来**；`moai` 容器本身完全一致，配置统一通过 `configs/system.json` 注入。
+MoAI 应用配置统一由部署脚本生成并挂载 `configs/system.json`；ASP.NET Core 默认加载的 `appsettings.json` 保持独立，不覆盖该运行时配置。
 
 > 图数据库（Memgraph / Neo4j）**不内置**。知识图谱模块为可选能力，需要时按 [第 7 节](#7-知识图谱可选接入-memgraph) 单独部署并接入。
 
@@ -28,6 +28,7 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
 
 - 生成路径 = `.env` 的 `MOAI_CONFIG_FILE`（默认 `./configs/system.json`，可填绝对路径）；每次生成前把旧文件备份为 `<路径>.bak`。
 - `docker-compose.yml` 挂载 `${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro`；后端通过 `MAI_FILE`（默认 `/app/configs/system.json`）加载。
+- Compose 同时持久化挂载 `./configs/plugins:/app/configs/plugins`，保存 MoPlatform 在线插件包与客户端指纹；备份/迁移 MoAI 时需保留该目录。
 - 仓库内 `configs/system.example.json` 是参考模板，也是镜像内置兜底（无挂载时复制为 `/app/configs/system.json.template`）。
 
 `.env` 中与配置相关的变量：
@@ -35,14 +36,15 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
 | 变量 | 作用 | 默认 |
 |---|---|---|
 | `MOAI_SERVER_URL` | MoAI 对外访问地址（**含协议**，如 `https://moai.example.com`），写入 `Server`/`WebUI` | 留空自动探测本机 IP → `http://<IP>:<MOAI_PORT>` |
-| `MOAI_PORT` | MoAI 容器映射到宿主机的端口（也用于自动探测时拼接） | `8080` |
+| `MOAI_PORT` | MoAI 容器映射到宿主机的端口（也用于自动探测时拼接） | 独立模式 `8080`；复用模式 `8081` |
 | `MOAI_AES_KEY` | AES 加密密钥 | `please-change-this-aes-key` |
-| `POSTGRES_*` / `RABBITMQ_*` | 数据库 / MQ 连接（host 固定为 compose 服务名） | 见 `.env.example` |
+| `POSTGRES_*` / `RABBITMQ_*` | 数据库 / MQ 连接 | 见 `.env.example`；复用模式必须与共享实例凭据一致 |
 | `S3_ENDPOINT` | 对象存储对外地址（**含协议**，自定义域名 / 外部 OSS）；留空用 `http://<自动探测IP>:${RUSTFS_PORT}` | 空 |
-| `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_ACCESS_KEY_SECRET` | 桶与凭据 | `moai` / `moaiadmin` / `moaiadmin123` |
+| `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_ACCESS_KEY_SECRET` | 桶与凭据 | `moai` / `mopladmin` / `mopladmin123` |
 | `RUSTFS_PORT` | 内置 RustFS 对外端口 | `9000` |
 | `OPENSANDBOX_*` | 沙箱镜像与超时 | 见 `.env.example` |
 | `OTLP_*` | 可观测性（留空禁用） | 空 |
+| `MOAI_POSTGRES_HOST` / `MOAI_REDIS_HOST` / `MOAI_RABBITMQ_HOST` / `MOAI_RUSTFS_HOST` | 共享网络中基础服务地址；由部署脚本按 Compose service label 自动发现 | 自动发现，也可手动覆盖 |
 
 生成的配置形如：
 
@@ -53,9 +55,9 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
     "Server": "<MOAI_SERVER_URL>",          // 如 https://moai.example.com
     "WebUI":  "<MOAI_SERVER_URL>",
     "AES": "<MOAI_AES_KEY>",
-    "Database": "Database=<POSTGRES_DB>;Host=postgres;Password=<POSTGRES_PASSWORD>;Port=5432;Username=<POSTGRES_USER>;Search Path=public",
-    "Redis":    "redis:6379",
-    "RabbitMQ": "amqp://<RABBITMQ_USER>:<RABBITMQ_PASSWORD>@rabbitmq:5672",
+    "Database": "Database=<POSTGRES_DB>;Host=<发现的 PostgreSQL 容器名>;Password=<POSTGRES_PASSWORD>;Port=5432;Username=<POSTGRES_USER>;Search Path=public",
+    "Redis":    "<发现的 Redis 容器名>:6379",
+    "RabbitMQ": "amqp://<RABBITMQ_USER>:<RABBITMQ_PASSWORD>@<发现的 RabbitMQ 容器名>:5672",
     "OpenSandBox": { "Address": "http://opensandbox-server:8090", "Image": "...", "TimeoutSeconds": 900, "RenewThresholdSeconds": 300 },
     "Storage": { "Endpoint": "<S3_ENDPOINT 或 http://<自动探测IP>:<RUSTFS_PORT>>", "ForcePathStyle": true, "Bucket": "...", "AccessKeyId": "...", "AccessKeySecret": "..." },
     "MaxUploadFileSize": 104857600,
@@ -162,29 +164,38 @@ curl -fsS http://localhost:8080/api/common/serverinfo
 
 ## 5. 形态 B：Docker Compose 一体部署
 
-包含：`postgres(pgvector/pg16)` + `redis` + `rabbitmq` + `rustfs`（替代 MinIO）+ `opensandbox-server` + `moai`。
+部署入口自动检查是否已有固定名称 `moai` 的 Docker 网络：
+
+- **没有 `moai` 网络**：启动 `docker-compose.yml` 的完整栈。
+- **已有 `moai` 网络**：确认 PostgreSQL、Redis、RabbitMQ、RustFS 均已加入网络后，使用 `docker-compose.reuse.yml`；复用这四项基础设施，只启动 MoAI 自己的数据库初始化、RustFS 建桶、OpenSandbox 和应用服务。
+
+MoAI 数据库名默认为 `moai`，不会复用其它服务的数据库。初始化容器会在共享 PostgreSQL 上检查并创建独立数据库，再创建 `vector`、`uuid-ossp`、`pg_trgm` 扩展。`.env` 中 `POSTGRES_USER/PASSWORD`、`RABBITMQ_USER/PASSWORD`、`S3_ACCESS_KEY_ID/SECRET` 必须与共享基础设施一致；Redis 不设置密码时无需额外认证。每个 Mo 系列服务仍使用自己的数据库名、对象桶和 Redis 键前缀。
+
+MoAI 与 MoPlatform 的 `.env.example` 共用基础设施凭据默认值：PostgreSQL `postgres/mopl123456`、RabbitMQ `mopl/mopl123456`、RustFS `mopladmin/mopladmin123`。在部署任何共享服务前，请确保实际 `.env` 使用同一组值；已有 PostgreSQL/RabbitMQ/RustFS 的初始化凭据无法通过改 `.env` 自动轮换。MoAI 的应用配置仍由部署脚本生成并挂载 `configs/system.json`；ASP.NET Core 默认加载的 `appsettings.json` 保持独立，不覆盖这份运行时配置。
 
 > **数据库镜像硬约束**：必须用 `pgvector/pgvector:pg16`（或自带 pgvector 的镜像），**不能用官方 `postgres` 镜像**。MoAI 依赖 `CREATE EXTENSION vector`（见 `init-pgvector.sql`），裸 `postgres` 镜像无该扩展，建库即失败。形态 A 使用外部数据库时同样要求已安装 pgvector 扩展。
 
 ```bash
-cp .env.example .env          # 按需修改账号/端口；MOAI_SERVER_URL 留空会自动探测
-bash deploy/deploy-compose.sh # 按 .env 生成配置 → 预拉沙箱镜像 → 拉取/构建 → 启动
-# 或手动（需已生成 configs/system.json）：
+cp .env.example .env          # 与共享基础设施账号密码保持一致
+bash deploy/deploy-compose.sh # 按 .env 生成配置 → 自动选择完整部署或复用模式 → 启动
+# 手动启动完整栈（需已生成 configs/system.json）：
 docker compose up -d
 ```
 
-> 直接用 `docker compose up -d` 时不会自动探测，请在 `.env` 设置 `MOAI_SERVER_URL=<对外地址>`（如 `https://moai.example.com`）与 `S3_ENDPOINT`，否则回退 `http://localhost:8080` / `http://localhost:9000`。
+共享部署模式请使用 `bash deploy/deploy-compose.sh`，它会生成指向已发现服务容器名的配置并选用 reuse Compose 文件；也可手动 `docker compose -f docker-compose.reuse.yml up -d`，但需先提供 `MOAI_POSTGRES_HOST`、`MOAI_RUSTFS_HOST` 及已生成的配置文件。
 
-访问：`http://<host>:8080`。RustFS 控制台：`http://<host>:9001`（账号见 `.env` 的 `S3_ACCESS_KEY_ID/S3_ACCESS_KEY_SECRET`）。
+访问：独立模式默认 `http://<host>:8080`；复用模式默认 `http://<host>:8081`。RustFS 控制台仅由基础设施所属 Compose 提供（MoAI 独立模式默认 `http://<host>:9001`）。
 
 常用命令：
 
 ```bash
 docker compose logs -f moai
 docker compose ps
-docker compose down            # 停止（保留数据卷）
-docker compose down -v         # 停止并删除数据卷（危险）
+docker compose down            # 独立模式停止（保留数据卷）
+docker compose down -v         # 独立模式停止并删除数据卷（危险）
 ```
+
+复用模式运维命令使用 `docker compose -f docker-compose.reuse.yml ...`。不要对共享基础设施运行 `down`；reuse Compose 不管理共享 PostgreSQL、Redis、RabbitMQ 或 RustFS。
 
 ### 5.1 RustFS 替代 MinIO
 
@@ -220,6 +231,27 @@ docker compose --profile sandbox-images pull sandbox-image   # code-interpreter
 docker pull opensandbox/execd:v1.1.0
 docker pull opensandbox/egress:v1.1.7
 ```
+
+#### 出站网络策略（egress）
+
+`deploy/opensandbox/sandbox.toml` 的 `[egress]` 段控制沙箱出站过滤的强制层：
+
+- `mode = "dns+nft"`（当前默认）：DNS 层域名过滤 + nftables 网络层强制，**CIDR/IP 规则与严格默认拒绝才会真正生效**；要求宿主机内核支持 nftables。
+- `mode = "dns"`：仅 DNS 层过滤，CIDR/IP 规则解析但不执行，**直连 IP 的出站流量完全绕过**——不要用于安全场景。
+- 版本同步注意：`sandbox.toml` 的 `[egress] image` 与 `deploy-compose.sh` 的 `OPENSANDBOX_EGRESS_IMAGE`（仅预拉用）需人工保持一致。
+
+应用侧（`execution_settings.sandbox.network`）与平台侧（系统设置 `SANDBOX_NETWORK_MODE` / `SANDBOX_INTRANET_CIDRS`）的语义见 `docs/app/sdd.md` 与 `docs/settings/sdd.md`；策略仅在沙箱创建时下发，改配置对已存活沙箱不回溯（随 TTL 自然收敛）。命令级拦截（`SANDBOX_DENIED_COMMANDS` 与应用级 commandFilter）是 MoAI 侧纵深防御的一层、非安全边界；网络策略与容器隔离才是边界。
+
+**平台强制基线（可选加固镜像）**：应用侧策略用户可配、系统设置可被 root 调整；如需「任何人都不可放开」的黑名单（如云元数据端点 `169.254.169.254`），用加固镜像叠加 `/var/egress/rules/deny.always`（优先级高于用户策略、每分钟热加载）：
+
+```bash
+docker build -t your-registry/opensandbox/egress:hardened deploy/opensandbox/egress-hardened
+# 取消 sandbox.toml [egress] image 的加固镜像注释行，重启 opensandbox-server 后仅对新建沙箱生效
+```
+
+#### 入站访问限制（部署层）
+
+Docker 运行时每个沙箱向宿主机发布 `sandbox.toml` `[docker] port_range_min/max`（默认 40000~60000）内的端口，MoAI 经宿主机回连沙箱。该端口段默认绑定所有网卡，**公网可达的宿主机必须用防火墙限制来源**（仅放行 MoAI 主机/内网网段），或仅绑定内网接口。带签名令牌的 gateway 入站模式目前仅 Kubernetes 运行时支持（`[ingress] secure_access`），Docker 运行时应用层无法管控入站。
 
 ## 6. 构建与发布镜像（Docker Hub）
 

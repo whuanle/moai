@@ -27,6 +27,8 @@
 
 新增第三方接口：① `MoAI.Infra.ExternalHttp/<Provider>/` 建 Refit 接口与 Models；② 模块中 `AddRefitClient`（固定域名设 BaseAddress，动态地址仿 `IOAuthClientFactory` 建工厂+命名 HttpClient，[@INF-S18](./bdd.md#inf-s18)）；③ 挂 `ExternalHttpMessageHandler` 与 `SetHandlerLifetime(30s)`；④ 领域模块构造注入使用，JSON 约定由统一 RefitSettings 保证（[@INF-S16](./bdd.md#inf-s16)）。排障看出站日志 `HttpLog`（二进制打码，[@INF-S17](./bdd.md#inf-s17)）。
 
+MoPlatform 插件分发使用 `MoPlatformPluginClient`，不是浏览器直连：实例指纹自动保存在 `configs/mo-platform-client.fingerprint`，请求 `/api/client/plugin/*` 时以 `X-MoAI-Client-Fingerprint` 发送；不要将指纹写入前端响应、日志或共享到多个无关安装实例。该值用于配额归并，不是认证凭据，平台负责按指纹/IP 限频。
+
 ## 4. 模型验证与用户上下文接入
 
 - 新命令实现 `IModelValidator<T>` 并在 `static Validate` 写规则——不要手写 AbstractValidator 子类，TypeFilter 自动注册（[@INF-S12](./bdd.md#inf-s12)，详见 [../cqrs-conventions.md](../cqrs-conventions.md)）。

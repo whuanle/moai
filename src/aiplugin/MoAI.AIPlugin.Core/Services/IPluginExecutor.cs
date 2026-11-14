@@ -17,8 +17,9 @@ public interface IPluginExecutor
     /// <param name="configJson">动态插件配置 JSON，静态插件忽略.</param>
     /// <param name="context">执行上下文（调用方用户/团队身份），插件经 <see cref="Contracts.IPluginRunContextAccessor"/> 读取；可为 null.</param>
     /// <param name="cancellationToken">取消令牌.</param>
+    /// <param name="toolKey">多工具插件的目标工具 key，不区分大小写；单工具插件传空或 run.</param>
     /// <returns>执行结果.</returns>
-    Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken);
+    Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken, string? toolKey = null);
 
     /// <summary>
     /// 按插件 key 执行插件.
@@ -28,6 +29,7 @@ public interface IPluginExecutor
     /// <param name="configJson">动态插件配置 JSON，静态插件忽略.</param>
     /// <param name="context">执行上下文（调用方用户/团队身份），可为 null.</param>
     /// <param name="cancellationToken">取消令牌.</param>
+    /// <param name="toolKey">多工具插件的目标工具 key，不区分大小写；单工具插件传空或 run.</param>
     /// <returns>执行结果.</returns>
-    Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken);
+    Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken, string? toolKey = null);
 }

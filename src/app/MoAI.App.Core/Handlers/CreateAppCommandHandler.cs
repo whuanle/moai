@@ -85,7 +85,9 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, SimpleG
             AppType = (int)request.AppType,
             Avatar = request.Avatar ?? string.Empty,
             IsExternal = request.IsExternal,
-            IsAuth = request.IsExternal && request.IsAuth,
+
+            // is_auth 已退役：外部应用一律匿名开放（请求字段保留接收但忽略），列收敛为 false
+            IsAuth = false,
             ClassifyId = request.ClassifyId,
         };
 

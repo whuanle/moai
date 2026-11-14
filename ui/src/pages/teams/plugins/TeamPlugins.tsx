@@ -11,6 +11,7 @@ import {
 import { useAppStore } from '@/store/app'
 import { TeamCustomPluginPanel } from './TeamCustomPluginPanel'
 import { TeamDynamicPluginPanel } from './TeamDynamicPluginPanel'
+import { TeamPluginStatsPanel } from './TeamPluginStatsPanel'
 
 interface TeamPluginsProps {
   teamId: number
@@ -82,6 +83,11 @@ export function TeamPlugins({ teamId }: TeamPluginsProps) {
           reload={load}
         />
       ),
+    },
+    {
+      key: 'stats',
+      label: t('plugins.tabStats'),
+      children: <TeamPluginStatsPanel teamId={teamId} />,
     },
   ]
 

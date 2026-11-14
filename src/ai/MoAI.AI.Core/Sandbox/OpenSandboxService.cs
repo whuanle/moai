@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AI.Models;
 using MoAI.Database;
+using MoAI.Settings.Services;
 using OpenSandbox;
 using OpenSandbox.CodeInterpreter;
 using OpenSandbox.CodeInterpreter.Models;
@@ -40,6 +41,7 @@ public sealed class OpenSandboxService : IAppSandboxService
     private readonly MoAI.Infra.SystemOptions _options;
     private readonly IRedisDatabase _redisDatabase;
     private readonly DatabaseContext _databaseContext;
+    private readonly ISandboxSettingsService _sandboxSettingsService;
     private readonly ILogger<OpenSandboxService> _logger;
 
     /// <summary>
@@ -48,16 +50,19 @@ public sealed class OpenSandboxService : IAppSandboxService
     /// <param name="options">系统配置.</param>
     /// <param name="redisDatabase">Redis 数据库.</param>
     /// <param name="databaseContext">数据库上下文.</param>
+    /// <param name="sandboxSettingsService">沙箱系统设置（出站网络管控模式等）.</param>
     /// <param name="logger">日志.</param>
     public OpenSandboxService(
         MoAI.Infra.SystemOptions options,
         IRedisDatabase redisDatabase,
         DatabaseContext databaseContext,
+        ISandboxSettingsService sandboxSettingsService,
         ILogger<OpenSandboxService> logger)
     {
         _options = options;
         _redisDatabase = redisDatabase;
         _databaseContext = databaseContext;
+        _sandboxSettingsService = sandboxSettingsService;
         _logger = logger;
     }
 
@@ -289,6 +294,9 @@ public sealed class OpenSandboxService : IAppSandboxService
             var timeout = ResolveTimeoutSeconds(context.Settings);
             var image = _options.OpenSandBox.Image;
 
+            // 平台网络管控与出站策略在创建时统一下发（改配置对已存活沙箱不生效，随 TTL 自然收敛）
+            var limits = await _sandboxSettingsService.GetLimitsAsync(cancellationToken).ConfigureAwait(false);
+
             await using var sandbox = await Sandbox.CreateAsync(new SandboxCreateOptions
             {
                 ConnectionConfig = BuildConnectionConfig(),
@@ -297,7 +305,7 @@ public sealed class OpenSandboxService : IAppSandboxService
                 TimeoutSeconds = timeout,
                 ReadyTimeoutSeconds = 300,
                 Resource = BuildResource(context.Settings),
-                NetworkPolicy = BuildNetworkPolicy(context.Settings),
+                NetworkPolicy = SandboxNetworkPolicyBuilder.Build(context.Settings.Network, limits),
                 Metadata = new Dictionary<string, string>
                 {
                     [MetadataSessionKey] = context.SessionId.ToString("D"),
@@ -389,38 +397,6 @@ public sealed class OpenSandboxService : IAppSandboxService
         }
 
         return resource.Count == 0 ? null : resource;
-    }
-
-    private static NetworkPolicy? BuildNetworkPolicy(SandboxSettings settings)
-    {
-        if (settings.Network == null)
-        {
-            return null;
-        }
-
-        NetworkRuleAction? defaultAction = settings.Network.DefaultAction?.Trim().ToLowerInvariant() switch
-        {
-            "allow" => NetworkRuleAction.Allow,
-            "deny" => NetworkRuleAction.Deny,
-            _ => null,
-        };
-
-        var egress = settings.Network.Egress
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => new NetworkRule
-            {
-                Target = x.Trim(),
-                // 默认 deny 时列出的是放行名单，否则视为拒绝名单
-                Action = defaultAction == NetworkRuleAction.Deny ? NetworkRuleAction.Allow : NetworkRuleAction.Deny,
-            })
-            .ToList();
-
-        if (defaultAction == null && egress.Count == 0)
-        {
-            return null;
-        }
-
-        return new NetworkPolicy { DefaultAction = defaultAction, Egress = egress };
     }
 
     private Task<SandboxCacheEntry?> GetEntryAsync(Guid sessionId, CancellationToken cancellationToken)

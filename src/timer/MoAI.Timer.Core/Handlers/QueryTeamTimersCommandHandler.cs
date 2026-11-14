@@ -70,10 +70,20 @@ public class QueryTeamTimersCommandHandler : IRequestHandler<QueryTeamTimersComm
             .Where(x => appIds.Contains(x.Id))
             .ToDictionaryAsync(x => x.Id, cancellationToken);
 
+        // 每个定时器取最近一条执行记录的状态（GroupBy + OrderBy + First 由 EF 翻译为子查询聚合）
+        var timerIds = timers.Select(x => x.Id).ToList();
+        var lastStatuses = await _databaseContext.TeamTimerExecutions.AsNoTracking()
+            .Where(x => timerIds.Contains(x.TimerId))
+            .GroupBy(x => x.TimerId)
+            .Select(g => new { TimerId = g.Key, Status = g.OrderByDescending(x => x.CreateTime).Select(x => x.Status).First() })
+            .ToDictionaryAsync(x => x.TimerId, x => x.Status, cancellationToken);
+
         var items = new List<TeamTimerItem>(timers.Count);
         foreach (var timer in timers)
         {
             apps.TryGetValue(timer.AppId, out var app);
+            // TryGetValue 失败时 out 为 0（Pending），必须以返回值区分「未执行过」
+            var hasStatus = lastStatuses.TryGetValue(timer.Id, out var lastStatus);
 
             var item = new TeamTimerItem
             {
@@ -91,6 +101,7 @@ public class QueryTeamTimersCommandHandler : IRequestHandler<QueryTeamTimersComm
                 MaxRetryCount = timer.MaxRetryCount,
                 RetryIntervalSeconds = timer.RetryIntervalSeconds,
                 LastRunTime = timer.LastRunTime,
+                LastExecutionStatus = hasStatus ? (Database.Enums.TimerExecutionStatus?)lastStatus : null,
                 NextRunTime = timer.IsEnabled ? await _scheduler.QueryNextRunTimeAsync(timer.Id) : null,
                 CreateTime = timer.CreateTime,
                 CreateUserId = (int)timer.CreateUserId,

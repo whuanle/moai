@@ -50,6 +50,10 @@ internal partial class AppUserConfigConfiguration : IEntityTypeConfiguration<App
         entity.Property(e => e.MemoryMode)
             .HasComment("长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）")
             .HasColumnName("memory_mode");
+        entity.Property(e => e.MemoryGlobalMode)
+            .HasDefaultValueSql("0")
+            .HasComment("全局记忆接入模式：0=默认（应用允许时接入）；1=不接入全局记忆（需应用 allowGlobalMemory）")
+            .HasColumnName("memory_global_mode");
         entity.Property(e => e.PromptId)
             .HasComment("用户为新会话选择的专家提示词 id，0=未设置")
             .HasColumnName("prompt_id");

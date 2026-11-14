@@ -185,7 +185,7 @@ async function main() {
 
   try {
     // ===== 配置保存与校验 =====
-    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '子代理应用-' + TS, appType: 'agent' } })
+    const ca = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '子代理应用_' + TS, appType: 'agent' } })
     const APP = String(ca.json?.value ?? '')
 
     const badRange = await api('PUT', `/api/app/${APP}/agent-config`, {
@@ -225,7 +225,7 @@ async function main() {
     check('SA-09 主代理请求携带 spawn_subagent 披露', mainRequests.some((r) => r.messages.some((m) => typeof m.content === 'string' && m.content.includes('spawn_subagent'))))
 
     // ===== 未开启协作：工具不注册 =====
-    const cb = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '无子代理应用-' + TS, appType: 'agent' } })
+    const cb = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '无子代理应用_' + TS, appType: 'agent' } })
     const APP2 = String(cb.json?.value ?? '')
     await api('PUT', `/api/app/${APP2}/agent-config`, {
       token: owner.token,

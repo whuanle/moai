@@ -227,5 +227,87 @@ function getServerUrl(): string {
 
 ### 6. 时间统一 `YYYY-MM-DD HH:mm` 单行
 
-列表/详情中的时间一律使用 `utils/datetime.ts` 的 `formatDateTime()`（`YYYY-MM-DD HH:mm`，本地时区），禁止 `toLocaleString()`（各浏览器 locale 输出不一致）。空值/非法值显示 `-`。规范出处：docs/user-management/sdd.md 决策 6（2026-09-02）。
+列表/详情中的时间一律使用 `utils/datetime.ts` 的 `formatDateTime()`（`YYYY-MM-DD HH:mm`，本地时区），禁止 `toLocaleString()`（各浏览器 locale 输出不一致）。空值/非法值显示 `-`。表格「创建/更新」列的时间展示遵循第 8 条（两行单元格），其余场景保持单行。规范出处：docs/user-management/sdd.md 决策 6（2026-09-02）。
+
+### 7. 列表页工具栏排序与分隔
+
+列表页工具栏组件从左到右固定排序，整行靠左，操作按钮**不**靠右对齐：
+
+```
+搜索输入框 → 筛选/下拉组件 → 查询类按钮（查询/重置） → | → 操作类按钮（新建/同步等）
+```
+
+- 查询类按钮与操作类按钮之间必须用竖分隔线 `|`（antd `Divider type="vertical"`）区隔；页面没有查询类按钮时，分隔线兜底放在筛选控件与操作按钮之间。
+- **查询按钮自带刷新语义，不再放刷新按钮**：查询/搜索本身就是重新拉取列表，工具栏已有查询按钮时**禁止**再放刷新图标按钮（工具栏右侧只挂刷新图标的做法已废弃）；需要重新拉取的场景统一落在本工具栏的查询按钮上。
+- **重置按钮按需渲染**：筛选条件简单（如仅一个搜索框、清空后点查询即等效重置）的页面**不传** `QueryBar` 的 `onReset`，组件即不渲染重置按钮；筛选字段较多、需要一键清空的页面才传 `onReset`。
+- 查询类按钮一律「图标 + 文字」（`SearchOutlined` + 查询），禁止纯图标按钮（同第 9 条行内操作的理由：纯图标需悬浮才能猜含义）。
+- 用设计系统组件实现，禁止手写 flex 工具行：
+  - `QueryBar`：`children` 传搜索输入框与筛选项，查询按钮内置，`onReset` 传入时才渲染重置按钮，`extra` 传操作按钮（渲染在分隔线右侧）。
+  - `PageToolbar`：`filters` 传搜索输入框与筛选项，`queries` 传查询类按钮，`actions` 传操作按钮。
+
+规范出处：组织用户页（TeamsPanel 删刷新图标 / OrgRolesPanel 刷新改查询 / UsersPanel 省略重置）走查整改（2026-11-03）。
+
+### 8. 实体列表必须有「创建/更新」审计列，两行单元格
+
+实体 CRUD 类列表页（用户/团队/渠道/插件/知识库文档等可增删改的对象）表格必须包含**创建**、**更新**两个审计列，单元格用设计系统的 `AuditCell`（`@/design-system` 导出）：操作人名称在上、`formatDateTime()` 时间次要信息在下，两行堆叠压缩横向占位。
+
+```tsx
+import { AuditCell } from '@/design-system'
+
+{ title: t('xxx.colCreate'), key: 'create', width: 150, render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} /> },
+{ title: t('xxx.colUpdate'), key: 'update', width: 150, render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} /> },
+```
+
+- **禁止**拆成 创建人/创建时间/更新人/更新时间 四个扁平列（历史遗留页面在改造时合并）。
+- 后端列表 DTO 按 CQRS 规范继承 `AuditsInfo`（见 docs/cqrs-conventions.md「列表数据审计属性」），前端手写封装不要丢弃审计字段。
+- 后端未返回操作人名称的字段（如仅 `createTime` 的日志/密钥列表）：`AuditCell` 会自动降级为单行时间，此时**不强凑**审计列，保留原有语义列（如「加入时间」「绑定时间」）即可。
+- 纯日志/运行历史/统计/图数据等**无审计语义**的表格不加这两列。
+
+### 9. 操作列按钮「图标 + 文字」
+
+表格行内操作列的按钮一律 `Button type="link" size="small"` 且**同时带图标与文字**，禁止纯图标（图标含义需要悬浮 Tooltip 才能猜）；危险操作（删除等）保持 `danger` + `Popconfirm` 包裹：
+
+```tsx
+<Space size={0}>
+  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+    {t('xxx.edit')}
+  </Button>
+  <Popconfirm title={t('xxx.deleteConfirm')} okButtonProps={{ danger: true }} onConfirm={() => handleDelete(record.id)}>
+    <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+      {t('xxx.delete')}
+    </Button>
+  </Popconfirm>
+</Space>
+```
+
+- 文案走 `t()`，与 `aria-label` 同源；2~4 个操作时列宽约 `操作数 × 72 + 24`，多操作或空间紧张时用 `更多` 下拉收纳，同样保持图标+文字。
+- 操作列跟随滚动时 `fixed: 'right'`。
+
+### 10. 头像类图片上传先前端压缩
+
+头像/图标上传不把原图原样传到存储：`AvatarUpload` 选中文件后先经 `src/utils/image.ts` 的 `compressImage()` 压缩再回调 `onSelect`（降采样至 ≤512px、优先重编码 WebP 质量 0.9，SVG/GIF/≤200KB 跳过，解码失败或无体积收益回退原图），调用方的 `image/*` 与 5MB 校验照旧作用于压缩产物，**不要在各页面重复调用压缩**。
+
+- 绕过 `AvatarUpload` 的独立图片产出路径（如 `ImageSquareCropModal` 裁剪输出）用 `pickImageEncodeType()` 选编码：优先 WebP（保留透明），浏览器不支持编码时按透明需求回退 PNG/JPEG。
+- 全屏展示的图（登录页背景等）**不适用**本条，避免降采样损伤画质。
+- jsdom 不实现 canvas，相关单测需 stub `createImageBitmap`/`getContext`/`toBlob`/`toDataURL`（参考 `src/utils/__tests__/image.test.ts`）。
+- `onSelect` 经压缩 Promise **异步**回调（原为同步）：组件测试里「选图 → 立即触发依赖头像状态的后续操作」需在两者间 `await act(async () => {})` 冲刷微任务，否则状态未落地。
+
+### 11. 纯图标按钮必须带 Tooltip 悬浮提示
+
+凡是**只显示图标没有文字**的按钮（卡片底栏操作钮、工具栏图标钮、复制按钮、眼睛显隐切换、表单行删除钮、聊天侧原生 `<button>` 图标钮等），鼠标悬浮时必须出现文字提示，禁止让用户靠猜：
+
+```tsx
+<Tooltip title={t('teamAgents.detail')}>
+  <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('teamAgents.detail')} onClick={...} />
+</Tooltip>
+```
+
+- 文案与 `aria-label` 同源，一律走 `t()`（zh-CN 与 en-US 同步）。
+- `Popconfirm`/`Dropdown` 包裹**不算**提示：确认气泡与菜单只在点击后出现，悬浮态依然要有 `Tooltip`（`Tooltip` 包在 `Popconfirm` 内、按钮外）。
+- 显隐切换类按钮（眼睛开/关）`Tooltip title` 跟随状态切换；空字符串 title 等于没有提示，禁止用空 title 占位。
+- 没有现成语义 key 时新增 i18n key，不要复用确认句式（如 `deleteFieldConfirm`「确定删除该字段？」）当悬浮文案。
+- 原生 `<button>` 图标钮同样用 antd `Tooltip` 包裹（原生元素可被 Tooltip clone）。
+- 修复存量时优先参照正确示范：`TeamPrompts.tsx`、`TeamWikis.tsx`、`TeamDynamicPluginPanel.tsx`（btn helper 统一包 Tooltip）、`workflow/WorkflowDesigner.tsx`。
+
+规范出处：团队页卡片图标按钮无悬浮提示走查整改（2026-11-07）。
 

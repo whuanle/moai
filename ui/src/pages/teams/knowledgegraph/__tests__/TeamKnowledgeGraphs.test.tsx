@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useParams } from 'react-router'
 import { TeamKnowledgeGraphs } from '../TeamKnowledgeGraphs'
-import { createKnowledgeGraph, getKnowledgeGraphs, getKnowledgeGraphTemplates, uploadKnowledgeGraphAvatar } from '@/api/knowledgeGraph'
+import { createKnowledgeGraph, getKnowledgeGraphs, getKnowledgeGraphTemplates, updateKnowledgeGraph, uploadKnowledgeGraphAvatar } from '@/api/knowledgeGraph'
 
 vi.mock('@/api/knowledgeGraph', () => ({
   getKnowledgeGraphs: vi.fn(),
@@ -59,6 +59,7 @@ describe('TeamKnowledgeGraphs', () => {
     renderTeam()
 
     expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
+    // 列表不触碰图数据库：卡片不展示实时实体/关系计数（进入详情/模型页按需统计）
     expect(getKnowledgeGraphs).toHaveBeenCalledWith(7)
     expect(screen.getByRole('button', { name: /新建知识图谱/ })).toBeInTheDocument()
   })
@@ -151,6 +152,8 @@ describe('TeamKnowledgeGraphs', () => {
     const file = new File(['png'], 'avatar.png', { type: 'image/png' })
     const input = modal.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [file] } })
+    // AvatarUpload 选图经前端压缩 Promise 异步回调，冲刷微任务让头像状态落地
+    await act(async () => {})
     fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(uploadKnowledgeGraphAvatar).toHaveBeenCalledWith(9, expect.any(File)))
@@ -171,6 +174,8 @@ describe('TeamKnowledgeGraphs', () => {
     const file = new File(['png'], 'avatar.png', { type: 'image/png' })
     const input = modal.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [file] } })
+    // AvatarUpload 选图经前端压缩 Promise 异步回调，冲刷微任务让头像状态落地
+    await act(async () => {})
     fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
 
     await waitFor(() => expect(createKnowledgeGraph).toHaveBeenCalledTimes(1))
@@ -190,5 +195,81 @@ describe('TeamKnowledgeGraphs', () => {
 
     await waitFor(() => expect(createKnowledgeGraph).toHaveBeenCalledTimes(1))
     expect(uploadKnowledgeGraphAvatar).not.toHaveBeenCalled()
+  })
+
+  it('编辑弹窗展示头像上传，默认回显当前头像', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: '7',
+      myRole: 2,
+      enabled: true,
+      items: [{ kgId: '3', teamId: '7', name: '支付域图谱', avatarPath: 'kg/3/avatar.png' }],
+    })
+    renderTeam()
+
+    fireEvent.click(await screen.findByRole('button', { name: '编辑' }))
+    const modal = await screen.findByRole('dialog')
+    expect(within(modal).getByText('图谱头像')).toBeInTheDocument()
+    expect(modal.querySelector('input[type="file"]')).not.toBeNull()
+    // 已有头像以存储地址回显为预览（AvatarUpload 内 Avatar 渲染 img）
+    const img = modal.querySelector('img') as HTMLImageElement
+    expect(img).not.toBeNull()
+    expect(img.src).toContain('/static/kg/3/avatar.png')
+  })
+
+  it('编辑时选择头像：保存成功后登记头像', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: '7',
+      myRole: 2,
+      enabled: true,
+      items: [{ kgId: '3', teamId: '7', name: '支付域图谱' }],
+    })
+    renderTeam()
+
+    fireEvent.click(await screen.findByRole('button', { name: '编辑' }))
+    const modal = await screen.findByRole('dialog')
+    const file = new File(['png'], 'new-avatar.png', { type: 'image/png' })
+    const input = modal.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+    // AvatarUpload 选图经前端压缩 Promise 异步回调，冲刷微任务让头像状态落地
+    await act(async () => {})
+    fireEvent.click(within(modal).getByRole('button', { name: 'OK' }))
+
+    await waitFor(() => expect(updateKnowledgeGraph).toHaveBeenCalledWith(3, expect.objectContaining({ name: '支付域图谱' })))
+    await waitFor(() => expect(uploadKnowledgeGraphAvatar).toHaveBeenCalledWith(3, expect.any(File)))
+    // 编辑保存后列表刷新
+    await waitFor(() => expect(getKnowledgeGraphs).toHaveBeenCalledTimes(2))
+  })
+
+  it('工具栏关键字搜索：查询后过滤名称/描述，无命中显示筛选空态', async () => {
+    vi.mocked(getKnowledgeGraphs).mockResolvedValue({
+      teamId: '7',
+      myRole: 2,
+      enabled: true,
+      items: [
+        { kgId: '1', teamId: '7', name: '支付域图谱', description: '交易数据' },
+        { kgId: '2', teamId: '7', name: '物流图谱', description: '' },
+      ],
+    })
+    renderTeam()
+
+    expect(await screen.findByText('支付域图谱')).toBeInTheDocument()
+    expect(screen.getByText('物流图谱')).toBeInTheDocument()
+
+    // 输入但不触发查询：卡片不过滤
+    const input = screen.getByPlaceholderText('搜索知识图谱名称/描述')
+    fireEvent.change(input, { target: { value: '支付' } })
+    expect(screen.getByText('支付域图谱')).toBeInTheDocument()
+    expect(screen.getByText('物流图谱')).toBeInTheDocument()
+
+    // 点查询：只剩支付域图谱
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    expect(screen.queryByText('物流图谱')).toBeNull()
+    expect(screen.getByText('支付域图谱')).toBeInTheDocument()
+
+    // 无命中：筛选空态（区别于完全无数据的空态）
+    fireEvent.change(input, { target: { value: '不存在的图谱' } })
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    expect(screen.getByText('没有符合筛选条件的知识图谱')).toBeInTheDocument()
+    expect(screen.queryByText('还没有知识图谱，请在所属团队下新建一个')).toBeNull()
   })
 })

@@ -36,6 +36,11 @@ public class SaveAppUserConfigCommand : IRequest<EmptyCommandResponse>, IModelVa
     /// </summary>
     public int? MemoryMode { get; init; }
 
+    /// <summary>
+    /// 全局记忆接入模式：0=默认（应用允许时接入）；1=不接入全局记忆；null=不修改（需应用记忆配置 allowGlobalMemory）.
+    /// </summary>
+    public int? MemoryGlobalMode { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -59,5 +64,8 @@ public class SaveAppUserConfigCommand : IRequest<EmptyCommandResponse>, IModelVa
         validate.RuleFor(x => x.MemoryMode)
             .Must(x => x == null || x is >= 0 and <= 3)
             .WithMessage("长期记忆模式不正确.");
+        validate.RuleFor(x => x.MemoryGlobalMode)
+            .Must(x => x == null || x is >= 0 and <= 1)
+            .WithMessage("全局记忆接入模式不正确.");
     }
 }

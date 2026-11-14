@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Maomi;
 using Microsoft.Agents.AI;
+using MoAI.Database.Aggregates;
 using MoAI.Database.Entities;
 
 namespace MoAI.AI.Services;
@@ -22,6 +23,11 @@ public sealed class AppAgentBuildContext
     /// 应用配置，可为空.
     /// </summary>
     public AppAgentConfigEntity? Config { get; init; }
+
+    /// <summary>
+    /// 本轮实际对话模型 id（对话端多模型切换后与所选模型一致，未切换=默认模型）；压缩阈值按它推导.
+    /// </summary>
+    public Guid ChatModelId { get; init; }
 
     /// <summary>
     /// 应用 id.
@@ -64,6 +70,11 @@ public sealed class AppAgentBuildContext
     public IReadOnlyList<Guid> WorkflowAppIds { get; init; } = [];
 
     /// <summary>
+    /// 绑定为工具的 Agent 应用 id（执行时按其发布快照无头单轮调用）.
+    /// </summary>
+    public IReadOnlyList<Guid> AgentAppIds { get; init; } = [];
+
+    /// <summary>
     /// 绑定的技能 id.
     /// </summary>
     public IReadOnlyList<Guid> SkillIds { get; init; } = [];
@@ -84,6 +95,12 @@ public sealed class AppAgentBuildContext
     /// 也不注入长期记忆（保持独立干净上下文）.
     /// </summary>
     public bool IsSubAgent { get; init; }
+
+    /// <summary>
+    /// 本轮生效的团队智能体（team-agent Phase 2，用户切换或配置默认；未绑定为 null）：
+    /// 子代理工具提供者按 <see cref="SnapshotTeamAgent.Subs"/> 逐个注册 subagent_{key} 具名派发工具替代通用 spawn_subagent.
+    /// </summary>
+    public SnapshotTeamAgent? ActiveTeamAgent { get; init; }
 }
 
 /// <summary>

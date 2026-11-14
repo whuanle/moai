@@ -1,11 +1,10 @@
+using System.Security.Cryptography;
 using System.Text;
 using MoAI.AIPlugin.Dynamic.Models;
 using MoAI.AIPlugin.Dynamic.Plugins;
+using MoAI.AIPlugin.Models;
+using MoAI.AIPlugin.Services;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Models;
-using MoAI.Storage.Commands;
-using MoAI.Storage.Models;
-using MoAI.Storage.Services;
 using Xunit;
 
 namespace MoAI.AIPlugin.Dynamic.Tests;
@@ -20,7 +19,7 @@ public class Base64DecodePluginTests
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
     };
 
-    private readonly StubStorageService _storage = new();
+    private readonly StubPluginFileStorageService _storage = new();
 
     private Base64DecodePlugin CreatePlugin(int? maxDecodeBytes = null, int? textMaxLength = null)
     {
@@ -282,54 +281,110 @@ public class Base64DecodePluginTests
 }
 
 /// <summary>
-/// 测试用存储桩：只实现上传与公开地址拼接，其余成员不可达.
+/// 测试用插件文件存储桩：记录保存内容并生成公开地址，其余成员不可达.
 /// </summary>
-internal sealed class StubStorageService : IStorageService
+internal sealed class StubPluginFileStorageService : IPluginFileStorageService
 {
-    public List<UploadStreamFileCommand> Uploads { get; } = new();
+    private readonly Dictionary<long, StubSavedFile> _files = new();
+    private long _nextId = 1;
+
+    public List<StubSavedFile> Uploads { get; } = new();
 
     public string Server { get; set; } = "http://test.local";
 
-    public Task<PreUploadFileCommandResponse> PreUploadAsync(PreUploadFileCommand command, CancellationToken cancellationToken = default)
+    public Task<long> SaveAsync(Stream stream, PluginFileSaveOptions options, CancellationToken cancellationToken = default)
+    {
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return Task.FromResult(Save(buffer.ToArray(), options));
+    }
+
+    public Task<long> SaveAsync(byte[] content, PluginFileSaveOptions options, CancellationToken cancellationToken = default)
+        => Task.FromResult(Save(content, options));
+
+    public Task<long> SaveFromUrlAsync(string url, PluginFileSaveOptions? options = null, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
-    public Task<FileUploadResult> UploadStreamAsync(UploadStreamFileCommand command, CancellationToken cancellationToken = default)
+    public Task<PluginStoredFile?> GetFileInfoAsync(long fileId, CancellationToken cancellationToken = default)
     {
-        Uploads.Add(command);
-        return Task.FromResult(new FileUploadResult
+        if (!_files.TryGetValue(fileId, out var file))
         {
-            FileId = 1,
-            ObjectKey = command.ObjectKey,
-            FileSha256 = command.SHA256,
-            FileType = command.ContentType,
+            return Task.FromResult<PluginStoredFile?>(null);
+        }
+
+        return Task.FromResult<PluginStoredFile?>(new PluginStoredFile
+        {
+            FileId = fileId,
+            FileExtension = Path.GetExtension(file.ObjectKey),
+            ContentType = file.ContentType,
+            FileSize = file.FileSize,
+            FileSha256 = file.FileSha256,
+            IsPublic = file.IsPublic,
+            PublicUrl = file.IsPublic ? GetPublicUrl(file.ObjectKey) : null,
         });
     }
 
-    public Task<string> CompleteAsync(long fileId, bool isSuccess, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
-
-    public Task DeleteFilesAsync(IReadOnlyCollection<long> fileIds, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
-
-    public Task<IReadOnlyDictionary<string, Uri>> GetDownloadUrlsAsync(IReadOnlyCollection<KeyValueString> objectKeys, TimeSpan expiryDuration, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
-
-    public Task<Uri> GetDownloadUrlAsync(string objectKey, string fileName, TimeSpan expiryDuration, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
-
-    public Task<bool> FileExistsAsync(string objectKey, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
-
-    public Task<StorageFileReadResult> ReadAsync(string objectKey, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
-
-    public Uri GetPublicFileUrl(string objectKey)
+    public Task<Uri> GetDownloadUrlAsync(long fileId, string? fileName = null, CancellationToken cancellationToken = default)
     {
-        var key = objectKey.Trim('/');
-        var escaped = string.Join('/', key.Split('/').Select(Uri.EscapeDataString));
-        return new Uri($"{Server}/static/{escaped}");
+        return Task.FromResult(new Uri($"{Server}/download/{fileId}/{fileName ?? "file"}"));
     }
 
-    public Task<StorageFileInfo?> GetFileInfoAsync(string objectKey, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    public Task<Uri?> GetPublicUrlAsync(long fileId, CancellationToken cancellationToken = default)
+    {
+        if (!_files.TryGetValue(fileId, out var file) || !file.IsPublic)
+        {
+            return Task.FromResult<Uri?>(null);
+        }
+
+        return Task.FromResult<Uri?>(GetPublicUrl(file.ObjectKey));
+    }
+
+    private long Save(byte[] content, PluginFileSaveOptions options)
+    {
+        var fileName = Path.GetFileName(options.FileName);
+        var extension = Path.GetExtension(fileName);
+        var sha256 = Convert.ToHexStringLower(SHA256.HashData(content));
+        var prefix = string.IsNullOrWhiteSpace(options.Prefix) ? "plugins" : options.Prefix.Trim('/');
+        var objectKey = options.IsPublic
+            ? $"public/{prefix}/{sha256}{extension}"
+            : $"{prefix}/{sha256}{extension}";
+
+        var file = new StubSavedFile
+        {
+            FileId = (int)_nextId,
+            ObjectKey = objectKey,
+            ContentType = options.ContentType ?? "application/octet-stream",
+            FileSize = content.Length,
+            FileSha256 = sha256,
+            IsPublic = options.IsPublic,
+        };
+
+        _files[_nextId] = file;
+        Uploads.Add(file);
+        return _nextId++;
+    }
+
+    private Uri GetPublicUrl(string objectKey)
+    {
+        var escaped = string.Join('/', objectKey.Trim('/').Split('/').Select(Uri.EscapeDataString));
+        return new Uri($"{Server}/static/{escaped}");
+    }
+}
+
+/// <summary>
+/// 测试用已保存文件.
+/// </summary>
+internal sealed class StubSavedFile
+{
+    public int FileId { get; init; }
+
+    public string ObjectKey { get; init; } = string.Empty;
+
+    public string ContentType { get; init; } = string.Empty;
+
+    public int FileSize { get; init; }
+
+    public string FileSha256 { get; init; } = string.Empty;
+
+    public bool IsPublic { get; init; }
 }

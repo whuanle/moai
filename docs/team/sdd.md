@@ -8,7 +8,9 @@
 
 ## 1. 目标
 
-团队是知识库、插件等资源的管理单元。本期交付：团队 CRUD、成员管理（添加/移除/角色调整/自行退出）；团队不可解散，仅平台管理员可禁用/启用（见管理员治理）。后续资源表通过 `team_id` 挂载。对齐侧边栏既有的「团队」菜单（问题台账 P9 死菜单之一）。
+团队是**协作与资源隔离单元**：知识库、插件、应用等资源按 `team_id` 挂载，以团队为边界隔离，团队内成员协作维护——销售、研发等团队各管各的事。注意**团队 ≠ 组织全体成员**：存在「生产型团队」专门制作应用给组织内其他成员（含管理层）使用（如报表分析应用），使用者（CEO 等）不加入该团队、不参与维护；这类需求的放通出口是 publication 上架审批（`is_public` 全员公开）或**按组织放通**（统一组织授权已落地，见 [../org/sdd.md](../org/sdd.md)「统一组织授权」）。组织与团队的概念边界见 [../org/sdd.md](../org/sdd.md)。
+
+本期交付：团队 CRUD、成员管理（添加/移除/角色调整/自行退出）；团队不可解散，仅平台管理员可禁用/启用（见管理员治理）。后续资源表通过 `team_id` 挂载。对齐侧边栏既有的「团队」菜单（问题台账 P9 死菜单之一）。
 
 ## 2. 数据模型
 
@@ -52,6 +54,9 @@
 | POST | `/api/team/{id}/avatar` | 设置头像（objectKey 须为已登记上传文件） | Empty |
 | GET | `/api/team/{id}/users` | 成员列表 | `QueryTeamUsersCommandResponse` |
 | POST | `/api/team/{id}/users` | 添加成员 `{userId, role}` | Empty |
+| POST | `/api/team/{id}/users/batch` | 批量添加成员 `{userIds[], role}`，跳过已入团/不存在并回传明细 | `AddTeamUsersCommandResponse` |
+| GET | `/api/team/{id}/org/role/list` | 组织平铺列表（团队侧只读视图，仅 Owner/Admin，复用组织查询） | `QueryOrgRolesCommandResponse` |
+| GET | `/api/team/{id}/org/role/{roleId}/users` | 某组织下用户清单（团队侧只读视图，仅 Owner/Admin） | `QueryOrgRoleUsersCommandResponse` |
 | PUT | `/api/team/{id}/user/{userId}/role` | 改角色 `{role}` | Empty |
 | DELETE | `/api/team/{id}/user/{userId}` | 移除/退出 | Empty |
 | GET | `/api/admin/team/list` | 管理员分页查全部团队（含负责人/成员数/禁用态），支持名称/简介模糊 + 禁用状态筛选 | `QueryAdminTeamListCommandResponse` |
@@ -69,7 +74,9 @@
 - **D5 管理员治理接口独立路由**：`/admin/team/*` 与团队内接口（`/team/*`）分离，避免管理面与协作面权限混淆；门禁在 Controller（`EnsureAdminAsync`，沿用 account 的 `GetUserStateAsync`），Handler 只做事实校验（团队/用户存在性、目标已是负责人）。治理接口归 `team` 模块实现，未使用尚空的 `admin` 模块。
 - **D6 禁用仅状态标记**：`team.is_disable` 为既有列，本轮只做「标记 + 列表展示 + 状态筛选」，不做跨模块级联停用（知识库/网关/插件仍可访问），级联留待后续轮次（见 §6）。
 - **D7 转让目标可为任意用户**：管理员转让不要求目标已在团——非成员自动入团并成为 Owner，原 Owner 降为 Admin；目标已是 Owner 时 400。区别于团队内转让（`PUT /team/{id}/owner`，要求操作者本人是 Owner 且目标须已在团）。
-- **D8 团队详情页导航收敛**：详情页无「团队信息」分区（信息卡与菜单项已移除，团队资料维护走「设置」分区）；面包屑为「主页（→ /dashboard）/ 团队头像+团队名称」，默认分区与越权/非法子路由回落分区均为「内部应用」（见 [@TM-S17](./bdd.md#tm-s17)）。
+- **D8 团队详情页导航收敛**：详情页无「团队信息」分区（信息卡与菜单项已移除，团队资料维护走「设置」分区）；页面顶部无面包屑（原「主页 / 团队头像+团队名称」面包屑已移除，右侧内容区不再预留其空白高度），返回入口收敛进侧边栏头部——团队头像+团队名称下方「返回主页」（→ /apps）；默认分区与越权/非法子路由回落分区均为「内部应用」（见 [@TM-S17](./bdd.md#tm-s17)）。
+- **D9 批量添加与团队侧组织视图**（2026-10-29，见 [@TM-S19](./bdd.md#tm-s19)/[@TM-S20](./bdd.md#tm-s20)）：添加成员改为弹窗（组织树按组织批量选人 + 关键字实时搜索全站用户，前端 `TeamMemberAddModal`）。批量端点整批校验（非空/去重/≤200），对已入团与不存在用户**跳过而非整批拒绝**，回传 `addedCount/skippedUserIds/notFoundUserIds` 供前端分层提示；授予 Admin 仍需 Owner。组织树数据不复制 Org 模块实现——Team.Api 引用 `MoAI.Org.Shared` 经 MediatR 复用 `QueryOrgRolesCommand`/`QueryOrgRoleUsersCommand`（两个 Handler 本身无门禁逻辑，团队侧门禁统一走 `EnsureTeamManagerAsync`，Admin 起可读；组织管理面 `/org/*` 仍仅管理员）。内联用户下拉已移除，单添加端点 `POST /users` 与 `candidates` 搜索接口保留（后者供弹窗实时搜索）。
+- **D10 使用分区 Dify 式分层**（2026-11-05）：六个使用分区（内部应用/提示词/技能/智能体/知识库/知识图谱）在 `TeamManage` 不再套外层白卡 `DSCard`——工具栏与分页裸排在页面底色上，列表内容自带白色表面（资源卡片）。其中团队技能分区同期由 `DataTable` 表格**改版为卡片列表**（同提示词/智能体卡款），六个使用分区至此全部卡片化、视觉一致。原因：外层白卡把工具栏与列表包进同一容器，数据量少时呈现"小大白板"。管理分区（成员/渠道/插件/变量/定时器/设置/外部接入）仍保留 `DSCard` 包裹（表单类内容为主，无此问题）。
 
 ## 6. 已知问题 / 下阶段
 

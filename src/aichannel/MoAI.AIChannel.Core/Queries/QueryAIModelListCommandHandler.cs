@@ -27,7 +27,13 @@ public class QueryAIModelListCommandHandler : IRequestHandler<QueryAIModelListCo
     {
         var query = _databaseContext.AiModels.AsQueryable();
 
-        if (request.TeamId.HasValue)
+        if (request.OwnerTeamId > 0)
+        {
+            var ownerTeamId = request.OwnerTeamId;
+            query = query.Where(x => _databaseContext.AiChannels
+                .Any(c => c.Id == x.ChannelId && c.TeamId == ownerTeamId));
+        }
+        else if (request.TeamId.HasValue)
         {
             var teamId = request.TeamId.Value;
             query = query.Where(x => x.IsPublic || _databaseContext.AiModelAuthorizations
@@ -74,6 +80,21 @@ public class QueryAIModelListCommandHandler : IRequestHandler<QueryAIModelListCo
                 UpdateUserId = (int)x.UpdateUserId,
             })
             .ToListAsync(cancellationToken);
+
+        // 批量填充授权团队名称（私有模型的授权团队，公开模型为空集合）
+        var modelIds = items.Select(x => x.Id).ToList();
+        var authPairs = await _databaseContext.AiModelAuthorizations
+            .Where(x => modelIds.Contains(x.AiModelId))
+            .Join(_databaseContext.Teams, a => a.TeamId, t => t.Id, (a, t) => new { a.AiModelId, a.TeamId, t.Name })
+            .OrderBy(x => x.TeamId)
+            .ToListAsync(cancellationToken);
+        var authNamesByModelId = authPairs
+            .GroupBy(x => x.AiModelId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Name).ToList());
+        foreach (var item in items)
+        {
+            item.AuthorizedTeamNames = authNamesByModelId.GetValueOrDefault(item.Id) ?? new List<string>();
+        }
 
         return new QueryAIModelListCommandResponse { Items = items };
     }

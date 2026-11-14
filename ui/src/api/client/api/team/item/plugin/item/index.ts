@@ -10,6 +10,8 @@ import { FunctionsRequestBuilderRequestsMetadata, type FunctionsRequestBuilder }
 // @ts-ignore
 import { Refresh_mcpRequestBuilderRequestsMetadata, type Refresh_mcpRequestBuilder } from './refresh_mcp/index.js';
 // @ts-ignore
+import { SemanticRequestBuilderRequestsMetadata, type SemanticRequestBuilder } from './semantic/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -28,6 +30,10 @@ export interface WithPluginItemRequestBuilder extends BaseRequestBuilder<WithPlu
      * The refresh_mcp property
      */
     get refresh_mcp(): Refresh_mcpRequestBuilder;
+    /**
+     * The semantic property
+     */
+    get semantic(): SemanticRequestBuilder;
     /**
      * 删除团队插件，需团队 Owner/Admin.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -62,6 +68,9 @@ export const WithPluginItemRequestBuilderNavigationMetadata: Record<Exclude<keyo
     },
     refresh_mcp: {
         requestsMetadata: Refresh_mcpRequestBuilderRequestsMetadata,
+    },
+    semantic: {
+        requestsMetadata: SemanticRequestBuilderRequestsMetadata,
     },
 };
 /**

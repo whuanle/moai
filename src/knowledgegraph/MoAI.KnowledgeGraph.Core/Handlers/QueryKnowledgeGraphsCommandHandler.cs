@@ -24,7 +24,10 @@ public class QueryKnowledgeGraphsCommandHandler : IRequestHandler<QueryKnowledge
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="authorizer">权限判定.</param>
     /// <param name="settingsService">知识图谱设置.</param>
-    public QueryKnowledgeGraphsCommandHandler(DatabaseContext databaseContext, IKnowledgeGraphAuthorizer authorizer, IKnowledgeGraphSettingsService settingsService)
+    public QueryKnowledgeGraphsCommandHandler(
+        DatabaseContext databaseContext,
+        IKnowledgeGraphAuthorizer authorizer,
+        IKnowledgeGraphSettingsService settingsService)
     {
         _databaseContext = databaseContext;
         _authorizer = authorizer;
@@ -37,23 +40,36 @@ public class QueryKnowledgeGraphsCommandHandler : IRequestHandler<QueryKnowledge
         var role = await _authorizer.RequireTeamRoleAsync(request.TeamId, adminOnly: false, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);
 
-        var items = await _databaseContext.KnowledgeGraphs
+        var rows = await _databaseContext.KnowledgeGraphs
             .Where(x => x.TeamId == request.TeamId)
             .OrderBy(x => x.Id)
-            .Select(x => new KnowledgeGraphItem
+            .Select(x => new
             {
-                KgId = x.Id,
-                TeamId = x.TeamId,
-                Name = x.Name,
-                Description = x.Description,
-                TemplateKey = x.TemplateKey,
-                Mode = x.Mode,
-                Database = x.Database,
-                ReadOnly = x.Mode == KnowledgeGraphModes.Connected,
-                AvatarPath = x.AvatarPath,
-                CreateTime = x.CreateTime,
+                x.Id,
+                x.TeamId,
+                x.Name,
+                x.Description,
+                x.Mode,
+                x.Database,
+                x.AvatarPath,
+                x.CreateTime,
             })
             .ToListAsync(cancellationToken);
+
+        // 列表只读业务库（设置开关 + 图谱行），不触碰图数据库：实体/关系数量在进入详情/模型页时按需统计，
+        // 图库不可用由具体操作端点连接失败自动报错，列表不承担探测职责.
+        var items = rows.Select(x => new KnowledgeGraphItem
+        {
+            KgId = x.Id,
+            TeamId = x.TeamId,
+            Name = x.Name,
+            Description = x.Description,
+            Mode = x.Mode,
+            Database = x.Database,
+            ReadOnly = x.Mode == KnowledgeGraphModes.Connected,
+            AvatarPath = x.AvatarPath,
+            CreateTime = x.CreateTime,
+        }).ToList();
 
         return new QueryKnowledgeGraphsCommandResponse
         {

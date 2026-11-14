@@ -41,7 +41,7 @@ public class QueryKnowledgeGraphSearchCommandHandler : IRequestHandler<QueryKnow
             throw new BusinessException("该图谱未配置向量化模型，请先在图谱设置中配置.") { StatusCode = 409 };
         }
 
-        var result = await _graphSearchService.SearchAsync([graph.Id], request.Query, request.TopK, request.MinScore, cancellationToken);
+        var result = await _graphSearchService.SearchAsync([graph.Id], request.Query, request.TopK, request.MinScore, request.NeighborTopK, cancellationToken);
 
         return new QueryKnowledgeGraphSearchCommandResponse
         {
@@ -60,10 +60,12 @@ public class QueryKnowledgeGraphSearchCommandHandler : IRequestHandler<QueryKnow
                     Direction = n.Direction,
                     Name = n.Name,
                     Description = n.Description,
+                    Degree = n.Degree,
                 }).ToList(),
             }).ToList(),
             Contents = result.Contents.ToList(),
             Text = result.Text,
+            TextTruncated = result.TextTruncated,
             SkippedHints = result.SkippedHints.ToList(),
         };
     }

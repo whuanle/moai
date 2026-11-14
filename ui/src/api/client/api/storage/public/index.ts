@@ -4,6 +4,8 @@
 // @ts-ignore
 import { Pre_upload_chat_fileRequestBuilderRequestsMetadata, type Pre_upload_chat_fileRequestBuilder } from './pre_upload_chat_file/index.js';
 // @ts-ignore
+import { Pre_upload_graph_fileRequestBuilderRequestsMetadata, type Pre_upload_graph_fileRequestBuilder } from './pre_upload_graph_file/index.js';
+// @ts-ignore
 import { Pre_upload_imageRequestBuilderRequestsMetadata, type Pre_upload_imageRequestBuilder } from './pre_upload_image/index.js';
 // @ts-ignore
 import { Pre_upload_tempRequestBuilderRequestsMetadata, type Pre_upload_tempRequestBuilder } from './pre_upload_temp/index.js';
@@ -18,6 +20,10 @@ export interface PublicRequestBuilder extends BaseRequestBuilder<PublicRequestBu
      * The pre_upload_chat_file property
      */
     get pre_upload_chat_file(): Pre_upload_chat_fileRequestBuilder;
+    /**
+     * The pre_upload_graph_file property
+     */
+    get pre_upload_graph_file(): Pre_upload_graph_fileRequestBuilder;
     /**
      * The pre_upload_image property
      */
@@ -37,6 +43,9 @@ export const PublicRequestBuilderUriTemplate = "{+baseurl}/api/storage/public";
 export const PublicRequestBuilderNavigationMetadata: Record<Exclude<keyof PublicRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
     pre_upload_chat_file: {
         requestsMetadata: Pre_upload_chat_fileRequestBuilderRequestsMetadata,
+    },
+    pre_upload_graph_file: {
+        requestsMetadata: Pre_upload_graph_fileRequestBuilderRequestsMetadata,
     },
     pre_upload_image: {
         requestsMetadata: Pre_upload_imageRequestBuilderRequestsMetadata,

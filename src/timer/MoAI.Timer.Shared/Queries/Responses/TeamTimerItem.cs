@@ -79,6 +79,11 @@ public class TeamTimerItem : AuditsInfo
     public DateTimeOffset? LastRunTime { get; set; }
 
     /// <summary>
+    /// 最近一次执行状态（等待/执行中/成功/失败/待重试），未执行过为 null；前端据此展示执行状态并在活跃时轮询刷新.
+    /// </summary>
+    public TimerExecutionStatus? LastExecutionStatus { get; set; }
+
+    /// <summary>
     /// 下次调度时间（Hangfire），未启用或无调度为 null.
     /// </summary>
     public DateTimeOffset? NextRunTime { get; set; }

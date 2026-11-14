@@ -22,7 +22,7 @@ src/infra/
 ├── MoAI.Infra.Configuration.Shared/ SystemOptions/SystemOptionStorage/OpenTelemetryOptions、
 │                                   InfraConfigurationModule（首启生成 2048 RSA 并注册 IRsaProvider）、RsaProvider
 ├── MoAI.Infra.Core/                InfraCoreModule：AddMaomiMQ + AES + IIdProvider + TypeFilter 自动注册验证器
-├── MoAI.Infra.ExternalHttp/        9 个 Refit 客户端注册 + ExternalHttpMessageHandler + OAuth/ 动态客户端
+├── MoAI.Infra.ExternalHttp/        Refit 客户端注册 + ExternalHttpMessageHandler + OAuth 动态客户端 + MoPlatform 插件客户端与安装指纹
 │                                   （Feishu×3/WeixinWork/DingTalk/Doc2x/BoCha/Put/Paddleocr）
 └── MoAI.Infra.Api/                 ExternalApiAttribute（预留，当前无使用方）
 ```
@@ -35,6 +35,7 @@ src/infra/
 |---|---|---|
 | Debug / Name | bool / string="MoAI" | 调试开关；Name 兼作 MQ AppName |
 | AES | string | 密钥（不足 32 字节补空格截断） |
+| MoPlatform.Endpoint | string，默认 `https://anyai.wiki` | MoPlatform 公共服务根地址；Development 当前指向 `http://127.0.0.1:5100` |
 | Port | int | 主端口；**Port+1 为第二端口**（内部/外部系统接口） |
 | Server / WebUI | string | 后端/前端对外地址（JWT Issuer/Audience、OAuth 回跳校验） |
 | Database / Redis / RabbitMQ | string | 连接串 |
@@ -52,6 +53,7 @@ src/infra/
 4. **Maomi.MQ**：WorkId=1、AutoQueueDeclare=true、AppName=Name、ConsumerDispatchConcurrency=100、ClientProvidedName="moai"，Rabbit Uri 来自 `MoAI:RabbitMQ`（[@INF-S22](./bdd.md#inf-s22)）。
 5. **外部 HTTP**：统一 RefitSettings（SystemTextJson、camelCase、忽略 null、允许多余逗号与注释、Buffered）；全部挂 `ExternalHttpMessageHandler`（日志+Activity 打标，二进制 `[Binary Content]` 打码）+ `SetHandlerLifetime(30s)`（Put/Paddleocr 60s）；固定 BaseAddress 见组件清单；OAuth 因 IdP 端点动态走 `IOAuthClientFactory` 运行时 `RestService.For`（命名 HttpClient `MoAI.OAuth` 复用连接池）（[@INF-S16](./bdd.md#inf-s16)~[@INF-S18](./bdd.md#inf-s18)）。
 6. **其余基座**：Yitter 雪花 ID（SeqBitLength=10、workId=0、GeneratorKey 16 位 hex）；AES（CBC、密钥补齐 32 字节、密文=IV(16B)+密文 Base64）；PBKDF2（10000 迭代 SHA256、salt/输出 128B、VerifyHash 非法 Base64 返回 false）；`UserContext.SetUserContext` 经 PropertySetHelper（表达式树+缓存）写 init-only 属性（[@INF-S14](./bdd.md#inf-s14)）；Kestrel 双端口 + `MaxRequestBodySize=1GB`。
+7. **MoPlatform 插件请求指纹**：首次请求时生成 256 位随机十六进制指纹并持久化到 `configs/mo-platform-client.fingerprint`；`MoPlatformPluginClient` 请求独立 `/api/client/plugin/*` 时通过 `X-MoAI-Client-Fingerprint` 发送。指纹只用于稳定配额归并，不是密码学认证密钥；资源接口的真正频控由 MoPlatform 按指纹与 IP 完成（[@INF-S23](./bdd.md#inf-s23)）。
 
 ## 已知问题
 

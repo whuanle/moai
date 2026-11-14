@@ -8,6 +8,7 @@ using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Publication.Commands;
+using MoAI.Publication.Queries;
 using MoAI.Team.Services;
 
 namespace MoAI.Publication.Handlers;
@@ -62,6 +63,12 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
             if (app.IsPublic)
             {
                 throw new BusinessException("应用已公开，无需重复申请.") { StatusCode = 409 };
+            }
+
+            // 上架前置条件：应用必须已发布（有团队发布快照），未发布先发布再申请
+            if (app.PublishStatus != 1)
+            {
+                throw new BusinessException("应用尚未发布，请先发布后再申请上架.") { StatusCode = 400 };
             }
 
             // 上架即把最新的团队发布上架：不携带版本号时自动记录应用当前版本；携带时防御性再验格式且不能低于当前版本（只能递增不能回退）
@@ -173,6 +180,19 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
             throw new BusinessException("该资源已有待审核的上架申请，请耐心等待审批.") { StatusCode = 409 };
         }
 
+        // 应用按组织限定可视范围时，校验清单中的组织全部存在（审批物化前的前置反馈）
+        if (request.ResourceType == PublicationResourceType.App && request.VisibleScope == AppVisibleScope.Organization)
+        {
+            var orgRoleIds = request.VisibleOrgGrants.Select(x => x.OrgRoleId).Distinct().ToList();
+            var existingCount = await _databaseContext.OrgRoles
+                .CountAsync(x => orgRoleIds.Contains(x.Id), cancellationToken);
+
+            if (existingCount != orgRoleIds.Count)
+            {
+                throw new BusinessException("可视范围中的组织不存在或已删除.") { StatusCode = 400 };
+            }
+        }
+
         var publicationReview = new PublicationReviewEntity
         {
             ResourceType = (int)request.ResourceType,
@@ -181,6 +201,8 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
             TeamId = teamId,
             ApplyReason = request.ApplyReason ?? string.Empty,
             PublishVersion = publishVersionValue,
+            VisibleScope = (short)(int)request.VisibleScope,
+            VisibleOrgGrants = VisibleOrgGrantSnapshot.Serialize(request.VisibleOrgGrants),
             State = (int)PublicationState.Pending
         };
 

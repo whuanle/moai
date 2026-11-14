@@ -51,6 +51,10 @@ internal partial class OauthConnectionConfiguration : IEntityTypeConfiguration<O
             .HasDefaultValueSql("'0'::bigint")
             .HasComment("软删除")
             .HasColumnName("is_deleted");
+        entity.Property(e => e.IsVisible)
+            .HasDefaultValue(true)
+            .HasComment("是否显示到登录页与个人中心绑定页（false=隐藏连接器，纯身份映射用）")
+            .HasColumnName("is_visible");
         entity.Property(e => e.Key)
             .HasMaxLength(100)
             .HasComment("应用key")

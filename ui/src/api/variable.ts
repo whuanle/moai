@@ -11,7 +11,10 @@ export interface TeamVariableItem {
   /** 私密变量对成员/列表恒为空 */
   value?: string | null
   description?: string | null
+  createUserName?: string | null
+  createTime?: string | null
   updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface VariablesResult {

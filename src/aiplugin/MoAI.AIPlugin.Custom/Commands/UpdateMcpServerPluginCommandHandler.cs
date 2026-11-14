@@ -74,10 +74,13 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
         pluginCustomEntity.Server = request.ServerUrl.ToString();
 
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
+        IReadOnlyDictionary<string, McpToolHints> toolHints;
 
         try
         {
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(request, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            var syncResult = await McpServerConnector.GetPluginFunctionsAsync(request, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            pluginFunctionEntities = syncResult.Functions;
+            toolHints = syncResult.Hints;
         }
         catch (Exception ex)
         {
@@ -95,6 +98,9 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // MCP 工具注解（readOnlyHint/destructiveHint）同步到工具元数据表（只回写注解位，保留管理员配置）
+        await McpToolHintsSyncHelper.UpsertAsync(_databaseContext, pluginEntity.Id, toolHints, cancellationToken);
 
         transactionScope.Complete();
 

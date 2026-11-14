@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Popconfirm, Spin, Tag, Typography } from 'antd'
-import { DeleteOutlined, LeftOutlined } from '@ant-design/icons'
+import { Button, Popconfirm, Spin, Tag, Tooltip, Typography } from 'antd'
+import { DeleteOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { feedback, Page } from '@/design-system'
+import { useParams } from 'react-router'
+import { BackLink, feedback, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { clearMyAppMemory, deleteMyMemory, getMyMemories, type MyMemoryItem } from '@/api/memory'
 import { formatDateTime } from '@/utils/datetime'
@@ -22,7 +22,6 @@ const TYPE_PROCEDURAL = 2
  */
 export function MyMemoryPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const params = useParams<{ teamId: string; appId: string }>()
   const teamId = Number(params.teamId)
   const appId = params.appId ?? ''
@@ -84,16 +83,13 @@ export function MyMemoryPage() {
     type === TYPE_EPISODIC ? t('appMemory.typeEpisodic') : type === TYPE_PROCEDURAL ? t('appMemory.typeProcedural') : t('appMemory.typeSemantic')
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to="/team">{t('team.title')}</Link> },
-        { title: <Link to={`/team/${teamId}/apps`}>{t('team.apps')}</Link> },
-        { title: t('myMemory.title') },
-      ]}
-    >
+    <Page>
+      {/* 左上角「← 返回内部应用」替代「团队 / 应用 / 我的记忆」面包屑与原独立返回按钮 */}
+      <div style={{ marginBottom: spacing.md }}>
+        <BackLink to={`/team/${teamId}/apps`}>{t('appManage.backToInternalApps')}</BackLink>
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md, gap: spacing.md }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, minWidth: 0 }}>
-          <Button icon={<LeftOutlined />} onClick={() => navigate(-1)} />
           <Typography.Title level={4} style={{ margin: 0 }}>
             {t('myMemory.title')}
           </Typography.Title>
@@ -105,8 +101,6 @@ export function MyMemoryPage() {
           </Button>
         </Popconfirm>
       </div>
-
-      <Text type="secondary">{t('myMemory.hint')}</Text>
 
       {loading ? (
         <div style={{ padding: spacing.xl, textAlign: 'center' }}>
@@ -138,7 +132,9 @@ export function MyMemoryPage() {
               </Text>
               {hoverId === String(item.id) && (
                 <Popconfirm title={t('myMemory.deleteConfirm')} onConfirm={() => void handleDelete(String(item.id))}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('myMemory.delete')} />
+                  <Tooltip title={t('myMemory.delete')}>
+                    <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('myMemory.delete')} />
+                  </Tooltip>
                 </Popconfirm>
               )}
             </div>

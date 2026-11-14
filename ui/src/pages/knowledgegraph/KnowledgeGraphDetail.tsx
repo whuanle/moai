@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Alert, Layout, Menu, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import { ApartmentOutlined, ApiOutlined, ClusterOutlined, ExperimentOutlined, ImportOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons'
-import { Card, Page } from '@/design-system'
+import { BackLink, Card, Page, SiderHeader } from '@/design-system'
 import { spacing } from '@/design-system/theme'
+import { resolveStorageUrl } from '@/utils/storage'
+
 import { getKnowledgeGraphDetail, type KnowledgeGraphDetail as GraphDetail } from '@/api/knowledgeGraph'
 import { KnowledgeGraphCanvas } from './KnowledgeGraphCanvas'
 import { KnowledgeGraphImportPage } from './KnowledgeGraphImportPage'
@@ -78,22 +80,31 @@ export function KnowledgeGraphDetail() {
   )
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to={`/team/${teamId}`}>{t('knowledgegraph.title')}</Link> },
-        { title: graph?.name ?? '' },
-      ]}
-    >
+    <Page>
       {graph && graph.enabled === false && (
         <Alert type="warning" showIcon message={t('knowledgegraph.disabled')} style={{ marginBottom: spacing.md }} />
       )}
       {graph === null ? (
-        <Card loading styles={{ body: { padding: spacing.lg, minHeight: 160 } }} />
+        <>
+          {/* 加载中先给返回入口，避免短暂丢失导航 */}
+          <div style={{ marginBottom: spacing.md }}>
+            <BackLink to={`/team/${teamId}/knowledgegraph`}>{t('knowledgegraph.backToKnowledgeGraph')}</BackLink>
+          </div>
+          <Card loading styles={{ body: { padding: spacing.lg, minHeight: 160 } }} />
+        </>
       ) : legacyStep ? (
         <Navigate to={`/team/${teamId}/kg/${graphId}/maintenance?step=${legacyStep}`} replace />
       ) : (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
           <Sider width={200} style={{ background: 'transparent' }}>
+            {/* 侧栏顶部身份区：上段「图谱头像 + 图名」、下段「← 返回知识图谱」整宽按钮（与团队/应用工作台同构，仿首页侧边栏头部） */}
+            <SiderHeader
+              name={graph?.name}
+              avatarSrc={graph?.avatarPath?.trim() ? resolveStorageUrl(graph.avatarPath) : undefined}
+              avatarFallback={<ClusterOutlined />}
+              backTo={`/team/${teamId}/knowledgegraph`}
+              backLabel={t('knowledgegraph.backToKnowledgeGraph')}
+            />
             <Menu
               mode="inline"
               items={menuItems}
@@ -110,9 +121,11 @@ export function KnowledgeGraphDetail() {
               // 图览：无头部步骤条与导入入口，画布占满剩余高度与全部宽度
               <KnowledgeGraphCanvas
                 graphId={graphId}
+                teamId={teamId}
                 mode={graph.mode}
                 myRole={graph?.myRole ?? null}
                 graphEnabled={graph?.enabled !== false}
+                canvasStyle={graph?.canvasStyle ?? null}
               />
             ) : section === 'maintenance' ? (
               <KnowledgeGraphMaintenance graph={graph} />
@@ -121,7 +134,7 @@ export function KnowledgeGraphDetail() {
             ) : section === 'recall' ? (
               <KnowledgeGraphRecallTest kgId={graphId} teamId={teamId} />
             ) : section === 'mcp' ? (
-              <KnowledgeGraphMcpPage kgId={graphId} />
+              <KnowledgeGraphMcpPage kgId={graphId} teamId={teamId} canManage={graph.myRole != null && graph.myRole !== 0} />
             ) : section === 'schema' ? (
               // 接入图只读模型页（托管图旧路径已重定向，正常不会进入）
               <Card styles={{ body: { padding: spacing.lg } }}>

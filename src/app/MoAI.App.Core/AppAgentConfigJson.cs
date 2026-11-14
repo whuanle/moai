@@ -30,6 +30,28 @@ internal static class AppAgentConfigJson
     }
 
     /// <summary>
+    /// 解析 JSON 数字数组（绑定专家提示词 id）；空串/非法内容返回空列表.
+    /// </summary>
+    /// <param name="json">JSON 文本，如 <c>[1,2]</c>.</param>
+    /// <returns>提示词 id 列表.</returns>
+    public static List<int> ParseIntList(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<int>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<int>>(json)?.Where(x => x > 0).ToList() ?? new List<int>();
+        }
+        catch (JsonException)
+        {
+            return new List<int>();
+        }
+    }
+
+    /// <summary>
     /// 解析 JSON uuid 字符串数组（插件 id）；空串/非法内容返回空列表.
     /// </summary>
     /// <param name="json">JSON 文本，如 <c>["...uuid..."]</c>.</param>
@@ -84,6 +106,14 @@ internal static class AppAgentConfigJson
     /// <returns>JSON 文本.</returns>
     public static string SerializePluginIds(IEnumerable<Guid> pluginIds)
         => JsonSerializer.Serialize(pluginIds.Select(x => x.ToString()).ToList());
+
+    /// <summary>
+    /// 序列化数字 id 列表为 JSON 数组文本（绑定专家提示词 id）.
+    /// </summary>
+    /// <param name="ids">提示词 id 列表.</param>
+    /// <returns>JSON 文本.</returns>
+    public static string SerializeInts(IEnumerable<int> ids)
+        => JsonSerializer.Serialize(ids.ToList());
 
     /// <summary>
     /// 解析 JSON 字符串数组（快捷输入）；空串/非法内容返回空列表.

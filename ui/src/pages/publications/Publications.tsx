@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CheckOutlined, CloseOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { CheckOutlined, CloseOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { Avatar, Button, Input, Modal, Popconfirm, Select, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router'
-import { DataTable, Page, PageToolbar, feedback } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { AuditCell, DataTable, Page, PageToolbar, feedback } from '@/design-system'
+import { controlHeight, spacing, tableCardChromeHeight } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
-import { formatDateTime } from '@/utils/datetime'
 import { formatAppVersion } from '@/utils/appVersion'
 import { resolveStorageUrl } from '@/utils/storage'
 import {
@@ -17,6 +16,7 @@ import {
   type PublicationReviewItem,
   type PublicationState,
 } from '@/api/publication'
+import { VisibleScopeTag } from '@/components/VisibleScopeTag'
 
 const { Text } = Typography
 
@@ -29,14 +29,34 @@ const STATE_TAG_COLOR: Record<PublicationState, string> = {
   rejected: 'error',
 }
 
+const pageVerticalPadding = spacing.lg * 2
+const toolbarHeight = controlHeight + spacing.md
+const tableHeaderHeight = 55
+const tablePaginationHeight = 57
+const publicationsPageHeight = `calc(100vh - ${pageVerticalPadding}px)`
+const publicationsTableScrollY = `calc(100vh - ${pageVerticalPadding + toolbarHeight + tableHeaderHeight + tablePaginationHeight + tableCardChromeHeight}px)`
+
 export function Publications() {
   const { t } = useTranslation()
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
 
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<PublicationReviewItem[]>([])
+  const [keyword, setKeyword] = useState('')
   const [stateFilter, setStateFilter] = useState<StateFilter>('all')
   const [resourceTypeFilter, setResourceTypeFilter] = useState<ResourceTypeFilter>('all')
+
+  /** 关键字筛选（客户端过滤）：匹配资源名称 / 团队名称 / 申请人 */
+  const filteredItems = useMemo(() => {
+    const kw = keyword.trim().toLowerCase()
+    if (!kw) return items
+    return items.filter(
+      (item) =>
+        (item.resourceName ?? '').toLowerCase().includes(kw) ||
+        (item.teamName ?? '').toLowerCase().includes(kw) ||
+        (item.createUserName ?? '').toLowerCase().includes(kw),
+    )
+  }, [items, keyword])
 
   /** 驳回弹窗：需填写审批意见 */
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -139,13 +159,22 @@ export function Publications() {
         width: 90,
         render: (v: number | null | undefined) => (v == null ? '-' : <Tag>v{formatAppVersion(v)}</Tag>),
       },
-      { title: t('publications.colTeam'), dataIndex: 'teamName', width: 150, render: (v: string | null) => v || '-' },
-      { title: t('publications.colApplicant'), dataIndex: 'createUserName', width: 110, render: (v: string | null) => v || '-' },
       {
-        title: t('publications.colApplyTime'),
-        dataIndex: 'createTime',
+        title: t('publications.colVisibleScope'),
+        key: 'visibleScope',
+        width: 130,
+        render: (_, record) => {
+          // 仅应用类型有可视范围（提示词/技能公开即全员可见）
+          if (record.resourceType !== 'app') return <Text type="secondary">-</Text>
+          return <VisibleScopeTag visibleScope={record.visibleScope} orgGrants={record.visibleOrgGrants} />
+        },
+      },
+      { title: t('publications.colTeam'), dataIndex: 'teamName', width: 150, render: (v: string | null) => v || '-' },
+      {
+        title: t('publications.colCreate'),
+        key: 'create',
         width: 150,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
       },
       {
         title: t('publications.colApplyReason'),
@@ -172,50 +201,33 @@ export function Publications() {
         render: (v: string | null) => v || '-',
       },
       {
-        title: t('publications.colReviewInfo'),
-        key: 'reviewInfo',
-        width: 220,
-        render: (_, record) => {
-          if (record.state === 'pending' || !record.reviewTime) return <Text type="secondary">-</Text>
-          return (
-            <div style={{ lineHeight: 1.5 }}>
-              <div>{record.updateUserName || '-'}</div>
-              <Text type="secondary" style={{ fontSize: 12 }}>{formatDateTime(record.reviewTime)}</Text>
-            </div>
-          )
-        },
+        title: t('publications.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('publications.colActions'),
         key: 'actions',
-        width: 120,
+        width: 170,
         fixed: 'right',
         render: (_, record) => {
           if (record.state !== 'pending') return <Text type="secondary">-</Text>
           return (
             <Space size={0}>
               <Popconfirm title={t('publications.approveConfirm')} onConfirm={() => void handleApprove(record)}>
-                <Tooltip title={t('publications.approve')}>
-                  <Button type="text" size="small" icon={<CheckOutlined />} aria-label={t('publications.approve')} />
-                </Tooltip>
+                <Button type="link" size="small" icon={<CheckOutlined />}>{t('publications.approve')}</Button>
               </Popconfirm>
-              <Tooltip title={t('publications.reject')}>
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<CloseOutlined />}
-                  aria-label={t('publications.reject')}
-                  onClick={() => openReject(record)}
-                />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<CloseOutlined />} onClick={() => openReject(record)}>
+                {t('publications.reject')}
+              </Button>
             </Space>
           )
         },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, items],
+    [t, stateFilter, resourceTypeFilter],
   )
 
   if (!isAdmin) {
@@ -224,56 +236,65 @@ export function Publications() {
 
   return (
     <Page>
-      <PageToolbar
-        filters={
-          <Space size={spacing.xs} wrap>
-            <Select<StateFilter>
-              value={stateFilter}
-              onChange={handleStateChange}
-              style={{ width: 140 }}
-              options={[
-                { label: t('publications.stateAll'), value: 'all' },
-                { label: t('publications.state_pending'), value: 'pending' },
-                { label: t('publications.state_approved'), value: 'approved' },
-                { label: t('publications.state_rejected'), value: 'rejected' },
-              ]}
-            />
-            <Select<ResourceTypeFilter>
-              value={resourceTypeFilter}
-              onChange={handleResourceTypeChange}
-              style={{ width: 140 }}
-              options={[
-                { label: t('publications.typeAll'), value: 'all' },
-                { label: t('publications.typeApp'), value: 'app' },
-                { label: t('publications.typePrompt'), value: 'prompt' },
-                { label: t('publications.typeSkill'), value: 'skill' },
-              ]}
-            />
-          </Space>
-        }
-        actions={
-          <Tooltip title={t('publications.refresh')}>
-            <Button
-              icon={<ReloadOutlined />}
-              aria-label={t('publications.refresh')}
-              onClick={() => void load()}
-            />
-          </Tooltip>
-        }
-      />
-      <DataTable<PublicationReviewItem>
-        rowKey="publicationId"
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        sticky
-        scroll={{ x: 1200 }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50],
-          defaultPageSize: 20,
-        }}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', height: publicationsPageHeight, minHeight: 0 }}>
+        <PageToolbar
+          filters={
+            <Space size={spacing.xs} wrap>
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                allowClear
+                maxLength={100}
+                prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+                placeholder={t('publications.searchPlaceholder')}
+                style={{ width: 260 }}
+              />
+              <Select<StateFilter>
+                value={stateFilter}
+                onChange={handleStateChange}
+                style={{ width: 140 }}
+                options={[
+                  { label: t('publications.stateAll'), value: 'all' },
+                  { label: t('publications.state_pending'), value: 'pending' },
+                  { label: t('publications.state_approved'), value: 'approved' },
+                  { label: t('publications.state_rejected'), value: 'rejected' },
+                ]}
+              />
+              <Select<ResourceTypeFilter>
+                value={resourceTypeFilter}
+                onChange={handleResourceTypeChange}
+                style={{ width: 140 }}
+                options={[
+                  { label: t('publications.typeAll'), value: 'all' },
+                  { label: t('publications.typeApp'), value: 'app' },
+                  { label: t('publications.typePrompt'), value: 'prompt' },
+                  { label: t('publications.typeSkill'), value: 'skill' },
+                ]}
+              />
+            </Space>
+          }
+          queries={
+            <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void load()}>
+              {t('ds.table.refresh')}
+            </Button>
+          }
+        />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <DataTable<PublicationReviewItem>
+            rowKey="publicationId"
+            columns={columns}
+            dataSource={filteredItems}
+            loading={loading}
+            sticky
+            scroll={{ x: 1470, y: publicationsTableScrollY }}
+            pagination={{
+              showSizeChanger: true,
+              pageSizeOptions: [10, 20, 50],
+              defaultPageSize: 20,
+            }}
+          />
+        </div>
+      </div>
       <Modal
         open={rejectOpen}
         title={t('publications.rejectTitle', { name: rejectTarget?.resourceName ?? '' })}

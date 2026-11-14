@@ -61,6 +61,27 @@ public class QueryAppSecurityEventsCommandHandler : IRequestHandler<QueryAppSecu
             query = query.Where(x => x.Scope == request.Scope);
         }
 
+        if (!string.IsNullOrEmpty(request.Keyword))
+        {
+            // 内置规则（手机号/证件等）rule_name 为空串：除规则名外同时匹配规则类型代码（大小写不敏感），
+            // 并把常见中文类型别名归一到代码，保证搜「手机号」能命中 rule_type=phone
+            var keyword = request.Keyword.Trim();
+            var typeAlias = keyword switch
+            {
+                "手机号" or "手机" => "phone",
+                "身份证号" or "身份证" => "idcard",
+                "邮箱" or "email" => "email",
+                "银行卡号" or "银行卡" => "bankcard",
+                "自定义正则" => "custom",
+                "提示词注入" or "注入" => "injection",
+                _ => null,
+            };
+            query = query.Where(x =>
+                x.RuleName.Contains(keyword)
+                || x.RuleType.ToLower().Contains(keyword.ToLower())
+                || (typeAlias != null && x.RuleType.ToLower() == typeAlias));
+        }
+
         var total = await query.CountAsync(cancellationToken);
         var items = await query
             .OrderByDescending(x => x.CreateTime)

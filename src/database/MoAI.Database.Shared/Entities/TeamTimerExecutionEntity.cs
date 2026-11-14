@@ -75,6 +75,11 @@ public partial class TeamTimerExecutionEntity : IFullAudited
     public string? AppInstanceId { get; set; }
 
     /// <summary>
+    /// 定时执行产生的 Agent 会话 id（app_agent_session，UserType=timer），流程应用为 null.
+    /// </summary>
+    public Guid? SessionId { get; set; }
+
+    /// <summary>
     /// 应用回答文本.
     /// </summary>
     public string? Result { get; set; }

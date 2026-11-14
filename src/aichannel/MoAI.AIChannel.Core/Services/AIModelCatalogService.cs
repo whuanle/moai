@@ -7,20 +7,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MoAI.AIChannel.Models;
-using MoAI.Infra.Exceptions;
+using MoAI.Infra;
 
 namespace MoAI.AIChannel.Services;
 
 /// <summary>
-/// 后端内置模型目录（models.json）加载与查询服务.
+/// MoPlatform 模型目录（models.json）加载与查询服务.
+/// 读取 configs/models.json，并按文件时间戳自动重载，无需重启.
 /// </summary>
 public class AIModelCatalogService
 {
-    private static readonly string CatalogPath = Path.Combine(AppContext.BaseDirectory, "models.json");
+    private static readonly string ConfigsCatalogPath = Path.Combine(AppConst.ConfigsPath, "models.json");
 
     private readonly ILogger<AIModelCatalogService> _logger;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Dictionary<string, Dictionary<string, AIChannelModelMeta>>? _cache;
+    private (string Path, DateTime WriteTimeUtc, long Length)? _cacheStamp;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AIModelCatalogService"/> class.
@@ -29,6 +31,15 @@ public class AIModelCatalogService
     public AIModelCatalogService(ILogger<AIModelCatalogService> logger)
     {
         _logger = logger;
+    }
+
+    /// <summary>
+    /// 失效内存缓存，下次查询时重新加载目录文件.
+    /// </summary>
+    public void InvalidateCache()
+    {
+        _cache = null;
+        _cacheStamp = null;
     }
 
     /// <summary>
@@ -74,6 +85,160 @@ public class AIModelCatalogService
         return null;
     }
 
+    /// <summary>
+    /// 解析 models.json 原文为目录结构，格式非法抛 <see cref="JsonException"/>.
+    /// </summary>
+    /// <param name="raw">models.json 原文.</param>
+    /// <returns>provider id → 模型元数据字典.</returns>
+    public static Dictionary<string, Dictionary<string, AIChannelModelMeta>> ParseCatalog(string raw)
+    {
+        using var doc = JsonDocument.Parse(raw);
+        var root = doc.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            // 统一抛 JsonException，调用方按格式非法处理
+            throw new JsonException("models.json 根节点必须是对象.");
+        }
+
+        if (root.TryGetProperty("schemaVersion", out _) || root.TryGetProperty("channels", out _))
+        {
+            var channelsElement = root.TryGetProperty("channels", out var channels) ? channels : default;
+            return ParseMoPlatformCatalog(root, channelsElement);
+        }
+
+        var catalog = new Dictionary<string, Dictionary<string, AIChannelModelMeta>>(StringComparer.Ordinal);
+
+        foreach (var provider in root.EnumerateObject())
+        {
+            if (!provider.Value.TryGetProperty("models", out var modelsElement) || modelsElement.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var providerModels = new Dictionary<string, AIChannelModelMeta>(StringComparer.Ordinal);
+            foreach (var model in modelsElement.EnumerateObject())
+            {
+                var meta = ParseModel(model.Name, model.Value);
+                if (meta != null)
+                {
+                    providerModels[meta.ModelId] = meta;
+                }
+            }
+
+            catalog[provider.Name] = providerModels;
+        }
+
+        return catalog;
+    }
+
+    private static Dictionary<string, Dictionary<string, AIChannelModelMeta>> ParseMoPlatformCatalog(JsonElement root, JsonElement channelsElement)
+    {
+        if (!root.TryGetProperty("schemaVersion", out var schemaVersion)
+            || schemaVersion.ValueKind != JsonValueKind.Number
+            || !schemaVersion.TryGetInt32(out var version)
+            || version != 1
+            || channelsElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new JsonException("MoPlatform models.json schemaVersion 必须为 1，且 channels 必须是数组.");
+        }
+
+        var catalog = new Dictionary<string, Dictionary<string, AIChannelModelMeta>>(StringComparer.Ordinal);
+        foreach (var channel in channelsElement.EnumerateArray())
+        {
+            if (channel.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var providerKey = GetString(channel, "code");
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                continue;
+            }
+
+            var providerModels = new Dictionary<string, AIChannelModelMeta>(StringComparer.Ordinal);
+            if (channel.TryGetProperty("models", out var modelsElement) && modelsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var model in modelsElement.EnumerateArray())
+                {
+                    var meta = ParseMoPlatformModel(model);
+                    if (meta != null)
+                    {
+                        providerModels[meta.ModelId] = meta;
+                    }
+                }
+            }
+
+            catalog[providerKey] = providerModels;
+        }
+
+        return catalog;
+    }
+
+    private static AIChannelModelMeta? ParseMoPlatformModel(JsonElement model)
+    {
+        if (model.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var modelId = GetString(model, "id");
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return null;
+        }
+
+        var limit = GetObject(model, "limit");
+        var pricing = GetObject(model, "pricing");
+        var inputModalities = GetStringArray(GetArray(model, "inputModalities"));
+        var outputModalities = GetStringArray(GetArray(model, "outputModalities"));
+        var capabilities = GetStringArray(GetArray(model, "capabilities"));
+
+        return new AIChannelModelMeta
+        {
+            ModelId = modelId,
+            Name = GetString(model, "name") ?? modelId,
+            Description = GetString(model, "description"),
+            Family = GetString(model, "family"),
+            ModelKind = MapMoPlatformModelKind(GetString(model, "kind")),
+            SupportsVision = inputModalities?.Contains("image", StringComparer.OrdinalIgnoreCase) == true,
+            SupportsAttachments = HasCapability(capabilities, "attachment"),
+            SupportsReasoning = HasCapability(capabilities, "reasoning"),
+            SupportsToolCall = HasCapability(capabilities, "toolCall"),
+            SupportsStructuredOutput = HasCapability(capabilities, "structuredOutput"),
+            SupportsTemperature = HasCapability(capabilities, "temperature"),
+            KnowledgeCutoff = GetString(model, "knowledgeCutoff"),
+            ReleaseDate = GetString(model, "releaseDate"),
+            InputModalities = inputModalities,
+            OutputModalities = outputModalities,
+            OpenWeights = GetBool(model, "openWeights"),
+            ContextWindow = GetInt(limit, "context"),
+            MaxOutput = GetInt(limit, "output"),
+            CostInput = GetDecimal(pricing, "input"),
+            CostOutput = GetDecimal(pricing, "output"),
+            CostCacheRead = GetDecimal(pricing, "cacheRead"),
+        };
+    }
+
+    private static string? MapMoPlatformModelKind(string? kind)
+    {
+        return kind switch
+        {
+            "chat" or "realtime" or "moderation" or "ocr" => "conversation",
+            "embedding" => "embedding",
+            "rerank" => "rerank",
+            "image" => "image-generation",
+            "video" => "video-generation",
+            "tts" or "asr" => "transcription",
+            _ => null,
+        };
+    }
+
+    private static bool HasCapability(List<string>? capabilities, string expected)
+    {
+        return capabilities?.Contains(expected, StringComparer.OrdinalIgnoreCase) == true;
+    }
+
     private static bool TryGetExact(Dictionary<string, AIChannelModelMeta> models, string modelId, out AIChannelModelMeta? meta)
     {
         foreach (var (key, value) in models)
@@ -97,7 +262,8 @@ public class AIModelCatalogService
 
     private async Task<Dictionary<string, Dictionary<string, AIChannelModelMeta>>> EnsureLoadedAsync(CancellationToken cancellationToken)
     {
-        if (_cache != null)
+        var stamp = CurrentStamp();
+        if (_cache != null && _cacheStamp == stamp)
         {
             return _cache;
         }
@@ -105,12 +271,13 @@ public class AIModelCatalogService
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (_cache != null)
+            if (_cache != null && _cacheStamp == stamp)
             {
                 return _cache;
             }
 
             _cache = Load();
+            _cacheStamp = CurrentStamp();
             return _cache;
         }
         finally
@@ -119,47 +286,45 @@ public class AIModelCatalogService
         }
     }
 
+    private static string? ResolveCatalogPath()
+    {
+        if (File.Exists(ConfigsCatalogPath))
+        {
+            return ConfigsCatalogPath;
+        }
+
+        return null;
+    }
+
+    private static (string Path, DateTime WriteTimeUtc, long Length)? CurrentStamp()
+    {
+        var path = ResolveCatalogPath();
+        if (path == null)
+        {
+            return null;
+        }
+
+        var info = new FileInfo(path);
+        return (path, info.LastWriteTimeUtc, info.Length);
+    }
+
     private Dictionary<string, Dictionary<string, AIChannelModelMeta>> Load()
     {
-        if (!File.Exists(CatalogPath))
+        var path = ResolveCatalogPath();
+        if (path == null)
         {
-            _logger.LogWarning("模型目录文件不存在：{Path}", CatalogPath);
+            _logger.LogWarning("模型目录文件不存在：{Configs}", ConfigsCatalogPath);
             return new Dictionary<string, Dictionary<string, AIChannelModelMeta>>();
         }
 
         try
         {
-            var raw = File.ReadAllText(CatalogPath);
-            using var doc = JsonDocument.Parse(raw);
-            var root = doc.RootElement;
-            var catalog = new Dictionary<string, Dictionary<string, AIChannelModelMeta>>(StringComparer.Ordinal);
-
-            foreach (var provider in root.EnumerateObject())
-            {
-                if (!provider.Value.TryGetProperty("models", out var modelsElement) || modelsElement.ValueKind != JsonValueKind.Object)
-                {
-                    continue;
-                }
-
-                var providerModels = new Dictionary<string, AIChannelModelMeta>(StringComparer.Ordinal);
-                foreach (var model in modelsElement.EnumerateObject())
-                {
-                    var meta = ParseModel(model.Name, model.Value);
-                    if (meta != null)
-                    {
-                        providerModels[meta.ModelId] = meta;
-                    }
-                }
-
-                catalog[provider.Name] = providerModels;
-            }
-
-            return catalog;
+            return ParseCatalog(File.ReadAllText(path));
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "模型目录解析失败：{Path}", CatalogPath);
-            throw new BusinessException("模型目录 models.json 解析失败.") { StatusCode = 500 };
+            _logger.LogError(ex, "模型目录解析失败，当前目录按空目录处理：{Path}", path);
+            return new Dictionary<string, Dictionary<string, AIChannelModelMeta>>();
         }
     }
 
@@ -219,6 +384,13 @@ public class AIModelCatalogService
             : (JsonElement?)null;
     }
 
+    private static JsonElement? GetArray(JsonElement element, string property)
+    {
+        return element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Array
+            ? value
+            : (JsonElement?)null;
+    }
+
     private static int? GetInt(JsonElement? element, string property)
     {
         if (element is not { } e || !e.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.Number)
@@ -248,6 +420,25 @@ public class AIModelCatalogService
 
         var list = new List<string>();
         foreach (var item in value.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(item.GetString()))
+            {
+                list.Add(item.GetString()!);
+            }
+        }
+
+        return list.Count > 0 ? list : null;
+    }
+
+    private static List<string>? GetStringArray(JsonElement? element)
+    {
+        if (element is not { ValueKind: JsonValueKind.Array } array)
+        {
+            return null;
+        }
+
+        var list = new List<string>();
+        foreach (var item in array.EnumerateArray())
         {
             if (item.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(item.GetString()))
             {

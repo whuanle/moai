@@ -18,8 +18,9 @@ public interface IGraphSearchService
     /// <param name="query">查询文本.</param>
     /// <param name="topPerGraph">每图召回条数.</param>
     /// <param name="minScore">相似度阈值（null 不过滤）.</param>
+    /// <param name="neighborTopK">每个命中实体按度数排序保留的邻居数（1~30，默认 10；度数高者优先）.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>检索结果（含跳过提示）.</returns>
     /// <remarks>跨图得分来自不同 embedding 模型空间，归并排序仅为 best-effort 排序.</remarks>
-    Task<GraphSearchResult> SearchAsync(IReadOnlyCollection<long> graphIds, string query, int topPerGraph = 5, double? minScore = null, CancellationToken cancellationToken = default);
+    Task<GraphSearchResult> SearchAsync(IReadOnlyCollection<long> graphIds, string query, int topPerGraph = 5, double? minScore = null, int neighborTopK = 10, CancellationToken cancellationToken = default);
 }

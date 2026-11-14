@@ -75,8 +75,9 @@ public class UpdateAppCommandHandler : IRequestHandler<UpdateAppCommand, EmptyCo
         app.Description = request.Description ?? string.Empty;
         app.ClassifyId = request.ClassifyId;
 
-        // 应用类型创建后不可更改，IsExternal 以库内为准；公开（is_public）只能通过上架审核通过后由系统设置
-        app.IsAuth = app.IsExternal && request.IsAuth;
+        // 应用类型创建后不可更改，IsExternal 以库内为准；公开（is_public）只能通过上架审核通过后由系统设置。
+        // is_auth 已退役：外部应用一律匿名开放（请求字段保留接收但忽略），列收敛为 false
+        app.IsAuth = false;
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         return EmptyCommandResponse.Default;

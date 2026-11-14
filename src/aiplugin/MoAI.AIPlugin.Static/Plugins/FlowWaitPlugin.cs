@@ -10,7 +10,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 /// <summary>
 /// 流程等待（静态插件）：等待指定秒数后继续执行.
 /// </summary>
-[AiPlugin(key: "static_flow_wait", Name = "流程等待", Description = "让工作流等待指定时间后运行")]
+[AiPlugin(key: "static_flow_wait", Name = "流程等待", HumanDescription = "用于在工作流执行过程中暂停一段时间再继续，方便控制任务节奏或等待外部流程完成。适合定时衔接、短暂延迟和分阶段运行的自动化场景。", Description = "让工作流等待指定时间后运行")]
 public class FlowWaitPlugin : IStaticPluginRuntime<FlowWaitRequest, FlowWaitResponse>
 {
     /// <summary>

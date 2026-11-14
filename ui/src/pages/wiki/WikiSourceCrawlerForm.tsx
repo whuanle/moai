@@ -99,6 +99,7 @@ export function WikiSourceCrawlerFormFields({ form }: WikiSourceCrawlerFormField
         />
       </Col>
 
+      {/* 请求间隔与超时并排一行，压缩弹窗纵向高度 */}
       <Col xs={24} sm={12}>
         <Form.Item
           name="requestIntervalSeconds"
@@ -119,6 +120,20 @@ export function WikiSourceCrawlerFormFields({ form }: WikiSourceCrawlerFormField
         </Form.Item>
       </Col>
 
+      <Col xs={24} sm={12}>
+        <Form.Item
+          name="timeoutSeconds"
+          label={t('wiki.source.crawler.timeout')}
+          extra={t('wiki.source.crawler.timeoutExtra')}
+          rules={[
+            { required: true, message: t('wiki.source.crawler.timeoutRequired') },
+            { type: 'integer', min: 5, max: 300, message: t('wiki.source.crawler.timeoutInvalid') },
+          ]}
+        >
+          <InputNumber min={5} max={300} precision={0} style={{ width: '100%' }} />
+        </Form.Item>
+      </Col>
+
       <Col span={24} style={{ marginTop: -spacing.sm }}>
         <Text type="secondary" style={{ fontSize: 12, marginRight: spacing.xs }}>
           {t('wiki.source.crawler.intervalPresetLabel')}
@@ -134,21 +149,8 @@ export function WikiSourceCrawlerFormFields({ form }: WikiSourceCrawlerFormField
         ))}
       </Col>
 
+      {/* 正文选择器与 UA 均为可选高级项，并排一行压缩纵向高度 */}
       <Col xs={24} sm={12}>
-        <Form.Item
-          name="timeoutSeconds"
-          label={t('wiki.source.crawler.timeout')}
-          extra={t('wiki.source.crawler.timeoutExtra')}
-          rules={[
-            { required: true, message: t('wiki.source.crawler.timeoutRequired') },
-            { type: 'integer', min: 5, max: 300, message: t('wiki.source.crawler.timeoutInvalid') },
-          ]}
-        >
-          <InputNumber min={5} max={300} precision={0} style={{ width: '100%' }} />
-        </Form.Item>
-      </Col>
-
-      <Col span={24}>
         <Form.Item
           name="contentSelector"
           label={t('wiki.source.crawler.contentSelector')}
@@ -159,7 +161,7 @@ export function WikiSourceCrawlerFormFields({ form }: WikiSourceCrawlerFormField
         </Form.Item>
       </Col>
 
-      <Col span={24}>
+      <Col xs={24} sm={12}>
         <Form.Item
           name="userAgent"
           label={t('wiki.source.crawler.userAgent')}

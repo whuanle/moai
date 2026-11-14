@@ -18,7 +18,9 @@ src/account/
 ├── MoAI.Account.Core/    Handlers/ 六个 + Queries/ 两个；Services/{UserAccountService,
 │                         CustomAuthorizaMiddleware,TokenProvider,UserContextProvider}
 └── MoAI.Account.Api/     AccountController（[Route("/account")]，8 端点，/api 前缀）
-ui/src/                   api/account.ts、pages/account/AccountSettings.tsx（/account）、
+ui/src/                   api/account.ts、pages/account/{AccountPage,Messages,AccountProfile,
+                         AccountPassword,AccountTwoFactor,TwoFactorPanel,AccountOauth}.tsx（/account/:section?，
+                         二级菜单 messages/profile/password/twofa/oauth，旧 settings 重定向 profile）、
                          utils/{storage,oauth}.ts
 ```
 

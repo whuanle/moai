@@ -54,6 +54,12 @@ public class CrawlerSyncResult
     public bool Truncated { get; set; }
 
     /// <summary>
+    /// 覆盖是否不完整：深度钳制或页数上限导致链接被静默放弃时为 true；
+    /// 此时存活页面集合不可信，删除同步必须跳过（防止把只是未抓到的页面误删）.
+    /// </summary>
+    public bool CoverageIncomplete { get; set; }
+
+    /// <summary>
     /// 逐页结果.
     /// </summary>
     public IList<CrawlerPageResult> Items { get; init; } = new List<CrawlerPageResult>();

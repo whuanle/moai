@@ -5,13 +5,13 @@
 ## 色彩
 | 令牌 | 值 | 用途 |
 |---|---|---|
-| `colorPrimary` | `#2970FF` | 品牌主色 |
-| `brandColors.primary` | `#2970FF` | 主色别名 |
+| `colorPrimary` | `#6D5AE6` | 品牌主色（晨光靛紫） |
+| `brandColors.primary` | `#6D5AE6` | 主色别名 |
 | `brandColors.success` | `#17B26A` | 成功 |
 | `brandColors.warning` | `#F79009` | 警告 |
 | `brandColors.error` | `#F04438` | 错误 |
 | `brandColors.info` | `#0BA5EC` | 信息 |
-| `brandGradient` | `#2A6FFF → #3D8BFF → #68A9FF` | 品牌渐变（强调面，渐变上固定白字） |
+| `brandGradient` | `#7C5CFF → #6D5AE6 → #4DA3FF` | 品牌渐变（强调面，渐变上固定白字） |
 | `chartColors` | AntV 八色 | 图表/分类回退色板（共用，勿在页面各存一份） |
 | `useNeutralColors()` | antd token 派生 | 主题感知中性色（键与 `neutralColors` 对齐）；页面取中性色一律用它，`neutralColors` 仅浅色一套 |
 

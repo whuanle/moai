@@ -55,7 +55,7 @@ async function main() {
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'pub-team-' + TS } })).json.value)
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
 
-  const app = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '上架应用-' + TS, appType: 'agent' } })
+  const app = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '上架应用_' + TS, appType: 'agent' } })
   const APP_ID = String(app.json?.value ?? '')
   // 公开列表（/api/app/public/list）只展示「已发布 + 已公开」的应用，这里先发布（发布 ≠ 公开）
   await api('POST', `/api/app/${APP_ID}/publish`, { token: owner.token })
@@ -145,12 +145,13 @@ async function main() {
   check('PB-14 已公开资源重复申请 409', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID, version: '1.3.1' } })).status === 409)
 
   // PB-15 外部应用不可申请公开
-  const ext = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '外部应用-' + TS, appType: 'agent', isExternal: true } })
+  const ext = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '外部应用_' + TS, appType: 'agent', isExternal: true } })
   check('PB-15 外部应用申请公开 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: String(ext.json?.value ?? '') } })).status === 400)
 
   // PB-16 排序：待审核恒排最前，组内按申请时间倒序
-  const appS = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '排序应用-' + TS, appType: 'agent' } })
+  const appS = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '排序应用_' + TS, appType: 'agent' } })
   const APPS_ID = String(appS.json?.value ?? '')
+  await api('POST', `/api/app/${APPS_ID}/publish`, { token: owner.token })
   const applyS = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPS_ID, version: '2.0.0' } })
   const PBS_ID = String(applyS.json?.value ?? '')
   const allItems = (await api('GET', '/api/publication/list', { token: adminToken })).json?.items ?? []
@@ -166,12 +167,131 @@ async function main() {
 
   // PB-17 下架（取消公开）：清 is_public、不改变团队发布状态、下架后可重新申请
   check('PB-17a Member 下架 403', (await api('POST', '/api/publication/takedown', { token: member.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 403)
-  check('PB-17b 非成员下架 404', (await api('POST', '/api/publication/takedown', { token: outsider.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 404)
-  check('PB-17c Owner 下架已公开应用 200', (await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 200)
+  const tk1 = await api('POST', '/api/publication/takedown', { token: outsider.token, body: { resourceType: 'app', resourceId: APP_ID } })
+  check('PB-17b 非成员下架 404', tk1.status === 404, `got ${tk1.status} ${tk1.text.slice(0, 120)}`)
+  const tk2 = await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })
+  check('PB-17c Owner 下架已公开应用 200', tk2.status === 200, `got ${tk2.status} ${tk2.text.slice(0, 120)}`)
   check('PB-17d 下架后 is_public=false', (await api('GET', `/api/app/${APP_ID}`, { token: owner.token })).json?.isPublic === false)
   check('PB-17e 下架后不再出现在公开列表', !((await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items ?? []).some(i => i.appId === APP_ID))
   check('PB-17f 未公开重复下架 409', (await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID } })).status === 409)
   check('PB-17g 下架后可重新申请 200', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APP_ID, version: '1.3.1' } })).status === 200)
+
+  // ===== 可视范围（组织）扩展 =====
+
+  // PB-18 上架前置校验：未发布应用不可申请（@PB-S14）
+  const appUnpub = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '未发布应用_' + TS, appType: 'agent' } })
+  const APPU_ID = String(appUnpub.json?.value ?? '')
+  check('PB-18a 未发布应用申请上架 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID } })).status === 400)
+  await api('POST', `/api/app/${APPU_ID}/publish`, { token: owner.token })
+  const applyU = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID } })
+  check('PB-18b 发布后申请通过前置校验 200', applyU.status === 200, `${applyU.status} ${applyU.text.slice(0, 140)}`)
+  check('PB-18c 撤回收尾 200', (await api('POST', '/api/publication/withdraw', { token: owner.token, body: { publicationId: applyU.json?.value } })).status === 200)
+
+  // PB-19 可视范围参数校验（干净应用：已发布未公开无待审）（@PB-S15）
+  check('PB-19a 按组织限定但授权清单为空 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID, visibleScope: 'organization', visibleOrgGrants: [] } })).status === 400)
+  check('PB-19b 组织不存在 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID, visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: 999999, scope: 'down' }] } })).status === 400)
+  check('PB-19c 非应用类型携带可视范围 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'prompt', resourceId: '1', visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: 1, scope: 'down' }] } })).status === 400)
+
+  // PB-20 组织范围全链路（@PB-S20 审批物化 + @AP-S131 广场过滤 + @AP-S124 使用门禁）
+  const orgRoot = await api('POST', '/api/org/role/create', { token: adminToken, body: { name: '研发中心-' + TS } })
+  const ROOT_ORG = Number(orgRoot.json?.orgRoleId ?? 0)
+  const orgChild = await api('POST', '/api/org/role/create', { token: adminToken, body: { name: '研发部-' + TS, parentId: ROOT_ORG } })
+  const CHILD_ORG = Number(orgChild.json?.orgRoleId ?? 0)
+  check('PB-20a root 创建组织树 200', orgRoot.status === 200 && orgChild.status === 200 && ROOT_ORG > 0 && CHILD_ORG > 0, `${orgRoot.status} ${orgChild.status}`)
+  check('PB-19d 同组织重复授权 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID, visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: CHILD_ORG, scope: 'down' }, { orgRoleId: CHILD_ORG, scope: 'self' }] } })).status === 400)
+
+  // member（团队成员）划入研发部；outsider 不在组织内
+  check('PB-20b 用户分配组织 200', (await api('PUT', `/api/org/user/${member.userId}/roles`, { token: adminToken, body: { roleIds: [CHILD_ORG] } })).status === 200)
+
+  const applyOrg = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID, visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: CHILD_ORG, scope: 'down' }] } })
+  check('PB-20c 按组织限定申请 200', applyOrg.status === 200, `${applyOrg.status} ${applyOrg.text.slice(0, 140)}`)
+  const orgItem = ((await api('GET', `/api/publication/team_list?teamId=${TID}`, { token: owner.token })).json?.items ?? [])
+    .find(i => String(i.publicationId) === String(applyOrg.json?.value ?? ''))
+  check('PB-20d 列表回显可视范围与组织名', orgItem?.visibleScope === 'organization' && orgItem?.visibleOrgGrants?.[0]?.orgRoleId === CHILD_ORG && orgItem?.visibleOrgGrants?.[0]?.roleName?.startsWith('研发部'), JSON.stringify(orgItem))
+  check('PB-20e 审批通过 200', (await api('POST', '/api/publication/review', { token: adminToken, body: { publicationId: String(applyOrg.json?.value), isApprove: true } })).status === 200)
+  check('PB-20f 通过后 is_public=true', (await api('GET', `/api/app/${APPU_ID}`, { token: owner.token })).json?.isPublic === true)
+
+  // 广场可见性：组织内成员可见，组织外用户不可见
+  check('PB-20g 组织内用户广场可见', ((await api('GET', '/api/app/public/list', { token: member.token })).json?.items ?? []).some(i => i.appId === APPU_ID))
+  check('PB-20h 组织外用户广场不可见', !((await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items ?? []).some(i => i.appId === APPU_ID))
+  // 使用门禁：组织外用户直链建会话 404，组织内成员 200
+  const outsiderSession = await api('POST', `/api/app/${APPU_ID}/session`, { token: outsider.token, body: {} })
+  check('PB-20i 组织外用户直链建会话 404', outsiderSession.status === 404, `${outsiderSession.status} ${outsiderSession.text.slice(0, 140)}`)
+  check('PB-20j 组织内成员建会话 200', (await api('POST', `/api/app/${APPU_ID}/session`, { token: member.token, body: {} })).status === 200)
+
+  // PB-21 全员重申覆盖：下架 → 按全员重新申请 → 通过 → 组织外用户也可见（@PB-S21）
+  check('PB-21a 下架清可视范围 200', (await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID } })).status === 200)
+  check('PB-21b 下架后组织内用户也不可见', !((await api('GET', '/api/app/public/list', { token: member.token })).json?.items ?? []).some(i => i.appId === APPU_ID))
+  const applyAll = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID, visibleScope: 'all' } })
+  check('PB-21c 全员范围重新申请 200', applyAll.status === 200, `${applyAll.status} ${applyAll.text.slice(0, 140)}`)
+  check('PB-21d 审批通过 200', (await api('POST', '/api/publication/review', { token: adminToken, body: { publicationId: String(applyAll.json?.value), isApprove: true } })).status === 200)
+  check('PB-21e 全员范围组织外用户广场可见', ((await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items ?? []).some(i => i.appId === APPU_ID))
+  check('PB-21f 全员范围组织外用户可建会话', (await api('POST', `/api/app/${APPU_ID}/session`, { token: outsider.token, body: {} })).status === 200)
+
+  // PB-22 停用联动：待审申请撤下 + is_public=false + 广场不可见（@PB-S22，后端沿用撤回发布语义）
+  const applyP = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID, visibleScope: 'all' } })
+  check('PB-22a 已公开重复申请 409（先下架）', applyP.status === 409)
+  check('PB-22b 停用（撤回发布）200', (await api('POST', `/api/app/${APPU_ID}/unpublish`, { token: owner.token })).status === 200)
+  check('PB-22c 停用后 is_public=false 且 publishStatus=0', (await api('GET', `/api/app/${APPU_ID}`, { token: owner.token })).json?.isPublic === false && (await api('GET', `/api/app/${APPU_ID}`, { token: owner.token })).json?.publishStatus === 0)
+  check('PB-22d 停用后广场不可见', !((await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items ?? []).some(i => i.appId === APPU_ID))
+  check('PB-22e 停用后未发布不可再申请 400', (await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPU_ID } })).status === 400)
+
+  // PB-23 待审核数量角标接口：门禁 + 申请后 +1 + 审批通过后回落（@PB-S23）
+  check('PB-23a 未登录查待审核数量 401', (await api('GET', '/api/publication/pending-count')).status === 401)
+  check('PB-23b 非管理员查待审核数量 403', (await api('GET', '/api/publication/pending-count', { token: owner.token })).status === 403)
+  const appBadge = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '角标应用_' + TS, appType: 'agent' } })
+  const APPB_ID = String(appBadge.json?.value ?? '')
+  await api('POST', `/api/app/${APPB_ID}/publish`, { token: owner.token })
+  const pendBefore = (await api('GET', '/api/publication/pending-count', { token: adminToken })).json?.count ?? -1
+  const applyB = await api('POST', '/api/publication/apply', { token: owner.token, body: { resourceType: 'app', resourceId: APPB_ID, version: '1.0.0' } })
+  check('PB-23c 角标应用申请上架 200', applyB.status === 200, `${applyB.status} ${applyB.text.slice(0, 140)}`)
+  const pendAfter = (await api('GET', '/api/publication/pending-count', { token: adminToken })).json?.count ?? -1
+  check('PB-23d 申请后待审核数量 +1', pendAfter === pendBefore + 1, `before=${pendBefore} after=${pendAfter}`)
+  check('PB-23e 审批通过后数量回落', (await api('POST', '/api/publication/review', { token: adminToken, body: { publicationId: String(applyB.json?.value), isApprove: true } })).status === 200
+    && (await api('GET', '/api/publication/pending-count', { token: adminToken })).json?.count === pendBefore)
+
+  // ===== 应用收藏扩展（@AP-S132 收藏/取消 + @AP-S133 门禁 + @AP-S134 收藏置顶） =====
+
+  // 三个夹具应用：F1/F3 全员范围、F2 组织范围（研发部，member 在范围内、outsider 在范围外），发布次序 F1→F2→F3（发布时间倒序基线 F3>F2>F1）
+  const mkFav = async (name, orgScoped) => {
+    const r = await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `${name}_${TS}`, appType: 'agent' } })
+    const id = String(r.json?.value ?? '')
+    await api('POST', `/api/app/${id}/publish`, { token: owner.token })
+    const body = orgScoped ? { resourceType: 'app', resourceId: id, visibleScope: 'organization', visibleOrgGrants: [{ orgRoleId: CHILD_ORG, scope: 'down' }] } : { resourceType: 'app', resourceId: id, visibleScope: 'all' }
+    const a = await api('POST', '/api/publication/apply', { token: owner.token, body })
+    if (a.status !== 200) throw new Error(`夹具 ${name} 申请失败: ${a.status} ${a.text.slice(0, 120)}`)
+    const rv = await api('POST', '/api/publication/review', { token: adminToken, body: { publicationId: String(a.json?.value), isApprove: true } })
+    if (rv.status !== 200) throw new Error(`夹具 ${name} 审批失败: ${rv.status}`)
+    return id
+  }
+  const FAV1 = await mkFav('收藏全员甲', false)
+  const FAV2 = await mkFav('收藏组织乙', true)
+  const FAV3 = await mkFav('收藏全员丙', false)
+
+  check('PB-24a 未登录收藏 401', (await api('POST', `/api/app/${FAV1}/favorite`)).status === 401)
+  check('PB-24b 组织外用户收藏组织范围应用 404', (await api('POST', `/api/app/${FAV2}/favorite`, { token: outsider.token })).status === 404)
+  check('PB-24c 停用未公开应用收藏 404', (await api('POST', `/api/app/${APPU_ID}/favorite`, { token: outsider.token })).status === 404)
+  check('PB-24d 组织外用户收藏全员应用 200', (await api('POST', `/api/app/${FAV1}/favorite`, { token: outsider.token })).status === 200)
+  check('PB-24e 组织内用户收藏组织范围应用 200', (await api('POST', `/api/app/${FAV2}/favorite`, { token: member.token })).status === 200)
+  check('PB-24f 重复收藏幂等 200', (await api('POST', `/api/app/${FAV2}/favorite`, { token: member.token })).status === 200)
+
+  // 收藏置顶：member（组织范围内）收藏 FAV2 后必居首位，非收藏组内保持发布时间倒序（FAV3>F2>F1 基线的相对序）；
+  // 断言用相对序，避免开发库存量公开应用（热度更高）挤占绝对位置
+  const memberIds = (await api('GET', '/api/app/public/list', { token: member.token })).json?.items?.map(i => i.appId) ?? []
+  check('PB-24g 收藏应用置顶', memberIds[0] === FAV2 && memberIds.indexOf(FAV3) < memberIds.indexOf(FAV1), JSON.stringify(memberIds.slice(0, 6)))
+  const memberFavItem = (await api('GET', '/api/app/public/list', { token: member.token })).json?.items?.find(i => i.appId === FAV2)
+  check('PB-24h 列表回显 isFavorite=true', memberFavItem?.isFavorite === true, JSON.stringify(memberFavItem))
+  const outsiderIds = (await api('GET', '/api/app/public/list', { token: outsider.token })).json?.items?.map(i => i.appId) ?? []
+  check('PB-24i 收藏按用户隔离', outsiderIds[0] === FAV1 && !outsiderIds.includes(FAV2), JSON.stringify(outsiderIds.slice(0, 6)))
+
+  check('PB-24j 取消收藏 200', (await api('DELETE', `/api/app/${FAV2}/favorite`, { token: member.token })).status === 200)
+  check('PB-24k 未收藏重复取消幂等 200', (await api('DELETE', `/api/app/${FAV2}/favorite`, { token: member.token })).status === 200)
+  const memberIdsAfter = (await api('GET', '/api/app/public/list', { token: member.token })).json?.items?.map(i => i.appId) ?? []
+  check('PB-24l 取消后恢复热度（发布时间）序', memberIdsAfter.indexOf(FAV3) < memberIdsAfter.indexOf(FAV2) && memberIdsAfter.indexOf(FAV2) < memberIdsAfter.indexOf(FAV1), JSON.stringify(memberIdsAfter.slice(0, 6)))
+
+  // 下架后遗留收藏仍可取消（不校验应用状态，清理不阻塞）
+  check('PB-24m 下架应用仍可取消收藏 200', (await api('POST', '/api/publication/takedown', { token: owner.token, body: { resourceType: 'app', resourceId: FAV1 } })).status === 200
+    && (await api('DELETE', `/api/app/${FAV1}/favorite`, { token: outsider.token })).status === 200)
 
   console.log(`\n结果: PASS=${PASS} FAIL=${FAIL}`)
   if (FAIL > 0) process.exit(1)

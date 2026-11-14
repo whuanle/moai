@@ -3,7 +3,7 @@ import { ArrowDownOutlined, RollbackOutlined } from '@ant-design/icons'
 import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
 import { fontSize, spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { APP_DEFAULT_VERSION, APP_VERSION_PATTERN, formatAppVersion, nextAppVersion, parseAppVersion } from '@/utils/appVersion'
@@ -15,7 +15,10 @@ import {
   withdrawPublication,
   type PublicationReviewItem,
   type PublicationState,
+  type VisibleGrantDirection,
 } from '@/api/publication'
+import { GrantScopeEditor, type GrantScopeValue } from '@/components/GrantScopeEditor'
+import { VisibleScopeTag } from '@/components/VisibleScopeTag'
 import type { AppDetail } from './AppConfigSection'
 
 const { Text } = Typography
@@ -33,18 +36,18 @@ export interface AppPublicationSectionProps {
   canManage: boolean
   /** 配置状态（工作台持有的真值）：0=草稿有未发布变更 1=与线上一致；null=未知 */
   configStatus?: number | null
-  /** 配置状态变化上报（团队应用卡发布/重新发布成功后回写 1） */
+  /** 配置状态变化上报（团队应用卡发布成功后回写 1） */
   onConfigStatusChange?: (status: number) => void
   onReload: () => Promise<void> | void
 }
 
 /**
  * 应用「上架管理」分区：发布与上架统一入口。
- * 「团队应用」卡——团队发布状态（线上发布快照/发布时间/当前版本），未发布提供「发布」、已发布提供「重新发布」（发布弹窗内设置版本号，
- * 版本号只能递增不能回退；发布即把当前草稿推入快照，幂等可重发）与「撤回发布」（撤回时已上架的应用自动下架）；
- * 「上架管理（应用市场）」卡——公开（is_public）需系统管理员审批，未公开可「申请上架」（无需填版本号，自动记录应用当前发布版本）、
- * 已公开可「下架」；「申请记录」卡展示历次申请。成员只读。
- * 外部应用（detail.isExternal）无上架审批概念：仅渲染「团队应用」发布卡，直接发布即生效，不加载申请记录。
+ * 「团队应用」卡——团队发布状态（线上发布快照/发布时间/当前版本）；「发布」常驻（发布弹窗内设置版本号，版本号只能递增不能回退；
+ * 发布即把当前草稿推入快照，幂等可重发），已发布时并列「停用」（停用时已上架的应用自动下架）；
+ * 「上架管理（应用市场）」卡——公开（is_public）需系统管理员审批，应用必须已发布才可「申请上架」（无需填版本号，自动记录应用
+ * 当前发布版本；可见范围可选全员可见或按组织限定，审批通过后按范围生效），已公开可「下架」；「申请记录」卡展示历次申请。
+ * 成员只读。外部应用（detail.isExternal）无上架审批概念：仅渲染「团队应用」发布卡，直接发布即生效，不加载申请记录。
  */
 export function AppPublicationSection({ teamId, appId, detail, canManage, configStatus, onConfigStatusChange, onReload }: AppPublicationSectionProps) {
   const { t } = useTranslation()
@@ -57,7 +60,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
   const [takedowning, setTakedowning] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [applyForm] = Form.useForm<{ applyReason?: string }>()
+  const [applyForm] = Form.useForm<{ applyReason?: string; scope?: GrantScopeValue }>()
   const [publishForm] = Form.useForm<{ version: string }>()
 
   // 外部应用：无上架审批概念（不公开到平台），分区收敛为仅发布
@@ -94,7 +97,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
     setPublishOpen(true)
   }
 
-  /** 发布/重新发布共用同一接口同一弹窗：未发布即首次发布，已发布把当前草稿推入发布快照并按弹窗版本号更新版本 */
+  /** 发布共用同一接口同一弹窗：未发布即首次发布，已发布把当前草稿推入发布快照并按弹窗版本号更新版本 */
   const handlePublish = async () => {
     if (!appId) return
     let values: { version: string }
@@ -104,10 +107,9 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
       return // 表单校验未通过，antd 已就地提示
     }
     setPublishing(true)
-    const republish = detail?.publishStatus === 1
     try {
       await publishApp(appId, values.version.trim())
-      feedback.success(t(republish ? 'appManage.republishSuccess' : 'appManage.publishSuccess'))
+      feedback.success(t('appManage.publishSuccess'))
       // 发布即把当前草稿写入快照，配置状态回「一致」
       onConfigStatusChange?.(1)
       setPublishOpen(false)
@@ -120,25 +122,32 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
     }
   }
 
-  /** 打开申请弹窗：上架把最新的团队发布上架，版本号自动记录应用当前发布版本，无需填写 */
+  /** 打开申请弹窗：上架把最新的团队发布上架，版本号自动记录应用当前发布版本，无需填写；可见范围默认全员可见 */
   const openApplyModal = () => {
-    applyForm.setFieldsValue({ applyReason: '' })
+    applyForm.setFieldsValue({ applyReason: '', scope: { allUsers: true, teamIds: [], orgGrants: [] } })
     setApplyOpen(true)
   }
 
   const handleApplyPublication = async () => {
-    let values: { applyReason?: string }
+    let values: { applyReason?: string; scope?: GrantScopeValue }
     try {
       values = await applyForm.validateFields()
     } catch {
       return // 表单校验未通过，antd 已就地提示
     }
+    const scope = values.scope ?? { allUsers: true, teamIds: [], orgGrants: [] }
     setApplying(true)
     try {
       await applyPublication({
         resourceType: 'app',
         resourceId: appId,
         applyReason: values.applyReason?.trim() || undefined,
+        visibleScope: scope.allUsers ? 'all' : 'organization',
+        visibleOrgGrants: scope.allUsers
+          ? undefined
+          : scope.orgGrants
+              .filter((x) => x.orgRoleId > 0)
+              .map((x) => ({ orgRoleId: x.orgRoleId, scope: x.scope as VisibleGrantDirection })),
       })
       feedback.success(t('appManage.applySuccess'))
       setApplyOpen(false)
@@ -163,7 +172,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
     }
   }
 
-  /** 撤回发布（取消团队发布）：成员将无法再进入对话；后端会联动下架并撤下待审申请，需一并刷新申请记录 */
+  /** 停用（取消团队发布）：成员将无法再进入对话；后端会联动下架并撤下待审申请，需一并刷新申请记录 */
   const handleUnpublish = async () => {
     try {
       await unpublishApp(appId)
@@ -208,6 +217,18 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
         render: (v: number | null | undefined) => (v == null ? '-' : <Tag>v{formatAppVersion(v)}</Tag>),
       },
       {
+        title: t('appManage.publicationColVisibleScope'),
+        key: 'visibleScope',
+        width: 130,
+        render: (_, record) => (
+          record.resourceType !== 'app' ? (
+            <Text type="secondary">-</Text>
+          ) : (
+            <VisibleScopeTag visibleScope={record.visibleScope} orgGrants={record.visibleOrgGrants} />
+          )
+        ),
+      },
+      {
         title: t('appManage.publicationColApplyReason'),
         dataIndex: 'applyReason',
         width: 200,
@@ -222,29 +243,18 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
         render: (v: string | null) => v || '-',
       },
       {
-        title: t('appManage.publicationColApplicant'),
-        dataIndex: 'createUserName',
-        width: 110,
-        render: (v: string | null) => v || '-',
-      },
-      {
-        title: t('appManage.publicationColApplyTime'),
-        dataIndex: 'createTime',
-        width: 160,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        title: t('appManage.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
       },
       {
         title: t('appManage.publicationColReviewInfo'),
         key: 'reviewInfo',
-        width: 200,
+        width: 150,
         render: (_, record) => {
-          if (record.state === 'pending' || !record.reviewTime) return <Text type="secondary">-</Text>
-          return (
-            <div style={{ lineHeight: 1.5 }}>
-              <div>{record.updateUserName || '-'}</div>
-              <Text type="secondary" style={{ fontSize: fontSize.xs }}>{formatDateTime(record.reviewTime)}</Text>
-            </div>
-          )
+          if (record.state === 'pending') return <Text type="secondary">-</Text>
+          return <AuditCell user={record.updateUserName} time={record.reviewTime} />
         },
       },
       ...(canManage
@@ -262,7 +272,9 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
                     cancelText={t('appManage.cancel')}
                     onConfirm={() => void handleWithdrawPublication()}
                   >
-                    <Button size="small">{t('appManage.withdrawApplication')}</Button>
+                    <Button type="link" size="small" icon={<RollbackOutlined />}>
+                      {t('appManage.withdrawApplication')}
+                    </Button>
                   </Popconfirm>
                 )
               },
@@ -279,57 +291,45 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
   const liveVersion = formatAppVersion(detail?.publishVersion)
   // 已发布且快照版本号与当前草稿版本号不一致：版本改动尚未随发布生效
   const versionPending = isPublished && detail?.publishVersion != null && detail.publishVersion !== detail.version
-  // 应用市场当前发布版本号：最近一次审批通过的上架申请所带版本
-  const marketVersion = formatAppVersion(publicationItems.find((x) => x.state === 'approved')?.publishVersion)
+  // 应用市场当前发布版本号与可视范围：最近一次审批通过的上架申请（存量应用无申请记录时按全员可见回显）
+  const approvedPublication = publicationItems.find((x) => x.state === 'approved')
+  const marketVersion = formatAppVersion(approvedPublication?.publishVersion)
 
   return (
     <Space direction="vertical" size={spacing.md} style={{ width: '100%' }}>
-      {/* 卡片一：团队应用——团队发布状态与发布入口（发布/重新发布带版本号弹窗、撤回发布）；发布=团队内可用最新版；
+      {/* 卡片一：团队应用——团队发布状态与发布入口（发布带版本号弹窗、停用）；发布=团队内可用最新版；
           外部应用仅此一卡：直接发布即生效，外部用户通过访问点使用已发布版本 */}
       <DSCard title={t(isExternal ? 'appManage.externalPublishCard' : 'appManage.teamAppCard')}>
         <Space direction="vertical" size={spacing.sm} style={{ width: '100%' }}>
           {isExternal && <Text type="secondary" style={{ fontSize: fontSize.xs }}>{t('appManage.externalPublishHint')}</Text>}
           <Space size={spacing.sm} wrap>
             <Text type="secondary">{t('appManage.publicationOnlineVersion')}</Text>
-            {isPublished ? (
-              <>
-                <Tag color="green">{t('appManage.published')}</Tag>
-                {liveVersion && <Tag color="blue">v{liveVersion}</Tag>}
-                {detail?.publishTime && (
-                  <Text type="secondary" style={{ fontSize: fontSize.xs }}>
-                    {t('appManage.publicationPublishTime')}：{formatDateTime(detail.publishTime)}
-                  </Text>
-                )}
-                {canManage && (
-                  <Button size="small" type="primary" onClick={openPublishModal}>
-                    {t('appManage.republish')}
-                  </Button>
-                )}
-                {canManage && (
-                  <Popconfirm
-                    title={t(isExternal ? 'appManage.externalUnpublishConfirm' : 'appManage.unpublishConfirm')}
-                    okText={t('appManage.confirm')}
-                    cancelText={t('appManage.cancel')}
-                    onConfirm={() => {
-                      setUnpublishing(true)
-                      void handleUnpublish()
-                    }}
-                  >
-                    <Button size="small" danger icon={<RollbackOutlined />} loading={unpublishing}>
-                      {t('appManage.unpublish')}
-                    </Button>
-                  </Popconfirm>
-                )}
-              </>
-            ) : (
-              <>
-                <Tag>{t('appManage.unpublished')}</Tag>
-                {canManage && (
-                  <Button size="small" type="primary" onClick={openPublishModal}>
-                    {t('appManage.publish')}
-                  </Button>
-                )}
-              </>
+            {isPublished ? <Tag color="green">{t('appManage.published')}</Tag> : <Tag>{t('appManage.unpublished')}</Tag>}
+            {isPublished && liveVersion && <Tag color="blue">v{liveVersion}</Tag>}
+            {isPublished && detail?.publishTime && (
+              <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+                {t('appManage.publicationPublishTime')}：{formatDateTime(detail.publishTime)}
+              </Text>
+            )}
+            {canManage && (
+              <Button size="small" type="primary" onClick={openPublishModal}>
+                {t('appManage.publish')}
+              </Button>
+            )}
+            {canManage && isPublished && (
+              <Popconfirm
+                title={t(isExternal ? 'appManage.externalUnpublishConfirm' : 'appManage.unpublishConfirm')}
+                okText={t('appManage.confirm')}
+                cancelText={t('appManage.cancel')}
+                onConfirm={() => {
+                  setUnpublishing(true)
+                  void handleUnpublish()
+                }}
+              >
+                <Button size="small" danger icon={<RollbackOutlined />} loading={unpublishing}>
+                  {t('appManage.unpublish')}
+                </Button>
+              </Popconfirm>
             )}
           </Space>
           <Space size={spacing.sm} wrap>
@@ -362,6 +362,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
                     <Tag color="blue">v{marketVersion}</Tag>
                   </>
                 )}
+                <VisibleScopeTag visibleScope={approvedPublication?.visibleScope} orgGrants={approvedPublication?.visibleOrgGrants} />
                 {canManage && (
                   <Popconfirm
                     title={t('appManage.takedownConfirm')}
@@ -398,8 +399,13 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
               <>
                 {lastRejected && <Tag color="error">{t('appManage.publicationRejected')}</Tag>}
                 {!lastRejected && <Tag>{t('appManage.publicationNotApplied')}</Tag>}
+                {!isPublished && (
+                  <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+                    {t('appManage.applyNeedPublish')}
+                  </Text>
+                )}
                 {canManage && (
-                  <Button type="primary" onClick={openApplyModal}>
+                  <Button type="primary" disabled={!isPublished} onClick={openApplyModal}>
                     {lastRejected ? t('appManage.reapplyPublication') : t('appManage.applyPublication')}
                   </Button>
                 )}
@@ -445,6 +451,8 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
         cancelText={t('appManage.cancel')}
         maskClosable={false}
         destroyOnHidden
+        // 宽于默认 520：授权组织行（组织下拉 + 方向按钮组 + 删除）需要足够横向空间
+        width={640}
       >
         <Text type="secondary" style={{ display: 'block', marginBottom: spacing.md, fontSize: 12 }}>
           {t('appManage.applyHint')}
@@ -456,6 +464,22 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
           >
             <Tag color="blue">v{formatAppVersion(detail?.version) || '1.0.0'}</Tag>
           </Form.Item>
+          <Form.Item
+            name="scope"
+            label={t('appManage.visibleScopeLabel')}
+            initialValue={{ allUsers: true, teamIds: [], orgGrants: [] }}
+            extra={t('appManage.visibleScopeHint')}
+            rules={[
+              {
+                validator: (_, value?: GrantScopeValue) =>
+                  value && !value.allUsers && !(value.orgGrants ?? []).some((x) => x.orgRoleId > 0)
+                    ? Promise.reject(new Error(t('appManage.visibleOrgRequired')))
+                    : Promise.resolve(),
+              },
+            ]}
+          >
+            <GrantScopeEditor hideTeams />
+          </Form.Item>
           <Form.Item name="applyReason" label={t('appManage.applyReasonLabel')} rules={[{ max: 255 }]}>
             <Input.TextArea placeholder={t('appManage.applyReasonPlaceholder')} maxLength={255} rows={3} />
           </Form.Item>
@@ -465,7 +489,7 @@ export function AppPublicationSection({ teamId, appId, detail, canManage, config
       {/* 发布弹窗（自工作台头部迁入）：版本号只在团队发布时设置，只能递增不能回退 */}
       <Modal
         open={publishOpen}
-        title={detail?.publishStatus === 1 ? t('appManage.republish') : t('appManage.publish')}
+        title={t('appManage.publish')}
         onCancel={() => setPublishOpen(false)}
         confirmLoading={publishing}
         onOk={() => void handlePublish()}

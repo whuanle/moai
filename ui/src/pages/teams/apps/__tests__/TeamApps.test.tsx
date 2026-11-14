@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { TeamApps } from '../TeamApps'
 import { createApp, getApps } from '@/api/app'
@@ -43,6 +43,7 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
           appType: 'agent',
           avatarPath: '',
           isPublic: true,
+          publishStatus: 1,
           createTime: '2026-09-10T02:00:00Z',
         },
         {
@@ -53,6 +54,7 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
           appType: 'workflow',
           avatarPath: '',
           isPublic: false,
+          publishStatus: 0,
           createTime: '2026-09-10T03:00:00Z',
         },
       ],
@@ -91,7 +93,6 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
     expect(await screen.findByText('客服助手')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /管\s*理/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /新建应用/ })).toBeNull()
-    expect(screen.getByText(/创建与配置需要团队管理员/)).toBeTruthy()
   })
 
   it('卡片展示「公开到平台」状态', async () => {
@@ -100,6 +101,30 @@ describe('TeamApps（团队内应用分区，卡片展示）', () => {
     expect(await screen.findByText('客服助手')).toBeTruthy()
     expect(screen.getByText('已公开')).toBeTruthy()
     expect(screen.getByText('未公开')).toBeTruthy()
+  })
+
+  it('工具栏筛选：发布状态下拉即时过滤，关键字经「查询」按钮生效', async () => {
+    renderSection(true)
+    await screen.findByText('客服助手')
+
+    // 第一个下拉 = 发布状态筛选，选「已发布」→ 只剩已发布的客服助手
+    fireEvent.mouseDown(document.querySelectorAll('.ant-select-selector')[0])
+    const dropdown = await waitFor(() => document.querySelector('.ant-select-dropdown') as HTMLElement)
+    fireEvent.click(within(dropdown).getByText('已发布'))
+
+    expect(screen.queryByText('审批流')).toBeNull()
+    expect(screen.getByText('客服助手')).toBeTruthy()
+
+    // 关键字输入 + 查询按钮：改搜「审批」时先切回「全部状态」
+    fireEvent.mouseDown(document.querySelectorAll('.ant-select-selector')[0])
+    const reopened = await waitFor(() => document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)') as HTMLElement)
+    fireEvent.click(within(reopened).getByText('全部状态'))
+
+    fireEvent.change(screen.getByPlaceholderText('搜索应用名称/描述'), { target: { value: '审批' } })
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+
+    expect(screen.queryByText('客服助手')).toBeNull()
+    expect(screen.getByText('审批流')).toBeTruthy()
   })
 
   it('新建弹窗可设置头像，提交创建请求（公开需走上架审核，弹窗不再提供公开开关）', async () => {

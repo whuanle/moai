@@ -9,15 +9,15 @@
 
 ## 2. 日常操作
 
-- 入口：团队页侧边菜单「定时器」（仅 Owner/Admin 可见），`/team/{teamId}/timers`。
-- 新建：绑定本团队**已发布**的 Agent/流程应用 → 填 cron（UTC，可用快选：每小时/每天 9 点/每天 18 点/每周一 9 点，按北京时间换算）→ 执行内容（作为提问发给应用）→ 启用调度 + 失败重试（0-5 次、间隔 10-3600 秒）。
+- 入口：团队页侧边菜单「自动化」（仅 Owner/Admin 可见，2026-10-30 前称「定时器」），`/team/{teamId}/timers`。
+- 新建：绑定本团队**已发布**的 Agent/流程应用（下拉仅列已发布，未发布不出现）→ 调度表达式选择器（常用模式按北京时间选择自动换算 UTC，或自定义 5 字段，底部预览描述与下次执行）→ 执行指令（作为提问发给应用）→ 启用调度 + 失败重试（0-5 次、间隔 10-3600 秒）。
 - 调试：行内「立即执行」异步执行一次并自动打开执行历史抽屉（默认最近 10 条，进行中每 3 秒轮询），行展开查看回答/失败原因。
 - 启停：行内开关；停用即移除 Hangfire 周期任务（key `team-timer:{timerId:N}`），启用即恢复。
 
 ## 3. 验收流程
 
-1. 后端运行后执行 `node local-dev/team-timer-smoke.mjs [base]`，期望 PASS 22/0 FAIL。
-2. 前端 `npx vitest run src/pages/teams/timers`，期望 4/4。
+1. 后端运行后执行 `node local-dev/team-timer-smoke.mjs [base]`，期望 PASS 28/0 FAIL。
+2. 前端 `npx vitest run src/pages/teams/timers`，期望 9/9；组件 `npx vitest run src/design-system/components/CronExpressionInput`，期望 19/19。
 3. 浏览器走查 @TIMER-S7：列表 → 新建（选应用/快选 cron）→ 立即执行 → 抽屉看历史 → 停用/启用 → 删除。
 
 ## 4. 排障表

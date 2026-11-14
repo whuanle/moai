@@ -161,4 +161,24 @@ Feature: 前端用户页（/users）
   Scenario: 禁用/启用二次确认
     When 管理员点击禁用
     Then 弹出确认框，确认后才执行并刷新列表
+
+  @UM-S27 @auto:vitest
+  Scenario: 昵称独立列展示
+    When 查看用户列表
+    Then 用户列显示头像与用户名
+    And 邮箱列前有独立昵称列，显示用户昵称
+    And 昵称为空时昵称列显示占位符 "-"
+
+  @UM-S28 @manual
+  Scenario: 用户详情弹窗昵称展示
+    When 查看昵称与用户名不同的用户详情
+    Then 弹窗头部以昵称为主显示名并以 @用户名 作次要行
+    And 昵称与用户名相同时不重复展示
+
+  @UM-S29 @auto:e2e
+  Scenario: 重置用户两步验证
+    When 管理员对已绑定 2FA 的用户执行重置两步验证（Popconfirm 确认）
+    Then 清空其 TOTP 绑定并失效用户态，用户下次登录回到（强制）绑定流程
+    When 对 root 自身、未绑定用户执行或由非管理员发起
+    Then 分别返回 400（root 受保护 / 尚未绑定）与 403
 ```

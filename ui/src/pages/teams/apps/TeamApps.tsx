@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppstoreAddOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons'
+import { AppstoreAddOutlined, SearchOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { Avatar, Button, Col, Empty, Form, Input, Modal, Row, Select, Space, Spin, Tag, Tooltip, Typography, Upload } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { Card, feedback, useNeutralColors } from '@/design-system'
+import { Card, feedback, PageToolbar, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { resolveStorageUrl, uploadImageWithKey } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
+import { NAME_PATTERN } from '@/utils/validation'
 import { classifyApi, ClassifyType, classifyLabel, type Classify } from '@/api/classify'
 import { createApp, getApps, type AppItem, type AppKind } from '@/api/app'
 import { ExternalChannelEntry } from '@/components/ExternalChannelEntry'
@@ -15,6 +16,12 @@ import { ExternalChannelEntry } from '@/components/ExternalChannelEntry'
 const { Text, Paragraph } = Typography
 
 const APP_KINDS: AppKind[] = ['agent', 'workflow']
+
+/** 发布状态筛选：全部 / 已发布 / 未发布 */
+type PublishFilter = 'all' | 'published' | 'unpublished'
+
+/** 应用类型筛选：全部 / Agent / 流程 */
+type TypeFilter = 'all' | AppKind
 
 const AVATAR_MAX_SIZE = 5 * 1024 * 1024
 
@@ -41,7 +48,7 @@ interface TeamAppsProps {
 /**
  * 团队内的应用区块（挂载在团队管理页 TeamManage 的「应用」分区）。
  * 应用是团队下的产物：创建与配置都在团队内完成，不提供跨团队的全局应用入口。
- * 应用以卡片展示，卡片右上角「管理」进入应用管理页。
+ * 应用以卡片展示，卡片右上角「管理」进入应用管理页；顶部工具栏提供关键字/发布状态/类型筛选。
  */
 export function TeamApps({ teamId, canManage }: TeamAppsProps) {
   const { t } = useTranslation()
@@ -50,6 +57,11 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
 
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<AppItem[]>([])
+  // 工具栏筛选：关键字经「查询」按钮/回车生效，状态与类型下拉即时生效（均为客户端过滤）
+  const [keyword, setKeyword] = useState('')
+  const [appliedKeyword, setAppliedKeyword] = useState('')
+  const [publishFilter, setPublishFilter] = useState<PublishFilter>('all')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [createOpen, setCreateOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [createAvatar, setCreateAvatar] = useState<PendingAvatar | null>(null)
@@ -87,6 +99,21 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
   useEffect(() => {
     void load()
   }, [load])
+
+  /** 应用关键字筛选（查询按钮/回车触发） */
+  const applySearch = useCallback(() => setAppliedKeyword(keyword.trim()), [keyword])
+
+  /** 客户端过滤：关键字匹配名称/描述，叠加发布状态与应用类型 */
+  const filteredItems = useMemo(() => {
+    const kw = appliedKeyword.toLowerCase()
+    return items.filter((item) => {
+      if (kw && !`${item.name ?? ''}\n${item.description ?? ''}`.toLowerCase().includes(kw)) return false
+      if (publishFilter === 'published' && item.publishStatus !== 1) return false
+      if (publishFilter === 'unpublished' && item.publishStatus === 1) return false
+      if (typeFilter !== 'all' && item.appType !== typeFilter) return false
+      return true
+    })
+  }, [items, appliedKeyword, publishFilter, typeFilter])
 
   /** 图片前置校验（类型 + 大小 5MB），通过返回 true */
   const checkImage = (file: File) => {
@@ -159,37 +186,63 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: spacing.sm,
-          marginBottom: spacing.md,
-        }}
-      >
-        {canManage ? (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('appManage.manageHint')}
-          </Text>
-        ) : (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('appManage.memberHint')}
-          </Text>
-        )}
-        {canManage && (
-          <Button type="primary" icon={<AppstoreAddOutlined />} onClick={openCreate}>
-            {t('appManage.create')}
+      <PageToolbar
+        filters={
+          <Space size={spacing.xs} wrap>
+            <Input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onPressEnter={applySearch}
+              allowClear
+              maxLength={100}
+              prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+              placeholder={t('appManage.searchPlaceholder')}
+              style={{ width: 240 }}
+            />
+            <Select<PublishFilter>
+              value={publishFilter}
+              onChange={setPublishFilter}
+              style={{ width: 132 }}
+              options={[
+                { label: t('appManage.publishAll'), value: 'all' },
+                { label: t('appManage.published'), value: 'published' },
+                { label: t('appManage.unpublished'), value: 'unpublished' },
+              ]}
+            />
+            <Select<TypeFilter>
+              value={typeFilter}
+              onChange={setTypeFilter}
+              style={{ width: 132 }}
+              options={[
+                { label: t('appManage.typeAll'), value: 'all' },
+                { label: t('appManage.typeAgent'), value: 'agent' },
+                { label: t('appManage.typeWorkflow'), value: 'workflow' },
+              ]}
+            />
+          </Space>
+        }
+        queries={
+          <Button loading={loading} onClick={applySearch}>
+            {t('ds.query.search')}
           </Button>
-        )}
-      </div>
+        }
+        actions={
+          canManage && (
+            <Button type="primary" icon={<AppstoreAddOutlined />} onClick={openCreate}>
+              {t('appManage.create')}
+            </Button>
+          )
+        }
+      />
 
       <Spin spinning={loading}>
         {!loading && items.length === 0 ? (
           <Empty description={t('appManage.empty')} />
+        ) : !loading && filteredItems.length === 0 ? (
+          <Empty description={t('appManage.filterEmpty')} />
         ) : (
           <Row gutter={[spacing.md, spacing.md]}>
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const name = item.name || '-'
               return (
                 <Col key={String(item.appId ?? '')} xs={24} sm={12} md={8} lg={6} xxl={4}>
@@ -334,6 +387,7 @@ export function TeamApps({ teamId, canManage }: TeamAppsProps) {
             rules={[
               { required: true, message: t('appManage.namePlaceholder') },
               { max: 20, message: `${t('appManage.name')} ≤ 20` },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('appManage.namePlaceholder')} maxLength={20} />

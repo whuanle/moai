@@ -13,7 +13,7 @@ using MoAI.Infra.Models;
 namespace MoAI.App;
 
 /// <summary>
-/// 外部 token 认证方案：校验 /api/external 专用的 access token（audience = Server + |external），
+/// 外部 token 认证方案：校验 /api/teamres 专用的 access token（audience = Server + |external），
 /// 与内部 JWT（audience = Server）互相隔离，外部 token 无法访问内部接口，内部 token 也无法访问外部接口.
 /// </summary>
 public class ExternalJwtBearerAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
@@ -60,11 +60,16 @@ public class ExternalJwtBearerAuthenticationHandler : AuthenticationHandler<Auth
             new(ClaimTypes.Name, tokenContext.Nickname ?? tokenContext.SubjectId),
         };
 
-        // 携带内部解析所需的 claims：用户 token 的 external_user.id 落入 NameIdentifier（UserContextProvider 可解析，
-        // AppAgentDispatcher 等内部组件据此校验会话归属）；应用 token 无数值主体，固定 0（匿名语义）
+        // 携带内部解析所需的 claims：访问用户 token 的真实站内用户 id / 用户 token 的 external_user.id
+        // 落入 NameIdentifier（UserContextProvider 可解析，AppAgentDispatcher 等内部组件据此校验会话归属）；
+        // 应用 token 无数值主体，固定 0（匿名语义）
         if (tokenContext.SubjectType == UserType.External)
         {
             claims.Add(new Claim(ClaimTypes.NameIdentifier, tokenContext.ExternalId.ToString()));
+        }
+        else if (tokenContext.SubjectType == UserType.Normal)
+        {
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, tokenContext.UserId.ToString()));
         }
         else
         {

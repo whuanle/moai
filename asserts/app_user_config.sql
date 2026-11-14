@@ -32,3 +32,7 @@ create index if not exists idx_app_user_config_team_id on app_user_config (team_
 -- 存量库补充列：长期记忆模式（0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用需应用允许）
 alter table app_user_config add column if not exists memory_mode smallint not null default 0;
 comment on column app_user_config.memory_mode is '长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）';
+
+-- 存量库补充列：全局记忆接入模式（0=默认（应用允许时接入）；1=不接入全局记忆，需应用 allowGlobalMemory）
+alter table app_user_config add column if not exists memory_global_mode smallint not null default 0;
+comment on column app_user_config.memory_global_mode is '全局记忆接入模式：0=默认（应用允许时接入）；1=不接入全局记忆（需应用 allowGlobalMemory）';

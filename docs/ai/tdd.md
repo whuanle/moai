@@ -33,6 +33,8 @@ cd ui && npm run typecheck && npm run lint && npm run test
 | @AI-S28 | 单测 `SandboxAppToolProviderTests.GetTools_Disabled/ExplicitlyDisabled_ReturnsEmpty` | PASS（2026-09-11） |
 | @AI-S30 | @manual（代码/文件需真实沙箱；结果映射单测 `SandboxExecutionMappingTests`） | PENDING（2026-09-11） |
 | @AI-S31 | @manual（会话隔离与 TTL 回收走查 + `OpenSandboxService` 逻辑） | PENDING（2026-09-11） |
+| @AI-S35 / S36 | [tests/MoAI.AI.Core.Tests](../../tests/MoAI.AI.Core.Tests/)（`SandboxNetworkPolicyBuilderTests` 10 例：per-rule 映射/端口、黑名单语义修复、deny 强制、intranet 注入去重；`SandboxSettingsTests` rules 解析与旧格式转换 6 例）+ dns+nft 真实强制效果归 [@DEP-S19](../deployment/bdd.md#dep-s19) @manual | PASS 156/156（2026-11-03） |
+| @AI-S37 | [tests/MoAI.AI.Core.Tests](../../tests/MoAI.AI.Core.Tests/)（`SandboxCommandGuardTests` 12 例：全词/拆段/sudo/regex:/code 通道/清单归一/内置默认集；`SandboxAppToolProviderTests` +4 例：应用级拦截、平台级并集、code 拦截、白名单放行）+ 真实沙箱拦截效果归 [@DEP-S19](../deployment/bdd.md#dep-s19) 同类 @manual | PASS 172/172（2026-11-04） |
 | 前端对话页 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx | PASS 3/3（2026-09-11） |
 | 应用管理页沙箱配置 | ui/src/pages/teams/apps/__tests__/AppManage.test.tsx（开关 + 存活时间/续期/镜像/CPU/内存/网络参数回显；保存携带 sandbox 配置） | PASS 7/7（2026-09-11） |
 | @AI-S19 / S19b / S20 | ui/src/pages/teams/apps/__tests__/AppChat.test.tsx（沉浸式布局/无面包屑、Markdown 渲染）+ Playwright 走查（明暗主题、无横向溢出） | PASS（2026-09-11） |

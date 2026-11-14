@@ -20,5 +20,6 @@ public class MemoryCoreModule : IModule
         context.Services.AddScoped<IMemoryVectorStore, PgVectorAgentMemoryVectorStore>();
         context.Services.AddScoped<IMemoryService, MemoryService>();
         context.Services.AddScoped<IMemoryExtractionTrigger, MemoryExtractionTrigger>();
+        context.Services.AddScoped<IMemoryModelMigrationService, MemoryModelMigrationService>();
     }
 }

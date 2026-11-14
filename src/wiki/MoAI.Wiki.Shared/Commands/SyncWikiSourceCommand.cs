@@ -80,6 +80,11 @@ public class SyncWikiSourceCommandResponse
     public int Failed { get; init; }
 
     /// <summary>
+    /// 已从外部源消失并随本轮同步删除的文档数（遍历被截断时不执行删除，恒为 0）.
+    /// </summary>
+    public int Removed { get; init; }
+
+    /// <summary>
     /// 已提交工作流的文档数.
     /// </summary>
     public int WorkflowTriggered { get; init; }

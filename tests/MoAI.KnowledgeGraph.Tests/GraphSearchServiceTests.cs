@@ -30,7 +30,7 @@ public class GraphSearchServiceTests
                      (new long[] { -1, 0 }, "查询"),
                  })
         {
-            var result = await sut.SearchAsync(ids, query, 5, null, CancellationToken.None);
+            var result = await sut.SearchAsync(ids, query, 5, null, 10, CancellationToken.None);
 
             Assert.Empty(result.Hits);
             Assert.Empty(result.Contents);
@@ -56,7 +56,7 @@ public class GraphSearchServiceTests
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object);
 
-        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, 10, CancellationToken.None);
 
         var hint = Assert.Single(result.SkippedHints);
         Assert.Contains("图谱 1", hint, StringComparison.Ordinal);
@@ -86,7 +86,7 @@ public class GraphSearchServiceTests
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object);
 
-        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, 10, CancellationToken.None);
 
         var hint = Assert.Single(result.SkippedHints);
         Assert.Contains("图谱 1", hint, StringComparison.Ordinal);
@@ -131,10 +131,13 @@ public class GraphSearchServiceTests
         graphStore
             .Setup(x => x.GetNeighborsAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Array.Empty<KnowledgeGraphNodeRecord>(), Array.Empty<KnowledgeGraphEdgeRecord>(), false));
+        graphStore
+            .Setup(x => x.GetNeighborsByDegreeAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<KnowledgeGraphNodeRecord>(), Array.Empty<KnowledgeGraphEdgeRecord>(), false));
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object, graphStore.Object);
 
-        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, 10, CancellationToken.None);
 
         Assert.Empty(result.SkippedHints);
         Assert.Equal(4, result.Hits.Count);
@@ -167,13 +170,13 @@ public class GraphSearchServiceTests
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object);
 
         // 有阈值：低分与 null 得分均被过滤
-        var filtered = await sut.SearchAsync(new long[] { 1 }, "查询", 5, 0.8, CancellationToken.None);
+        var filtered = await sut.SearchAsync(new long[] { 1 }, "查询", 5, 0.8, 10, CancellationToken.None);
         var hit = Assert.Single(filtered.Hits);
         Assert.Equal("n1", hit.NodeId);
         Assert.Equal(0.9, hit.Score);
 
         // 无阈值：null 得分保留且排在最后
-        var all = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, CancellationToken.None);
+        var all = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, 10, CancellationToken.None);
         Assert.Equal(new[] { "n1", "n2", "n3" }, all.Hits.Select(x => x.NodeId).ToArray());
         Assert.Null(all.Hits[2].Score);
     }
@@ -209,14 +212,14 @@ public class GraphSearchServiceTests
         };
         var graphStore = new Mock<IKnowledgeGraphStore>();
         graphStore
-            .Setup(x => x.GetNeighborsAsync(1, "n1", 10, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetNeighborsByDegreeAsync(1, "n1", 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync((nodes, edges, false));
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object, graphStore.Object);
 
-        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, 10, CancellationToken.None);
 
-        graphStore.Verify(x => x.GetNeighborsAsync(1, "n1", 10, It.IsAny<CancellationToken>()), Times.Once);
+        graphStore.Verify(x => x.GetNeighborsByDegreeAsync(1, "n1", 10, It.IsAny<CancellationToken>()), Times.Once);
 
         var hit = Assert.Single(result.Hits);
         Assert.Equal("人物", hit.EntityTypeName);
@@ -262,10 +265,13 @@ public class GraphSearchServiceTests
         graphStore
             .Setup(x => x.GetNeighborsAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Array.Empty<KnowledgeGraphNodeRecord>(), Array.Empty<KnowledgeGraphEdgeRecord>(), false));
+        graphStore
+            .Setup(x => x.GetNeighborsByDegreeAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<KnowledgeGraphNodeRecord>(), Array.Empty<KnowledgeGraphEdgeRecord>(), false));
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object, graphStore.Object);
 
-        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, 10, CancellationToken.None);
 
         Assert.EndsWith("…(已截断)", result.Text, StringComparison.Ordinal);
         Assert.Equal(8192 + "…(已截断)".Length, result.Text.Length);
@@ -289,7 +295,7 @@ public class GraphSearchServiceTests
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object);
 
-        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1, 2 }, "查询", 2, null, 10, CancellationToken.None);
 
         var hint = Assert.Single(result.SkippedHints);
         Assert.Contains("图谱 1", hint, StringComparison.Ordinal);
@@ -331,7 +337,7 @@ public class GraphSearchServiceTests
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(CreateGenerator().Object).Object);
 
-        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, 10, CancellationToken.None);
 
         var hit = Assert.Single(result.Hits);
         Assert.Equal("甲", hit.Name);
@@ -354,7 +360,7 @@ public class GraphSearchServiceTests
 
         var sut = CreateSut(db.Context, vectorStore.Object, CreateGeneratorProvider(generator.Object).Object);
 
-        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, CancellationToken.None);
+        var result = await sut.SearchAsync(new long[] { 1 }, "查询", 5, null, 10, CancellationToken.None);
 
         Assert.Empty(result.Hits);
         var hint = Assert.Single(result.SkippedHints);
@@ -381,6 +387,9 @@ public class GraphSearchServiceTests
         var graphStore = new Mock<IKnowledgeGraphStore>();
         graphStore
             .Setup(x => x.GetNeighborsAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<KnowledgeGraphNodeRecord>(), Array.Empty<KnowledgeGraphEdgeRecord>(), false));
+        graphStore
+            .Setup(x => x.GetNeighborsByDegreeAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Array.Empty<KnowledgeGraphNodeRecord>(), Array.Empty<KnowledgeGraphEdgeRecord>(), false));
         return graphStore.Object;
     }

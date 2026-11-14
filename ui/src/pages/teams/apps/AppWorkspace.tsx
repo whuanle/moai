@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
-import { Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd'
+import { ApiOutlined, CloudUploadOutlined, HistoryOutlined, InfoCircleOutlined, MessageOutlined, ProfileOutlined, SafetyCertificateOutlined, SettingOutlined, ShareAltOutlined } from '@ant-design/icons'
+import { Button, Layout, Menu, Result, Space, Spin, Tag, Tooltip, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { Page } from '@/design-system'
-import { spacing } from '@/design-system/theme'
+import { useNavigate, useParams } from 'react-router'
+import { Page, SiderHeader } from '@/design-system'
+import { fontSize, spacing } from '@/design-system/theme'
+import { formatAppVersion } from '@/utils/appVersion'
 import { useShellStore } from '@/store/shell'
 import { getAppDetail } from '@/api/app'
+import { resolveStorageUrl } from '@/utils/storage'
 import { AppAccessSection } from './AppAccessSection'
-import { AppAcpSection } from './AppAcpSection'
-import { AppA2aSection } from './AppA2aSection'
+import { AppProtocolSection } from './AppProtocolSection'
 import { AppChannelsSection } from './AppChannelsSection'
 import { AppDingTalkChannelsSection } from './AppDingTalkChannelsSection'
 import { AppWeixinWorkChannelsSection } from './AppWeixinWorkChannelsSection'
@@ -41,12 +42,15 @@ const CONFIG_GROUP_SECTIONS = ['info', 'publication', 'security', 'logs', 'monit
  * - 内部应用：左侧菜单承载 配置/信息/上架管理/日志/外部渠道（外部应用另有访问点），「配置」分区为左配置栏 + 右调试对话，
  *   安全（内容脱敏）与长期记忆并入「配置」分区收缩卡片；「日志」为 Tab 容器（日志/安全事件/使用分析，原「监控」分区并入、菜单移除）；
  * - 流程应用：头部 Tab（设计/调试/配置/运行历史），「调试」为会话式对话，「配置」下挂二级菜单（信息/上架管理/安全/日志/外部渠道，功能与内部应用一致）。
- * 面包屑与「进入对话/返回列表」页级操作在此；发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）；
+ * 应用身份（头像/名称）与「返回内部应用」收敛在左侧菜单栏顶部（与团队工作台一致），不渲染面包屑页头；
+ * 「进入对话」移至「配置」分区调试面板标题右侧（AppDebugChat headerExtra）；发布状态/线上版本/当前版本与未发布变更收敛在菜单栏底部；
+ * 发布/重新发布与撤回发布统一收敛在「上架管理」分区的「团队应用」卡（发布弹窗内设置版本号）；
  * 外部应用同一分区收敛为「发布」（仅团队发布卡，无上架审批与申请记录，外部应用不公开到平台）。
  */
 export function AppWorkspace() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { token } = theme.useToken()
   const params = useParams<{ teamId: string; appId: string; section?: string }>()
   const teamId = Number(params.teamId)
   const appId = params.appId ?? ''
@@ -62,6 +66,10 @@ export function AppWorkspace() {
   const isAgent = detail?.appType !== 'workflow'
   const isExternal = detail?.isExternal === true
   const isPublished = detail?.publishStatus === 1
+  const liveVersion = formatAppVersion(detail?.publishVersion)
+  const draftVersion = formatAppVersion(detail?.version)
+  // 已发布且当前版本号大于线上快照版本号：版本号已递增但尚未随发布生效
+  const versionPending = isPublished && detail?.publishVersion != null && detail.publishVersion !== detail.version
 
   const load = useCallback(async (silent = false) => {
     if (!appId) return
@@ -95,18 +103,16 @@ export function AppWorkspace() {
       menuItems.push(
         // 安全（内容脱敏）与长期记忆不再单独成菜单：Agent 应用并入「配置」分区收缩卡片（流程应用仍保留安全二级页）
         { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
-        // ACP：agent-to-agent 接入（Agent 与流程应用均支持）
-        { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
-        // A2A：Google Agent2Agent 协议接入（Agent 与流程应用均支持）
-        { key: 'a2a', icon: <ApiOutlined />, label: t('appWorkspace.menuA2a') },
+        // ACP/A2A：对外协议接入单一分区（同开同关，共用一把资源 key；Agent 与流程应用均支持）
+        { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcpA2a') },
       )
       // 外部渠道（飞书接入等）：仅内部应用（外部应用走访问点）
       if (!isExternal) {
         menuItems.push({ key: 'channels', icon: <ShareAltOutlined />, label: t('appWorkspace.menuChannels') })
       }
     }
-    // 外部应用：访问点菜单项
-    if (canManage && isExternal) {
+    // 访问点菜单项：外部应用=匿名开放入口；内部应用=身份穿透入口（访问用户 token）
+    if (canManage) {
       menuItems.push({ key: 'access', icon: <ApiOutlined />, label: t('appWorkspace.menuAccess') })
     }
   }
@@ -126,7 +132,7 @@ export function AppWorkspace() {
     workflowSectionKeys.add('channels')
     workflowSectionKeys.add('publication')
   }
-  if (canManage && isExternal) {
+  if (canManage) {
     workflowSectionKeys.add('access')
   }
 
@@ -152,8 +158,7 @@ export function AppWorkspace() {
     configGroupItems.push(
       { key: 'security', icon: <SafetyCertificateOutlined />, label: t('appWorkspace.menuSecurity') },
       { key: 'logs', icon: <ProfileOutlined />, label: t('appWorkspace.menuLogs') },
-      { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcp') },
-      { key: 'a2a', icon: <ApiOutlined />, label: t('appWorkspace.menuA2a') },
+      { key: 'acp', icon: <ApiOutlined />, label: t('appWorkspace.menuAcpA2a') },
     )
   }
   if (!isExternal) {
@@ -242,7 +247,6 @@ export function AppWorkspace() {
         <AppAccessSection
           appId={appId}
           isExternal={detail?.isExternal ?? false}
-          isAuth={detail?.isAuth ?? false}
           canManage={canManage}
           userRole={detail?.myRole ?? -1}
         />
@@ -252,14 +256,14 @@ export function AppWorkspace() {
     // 旧 /monitor 深链：同一 Tab 容器落到「使用分析」
     if (validSection === 'monitor') return <AppLogsSection appId={appId} canManage={canManage} defaultTab="usage" />
     if (validSection === 'security') return <AppSecuritySection appId={appId} canManage={canManage} />
-    if (validSection === 'acp') return <AppAcpSection appId={appId} />
-    if (validSection === 'a2a') return <AppA2aSection appId={appId} />
+    // ACP 与 A2A 合并为单一「协议接入」分区（同开同关，共用一把资源 key）；旧 /a2a 路由同页
+    if (validSection === 'acp' || validSection === 'a2a') return <AppProtocolSection appId={appId} teamId={teamId} canManage={canManage} />
     if (validSection === 'channels') {
       return (
         <Space direction="vertical" style={{ width: '100%' }}>
-          <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
-          <AppDingTalkChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
-          <AppWeixinWorkChannelsSection teamId={teamId} appId={appId} canManage={canManage} isPublished={isPublished} />
+          <AppChannelsSection teamId={teamId} appId={appId} canManage={canManage} />
+          <AppDingTalkChannelsSection teamId={teamId} appId={appId} canManage={canManage} />
+          <AppWeixinWorkChannelsSection teamId={teamId} appId={appId} canManage={canManage} />
         </Space>
       )
     }
@@ -285,11 +289,18 @@ export function AppWorkspace() {
             </>
           }
           right={
-            canManage && (
-              <Tooltip title={t('workflowDesigner.runsTip')}>
-                <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
-              </Tooltip>
-            )
+            <>
+              {canManage && isPublished && (
+                <Tooltip title={t('appManage.enterChat')}>
+                  <Button icon={<MessageOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)} />
+                </Tooltip>
+              )}
+              {canManage && (
+                <Tooltip title={t('workflowDesigner.runsTip')}>
+                  <Button icon={<HistoryOutlined />} onClick={() => navigate(`/team/${teamId}/app/${appId}/runs`)} />
+                </Tooltip>
+              )}
+            </>
           }
         />
         <div className="wf-app-body">
@@ -310,48 +321,71 @@ export function AppWorkspace() {
   }
 
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to="/team">{t('team.title')}</Link> },
-        {
-          title: (
-            <Link to={isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}/apps`}>
-              {t(isExternal ? 'team.externalApps' : 'team.apps')}
-            </Link>
-          ),
-        },
-        { title: detail?.name ?? '' },
-      ]}
-      extra={
-        <Space>
-          {isPublished ? (
-            <Tag color="green">{t('appManage.published')}</Tag>
-          ) : (
-            <Tag>{t('appManage.unpublished')}</Tag>
-          )}
-          {/* 发布/重新发布入口收敛在「上架管理」分区的「团队应用」卡（版本号在发布弹窗中设置）；流程应用发布走编排设计器 */}
-          {isPublished && (
-            <Button onClick={() => navigate(`/team/${teamId}/app/${appId}/chat`)}>{t('appManage.enterChat')}</Button>
-          )}
-          <Button onClick={() => navigate(`/team/${teamId}/apps`)}>{t('appManage.backToList')}</Button>
-        </Space>
-      }
-    >
+    <Page>
       {loading ? (
         <div style={{ padding: spacing.xl, textAlign: 'center' }}>
           <Spin />
         </div>
       ) : detail?.appId ? (
         <Layout style={{ background: 'transparent', gap: spacing.md }}>
-          <Sider width={200} style={{ background: 'transparent' }}>
+          {/* 侧栏钉在视口内（48 = AppLayout 全局上下内边距 24×2）：高度恒为视口内容区高度，
+              不随右侧内容拉伸——发布状态/版本信息始终吸底；右侧内容照常随页面滚动，侧栏 sticky 吸顶 */}
+          <Sider
+            width={200}
+            style={{
+              background: 'transparent',
+              position: 'sticky',
+              top: 24,
+              height: 'calc(100vh - 48px)',
+              alignSelf: 'flex-start',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              {/* 侧栏顶部身份区（SiderHeader 与团队工作台/知识库/知识图谱同构）：上段应用头像+名称、下段返回按钮；「进入对话」移至「配置」分区调试面板标题右侧 */}
+              <SiderHeader
+                name={detail?.name}
+                avatarSrc={resolveStorageUrl(detail?.avatarPath ?? null) || undefined}
+                backTo={isExternal ? `/team/${teamId}/externalApps` : `/team/${teamId}`}
+                backLabel={t(isExternal ? 'appManage.backToExternalApps' : 'appManage.backToInternalApps')}
+              />
               <Menu
                 mode="inline"
                 items={menuItems}
                 selectedKeys={[validSection]}
                 onClick={({ key }) => navigate(key === 'config' ? `/team/${teamId}/app/${appId}` : `/team/${teamId}/app/${appId}/${key}`)}
-                style={{ borderRadius: spacing.sm }}
+                style={{ flex: 1, borderRadius: spacing.sm }}
               />
-            </Sider>
+              {/* 发布状态收敛在菜单栏底部：状态/未发布变更 + 线上版本 + 当前版本（空间充裕，替代原名称下方状态 Tag） */}
+              <div style={{ marginTop: spacing.sm, padding: `${spacing.sm}px ${spacing.sm}px 0`, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
+                <Space size={spacing.xs} wrap style={{ marginBottom: spacing.xs }}>
+                  {isPublished ? (
+                    <Tag color="green" style={{ marginInlineEnd: 0 }}>{t('appManage.published')}</Tag>
+                  ) : (
+                    <Tag style={{ marginInlineEnd: 0 }}>{t('appManage.unpublished')}</Tag>
+                  )}
+                  {configStatus === 0 && (
+                    <Tag color="orange" style={{ marginInlineEnd: 0 }}>{t('appManage.publicationDraftChanged')}</Tag>
+                  )}
+                </Space>
+                {isPublished && liveVersion && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+                      {t('appManage.sidebarOnlineVersion')}：v{liveVersion}
+                    </Text>
+                  </div>
+                )}
+                {draftVersion && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: fontSize.xs }}>
+                      {t('appManage.sidebarCurrentVersion')}：v{draftVersion}
+                      {versionPending ? `（${t('appManage.publicationVersionUnreleased')}）` : ''}
+                    </Text>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Sider>
           <Content>{renderSection()}</Content>
         </Layout>
       ) : (

@@ -91,9 +91,9 @@ function buildSharedComponents(palette: ThemePalette): ThemeConfig['components']
       itemSelectedBg: palette.menu.selectedBg,
       itemHoverBg: palette.menu.hoverBg,
       itemBorderRadius: 8,
-      itemHeight: 40,
+      itemHeight: 36,
       itemMarginInline: 12,
-      itemMarginBlock: 4,
+      itemMarginBlock: 3,
     },
     Button: {
       borderRadius: 8,

@@ -34,6 +34,13 @@ public class UpdateAIModelVisibilityCommandHandler : IRequestHandler<UpdateAIMod
             throw new BusinessException("未找到模型，请检查 id 是否正确.") { StatusCode = 404 };
         }
 
+        var isTeamChannel = await _databaseContext.AiChannels
+            .AnyAsync(x => x.Id == model.ChannelId && x.TeamId > 0, cancellationToken);
+        if (isTeamChannel)
+        {
+            throw new BusinessException("团队自有渠道模型不支持设置公私有可见性，仅本团队可用.") { StatusCode = 400 };
+        }
+
         model.IsPublic = request.IsPublic;
         _databaseContext.AiModels.Update(model);
         await _databaseContext.SaveChangesAsync(cancellationToken);

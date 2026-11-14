@@ -28,6 +28,11 @@ public class QueryMyMemoriesCommand : IRequest<QueryMyMemoriesCommandResponse>, 
     /// </summary>
     public int PageSize { get; init; } = 20;
 
+    /// <summary>
+    /// 关键字（按记忆内容模糊匹配，区分中英文，不区分大小写；留空返回全部）.
+    /// </summary>
+    public string? Keywords { get; init; }
+
     /// <inheritdoc/>
     [JsonIgnore]
     public long ContextUserId { get; init; }
@@ -41,5 +46,6 @@ public class QueryMyMemoriesCommand : IRequest<QueryMyMemoriesCommandResponse>, 
     {
         validate.RuleFor(x => x.Page).GreaterThanOrEqualTo(1).WithMessage("页码不正确.");
         validate.RuleFor(x => x.PageSize).InclusiveBetween(1, 100).WithMessage("页大小不正确.");
+        validate.RuleFor(x => x.Keywords).MaximumLength(100).WithMessage("关键字不能超过 100 字.");
     }
 }

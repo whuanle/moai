@@ -10,6 +10,8 @@ import { IsdisableRequestBuilderRequestsMetadata, type IsdisableRequestBuilder }
 // @ts-ignore
 import { PasswordRequestBuilderRequestsMetadata, type PasswordRequestBuilder } from './password/index.js';
 // @ts-ignore
+import { Reset_2faRequestBuilderRequestsMetadata, type Reset_2faRequestBuilder } from './reset_2fa/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -28,6 +30,10 @@ export interface UserItemRequestBuilder extends BaseRequestBuilder<UserItemReque
      * The password property
      */
     get password(): PasswordRequestBuilder;
+    /**
+     * The reset_2fa property
+     */
+    get reset_2fa(): Reset_2faRequestBuilder;
     /**
      * 查询指定用户的信息（仅管理员可访问）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -62,6 +68,9 @@ export const UserItemRequestBuilderNavigationMetadata: Record<Exclude<keyof User
     },
     password: {
         requestsMetadata: PasswordRequestBuilderRequestsMetadata,
+    },
+    reset_2fa: {
+        requestsMetadata: Reset_2faRequestBuilderRequestsMetadata,
     },
 };
 /**

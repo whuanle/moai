@@ -13,7 +13,7 @@ import {
 describe('theme config', () => {
   it('returns a config for the default preset', () => {
     const config = getThemeConfig(defaultThemeKey)
-    expect(config.token?.colorPrimary).toBe('#2970FF')
+    expect(config.token?.colorPrimary).toBe('#6D5AE6')
     expect(config.algorithm).toBe(theme.defaultAlgorithm)
   })
 

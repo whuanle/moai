@@ -52,14 +52,12 @@ interface DynamicPluginInstanceModalProps {
   onClose: () => void
 }
 
-/** 从实例配置 JSON 中容错解析 KgId（编辑回显用）. */
+/** 从实例配置 JSON 中容错解析 KgId（编辑回显用）。配置允许带注释（保存链路原文透传），JSON.parse 不支持注释，改用正则匹配提取. */
 function parseKgIdFromConfig(config: string | null | undefined): number | undefined {
-  try {
-    const kgId = Number((JSON.parse(config ?? '{}') as { KgId?: unknown }).KgId)
-    return Number.isFinite(kgId) && kgId > 0 ? kgId : undefined
-  } catch {
-    return undefined
-  }
+  const match = (config ?? '').match(/["']?kgId["']?\s*:\s*(\d+)/i)
+  if (!match) return undefined
+  const kgId = Number(match[1])
+  return Number.isFinite(kgId) && kgId > 0 ? kgId : undefined
 }
 
 /** 团队模式新建：实例 key 缺省取「模板key_{团队id}」，模板段超长时截断以保留完整团队后缀；系统模式不自动填. */

@@ -7,6 +7,7 @@ using MoAI.Infra.Models;
 using MoAI.Wiki.External;
 using MoAI.Wiki.Models;
 using MoAI.Wiki.Services;
+using MoAI.AIChannel.Services;
 
 namespace MoAI.Wiki.Handlers;
 
@@ -78,14 +79,7 @@ public class GenerateExternalDocumentChunksMetadataCommandHandler : IRequestHand
             throw new BusinessException("所选模型不是对话模型，无法用于元数据生成.") { StatusCode = 400 };
         }
 
-        if (model.IsPublic)
-        {
-            return;
-        }
-
-        var authorized = await _databaseContext.AiModelAuthorizations
-            .AnyAsync(x => x.AiModelId == modelId && x.TeamId == teamId, cancellationToken);
-        if (!authorized)
+        if (!await _databaseContext.IsTeamUsableModelAsync(teamId, modelId, cancellationToken))
         {
             throw new BusinessException("元数据生成模型未授权给你的团队使用.") { StatusCode = 403 };
         }

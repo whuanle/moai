@@ -30,4 +30,10 @@ public enum UserType
     /// </summary>
     [JsonPropertyName("normal")]
     Normal = 3,
+
+    /// <summary>
+    /// 定时任务（团队自动化无头执行产生的会话，仅管理员在应用日志页可见，本人会话列表排除）.
+    /// </summary>
+    [JsonPropertyName("timer")]
+    Timer = 4,
 }

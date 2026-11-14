@@ -32,10 +32,11 @@ public static class AppToolApprovalContract
     public const int PollIntervalMilliseconds = 400;
 
     /// <summary>
-    /// 需要审批的工具来源类型：沙箱、各类插件与流程应用（有外部副作用）；
-    /// 知识库检索（只读）与技能装载（仅写入沙箱工作区）不拦截.
+    /// 需要审批的工具来源类型：沙箱、各类插件、流程应用、Agent 应用、技能与知识库/知识图谱检索
+    /// （知识库/图谱检索一次调用覆盖全部绑定资源，按「全部绑定资源均自动放通才放行」判定）；
+    /// 内部工具（长期记忆 memory、子代理 subagent）不拦截.
     /// </summary>
-    public static readonly string[] RequireApprovalKinds = ["sandbox", "dynamic", "static", "mcp", "openapi", "workflow"];
+    public static readonly string[] RequireApprovalKinds = ["sandbox", "dynamic", "static", "mcp", "openapi", "workflow", "agentapp", "skill", "wiki", "graph"];
 
     /// <summary>
     /// 沙箱工具的来源类型（运行代码/Shell/文件读写等）.
@@ -48,14 +49,44 @@ public static class AppToolApprovalContract
     public const string SandboxToolPrefix = "sandbox_";
 
     /// <summary>
-    /// 前端无需展示审批卡的工具名（只读检索），与 <see cref="ExemptToolPrefixes"/> 一同经 userconfig 下发.
+    /// 知识库检索工具名（覆盖全部绑定知识库）.
     /// </summary>
-    public static readonly string[] ExemptToolNames = ["search_knowledge_base"];
+    public const string WikiSearchToolName = "search_knowledge_base";
 
     /// <summary>
-    /// 前端无需展示审批卡的工具名前缀（技能装载 skill_*）.
+    /// 知识库片段获取工具名（覆盖全部绑定知识库）.
     /// </summary>
-    public static readonly string[] ExemptToolPrefixes = ["skill_"];
+    public const string WikiChunkToolName = "get_knowledge_base_chunk";
+
+    /// <summary>
+    /// 知识图谱检索工具名（覆盖全部绑定图谱）.
+    /// </summary>
+    public const string GraphSearchToolName = "search_knowledge_graph";
+
+    /// <summary>
+    /// 技能装载工具名前缀（skill_{key}）.
+    /// </summary>
+    public const string SkillToolPrefix = "skill_";
+
+    /// <summary>
+    /// 流程应用工具名前缀（workflow__{应用名}，同名加短 id 后缀）.
+    /// </summary>
+    public const string WorkflowToolPrefix = "workflow__";
+
+    /// <summary>
+    /// Agent 应用工具名前缀（agent__{应用名}，同名加短 id 后缀）.
+    /// </summary>
+    public const string AgentAppToolPrefix = "agent__";
+
+    /// <summary>
+    /// 前端无需展示审批卡的工具名：检索/技能装载已纳入审批范围，当前无整类豁免（保留契约字段供历史前端兼容）.
+    /// </summary>
+    public static readonly string[] ExemptToolNames = [];
+
+    /// <summary>
+    /// 前端无需展示审批卡的工具名前缀：当前无整类豁免（保留契约字段供历史前端兼容）.
+    /// </summary>
+    public static readonly string[] ExemptToolPrefixes = [];
 
     /// <summary>
     /// 状态：等待决策.

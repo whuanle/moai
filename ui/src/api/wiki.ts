@@ -41,11 +41,49 @@ export async function getWikis(teamId: number): Promise<WikisResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
-/** 查询知识库上传文件大小上限（MB），0 表示不限制 */
-export async function getWikiUploadLimit(): Promise<number> {
+/** 跨知识库文件名搜索命中项 */
+export interface WikiTeamFileItem {
+  /** 后端 long 序列化为字符串 */
+  documentId?: string | number | null
+  /** 所属知识库 id */
+  wikiId?: string | number | null
+  /** 所属知识库名称 */
+  wikiName?: string | null
+  /** 文件名 */
+  fileName?: string | null
+  /** 最近更新时间 */
+  updateTime?: string | null
+}
+
+export interface WikiTeamFilesResult {
+  teamId?: string | number | null
+  /** 命中总数（排序截断前的全量匹配数） */
+  total?: number | null
+  items?: WikiTeamFileItem[] | null
+}
+
+/** 跨知识库按文件名搜索团队内的文档（相关度排序：精确 > 前缀 > 包含，同档按更新时间倒序） */
+export async function searchWikiTeamFiles(teamId: number, query: string, limit = 50): Promise<WikiTeamFilesResult> {
+  const client = getApiClient()
+  const res = await client.api.wiki.files.search.get({
+    queryParameters: { teamId: String(teamId), query, limit },
+  })
+  return { teamId: res?.teamId, total: Number(res?.total ?? 0), items: res?.items ?? [] }
+}
+
+/** 知识库上传约束：大小上限（MB，0 表示不限制）与允许上传的文件类型（小写扩展名） */
+export interface WikiUploadLimit {
+  maxFileSizeMb: number
+  allowedFileTypes: string[]
+}
+
+export async function getWikiUploadLimit(): Promise<WikiUploadLimit> {
   const client = getApiClient()
   const res = await client.api.wiki.uploadLimit.get()
-  return Number(res?.maxFileSizeMb ?? 0)
+  return {
+    maxFileSizeMb: Number(res?.maxFileSizeMb ?? 0),
+    allowedFileTypes: (res?.allowedFileTypes ?? []).map((x) => String(x)),
+  }
 }
 
 export function getWikiDetail(wikiId: number) {
@@ -62,6 +100,38 @@ export async function createWiki(payload: { teamId: number; name: string; descri
 export async function updateWiki(wikiId: number, payload: { name: string; description?: string }): Promise<void> {
   const client = getApiClient()
   await client.api.wiki.byId(String(wikiId)).put({ name: payload.name, description: payload.description })
+}
+
+/** 知识库 MCP 接入配置：开关 + 该库的团队资源 key（开启过 MCP 才有） */
+export interface WikiMcpConfig {
+  isMcpEnabled?: boolean | null
+  teamResourceKeyId?: string | null
+  key?: string | null
+  keyPrefix?: string | null
+}
+
+/** 查询知识库 MCP 接入配置（仅团队 Admin+） */
+export async function getWikiMcpConfig(wikiId: number): Promise<WikiMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).mcpConfig.get()
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+  }
+}
+
+/** 更新知识库 MCP 接入开关；开启时后端自动生成/复用该库的团队资源 key */
+export async function updateWikiMcpConfig(wikiId: number, isMcpEnabled: boolean): Promise<WikiMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).mcpConfig.put({ isMcpEnabled })
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+  }
 }
 
 export async function deleteWiki(wikiId: number): Promise<void> {
@@ -99,6 +169,7 @@ export interface WikiDocumentItem {
   createUserName?: string | null
   createTime?: string | null
   updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface WikiDocumentsResult {
@@ -193,6 +264,44 @@ export async function deleteWikiDocuments(wikiId: number, documentIds: number[])
 export async function downloadWikiDocument(wikiId: number, documentId: number): Promise<string> {
   const client = getApiClient()
   const res = await client.api.wiki.byId(String(wikiId)).documents.byDocumentId(String(documentId)).download.get()
+  return res?.value ?? ''
+}
+
+/** 文档内嵌图片附件项（文档提取 pdf/word/excel/ppt 时落出的图片资产） */
+export interface WikiDocumentImageItem {
+  imageId?: number | null
+  wikiId?: number | null
+  documentId?: number | null
+  fileId?: string | number | null
+  fileName?: string | null
+  /** 文件扩展名，如 .png */
+  fileType?: string | null
+  /** 文件大小（字节） */
+  fileSize?: number | null
+  /** 所在页码（pdf 提取可解析），null=未知 */
+  pageNumber?: number | null
+  /** 文档内序号，从 0 递增 */
+  imageIndex?: number | null
+  /** 预签名下载地址（有效期 2 分钟） */
+  downloadUrl?: string | null
+  createTime?: string | null
+}
+
+/** 查询知识库文档的内嵌图片附件列表 */
+export async function getWikiDocumentImages(wikiId: number, documentId: number): Promise<WikiDocumentImageItem[]> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).documents.byDocumentId(String(documentId)).images.get()
+  return res?.items ?? []
+}
+
+/** 获取文档内嵌图片附件的下载地址 */
+export async function downloadWikiDocumentImage(wikiId: number, documentId: number, imageId: number): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.wiki
+    .byId(String(wikiId))
+    .documents.byDocumentId(String(documentId))
+    .images.byImageId(String(imageId))
+    .download.get()
   return res?.value ?? ''
 }
 
@@ -414,6 +523,8 @@ export interface WikiRecallContextChunk {
 export interface WikiRecallTestHit {
   documentId?: number | null
   documentName?: string | null
+  /** 切片标题锚点（所在章节的标题面包屑） */
+  anchor?: string | null
   chunkId?: string | null
   /** 0=原文切片 1=大纲 2=问题 3=关键词 4=摘要 5=聚合段 */
   metadataType?: number | null
@@ -426,6 +537,12 @@ export interface WikiRecallTestHit {
   score?: number | null
   /** 重排序得分（配置了重排序模型且重排成功时才有值） */
   rerankScore?: number | null
+  /** 是否同时命中关键词检索（切片原文或关键词/问题元数据与查询词匹配） */
+  isKeywordHit?: boolean | null
+  /** 是否为内容级兜底命中（文档已提取但尚未切割：返回文档级片段，无切片序号） */
+  isContentFallback?: boolean | null
+  /** 命中文档的内容已更新且重新向量化尚未完成（内容可能过期） */
+  isStale?: boolean | null
   /** 相邻上下文片段（命中片段的前一个与后一个，已按全文去重） */
   context?: WikiRecallContextChunk[] | null
 }
@@ -447,6 +564,8 @@ export interface WikiRecallTestPayload {
   top?: number
   /** 相似度阈值 0-1；不传表示不过滤 */
   minScore?: number | null
+  /** 相邻上下文窗口大小 1-3，默认 1 */
+  contextWindow?: number | null
   /** AI 对话模型 id；开启优化或回答时必填 */
   aiModelId?: string | null
   isOptimizeQuery?: boolean
@@ -462,6 +581,7 @@ export async function recallWikiTest(wikiId: number, payload: WikiRecallTestPayl
     documentIds: (payload.documentIds ?? []).map((id) => String(id)),
     top: payload.top ?? 5,
     minScore: payload.minScore ?? null,
+    contextWindow: payload.contextWindow ?? null,
     aiModelId: payload.aiModelId || null,
     isOptimizeQuery: payload.isOptimizeQuery ?? false,
     isAnswer: payload.isAnswer ?? false,
@@ -473,6 +593,7 @@ export async function recallWikiTest(wikiId: number, payload: WikiRecallTestPayl
     items: (res?.items ?? []).map((item) => ({
       documentId: item.documentId != null ? Number(item.documentId) : null,
       documentName: item.documentName,
+      anchor: item.anchor,
       chunkId: item.chunkId,
       metadataType: item.metadataType,
       chunkIndex: item.chunkIndex,
@@ -480,12 +601,60 @@ export async function recallWikiTest(wikiId: number, payload: WikiRecallTestPayl
       content: item.content,
       score: item.score,
       rerankScore: item.rerankScore,
+      isKeywordHit: item.isKeywordHit,
+      isContentFallback: item.isContentFallback,
+      isStale: item.isStale,
       context: (item.context ?? []).map((chunk) => ({
         chunkIndex: chunk.chunkIndex,
         content: chunk.content,
       })),
     })),
   }
+}
+
+// ==================== 向量化模型迁移 ====================
+
+/** 知识库向量化模型迁移任务状态 */
+export interface WikiModelMigrationTaskState {
+  taskId?: string | null
+  /** 1 等待 / 2 处理中 / 4 成功 / 5 失败 */
+  state?: number | null
+  message?: string | null
+  targetModelId?: string | null
+  targetModelName?: string | null
+  targetDimensions?: number | null
+  totalCount?: number | null
+  migratedCount?: number | null
+  createTime?: string | null
+  updateTime?: string | null
+}
+
+/** 知识库向量化模型迁移状态：当前配置 + 向量总数 + 最近任务进度 */
+export interface WikiModelMigrationStatus {
+  wikiId?: number | null
+  currentModelId?: string | null
+  currentModelName?: string | null
+  currentDimensions?: number | null
+  totalVectorCount?: number | null
+  activeMigration?: WikiModelMigrationTaskState | null
+}
+
+/** 查询知识库向量化模型迁移状态（当前配置 + 向量总数 + 最近任务进度） */
+export async function getWikiModelMigrationStatus(wikiId: number): Promise<WikiModelMigrationStatus> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).modelMigration.get()
+  return (res ?? {}) as WikiModelMigrationStatus
+}
+
+/** 发起知识库向量化模型迁移：以新模型/维度重建该库全部向量，返回迁移任务 id */
+export async function startWikiModelMigration(wikiId: number, modelId: string, dimensions: number): Promise<string> {
+  const client = getApiClient()
+  const res = await client.api.wiki.byId(String(wikiId)).modelMigration.post({
+    wikiId: String(wikiId),
+    modelId,
+    dimensions,
+  })
+  return res?.taskId ?? ''
 }
 
 // ==================== 默认工作流配置 ====================
@@ -607,6 +776,7 @@ export interface WikiSourceItem {
   createUserName?: string | null
   createTime?: string | null
   updateTime?: string | null
+  updateUserName?: string | null
 }
 
 export interface WikiSourcesResult {
@@ -654,11 +824,11 @@ export interface CreateWikiSourcePayload {
   description?: string
   /** 爬虫源配置（sourceType=1 时必填） */
   crawler?: WikiSourceCrawlerConfig
-  /** 飞书文档源：方式一，选择已有飞书应用连接 */
-  feishuAppId?: string | null
-  /** 飞书文档源：方式二，新建连接 */
+  /** 飞书文档源：新建连接名称（团队内唯一） */
   newAppName?: string | null
+  /** 飞书文档源：飞书开放平台 AppID，必填 */
   newAppId?: string | null
+  /** 飞书文档源：飞书开放平台 AppSecret，必填 */
   newAppSecret?: string | null
   newAppDomain?: string | null
   /** 飞书文档源：知识空间节点 token */
@@ -677,7 +847,7 @@ export interface UpdateWikiSourcePayload {
   name?: string
   description?: string
   crawler?: WikiSourceCrawlerConfig
-  feishuAppId?: string | null
+  /** 提交 newAppId 时按新凭证新建连接并改绑；为空表示不修改绑定 */
   newAppName?: string | null
   newAppId?: string | null
   newAppSecret?: string | null
@@ -707,7 +877,6 @@ export async function createWikiSource(wikiId: number, payload: CreateWikiSource
     name: payload.name,
     description: payload.description,
     crawler: payload.crawler as never,
-    feishuAppId: payload.feishuAppId ?? null,
     newAppName: payload.newAppName ?? null,
     newAppId: payload.newAppId ?? null,
     newAppSecret: payload.newAppSecret ?? null,
@@ -732,7 +901,6 @@ export async function updateWikiSource(wikiId: number, sourceId: string, payload
     name: payload.name,
     description: payload.description,
     crawler: payload.crawler as never,
-    feishuAppId: payload.feishuAppId ?? null,
     newAppName: payload.newAppName ?? null,
     newAppId: payload.newAppId ?? null,
     newAppSecret: payload.newAppSecret ?? null,

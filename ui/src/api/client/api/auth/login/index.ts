@@ -4,15 +4,21 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createLoginCommandResponseFromDiscriminatorValue, serializeLoginCommand, serializeLoginCommandResponse, type BusinessValidationResult, type LoginCommand, type LoginCommandResponse } from '../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { type VerifyRequestBuilder, VerifyRequestBuilderRequestsMetadata } from './verify/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/auth/login
  */
 export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuilder> {
     /**
-     * 用户登录.
-     * @param body 登录.
+     * The verify property
+     */
+    get verify(): VerifyRequestBuilder;
+    /**
+     * 用户登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
+     * @param body 登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<LoginCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -23,8 +29,8 @@ export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuil
      */
      post(body: LoginCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<LoginCommandResponse | undefined>;
     /**
-     * 用户登录.
-     * @param body 登录.
+     * 用户登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
+     * @param body 登录：账号 + 密码 + 按策略携带的图形验证码与邮箱验证码一体验证，全部通过后颁发令牌.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */
@@ -34,6 +40,14 @@ export interface LoginRequestBuilder extends BaseRequestBuilder<LoginRequestBuil
  * Uri template for the request builder.
  */
 export const LoginRequestBuilderUriTemplate = "{+baseurl}/api/auth/login";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const LoginRequestBuilderNavigationMetadata: Record<Exclude<keyof LoginRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    verify: {
+        requestsMetadata: VerifyRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

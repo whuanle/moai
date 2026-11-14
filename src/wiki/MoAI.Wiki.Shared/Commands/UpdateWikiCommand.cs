@@ -28,7 +28,8 @@ public class UpdateWikiCommand : IRequest<EmptyCommandResponse>, IModelValidator
     public static void Validate(AbstractValidator<UpdateWikiCommand> validate)
     {
         // WikiId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处只校验请求体字段.
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("知识库名称不能为空.").MaximumLength(50).WithMessage("知识库名称最长 50 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("知识库名称不能为空.").MaximumLength(50).WithMessage("知识库名称最长 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("知识库名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("知识库简介最长 255 个字符.");
     }
 }

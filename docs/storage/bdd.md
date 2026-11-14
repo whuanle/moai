@@ -13,7 +13,7 @@ Feature: 图片预上传
   Scenario: 首次预上传新图片
     When 提交 { fileName, contentType, fileSize, sha256 }
     Then 返回 isExist=false、fileId、objectKey="public/images/{sha256}.{ext}"
-    And uploadUrl 为指向对象存储的预签名 PUT 地址（5 分钟有效）
+    And uploadUrl 为指向对象存储的预签名 PUT 地址（1 分钟有效）
 
   @STO-S2 @auto:e2e
   Scenario: 相同内容再次预上传命中秒传
@@ -163,3 +163,26 @@ Feature: 前端上传链路（头像 / 图标）
     Then 走 pre_upload_chat_file 预上传，ObjectKey=public/chat/{sha256}.{ext}，经 /static 免登录下载
     When 附件扩展名不在文档/图片白名单（如 .exe）或超过 20MB
     Then 预上传返回 400
+
+```gherkin
+Feature: S3 预签名地址安全
+  @STO-S26 @auto:e2e
+  Scenario: 上传预签名地址固定一分钟过期
+    Given 用户请求 S3 预签名上传地址
+    When 存储层生成预签名地址
+    Then 地址有效期固定为 1 分钟，不受调用方传入时长影响
+    And 上传响应中的 expiration 与地址有效期一致
+
+  @STO-S27 @manual
+  Scenario: 下载预签名地址固定一分钟过期
+    Given 业务模块请求 S3 预签名下载地址并传入更长有效期
+    When 存储层生成预签名地址
+    Then 下载地址仍固定为 1 分钟有效
+
+  @STO-S28 @manual
+  Scenario: 按文件 id 查询已上传文件
+    Given 业务模块只持有文件 id（如插件文件服务）
+    When 调用 GetFileInfoByIdAsync(fileId)
+    Then 返回 ObjectKey/ContentType/Size/SHA-256 等文件信息
+    And 预上传未完成或已删除的记录返回 null
+```

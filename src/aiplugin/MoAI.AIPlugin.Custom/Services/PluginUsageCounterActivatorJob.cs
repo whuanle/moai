@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
-using MoAI.Hangfire.Services;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AIPlugin.Services;
 
 /// <summary>
 /// 将 Redis 中的插件使用次数刷新到 PostgreSQL.
 /// </summary>
-public class PluginUsageCounterActivatorJob : ICounterActivatorJob
+public class PluginUsageCounterActivatorJob : IResourceUsageWriter
 {
-    private const string CounterName = "plugin-usage";
+    private const string CounterName = ResourceUsageNames.Plugin;
     private readonly DatabaseContext _databaseContext;
 
     /// <summary>
@@ -22,7 +22,7 @@ public class PluginUsageCounterActivatorJob : ICounterActivatorJob
     }
 
     /// <inheritdoc/>
-    public async Task ActivateAsync(IReadOnlyDictionary<string, long> values)
+    public async Task WriteAsync(IReadOnlyDictionary<string, long> values)
     {
         var increments = Parse(values);
         if (increments.Count == 0)
@@ -57,7 +57,7 @@ public class PluginUsageCounterActivatorJob : ICounterActivatorJob
         Dictionary<Guid, long> increments = new();
         foreach (var item in values)
         {
-            if (item.Value <= 0
+            if (item.Value == 0
                 || !Guid.TryParseExact(item.Key, "N", out var pluginId)
                 || item.Key != pluginId.ToString("N"))
             {

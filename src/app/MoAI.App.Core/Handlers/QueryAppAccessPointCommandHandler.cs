@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
+using MoAI.App.Models;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
 using MoAI.Database.Enums;
@@ -63,13 +64,16 @@ public class QueryAppAccessPointCommandHandler : IRequestHandler<QueryAppAccessP
             Subtitle = config?.Subtitle,
             Placeholder = config?.Placeholder,
             PrimaryColor = config?.PrimaryColor,
-            Position = config?.Position ?? "bottomRight",
+            Position = AccessPointPositionText.Normalize(config?.Position),
+            DisplayMode = AccessPointDisplayModeText.Normalize(config?.DisplayMode),
             LauncherText = config?.LauncherText,
             Avatar = config?.Avatar,
             PanelWidth = config?.PanelWidth ?? 380,
             PanelHeight = config?.PanelHeight ?? 560,
             DefaultOpen = config?.DefaultOpen ?? false,
-            Enabled = config?.Enabled ?? true,
+
+            // 外部应用沿用「未配置即开放」；内部应用访问点=身份穿透入口，未保存过时默认关闭（开启即授权动作）
+            Enabled = config?.Enabled ?? app.IsExternal,
         };
     }
 }

@@ -8,7 +8,7 @@
 |---|---|---|
 | L0 导航 | 本页 | — |
 | L1 全局规范 | 后端 CQRS / 文档标准 / 前端约定 / 设计系统 | 见下「全局规范」 |
-| L2 领域四件套 | 27 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
+| L2 领域四件套 | 40 个模块 × {sdd,bdd,tdd,sop} | 见下「模块地图」 |
 | L3 证据 | 可执行验收脚本 / 单测 / 回归命令 | 见下「回归入口」 |
 
 ## 全局规范（L1）
@@ -16,13 +16,13 @@
 - [DOC-STANDARD.md](./DOC-STANDARD.md) — 文档分层、四件套契约、Gherkin（小黄瓜）规范、相互引用规则
 - [api_interface.md](./api_interface.md) — 前后端对接：后端 OpenAPI → 前端 `npm run syncapi` 生成客户端
 - [cqrs-conventions.md](./cqrs-conventions.md) — 后端 CQRS 三层与 `IModelValidator` 硬约束
-- [aiplugin-authoring.md](./aiplugin-authoring.md) — 静态/动态插件编写规范（发现机制、运行时接口、配置校验、流程）
+- [aiplugin-authoring.md](./aiplugin-authoring.md) — 静态插件与 MoPlatform 动态插件包编写规范（发现机制、运行时接口、配置校验、流程）
 - [settings.md](./settings.md) — setting 表机制（接口层权限模式范例）
 - [storage-file-layout.md](./storage-file-layout.md) — 对象存储路径布局
 - [ui/docs/frontend-conventions.md](../ui/docs/frontend-conventions.md) — 前端架构与目录约定
 - [ui/docs/design-system/](../ui/docs/design-system/README.md) — 设计系统规范
 
-## 模块地图（L2，26 个四件套）
+## 模块地图（L2，40 个四件套）
 
 缩写列 = BDD 场景编号前缀（见各模块 bdd.md）。
 
@@ -31,25 +31,33 @@
 | 模块 | 缩写 | 说明 |
 |---|---|---|
 | [auth](./auth/) | AUTH | 登录/注册/OAuth 登录/刷新，JWT+RSA |
+| [loginsafety](./loginsafety/) | LS | 登录安全风控（登录日志全量落库 + 新 IP/异地/疾速旅行/IP 爆破/撞库喷洒/管理员新环境六规则 + 用户提醒与管理员告警邮件 + IP 自动/手动封禁 + 管理页「日志事件」Tab 与菜单未读角标；IP2Region 离线归属地，ForwardedHeaders 反代穿透） |
 | [account](./account/) | ACC | 账号自助：资料/改密/头像/OAuth 绑定 |
 | [user-management](./user-management/) | UM | 管理员用户治理（列表/授权/禁用/重置密码）；[📘 HTML 操作指南](./user-management/manual.html)（含截图） |
 | [settings](./settings/) | SET | 系统设置项（SettingDefinitions 注册表） |
 | [oauthconnect](./oauthconnect/) | OC | 第三方登录连接器管理 |
+| [subsystem](./subsystem/) | SUB | 系统级接入合并模型（**子系统与应用接入同表同列表同接口** `/api/subsys/**`：appid+密钥/统一 token/多实例心跳在线（按实例 ZSET+在线实例数）/团队组织授权/委托 SSO；子系统=自填 appid+回调登录+在线监测，应用接入=moai-sa- 自动 appid 全量资源；资源范围分档已下线） |
+| [org](./org/) | ORG | 组织（**通讯录层级·授权维度，不隔离资源**；全局层级组织树 + path 物化路径前缀匹配 + 用户组织分配，仅管理员；非 OA/ERP 轻量定位）；统一组织授权已落地（org_grant 跨资源表 + IOrgGrantService + Redis 三 key 缓存，self/up/down 定向放通，管理面 /org/grant/*；子系统已接入，应用发布等消费方后续接入） |
 | [classify](./classify/) | CLS | 分类管理（plugin/app/kb 三类，仅管理员） |
 | [aiplugin-static](./aiplugin-static/) | STP | 静态插件（列表合并去重、运行抽屉、编辑写回） |
-| [aiplugin-dynamic](./aiplugin-dynamic/) | DYN | 动态插件（实例创建/编辑/删除、模板+配置、运行实例） |
+| [aiplugin-dynamic](./aiplugin-dynamic/) | DYN | 动态插件实例与在线包（实例配置、MoPlatform 安装、启动加载、上/下架） |
+| [aiplugin-marketplace](./aiplugin-marketplace/) | PLGM | MoPlatform 在线插件目录与安装（稳定指纹限频、包摘要校验、安全解压、本地运行时加载，并从 semantic.json 导入插件语义规则；管理员上/下架、不支持在线覆盖/卸载） |
+| [aichannel](./aichannel/) | MC | AI 渠道与模型目录（渠道模型探测 + 从 MoPlatform 同步 schema v1 目录） |
 | [common](./common/) | COM | serverinfo / build_guid |
 | [storage](./storage/) | STO | S3/MinIO 三段式上传与 /static 中转 |
 | [hangfire](./hangfire/) | HF | 定时任务与 recurring job 扩展点 |
-| [infra](./infra/) | INF | 配置加载/RSA/异常/模块框架 |
+| [statistics](./statistics/) | ST | 资源使用统计（**全站唯一入口**：业务模块经 `IResourceUsageService` 领域服务/`IResourceUsageCollector` 对话轮次收集器 → Redis `counter:{name}` 原子增减 → 每分钟批量取出分发给 `IResourceUsageWriter` 写资源自身表 + 统一 `resource_usage_daily`/`resource_usage_total` upsert 累加；覆盖 plugin/app/skill/wiki/ai-model/prompt 六类；粒度按天/按小时管理员可配（STATISTICS_GRANULARITY）；管理查询 /api/statistics/usage/*；**新模块做统计先读 [sop](./statistics/sop.md)**） |
+| [infra](./infra/) | INF | 配置加载/RSA/异常/模块框架/MoPlatform 插件分发客户端与持久安装指纹 |
 | [database-scaffold](./database-scaffold/) | DB | EF 模型、种子数据、PostgresScaffold 工具 |
 | [deployment](./deployment/) | DEP | Docker/entrypoint/本地环境 |
-| [team](./team/) | TM | 团队/成员/角色（Owner/Admin/Member）、所有权转让；团队不可解散，仅平台管理员可禁用 |
-| [gateway](./gateway/) | GW | 团队/应用接入 key 与外部接口范围体系（功能范围分档、key 直连、Redis 缓存、中间件拦截）；**细节总账 [external-api-scope-system.md](./gateway/external-api-scope-system.md)** |
+| [team](./team/) | TM | 团队（**协作与资源隔离单元**）/成员/角色（Owner/Admin/Member）、所有权转让；团队不可解散，仅平台管理员可禁用 |
+| [gateway](./gateway/) | GW | 团队外部接口凭证体系（moai-ac- 接入 key 全量 + moai-tr- 资源 key 包围圈、key 直连、中间件拦截；scope 范围分档已退役）；**团队模型网关已下线**（模型仅供应用内部调用，后续由独立子系统承接）；**细节总账 [external-api-scope-system.md](./gateway/external-api-scope-system.md)** |
 | [teamplugin](./teamplugin/) | TP | 团队插件（团队自有 custom/dynamic）+ 系统插件私有授权团队 |
 | [wiki](./wiki/) | WK | 团队知识库（卡片聚合我的团队、isPublic 公开只读；内容/文档层下阶段） |
 | [knowledgegraph](./knowledgegraph/) | KG | 团队知识图谱（托管图谱维护 + 外部接入只读；Memgraph/Neo4j 双方言 Bolt 访问、单库 kgId 隔离；图览画布 + 一跳邻接；`KG_ENABLED` 门禁，Member 全只读，名称全局唯一） |
 | [memory](./memory/) | MEM | Agent 应用跨会话长期记忆（mem0 v3 式两段写入：抽取+合并；每轮相关记忆按需注入；语义/情景/程序三类；按用户隔离，应用内/跨应用共享范围 + 用户级关闭与清空；`__agent_mem_{appId}` 向量分表 + `app_memory_shard` 登记发现；外部应用不开放） |
+| [message](./message/) | MSG | 站内信与平台事件推送（SignalR `/hub/moai` **只推事件不推数据**：onEvent 负载仅事件名+标识字段；每收件人一行 message 表独立已读态；RabbitMQ `message.push` 异步→消费者触发推送，Redis backplane 多实例；领域服务 IMessageService 发个人/团队/全员、IEventPushService 通用事件推送，消费方仅引用 Message.Shared；读侧 REST /api/message/*；前端接入为下轮） |
+| [notification](./notification/) | NT | 通知中心（统一多渠道通知出口：飞书/钉钉/企微机器人 webhook、Telegram/Slack/Discord/Teams、通用 webhook（自定义头+模板）、SMTP（渠道自带连接配置；系统设置「邮箱验证」仅绑定渠道 id）、阿里云/腾讯云短信（平台已审核模板 Code/Id+变量发送，必须经通知模板）、Gotify/ntfy/Bark/Server酱/PushPlus、站内推送（复用站内信，广播可直接勾选）；**通知模板** notification_template：文本+变量定义 {key} 插值+text/html 内容类型（SMTP 发样式邮件其它渠道降级）+平台模板映射，业务方可带模板也可直发；`INotificationService` 领域服务屏蔽外部接口格式，NotifyAsync=Hangfire 异步失败重试/SendNowAsync=同步，广播支持渠道多选与站内信组合（可用模板）；每渠道发送记录留痕 notification_log；管理页三 Tab 渠道管理/通知模板/发送记录，仅管理员；后续子系统协作面可复用） |
 | [variable](./variable/) | VR | 团队变量（普通/私密、名称、${key} 服务端替换；私密值永不回传） |
 | [timer](./timer/) | TIMER | 团队定时器（绑定已发布 Agent/流程应用按 cron(UTC) 无头执行固定提问；立即执行调试、失败重试策略、执行历史默认 10 条可回看；Hangfire 周期任务 `team-timer:{id}`） |
 | [app](./app/) | AP | 团队应用（团队页「应用」分区：Agent/流程应用的卡片列表与基础信息 + 头像与「允许外部使用」开关；卡片「管理」进**单页左侧应用信息 + 右侧 Agent 配置**的管理页，配置**对话模型**/插件/知识库/提示词；成员只读使用；**已支持发布进入对话**，会话运行见 ai 模块） |
@@ -61,6 +69,7 @@
 | [weixinwork](./weixinwork/) | WX | 企业微信渠道基座（自建应用 HTTP 回调模式：一个 CorpId+AgentId 一条连接；Token 签名 + AES 加解密 + receiveid 比对，受理即应答、MsgId 去重后转发 `IWeixinWorkEventHandler`，应用渠道已落地**单聊 message/send / 群聊 appchat/send 回复**；与 dingtalk/feishu 模块同构） |
 | [publication](./publication/) | PB | 上架审核（应用/提示词公开改审批制：团队申请上架 → `publication_review` 审核表 → 系统管理员「审批上架」菜单审批；**通过后系统才将目标资源 is_public 置为 true**；撤回/驳回/重新申请、pending 唯一约束） |
 | [prompt](./prompt/) | PT | 提示词库（个人提示词仅本人可用；团队提示词 Admin 创建、成员可用；独立编辑器页所见即所得 Markdown 编辑（Vditor IR）+ 头像上传；申请上架走 publication 审批，通过后进入「提示词市场」对所有用户开放；市场查看计数） |
+| [team-agent](./team-agent/) | AG | 团队智能体（**Phase 1 管理面**：主智能体 + ≤20 个命名子智能体的编排定义资产，各带提示词/偏好模型/插件与知识库依赖声明（绑定预检清单 + 运行时白名单双角色，本期仅落清单校验）；**系统内置规划师/构建师**团队创建时自动种入（不可删除可编辑、seed-builtin 补种）；团队页「智能体」分区，成员只读 Admin+ 管理；应用绑定与 `subagent_{name}` 运行时派发为 Phase 2） |
 
 ### 前端（ui/docs/）
 
@@ -88,8 +97,11 @@ node local-dev/user-management-e2e.mjs        # UM 34 场景
 node local-dev/audit-345.mjs                  # ACC/SET/OC 14 场景
 node local-dev/audit-storage.mjs              # STO 全链路 7 场景
 node local-dev/auth-lockout-check.mjs         # AUTH 锁定 8 场景
+node local-dev/loginsafety-e2e.mjs            # LS 26 场景（需 ForwardedHeaders 开启的后端，见脚本头部）
 node local-dev/prompt-e2e.mjs                # PT 40 场景
-node local-dev/skill-userconfig-e2e.mjs      # SKL 20 场景
+node local-dev/skill-userconfig-e2e.mjs      # SKL 41 用例
+node local-dev/team-agent-e2e.mjs            # AG 54 场景
+node local-dev/message-e2e.mjs               # MSG 9 场景（MQ 场景管理口不可达时 SKIP；发送链路见 tests/MoAI.Message.Tests）
 # 前端
 cd ui && npm run typecheck && npm run lint && npm run test
 ```

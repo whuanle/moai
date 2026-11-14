@@ -26,6 +26,11 @@ public class SkillOptionItem
     public string Description { get; init; } = string.Empty;
 
     /// <summary>
+    /// 技能头像存储路径，未设置时为 null.
+    /// </summary>
+    public string? AvatarPath { get; init; }
+
+    /// <summary>
     /// 是否系统内置技能.
     /// </summary>
     public bool IsSystem { get; init; }

@@ -12,9 +12,10 @@ import {
 import { Button, Col, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { NAME_PATTERN } from '@/utils/validation'
 import {
   createWikiSource,
   deleteWikiSource,
@@ -60,7 +61,6 @@ interface SourceFormValues extends WikiSourceCrawlerFormValues {
   cron: string
   isEnable: boolean
   nodeToken?: string
-  feishuAppId?: string
   newAppName?: string
   newAppId?: string
   newAppSecret?: string
@@ -182,7 +182,13 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
   }
 
   const handleSubmit = async () => {
-    const values = await form.validateFields()
+    // validateFields 校验失败会 reject（弹窗保持打开由表单展示错误），此处捕获避免未处理 rejection
+    let values: SourceFormValues
+    try {
+      values = await form.validateFields()
+    } catch {
+      return
+    }
     const isCrawler = activeType === WIKI_SOURCE_TYPE_CRAWLER
     const payload = {
       name: values.name.trim(),
@@ -217,8 +223,7 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
         await createWikiSource(wikiId, {
           ...payload,
           sourceType: activeType,
-          // 飞书文档源沿用原有绑定参数（选择已有连接或新建连接）
-          feishuAppId: isCrawler ? undefined : (form.getFieldValue('feishuAppId') as string | undefined) ?? null,
+          // 飞书文档源必须完整填写新建连接三件套（名称/AppID/AppSecret）
           newAppName: isCrawler ? undefined : (form.getFieldValue('newAppName') as string | undefined) ?? null,
           newAppId: isCrawler ? undefined : (form.getFieldValue('newAppId') as string | undefined) ?? null,
           newAppSecret: isCrawler ? undefined : (form.getFieldValue('newAppSecret') as string | undefined) ?? null,
@@ -456,41 +461,39 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
         ),
       },
       {
+        title: t('wiki.source.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
+      },
+      {
+        title: t('wiki.source.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
+      },
+      {
         title: t('wiki.source.colActions'),
         key: 'actions',
-        width: 150,
+        width: 320,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('wiki.source.syncNow')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<SyncOutlined spin={syncingId === record.sourceId} />}
-                aria-label={t('wiki.source.syncNow')}
-                disabled={!isAdminPlus || syncingId === record.sourceId}
-                onClick={() => void handleSync(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('wiki.source.documents')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<FileTextOutlined />}
-                aria-label={t('wiki.source.documents')}
-                onClick={() => openDocs(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('wiki.edit')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                aria-label={t('wiki.edit')}
-                disabled={!isAdminPlus}
-                onClick={() => openEdit(record)}
-              />
-            </Tooltip>
+            <Button
+              type="link"
+              size="small"
+              icon={<SyncOutlined spin={syncingId === record.sourceId} />}
+              disabled={!isAdminPlus || syncingId === record.sourceId}
+              onClick={() => void handleSync(record)}
+            >
+              {t('wiki.source.syncNow')}
+            </Button>
+            <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => openDocs(record)}>
+              {t('wiki.source.documents')}
+            </Button>
+            <Button type="link" size="small" icon={<EditOutlined />} disabled={!isAdminPlus} onClick={() => openEdit(record)}>
+              {t('wiki.edit')}
+            </Button>
             <Popconfirm
               title={t('wiki.source.deleteConfirm')}
               description={t('wiki.source.deleteHint')}
@@ -498,9 +501,9 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
               onConfirm={() => void handleDelete(record)}
               disabled={!isAdminPlus}
             >
-              <Tooltip title={t('wiki.delete')}>
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.delete')} disabled={!isAdminPlus} />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled={!isAdminPlus}>
+                {t('wiki.delete')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -558,14 +561,15 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
 
   return (
     <>
-      <DataTable<WikiSourceItem>
-        rowKey={(record) => record.sourceId ?? ''}
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        scroll={{ x: 1250 }}
-        toolbar={
-          <Space wrap>
+      {/* 工具行裸排在页面底色上（Dify 分体式），排序：刷新 → | → 操作按钮；表格由 DataTable 自带容器卡片承载 */}
+      <PageToolbar
+        queries={
+          <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+            {t('ds.table.refresh')}
+          </Button>
+        }
+        actions={
+          <>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -577,12 +581,16 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
             <Button icon={<GlobalOutlined />} disabled={!isAdminPlus} onClick={() => openCreate(WIKI_SOURCE_TYPE_CRAWLER)}>
               {t('wiki.source.createCrawler')}
             </Button>
-            <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-              {t('ds.table.refresh')}
-            </Button>
             {!isAdminPlus && <Text type="secondary">{t('wiki.source.readonlyHint')}</Text>}
-          </Space>
+          </>
         }
+      />
+      <DataTable<WikiSourceItem>
+        rowKey={(record) => record.sourceId ?? ''}
+        columns={columns}
+        dataSource={items}
+        loading={loading}
+        scroll={{ x: 1800 }}
         pagination={false}
       />
 
@@ -604,8 +612,12 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
         confirmLoading={submitting}
         maskClosable={false}
         destroyOnHidden
-        width={640}
-        styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
+        width={720}
+        centered
+        // 弹窗内容限高：垂直居中 + body 内部滚动（默认标题/底部按钮约 130px，预留 260px 上下留白），
+        // 表单过长时标题与「保存/取消」始终完整可见，不再贴窗口底边或遮盖底部内容；
+        // overflowY:auto 会令 overflowX 隐式变 auto，字段区 gutter 负 margin 比容器宽 8px 会带出横向滚动条，故显式 hidden
+        styles={{ body: { maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', overflowX: 'hidden' } }}
       >
         <Form form={form} layout="vertical">
           {editing ? (
@@ -627,6 +639,7 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
             rules={[
               { required: true, message: t('wiki.source.nameRequired') },
               { max: 50, message: t('wiki.source.nameInvalid') },
+              { pattern: NAME_PATTERN, message: t('validation.nameChars') },
             ]}
           >
             <Input placeholder={t('wiki.source.namePlaceholder')} maxLength={50} disabled={Boolean(editing)} />
@@ -713,6 +726,8 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
             current: docPageNo,
             pageSize: docPageSize,
             total: docTotal,
+            // 覆盖 DataTable 默认的「共 N 条」统计文案
+            showTotal: undefined,
             onChange: (page, size) => {
               setDocPageNo(page)
               setDocPageSize(size)
@@ -726,7 +741,7 @@ export function WikiSources({ wikiId, myRole }: WikiSourcesProps) {
 }
 
 /**
- * 飞书文档源字段：沿用原有「选择已有连接 / 新建连接」两种绑定方式与节点参数。
+ * 飞书文档源字段：完整填写新建连接三件套（连接名称/AppID/AppSecret）与节点参数。
  * 抽到独立组件是为了让爬虫源与飞书源的字段互不干扰，避免隐藏字段被一并校验。
  * 布局对齐 WikiSourceCrawlerFormFields：长字段通栏，短字段/数字/开关双列，避免数字框与开关被拉伸成整行。
  */
@@ -734,11 +749,6 @@ function WikiSourceFeishuFields({ editing }: { editing: boolean }) {
   const { t } = useTranslation()
   return (
     <Row gutter={[16, 0]}>
-      <Col span={24}>
-        <Form.Item label={t('wiki.source.feishuHint')} style={{ marginBottom: spacing.sm }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>{t('wiki.source.feishuHintText')}</Text>
-        </Form.Item>
-      </Col>
       <Col span={24}>
         <Form.Item
           name={'nodeToken' as never}
@@ -748,35 +758,52 @@ function WikiSourceFeishuFields({ editing }: { editing: boolean }) {
           <Input placeholder={t('wiki.source.nodeTokenPlaceholder')} maxLength={128} />
         </Form.Item>
       </Col>
-      <Col span={24}>
-        <Form.Item
-          name={'feishuAppId' as never}
-          label={t('wiki.source.feishuApp')}
-          extra={t('wiki.source.feishuAppExtra')}
-        >
-          <Input placeholder={t('wiki.source.feishuAppPlaceholder')} maxLength={64} />
-        </Form.Item>
-      </Col>
-      <Col xs={24} sm={12}>
-        <Form.Item name={'newAppName' as never} label={t('wiki.source.newAppName')} rules={[{ max: 50 }]}>
-          <Input placeholder={t('wiki.source.newAppNamePlaceholder')} maxLength={50} />
-        </Form.Item>
-      </Col>
-      <Col xs={24} sm={12}>
-        <Form.Item name={'newAppId' as never} label={t('wiki.source.newAppId')} rules={[{ max: 64 }]}>
-          <Input placeholder="cli_xxxxxxxx" maxLength={64} />
-        </Form.Item>
-      </Col>
-      <Col xs={24} sm={12}>
-        <Form.Item name={'newAppSecret' as never} label={t('wiki.source.newAppSecret')} rules={[{ max: 128 }]}>
-          <Input.Password placeholder="AppSecret" maxLength={128} />
-        </Form.Item>
-      </Col>
-      <Col xs={24} sm={12}>
-        <Form.Item name={'newAppDomain' as never} label={t('wiki.source.newAppDomain')} extra={t('wiki.source.newAppDomainExtra')} rules={[{ max: 100 }]}>
-          <Input placeholder="https://open.feishu.cn" maxLength={100} />
-        </Form.Item>
-      </Col>
+      {/* 新建连接三件套仅创建时渲染：编辑弹窗不提供改绑入口，避免强迫用户重填被丢弃的密钥 */}
+      {!editing && (
+        <>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name={'newAppName' as never}
+              label={t('wiki.source.newAppName')}
+              rules={[
+                { required: true, message: t('wiki.source.newAppNameRequired') },
+                { max: 50, message: t('wiki.source.newAppNameMaxLength') },
+              ]}
+            >
+              <Input placeholder={t('wiki.source.newAppNamePlaceholder')} maxLength={50} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name={'newAppId' as never}
+              label={t('wiki.source.newAppId')}
+              rules={[
+                { required: true, message: t('wiki.source.newAppIdRequired') },
+                { max: 64, message: t('wiki.source.newAppIdMaxLength') },
+              ]}
+            >
+              <Input placeholder="cli_xxxxxxxx" maxLength={64} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              name={'newAppSecret' as never}
+              label={t('wiki.source.newAppSecret')}
+              rules={[
+                { required: true, message: t('wiki.source.newAppSecretRequired') },
+                { max: 128, message: t('wiki.source.newAppSecretMaxLength') },
+              ]}
+            >
+              <Input.Password placeholder="AppSecret" maxLength={128} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item name={'newAppDomain' as never} label={t('wiki.source.newAppDomain')} extra={t('wiki.source.newAppDomainExtra')} rules={[{ max: 100 }]}>
+              <Input placeholder="https://open.feishu.cn" maxLength={100} />
+            </Form.Item>
+          </Col>
+        </>
+      )}
       <Col xs={24} sm={12}>
         <Form.Item name={'feishuMaxDepth' as never} label={t('wiki.source.maxDepth')} extra={t('wiki.source.maxDepthHint')}>
           <InputNumber min={0} max={10} precision={0} style={{ width: '100%' }} />

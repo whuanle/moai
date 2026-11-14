@@ -43,7 +43,7 @@ public class QueryMyMemoriesCommandHandler : IRequestHandler<QueryMyMemoriesComm
         }
 
         var resolution = await _memoryService.ResolveAsync(request.AppId, request.ContextUserId, cancellationToken);
-        var (items, total) = await _memoryService.ListMineAsync(request.AppId, request.ContextUserId, request.Page, request.PageSize, cancellationToken);
+        var (items, total) = await _memoryService.ListMineAsync(request.AppId, request.ContextUserId, request.Page, request.PageSize, request.Keywords, cancellationToken);
 
         return new QueryMyMemoriesCommandResponse
         {

@@ -86,4 +86,22 @@ public class SettingsController : ControllerBase
 
         return await _mediator.Send(req, ct);
     }
+
+    /// <summary>
+    /// 更新登录页背景图（仅超级管理员可修改；ObjectKey 为空恢复默认背景）.
+    /// </summary>
+    /// <param name="req">更新背景图请求体.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("login-background")]
+    public async Task<EmptyCommandResponse> UpdateLoginBackground([FromBody] UpdateLoginBackgroundCommand req, CancellationToken ct)
+    {
+        var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
+        if (!userState.IsRoot)
+        {
+            throw new BusinessException("只有超级管理员可以修改登录页背景图") { StatusCode = 403 };
+        }
+
+        return await _mediator.Send(req, ct);
+    }
 }

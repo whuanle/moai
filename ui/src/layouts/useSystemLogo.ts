@@ -24,6 +24,22 @@ export function useSystemLogoSrc(): string {
 }
 
 /**
+ * 解析当前登录页背景图地址：超级管理员在系统设置上传后为自定义背景，空串表示未设置（登录页回退默认渐变）。
+ * 与 Logo 共用同一条 serverinfo，store 缺失时触发一次拉取。
+ */
+export function useLoginBackgroundSrc(): string {
+  const backgroundPath = useAppStore((state) => state.serverInfo?.loginBackgroundPath ?? '')
+
+  useEffect(() => {
+    if (!useAppStore.getState().serverInfo) {
+      void getServerInfo()
+    }
+  }, [])
+
+  return resolveStorageUrl(backgroundPath)
+}
+
+/**
  * 当前网站展示名称：超级管理员在系统设置修改后全局生效，空时回退 i18n 默认名（app.name）。
  * 与 Logo 共用同一条 serverinfo，store 缺失时触发一次拉取。
  */

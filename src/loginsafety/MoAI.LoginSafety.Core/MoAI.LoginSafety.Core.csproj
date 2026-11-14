@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.LoginSafety</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Hangfire.Core" />
+		<PackageReference Include="SmartFormat.NET" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\message\MoAI.Message.Shared\MoAI.Message.Shared.csproj" />
+		<ProjectReference Include="..\..\notification\MoAI.Notification.Shared\MoAI.Notification.Shared.csproj" />
+		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.LoginSafety.Api\MoAI.LoginSafety.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Handlers\" />
+		<Folder Include="Services\" />
+	</ItemGroup>
+
+</Project>

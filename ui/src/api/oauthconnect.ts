@@ -10,6 +10,8 @@ export interface OAuthConnectionItem {
   wellKnown?: string | null
   agentId?: string | null
   authorizeUrl?: string | null
+  /** 是否显示到登录页与个人中心绑定页（false=隐藏连接器，纯身份映射用） */
+  isVisible?: boolean | null
   createTime?: string | null
   createUserName?: string | null
   updateTime?: string | null
@@ -24,6 +26,8 @@ export interface CreateOAuthConnectionPayload {
   iconUrl: string
   wellKnown?: string
   agentId?: string
+  /** 是否显示到登录页与个人中心绑定页；false=隐藏连接器（纯身份映射用） */
+  isVisible?: boolean
 }
 
 export type UpdateOAuthConnectionPayload = Omit<CreateOAuthConnectionPayload, 'secret' | 'wellKnown'> & {

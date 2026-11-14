@@ -131,6 +131,25 @@ public class QueryAppLogsCommandHandler : IRequestHandler<QueryAppLogsCommand, Q
             item.UpdateUserName = string.Empty;
         }
 
+        // 填充服务的 CreateUserName 是昵称；日志用户列需与登录用户名并列展示，单独补查 user_name
+        var ownerUserIds = items
+            .Where(x => x.UserType == UserType.Normal)
+            .Select(x => x.OwnerId)
+            .Distinct()
+            .ToArray();
+        if (ownerUserIds.Length > 0)
+        {
+            var ownerNames = await _databaseContext.Users
+                .Where(x => ownerUserIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.UserName, cancellationToken);
+            foreach (var item in items.Where(x => x.UserType == UserType.Normal))
+            {
+                item.OwnerUserName = ownerNames.TryGetValue(item.OwnerId, out var ownerUserName)
+                    ? ownerUserName
+                    : string.Empty;
+            }
+        }
+
         return new QueryAppLogsCommandResponse
         {
             Items = items,

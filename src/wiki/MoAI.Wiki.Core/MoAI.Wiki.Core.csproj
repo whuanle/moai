@@ -10,6 +10,7 @@
 		<ProjectReference Include="..\..\feishu\MoAI.Feishu.Shared\MoAI.Feishu.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Configuration.Shared\MoAI.Infra.Configuration.csproj" />
 		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
+		<ProjectReference Include="..\..\statistics\MoAI.Statistics.Shared\MoAI.Statistics.Shared.csproj" />
 		<ProjectReference Include="..\..\team\MoAI.Team.Shared\MoAI.Team.Shared.csproj" />
 		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
@@ -21,6 +22,7 @@
 	<ItemGroup>
 		<PackageReference Include="AngleSharp" />
 		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
+		<PackageReference Include="Hangfire.Core" />
 		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 		<PackageReference Include="Maomi.ToMarkdown" />
 		<PackageReference Include="Maomi.ToMarkdown.Token" />
@@ -28,6 +30,7 @@
 		<PackageReference Include="ModelContextProtocol" />
 		<PackageReference Include="ModelContextProtocol.AspNetCore" />
 		<PackageReference Include="Npgsql" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 	</ItemGroup>
 
 	<ItemGroup>

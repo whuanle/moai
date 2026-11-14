@@ -36,7 +36,7 @@ public class QueryExternalKgRecallCommandHandler : IRequestHandler<QueryExternal
             throw new BusinessException("接入模式图谱不支持向量召回，可使用节点关键字搜索.") { StatusCode = 409 };
         }
 
-        var result = await _graphSearchService.SearchAsync([request.KnowledgeGraphId], request.Query, request.Top, request.MinScore, cancellationToken);
+        var result = await _graphSearchService.SearchAsync([request.KnowledgeGraphId], request.Query, request.Top, request.MinScore, cancellationToken: cancellationToken);
 
         return new QueryExternalKgRecallCommandResponse
         {

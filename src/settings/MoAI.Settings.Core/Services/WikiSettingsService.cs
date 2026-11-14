@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Seed;
@@ -41,5 +42,28 @@ public class WikiSettingsService : IWikiSettingsService
         }
 
         return maxFileSizeMb;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> GetAllowedFileTypesAsync(CancellationToken cancellationToken)
+    {
+        var key = SettingDefinitions.WikiAllowedFileTypesKey;
+        var value = await _databaseContext.Settings
+            .Where(s => s.Key == key)
+            .Select(s => s.Value)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return WikiFileTypes.Default;
+        }
+
+        // 存量库升级：未自定义过的行仍是旧默认值（提取能力扩容前），按新默认返回
+        if (string.Equals(value.Trim(), WikiFileTypes.LegacyDefaultValue, StringComparison.Ordinal))
+        {
+            return WikiFileTypes.Default;
+        }
+
+        return WikiFileTypes.ParseOrDefault(value);
     }
 }

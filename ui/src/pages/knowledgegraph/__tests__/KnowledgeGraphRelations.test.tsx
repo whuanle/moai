@@ -58,23 +58,23 @@ describe('KnowledgeGraphRelations', () => {
   it('管理员（能力开启）新建/编辑/删除可用', async () => {
     renderRelations(true, 1)
     expect(await screen.findByRole('button', { name: /新建关系/ })).toBeEnabled()
-    expect(await screen.findByRole('button', { name: /^编辑$/ })).toBeEnabled()
-    expect(await screen.findByRole('button', { name: /^删除$/ })).toBeEnabled()
+    expect(await screen.findByRole('button', { name: /编辑$/ })).toBeEnabled()
+    expect(await screen.findByRole('button', { name: /删除$/ })).toBeEnabled()
   })
 
   it('能力未开启时不显示新建/编辑/删除入口', async () => {
     renderRelations(false, 1)
     expect(await screen.findByText('依赖')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /新建关系/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^编辑$/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^删除$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /编辑$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /删除$/ })).not.toBeInTheDocument()
   })
 
   it('普通成员对关系数据只读（不显示写入口）', async () => {
     renderRelations(true, 0)
     expect(await screen.findByText('依赖')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /新建关系/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^编辑$/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^删除$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /编辑$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /删除$/ })).not.toBeInTheDocument()
   })
 })

@@ -4,13 +4,16 @@ import { RequireAuth } from '@/auth/RequireAuth'
 import { Login } from '@/pages/auth/Login'
 import { OAuthLogin } from '@/pages/auth/OAuthLogin'
 import { Register } from '@/pages/auth/Register'
+import { ForgotPassword } from '@/pages/auth/ForgotPassword'
 import { AppPlaza } from '@/pages/apps/AppPlaza'
 import { DesignSystemPreview } from '@/pages/DesignSystemPreview'
 import { Settings } from '@/pages/settings/Settings'
-import { AccountSettings } from '@/pages/account/AccountSettings'
+import { AccountPage } from '@/pages/account/AccountPage'
 import { OauthConnect } from '@/pages/oauthconnect/OauthConnect'
-import { Users } from '@/pages/users/Users'
 import { AdminTeams } from '@/pages/admin/AdminTeams'
+import { AdminIntegrations } from '@/pages/admin/AdminIntegrations'
+import { LoginSafety } from '@/pages/admin/LoginSafety'
+import { NotificationCenter } from '@/pages/admin/NotificationCenter'
 import { Publications } from '@/pages/publications/Publications'
 import { Models } from '@/pages/ai/Models'
 import { Teams } from '@/pages/teams/Teams'
@@ -18,6 +21,7 @@ import { TeamManage } from '@/pages/teams/TeamManage'
 import { AppWorkspace } from '@/pages/teams/apps/AppWorkspace'
 import { AppChat } from '@/pages/teams/apps/AppChat'
 import { MyMemoryPage } from '@/pages/teams/apps/MyMemoryPage'
+import { MemoryManagement } from '@/pages/memory/MemoryManagement'
 import { WikiDetail } from '@/pages/wiki/WikiDetail'
 import { WikiDocumentDetail } from '@/pages/wiki/WikiDocumentDetail'
 import { KnowledgeGraphDetail } from '@/pages/knowledgegraph/KnowledgeGraphDetail'
@@ -27,12 +31,17 @@ import { Skills } from '@/pages/skills/Skills'
 import { ClassifyPage } from '@/pages/classify/Classify'
 import { PromptCenter } from '@/pages/prompts/PromptCenter'
 import { PromptEditor } from '@/pages/prompts/PromptEditor'
+import { TeamAgentEditor } from '@/pages/teams/agents/TeamAgentEditor'
+import { SsoAuthorize } from '@/pages/sso/SsoAuthorize'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
   { path: '/oauth_login', element: <OAuthLogin /> },
   { path: '/register', element: <Register /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
   { path: '/design-system', element: <DesignSystemPreview /> },
+  // 子系统委托 SSO 跳转页（公开，未登录时引导登录后回跳）
+  { path: '/sso/authorize', element: <SsoAuthorize /> },
   {
     path: '/',
     element: (
@@ -50,18 +59,28 @@ export const router = createBrowserRouter([
       { path: 'prompts/:promptId/edit', element: <PromptEditor /> },
       { path: 'prompt-market', element: <PromptCenter /> },
       { path: 'skill-market', element: <Skills /> },
-      { path: 'account', element: <AccountSettings /> },
-      { path: 'users', element: <Users /> },
+      { path: 'account/:section?', element: <AccountPage /> },
+      // 用户管理已并入「组织用户」页第三个 Tab，旧地址平滑落位
+      { path: 'users', element: <Navigate to="/admin/teams?tab=users" replace /> },
       { path: 'admin/teams', element: <AdminTeams /> },
+      { path: 'admin/integrations', element: <AdminIntegrations /> },
+      { path: 'admin/loginsafety', element: <LoginSafety /> },
+      { path: 'admin/notifications', element: <NotificationCenter /> },
+      { path: 'admin/subsystems', element: <Navigate to="/admin/integrations" replace /> },
       { path: 'publications', element: <Publications /> },
       { path: 'team', element: <Teams /> },
       { path: 'team/:id/:section?', element: <TeamManage /> },
       { path: 'team/:teamId/prompt/new', element: <PromptEditor /> },
       { path: 'team/:teamId/prompt/:promptId/edit', element: <PromptEditor /> },
+      // 团队智能体编辑页：主智能体 + N 个子智能体内容较大，独立页编辑
+      { path: 'team/:teamId/agent/new', element: <TeamAgentEditor /> },
+      { path: 'team/:teamId/agent/:agentId/edit', element: <TeamAgentEditor /> },
       { path: 'team/:teamId/app/:appId/:section?', element: <AppWorkspace /> },
       { path: 'team/:teamId/app/:appId/chat/:sessionId?', element: <AppChat /> },
       // 我的记忆管理页（当前用户在本应用下的长期记忆，仅删除/清空）
       { path: 'team/:teamId/app/:appId/memory/mine', element: <MyMemoryPage /> },
+      // 记忆管理页（个人跨应用：按应用查看本人记忆 + 个人全局记忆维护）
+      { path: 'memory', element: <MemoryManagement /> },
       { path: 'team/:teamId/wiki/:wikiId/:section?', element: <WikiDetail /> },
       { path: 'team/:teamId/wiki/:wikiId/document/:documentId/:section?', element: <WikiDocumentDetail /> },
       { path: 'team/:teamId/kg/:graphId/:section?', element: <KnowledgeGraphDetail /> },

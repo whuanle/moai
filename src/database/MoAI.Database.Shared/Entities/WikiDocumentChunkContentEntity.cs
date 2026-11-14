@@ -45,6 +45,11 @@ public partial class WikiDocumentChunkContentEntity : IFullAudited
     public int SliceLength { get; set; }
 
     /// <summary>
+    /// 切片标题锚点（所在章节的标题面包屑，如「标题A > 标题B」，切割时从 markdown 标题结构提取；空串表示未定位到章节）.
+    /// </summary>
+    public string SliceAnchor { get; set; } = string.Empty;
+
+    /// <summary>
     /// 创建人.
     /// </summary>
     public long CreateUserId { get; set; }

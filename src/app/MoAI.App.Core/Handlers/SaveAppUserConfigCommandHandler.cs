@@ -5,6 +5,7 @@ using MoAI.App.Commands;
 using MoAI.App.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Database.Seed;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Services;
@@ -18,16 +19,19 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IPublicAppScopeService _publicAppScopeService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SaveAppUserConfigCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public SaveAppUserConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="publicAppScopeService">应用市场可视范围判定服务.</param>
+    public SaveAppUserConfigCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IPublicAppScopeService publicAppScopeService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _publicAppScopeService = publicAppScopeService;
     }
 
     /// <inheritdoc/>
@@ -42,7 +46,9 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
         }
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
-        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        // 非团队成员仅在「已发布且公开到平台且在可视范围内」时可使用（团队成员不受市场可视范围限制）
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1
+            && (myRole != null || await _publicAppScopeService.IsAllowedAsync(app.Id, request.ContextUserId, cancellationToken));
         if (myRole == null && !canUseAsPublic)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
@@ -50,10 +56,10 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
 
         if (request.PromptId != 0)
         {
-            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, app.TeamId, request.ContextUserId, cancellationToken);
+            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, request.PromptId, app.Id, request.ContextUserId, cancellationToken);
         }
 
-        // 应用默认技能集合：用户勾选只能落在该集合内
+        // 可选技能池 = 应用默认 ∪ 市场公开 ∪ 本人个人（应用默认按配置 JSON 原样放行，容忍已删除/停用的存量勾选）
         var skillsJson = await _databaseContext.AppAgentConfigs.AsNoTracking()
             .Where(x => x.AppId == request.AppId)
             .Select(x => x.Skills)
@@ -61,13 +67,24 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
         var defaultSkillIds = AppAgentConfigJson.ParseGuidList(skillsJson).ToHashSet();
 
         var skills = request.Skills?.Distinct().ToList() ?? new List<Guid>();
-        if (skills.Count > 0 && skills.Any(x => !defaultSkillIds.Contains(x)))
+        if (skills.Count > 0)
         {
-            throw new BusinessException("存在应用未开放的技能，请在应用设置中重新选择.") { StatusCode = 400 };
+            var rows = await _databaseContext.Skills.AsNoTracking()
+                .Where(x => skills.Contains(x.Id))
+                .Select(x => new { x.Id, x.TeamId, x.IsSystem, x.IsPublic, x.IsDisable, x.CreateUserId })
+                .ToListAsync(cancellationToken);
+            var inPool = skills.All(id => defaultSkillIds.Contains(id)
+                || rows.Any(r => r.Id == id && !r.IsDisable
+                    && (r.IsPublic || (r.TeamId == 0 && !r.IsSystem && r.CreateUserId == request.ContextUserId))));
+            if (!inPool)
+            {
+                throw new BusinessException("存在不可用的技能，请在应用设置中重新选择.") { StatusCode = 400 };
+            }
         }
 
         // 长期记忆模式：应用开启记忆时才允许用户调整；跨应用选项须应用授权（ScopeDefault=crossApp），关闭记忆时仅允许 0/1
-        if (request.MemoryMode.HasValue)
+        // 长期记忆偏好（模式与全局接入）：应用开启记忆时才允许用户调整；未开启时拒绝
+        if (request.MemoryMode.HasValue || request.MemoryGlobalMode.HasValue)
         {
             var configRow = await _databaseContext.AppAgentConfigs.AsNoTracking()
                 .Where(x => x.AppId == request.AppId)
@@ -77,10 +94,12 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
                 ? MoAI.Database.Aggregates.AppAgentConfigSnapshot.TryParse(configRow?.PublishedConfig)?.ExecutionSettings ?? configRow?.ExecutionSettings
                 : configRow?.ExecutionSettings;
             var memorySettings = MoAI.AI.Models.AgentMemorySettings.ParseExecutionSettings(effectiveSettings);
-            // 应用开启记忆时用户可自由选择模式（跨应用为用户自主设置，无应用级授权闸门）；未开启仅允许 0/1
-            var memoryEnabled = memorySettings is { Enabled: true };
-            var mode = request.MemoryMode.Value;
-            if (!memoryEnabled && mode != MoAI.AI.Models.AgentMemorySettings.UserModeFollowApp && mode != MoAI.AI.Models.AgentMemorySettings.UserModeOff)
+            // 平台未开启长期记忆（MEMORY_* 总开关/模型未就绪）时与应用未开启同责：运行时一律不生效
+            var memoryEnabled = memorySettings is { Enabled: true } && await IsPlatformMemoryUsableAsync(cancellationToken);
+            // 应用开启记忆时用户可自由选择模式；未开启仅允许记忆模式 0/1，全局接入直接拒绝
+            var mode = request.MemoryMode ?? MoAI.AI.Models.AgentMemorySettings.UserModeFollowApp;
+            if ((!memoryEnabled && mode != MoAI.AI.Models.AgentMemorySettings.UserModeFollowApp && mode != MoAI.AI.Models.AgentMemorySettings.UserModeOff)
+                || (!memoryEnabled && request.MemoryGlobalMode.HasValue))
             {
                 throw new BusinessException("该应用未开启长期记忆.") { StatusCode = 400 };
             }
@@ -103,6 +122,7 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
                     ? request.ToolApprovalMode!
                     : MoAI.AI.AppToolApprovalContract.ModeAuto,
                 MemoryMode = (short)(request.MemoryMode ?? MoAI.AI.Models.AgentMemorySettings.UserModeFollowApp),
+                MemoryGlobalMode = (short)(request.MemoryGlobalMode ?? MoAI.AI.Models.AgentMemorySettings.UserGlobalModeOn),
             };
             _databaseContext.AppUserConfigs.Add(userConfig);
         }
@@ -119,9 +139,35 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
             {
                 userConfig.MemoryMode = (short)request.MemoryMode.Value;
             }
+
+            if (request.MemoryGlobalMode.HasValue)
+            {
+                userConfig.MemoryGlobalMode = (short)request.MemoryGlobalMode.Value;
+            }
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return EmptyCommandResponse.Default;
+    }
+
+    /// <summary>
+    /// 解析平台长期记忆是否可用（MEMORY_ENABLED=true 且已选统一向量化模型），与应用配置共同决定用户记忆偏好是否可调整.
+    /// </summary>
+    private async Task<bool> IsPlatformMemoryUsableAsync(CancellationToken cancellationToken)
+    {
+        var keys = new[]
+        {
+            SettingDefinitions.MemoryEnabledKey,
+            SettingDefinitions.MemoryEmbeddingModelKey,
+        };
+        var values = await _databaseContext.Settings.AsNoTracking()
+            .Where(s => keys.Contains(s.Key))
+            .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
+        string Resolve(string key) => values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : SettingDefinitions.Find(key)?.DefaultValue ?? string.Empty;
+        var enabled = string.Equals(Resolve(SettingDefinitions.MemoryEnabledKey).Trim(), "true", StringComparison.OrdinalIgnoreCase);
+        var hasModel = Guid.TryParse(Resolve(SettingDefinitions.MemoryEmbeddingModelKey).Trim(), out var modelId) && modelId != Guid.Empty;
+        return enabled && hasModel;
     }
 }

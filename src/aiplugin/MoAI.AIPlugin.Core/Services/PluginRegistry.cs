@@ -15,6 +15,7 @@ public class PluginRegistry : IPluginRegistry
     private const string ContractsAssemblyName = "MoAI.AIPlugin.Shared";
 
     private readonly ConcurrentDictionary<string, PluginInfo> _plugins = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, byte> _enabled = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _gate = new();
     private bool _scanned;
 
@@ -22,21 +23,46 @@ public class PluginRegistry : IPluginRegistry
     public IReadOnlyList<PluginInfo> GetAll()
     {
         EnsureScanned();
-        return _plugins.Values.OrderBy(x => x.Key).ToList();
+        return _plugins.Values.Where(x => _enabled.ContainsKey(x.Key)).OrderBy(x => x.Key).ToList();
     }
 
     /// <inheritdoc/>
     public PluginInfo? Get(string key)
     {
         EnsureScanned();
-        _plugins.TryGetValue(key, out var info);
-        return info;
+        return _enabled.ContainsKey(key) && _plugins.TryGetValue(key, out var info) ? info : null;
     }
 
     /// <inheritdoc/>
-    public void RegisterAssembly(Assembly assembly)
+    public void RegisterAssembly(Assembly assembly, bool enabled = true)
     {
-        ScanAssembly(assembly);
+        ScanAssembly(assembly, enabled);
+    }
+
+    /// <inheritdoc/>
+    public void SetEnabled(string key, bool enabled)
+    {
+        EnsureScanned();
+        if (!_plugins.ContainsKey(key))
+        {
+            return;
+        }
+
+        if (enabled)
+        {
+            _enabled.TryAdd(key, 0);
+        }
+        else
+        {
+            _enabled.TryRemove(key, out _);
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool IsRegistered(string key)
+    {
+        EnsureScanned();
+        return _plugins.ContainsKey(key);
     }
 
     private void EnsureScanned()
@@ -55,14 +81,14 @@ public class PluginRegistry : IPluginRegistry
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                ScanAssembly(assembly);
+                ScanAssembly(assembly, enabled: true);
             }
 
             _scanned = true;
         }
     }
 
-    private void ScanAssembly(Assembly assembly)
+    private void ScanAssembly(Assembly assembly, bool enabled)
     {
         if (assembly.IsDynamic || !ReferencesContracts(assembly))
         {
@@ -73,7 +99,10 @@ public class PluginRegistry : IPluginRegistry
         {
             if (PluginTypeHelper.TryGetPluginInfo(type) is { } info)
             {
-                _plugins.TryAdd(info.Key, info);
+                if (_plugins.TryAdd(info.Key, info) && enabled)
+                {
+                    _enabled.TryAdd(info.Key, 0);
+                }
             }
         }
     }

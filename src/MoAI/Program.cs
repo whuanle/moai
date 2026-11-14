@@ -1,13 +1,14 @@
 using Maomi.I18n;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI;
 using MoAI.AI;
 using MoAI.AI.A2a;
 using MoAI.AI.Acp;
-using MoAI.Gateway;
 using MoAI.KnowledgeGraph;
 using MoAI.KnowledgeGraph.Mcp;
+using MoAI.Message.Hubs;
 using MoAI.Wiki;
 using Scalar.AspNetCore;
 
@@ -27,28 +28,63 @@ builder.WebHost.ConfigureKestrel((options) =>
 
 WebApplication app = builder.Build();
 
+// 反向代理穿透：MoAI:ForwardedHeaders:Enabled=true 时从 X-Forwarded-For / X-Forwarded-Proto 解析真实客户端 IP，
+// 登录风控、审计等依赖真实 IP 的能力必须开启；KnownProxies 为可信代理 IP 列表，留空表示信任任意直连对端
+// （自托管部署通常在可信内网反代之后，代理 IP 不固定；公网直连暴露端口时切勿开启，否则 IP 可被伪造）。
+// 必须置于管道最前，保证后续 CORS/认证/控制器读到的 RemoteIpAddress 已是真实客户端 IP
+var forwardedHeadersConfig = builder.Configuration.GetSection("MoAI:ForwardedHeaders").Get<ForwardedHeadersOptions>();
+if (forwardedHeadersConfig is { Enabled: true })
+{
+    var forwardOptions = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    };
+
+    forwardOptions.KnownNetworks.Clear();
+    forwardOptions.KnownProxies.Clear();
+    if (forwardedHeadersConfig.KnownProxies != null)
+    {
+        foreach (var proxy in forwardedHeadersConfig.KnownProxies)
+        {
+            if (System.Net.IPAddress.TryParse(proxy, out var ip))
+            {
+                forwardOptions.KnownProxies.Add(ip);
+            }
+        }
+    }
+
+    app.UseForwardedHeaders(forwardOptions);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseOpenApi(c =>
     {
         c.Path = "/openapi/{documentName}.json";
     });
-    // API 文档：/scalar 同页下拉切换 v1（内部接口）与 external（外部接口）两份文档，
-    // 原始文档分别为 /openapi/v1.json 与 /openapi/external.json（外部文档也可直接访问 /scalar/external）
+    // API 文档：/scalar 同页下拉切换 v1（内部接口）、teamres（团队资源接口）与 subsys（子系统协作接口）三份文档，
+    // 原始文档分别为 /openapi/v1.json、/openapi/teamres.json 与 /openapi/subsys.json（也可直接访问 /scalar/teamres、/scalar/subsys）
     app.MapScalarApiReference(options =>
     {
         options.AddDocument("v1", "AI API", isDefault: true);
-        options.AddDocument("external", "AI External API");
+        options.AddDocument("teamres", "AI Team Resource API");
+        options.AddDocument("subsys", "AI Subsystem API");
     });
 }
 else
 {
-    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留外部接口文档供第三方接入方获取
+    // 部署环境：内部文档 v1 与 Scalar 不暴露，仅保留团队资源接口文档与子系统协作文档供接入方获取
     // （Path 不含 {documentName} 占位符时 DocumentName 为固定绑定，NSwag 不会响应其它文档名）
     app.UseOpenApi(c =>
     {
-        c.Path = "/openapi/external.json";
-        c.DocumentName = "external";
+        c.Path = "/openapi/teamres.json";
+        c.DocumentName = "teamres";
+    });
+
+    app.UseOpenApi(c =>
+    {
+        c.Path = "/openapi/subsys.json";
+        c.DocumentName = "subsys";
     });
 
     // 其余 /openapi/**、/scalar/** 明确 404，避免落入 SPA 回退返回 index.html
@@ -92,6 +128,7 @@ app.UseAuthorization();
 
 // 自定义鉴权中间件
 app.UseMiddleware<MoAI.App.ExternalAuthenticationMiddleware>();
+app.UseMiddleware<MoAI.Subsystem.SubsysAccessMiddleware>();
 app.UseMoAI();
 
 // 配置静态文件服务（支持 SPA）
@@ -125,30 +162,48 @@ app.Use(async (HttpContext context, RequestDelegate next) =>
 
 app.UseHttpLogging();
 
-// 知识库 MCP 服务器（/api/external/wiki/{wikiId}/mcp）：
+// 知识库 MCP 服务器（/api/teamres/wiki/{wikiId}/mcp）：
 // 接入 key 鉴权（含 wiki_mcp 范围与 wikiId 归属校验）由 ExternalAuthenticationMiddleware 在上方统一处理
 app.MapWikiMcp();
 
-// 知识图谱 MCP 服务器（/api/external/knowledge-graph/{kgId}/mcp）：鉴权（kg_mcp 范围与 kgId 归属）同由中间件统一处理；
+// 知识图谱 MCP 服务器（/api/teamres/knowledge-graph/{kgId}/mcp）：鉴权（kg_mcp 范围与 kgId 归属）同由中间件统一处理；
 // 与知识库 MCP 共享 McpServerOptions，工具按请求路径经 KnowledgeGraphMcpToolGate 分域（启动时注入一次 HttpContextAccessor）
 KnowledgeGraphMcpToolGate.Initialize(app.Services.GetRequiredService<IHttpContextAccessor>());
 app.MapKnowledgeGraphMcp();
 
 app.MapControllers();
 
-// 团队模型网关（OpenAI/Anthropic 兼容 /v1 端点）
-app.MapGatewayEndpoints();
+// 站内信/平台事件推送 Hub（/hub/moai）：只推事件不推数据，JWT 经 access_token 查询参数鉴权
+// （见 ConfigureAuthorizaModule.OnMessageReceived），多实例经 Redis backplane 共享连接状态
+app.MapHub<MoAIEventHub>("/hub/moai").RequireAuthorization();
+
 
 // Agent 应用对话（AG-UI SSE 端点 /api/app/{appId}/chat）
 app.MapAppAgentEndpoints();
 
-// 应用 ACP 服务器（/api/external/app/{appId}/acp，agent-to-agent）：鉴权（app_acp 范围与 appId 归属）同由中间件统一处理
+// 应用 ACP 服务器（/api/teamres/app/{appId}/acp，agent-to-agent）：鉴权（app_acp 范围与 appId 归属）同由中间件统一处理
 app.MapAppAcpEndpoint();
 
-// 应用 A2A 服务器（/api/external/app/{appId}/a2a，Google Agent2Agent JSON-RPC）：鉴权（app_a2a 范围与 appId 归属）同由中间件统一处理
+// 应用 A2A 服务器（/api/teamres/app/{appId}/a2a，Google Agent2Agent JSON-RPC）：鉴权（app_a2a 范围与 appId 归属）同由中间件统一处理
 app.MapAppA2aEndpoint();
 
 // SPA 回退：未匹配的路由返回 index.html（放在最后，以免抢在认证分发之前）
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+/// <summary>
+/// 反向代理穿透配置（MoAI:ForwardedHeaders 节）.
+/// </summary>
+public class ForwardedHeadersOptions
+{
+    /// <summary>
+    /// 是否启用 X-Forwarded-* 解析（部署在反向代理之后时开启）.
+    /// </summary>
+    public bool Enabled { get; init; }
+
+    /// <summary>
+    /// 可信代理 IP 列表；留空表示信任任意直连对端（可信内网部署）.
+    /// </summary>
+    public List<string>? KnownProxies { get; init; }
+}

@@ -205,6 +205,63 @@ async function main() {
     check('TM-16g 重复转让给当前负责人 400', (await api('PUT', `/api/admin/team/${TID4}/owner`, { token: adminToken, body: { userId: pick.userId } })).status === 400)
     check('TM-16h 清理：管理员禁用治理团队 200（团队不可解散，禁用归档）', (await api('PUT', `/api/admin/team/${TID4}/disable`, { token: adminToken, body: { isDisable: true } })).status === 200)
 
+    // TM-18 批量添加团队成员（@TM-S18，前端添加成员弹窗的接口面）
+    {
+      const dm1 = await mkuser('dm')
+      const dm2 = await mkuser('dm')
+      const dm3 = await mkuser('dm')
+      const dm4 = await mkuser('dm')
+
+      check('TM-18a 空用户列表 400', (await api('POST', `/api/team/${TID}/users/batch`, { token: owner.token, body: { userIds: [], role: 0 } })).status === 400)
+      check('TM-18b 超过 200 人上限 400', (await api('POST', `/api/team/${TID}/users/batch`, { token: owner.token, body: { userIds: Array.from({ length: 201 }, (_, i) => i + 1), role: 0 } })).status === 400)
+      check('TM-18c 用户列表重复 400', (await api('POST', `/api/team/${TID}/users/batch`, { token: owner.token, body: { userIds: [dm1.userId, dm1.userId], role: 0 } })).status === 400)
+      check('TM-18d 批量角色 Owner 400', (await api('POST', `/api/team/${TID}/users/batch`, { token: owner.token, body: { userIds: [dm1.userId], role: 2 } })).status === 400)
+      check('TM-18e Admin 批量授 Admin 403', (await api('POST', `/api/team/${TID}/users/batch`, { token: bob.token, body: { userIds: [dm1.userId], role: 1 } })).status === 403)
+
+      const batch = await api('POST', `/api/team/${TID}/users/batch`, { token: owner.token, body: { userIds: [dm1.userId, dm2.userId, dm3.userId, 99999999], role: 0 } })
+      check(
+        'TM-18f Owner 批量添加 3 人 + 不存在跳过',
+        batch.status === 200 && batch.json?.addedCount === 3 && (batch.json?.notFoundUserIds ?? []).map(String).includes('99999999') && (batch.json?.skippedUserIds ?? []).length === 0,
+        `${batch.status} ${batch.text.slice(0, 160)}`,
+      )
+      const reBatch = await api('POST', `/api/team/${TID}/users/batch`, { token: owner.token, body: { userIds: [dm1.userId, dm2.userId, dm3.userId], role: 0 } })
+      check(
+        'TM-18g 重复批量添加整批跳过',
+        reBatch.status === 200 && reBatch.json?.addedCount === 0 && (reBatch.json?.skippedUserIds ?? []).map(String).sort().join(',') === [dm1.userId, dm2.userId, dm3.userId].sort().join(','),
+        `${reBatch.status} ${reBatch.text.slice(0, 160)}`,
+      )
+      const membersAfter = await api('GET', `/api/team/${TID}/users`, { token: owner.token })
+      const memberIds = (membersAfter.json?.items ?? []).map(i => String(i.userId))
+      check('TM-18h 成员列表包含批量加入的三人', [dm1, dm2, dm3].every(u => memberIds.includes(String(u.userId))), JSON.stringify(memberIds))
+      const adminBatch = await api('POST', `/api/team/${TID}/users/batch`, { token: bob.token, body: { userIds: [dm4.userId], role: 0 } })
+      check('TM-18i Admin 批量加 Member 200', adminBatch.status === 200 && adminBatch.json?.addedCount === 1, `${adminBatch.status} ${adminBatch.text.slice(0, 120)}`)
+
+      // TM-17 团队侧组织架构只读视图（@TM-S19，前端弹窗左侧组织树的数据面）
+      const dm5 = await mkuser('dm')
+      const orgCreate = await api('POST', '/api/org/role/create', { token: adminToken, body: { name: 'e2e-org-' + TS } })
+      check('TM-17a 管理员创建组织角色 200', orgCreate.status === 200 && Number(orgCreate.json?.orgRoleId) > 0, `${orgCreate.status} ${orgCreate.text.slice(0, 120)}`)
+      const ORGID = Number(orgCreate.json?.orgRoleId)
+      for (const u of [dm2, dm3, dm5]) {
+        await api('PUT', `/api/org/user/${u.userId}/roles`, { token: adminToken, body: { roleIds: [ORGID] } })
+      }
+
+      check('TM-17b 未登录查团队组织架构 401', (await api('GET', `/api/team/${TID}/org/role/list`)).status === 401)
+      check('TM-17c 非成员查团队组织架构 404', (await api('GET', `/api/team/${TID}/org/role/list`, { token: alice.token })).status === 404)
+      check('TM-17d Member 查团队组织架构 403', (await api('GET', `/api/team/${TID}/org/role/list`, { token: dm1.token })).status === 403)
+      const orgList = await api('GET', `/api/team/${TID}/org/role/list`, { token: bob.token })
+      const orgRow = (orgList.json?.items ?? []).find(i => Number(i.orgRoleId) === ORGID)
+      check('TM-17e Admin 查组织架构 200 且命中角色带直属人数', orgList.status === 200 && !!orgRow && orgRow.userCount === 3, `${orgList.status} ${orgList.text.slice(0, 200)}`)
+      const orgUsers = await api('GET', `/api/team/${TID}/org/role/${ORGID}/users`, { token: bob.token })
+      const orgUserIds = (orgUsers.json?.items ?? []).map(i => String(i.userId)).sort()
+      check(
+        'TM-17f Admin 查组织角色用户 200 返回绑定成员',
+        orgUsers.status === 200 && orgUserIds.join(',') === [dm2, dm3, dm5].map(u => String(u.userId)).sort().join(','),
+        `${orgUsers.status} ${orgUsers.text.slice(0, 200)}`,
+      )
+      check('TM-17g 组织角色不存在 404', (await api('GET', `/api/team/${TID}/org/role/99999999/users`, { token: bob.token })).status === 404)
+      check('TM-17h 清理：删除组织角色 200（解绑用户）', (await api('DELETE', `/api/org/role/${ORGID}`, { token: adminToken })).status === 200)
+    }
+
     // 收尾清理：团队不可解散，脚本创建的团队统一禁用归档（TID4 已在 TM-16h 处理）
     for (const id of cleanupTeamIds) {
       check(`清理：禁用团队 ${id}`, (await api('PUT', `/api/admin/team/${id}/disable`, { token: adminToken, body: { isDisable: true } })).status === 200)

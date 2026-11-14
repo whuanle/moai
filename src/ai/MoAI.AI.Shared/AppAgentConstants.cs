@@ -35,4 +35,16 @@ public static class AppAgentConstants
     /// 正式对话（应用对话页/飞书等）不携带，按已发布快照执行.
     /// </summary>
     public const string WorkflowDraftHeaderName = "X-Moai-Workflow-Draft";
+
+    /// <summary>
+    /// 对话 SSE 请求上携带用户所选对话模型的请求头（值为 ai_model.id 的 uuid）：
+    /// 须在应用配置的可选模型列表内且该团队可用，否则后端静默回退默认模型；未携带按默认模型.
+    /// </summary>
+    public const string ModelHeaderName = "X-Moai-Model-Id";
+
+    /// <summary>
+    /// 对话 SSE 请求上携带用户所选团队智能体的请求头（值为 team_agent.id 的 uuid）：
+    /// 须在应用配置的绑定列表内，否则静默回退默认智能体；未携带按默认智能体.
+    /// </summary>
+    public const string TeamAgentHeaderName = "X-Moai-Team-Agent-Id";
 }

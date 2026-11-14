@@ -337,6 +337,77 @@ async function main() {
     }
   }
 
+  // ===== 插件使用统计（系统管理端全团队汇总 + 团队端本团队口径，TP-37 系）=====
+  {
+    const statsKey = `tpstat_${TS.slice(-3).replace(/./g, (c) => String.fromCharCode(97 + Number(c)))}`
+    const statsCreate = await api('POST', `/api/team/${TID}/plugin/dynamic`, { token: owner.token, body: { teamId: TID, instanceKey: statsKey, templeteKey: 'dynamic_greet', title: '统计样本插件', description: 'E2E 插件统计样本', config: '{}' } })
+    check('TP-37p 前置：创建统计样本团队插件 200', statsCreate.status === 200, statsCreate.text.slice(0, 160))
+
+    // TP-37 门禁：系统统计仅管理员，团队统计仅成员
+    check('TP-37a 无 token 查系统插件统计 401', (await api('GET', '/api/ai/plugin/manage/stats')).status === 401)
+    check('TP-37b 普通用户查系统插件统计 403', (await api('GET', '/api/ai/plugin/manage/stats', { token: owner.token })).status === 403)
+    check('TP-37c 无 token 查团队统计 401', (await api('GET', `/api/team/${TID}/plugin/stats`)).status === 401)
+    check('TP-37d 非成员查团队统计 404', (await api('GET', `/api/team/${TID}/plugin/stats`, { token: outsider.token })).status === 404)
+    check('TP-37e 非法 teamId 查团队统计 404（与 list 端点口径一致：团队不存在）', (await api('GET', '/api/team/0/plugin/stats', { token: owner.token })).status === 404)
+
+    const statsAdminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const statsAdminToken = statsAdminLogin.json?.accessToken
+
+    if (statsAdminToken) {
+      // TP-38 系统统计：全团队汇总（系统侧 + 全部团队自有插件）
+      const sysStats = await api('GET', '/api/ai/plugin/manage/stats', { token: statsAdminToken })
+      const ss = sysStats.json
+      check('TP-38a admin 查全团队统计 200 且概览结构齐全', sysStats.status === 200 && ss?.totalPlugins !== undefined && ss?.totalCalls !== undefined && ss?.totalFunctions !== undefined && ss?.mcpCount !== undefined && ss?.openApiCount !== undefined && Array.isArray(ss?.top) && Array.isArray(ss?.classifies), sysStats.text.slice(0, 160))
+      check('TP-38b TOP 项均带团队维度字段（teamId 必带，teamName 团队插件为字符串、系统侧 null 省略）', (ss?.top ?? []).every((x) => typeof x.teamId === 'number' && (x.teamName === undefined || typeof x.teamName === 'string')), JSON.stringify(ss?.top)?.slice(0, 200))
+      check('TP-38c 分类分布项均带 id 与计数（未分类 classifyName 省略）', (ss?.classifies ?? []).every((x) => typeof x.classifyId === 'number' && x.count !== undefined && (x.classifyName === undefined || typeof x.classifyName === 'string')))
+      check('TP-38d 趋势近 30 天逐日补 0', Array.isArray(ss?.trend?.items) && ss.trend.items.length === 30 && ss.trend.items.every((x) => x.date !== undefined && x.count !== undefined))
+
+      // TP-39 团队统计：仅本团队自有插件
+      const teamStats = await api('GET', `/api/team/${TID}/plugin/stats`, { token: member.token })
+      const ts = teamStats.json
+      check('TP-39a 成员查团队统计 200 且回显 teamId', teamStats.status === 200 && Number(ts?.teamId) === TID, teamStats.text.slice(0, 160))
+      check('TP-39b 团队统计含样本插件且 TOP 项不带团队维度字段（本团队口径）', Number(ts?.totalPlugins) >= 1 && (ts?.top ?? []).some((x) => x.name === '统计样本插件') && (ts?.top ?? []).every((x) => !('teamName' in x) && !('teamId' in x)), JSON.stringify(ts?.top)?.slice(0, 200))
+      check('TP-39c 团队统计趋势近 30 天', Array.isArray(ts?.trend?.items) && ts.trend.items.length === 30)
+      check('TP-39d 团队统计总数不超过全团队汇总', Number(ts?.totalPlugins) <= Number(ss?.totalPlugins))
+
+      // 清理统计样本
+      const listStats = await api('GET', `/api/team/${TID}/plugin/list`, { token: owner.token })
+      const statsItem = (listStats.json?.items ?? []).find((x) => x.pluginName === statsKey)
+      if (statsItem) await api('DELETE', `/api/team/${TID}/plugin/${statsItem.pluginId}`, { token: owner.token })
+    }
+  }
+
+  // TSM 团队插件语义配置（@DYN-S154~S158）：团队自有插件的使用须知/语义条目/工具元数据
+  if (dynItem) {
+    const semId = dynItem.pluginId
+    // @DYN-S154 非团队成员 404（团队维度隔离）
+    check('TSM-1 非成员查语义 404', (await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: outsider.token })).status === 404)
+    // @DYN-S155 团队成员可读，工具清单为单工具固定 run 项
+    const mSem = await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: member.token })
+    check('TSM-2 成员查语义 200 且工具清单含 run', mSem.status === 200 && (mSem.json?.tools ?? []).some((x) => x.key === 'run'), mSem.text.slice(0, 160))
+    // @DYN-S156 团队成员保存 403（仅 Owner/Admin 可管理）
+    check('TSM-3 成员保存语义 403', (await api('PUT', `/api/team/${TID}/plugin/${semId}/semantic`, { token: member.token, body: { usageNotes: 'x', notes: [], toolMetas: [] } })).status === 403)
+    // @DYN-S157 Owner 保存 + 回显一致（须知/条目/策略/注解位）
+    const semBody = {
+      usageNotes: '团队语义须知',
+      notes: [{ toolKey: '', title: '须知条目', content: '内容', mode: 'onDemand', sortOrder: 0 }],
+      toolMetas: [{ toolKey: 'run', extraNotes: '补充', callPolicy: '{"denyPatterns":["delete\\\\s"],"action":"block"}', readOnlyHint: true, destructiveHint: false }],
+    }
+    const semSave = await api('PUT', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner.token, body: semBody })
+    const semBack = await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner.token })
+    check('TSM-4 Owner 保存 200', semSave.status === 200, `${semSave.status} ${semSave.text.slice(0, 120)}`)
+    check('TSM-5 语义配置回显一致', semBack.json?.usageNotes === '团队语义须知'
+      && (semBack.json?.notes ?? []).length === 1 && semBack.json.notes[0].mode === 'onDemand'
+      && (semBack.json?.toolMetas ?? []).length === 1
+      && (semBack.json.toolMetas[0].callPolicy ?? '').includes('denyPatterns')
+      && semBack.json.toolMetas[0].readOnlyHint === true
+      && semBack.json.toolMetas[0].destructiveHint === false, semBack.text.slice(0, 200))
+    // @DYN-S158 调用策略 action 非法 400（与系统侧同一校验）
+    check('TSM-6 调用策略 action 非法 400', (await api('PUT', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner.token, body: { usageNotes: '', notes: [], toolMetas: [{ toolKey: 'run', extraNotes: '', callPolicy: '{"denyPatterns":["a"],"action":"nuke"}', readOnlyHint: false, destructiveHint: false }] } })).status === 400)
+    // 他团队管理员（非本团队成员）访问 → 404
+    check('TSM-7 他团队管理员访问 404', (await api('GET', `/api/team/${TID}/plugin/${semId}/semantic`, { token: owner2.token })).status === 404)
+  }
+
   // TP-19 Owner 删除团队动态插件
   if (dynItem) {
     check('TP-19a Owner 删除团队插件 200', (await api('DELETE', `/api/team/${TID}/plugin/${dynItem.pluginId}`, { token: owner.token })).status === 200)

@@ -24,4 +24,9 @@ public class QueryTeamAllCommandResponseItem
     /// 成员数量.
     /// </summary>
     public int MemberCount { get; set; }
+
+    /// <summary>
+    /// 团队头像（存储 ObjectKey，前端拼装 /static 地址展示）.
+    /// </summary>
+    public string Avatar { get; set; } = string.Empty;
 }

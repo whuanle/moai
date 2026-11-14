@@ -50,6 +50,11 @@ public partial class UserEntity : IFullAudited
     public string Phone { get; set; } = default!;
 
     /// <summary>
+    /// 两步验证密钥（AES 加密后的 base32，未绑定为空）.
+    /// </summary>
+    public string? TotpSecret { get; set; }
+
+    /// <summary>
     /// 禁用.
     /// </summary>
     public bool IsDisable { get; set; }
@@ -58,6 +63,11 @@ public partial class UserEntity : IFullAudited
     /// 是否管理员.
     /// </summary>
     public bool IsAdmin { get; set; }
+
+    /// <summary>
+    /// 是否启用两步验证（TOTP）.
+    /// </summary>
+    public bool IsTotpEnabled { get; set; }
 
     /// <summary>
     /// 计算密码值的salt.

@@ -1,4 +1,12 @@
 import { getApiClient } from '@/api/kiota'
+import {
+  normalizePluginSemantic,
+  normalizePluginStats,
+  type PluginSemanticData,
+  type PluginSemanticNoteItem,
+  type PluginStatsData,
+  type PluginToolMetaItem,
+} from '@/api/plugin'
 import type {
   EmptyCommandResponse,
   KeyValueString,
@@ -61,6 +69,13 @@ export async function getTeamPlugins(teamId: number): Promise<TeamPluginsRespons
     canManage: res?.canManage ?? null,
     items: res?.items ?? [],
   }
+}
+
+/** 查询团队插件使用统计（仅本团队自有插件），仅团队成员可访问. */
+export async function getTeamPluginStats(teamId: number): Promise<PluginStatsData> {
+  const client = getApiClient()
+  const res = await client.api.team.byId(String(teamId)).plugin.stats.get()
+  return normalizePluginStats(res)
 }
 
 /** 保存/创建团队动态插件实例. */
@@ -197,11 +212,13 @@ export async function preUploadTeamOpenApiFile(payload: {
   return (await client.api.team.byId(String(payload.teamId)).plugin.pre_upload_openapi.post(body)) ?? null
 }
 
-/** 执行团队可用插件.*/
+/** 执行团队可用插件（多工具插件经 toolKey 选工具，Kiota 将关键字 function 转义为 functionEscaped）.*/
 export async function runTeamPlugin(payload: {
   teamId: number
   key: string
   requestJson: string
+  /** 多工具插件的目标工具 key；单工具插件不传. */
+  toolKey?: string | null
 }): Promise<PluginRunResult | null> {
   const client = getApiClient()
   return (
@@ -209,8 +226,37 @@ export async function runTeamPlugin(payload: {
       teamId: String(payload.teamId),
       key: payload.key,
       requestJson: payload.requestJson,
+      ...(payload.toolKey ? { functionEscaped: payload.toolKey } : {}),
     })) ?? null
   )
+}
+
+/** 查询团队自有插件的语义配置（使用须知/语义条目/工具元数据/工具清单），仅团队成员可访问. */
+export async function getTeamPluginSemantic(
+  teamId: number,
+  pluginId: string,
+): Promise<PluginSemanticData | null> {
+  const client = getApiClient()
+  const res = await client.api.team.byId(String(teamId)).plugin.byPluginId(pluginId).semantic.get()
+  if (!res) return null
+  // 复用 plugin.ts 的归一口径（主客户端模型字段可空）
+  return normalizePluginSemantic(res, pluginId)
+}
+
+/** 保存团队自有插件的语义配置（整体覆盖），需团队 Owner/Admin. */
+export async function saveTeamPluginSemantic(
+  teamId: number,
+  pluginId: string,
+  payload: { usageNotes: string; notes: PluginSemanticNoteItem[]; toolMetas: PluginToolMetaItem[] },
+): Promise<void> {
+  const client = getApiClient()
+  await client.api.team.byId(String(teamId)).plugin.byPluginId(pluginId).semantic.put({
+    teamId: String(teamId),
+    pluginId,
+    usageNotes: payload.usageNotes,
+    notes: payload.notes,
+    toolMetas: payload.toolMetas,
+  })
 }
 
 /** 查询可用动态插件模板（注册表已发现的动态插件），仅团队成员可访问.*/

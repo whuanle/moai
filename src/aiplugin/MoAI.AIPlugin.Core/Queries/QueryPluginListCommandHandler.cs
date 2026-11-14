@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -31,13 +33,15 @@ public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListComm
             {
                 Key = x.Key,
                 Name = x.Name,
-                Description = x.Description,
+                Description = string.IsNullOrWhiteSpace(x.HumanDescription) ? x.Description : x.HumanDescription,
                 IsDynamic = x.IsDynamic,
-                RequestType = x.Request.FullName,
-                ResponseType = x.Response.FullName,
+                RequestType = x.Request?.FullName,
+                ResponseType = x.Response?.FullName,
                 ConfigType = x.ConfigType?.FullName,
                 ParamsExample = PluginTypeHelper.GetStaticExample(x.PluginType, "GetParamsExampleValue"),
                 ConfigExample = x.IsDynamic ? PluginTypeHelper.GetStaticExample(x.PluginType, "GetConfigExampleValue") : null,
+                ToolCount = x.IsMultiTool ? x.Tools.Count : 1,
+                Tools = PluginTypeHelper.BuildToolItems(x),
             })
             .ToList();
 

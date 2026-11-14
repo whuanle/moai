@@ -69,6 +69,9 @@ public class UserContextProvider : IUserContextProvider
         var email = user.FindFirstValue(ClaimTypes.Email);
         var userTypeRaw = user.FindFirstValue(JwtRegisteredClaimNames.Typ);
 
+        // 自定义控制位 claim（如 mfa_pending，强制两步验证期间签发）回填 Properties，供授权中间件读取
+        var mfaPending = user.FindFirstValue("mfa_pending");
+
         return new DefaultUserContext
         {
             IsAuthenticated = user.Identity.IsAuthenticated,
@@ -76,7 +79,10 @@ public class UserContextProvider : IUserContextProvider
             UserName = userName ?? string.Empty,
             NickName = nickName ?? string.Empty,
             Email = email ?? string.Empty,
-            UserType = string.IsNullOrWhiteSpace(userTypeRaw) ? UserType.None : userTypeRaw.JsonToObject<UserType>()
+            UserType = string.IsNullOrWhiteSpace(userTypeRaw) ? UserType.None : userTypeRaw.JsonToObject<UserType>(),
+            Properties = string.Equals(mfaPending, "true", StringComparison.OrdinalIgnoreCase)
+                ? new Dictionary<string, string> { ["mfa_pending"] = "true" }
+                : new Dictionary<string, string>()
         };
     }
 }

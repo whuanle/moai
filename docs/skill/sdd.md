@@ -74,7 +74,7 @@ Agent 运行时(src/ai)                 ▼
 - **列表三入口**：`my_list`（本人个人技能）/`team_list`（团队成员）/`market_list`（is_public 全员）+ 保留 `list`（管理员全量分页）。列表项扩展 `teamId/isPublic/pendingPublicationId` 并继承 `AuditsInfo` 填充人名（`QuerySkillListHelper`）。
 - **详情/下载可见性**：`SkillAccessGuard.EnsureCanViewAsync`——系统内置 ∪ 公开 ∪ 本团队 ∪ 本人 ∪ 平台管理员；下载端点 `{id}/download` 返回逐文件 MinIO 预签名地址（1 小时），内置技能 400（脚本随平台分发无对象存储文件）。
 - **删除联动**：删技能同步删待审核上架申请（对齐提示词，防僵尸审核记录）。
-- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心（xl/xxl 一行 6 张，不展示条数统计，头部固定分类 chip 按 `classifyId` 过滤、`classifyLabel` 展示 emoji）；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定，分类下拉同款 classifyLabel）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。
+- **前端**：`/skill-market`（市场）+`/skills`（我的技能）双 Tab 技能中心，卡片流对齐提示词中心（xl/xxl 一行 6 张，不展示条数统计，头部固定分类 chip 按 `classifyId` 过滤、`classifyLabel` 展示 emoji）；团队详情新增「团队技能」分区（TeamSkills，Admin+ 可管理，**2026-11-05 改版为卡片列表**：同智能体/提示词卡款——头像+名称+状态 Tag+文件数/使用次数徽标+key 代码字+两行省略描述+底栏纯图标操作与更新时间，工具栏单行 `QueryBar`（搜索→查询→|→新建，去重置/刷新，规范 §7），删除/上架/撤回/详情/编辑/下载语义不变）；创建/编辑收敛为共用 `SkillEditModal`（teamId 由入口决定，分类下拉同款 classifyLabel）；详情弹窗 Markdown 渲染 instructions + 逐文件下载；审批上架页类型筛选加「技能」。
 
 ## 8. 增量设计（2026-09-18：技能分类）
 
@@ -105,3 +105,11 @@ Agent 运行时(src/ai)                 ▼
 - **计数挂点**：`SkillAppToolProvider.LoadSkillAsync`（模型真实调用装载工具即视为一次使用）原子自增（`ExecuteUpdateAsync use_count+1`），失败仅告警不影响技能返回；个人技能不能被应用绑定，故计数只发生在系统/公开/团队技能上。
 - **下发**：`GET /api/skill/options` 与应用 `GET userconfig.defaultSkills` 均带 `useCount`；前端应用设置面板技能卡片默认按 `useCount` 降序取前十（应用层 UI，见 [../app/sdd.md](../app/sdd.md)）。
 - 证据：[local-dev/skill-usecount-e2e.mjs](../../local-dev/skill-usecount-e2e.mjs)（装载一次 0→1 双接口回显，8/8）。
+
+## 增量设计（2026-11-03：技能中心工具栏对齐规范第 7 条）
+
+- 用户反馈「搜索框后面图标多余、刷新改查询、我的技能按钮排序参考最新文档」：工具栏由手写 flex 换 `PageToolbar`（搜索输入框 → 查询类按钮 → 竖分隔线 → 操作类按钮），「新建技能」从搜索框左侧移到分隔线右侧（`actions`）；`Input.Search` 换普通 `Input`（去 `Input.Search` 自带的冗余 suffix 放大镜，仅保留 `SearchOutlined` 前缀），回车或「查询」按钮（`ds.query.search`，原「刷新」）应用关键字——关键字变化走 state 触发重载并回第一页，关键字未变化时手动重查一次；纯前端改动，`Skills.test.tsx` 3/3。
+
+## 资源命名规则（2026-11-07）
+
+- 技能名称统一约束：正则 `^[\u4e00-\u9fa5a-zA-Z0-9_]+$`（仅中文、英文、数字、下划线），`Create/UpdateSkillCommand.Validate` 落 `Matches` 规则（key 已有独立正则不变），前端 `SkillEditModal` 名称表单同步 pattern 校验；`SkillSeed` 内置技能名称去空格（「Word 文档生成」→「Word文档生成」等，仅新装库生效，存量行不动）；`ExtractSkillPackageCommand` 为包解析预览步骤不设名约束（保存走 CreateSkillCommand 时校验）。行为见 [@SKM-S1](./bdd.md#skm-s1)。

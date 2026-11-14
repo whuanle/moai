@@ -165,6 +165,17 @@
 
 @STP-S19 @auto:unit
 
+@STP-S20 @auto:unit
+
+### Scenario: 插件通过共享服务保存文件并按 id 取地址
+
+- Given 插件构造注入 `IPluginFileStorageService`（只依赖 `MoAI.AIPlugin.Shared`，不引用存储/S3 模块）
+- When 插件用 `SaveAsync` 保存图片流并设置 IsPublic=true，或保存 PDF 流保持私有
+- Then 返回文件 id，公开文件 `GetPublicUrlAsync` 返回不过期的 `/static` 地址、私有文件返回 null
+- And `GetDownloadUrlAsync(fileId)` 返回预签名下载地址（有有效期）
+- And `SaveFromUrlAsync(url)` 可下载公网文件并转存，文件名留空时自动识别
+
+
 ```gherkin
 @ST-S99 @auto:vitest
 Scenario: 静态插件编辑后列表不重复渲染

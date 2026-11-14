@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Divider, Form, Input, InputNumber, Popconfirm, Select, Space, Switch, Tag, Typography } from 'antd'
+import { Alert, Button, Divider, Form, Input, InputNumber, Popconfirm, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -143,7 +143,9 @@ function RuleSetEditor({ rules, canManage, onChange }: RuleSetEditorProps) {
                 cancelText={t('appManage.cancel')}
                 onConfirm={() => removeRule(index)}
               >
-                <Button icon={<DeleteOutlined />} danger type="text" />
+                <Tooltip title={t('appSecurity.removeRule')}>
+                  <Button icon={<DeleteOutlined />} danger type="text" aria-label={t('appSecurity.removeRule')} />
+                </Tooltip>
               </Popconfirm>
             )}
           </Space>

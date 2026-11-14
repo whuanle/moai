@@ -38,6 +38,7 @@ public class CreateAIChannelCommandHandler : IRequestHandler<CreateAIChannelComm
 
         var channel = new AiChannelEntity
         {
+            TeamId = request.TeamId,
             ProviderKey = request.ProviderKey,
             Name = request.Name,
             ProtocolFamily = (int)request.ProtocolFamily,

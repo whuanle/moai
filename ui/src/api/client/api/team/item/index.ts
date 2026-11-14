@@ -4,19 +4,23 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryTeamCommandResponseFromDiscriminatorValue, serializeEmptyCommandResponse, serializeUpdateTeamCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryTeamCommandResponse, type UpdateTeamCommand } from '../../../models/index.js';
 // @ts-ignore
+import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
+// @ts-ignore
 import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from './avatar/index.js';
 // @ts-ignore
 import { CandidatesRequestBuilderRequestsMetadata, type CandidatesRequestBuilder } from './candidates/index.js';
 // @ts-ignore
-import { GatewayRequestBuilderNavigationMetadata, type GatewayRequestBuilder } from './gateway/index.js';
+import { OrgRequestBuilderNavigationMetadata, type OrgRequestBuilder } from './org/index.js';
 // @ts-ignore
 import { OwnerRequestBuilderRequestsMetadata, type OwnerRequestBuilder } from './owner/index.js';
 // @ts-ignore
 import { PluginRequestBuilderNavigationMetadata, type PluginRequestBuilder } from './plugin/index.js';
 // @ts-ignore
+import { SubsystemRequestBuilderNavigationMetadata, type SubsystemRequestBuilder } from './subsystem/index.js';
+// @ts-ignore
 import { type UserRequestBuilder, UserRequestBuilderNavigationMetadata } from './user/index.js';
 // @ts-ignore
-import { type UsersRequestBuilder, UsersRequestBuilderRequestsMetadata } from './users/index.js';
+import { type UsersRequestBuilder, UsersRequestBuilderNavigationMetadata, UsersRequestBuilderRequestsMetadata } from './users/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -24,6 +28,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/team/{-id}
  */
 export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilder> {
+    /**
+     * The ai property
+     */
+    get ai(): AiRequestBuilder;
     /**
      * The avatar property
      */
@@ -33,9 +41,9 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      */
     get candidates(): CandidatesRequestBuilder;
     /**
-     * The gateway property
+     * The org property
      */
-    get gateway(): GatewayRequestBuilder;
+    get org(): OrgRequestBuilder;
     /**
      * The owner property
      */
@@ -44,6 +52,10 @@ export interface ItemRequestBuilder extends BaseRequestBuilder<ItemRequestBuilde
      * The plugin property
      */
     get plugin(): PluginRequestBuilder;
+    /**
+     * The subsystem property
+     */
+    get subsystem(): SubsystemRequestBuilder;
     /**
      * The user property
      */
@@ -97,14 +109,17 @@ export const ItemRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}";
  * Metadata for all the navigation properties in the request builder.
  */
 export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    ai: {
+        navigationMetadata: AiRequestBuilderNavigationMetadata,
+    },
     avatar: {
         requestsMetadata: AvatarRequestBuilderRequestsMetadata,
     },
     candidates: {
         requestsMetadata: CandidatesRequestBuilderRequestsMetadata,
     },
-    gateway: {
-        navigationMetadata: GatewayRequestBuilderNavigationMetadata,
+    org: {
+        navigationMetadata: OrgRequestBuilderNavigationMetadata,
     },
     owner: {
         requestsMetadata: OwnerRequestBuilderRequestsMetadata,
@@ -112,11 +127,15 @@ export const ItemRequestBuilderNavigationMetadata: Record<Exclude<keyof ItemRequ
     plugin: {
         navigationMetadata: PluginRequestBuilderNavigationMetadata,
     },
+    subsystem: {
+        navigationMetadata: SubsystemRequestBuilderNavigationMetadata,
+    },
     user: {
         navigationMetadata: UserRequestBuilderNavigationMetadata,
     },
     users: {
         requestsMetadata: UsersRequestBuilderRequestsMetadata,
+        navigationMetadata: UsersRequestBuilderNavigationMetadata,
     },
 };
 /**

@@ -8,7 +8,7 @@ using MoAI.Infra.Models;
 namespace MoAI.AIChannel.Commands;
 
 /// <summary>
-/// 批量导入模型列表（前端从 opencode models.json 解析后提交）.
+/// 批量导入模型列表（前端提交用户确认后的模型元数据）.
 /// </summary>
 public class ImportAIModelCommand : IRequest<EmptyCommandResponse>, IModelValidator<ImportAIModelCommand>
 {
@@ -16,6 +16,11 @@ public class ImportAIModelCommand : IRequest<EmptyCommandResponse>, IModelValida
     /// 所属渠道 id.
     /// </summary>
     public Guid ChannelId { get; init; }
+
+    /// <summary>
+    /// 所属团队 id，0=系统渠道；由 Controller 按路由回填，请求体无需传递.
+    /// </summary>
+    public int TeamId { get; set; }
 
     /// <summary>
     /// 待导入的模型列表.

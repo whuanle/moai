@@ -115,6 +115,11 @@ export function getAiPluginClient(): AiPluginClient {
   return createAiPluginClient(buildAdapter())
 }
 
+/** 为业务封装层提供同一鉴权/中间件配置的 Kiota adapter，用于新 API 尚未进入生成客户端时的强类型请求封装. */
+export function createAiPluginRequestAdapter(): FetchRequestAdapter {
+  return buildAdapter()
+}
+
 export function getAnonymousClient(): MoAIClient {
   const httpClient = KiotaClientFactory.create(undefined, createMiddleware())
   const adapter = new FetchRequestAdapter(

@@ -34,11 +34,24 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
     /// <inheritdoc/>
     public async Task<SimpleGuid> Handle(CreateExternalAgentSessionCommand request, CancellationToken cancellationToken)
     {
-        var externalUserId = ExternalAppAccessValidator.EnsureExternalUser(request.Context);
+        // 访问用户 token → 真实站内用户 id（会话落 UserType.Normal，与站内账号合并）；
+        // 外部用户 token / key 直连身份 → external_user.id（会话落 UserType.External）
+        var (identityId, sessionUserType) = ExternalAppAccessValidator.EnsureSessionIdentity(request.Context);
 
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
-        ExternalAppAccessValidator.EnsureUsable(app);
+
+        if (sessionUserType == UserType.Normal)
+        {
+            // 内部应用访问点：身份穿透，访问点已开启是授权前提
+            var accessPointEnabled = await _databaseContext.AppAccessPoints
+                .AnyAsync(x => x.AppId == request.AppId && x.Enabled, cancellationToken);
+            ExternalAppAccessValidator.EnsureInternalUsable(app, accessPointEnabled);
+        }
+        else
+        {
+            ExternalAppAccessValidator.EnsureUsable(app);
+        }
 
         // 团队级授权：应用必须属于 token 归属团队
         if ((long)app!.TeamId != request.Context.TeamId)
@@ -57,9 +70,9 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
             TeamId = app.TeamId,
             AppId = app.Id,
             Title = string.IsNullOrWhiteSpace(request.Title) ? DefaultTitle : request.Title!,
-            UserType = (int)UserType.External,
+            UserType = (int)sessionUserType,
             LastMessageTime = DateTimeOffset.Now,
-            CreateUserId = externalUserId,
+            CreateUserId = identityId,
         };
 
         _databaseContext.AppAgentSessions.Add(session);

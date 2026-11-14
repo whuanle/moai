@@ -1,8 +1,9 @@
 // 网站 Logo 与网站名称 E2E（场景 @SET-S24+）
 // 覆盖：超级管理员在系统设置上传/恢复全局网站 Logo；匿名 serverinfo 暴露 logoPath；门禁与非法文件防护；
-//       超级管理员修改网站名称（SYSTEM_NAME，仅前端展示），serverinfo.name 空值回退默认、长度校验与门禁。
+//       超级管理员修改网站名称（SYSTEM_NAME，仅前端展示），serverinfo.name 空值回退默认、长度校验与门禁；
+//       登录页背景图（LOGIN_BACKGROUND）：root 上传/生效/恢复 + 匿名 serverinfo 暴露 loginBackgroundPath + 门禁与伪造 objectKey 防护。
 // 用法：node local-dev/settings-logo-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000）
-// 前置：后端运行中，MinIO 可达；种子账号 admin / abcd123456（root）。脚本结束时恢复默认 Logo（清空）并清空网站名称。
+// 前置：后端运行中，MinIO 可达；种子账号 admin / abcd123456（root）。开头快照 SYSTEM_NAME/SYSTEM_LOGO/LOGIN_BACKGROUND 原值，场景内清空断言完成后恢复原值（共享开发实例上不破坏已配置的站点品牌）。
 import crypto from 'node:crypto'
 
 const BASE = process.env.APP_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5000'
@@ -72,6 +73,13 @@ async function main() {
   const root = await rootLogin()
   check('SET-00 root 登录', Boolean(root))
 
+  // ============ 快照原值（结束时恢复，避免清掉共享实例已配置的站点品牌） ============
+  const q0 = await api('GET', '/api/settings', { token: root })
+  const origValue = (key) => (q0.json?.items ?? []).find((s) => s.key === key)?.value ?? ''
+  const ORIG_LOGO = origValue('SYSTEM_LOGO')
+  const ORIG_NAME = origValue('SYSTEM_NAME')
+  const ORIG_BG = origValue('LOGIN_BACKGROUND')
+
   // ============ 匿名可读（登录/注册页依赖） ============
   // SET-24 匿名 serverinfo 返回 logoPath 字段（string）
   check('SET-24 匿名 serverinfo 含 logoPath 字段', typeof si.json?.logoPath === 'string', JSON.stringify(si.json ?? {}).slice(0, 160))
@@ -113,6 +121,7 @@ async function main() {
     check('SET-29a 清空 Logo 恢复默认 200', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
     const s = await serverinfo()
     check('SET-29b 匿名 serverinfo logoPath 为空', s.status === 200 && (s.json?.logoPath ?? '') === '', `${s.status} ${s.text.slice(0, 160)}`)
+    if (ORIG_LOGO) await putLogo(root, ORIG_LOGO)
   }
 
   // ============ 网站名称（SYSTEM_NAME，仅前端展示） ============
@@ -148,6 +157,57 @@ async function main() {
       s.status === 200 && typeof s.json?.name === 'string' && s.json.name.length > 0 && s.json.name !== NEW_NAME,
       `${s.status} ${s.text.slice(0, 160)}`,
     )
+    await putName(root, ORIG_NAME)
+  }
+
+  // ============ 登录页背景图（LOGIN_BACKGROUND，专用端点） ============
+  const putBg = (token, objectKey) => api('POST', '/api/settings/login-background', { token, body: { objectKey } })
+
+  // SET-35 匿名 serverinfo 返回 loginBackgroundPath 字段（string）
+  check('SET-35 匿名 serverinfo 含 loginBackgroundPath 字段', typeof si.json?.loginBackgroundPath === 'string', JSON.stringify(si.json ?? {}).slice(0, 160))
+
+  // SET-36 root 上传图片并提交登录页背景
+  const bgPng = crypto.randomBytes(512)
+  const bgUp = await uploadImage(root, 'login-bg.png', bgPng, 'image/png')
+  check('SET-36a 背景图片直传成功', bgUp.status === 200 && bgUp.objectKey.startsWith('public/images/'), JSON.stringify(bgUp).slice(0, 140))
+  const bgPut = await putBg(root, bgUp.objectKey)
+  check('SET-36b root 提交登录页背景 200', bgPut.status === 200, `${bgPut.status} ${bgPut.text.slice(0, 140)}`)
+
+  // SET-37 背景替换后设置项与公开 serverinfo 均生效
+  {
+    const q = await api('GET', '/api/settings', { token: root })
+    const item = (q.json?.items ?? []).find((s) => s.key === 'LOGIN_BACKGROUND')
+    check('SET-37a 设置项列表含 LOGIN_BACKGROUND=objectKey', q.status === 200 && item?.value === bgUp.objectKey, `${q.status} ${q.text.slice(0, 160)}`)
+    const r = await serverinfo()
+    check('SET-37b 匿名 serverinfo loginBackgroundPath=objectKey', r.status === 200 && r.json?.loginBackgroundPath === bgUp.objectKey, `${r.status} ${r.text.slice(0, 160)}`)
+  }
+
+  // SET-38 门禁：普通用户 403、未登录 401
+  check('SET-38a member 提交登录页背景 403', (await putBg(member.token, bgUp.objectKey)).status === 403)
+  check('SET-38b 未登录提交登录页背景 401', (await putBg(undefined, bgUp.objectKey)).status === 401)
+
+  // SET-39 未登记/未完成上传的 objectKey 拒绝
+  {
+    const r = await putBg(root, 'public/images/' + 'e'.repeat(64) + '.png')
+    check('SET-39 伪造 objectKey 404', r.status === 404 && (r.text.includes('不存在') || r.json?.detail?.includes('不存在')), `${r.status} ${r.text.slice(0, 140)}`)
+  }
+
+  // SET-40 恢复默认背景
+  {
+    const r = await putBg(root, '')
+    check('SET-40a 清空登录页背景恢复默认 200', r.status === 200, `${r.status} ${r.text.slice(0, 140)}`)
+    const s = await serverinfo()
+    check('SET-40b 匿名 serverinfo loginBackgroundPath 为空', s.status === 200 && (s.json?.loginBackgroundPath ?? '') === '', `${s.status} ${s.text.slice(0, 160)}`)
+    if (ORIG_BG) await putBg(root, ORIG_BG)
+  }
+
+  // ============ 结束校验：恢复执行前原值 ============
+  {
+    const s = await serverinfo()
+    const logoOk = (s.json?.logoPath ?? '') === ORIG_LOGO
+    const bgOk = (s.json?.loginBackgroundPath ?? '') === ORIG_BG
+    const nameOk = ORIG_NAME === '' || s.json?.name === ORIG_NAME
+    check('SET-90 结束恢复执行前原值（logo/background/name）', logoOk && bgOk && nameOk, `logo=${s.json?.logoPath} bg=${s.json?.loginBackgroundPath} name=${s.json?.name}`)
   }
 
   console.log(`\n总计: PASS ${PASS} / FAIL ${FAIL}`)

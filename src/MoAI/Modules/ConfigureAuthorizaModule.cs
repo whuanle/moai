@@ -1,5 +1,6 @@
 ﻿using Maomi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using MoAI.Infra;
 using MoAI.Infra.Services;
@@ -55,6 +56,18 @@ public class ConfigureAuthorizaModule : IModule
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = context =>
+                    {
+                        // SignalR WebSocket 握手无法携带 Authorization 头，浏览器经 access_token 查询参数传递（仅限 /hub 前缀）
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!StringValues.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    },
                     OnChallenge = context =>
                     {
                         var logger = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigureAuthorizaModule>>();
@@ -65,7 +78,7 @@ public class ConfigureAuthorizaModule : IModule
                     OnAuthenticationFailed = context =>
                     {
                         // 不在此处直接改写响应状态码：最终 401 由 Authorization 的 Challenge 决定，
-                        // 否则多认证方案场景（如 /api/external 的外部 token）会被内部方案误标 401
+                        // 否则多认证方案场景（如 /api/teamres 的外部 token）会被内部方案误标 401
                         var logger = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigureAuthorizaModule>>();
                         logger.LogError(context.Exception, "JWT 认证失败，token 无法通过验证: {Message} / [NoToken] = {NoToken}",
                             context.Exception?.Message, context.Request.Headers.Authorization.Count == 0 ? "true(未携带Authorization头)" : "false");

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +13,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 /// <summary>
 /// JavaScript 执行器（静态插件）：使用 Jint 执行一段 JavaScript 代码，返回 run() 函数的结果.
 /// </summary>
-[AiPlugin(key: "static_javascript_executor", Name = "JavaScript 执行器", Description = "使用 Jint 执行 JavaScript 代码，限制最大内存 4MB、超时 4 秒、递归深度 100、最大语句 1000；要求代码定义一个无参 run() 函数并返回执行结果")]
+[AiPlugin(key: "static_javascript_executor", Name = "JavaScript 执行器", HumanDescription = "用于运行轻量脚本处理文本和数据，完成自定义转换或计算。适合标准工具无法覆盖的小型逻辑；代码受执行时长和资源限制，请仅运行可信内容。", Description = "使用 Jint 执行 JavaScript 代码，限制最大内存 4MB、超时 4 秒、递归深度 100、最大语句 1000；要求代码定义一个无参 run() 函数并返回执行结果")]
 public class JavaScriptExecutorPlugin : IStaticPluginRuntime<JavaScriptExecutorRequest, JavaScriptExecutorResponse>
 {
     /// <summary>

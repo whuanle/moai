@@ -141,3 +141,11 @@ Feature: 消息队列装配
     When 模块装配完成
     Then MQ 连接使用 MoAI:RabbitMQ 连接串并自动声明队列
     And 消费并发 100、AppName 取系统名、客户端标识 moai
+
+Feature: MoPlatform 插件客户端指纹
+  @INF-S23 @auto:unit
+  Scenario: 首次创建并持久化安装指纹
+    Given MoPlatform 客户端指纹文件不存在
+    When MoAI 初始化插件客户端
+    Then 系统创建 64 位十六进制随机指纹并持久化
+    And 后续加载得到相同指纹

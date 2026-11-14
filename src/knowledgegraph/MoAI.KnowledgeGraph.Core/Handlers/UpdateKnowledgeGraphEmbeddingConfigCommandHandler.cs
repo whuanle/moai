@@ -12,6 +12,7 @@ using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.Commands;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Services;
+using MoAI.AIChannel.Services;
 
 namespace MoAI.KnowledgeGraph.Handlers;
 
@@ -60,15 +61,12 @@ public class UpdateKnowledgeGraphEmbeddingConfigCommandHandler : IRequestHandler
             throw new BusinessException("外部接入图谱不支持向量检索配置.") { StatusCode = 409 };
         }
 
-        var authorizedModelIds = await _databaseContext.AiModelAuthorizations
-            .Where(x => x.TeamId == graph.TeamId)
-            .Select(x => x.AiModelId)
-            .ToListAsync(cancellationToken);
+        var usableModelIds = await _databaseContext.GetTeamUsableModelIdsAsync(graph.TeamId, cancellationToken);
 
         var model = await (from m in _databaseContext.AiModels
                            join c in _databaseContext.AiChannels on m.ChannelId equals c.Id
                            where m.Id == request.EmbeddingModelId && m.Enabled && c.Enabled && m.IsDeleted == 0 && c.IsDeleted == 0
-                               && (m.IsPublic || authorizedModelIds.Contains(m.Id))
+                               && usableModelIds.Contains(m.Id)
                            select new { m.Id, m.ModelKind })
             .FirstOrDefaultAsync(cancellationToken);
         if (model == null)

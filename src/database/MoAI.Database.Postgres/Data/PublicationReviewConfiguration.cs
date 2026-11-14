@@ -41,6 +41,15 @@ internal partial class PublicationReviewConfiguration : IEntityTypeConfiguration
         entity.Property(e => e.PublishVersion)
             .HasComment("申请上架的版本号（int 编码 aaa*10000 + bb*100 + cc，显示 aaa.bb.cc），仅应用类型使用，其他资源为 null")
             .HasColumnName("publish_version");
+        entity.Property(e => e.VisibleScope)
+            .HasDefaultValue((short)0)
+            .HasComment("可视范围，见 AppVisibleScope（全员=0，按组织=1），仅应用类型使用，其他资源为 0")
+            .HasColumnName("visible_scope");
+        entity.Property(e => e.VisibleOrgGrants)
+            .HasMaxLength(2000)
+            .HasDefaultValueSql("''::character varying")
+            .HasComment("可视范围组织授权快照 JSON：[{\"orgRoleId\":3,\"scope\":\"down\"}]，方向见 OrgGrantScope；仅 visible_scope=1 时有值")
+            .HasColumnName("visible_org_grants");
         entity.Property(e => e.CreateTime)
             .HasDefaultValueSql("timezone('utc'::text, now())")
             .HasComment("创建时间")

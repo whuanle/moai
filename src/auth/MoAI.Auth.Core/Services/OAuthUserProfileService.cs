@@ -62,6 +62,10 @@ public class OAuthUserProfileService : IOAuthUserProfileService
         {
             return await GetOpenIdFromDingTalkAsync(code, oauthConnectionEntity);
         }
+        else if (oauthPrivider == OAuthPrivider.WeixinWork)
+        {
+            return await GetOpenIdFromWeixinWorkAsync(code, oauthConnectionEntity);
+        }
 
         return await GetOpenIdFromCustomAsync(code, oauthConnectionEntity);
     }
@@ -215,6 +219,7 @@ public class OAuthUserProfileService : IOAuthUserProfileService
             Profile = new OpenIdUserProfile
             {
                 Sub = feishuUserInfo.Data.OpenId,
+                UnionId = feishuUserInfo.Data.UnionId,
                 Name = feishuUserInfo.Data.Name,
                 Audience = clientEntity.Key,
                 Issuer = "https://open.feishu.cn",

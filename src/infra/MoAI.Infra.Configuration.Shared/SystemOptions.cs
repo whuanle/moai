@@ -39,6 +39,11 @@ public class SystemOptions
     public string WebUI { get; init; } = string.Empty;
 
     /// <summary>
+    /// MoPlatform 服务配置.
+    /// </summary>
+    public SystemOptionMoPlatform MoPlatform { get; init; } = new();
+
+    /// <summary>
     /// 系统数据库连接字符串.
     /// </summary>
     public string Database { get; init; } = string.Empty;
@@ -72,4 +77,15 @@ public class SystemOptions
     /// 可观察性.
     /// </summary>
     public OpenTelemetryOptions OTLP { get; init; } = new();
+}
+
+/// <summary>
+/// MoPlatform 服务配置.
+/// </summary>
+public class SystemOptionMoPlatform
+{
+    /// <summary>
+    /// MoPlatform 公共服务地址.
+    /// </summary>
+    public string Endpoint { get; init; } = "https://anyai.wiki";
 }

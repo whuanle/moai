@@ -86,12 +86,12 @@ namespace MoAI.Storage.Services;
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
-        var uploadUrl = await _s3Client.GeneratePreSignedUploadUrlAsync(fileEntity.ObjectKey, command.ContentType, command.Expiration);
+        var uploadUrl = await _s3Client.GeneratePreSignedUploadUrlAsync(fileEntity.ObjectKey, command.ContentType, S3Client.PreSignedUrlLifetime);
 
         return new PreUploadFileCommandResponse
         {
             IsExist = false,
-            Expiration = DateTimeOffset.UtcNow.Add(command.Expiration),
+            Expiration = DateTimeOffset.UtcNow.Add(S3Client.PreSignedUrlLifetime),
             FileId = fileEntity.Id,
             ObjectKey = fileEntity.ObjectKey,
             UploadUrl = new Uri(uploadUrl)
@@ -304,6 +304,20 @@ namespace MoAI.Storage.Services;
         var fileEntity = await _databaseContext.Files
             .FirstOrDefaultAsync(x => x.ObjectKey == objectKey, cancellationToken);
 
+        return ToStorageFileInfo(fileEntity);
+    }
+
+    /// <inheritdoc/>
+    public async Task<StorageFileInfo?> GetFileInfoByIdAsync(long fileId, CancellationToken cancellationToken = default)
+    {
+        var fileEntity = await _databaseContext.Files
+            .FirstOrDefaultAsync(x => x.Id == fileId && x.IsUploaded, cancellationToken);
+
+        return ToStorageFileInfo(fileEntity);
+    }
+
+    private static StorageFileInfo? ToStorageFileInfo(FileEntity? fileEntity)
+    {
         if (fileEntity == null)
         {
             return null;

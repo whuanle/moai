@@ -31,9 +31,14 @@ public class AppAccessPointConfigResponse
     public string? PrimaryColor { get; init; }
 
     /// <summary>
-    /// 悬浮位置.
+    /// 悬浮位置（bottomRight / bottomLeft，camelCase）.
     /// </summary>
-    public string Position { get; init; } = "bottom-right";
+    public string Position { get; init; } = "bottomRight";
+
+    /// <summary>
+    /// 显示形式：floating 悬浮组件（默认）/ inline 内嵌小窗.
+    /// </summary>
+    public string DisplayMode { get; init; } = "floating";
 
     /// <summary>
     /// 悬浮按钮文案，空则用图标.

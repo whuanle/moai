@@ -3,7 +3,11 @@
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/dynamic-plugin-e2e.mjs](../../local-dev/dynamic-plugin-e2e.mjs) ｜ [local-dev/bocha-search-e2e.mjs](../../local-dev/bocha-search-e2e.mjs) ｜ [local-dev/moji-weather-e2e.mjs](../../local-dev/moji-weather-e2e.mjs) ｜ [local-dev/jina-search-e2e.mjs](../../local-dev/jina-search-e2e.mjs) ｜ [local-dev/yahoo-finance-e2e.mjs](../../local-dev/yahoo-finance-e2e.mjs) ｜ [local-dev/metaso-search-e2e.mjs](../../local-dev/metaso-search-e2e.mjs) ｜ [local-dev/hot-board-e2e.mjs](../../local-dev/hot-board-e2e.mjs)
 > 规范：[../DOC-STANDARD.md](../DOC-STANDARD.md)。场景复述见 BDD，本文只做编号→验证物映射。
 
-## 后端 E2E
+> 生命周期说明（2026-11-14）：MoAI 不再从宿主程序集加载内置动态模板；旧模板单测/E2E 为移植前历史证据，新包分发场景见 @DYN-S159~S164。
+
+> 本文列出的 `dynamic-plugin-e2e.mjs` 与各旧模板桩 E2E 均为迁移前证据，不应作为当前 MoAI 宿主的回归命令；只有安装相应 MoPlatform 在线包后，才可对该包执行运行时验收。当前在线安装、重启加载与下架以 @DYN-S159~S164 的手工联调场景为准。
+
+## 迁移前后端 E2E（历史证据）
 
 三个脚本分工：`dynamic-plugin-e2e.mjs` 针对**已运行的真实后端**做实例管理与失败路径断言；`bocha-search-e2e.mjs`
 自带 BoCha 桩服务并拉起一个独立后端（`MoAI__BoCha__Endpoint` 指向桩），覆盖**成功路径与响应解析**，无需真实 API Key、不消耗额度；
@@ -94,6 +98,8 @@ node local-dev/hot-board-e2e.mjs
 | @DYN-S121 | local-dev/dynamic-plugin-e2e.mjs（save 携带已登记 objectKey → 200 且列表回读 avatarPath 一致）；[DynamicPluginPanel.test.tsx](../../ui/src/pages/plugins/__tests__/DynamicPluginPanel.test.tsx)（新建弹窗渲染头像上传入口） | e2e PASS 165/0/SKIP 4、vitest PASS 7/7（2026-10-26） |
 | @DYN-S122 | local-dev/dynamic-plugin-e2e.mjs（编辑不传 avatarPath → 200 且头像保持不变） | PASS 165/0/SKIP 4（2026-10-26） |
 | @DYN-S123 | local-dev/dynamic-plugin-e2e.mjs（伪 objectKey → 404 且实例不创建） | PASS 165/0/SKIP 4（2026-10-26） |
+| @DYN-S125 | local-dev/team-plugin-e2e.mjs（TP-37a 无 token 401 / TP-37b 普通用户 403 / TP-38a admin 200 结构齐全） | PASS 61/61（2026-11-02） |
+| @DYN-S126 | local-dev/team-plugin-e2e.mjs（TP-38b TOP 团队维度字段 + TP-38c 分类分布 + TP-38d 趋势 30 天补 0 + TP-39d 全团队⊇单团队） | PASS 61/61（2026-11-02） |
 | @DYN-S50 | local-dev/ops-p1-plugins-e2e.mjs（`S50a~i` http 拨测 200/500、tcp 通/拒、dns 解析、内网防护默认拒+放行、非法方法与协议 400） | PASS 39/39（2026-09-29） |
 | @DYN-S51 | local-dev/ops-p1-plugins-e2e.mjs（`S51a~k` version 免鉴权、problems 解析+主机富化+SeverityMin、body auth 命中子路径、header auth 命中根路径、hosts/triggers、登录失败归一） | PASS 39/39（2026-09-29） |
 | @DYN-S52 | local-dev/ops-p1-plugins-e2e.mjs（`S52a~l` info 分节/指定节段、dbsize、slowlog、client_list、config_get、key_info 含不存在键、缺参 400、错误密码归一） | PASS 39/39（2026-09-29） |
@@ -135,6 +141,14 @@ node local-dev/hot-board-e2e.mjs
 | @DYN-S114 | local-dev/hot-board-e2e.mjs（`S114a` 全来源不可达归一「全部来源抓取失败」） | PASS 29/0（2026-10-13） |
 | @DYN-S115 | local-dev/hot-board-e2e.mjs（`S115a` 非法 Gateway 被 InitAsync 拦截） | PASS 29/0（2026-10-13） |
 | @DYN-S116 | local-dev/hot-board-e2e.mjs（`S116a` 删除实例后运行 404） | PASS 29/0（2026-10-13） |
+| @DYN-S160 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageArchiveTests.cs（包裹目录展平、ZIP 越界路径拒绝、plugin.json key 冲突拒绝） | PASS（2026-11-14） |
+| @DYN-S161 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginRegistryAvailabilityTests.cs（下架后 Get/GetAll 隐藏，注册仍保留且可重新上架） | PASS（2026-11-14） |
+| @DYN-S163 | ui/src/pages/plugins/__tests__/PluginMarketplacePanel.test.tsx（在线安装、下架确认与无卸载按钮） | PASS 2/2（2026-11-14） |
+| @DYN-S159 | @manual（MoPlatform 联调：目录/包/图标下载与 DB/OSS 快照，见 sop.md） | 待执行 |
+| @DYN-S162 | @manual（重启后加载 package ALC 与故障隔离，见 sop.md） | 待执行 |
+| @DYN-S164 | @manual（下架刷新后复用 DB 描述/OSS 图标且不访问 MoPlatform，见 sop.md） | 待执行 |
+| @DYN-S165 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageRuntimeLoaderTests.cs（camelCase 安装快照字段正确反序列化） | PASS 1/1（2026-11-14） |
+| @DYN-S166 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageRuntimeLoaderTests.cs（启动目录扫描发现插件目录并跳过隐藏暂存目录） | PASS 1/1（2026-11-14） |
 
 ## 前端测试
 
@@ -348,6 +362,44 @@ node local-dev/clickstack-e2e.mjs                             # ClickStack 查�
 
 ### 2026-10-13 Base64 解码内置模板（@DYN-S117~S120）
 
-- `dotnet build src/MoAI/MoAI.csproj -o .builds/base64` → **0 error**（用户后端运行中 + VS 双锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **381/381**（新增 `Base64DecodePluginTests` 17 例：数据 URL 前缀剥离、图片魔数/SVG 判定、文本截断、转存路径与 ObjectKey 幂等、校验拒绝零转存、解码前粗估、InitAsync 钳制）。
-- 新文件：插件侧 `Base64ContentDetector.cs`、`Models/Base64Decode{Config,Request,Response}.cs`、`Plugins/Base64DecodePlugin.cs`；`MoAI.AIPlugin.Dynamic.csproj` 增 `MoAI.Storage.Shared` 引用（构造注入 `IStorageService`）；单测 `tests/.../Base64DecodePluginTests.cs`（内置 `StubStorageService` 桩，零后端可跑）。纯本地解码无需外部依赖，不设 E2E（实例管理/失败路径由 `dynamic-plugin-e2e.mjs` 的通用链路覆盖）。
-- 设计取舍：①解码产物形态三分——严格 UTF-8 文本（解码失败或含 NUL 等控制字符即非文本）直接回填 `Text`，图片（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF 魔数 + SVG 文本特判：SVG 是文本但按图片处理才能渲染）与其它二进制经 `IStorageService.UploadStreamAsync` 转存 `public/images|files` 回 `/static` 公开地址；②**不回传 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL（仅放行 http/https 等），图片必须落公开 http 地址才能在对话里渲染，且小响应不吃模型上下文；③转存按 SHA-256 内容寻址（`FileStoreHelper.ToPublicObjectKey(GetObjectKey(...))`），同内容幂等去重；`FileName` 仅取扩展名参与 ObjectKey 与结果回显；④二进制形态有 `data:<mime>;base64,` 类型声明时信任声明定扩展名（如 application/pdf → .pdf），无声明按 octet-stream/.bin；⑤解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数，不会低估故不会误杀），超大输入不解码不占内存。
+- `dotnet build src/MoAI/MoAI.csproj -o .builds/plugin-file-service` → **0 error**（用户后端运行中 + VS 双锁 bin/Debug，走独立输出目录）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **402/402**（`Base64DecodePluginTests` 17 例 + 新增 `PluginFileStorageServiceTests` 5 例：内容寻址、非可定位流、按 id 取下载地址、私有文件无公开地址、公网转存；旧 `StubStorageService` 桩替换为 `StubPluginFileStorageService`）。
+- 新文件：插件侧 `Base64ContentDetector.cs`、`Models/Base64Decode{Config,Request,Response}.cs`、`Plugins/Base64DecodePlugin.cs`；`MoAI.AIPlugin.Dynamic.csproj` **不再引用** `MoAI.Storage.Shared`，改为构造注入 `IPluginFileStorageService`（契约在 `MoAI.AIPlugin.Shared`）；单测 `tests/.../Base64DecodePluginTests.cs`（内置 `StubPluginFileStorageService` 桩，零后端可跑）。纯本地解码无需外部依赖，不设 E2E（实例管理/失败路径由 `dynamic-plugin-e2e.mjs` 的通用链路覆盖）。
+- 设计取舍：①解码产物形态三分——严格 UTF-8 文本（解码失败或含 NUL 等控制字符即非文本）直接回填 `Text`，图片（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF 魔数 + SVG 文本特判：SVG 是文本但按图片处理才能渲染）与其它二进制经 `IPluginFileStorageService.SaveAsync` 转存 `public/images|files` 回 `/static` 公开地址；②**不回传 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL（仅放行 http/https 等），图片必须落公开 http 地址才能在对话里渲染，且小响应不吃模型上下文；③转存按 SHA-256 内容寻址，同内容幂等去重；`FileName` 仅取扩展名参与 ObjectKey 与结果回显；④二进制形态有 `data:<mime>;base64,` 类型声明时信任声明定扩展名（如 application/pdf → .pdf），无声明按 octet-stream/.bin；⑤解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数，不会低估故不会误杀），超大输入不解码不占内存。
+
+### 2026-11-01 插件管理页重构与使用量统计（@DYN-S121~S124）
+
+- `npx vitest run src/pages/plugins` → **36/36**（7 文件）：新增 PluginStatsPanel 3 例（概览聚合/TOP5+分类分布/趋势空态）；CustomPluginPanel 断言重构（双视图切换、「更多」菜单收纳刷新函数、卡片内联 Popconfirm 删除、列表视图操作齐全）；全量 vitest **694/694**、typecheck 0 error、lint 0 error（plugins 目录仅余 2 条 fast-refresh warning，与存量页面同类）
+- @DYN-S124 计数链路：`dotnet build src/MoAI/MoAI.csproj` **0 error**；执行点 `PluginAppToolProvider`（Agent 全类型工具调用，闭包捕获 plugin.Id）/ `RunPluginCommandHandler`（管理端运行 + 工作流 plugin 节点，经 `IncrementPluginUsageCommand` 按 plugin_name+team 解析实体 id）/ `RunTeamPluginCommandHandler`（团队运行，可用性查询顺带取实体 id 直增）；计数失败静默不阻塞执行；**@manual 待 e2e 断言**（计数为分钟级批量落库，后续参照 app-usecount 模式补）
+- 客户端重建：`npm run syncapi`（主 client）+ `MSYS_NO_PATHCONV=1 kiota generate --include-path /api/ai/plugin`（aiplugin-client，counter/functionCount 进 `PluginBaseInfoItem` 与 `QueryPluginManageListCommandResponseItem`）
+
+### 2026-11-02 插件使用统计（@DYN-S125~S126）
+
+- 后端：`QueryPluginStatsCommand` + `.Custom` 层 Handler + `GET /ai/plugin/manage/stats`（admin 门禁）——dotnet build 0 error；后端重启后 `/openapi/v1.json` 含新路径，`npm run syncapi` 重建主客户端 + `MSYS_NO_PATHCONV=1` 手工 kiota 重建 aiplugin-client。
+- 前端：`PluginStatsPanel` 改新端点 + 共享 `PluginStatsView`；`npx vitest run src/pages/plugins/__tests__/PluginStatsPanel.test.tsx` → 5/5（概览/团队名后缀/分类兜底/趋势有数/趋势空态）；插件套件 15/15。
+- E2E：`team-plugin-e2e.mjs` TP_BASE 指向 5000 → **61/61**（新增 TP-37p/37a~e/38a~d/39a~d 共 14 断言）；`statistics-usage-e2e.mjs` 回归全绿（统计模块只读接入，写链路无改动）。
+- team-plugin-e2e 从 47 断言增至 61（AGENTS TP 计数同步）。
+
+### 2026-11-04 动态插件多工具 + 插件语义配置（@DYN-S127~S144）
+
+| 场景 | 验证物 | 结果（日期） |
+|---|---|---|
+| @DYN-S127~S136 | local-dev/plugin-multi-tool-semantic-e2e.mjs（MT-1~16） | PASS 16/16（2026-11-04） |
+| @DYN-S137~S144 | local-dev/plugin-multi-tool-semantic-e2e.mjs（SM-1~14） | PASS 14/14（2026-11-04） |
+| 多工具契约发现与执行路由 | tests/MoAI.AIPlugin.Dynamic.Tests/TextToolkitPluginTests.cs | PASS 10/10（2026-11-04） |
+| 语义注入/元工具/预检 | tests/MoAI.AI.Core.Tests/AppToolContextProviderTests.cs（新增 8 例） | PASS 179/179（2026-11-04） |
+| 前端回归 | ui typecheck 0 error + lint 0 error + plugins 套件单跑通过 | PASS（2026-11-04） |
+
+- 构建与回归：`dotnet build src/MoAI/MoAI.csproj` **0 error**；存量库执行 `asserts/plugin_semantic.sql`（usage_notes 列 + plugin_semantic_note/plugin_tool_meta 两表）后端到端全链路可跑。
+- E2E：`node local-dev/plugin-multi-tool-semantic-e2e.mjs` → **PASS 30 / FAIL 0**（后端 127.0.0.1:5000）。覆盖：模板/实例工具清单与参数示例接口、按 toolKey 独立运行与未知 toolKey 拒绝、存量单工具兼容（run 项 + 不带 toolKey 运行）、配置注释原文保留、语义配置整体覆盖保存/回显/校验 400/门禁 403/404。
+- 单测新增：`TextToolkitPluginTests`（契约发现 3 工具/单工具形态不变/toolKey 路由/未知 key/配置校验/长度护栏）、`AppToolContextProviderTests` 增 8 例（使用须知注入与同插件去重、语义目录注入 + plugin_note 元工具取回/缺失报错、无条目不注册、CallPolicy 命中拦截/未命中放行、ExtraNotes 并入 list_tools 描述）。
+- 客户端重建：`npm run syncapi` 已固化双客户端生成（主 client + aiplugin-client include `/api/ai/plugin` + `/api/ai/plugin/**`，只带 `/**` 会丢挂在该节点的 `GET /api/ai/plugin`）。
+- 实踩坑：①`SavePluginSemanticCommand.Validate` 校验路由回填的 PluginId → body 不带 pluginId 恒 400（路由参数时序坑复命中，oauthconnect 同款）；修复为不校验该字段、Handler 查不到插件 404 兜底；②`PluginInfo.Request/Response` 改可空后，`QueryTeamDynamicTemplatesCommandHandler`（团队动态模板列表）残留裸解引用 `x.Request.FullName` → 注册表含多工具模板即 NRE「服务器错误 Object reference not set to an instance of an object」——修复为可空访问，并把工具清单组装收敛为 `PluginTypeHelper.BuildToolItems` 共享实现（团队模板列表同步带出 Tools/ToolCount）；③全量 vitest 在本机并发下有 14 例资源竞争 flaky（分类/维基/接入页等，与存量页同类），单文件重跑全过。
+- 回归：修复②后 `team-plugin-e2e.mjs`（TP_BASE=5000）**68/68**（追加 TSM-1~7 团队语义用例，见下）、`dynamic-plugin-e2e.mjs` **PASS 165 / FAIL 0 / SKIP 4**、`plugin-multi-tool-semantic-e2e.mjs` **30/30**。
+
+### 2026-11-04b 团队插件语义配置（@DYN-S154~S158）
+
+- 后端：`QueryTeamPluginSemanticCommand`/`SaveTeamPluginSemanticCommand`（teamplugin.Shared）+ Handler（成员可读 / Owner-Admin 可写 / 团队自有归属校验，非自有 403）经 MediatR 转发 aiplugin 同一 Handler——零逻辑复制，团队侧与系统侧同一存储同一校验；路由 `GET/PUT /team/{teamId}/plugin/{pluginId}/semantic`。⚠️ `TaskStop` 只杀 shell 不杀 dotnet 子进程——重启后端时端口被残留进程占用致新进程 exit 1，需 `taskkill` PID 后再起（实踩）。
+- 前端：`PluginSemanticModal` 加 `teamId` prop（走团队端点）+ `team-plugin.ts` 封装（归一复用 `normalizePluginSemantic`）+ 团队动态/自定义两面板「语义配置」入口（`canManage && isTeamOwned`——系统授权插件的语义属全局数据，团队侧不可改）。
+- E2E：`team-plugin-e2e.mjs` → **68/68**（TSM-1 非成员 404 / TSM-2 成员可读 / TSM-3 成员写 403 / TSM-4~5 Owner 保存回显 / TSM-6 策略校验 400 / TSM-7 跨团队 404）；`plugin-multi-tool-semantic-e2e.mjs` 回归 **30/30**；主客户端 `npm run syncapi` 重建（新端点进生成物）。
+- 口径说明：团队侧语义仅限团队自有插件；系统授权插件在团队侧不可配置（其语义影响全平台），这与编辑/删除权限口径一致。
+- 已知留白：AI 会话内 plugin_note 取回与 CallPolicy 拦截的真实对话链路由单测覆盖（`AppToolContextProviderTests`），未铺桩模型端到端；CallPolicy 命中未接 app_security_event 审计。

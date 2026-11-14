@@ -123,18 +123,42 @@ public class WikiEmbeddingService
             throw new InvalidOperationException("未构建出任何可向量化记录：请确认已启用原文向量化或文档切片存在可用元数据。");
         }
 
-        foreach (var record in records)
+        // 批量生成向量（外部模型调用与写入分离：先完成并校验全部向量，再写入集合，避免失败时丢失旧数据）
+        foreach (var batchStart in Enumerable.Range(0, (records.Count + EmbedBatchSize - 1) / EmbedBatchSize))
         {
-            record.Embedding = await GenerateEmbeddingVectorAsync(generator, wiki, record, cancellationToken);
+            var batch = records.Skip(batchStart * EmbedBatchSize).Take(EmbedBatchSize).ToList();
+            var embeddings = await generator.GenerateAsync(
+                batch.Select(x => x.Content),
+                new EmbeddingGenerationOptions { Dimensions = wiki.EmbeddingDimensions },
+                cancellationToken);
+
+            // 生成的向量与输入内容按顺序一一对应
+            for (var i = 0; i < batch.Count; i++)
+            {
+                if (i >= embeddings.Count || embeddings[i].Vector.IsEmpty)
+                {
+                    throw new InvalidOperationException($"向量模型未返回有效向量：ChunkId={batch[i].ChunkId}, MetadataType={batch[i].MetadataType}。");
+                }
+
+                batch[i].Embedding = embeddings[i].Vector;
+            }
         }
 
-        // 先完成外部模型调用并校验，再写入向量集合，避免失败时丢失旧数据。
         await _vectorStore.EnsureCollectionAsync(wikiId, wiki.EmbeddingDimensions, cancellationToken);
         await _vectorStore.ReplaceDocumentVectorsAsync(wikiId, documentId, records, cancellationToken);
 
         document.IsEmbedding = true;
+        // 内容更新后的重新向量化至此完成，清除过期标记（召回侧据此不再标记 IsStale）
+        document.IsUpdate = false;
         wiki.IsLock = true;
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 推进索引纪元：向量集合变化使该库的检索经验聚类失效（新向量化内容对已缓存查询可见）
+        await _databaseContext.Wikis
+            .Where(x => x.Id == wikiId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.IndexEpoch, x => x.IndexEpoch + 1)
+                .SetProperty(x => x.UpdateTime, DateTimeOffset.UtcNow), cancellationToken);
     }
 
     internal static List<WikiEmbeddingVectorRecord> BuildEmbeddingRecords(
@@ -257,58 +281,79 @@ public class WikiEmbeddingService
         var (model, channel) = await ResolveChatAsync(metadataModelId, wiki.TeamId, cancellationToken);
         var failures = new List<Exception>();
 
-        foreach (var chunk in chunks)
+        // 有界并发生成（AI 调用为独立 HTTP 请求可并发；DbContext 非线程安全，DB 写保持顺序）：
+        // 按批 Task.WhenAll，单 chunk 失败按位收集不中断，结果按 chunk 顺序落库（与串行版本语义一致）
+        var metadataResults = new ChunkMetadata?[chunks.Count];
+        var failureResults = new Exception?[chunks.Count];
+        for (var offset = 0; offset < chunks.Count; offset += MetadataConcurrency)
         {
-            try
+            var batch = chunks.Skip(offset).Take(MetadataConcurrency).ToList();
+            await Task.WhenAll(batch.Select(async (chunk, index) =>
             {
-                var metadata = await GenerateChunkMetadataAsync(model, channel, chunk.SliceContent, strategyTypes, cancellationToken);
-                if (metadata == null)
+                var slot = offset + index;
+                try
                 {
-                    continue;
+                    metadataResults[slot] = await GenerateChunkMetadataAsync(model, channel, chunk.SliceContent, strategyTypes, cancellationToken);
                 }
-
-                var entities = new List<WikiDocumentChunkMetadatumEntity>();
-                if (WantsMetadataType(strategyTypes, 1) && !string.IsNullOrWhiteSpace(metadata.Outline))
+                catch (Exception ex)
                 {
-                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 1, metadata.Outline));
+                    failureResults[slot] = ex;
+                    _logger.LogError(ex, "生成切片元数据失败. DocumentId={DocumentId}, ChunkId={ChunkId}", document.Id, chunk.Id);
                 }
+            }));
+        }
 
-                if (WantsMetadataType(strategyTypes, 2))
-                {
-                    foreach (var question in metadata.Questions)
-                    {
-                        entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 2, question));
-                    }
-                }
+        for (var index = 0; index < chunks.Count; index++)
+        {
+            var chunk = chunks[index];
+            if (failureResults[index] != null)
+            {
+                failures.Add(failureResults[index]!);
+                continue;
+            }
 
-                if (WantsMetadataType(strategyTypes, 3))
-                {
-                    foreach (var keyword in metadata.Keywords)
-                    {
-                        entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 3, keyword));
-                    }
-                }
+            var metadata = metadataResults[index];
+            if (metadata == null)
+            {
+                continue;
+            }
 
-                if (WantsMetadataType(strategyTypes, 4) && !string.IsNullOrWhiteSpace(metadata.Summary))
-                {
-                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 4, metadata.Summary));
-                }
+            var entities = new List<WikiDocumentChunkMetadatumEntity>();
+            if (WantsMetadataType(strategyTypes, 1) && !string.IsNullOrWhiteSpace(metadata.Outline))
+            {
+                entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 1, metadata.Outline));
+            }
 
-                if (WantsMetadataType(strategyTypes, 5) && !string.IsNullOrWhiteSpace(metadata.Aggregated))
+            if (WantsMetadataType(strategyTypes, 2))
+            {
+                foreach (var question in metadata.Questions)
                 {
-                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 5, metadata.Aggregated));
-                }
-
-                if (entities.Count > 0)
-                {
-                    await _databaseContext.WikiDocumentChunkMetadata.AddRangeAsync(entities, cancellationToken);
-                    metadataByChunk[chunk.Id] = entities;
+                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 2, question));
                 }
             }
-            catch (Exception ex)
+
+            if (WantsMetadataType(strategyTypes, 3))
             {
-                failures.Add(ex);
-                _logger.LogError(ex, "生成切片元数据失败. DocumentId={DocumentId}, ChunkId={ChunkId}", document.Id, chunk.Id);
+                foreach (var keyword in metadata.Keywords)
+                {
+                    entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 3, keyword));
+                }
+            }
+
+            if (WantsMetadataType(strategyTypes, 4) && !string.IsNullOrWhiteSpace(metadata.Summary))
+            {
+                entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 4, metadata.Summary));
+            }
+
+            if (WantsMetadataType(strategyTypes, 5) && !string.IsNullOrWhiteSpace(metadata.Aggregated))
+            {
+                entities.Add(CreateMetadata(wiki.Id, document.Id, chunk.Id, 5, metadata.Aggregated));
+            }
+
+            if (entities.Count > 0)
+            {
+                await _databaseContext.WikiDocumentChunkMetadata.AddRangeAsync(entities, cancellationToken);
+                metadataByChunk[chunk.Id] = entities;
             }
         }
 
@@ -528,30 +573,15 @@ public class WikiEmbeddingService
             .ToList();
     }
 
-    private async Task<ReadOnlyMemory<float>> GenerateEmbeddingVectorAsync(
-        IEmbeddingGenerator<string, Embedding<float>> generator,
-        WikiEntity wiki,
-        WikiEmbeddingVectorRecord record,
-        CancellationToken cancellationToken)
-    {
-        var embeddings = await generator.GenerateAsync(
-            [record.Content],
-            options: new EmbeddingGenerationOptions { Dimensions = wiki.EmbeddingDimensions },
-            cancellationToken: cancellationToken);
+    /// <summary>
+    /// 向量化批量大小（单次请求批量生成的记录数上限）.
+    /// </summary>
+    private const int EmbedBatchSize = 32;
 
-        if (embeddings.Count == 0)
-        {
-            throw new InvalidOperationException($"向量模型未返回向量：ChunkId={record.ChunkId}, MetadataType={record.MetadataType}。");
-        }
-
-        var vector = embeddings[0].Vector;
-        if (vector.Length == 0)
-        {
-            throw new InvalidOperationException($"向量模型返回空向量：ChunkId={record.ChunkId}, MetadataType={record.MetadataType}。");
-        }
-
-        return vector;
-    }
+    /// <summary>
+    /// 元数据生成并发度（每批并行的 chunk AI 调用数；渠道限流 429 由失败收集与 MQ 重投兜底）.
+    /// </summary>
+    private const int MetadataConcurrency = 4;
 
     private async Task<(AiModelEntity Model, AiChannelEntity Channel)> ResolveEmbeddingAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
     {
@@ -583,7 +613,7 @@ public class WikiEmbeddingService
                     select new { m, c };
 
         var candidates = await query.ToListAsync(cancellationToken);
-        var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+        var model = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (model == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

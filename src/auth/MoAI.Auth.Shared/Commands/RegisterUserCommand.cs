@@ -34,6 +34,11 @@ public class RegisterUserCommand : IRequest<SimpleLong>, IModelValidator<Registe
     /// </summary>
     public string Phone { get; init; } = default!;
 
+    /// <summary>
+    /// 邮箱验证码（系统开启注册验证码时必填，否则忽略）.
+    /// </summary>
+    public string EmailCode { get; init; } = string.Empty;
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<RegisterUserCommand> validate)
     {
@@ -42,5 +47,6 @@ public class RegisterUserCommand : IRequest<SimpleLong>, IModelValidator<Registe
         validate.RuleFor(x => x.Password).NotEmpty(); // .MinimumLength(8).MaximumLength(30).Matches("(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$").WithMessage("密码 8-30 长度，并包含数字+字母+特殊字符.");
         validate.RuleFor(x => x.NickName).NotEmpty().MinimumLength(3).MaximumLength(20).WithMessage("昵称 3-20 字符.");
         validate.RuleFor(x => x.Phone).NotEmpty().Matches(@"^(?:\+?1)?\d{10,15}$").WithMessage("手机号格式错误.");
+        validate.RuleFor(x => x.EmailCode).MaximumLength(10).WithMessage("验证码格式错误.");
     }
 }

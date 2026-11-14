@@ -23,6 +23,7 @@
 | @ACC-S21、@ACC-S23 | [local-dev/audit-345.mjs](../../local-dev/audit-345.mjs)（绑定列表 / 解绑未绑定 404） | PASS（2026-09-01） |
 | @ACC-S22 | OAuth 全链路 12/12（解绑分支，存档同上） | PASS 12/12（2026-09-02） |
 | @ACC-S24 ~ @ACC-S28 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)；三轮浏览器全页面回归含账号设置页） | PASS（2026-09-01/09-02） |
+| @ACC-S29 | @manual + `cd ui && npm run typecheck && npm run lint && npm run test`（分区导航/旧链接重定向；组件拆分后全量 699 用例通过 2026-11-01） | PASS（2026-11-01） |
 
 ## 回归命令（后端运行于 :5210）
 

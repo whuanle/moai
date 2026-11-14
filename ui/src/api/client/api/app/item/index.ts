@@ -12,6 +12,10 @@ import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from 
 // @ts-ignore
 import { DebugRequestBuilderNavigationMetadata, type DebugRequestBuilder } from './debug/index.js';
 // @ts-ignore
+import { FavoriteRequestBuilderRequestsMetadata, type FavoriteRequestBuilder } from './favorite/index.js';
+// @ts-ignore
+import { FeatureRequestBuilderRequestsMetadata, type FeatureRequestBuilder } from './feature/index.js';
+// @ts-ignore
 import { LogsRequestBuilderNavigationMetadata, LogsRequestBuilderRequestsMetadata, type LogsRequestBuilder } from './logs/index.js';
 // @ts-ignore
 import { MemoryRequestBuilderNavigationMetadata, MemoryRequestBuilderRequestsMetadata, type MemoryRequestBuilder } from './memory/index.js';
@@ -24,7 +28,7 @@ import { SessionRequestBuilderNavigationMetadata, SessionRequestBuilderRequestsM
 // @ts-ignore
 import { type UnpublishRequestBuilder, UnpublishRequestBuilderRequestsMetadata } from './unpublish/index.js';
 // @ts-ignore
-import { type UsageRequestBuilder, UsageRequestBuilderRequestsMetadata } from './usage/index.js';
+import { type UsageRequestBuilder, UsageRequestBuilderNavigationMetadata, UsageRequestBuilderRequestsMetadata } from './usage/index.js';
 // @ts-ignore
 import { type UserconfigRequestBuilder, UserconfigRequestBuilderRequestsMetadata } from './userconfig/index.js';
 // @ts-ignore
@@ -50,6 +54,14 @@ export interface AppItemRequestBuilder extends BaseRequestBuilder<AppItemRequest
      * The debug property
      */
     get debug(): DebugRequestBuilder;
+    /**
+     * The favorite property
+     */
+    get favorite(): FavoriteRequestBuilder;
+    /**
+     * The feature property
+     */
+    get feature(): FeatureRequestBuilder;
     /**
      * The logs property
      */
@@ -139,6 +151,12 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     debug: {
         navigationMetadata: DebugRequestBuilderNavigationMetadata,
     },
+    favorite: {
+        requestsMetadata: FavoriteRequestBuilderRequestsMetadata,
+    },
+    feature: {
+        requestsMetadata: FeatureRequestBuilderRequestsMetadata,
+    },
     logs: {
         requestsMetadata: LogsRequestBuilderRequestsMetadata,
         navigationMetadata: LogsRequestBuilderNavigationMetadata,
@@ -163,6 +181,7 @@ export const AppItemRequestBuilderNavigationMetadata: Record<Exclude<keyof AppIt
     },
     usage: {
         requestsMetadata: UsageRequestBuilderRequestsMetadata,
+        navigationMetadata: UsageRequestBuilderNavigationMetadata,
     },
     userconfig: {
         requestsMetadata: UserconfigRequestBuilderRequestsMetadata,

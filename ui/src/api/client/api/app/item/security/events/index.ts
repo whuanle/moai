@@ -33,6 +33,10 @@ export interface EventsRequestBuilder extends BaseRequestBuilder<EventsRequestBu
  */
 export interface EventsRequestBuilderGetQueryParameters {
     /**
+     * 按规则名称/类型模糊过滤，可空.
+     */
+    keyword?: string;
+    /**
      * 页码，从 1 开始.
      */
     pageNo?: number;
@@ -48,7 +52,7 @@ export interface EventsRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const EventsRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}/security/events{?pageNo*,pageSize*,scope*}";
+export const EventsRequestBuilderUriTemplate = "{+baseurl}/api/app/{id}/security/events{?keyword*,pageNo*,pageSize*,scope*}";
 /**
  * Metadata for all the requests in the request builder.
  */

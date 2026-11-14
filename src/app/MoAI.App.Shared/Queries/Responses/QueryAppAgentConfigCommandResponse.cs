@@ -29,9 +29,14 @@ public class QueryAppAgentConfigCommandResponse
     public string Prompt { get; set; } = string.Empty;
 
     /// <summary>
-    /// 对话使用的模型 id（uuid）；模型选择未开放时为空 Guid.
+    /// 默认对话模型 id（uuid）；模型选择未开放时为空 Guid.
     /// </summary>
     public Guid ModelId { get; set; }
+
+    /// <summary>
+    /// 开放给用户选择的对话模型 id 列表（含默认模型，uuid）；未配置时仅含默认模型（单模型应用）.
+    /// </summary>
+    public IReadOnlyList<Guid> ModelIds { get; set; } = new List<Guid>();
 
     /// <summary>
     /// 绑定的知识库 id 列表（元素为 wiki.id）.
@@ -44,6 +49,21 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<long> GraphIds { get; set; } = new List<long>();
 
     /// <summary>
+    /// 绑定的团队智能体 id 列表（元素为 team_agent.id，uuid，须为本团队启用中智能体）.
+    /// </summary>
+    public IReadOnlyList<Guid> TeamAgentIds { get; set; } = new List<Guid>();
+
+    /// <summary>
+    /// 默认团队智能体 id（uuid）；空=取列表第一个.
+    /// </summary>
+    public Guid? DefaultTeamAgentId { get; set; }
+
+    /// <summary>
+    /// 绑定的团队智能体选项（按绑定顺序，含实时启用状态；供配置回显与调试面板）.
+    /// </summary>
+    public IReadOnlyList<AppTeamAgentOption> TeamAgents { get; set; } = new List<AppTeamAgentOption>();
+
+    /// <summary>
     /// 绑定的插件 id 列表（元素为 plugin.id，uuid）.
     /// </summary>
     public IReadOnlyList<Guid> Plugins { get; set; } = new List<Guid>();
@@ -54,9 +74,20 @@ public class QueryAppAgentConfigCommandResponse
     public IReadOnlyList<Guid> WorkflowApps { get; set; } = new List<Guid>();
 
     /// <summary>
+    /// 绑定为工具的 Agent 应用 id 列表（元素为 app.id，uuid，本团队已发布内部 Agent 应用）.
+    /// </summary>
+    public IReadOnlyList<Guid> AgentApps { get; set; } = new List<Guid>();
+
+    /// <summary>
     /// 应用默认使用的技能 id 列表（元素为 skill.id，uuid），用户可在应用设置中取消勾选.
     /// </summary>
     public IReadOnlyList<Guid> Skills { get; set; } = new List<Guid>();
+
+    /// <summary>
+    /// 开放给用户选择的可选专家提示词 id 列表（元素为 prompt.id，整数；市场公开或本团队提示词），
+    /// 用户在应用设置中与市场公开、本人个人提示词一起选用.
+    /// </summary>
+    public IReadOnlyList<int> Prompts { get; set; } = new List<int>();
 
     /// <summary>
     /// 对话执行参数（JSON 对象，含沙箱等扩展配置）.

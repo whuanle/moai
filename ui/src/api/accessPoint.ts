@@ -2,7 +2,7 @@ import { type Guid } from '@microsoft/kiota-abstractions'
 import { Env } from '@/config/env'
 import { getApiClient } from '@/api/kiota'
 
-/** 访问点公开配置（外部匿名端点返回结构，/openapi/external.json） */
+/** 访问点公开配置（外部匿名端点返回结构，/openapi/teamres.json） */
 export interface ExternalAccessPointResponse {
   appId?: string | null
   title?: string | null
@@ -10,11 +10,17 @@ export interface ExternalAccessPointResponse {
   placeholder?: string | null
   primaryColor?: string | null
   position?: string | null
+  /** floating 悬浮组件 / inline 内嵌小窗 */
+  displayMode?: string | null
   launcherText?: string | null
   avatar?: string | null
   panelWidth?: number | null
   panelHeight?: number | null
   defaultOpen?: boolean | null
+  /** 对话开场白（未启用为 null） */
+  openingStatement?: string | null
+  /** open 匿名开放（外部应用）/ token 需访问用户 token（内部应用访问点） */
+  authMode?: string | null
   enabled?: boolean | null
 }
 
@@ -28,6 +34,8 @@ export interface AppAccessPointConfig {
   primaryColor?: string | null
   /** bottomRight / bottomLeft */
   position?: string | null
+  /** floating 悬浮组件 / inline 内嵌小窗 */
+  displayMode?: string | null
   /** 悬浮按钮文案，空则用图标 */
   launcherText?: string | null
   /** 头像 objectKey */
@@ -45,6 +53,8 @@ export interface SaveAccessPointPayload {
   placeholder?: string | null
   primaryColor?: string | null
   position?: string
+  /** floating / inline */
+  displayMode?: string
   launcherText?: string | null
   avatar?: string | null
   panelWidth: number
@@ -68,6 +78,7 @@ export async function getAppAccessPoint(appId: string): Promise<AppAccessPointCo
     placeholder: res?.placeholder ?? null,
     primaryColor: res?.primaryColor ?? null,
     position: res?.position ?? 'bottomRight',
+    displayMode: res?.displayMode ?? 'floating',
     launcherText: res?.launcherText ?? null,
     avatar: res?.avatar ?? null,
     panelWidth: res?.panelWidth ?? 380,
@@ -86,6 +97,7 @@ export async function saveAppAccessPoint(appId: string, payload: SaveAccessPoint
     placeholder: payload.placeholder ?? null,
     primaryColor: payload.primaryColor ?? null,
     position: payload.position,
+    displayMode: payload.displayMode ?? 'floating',
     launcherText: payload.launcherText ?? null,
     avatar: payload.avatar ?? null,
     panelWidth: payload.panelWidth,
@@ -96,9 +108,9 @@ export async function saveAppAccessPoint(appId: string, payload: SaveAccessPoint
 }
 
 /** 查询访问点公开配置（匿名，悬浮组件用）。
- * 外部接口（/api/external）已从内部 Kiota 客户端文档拆分（/openapi/external.json），此处直接 fetch。 */
+ * 团队资源接口（/api/teamres）已从内部 Kiota 客户端文档拆分（/openapi/teamres.json），此处直接 fetch。 */
 export async function getExternalAccessPoint(appId: string): Promise<ExternalAccessPointResponse | null> {
-  const res = await fetch(`${Env.serverUrl}/api/external/app/${appId}/access-point`)
+  const res = await fetch(`${Env.serverUrl}/api/teamres/app/${appId}/access-point`)
   if (!res.ok) {
     return null
   }

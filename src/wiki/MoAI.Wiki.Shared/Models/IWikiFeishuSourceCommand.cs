@@ -18,27 +18,22 @@ public interface IWikiFeishuSourceCommand
     string? NodeToken { get; }
 
     /// <summary>
-    /// 方式一：选择团队已有的飞书应用连接 id.
-    /// </summary>
-    System.Guid? FeishuAppId { get; }
-
-    /// <summary>
-    /// 方式二：新建飞书应用连接的名称.
+    /// 新建飞书应用连接的名称.
     /// </summary>
     string? NewAppName { get; }
 
     /// <summary>
-    /// 方式二：飞书开放平台 AppID.
+    /// 飞书开放平台 AppID.
     /// </summary>
     string? NewAppId { get; }
 
     /// <summary>
-    /// 方式二：飞书开放平台 AppSecret.
+    /// 飞书开放平台 AppSecret.
     /// </summary>
     string? NewAppSecret { get; }
 
     /// <summary>
-    /// 方式二：接入域名.
+    /// 接入域名.
     /// </summary>
     string? NewAppDomain { get; }
 }

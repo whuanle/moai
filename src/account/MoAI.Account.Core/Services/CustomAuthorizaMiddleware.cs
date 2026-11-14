@@ -75,8 +75,36 @@ public class CustomAuthorizaMiddleware : IMiddleware
                 });
                 return;
             }
+
+            // 强制两步验证：登录时未绑定 2FA 的用户（token 携带 mfa_pending）只放行绑定流程相关接口，
+            // 绑定成功后用户态缓存已失效（TwoFactorEnabled=true），旧 token 立即恢复完整访问，无需重新登录.
+            if (userState != null
+                && !userState.TwoFactorEnabled
+                && userContext.Properties.TryGetValue("mfa_pending", out var mfaPending)
+                && string.Equals(mfaPending, "true", StringComparison.OrdinalIgnoreCase)
+                && !IsMfaBindWhitelistedPath(context.Request.Path))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new BusinessValidationResult
+                {
+                    Code = StatusCodes.Status403Forbidden,
+                    RequestId = context.TraceIdentifier,
+                    Detail = "请先绑定两步验证后再使用系统",
+                });
+                return;
+            }
         }
 
         await next(context);
+    }
+
+    /// <summary>
+    /// 强制两步验证期间放行的接口前缀：两步验证绑定流程自身与当前用户信息查询.
+    /// </summary>
+    private static bool IsMfaBindWhitelistedPath(PathString path)
+    {
+        var value = path.Value ?? string.Empty;
+        return value.StartsWith("/api/auth/two_factor", StringComparison.OrdinalIgnoreCase)
+               || value.StartsWith("/api/account/userinfo", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -71,6 +71,7 @@ public class QueryTeamTimerExecutionsCommandHandler : IRequestHandler<QueryTeamT
             DurationMs = execution.DurationMs,
             NextRetryTime = execution.NextRetryTime,
             AppInstanceId = execution.AppInstanceId,
+            SessionId = execution.SessionId,
             Result = execution.Result,
             ErrorMessage = execution.ErrorMessage,
             CreateTime = execution.CreateTime,

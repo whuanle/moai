@@ -18,4 +18,9 @@ public class QueryAIModelListCommand : IRequest<QueryAIModelListCommandResponse>
     /// 渠道 id，为空时查询全部.
     /// </summary>
     public Guid? ChannelId { get; init; }
+
+    /// <summary>
+    /// 团队自有渠道归属团队 id，大于 0 时仅返回该团队自有渠道下的模型（团队模型渠道页使用）.
+    /// </summary>
+    public int OwnerTeamId { get; init; }
 }

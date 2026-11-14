@@ -28,7 +28,8 @@ public class UpdateKnowledgeGraphCommand : IRequest<EmptyCommandResponse>, IMode
     public static void Validate(AbstractValidator<UpdateKnowledgeGraphCommand> validate)
     {
         // KnowledgeGraphId 由 Controller 从路由参数回填，自动验证发生在回填之前，因此此处不校验。
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("知识图谱名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("简介最长 255 个字符.");
     }
 }

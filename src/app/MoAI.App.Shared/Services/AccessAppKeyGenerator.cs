@@ -32,4 +32,20 @@ public static class AccessAppKeyGenerator
         var secret = sb.ToString();
         return (secret, secret[..PrefixLength]);
     }
+
+    /// <summary>
+    /// 生成新接入密钥（48 位随机字符，无前缀），库内只存 PBKDF2 哈希，原文仅在创建/重置时返回一次.
+    /// </summary>
+    /// <returns>返回密钥原文.</returns>
+    public static string NewSecret()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(48);
+        var sb = new StringBuilder(48);
+        foreach (var b in bytes)
+        {
+            sb.Append(Alphabet[b % Alphabet.Length]);
+        }
+
+        return sb.ToString();
+    }
 }

@@ -1,5 +1,5 @@
 // 知识图谱模块 E2E（真实 HTTP，复用 wiki/team-e2e 同款登录/断言；后端 127.0.0.1:5210）
-// 场景编号与 docs/knowledgegraph/bdd.md 对应（@KG-S1..S16）
+// 场景编号与 docs/knowledgegraph/bdd.md 对应（@KG-S1..S21 与 v4 探索工作台段 @KG-S37/S38/S40）
 // 需后端 + Memgraph/图数据库 + KG_ENABLED=true；未开启/连不上时打印 SKIP 并退出码 0（CI 无图数据库不失败）
 import crypto from 'node:crypto'
 
@@ -68,16 +68,41 @@ async function main() {
   }
 
   // 图数据库可达性探针：建一个 connected 图，成功即证明可达，随后清理
-  const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-probe-' + TS, mode: 'connected', database: 'neo4j' } })
+  const probe = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_probe_' + TS, mode: 'connected', database: 'neo4j' } })
   if (probe.status !== 200) {
     skip(`图数据库探活失败 (${probe.status}): ${probe.text.slice(0, 160)}`)
   }
   await api('DELETE', kg(Number(probe.json.value)), { token })
 
+  // ===== KG-S46 测试连接（系统设置开启前预检，仅 root）=====
+  {
+    const t1 = await api('POST', '/api/knowledge-graph/test-connection', { token, body: {} })
+    check('KG-S46a 空体回退已保存连接，图库可达 ok=true 携带耗时', t1.status === 200 && t1.json?.ok === true && Number(t1.json?.latencyMs) >= 0, JSON.stringify(t1.json).slice(0, 160))
+    const t2 = await api('POST', '/api/knowledge-graph/test-connection', { token, body: { uri: 'bolt://127.0.0.1:1', dialect: 'memgraph' } })
+    check('KG-S46b 错误地址 8 秒限幅内 ok=false 携带原因（不 5xx 不挂起）', t2.status === 200 && t2.json?.ok === false && !!t2.json?.error, JSON.stringify(t2.json).slice(0, 160))
+    const t3 = await api('POST', '/api/knowledge-graph/test-connection', { token, body: { uri: 'not-a-uri' } })
+    check('KG-S46c 非法地址格式 400', t3.status === 400)
+    const t4 = await api('POST', '/api/knowledge-graph/test-connection', { token, body: { dialect: 'mysql' } })
+    check('KG-S46d 非法方言 400', t4.status === 400)
+    const t5 = await api('POST', '/api/knowledge-graph/test-connection', { body: {} })
+    check('KG-S46e 未认证 401', t5.status === 401)
+    // 非 root 门禁：注册普通用户后调用应 403（注册被环境策略挡住时容忍跳过）
+    const ru = 'kg_noroot_' + TS
+    const reg = await api('POST', '/api/auth/register', { body: { userName: ru, email: `${ru}@test.local`, nickName: ru, phone: `138${String(Math.floor(Math.random() * 1e8)).padStart(8, '0')}`, password: rsa('Abcd123456') } })
+    if (reg.status === 200) {
+      const lt = await api('POST', '/api/auth/login', { body: { userName: ru, password: rsa('Abcd123456') } })
+      const t6 = await api('POST', '/api/knowledge-graph/test-connection', { token: lt.json?.accessToken, body: {} })
+      check('KG-S46f 普通用户 403', t6.status === 403, `${t6.status} ${t6.text.slice(0, 120)}`)
+    } else {
+      check(`KG-S46f 注册不可用（${reg.status}）时跳过非 root 门禁断言`, true)
+    }
+  }
+
   // ===== KG-S1 创建图谱（空白模板）=====
-  const blankName = 'kg-blank-' + TS
+  const blankName = 'kg_blank_' + TS
   const c1 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: blankName, templateKey: 'blank' } })
   check('KG-S1a 创建空白图谱 200 且返回 id', c1.status === 200 && Number(c1.json?.value) > 0, `${c1.status} ${c1.text.slice(0, 120)}`)
+  check('KG-S1b 名称含特殊字符 400', (await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-bad!', templateKey: 'blank' } })).status === 400)
   const G1 = Number(c1.json?.value)
   if (!Number.isFinite(G1)) throw new Error('KG-S1 建图失败，后续场景无法继续')
   {
@@ -85,8 +110,15 @@ async function main() {
     check('KG-S1b 空白图谱 schema 无实体/关系类型且 mode=managed', s.status === 200 && (s.json?.entityTypes ?? []).length === 0 && (s.json?.relationTypes ?? []).length === 0 && s.json?.mode === 'managed', JSON.stringify(s.json).slice(0, 150))
   }
 
+  // ===== KG-S47 列表去图库化（不实时探测，计数字段退役）=====
+  {
+    const l = await api('GET', `/api/knowledge-graph/list?teamId=${TID}`, { token })
+    const item = (l.json?.items ?? []).find(x => Number(x.kgId) === G1)
+    check('KG-S47a 列表秒回且不触碰图数据库（entityCount/relationCount 字段已移除，enabled 仍回显）', l.status === 200 && !!item && !('entityCount' in item) && !('relationCount' in item) && l.json?.enabled === true, JSON.stringify(item).slice(0, 160))
+  }
+
   // ===== KG-S2 创建模板图谱（logistics 物流运输）=====
-  const tplName = 'kg-logistics-' + TS
+  const tplName = 'kg_logistics_' + TS
   const c2 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: tplName, templateKey: 'logistics' } })
   check('KG-S2a 创建物流运输模板图谱 200', c2.status === 200 && Number(c2.json?.value) > 0, `${c2.status} ${c2.text.slice(0, 120)}`)
   const G2 = Number(c2.json?.value)
@@ -212,13 +244,13 @@ async function main() {
 
   // ===== KG-S10 接入未知库名（方言语义：neo4j 多库→400 拒绝；memgraph 单库→200 仅登记名，随后清理）=====
   {
-    const s10 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-miss-' + TS, mode: 'connected', database: 'kg_missing_db_' + TS } })
+    const s10 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_conn_miss_' + TS, mode: 'connected', database: 'kg_missing_db_' + TS } })
     check('KG-S10 接入未知库名按方言处理（neo4j=400 / memgraph=200）', s10.status === 400 || s10.status === 200, `${s10.status}`)
     if (s10.status === 200 && Number(s10.json?.value)) await api('DELETE', kg(Number(s10.json.value)), { token })
   }
 
   // ===== KG-S11 接入真实数据库 neo4j（内省 schema）=====
-  const c11 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-conn-' + TS, mode: 'connected', database: 'neo4j' } })
+  const c11 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_conn_' + TS, mode: 'connected', database: 'neo4j' } })
   check('KG-S11a 接入真实库 neo4j 200 且返回 id', c11.status === 200 && Number(c11.json?.value) > 0, `${c11.status} ${c11.text.slice(0, 120)}`)
   const CONN = Number(c11.json?.value)
   {
@@ -252,6 +284,66 @@ async function main() {
     check('KG-S14a 邻接含 seed-port 且带出发边', nb.status === 200 && (nb.json?.nodes ?? []).some(x => x.name === 'seed-port-' + TS) && (nb.json?.edges ?? []).length >= 1, JSON.stringify(nb.json).slice(0, 200))
     const nbGhost = await api('GET', `${kg(G2)}/nodes/ghost/neighbors`, { token })
     check('KG-S14b 不存在节点邻接 404', nbGhost.status === 404, `${nbGhost.status}`)
+  }
+
+  // ===== KG-S37/S38/S40 画布探索工作台 v4（独立图自包含：depth 扩跳 / 邻携度数 / 实体合并）=====
+  {
+    const g4 = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_v4_' + TS, description: '', templateKey: null } })
+    const G4 = Number(g4.json?.value)
+    const tA = await api('POST', `${kg(G4)}/entity-types`, { token, body: { name: '甲类' } })
+    const tB = await api('POST', `${kg(G4)}/entity-types`, { token, body: { name: '乙类' } })
+    const TA = Number(tA.json?.value), TB = Number(tB.json?.value)
+    const rR = await api('POST', `${kg(G4)}/relation-types`, { token, body: { name: '甲到乙', sourceTypeId: TA, targetTypeId: TB } })
+    const rAny = await api('POST', `${kg(G4)}/relation-types`, { token, body: { name: '任意连' } })
+    const rAA = await api('POST', `${kg(G4)}/relation-types`, { token, body: { name: '甲到甲', sourceTypeId: TA, targetTypeId: TA } })
+    const RR = Number(rR.json?.value), RANY = Number(rAny.json?.value), RAA = Number(rAA.json?.value)
+    const mkNode = (name, type) => api('POST', `${kg(G4)}/nodes`, { token, body: { entityTypeId: type, name, description: name + ' 描述' } })
+    const nA1 = await mkNode('a1-' + TS, TA), nA2 = await mkNode('a2-' + TS, TA), nA3 = await mkNode('a3-' + TS, TA), nB1 = await mkNode('b1-' + TS, TB)
+    const A1 = nA1.json?.value, A2 = nA2.json?.value, A3 = nA3.json?.value, B1 = nB1.json?.value
+    const mkEdge = (rt, s, t) => api('POST', `${kg(G4)}/edges`, { token, body: { relationTypeId: rt, sourceNodeId: s, targetNodeId: t } })
+    await mkEdge(RR, A1, B1)
+    await mkEdge(RR, A2, B1)
+    await mkEdge(RANY, A1, A2)
+    await mkEdge(RAA, A2, A3)
+    check('KG-S37z 建图造数（4 节点 4 边）', [tA, tB, rR, rAny, rAA, nA1, nA2, nA3, nB1].every(r => r.status === 200), `${g4.status}/${tA.status}/${nB1.status}`)
+
+    // KG-S40 邻接节点携度数：a1 的邻居 = {a2(RANY), b1(RR)}；b1 度数=2（两条入边）、a2 度数=2（连 a1 与被 b1 连）
+    {
+      const nb = await api('GET', `${kg(G4)}/nodes/${A1}/neighbors?limit=50`, { token })
+      const byName = Object.fromEntries((nb.json?.nodes ?? []).map(x => [x.name, x]))
+      check('KG-S40a 邻接返回两个邻居且携带度数', nb.status === 200 && (nb.json?.nodes ?? []).length === 2 && (nb.json?.nodes ?? []).every(x => typeof x.degree === 'number'), JSON.stringify(nb.json?.nodes?.map(x => [x.name, x.degree])))
+      check('KG-S40b 度数正确（b1=2 / a2=3）', byName['b1-' + TS]?.degree === 2 && byName['a2-' + TS]?.degree === 3, JSON.stringify({ b1: byName['b1-' + TS]?.degree, a2: byName['a2-' + TS]?.degree }))
+    }
+
+    // KG-S38 子图深度：depth=1 关键字 a1 仅 1 节点；depth=2 扩出 a2/b1 共 3 节点；depth=3 参数 400
+    {
+      const d1 = await api('POST', `${kg(G4)}/canvas`, { token, body: { keyword: 'a1-' + TS, limit: 100, depth: 1 } })
+      check('KG-S38a depth=1 仅种子节点', d1.status === 200 && (d1.json?.nodes ?? []).length === 1, JSON.stringify(d1.json?.nodes?.length))
+      const d2 = await api('POST', `${kg(G4)}/canvas`, { token, body: { keyword: 'a1-' + TS, limit: 100, depth: 2 } })
+      check('KG-S38b depth=2 扩一跳共 3 节点', d2.status === 200 && (d2.json?.nodes ?? []).length === 3, JSON.stringify(d2.json?.nodes?.length))
+      const dBad = await api('POST', `${kg(G4)}/canvas`, { token, body: { depth: 3 } })
+      check('KG-S38c depth 越界 400', dBad.status === 400, `${dBad.status}`)
+    }
+
+    // KG-S37 实体合并：约束负例 400 → 正例 target=a1 sources=[a2]（重挂 a2→a3 成 a1→a3、同三元组 a1→b1 跳过、a1→a2 自环丢弃）→ 幂等与成员校验
+    {
+      const mBad = await api('POST', `${kg(G4)}/nodes/merge`, { token, body: { targetNodeId: B1, sourceNodeIds: [A2] } })
+      check('KG-S37a 起止类型约束违反 400（乙类目标承接 a2→a3 的甲到甲出边）', mBad.status === 400, `${mBad.status} ${mBad.text.slice(0, 140)}`)
+      const mSelf = await api('POST', `${kg(G4)}/nodes/merge`, { token, body: { targetNodeId: A1, sourceNodeIds: [A1] } })
+      check('KG-S37b 目标同时出现在源列表 400', mSelf.status === 400, `${mSelf.status}`)
+      const m = await api('POST', `${kg(G4)}/nodes/merge`, { token, body: { targetNodeId: A1, sourceNodeIds: [A2] } })
+      check('KG-S37c 合并成功：重挂 1（a2→a3 成 a1→a3）、自环丢弃 1（a1→a2 两端归一）、删源 1；a2→b1 重挂成 a1→b1 已存在跳过',
+        m.status === 200 && m.json?.rehungEdges === 1 && m.json?.droppedSelfLoopEdges === 1 && m.json?.removedNodes === 1,
+        m.text.slice(0, 160))
+      const after = await api('POST', `${kg(G4)}/canvas`, { token, body: { limit: 100 } })
+      check('KG-S37d 合并后 3 节点 2 边（a2 已删、a1→b1 与 a1→a3）',
+        after.status === 200 && (after.json?.nodes ?? []).length === 3 && (after.json?.edges ?? []).length === 2,
+        JSON.stringify({ n: after.json?.nodes?.length, e: after.json?.edges?.length }))
+      const desc = (after.json?.nodes ?? []).find(x => x.name === 'a1-' + TS)?.description ?? ''
+      check('KG-S37e 目标描述合并源描述', desc.includes('a2-' + TS), desc)
+    }
+
+    try { await api('DELETE', `${kg(G4)}`, { token }) } catch { /* 清理尽力而为 */ }
   }
 
   // ===== KG-S17 接入图画布（外部图库全量查询，elementId 定位 + label 展示）=====

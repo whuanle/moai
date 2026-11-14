@@ -1,57 +1,49 @@
 # 团队网关模块设计（SDD）
 
-> 关联：[BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ **[外部接口与范围体系细节总账](./external-api-scope-system.md)（改此模块前必读：scope 位表/端点分档/缓存/新增资源组清单/踩坑）** ｜ 上游：[../team/sdd.md](../team/sdd.md)、[../app/sdd.md](../app/sdd.md)（外部 token）｜ 证据：[local-dev/team-apikey-scope-e2e.mjs](../../local-dev/team-apikey-scope-e2e.mjs)、[local-dev/gateway-e2e.mjs](../../local-dev/gateway-e2e.mjs)
+> 关联：[BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ **[外部接口与凭证体系细节总账](./external-api-scope-system.md)（改此模块前必读：凭证双轨/资源 key 包围圈/中间件管道/新增资源组清单/踩坑）** ｜ 上游：[../team/sdd.md](../team/sdd.md)、[../app/sdd.md](../app/sdd.md)（外部 token 与 teamres_key）｜ 证据：[local-dev/teamres-key-e2e.mjs](../../local-dev/teamres-key-e2e.mjs)
 
-- 日期：2026-09-21 初版；2026-09-26 六批增补功能范围/直连/缓存；**2026-09-27：团队接入 key（`team_api_key`，`moai-` 前缀）整体下线删除**——密钥管理接口、`moai-` 认证路径、换 token/直连的团队 key 分支、实体与数据表全部移除，接入统一使用应用接入 key（`moai-ac-`，`access_app`），见 [@GW-S3](./bdd.md#gw-s3)
-- 状态：网关四端点 + 额度记账 + 应用接入 key 功能范围已上线（[src/gateway/README.md](../../src/gateway/README.md)）；知识库 MCP 已上线（端点与工具见 [../wiki/sdd.md](../wiki/sdd.md) D35）；知识图谱 MCP 已上线
+- 日期：2026-09-21 初版；2026-09-27 团队接入 key（`team_api_key`，`moai-` 前缀）整体下线删除；2026-10-29 团队模型网关整体下线删除（`src/gateway/` 三项目移除，模型仅供建模应用内部调用，后续由独立子系统承接）；**2026-11-04：scope 范围体系整体退役 + 统一团队资源 key（teamres_key）**——`TeamApiKeyScopes` 枚举与全部掩码常量删除、`access_app.scopes` 列 DROP，moai-ac- 接入 key 全量访问 `/api/teamres`，细粒度授权改由 `teamres_key`（`moai-tr-`）包围圈承接
+- 状态：外部接口凭证体系（moai-ac- 全量 + moai-tr- 包围圈 + 换 token）持续服务；模型网关面与 scope 体系均已下线
 
 ## 1. 目标
 
-应用接入 key（`access_app`，`moai-ac-` 前缀）支持**功能范围**勾选：第三方持 key 只能调用勾选范围内、面向团队资源的外部开放接口，未勾选一律 403。团队外部接口按**资源组**划分，接入按组授权：
+团队外部资源（知识库、知识图谱、团队应用 ACP/A2A）的第三方接入采用**凭证双轨**：
 
-| 资源组 | 覆盖外部接口面 | scope 代码（位） | 应用接入 key |
-|---|---|---|---|
-| 模型网关 | `/api/aigateway/{teamId}/v1/*` | `model` (1) | ✅（直连） |
-| 知识库·读 | `/external/wiki/*` 读面（列表/详情/文档/正文/召回） | `wiki_read` (2) | ✅ |
-| 知识库·写 | `/external/wiki/*` 写面（上传/提取/切割/向量化/删除） | `wiki_write` (4) | ✅ |
-| 应用对话 | 换取用户 token + `/external/agent/*`、`/external/session/*` | `app_chat` (32) | ✅ |
-| 知识库 MCP | `/external/wiki/{wikiId}/mcp` | `wiki_mcp` (16) | ✅ |
-| 知识图谱·读 | `/external/knowledge-graph/*` 读面（列表/模式/节点/边查询） | `kg_read` (64) | ✅ |
-| 知识图谱·写 | `/external/knowledge-graph/*` 写面（节点/边/实体类型/关系类型增删改） | `kg_write` (128) | ✅ |
-| 知识图谱 MCP | `/external/knowledge-graph/{kgId}/mcp` | `kg_mcp` (256) | ✅ |
-| 应用 ACP | `/external/app/{appId}/acp`（agent-to-agent 对话） | `app_acp` (512) | ✅ |
+| 凭证 | 授权粒度 | 适用方 |
+|---|---|---|
+| 应用接入 key（`moai-ac-`，`access_app`） | 团队级**全量** `/api/teamres`（无任何范围勾选） | 业务系统后端持 key 换 token / 直连调任意团队外部接口 |
+| 团队资源 key（`moai-tr-`，`teamres_key`） | **包围圈**：仅绑定资源实例端点（**一资源一把**：应用行=应用 Guid（其 ACP/A2A 共用）、知识库行=wikiId、知识图谱行=kgId；不同实例 key 互不相同） | 用户复制「端点地址 + key」即可接入单个资源（MCP 客户端、ACP agent 等），无 secret 不可换 token；**key 唯一生成时机=资源开启对外功能**（应用 `is_acp_enabled/is_a2a_enabled`、库/图 `is_mcp_enabled`，开启时自动生成/复用，未开启端点 403 feature_disabled） |
 
-> 团队接入 key 专属的 `external_token` (8) 位随下线一并移除（枚举与代码表已删）。
-> 端点逐条清单、中间件分档规则、缓存键与失效钩子、**新增资源组操作清单**与踩坑，见 [外部接口与范围体系细节总账](./external-api-scope-system.md)。
+> ~~scope 范围体系（wiki_read/wiki_write/wiki_mcp/app_chat/kg_read/kg_write/kg_mcp/app_acp/app_a2a 位表与读/写分档）~~ 已随 2026-11-04 去范围化退役：`access_app.scopes` 列 DROP、枚举/掩码删除、创建接入传 scopes 被忽略 200、token 不再写 scope claim；TA-* 证据脚本删除编号不复用。位表/掩码/分档口径的历史细节见 git 历史与 [外部接口与凭证体系细节总账](./external-api-scope-system.md) §2 退役注记。
 
 ## 2. 组件
 
-- `MoAI.Gateway.Shared`：`QueryTeamGatewayModelsCommand`（可用模型）；`ApiKeyGenerator.Hash`（接入 key 摘要，缓存失效钩子复用）；`ExternalKeyCache`（`externalkey:ac:{sha256}` 快照缓存）。
-- `MoAI.Gateway.Core`：`QueryTeamGatewayModelsCommandHandler`；`GatewayEndpointMapper` 网关端点认证 + 范围校验。
-- `MoAI.Gateway.Api`：`GatewayApiKeyAuthenticationHandler`（`moai-ac-` 明文比对 `access_app.key` + `scopes` claim）；`TeamGatewayController`（仅 models 查询）。
-- `MoAI.Database.Shared/Enums/TeamApiKeyScopes.cs`：位标记枚举 + `TeamApiKeyScopeCodes`（代码↔标记互转，token claim 逗号串编解码；命名保留历史口径，现仅服务 access_app 体系）。
+- `MoAI.Database.Shared/Entities/TeamResourceKeyEntity.cs` + `Enums/TeamResourceKeyEnums.cs`：资源 key 实体与 `TeamResourceType`（app=1/wiki=2/knowledgeGraph=3，JsonPropertyName camelCase wire 值）/`TeamResourceKeyStatus`（enabled=0/disabled=1）枚举；`DbSet` 于 `DatabaseContext.TeamResourceKeys`。
+- `MoAI.App.Shared/Services/TeamResourceKeyGenerator.cs`：key 生成器（`moai-tr-` + 32 位随机字母数字，前 12 位为展示前缀）；`ExternalAuthDefaults.ResourceKeyPrefix`。
+- `MoAI.App.Core/Services/ExternalAccessKeyService.cs`：`ResolveContextAsync` 按 moai-ac-/moai-tr- 双前缀分支解析直连上下文（资源 key 须 Enabled）；`EnsurePrincipalUserAsync` 直连身份（资源 key 按 `__key_direct_{行id}__` 派生、`access_app_id=null`）。
+- `MoAI.App.Api/ExternalAuthenticationMiddleware.cs`：`/api/teamres` 认证 + 资源 key 包围圈 `IsResourceKeyAllowedAsync`（前置拦截：路由资源 id 等值 + 绑定资源功能开启校验，越圈/未开启 403）+ appId/MCP/ACP/A2A 各专属门禁（ACP/A2A/MCP 端点校验应用/库/图功能开关，未开启 403 `feature_disabled`）。
+- `MoAI.App.Api/Controllers/TeamResourceKeyController.cs`（`/api/team-resource-key`，团队 Admin+ 门禁）+ `MoAI.App.Core/Handlers/TeamResourceKeyHandlers.cs`（get-or-create/列表/重置/启停/软删）。
+- `MoAI.AIChannel`（团队可用模型查询，原网关 models 端点职责迁入）：`GET /api/team/{teamId}/ai/model/available`。
 
 ## 3. 数据
 
-- `access_app.scopes int not null default 1014`：应用接入允许范围 = model/wiki_read/wiki_write/app_chat/wiki_mcp/kg_read/kg_write/kg_mcp/app_acp（`1=model 2=wiki_read 4=wiki_write 16=wiki_mcp 32=app_chat 64=kg_read 128=kg_write 256=kg_mcp 512=app_acp`；位或）。DDL：[asserts/access_app_scopes.sql](../../asserts/access_app_scopes.sql)、[asserts/access_app_app_chat.sql](../../asserts/access_app_app_chat.sql)、[asserts/access_app_kg_scopes.sql](../../asserts/access_app_kg_scopes.sql)、[asserts/access_app_kg_mcp_scopes.sql](../../asserts/access_app_kg_mcp_scopes.sql)、[asserts/app_acp.sql](../../asserts/app_acp.sql)。
-- `team_api_key` 表已删除（[asserts/team_api_key_drop.sql](../../asserts/team_api_key_drop.sql)，存量库执行删表；新库 EnsureCreated 不再建）。
-- `access_app.last_used_time timestamptz null`：应用接入 key 直连网关调用时刷新。
-- scope 代码对内枚举、对外小写下划线串（API 请求/响应、token `scope` claim 均用代码串）。
+- `teamres_key`：`id uuid / team_id int / resource_type int / resource_id bigint（app 行=0）/ key varchar(255) 明文（唯一部分索引 (key,is_deleted)）/ key_prefix varchar(16)（前 12 位）/ status int / 审计四件 + is_deleted`。DDL：[asserts/team-resource-key.sql](../../asserts/team-resource-key.sql)（与 `DatabasPostgresModule` 幂等 DDL 等价，存量库执行即得）。
+- `access_app.scopes` 列已 DROP（同上文件 `ALTER TABLE ... DROP COLUMN IF EXISTS scopes`）；token 不再写 scope claim。
+- `team_api_key` 表已删除（asserts/team_api_key_drop.sql）；`access_app.last_used_time` 为网关下线后的存量值。
 
 ## 4. 关键决策
 
-- **接入即 key**：网关端点直接校验接入的 `model` 位；外部资源走「接入 key → `/external/token` 换 token」或 key 直连两条路径，token 的 `scope` claim = 接入勾选中知识库维度（`ExternalDimensions` 掩码裁剪），`model/app_chat` 是接入层概念不进 token。
-- **D-GW2 范围来源**：应用接入 key 签发的 token 范围取 `access_app.scopes` 勾选（未传 scopes 默认 `AccessAppDefault`=外部资源全量+对话；可配空=纯对话接入）；无 scope claim 的在途旧 token 解析侧仍按全量知识库范围处理；匿名 token 恒为全量。
-- **D-GW4 刷新重验**：refresh token 刷新时按接入当前勾选范围与存在性重签——范围收紧或接入删除在下次刷新即生效（access token 本身在有效期内不回收）。
-- **D-GW5 应用接入 key 直连网关**：`GatewayApiKeyAuthenticationHandler` 仅接受 `moai-ac-` 前缀，key 明文比对 `access_app`（存在即有效，沿用接入既有语义）；端点层按 `model` 位门禁。`GatewayUsageService.RecordAsync` 把最近使用时间落到 `access_app.last_used_time`。
-- **D-GW7 应用对话门禁**：用户 token 的用途是外部应用会话/对话，换取用户 token 要求接入勾选 `app_chat`（403），用户 token 刷新时按来源接入当前勾选重验——撤销对话范围在下次刷新即生效；直连 key 以「直连会话身份」外部用户承载会话归属。
-- **D-GW8 key 校验 Redis 缓存**：`ExternalKeyCache`（`externalkey:ac:{sha256}`，TTL 10 分钟）缓存可用接入快照；管理端删除/改范围即删缓存（`UpdateAccessAppCommandHandler`/`DeleteAccessAppCommandHandler` 挂失效钩子），变更立即生效（TA-36 验证）。
-- **D-GW9 中间件前置拦截**：`ExternalAuthenticationMiddleware` 在身份解析后按「路径+方法」静态分档判定所需范围——`/external/wiki` 与 `/external/knowledge-graph` 的 GET 与 `*/list` 为读档（`wiki_read`/`kg_read`），其余为写档（`wiki_write`/`kg_write`），MCP 路径另行要求 `wiki_mcp`/`kg_mcp` 不叠加读写档；未勾选在中间件层直接 403，控制器内保留同口径校验兜底。判定成本为常数次字符串比较，无 IO。
-- **D-GW6 key 直连外部接口**：`/api/external` 的认证中间件接受 key 直连（`moai-ac-`，Bearer 或 x-api-key），上下文范围取接入勾选的知识库维度——见 [../app/sdd.md](../app/sdd.md) 外部接入节。
-- **团队接入 key 下线（2026-09-27）**：`/api/team/{teamId}/gateway/keys` CRUD、`GatewayApiKeyAuthenticationHandler` 的 `moai-` 分支、`TeamApiKeyValidator`、`ExternalKeyCache` tk 路径、换 token/刷新的 `apiKey` 凭证与 `keyid` claim、`external_token` scope 位全部移除；存量团队 key 随删表立即失效，第三方改用应用接入 key（范围模型为其超集）。
+- **D-GW2（修订）凭证双轨授权模型**：应用接入 key 不再携带任何范围概念——存在即团队级全量（换 token / 直连同口径）；细粒度授权下沉到资源 key，以「路径包围圈」而非「位掩码」表达，授权单位从资源组收缩到资源实例。
+- **D-GW9（修订）包围圈前置拦截取代分档判定**：`ExternalAuthenticationMiddleware` 在凭证解析后按 `IsResourceKeyPathAllowed` 判定 moai-tr- 可达端点——路由资源 id 与绑定 id 精确等值、团队级 list 端点放行交 handler 过滤（`OnlyWikiId/OnlyGraphId`）；越圈统一 403 insufficient_scope。原「GET 与 `*/list`=读档」分档口径与控制器 `RequireCaller(requireWrite)` 兜底一并删除（签名简化）。
+- **D-GW4（修订）刷新重验**：refresh token 刷新时按接入**当前存在性与 secret** 重签（范围概念已删）——接入删除在下次刷新即生效；access token 有效期内不回收。
+- **D-GW7（退役；2026-11-13 收敛）应用对话门禁**：`app_chat` 位随 scope 体系删除，兑换/刷新 token 不再要求任何资格位；外部应用 `is_auth` 退役（一律匿名开放），会话面 key 直连/匿名 token 按用户身份放行、应用 token 仍 403；内部应用走访问点访问用户 token（`typ=normal`，绑定单应用 + 访问点开启），跨团队仍 403/404。见 [../app/sdd.md](../app/sdd.md) 决策 D57。
+- **D-GW6 key 直连外部接口**：`/api/teamres` 认证中间件接受 Bearer/x-api-key 携带 moai-ac-/moai-tr- 直连；每请求直查数据库，删除/停用/重置下一请求即生效（TR-S24~S28、ACP-S17a/b 验证）。资源 key 为纯直连凭证：不可换 token（`POST /api/teamres/token` 仅认 moai-ac-）。
+- **资源 key 生命周期（2026-11-04）**：get-or-create 幂等（同 (团队,类型,资源) 原样返回 created=false）；重置=同表行重生成 key（行 id 不变，直连身份延续）；停用 401、启用恢复、删除（软删）401；wiki/kg 生成时校验资源归属团队否则 404。
+- **团队接入 key 下线（2026-09-27）/ 模型网关下线（2026-10-29）**：历史决策原文见 git 历史——前者删除 `team_api_key` 表与 `moai-` 单前缀认证，后者删除 `src/gateway/` 三项目与 `/api/aigateway/*` 四端点，团队可用模型查询迁至 aichannel 模块。
 
 ## 5. 已知问题
 
-- access token 签发后范围在有效期内不回收（Debug 7 天 / Release 2 小时）；需要立即止损走「删除接入」+ 等待刷新失败或 token 自然过期。
-- `/external/wiki` 尚无语义搜索外部端点，「知识库读」现覆盖 列表/详情/文档列表/正文/向量化查询；搜索端点上线后应同挂 `wiki_read` 校验。
-- 下线前签发、携带 `keyid` claim 的存量 token：access 在有效期内仍可用（claims 不再解析 keyid），refresh 时按匿名/接入语义重验，来源 key 已随表删除。
+- access token 签发后在有效期内不回收（Debug 7 天 / Release 2 小时）；需要立即止损走「删除接入」+ 等待刷新失败或 token 自然过期；资源 key 无此问题（直连每请求校验，停用即 401）。
+- `/api/teamres/wiki` 尚无语义搜索外部端点；资源 key 的 list 过滤仅覆盖团队级列表端点，其余团队维度聚合端点新增时须同步挂 `OnlyXxxId` 过滤。
+- 资源 key 明文落库（无哈希）+ 管理端明文回显：便利性优先的取舍（用户复制即用），门禁依赖团队 Admin+ 与传输层安全；若需审计增强可加最后使用时间列（现无）。
+- 下线前签发、携带 `keyid`/`scope` claim 的存量 token：access 在有效期内仍可用（claims 不再解析），refresh 时按匿名/接入语义重验。

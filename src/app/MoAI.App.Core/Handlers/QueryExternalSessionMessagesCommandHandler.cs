@@ -26,15 +26,17 @@ public class QueryExternalSessionMessagesCommandHandler : IRequestHandler<QueryE
     /// <inheritdoc/>
     public async Task<QueryAppSessionMessagesCommandResponse> Handle(QueryExternalSessionMessagesCommand request, CancellationToken cancellationToken)
     {
-        var externalUserId = ExternalAppAccessValidator.EnsureExternalUser(request.Context);
+        var (identityId, _) = ExternalAppAccessValidator.EnsureSessionIdentity(request.Context);
 
         var session = await _databaseContext.AppAgentSessions
             .Where(x => x.Id == request.SessionId)
             .Select(x => new { x.Id, x.Title, x.AppId, x.TeamId, x.CreateUserId })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // 非归属用户按不存在处理，避免泄露会话存在性；应用不属于 token 归属团队同样按不存在处理
-        if (session == null || session.CreateUserId != externalUserId || (long)session.TeamId != request.Context.TeamId)
+        // 非归属用户按不存在处理，避免泄露会话存在性；应用不属于 token 归属团队同样按不存在处理；
+        // 访问用户 token 绑定单应用，跨应用会话一律按不存在处理
+        var appBoundMismatch = request.Context.AppId != null && session != null && session.AppId != request.Context.AppId.Value;
+        if (session == null || session.CreateUserId != identityId || (long)session.TeamId != request.Context.TeamId || appBoundMismatch)
         {
             throw new BusinessException("会话不存在.") { StatusCode = 404 };
         }

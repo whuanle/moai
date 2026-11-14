@@ -44,12 +44,11 @@ public class QueryAccessAppsCommandHandler : IRequestHandler<QueryAccessAppsComm
         }
 
         var rows = await _databaseContext.AccessApps
-            .Where(x => x.TeamId == request.TeamId)
+            .Where(x => x.Level == AccessAppLevel.Team && x.TeamId == request.TeamId)
             .OrderByDescending(x => x.CreateTime)
-            .Select(x => new { x.Id, x.Name, x.Description, x.Key, x.CreateTime, x.LastUsedTime, x.Scopes })
+            .Select(x => new { x.Id, x.Name, x.Description, x.Key, x.CreateTime, x.LastUsedTime })
             .ToListAsync(cancellationToken);
 
-        // scope 位标记转代码列表不可在 EF 投影内完成，先取数再内存映射
         var items = rows
             .Select(x => new AccessAppItem
             {
@@ -59,7 +58,6 @@ public class QueryAccessAppsCommandHandler : IRequestHandler<QueryAccessAppsComm
                 Key = x.Key,
                 CreateTime = x.CreateTime,
                 LastUsedTime = x.LastUsedTime,
-                Scopes = TeamApiKeyScopeCodes.ToCodes((TeamApiKeyScopes)x.Scopes),
             })
             .ToList();
 

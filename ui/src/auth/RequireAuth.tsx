@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate, useLocation, useNavigate } from 'react-router'
 import { Spin } from 'antd'
 import { useAppStore } from '@/store/app'
 import { checkToken, refreshUserProfile } from '@/api/auth'
@@ -8,7 +8,9 @@ const TOKEN_CHECK_INTERVAL = 60_000
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const accessToken = useAppStore((state) => state.userInfo?.accessToken)
+  const mfaPending = useAppStore((state) => state.userInfo?.mfaPending)
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
@@ -51,6 +53,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [navigate])
 
   if (!accessToken) return <Navigate to="/login" replace />
+
+  // 系统强制两步验证且用户未绑定：只放行个人中心（2FA 绑定分区），其余页面一律重定向
+  if (mfaPending && !location.pathname.startsWith('/account')) {
+    return <Navigate to="/account/twofa?bind2fa=1" replace />
+  }
 
   if (checking) {
     return (

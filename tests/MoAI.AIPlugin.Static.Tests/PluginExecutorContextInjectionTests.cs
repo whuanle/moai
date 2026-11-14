@@ -51,9 +51,15 @@ public class PluginExecutorContextInjectionTests
 
         public PluginInfo? Get(string key) => string.Equals(key, _plugin.Key, StringComparison.OrdinalIgnoreCase) ? _plugin : null;
 
-        public void RegisterAssembly(Assembly assembly)
+        public void RegisterAssembly(Assembly assembly, bool enabled = true)
         {
         }
+
+        public void SetEnabled(string key, bool enabled)
+        {
+        }
+
+        public bool IsRegistered(string key) => false;
     }
 
     [AiPlugin(key: "test_context_run", Name = "上下文读取", Description = "测试用")]

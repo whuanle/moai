@@ -26,7 +26,7 @@ public class QueryExternalAgentSessionsCommandHandler : IRequestHandler<QueryExt
     /// <inheritdoc/>
     public async Task<QueryExternalAgentSessionsCommandResponse> Handle(QueryExternalAgentSessionsCommand request, CancellationToken cancellationToken)
     {
-        var externalUserId = ExternalAppAccessValidator.EnsureExternalUser(request.Context);
+        var (identityId, _) = ExternalAppAccessValidator.EnsureSessionIdentity(request.Context);
 
         var appTeamId = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)
@@ -44,7 +44,7 @@ public class QueryExternalAgentSessionsCommandHandler : IRequestHandler<QueryExt
         }
 
         var rows = await _databaseContext.AppAgentSessions
-            .Where(x => x.AppId == request.AppId && x.CreateUserId == externalUserId)
+            .Where(x => x.AppId == request.AppId && x.CreateUserId == identityId)
             .OrderByDescending(x => x.LastMessageTime)
             .Select(x => new
             {

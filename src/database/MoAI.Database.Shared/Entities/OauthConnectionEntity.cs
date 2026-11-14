@@ -60,6 +60,12 @@ public partial class OauthConnectionEntity : IFullAudited
     public string? AgentId { get; set; }
 
     /// <summary>
+    /// 是否显示到登录页与个人中心绑定页：false=隐藏连接器（纯身份映射用，
+    /// 仅供系统接口绑定第三方 id 与换发访问用户 token，不在任何界面露出）.
+    /// </summary>
+    public bool IsVisible { get; set; } = true;
+
+    /// <summary>
     /// 软删除.
     /// </summary>
     public long IsDeleted { get; set; }

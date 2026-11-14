@@ -11,6 +11,7 @@ using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 using MoAI.Team.Services;
 using MoAI.Wiki.Commands;
+using MoAI.AIChannel.Services;
 
 namespace MoAI.Wiki.Handlers;
 
@@ -50,7 +51,7 @@ public class UpdateWikiEmbeddingCommandHandler : IRequestHandler<UpdateWikiEmbed
 
         if (wiki.IsLock)
         {
-            throw new BusinessException("知识库已有文档向量化，配置已锁定，不能修改.") { StatusCode = 409 };
+            throw new BusinessException("知识库已有文档向量化，配置已锁定，更换模型请使用模型迁移端点（POST /wiki/{id}/model-migration）.") { StatusCode = 409 };
         }
 
         await EnsureEmbeddingModelAsync(request.EmbeddingModelId, wiki.TeamId, cancellationToken);
@@ -81,18 +82,7 @@ public class UpdateWikiEmbeddingCommandHandler : IRequestHandler<UpdateWikiEmbed
 
     private async Task EnsureAuthorizedAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
     {
-        var isPublic = await _databaseContext.AiModels
-            .Where(x => x.Id == modelId)
-            .Select(x => x.IsPublic)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (isPublic)
-        {
-            return;
-        }
-
-        var authorized = await _databaseContext.AiModelAuthorizations
-            .AnyAsync(x => x.AiModelId == modelId && x.TeamId == teamId, cancellationToken);
-        if (!authorized)
+        if (!await _databaseContext.IsTeamUsableModelAsync(teamId, modelId, cancellationToken))
         {
             throw new BusinessException("该模型未授权给你的团队使用.") { StatusCode = 403 };
         }

@@ -1,5 +1,5 @@
 /**
- * 流程应用「调试」分区容器：复用 app-chat.css 的会话/气泡样式（--mc-* 变量由 chatCssVars 注入）。
+ * 流程应用「调试」分区容器：复用 app-chat.css 的会话/气泡/欢迎态样式（--mc-* 变量由 chatCssVars 注入）。
  * 高度由全屏外壳内容区决定（.wf-app-body-content > .wfd-chat { height: 100% }）。
  */
 .wfd-chat {
@@ -11,3 +11,27 @@
   overflow: hidden;
   background: var(--mc-bg);
 }
+
+/* 嵌入外壳的侧栏与面板内边距：与真实对话页同结构，仅宽度与留白按工作台场景收窄 */
+.wfd-chat__sidebar {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.wfd-chat__landing {
+  padding: 24px 24px 40px;
+}
+
+.wfd-chat__scroll {
+  padding: 8px 12px;
+}
+
+.wfd-chat__composer-wrap {
+  padding: 10px 12px 12px;
+}
+
+/* 欢迎态徽标回退：无头像时用闪电图标（流程执行意象），与 Agent 对话页首字母徽标同容器 */
+.wfd-chat__landing .moai-chat__landing-badge svg {
+  font-size: 34px;
+}
+

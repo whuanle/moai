@@ -78,4 +78,9 @@ public partial class AppUserConfigEntity : IFullAudited
     /// 长期记忆模式：0=跟随应用默认；1=对我关闭；2=仅本应用内；3=跨应用（需应用允许）.
     /// </summary>
     public short MemoryMode { get; set; }
+
+    /// <summary>
+    /// 全局记忆接入模式：0=默认（应用允许时接入）；1=不接入全局记忆（应用内记忆不受影响，需应用 allowGlobalMemory）.
+    /// </summary>
+    public short MemoryGlobalMode { get; set; }
 }

@@ -20,6 +20,7 @@ namespace MoAI.AIPlugin.Static.Plugins;
 [AiPlugin(
     key: "static_file_to_markdown",
     Name = "文件转 Markdown",
+    HumanDescription = "用于把 PDF、Office 文件等常见文档转换为 Markdown，便于后续阅读和分析。适合文档问答、知识整理和保留标题表格结构；复杂版面还原效果取决于原文件质量。",
     Description = "把 http/https 文件地址自动下载并转换为 Markdown，支持 pdf/docx/xlsx/pptx/html/md/txt/json 等格式；FileName 留空时从 Url 自动识别文件名")]
 public class FileToMarkdownPlugin : IStaticPluginRuntime<FileToMarkdownRequest, FileToMarkdownResponse>
 {

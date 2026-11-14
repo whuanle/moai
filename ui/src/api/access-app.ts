@@ -1,19 +1,15 @@
 import { getApiClient } from '@/api/kiota'
 
-/** 应用接入可选功能范围（模型网关 + 知识库/知识图谱维度 + 应用对话 + 两域 MCP + 应用 ACP） */
-export type AccessAppScope = 'model' | 'wiki_read' | 'wiki_write' | 'wiki_mcp' | 'kg_read' | 'kg_write' | 'kg_mcp' | 'app_chat' | 'app_acp'
-
 export interface AccessAppItem {
   /** 后端 Guid 序列化为字符串 */
   accessAppId?: string | null
   name?: string | null
   description?: string | null
-  /** 接入 key（明文，可再次查看；前端默认掩码、点击展开） */
+  /** 接入 appid（明文，可再次查看；前端默认掩码、点击展开） */
   key?: string | null
   createTime?: string | null
   /** 最近使用时间（通过模型网关调用时刷新） */
   lastUsedTime?: string | null
-  scopes?: string[] | null
 }
 
 export interface AccessAppsResult {
@@ -25,12 +21,14 @@ export interface AccessAppsResult {
 
 export interface CreatedAccessApp {
   accessAppId?: string | null
-  /** key 原文，仅创建时返回一次 */
+  /** appid 原文，仅创建时返回一次 */
   key?: string | null
+  /** 接入密钥原文，仅创建时返回返回一次 */
+  secret?: string | null
   keyPrefix?: string | null
 }
 
-/** 查询团队下的应用接入列表（仅团队 Admin+） */
+/** 查询团队下的应用接入列表（仅团队 Admin+）；moai-ac- 可全量访问 /api/teamres */
 export async function getAccessApps(teamId: number): Promise<AccessAppsResult> {
   const client = getApiClient()
   const res = await client.api.accessApp.list.get({
@@ -39,39 +37,74 @@ export async function getAccessApps(teamId: number): Promise<AccessAppsResult> {
   return { teamId: res?.teamId, myRole: res?.myRole, items: res?.items ?? [] }
 }
 
-/** 创建应用接入，返回 key 原文（仅此一次） */
+/** 创建应用接入（moai-ac-，全量访问 /api/teamres），返回 appid 与密钥原文（仅此一次） */
 export async function createAccessApp(payload: {
   teamId: number
   name: string
   description?: string
-  /** 不传=默认读写全量；空数组=纯对话接入 */
-  scopes?: string[]
 }): Promise<CreatedAccessApp> {
   const client = getApiClient()
   const res = await client.api.accessApp.post({
     teamId: String(payload.teamId),
     name: payload.name,
     description: payload.description,
-    scopes: payload.scopes,
   })
-  return { accessAppId: res?.accessAppId, key: res?.key, keyPrefix: res?.keyPrefix }
+  return { accessAppId: res?.accessAppId, key: res?.key, secret: res?.secret, keyPrefix: res?.keyPrefix }
 }
 
-/** 更新应用接入（名称/描述；key 不可改） */
+/** 更新应用接入（名称/描述；appid 不可改） */
 export async function updateAccessApp(
   accessAppId: string,
-  payload: { name: string; description?: string; scopes?: string[] },
+  payload: { name: string; description?: string },
 ): Promise<void> {
   const client = getApiClient()
   await client.api.accessApp.byId(accessAppId).put({
     name: payload.name,
     description: payload.description,
-    scopes: payload.scopes,
   })
+}
+
+/** 重置应用接入密钥，新密钥原文仅此一次返回，旧密钥立即失效 */
+export async function resetAccessAppSecret(accessAppId: string): Promise<string | null | undefined> {
+  const client = getApiClient()
+  const res = await client.api.accessApp.byId(accessAppId).resetSecret.post()
+  return res?.secret
 }
 
 /** 删除应用接入（软删除） */
 export async function deleteAccessApp(accessAppId: string): Promise<void> {
   const client = getApiClient()
   await client.api.accessApp.byId(accessAppId).delete()
+}
+
+/** 应用对外协议接入（ACP/A2A 单一开关）与该应用的团队资源 key（一个应用一把，ACP/A2A 共用） */
+export interface AppFeature {
+  isAcpA2aEnabled?: boolean | null
+  teamResourceKeyId?: string | null
+  key?: string | null
+  keyPrefix?: string | null
+}
+
+/** 查询应用对外协议接入开关与团队资源 key（仅团队 Admin+） */
+export async function getAppFeature(appId: string): Promise<AppFeature> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).feature.get()
+  return {
+    isAcpA2aEnabled: res?.isAcpA2aEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+  }
+}
+
+/** 更新应用对外协议接入开关（ACP/A2A 同开同关）；开启时后端自动生成/复用该应用的团队资源 key */
+export async function updateAppFeature(appId: string, isAcpA2aEnabled: boolean): Promise<AppFeature> {
+  const client = getApiClient()
+  const res = await client.api.app.byId(appId).feature.put({ isAcpA2aEnabled })
+  return {
+    isAcpA2aEnabled: res?.isAcpA2aEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+  }
 }

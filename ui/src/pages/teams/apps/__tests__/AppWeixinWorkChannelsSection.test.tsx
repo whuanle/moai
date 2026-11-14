@@ -55,7 +55,7 @@ const ITEMS = [
 
 function renderSection(props?: Partial<Parameters<typeof AppWeixinWorkChannelsSection>[0]>) {
   return render(
-    <AppWeixinWorkChannelsSection teamId={3} appId="a1" canManage isPublished {...props} />,
+    <AppWeixinWorkChannelsSection teamId={3} appId="a1" canManage {...props} />,
   )
 }
 
@@ -77,12 +77,6 @@ describe('AppWeixinWorkChannelsSection（应用外部渠道·企业微信）', (
     expect(screen.queryByText('其它应用渠道')).not.toBeInTheDocument()
     expect(screen.getByText('接入指引')).toBeInTheDocument()
     expect(screen.getByText('企业微信渠道')).toBeInTheDocument()
-    expect(screen.queryByText(/应用尚未发布/)).not.toBeInTheDocument()
-  })
-
-  it('应用未发布时提示消息不会被处理', async () => {
-    renderSection({ isPublished: false })
-    expect(await screen.findByText(/应用尚未发布/)).toBeInTheDocument()
   })
 
   it('接入企业微信应用：创建连接即绑定到当前应用（单次调用）', async () => {

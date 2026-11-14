@@ -14,6 +14,8 @@ import { EmbeddingRequestBuilderRequestsMetadata, type EmbeddingRequestBuilder }
 // @ts-ignore
 import { ExtractRequestBuilderRequestsMetadata, type ExtractRequestBuilder } from './extract/index.js';
 // @ts-ignore
+import { ImagesRequestBuilderNavigationMetadata, ImagesRequestBuilderRequestsMetadata, type ImagesRequestBuilder } from './images/index.js';
+// @ts-ignore
 import { PartitionRequestBuilderRequestsMetadata, type PartitionRequestBuilder } from './partition/index.js';
 // @ts-ignore
 import { RenameRequestBuilderRequestsMetadata, type RenameRequestBuilder } from './rename/index.js';
@@ -49,6 +51,10 @@ export interface WithDocumentItemRequestBuilder extends BaseRequestBuilder<WithD
      */
     get extract(): ExtractRequestBuilder;
     /**
+     * The images property
+     */
+    get images(): ImagesRequestBuilder;
+    /**
      * The partition property
      */
     get partition(): PartitionRequestBuilder;
@@ -82,6 +88,10 @@ export const WithDocumentItemRequestBuilderNavigationMetadata: Record<Exclude<ke
     },
     extract: {
         requestsMetadata: ExtractRequestBuilderRequestsMetadata,
+    },
+    images: {
+        requestsMetadata: ImagesRequestBuilderRequestsMetadata,
+        navigationMetadata: ImagesRequestBuilderNavigationMetadata,
     },
     partition: {
         requestsMetadata: PartitionRequestBuilderRequestsMetadata,

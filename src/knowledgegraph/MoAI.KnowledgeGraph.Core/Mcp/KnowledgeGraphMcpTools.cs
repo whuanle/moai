@@ -270,7 +270,7 @@ public class KnowledgeGraphMcpTools
     }
 
     /// <summary>
-    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成 key/token 鉴权并写入 HttpContext）.
+    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成 key/token 鉴权与资源 key 包围圈判定）.
     /// </summary>
     private ExternalGraphCaller RequireCaller()
     {
@@ -278,10 +278,15 @@ public class KnowledgeGraphMcpTools
         var tokenContext = httpContext.Items.TryGetValue(ExternalAuthDefaults.TokenContextItemKey, out var value) ? value as ExternalTokenContext : null;
         if (tokenContext == null)
         {
-            throw new McpException("接入凭证无效，请在请求头携带团队/应用接入 key.");
+            throw new McpException("接入凭证无效，请在请求头携带接入 key（moai-ac-/moai-tr-）.");
         }
 
-        return new ExternalGraphCaller { TeamId = tokenContext.TeamId, AccessAppId = tokenContext.AccessAppId };
+        return new ExternalGraphCaller
+        {
+            TeamId = tokenContext.TeamId,
+            AccessAppId = tokenContext.AccessAppId,
+            OnlyGraphId = tokenContext.IsResourceKey && tokenContext.ResourceKeyType == TeamResourceType.KnowledgeGraph && long.TryParse(tokenContext.ResourceKeyId, out var onlyGraphId) ? onlyGraphId : null,
+        };
     }
 
     /// <summary>

@@ -63,6 +63,11 @@ public class SkillListItem : AuditsInfo
     public int FileCount { get; init; }
 
     /// <summary>
+    /// 使用次数（统计模块每分钟批量落库，非实时）.
+    /// </summary>
+    public int UseCount { get; init; }
+
+    /// <summary>
     /// 技能头像的 ObjectKey（空串=未设置）.
     /// </summary>
     public string AvatarPath { get; init; } = string.Empty;

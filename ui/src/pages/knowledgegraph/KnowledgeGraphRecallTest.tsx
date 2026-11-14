@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Form, Grid, Input, InputNumber, Select, Space, Spin, Switch, Tag, Typography, theme } from 'antd'
-import { RobotOutlined, SearchOutlined } from '@ant-design/icons'
+import { FundViewOutlined, RobotOutlined, SearchOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { spacing } from '@/design-system'
 import { getKnowledgeGraphModelOptions, recallKnowledgeGraphTest, type KnowledgeGraphRecallTestHit } from '@/api/knowledgeGraph'
 
@@ -16,6 +17,7 @@ interface RecallFormValues {
   query: string
   top: number
   minScore?: number | null
+  neighborTopK?: number
   isOptimizeQuery: boolean
   isAnswer: boolean
   aiModelId?: string | null
@@ -51,6 +53,7 @@ interface RecallResult {
 /** 知识图谱召回测试：向量召回实体 + 一跳邻居，支持 AI 优化问题与 AI 生成回答（语义对齐知识库召回测试） */
 export function KnowledgeGraphRecallTest({ kgId, teamId }: KnowledgeGraphRecallTestProps) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [form] = Form.useForm<RecallFormValues>()
   const { token } = theme.useToken()
   const screens = Grid.useBreakpoint()
@@ -105,6 +108,7 @@ export function KnowledgeGraphRecallTest({ kgId, teamId }: KnowledgeGraphRecallT
         query: values.query.trim(),
         top: values.top,
         minScore: values.minScore ?? null,
+        neighborTopK: values.neighborTopK ?? 0,
         aiModelId: values.isOptimizeQuery || values.isAnswer ? values.aiModelId ?? null : null,
         isOptimizeQuery: values.isOptimizeQuery,
         isAnswer: values.isAnswer,
@@ -138,7 +142,7 @@ export function KnowledgeGraphRecallTest({ kgId, teamId }: KnowledgeGraphRecallT
     <Form
       form={form}
       layout="vertical"
-      initialValues={{ top: 5, isOptimizeQuery: false, isAnswer: false }}
+      initialValues={{ top: 5, neighborTopK: 10, isOptimizeQuery: false, isAnswer: false }}
     >
       <Form.Item
         name="query"
@@ -169,6 +173,15 @@ export function KnowledgeGraphRecallTest({ kgId, teamId }: KnowledgeGraphRecallT
           style={{ flex: 1 }}
         >
           <InputNumber min={1} max={50} precision={0} style={{ width: '100%' }} />
+        </Form.Item>
+        <Form.Item
+          name="neighborTopK"
+          label={t('knowledgegraph.recall.neighborTopKLabel')}
+          tooltip={t('knowledgegraph.recall.neighborTopKTip')}
+          normalize={(value) => (value == null || value === '' ? 0 : Number(value))}
+          style={{ flex: 1 }}
+        >
+          <InputNumber min={0} max={30} precision={0} style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item
           name="minScore"
@@ -281,6 +294,20 @@ export function KnowledgeGraphRecallTest({ kgId, teamId }: KnowledgeGraphRecallT
           <Text type="secondary" style={{ fontSize: 13, fontWeight: 'normal', marginLeft: spacing.sm }}>
             {t('knowledgegraph.recall.resultCount', { count: result.items.length })}
           </Text>
+          {result.items.some((hit) => hit.nodeId) && (
+            <Button
+              type="link"
+              size="small"
+              icon={<FundViewOutlined />}
+              style={{ marginLeft: spacing.sm }}
+              onClick={() => {
+                const ids = result.items.map((hit) => hit.nodeId).filter((x): x is string => !!x)
+                navigate(`/team/${teamId}/kg/${kgId}/canvas?highlight=${ids.join(',')}`)
+              }}
+            >
+              {t('knowledgegraph.recall.viewInCanvas')}
+            </Button>
+          )}
         </Title>
         {result.items.length === 0 ? (
           <Text type="secondary">{searched ? t('knowledgegraph.recall.empty') : ''}</Text>

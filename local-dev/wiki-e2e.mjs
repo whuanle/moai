@@ -38,6 +38,161 @@ async function mkuser(p) {
   return { name, userId: Number(l.json.userId), token: l.json.accessToken }
 }
 
+const sha256Hex = (data) => crypto.createHash('sha256').update(data).digest('hex')
+
+// ==================== WK-13 桩文档生成器（纯 Node 标准库） ====================
+import { deflateSync, crc32 as zlibCrc32 } from 'node:zlib'
+
+/** 生成 2x2 纯色变体 PNG（RGB 8 位），seed 决定像素值，用于断言图片字节一致性 */
+function buildPng(seed) {
+  const width = 2, height = 2
+  const raw = Buffer.alloc(height * (1 + width * 3))
+  for (let y = 0; y < height; y++) {
+    const rowStart = y * (1 + width * 3)
+    raw[rowStart] = 0
+    for (let x = 0; x < width; x++) {
+      const p = rowStart + 1 + x * 3
+      raw[p] = (seed + x) % 256
+      raw[p + 1] = (seed + y * 3) % 256
+      raw[p + 2] = (seed * 7 + x + y) % 256
+    }
+  }
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4)
+    len.writeUInt32BE(data.length, 0)
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data])
+    const crc = Buffer.alloc(4)
+    crc.writeUInt32BE(zlibCrc32(body) >>> 0, 0)
+    return Buffer.concat([len, body, crc])
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0)
+  ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8
+  ihdr[9] = 2
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
+/** 手工构造 STORE 型 zip（entry 内容支持 Buffer/string），docx 即 zip 包 */
+function buildRawZip(entries) {
+  const enc = new TextEncoder()
+  const chunks = []
+  const central = []
+  let offset = 0
+  const dosTime = 0
+  const dosDate = 0x21
+  for (const [name, content] of entries) {
+    const nameBuf = enc.encode(name)
+    const data = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8')
+    const crc = zlibCrc32(data) >>> 0
+    const local = Buffer.alloc(30)
+    local.writeUInt32LE(0x04034b50, 0)
+    local.writeUInt16LE(20, 4)
+    local.writeUInt16LE(0, 6)
+    local.writeUInt16LE(0, 8)
+    local.writeUInt16LE(dosTime, 10)
+    local.writeUInt16LE(dosDate, 12)
+    local.writeUInt32LE(crc, 14)
+    local.writeUInt32LE(data.length, 18)
+    local.writeUInt32LE(data.length, 22)
+    local.writeUInt16LE(nameBuf.length, 26)
+    local.writeUInt16LE(0, 28)
+    chunks.push(local, nameBuf, data)
+
+    const cd = Buffer.alloc(46)
+    cd.writeUInt32LE(0x02014b50, 0)
+    cd.writeUInt16LE(20, 4)
+    cd.writeUInt16LE(20, 6)
+    cd.writeUInt16LE(0, 8)
+    cd.writeUInt16LE(0, 10)
+    cd.writeUInt16LE(dosTime, 12)
+    cd.writeUInt16LE(dosDate, 14)
+    cd.writeUInt32LE(crc, 16)
+    cd.writeUInt32LE(data.length, 20)
+    cd.writeUInt32LE(data.length, 24)
+    cd.writeUInt16LE(nameBuf.length, 28)
+    cd.writeUInt16LE(0, 30)
+    cd.writeUInt16LE(0, 32)
+    cd.writeUInt16LE(0, 34)
+    cd.writeUInt16LE(0, 36)
+    cd.writeUInt32LE(0, 38)
+    cd.writeUInt32LE(offset, 42)
+    central.push(cd, nameBuf)
+
+    offset += local.length + nameBuf.length + data.length
+  }
+  const centralBuf = Buffer.concat(central)
+  const eocd = Buffer.alloc(22)
+  eocd.writeUInt32LE(0x06054b50, 0)
+  eocd.writeUInt16LE(entries.length, 8)
+  eocd.writeUInt16LE(entries.length, 10)
+  eocd.writeUInt32LE(centralBuf.length, 12)
+  eocd.writeUInt32LE(offset, 16)
+  return Buffer.concat([...chunks, centralBuf, eocd])
+}
+
+/** 构造最小 docx：一段文本 + N 张内嵌 PNG（word/media/imageN.png，document.xml drawing 引用） */
+function buildDocxWithImages(pngs, text = '内嵌图片提取测试文档') {
+  const relsXml = pngs
+    .map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${i + 1}.png"/>`)
+    .join('')
+  const drawingsXml = pngs
+    .map((_, i) => `<w:p><w:r><w:drawing><wp:inline><wp:extent cx="${990000 + i}" cy="990000"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${i + 1}" name="img${i + 1}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId${i + 1}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="990000" cy="990000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`)
+    .join('')
+  return buildRawZip([
+    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId0" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+    ['word/document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><w:body><w:p><w:r><w:t>${text}</w:t></w:r></w:p>${drawingsXml}</w:body></w:document>`],
+    ['word/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relsXml}</Relationships>`],
+    ...pngs.map((png, i) => [`word/media/image${i + 1}.png`, png]),
+  ])
+}
+
+/** 构造最小 PDF：一页 + 一张 FlateDecode 2x2 RGB 内嵌图（提取后应解析出页码） */
+function buildPdfWithImage(seed) {
+  const raw = Buffer.from(Array.from({ length: 12 }, (_, i) => (seed + i * 13) % 256))
+  const img = deflateSync(raw)
+  const contents = Buffer.from('q 100 0 0 100 0 0 cm /Im0 Do Q')
+  const objs = []
+  objs[1] = Buffer.from('<< /Type /Catalog /Pages 2 0 R >>')
+  objs[2] = Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
+  objs[3] = Buffer.from('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>')
+  objs[4] = Buffer.concat([Buffer.from(`<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${img.length} >>\nstream\n`), img, Buffer.from('\nendstream')])
+  objs[5] = Buffer.concat([Buffer.from(`<< /Length ${contents.length} >>\nstream\n`), contents, Buffer.from('\nendstream')])
+  let pdf = Buffer.from('%PDF-1.4\n')
+  const offsets = [0]
+  for (let i = 1; i <= 5; i++) {
+    offsets[i] = pdf.length
+    pdf = Buffer.concat([pdf, Buffer.from(`${i} 0 obj\n`), objs[i], Buffer.from('\nendobj\n')])
+  }
+  const xrefStart = pdf.length
+  let xref = 'xref\n0 6\n0000000000 65535 f \n'
+  for (let i = 1; i <= 5; i++) xref += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`
+  return Buffer.concat([pdf, Buffer.from(`${xref}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`)])
+}
+
+/** WK-13 文档上传（preupload → PUT → complete 自动提取），返回 documentId */
+async function uploadWikiDoc(wikiId, token, fileName, contentType, buf) {
+  const pre = await api('POST', `/api/wiki/${wikiId}/documents/preupload`, { token, body: { fileName, contentType, fileSize: buf.length, sha256: sha256Hex(buf) } })
+  if (pre.status !== 200) return { error: `preupload ${pre.status} ${pre.text.slice(0, 120)}` }
+  if (!pre.json.isExist && pre.json.uploadUrl) {
+    const put = await fetch(pre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: buf })
+    if (put.status !== 200) return { error: `PUT ${put.status}` }
+  }
+  const comp = await api('POST', `/api/wiki/${wikiId}/documents/complete`, { token, body: { isSuccess: true, fileId: pre.json.fileId, fileName } })
+  if (comp.status !== 200) return { error: `complete ${comp.status} ${comp.text.slice(0, 120)}` }
+  const list = await api('POST', `/api/wiki/${wikiId}/documents/list`, { token, body: { pageNo: 1, pageSize: 50 } })
+  const item = (list.json?.items ?? []).find((x) => Number(x.fileId) === Number(pre.json.fileId))
+  const documentId = item ? Number(item.documentId) : 0
+  if (documentId <= 0) return { error: 'documents/list 未找到文档' }
+  return { documentId }
+}
+
 async function main() {
   const si = await api('GET', '/api/common/serverinfo')
   RSA_KEY = si.json.rsaPublic
@@ -59,6 +214,7 @@ async function main() {
   // WK-02 参数校验
   check('WK-02a 空名称 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: '' } })).status === 400)
   check('WK-02b 超长名称 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'x'.repeat(51) } })).status === 400)
+  check('WK-02d 名称含特殊字符 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'wk-name!' } })).status === 400)
   check('WK-02c 非法 teamId 400', (await api('POST', '/api/wiki', { token: owner.token, body: { teamId: 0, name: 'ok1' } })).status === 400)
 
   // WK-03 权限：Member 403 / 非成员 404
@@ -66,7 +222,7 @@ async function main() {
   check('WK-03b 非成员创建 404', (await api('POST', '/api/wiki', { token: outsider.token, body: { teamId: TID, name: 'nope' } })).status === 404)
 
   // WK-04 Admin 创建成功 + 列表
-  const WNAME = 'wk-' + TS
+  const WNAME = 'wk_' + TS
   const cr = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: WNAME, description: 'e2e wiki' } })
   check('WK-04a Admin 创建 200 且返回 id', cr.status === 200 && Number(cr.json?.value) > 0, `${cr.status} ${cr.text.slice(0, 120)}`)
   const WID = Number(cr.json?.value)
@@ -98,23 +254,23 @@ async function main() {
   check('WK-06c 不存在 404', (await api('GET', '/api/wiki/999999', { token: bob.token })).status === 404)
 
   // WK-07 更新
-  check('WK-07a Member 更新 403', (await api('PUT', `/api/wiki/${WID}`, { token: bob.token, body: { name: 'new-' + WNAME } })).status === 403)
-  check('WK-07b Admin 更新 200', (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'new-' + WNAME, description: '改过' } })).status === 200)
-  check('WK-07c 详情回显', (await api('GET', `/api/wiki/${WID}`, { token: alice.token })).json?.name === 'new-' + WNAME)
+  check('WK-07a Member 更新 403', (await api('PUT', `/api/wiki/${WID}`, { token: bob.token, body: { name: 'new_' + WNAME } })).status === 403)
+  check('WK-07b Admin 更新 200', (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'new_' + WNAME, description: '改过' } })).status === 200)
+  check('WK-07c 详情回显', (await api('GET', `/api/wiki/${WID}`, { token: alice.token })).json?.name === 'new_' + WNAME)
   check('WK-07d 更新为已有重名 409', await (async () => {
-    await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'second-' + TS } })
-    return (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'second-' + TS } })).status
+    await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'second_' + TS } })
+    return (await api('PUT', `/api/wiki/${WID}`, { token: alice.token, body: { name: 'second_' + TS } })).status
   })() === 409)
 
   // WK-08 删除
   check('WK-08a Member 删除 403', (await api('DELETE', `/api/wiki/${WID}`, { token: bob.token })).status === 403)
   check('WK-08b Admin 删除 200', (await api('DELETE', `/api/wiki/${WID}`, { token: alice.token })).status === 200)
   check('WK-08c 删除后详情 404', (await api('GET', `/api/wiki/${WID}`, { token: alice.token })).status === 404)
-  check('WK-08d 删除后列表不含', !(await api('GET', `/api/wiki/list?teamId=${TID}`, { token: alice.token })).json.items.some(i => i.name === 'new-' + WNAME))
-  check('WK-08e 删除后同名可重建', (await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'new-' + WNAME } })).status === 200)
+  check('WK-08d 删除后列表不含', !(await api('GET', `/api/wiki/list?teamId=${TID}`, { token: alice.token })).json.items.some(i => i.name === 'new_' + WNAME))
+  check('WK-08e 删除后同名可重建', (await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'new_' + WNAME } })).status === 200)
 
   // WK-09 公开字段已移除：团队知识库不存在公开概念，非成员访问一律 404
-  const pubName = 'pub-' + TS
+  const pubName = 'pub_' + TS
   const pub = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: pubName } })
   const PUBID = Number(pub.json?.value)
   check('WK-09a 非成员查详情 404（公开字段已移除）', (await api('GET', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
@@ -122,7 +278,7 @@ async function main() {
   check('WK-09c 非成员删除 404', (await api('DELETE', `/api/wiki/${PUBID}`, { token: outsider.token })).status === 404)
 
   // WK-10 非成员门禁保持
-  const privName = 'priv-' + TS
+  const privName = 'priv_' + TS
   const prv = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: privName } })
   const PRIVID = Number(prv.json?.value)
   check('WK-10 非成员查详情 404', (await api('GET', `/api/wiki/${PRIVID}`, { token: outsider.token })).status === 404)
@@ -136,7 +292,7 @@ async function main() {
 
   // WK-11 知识库最大文件大小（WIKI_MAX_FILE_SIZE_MB，超管设置，网页端与开放接口上传同时受限）
   {
-    const wk11 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk11-' + TS } })
+    const wk11 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk11_' + TS } })
     const WID11 = Number(wk11.json?.value)
     const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
     const rootTk = rootL.json.accessToken
@@ -156,6 +312,213 @@ async function main() {
     const limit50 = await api('GET', '/api/wiki/upload-limit', { token: bob.token })
     const free = await preup(bob.token, `free-${TS}.md`, 2 * 1024 * 1024, sha256Hex(`free-${TS}`))
     check('WK-11d 恢复默认 50MB 后 2MB preupload 200', limit50.json?.maxFileSizeMb === 50 && Number(limit50.json?.maxFileSizeBytes) === 52428800 && free.status === 200, `${JSON.stringify(limit50.json)} ${free.status}`)
+  }
+
+  // WK-12 知识库允许上传文件类型（WIKI_ALLOWED_FILE_TYPES，超管设置，网页端与开放接口上传同时受限）
+  {
+    const wk12 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk12_' + TS } })
+    const WID12 = Number(wk12.json?.value)
+    const rootL = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const rootTk = rootL.json.accessToken
+    const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex')
+    const DEFAULT_TYPES = '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml'
+    const preup = (fileName, sha) => api('POST', `/api/wiki/${WID12}/documents/preupload`, {
+      token: bob.token,
+      body: { fileName, contentType: 'application/pdf', fileSize: 10, sha256: sha },
+    })
+    const putTypes = async (value) => api('PUT', '/api/settings', { token: rootTk, body: { key: 'WIKI_ALLOWED_FILE_TYPES', value } })
+
+    await putTypes(DEFAULT_TYPES)
+    const dft = await api('GET', '/api/wiki/upload-limit', { token: bob.token })
+    check('WK-12a 默认允许类型 upload-limit 回显（成员可读）', dft.status === 200 && Array.isArray(dft.json?.allowedFileTypes) && dft.json.allowedFileTypes.join(',') === DEFAULT_TYPES, JSON.stringify(dft.json))
+
+    await putTypes('.md,.txt')
+    const noPdf = await preup(`no-${TS}.pdf`, sha256Hex(`no-${TS}`))
+    check('WK-12b 收窄后 .pdf preupload 400 且错误信息带允许清单', noPdf.status === 400 && noPdf.text.includes('.md') && noPdf.text.includes('.txt'), `${noPdf.status} ${noPdf.text.slice(0, 160)}`)
+
+    await putTypes(DEFAULT_TYPES)
+    check('WK-12c 恢复默认后 .pdf preupload 200', (await preup(`yes-${TS}.pdf`, sha256Hex(`yes-${TS}`))).status === 200)
+  }
+
+  // WK-13 文档内嵌图片附件（提取 pdf/word/excel/ppt 落出的图片资产：登记/列表/下载/页码/重提取替换/删除联动与共享保护）
+  {
+    const wk13 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk13_' + TS } })
+    const WID13 = Number(wk13.json?.value)
+
+    const PNG1 = buildPng(10)
+    const PNG2 = buildPng(200)
+    const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    const docxBuf = buildDocxWithImages([PNG1, PNG2])
+    const d1 = await uploadWikiDoc(WID13, alice.token, `imgdoc-${TS}.docx`, DOCX_TYPE, docxBuf)
+    check('WK-13a 带图 docx 上传提取成功', !!d1.documentId, d1.error ?? '')
+
+    const imgList1 = await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images`, { token: alice.token })
+    const items1 = imgList1.json?.items ?? []
+    check('WK-13b 图片列表返回 2 项且字段回显', imgList1.status === 200 && items1.length === 2
+      && items1.every((x, i) => Number(x.imageIndex) === i && x.fileType === '.png' && String(x.fileName).endsWith('.png') && Number(x.fileSize) > 0 && !!x.downloadUrl && x.pageNumber == null),
+    `${imgList1.status} ${JSON.stringify(items1).slice(0, 220)}`)
+
+    const content1 = await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/content`, { token: alice.token })
+    check('WK-13c 正文不含图片引用且保留文本', content1.status === 200 && !String(content1.json?.value ?? '').includes('![') && String(content1.json?.value ?? '').includes('内嵌图片提取测试文档'), `${content1.status} ${String(content1.json?.value ?? '').slice(0, 120)}`)
+
+    // 下载字节与源 PNG 一致（顺序不敏感比较）
+    const dl0 = await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images/${items1[0].imageId}/download`, { token: alice.token })
+    const dl1 = await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images/${items1[1].imageId}/download`, { token: alice.token })
+    let bytesOk = false
+    try {
+      const b0 = Buffer.from(await (await fetch(dl0.json.value)).arrayBuffer())
+      const b1 = Buffer.from(await (await fetch(dl1.json.value)).arrayBuffer())
+      const got = [sha256Hex(b0), sha256Hex(b1)].sort().join(',')
+      bytesOk = got === [sha256Hex(PNG1), sha256Hex(PNG2)].sort().join(',')
+    } catch { bytesOk = false }
+    check('WK-13d 图片下载字节与源一致', dl0.status === 200 && dl1.status === 200 && bytesOk, `dl0=${dl0.status} dl1=${dl1.status}`)
+
+    check('WK-13e 非成员查图片列表 404', (await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images`, { token: outsider.token })).status === 404)
+    check('WK-13f 伪造 imageId 下载 404', (await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images/999999/download`, { token: alice.token })).status === 404)
+
+    // PDF 内嵌图：解析页码
+    const pdfBuf = buildPdfWithImage(42)
+    const d2 = await uploadWikiDoc(WID13, alice.token, `imgpdf-${TS}.pdf`, 'application/pdf', pdfBuf)
+    const imgList2 = await api('GET', `/api/wiki/${WID13}/documents/${d2.documentId}/images`, { token: alice.token })
+    const items2 = imgList2.json?.items ?? []
+    check('WK-13g PDF 内嵌图提取且页码=1', imgList2.status === 200 && items2.length === 1 && Number(items2[0].pageNumber) === 1, `${imgList2.status} ${JSON.stringify(items2).slice(0, 220)}`)
+
+    // 重新提取：图片登记替换不重复
+    await api('POST', `/api/wiki/${WID13}/documents/${d1.documentId}/extract`, { token: alice.token })
+    const imgList1b = await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images`, { token: alice.token })
+    check('WK-13h 重新提取后图片仍为 2 项不重复', imgList1b.status === 200 && (imgList1b.json?.items ?? []).length === 2, `${imgList1b.status} len=${(imgList1b.json?.items ?? []).length}`)
+
+    // 内嵌图片内容寻址共享：不同文档包含同一批图片 → 图片 file/objectKey 共享；删除其一，另一文档图片仍可下载
+    // （同知识库同文件 preupload 会 409，故第二份文档用不同文本、相同图片字节）
+    const docxBuf2 = buildDocxWithImages([PNG1, PNG2], `第二份内嵌图片文档-${TS}`)
+    const d5 = await uploadWikiDoc(WID13, alice.token, `imgdoc2-${TS}.docx`, DOCX_TYPE, docxBuf2)
+    const imgList5 = d5.documentId ? await api('GET', `/api/wiki/${WID13}/documents/${d5.documentId}/images`, { token: alice.token }) : { json: {} }
+    const items5 = imgList5.json?.items ?? []
+    const sharedIds1 = items1.map((x) => Number(x.fileId)).sort().join(',')
+    const sharedIds5 = items5.map((x) => Number(x.fileId)).sort().join(',')
+    check('WK-13i 不同文档同图共享 fileId', !!d5.documentId && imgList5.status === 200 && items5.length === 2 && sharedIds1 === sharedIds5 && sharedIds1.length > 0, `d5=${d5.documentId} ${d5.error ?? ''} ${sharedIds1} vs ${sharedIds5}`)
+    await api('DELETE', `/api/wiki/${WID13}/documents`, { token: alice.token, body: { documentIds: [d1.documentId] } })
+    const dl5 = items5.length > 0 ? await api('GET', `/api/wiki/${WID13}/documents/${d5.documentId}/images/${items5[0].imageId}/download`, { token: alice.token }) : { status: 0 }
+    let sharedBytesOk = false
+    try {
+      const b = Buffer.from(await (await fetch(dl5.json.value)).arrayBuffer())
+      sharedBytesOk = [sha256Hex(PNG1), sha256Hex(PNG2)].includes(sha256Hex(b))
+    } catch { sharedBytesOk = false }
+    check('WK-13j 删除共享文档后另一文档图片仍可下载', dl5.status === 200 && sharedBytesOk, `dl5=${dl5.status}`)
+    check('WK-13k 删除文档后其图片列表 404', (await api('GET', `/api/wiki/${WID13}/documents/${d1.documentId}/images`, { token: alice.token })).status === 404)
+
+    // 无图文档：图片列表为空数组
+    const mdBuf = Buffer.from(`# 无图文档-${TS}\n\n纯文本内容。`, 'utf8')
+    const d4 = await uploadWikiDoc(WID13, alice.token, `nomedia-${TS}.md`, 'text/markdown', mdBuf)
+    const imgList4 = await api('GET', `/api/wiki/${WID13}/documents/${d4.documentId}/images`, { token: alice.token })
+    check('WK-13l 无图文档图片列表为空数组', imgList4.status === 200 && Array.isArray(imgList4.json?.items) && imgList4.json.items.length === 0, `${imgList4.status} ${JSON.stringify(imgList4.json).slice(0, 120)}`)
+  }
+
+  // WK-14 跨知识库文件名搜索（GET /api/wiki/files/search：团队门禁 + 相关度排序 + 软删过滤）
+  {
+    const KW = `wkf${TS}`
+    const textMd = (tag) => Buffer.from(`# ${tag}\n\n跨库搜索测试内容。`, 'utf8')
+    const wA = Number((await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: `wka_${TS}` } })).json?.value)
+    const wB = Number((await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: `wkb_${TS}` } })).json?.value)
+    const NAME_A = `wka_${TS}`
+    // 上传顺序（决定更新时间升序）：包含档 → 前缀档1 → 前缀档2；期望排序 = 前缀档按更新时间倒序在前，包含档垫底
+    const fContains = await uploadWikiDoc(wB, alice.token, `zz-${KW}.md`, 'text/markdown', textMd('contains'))
+    const fPrefix1 = await uploadWikiDoc(wA, alice.token, `${KW}.md`, 'text/markdown', textMd('prefix1'))
+    const fPrefix2 = await uploadWikiDoc(wB, alice.token, `${KW}abc.md`, 'text/markdown', textMd('prefix2'))
+    check('WK-14a 两库各上传命中文件成功', wA > 0 && wB > 0 && !!fPrefix1.documentId && !!fPrefix2.documentId && !!fContains.documentId, `wA=${wA} wB=${wB} ${fPrefix1.error ?? ''}${fPrefix2.error ?? ''}${fContains.error ?? ''}`)
+
+    check('WK-14b 无 token 401', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`)).status === 401)
+    check('WK-14c 非成员 404', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: outsider.token })).status === 404)
+    check('WK-14d 空关键字 400', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=`, { token: bob.token })).status === 400)
+    check('WK-14d2 非法 limit 400', (await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}&limit=0`, { token: bob.token })).status === 400)
+
+    const s = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
+    const hits = s.json?.items ?? []
+    const hitIds = hits.map((x) => Number(x.documentId))
+    check('WK-14e Member 跨库命中 total=3', s.status === 200 && Number(s.json?.total) === 3 && hits.length === 3, `${s.status} total=${s.json?.total} hits=${hits.length}`)
+    check('WK-14f 命中项回显 wikiId/wikiName/fileName/updateTime', hits.every((x) => Number(x.wikiId) > 0 && [NAME_A, `wkb_${TS}`].includes(String(x.wikiName)) && !!x.fileName && !!x.updateTime), JSON.stringify(hits).slice(0, 260))
+    check('WK-14g 排序：前缀命中在前按更新时间倒序、包含命中垫底', hitIds[0] === fPrefix2.documentId && hitIds[1] === fPrefix1.documentId && hitIds[2] === fContains.documentId, `ids=${hitIds.join(',')} 期望=${fPrefix2.documentId},${fPrefix1.documentId},${fContains.documentId}`)
+
+    const sl = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}&limit=2`, { token: bob.token })
+    check('WK-14h limit=2 截断 items=2 且 total=3', sl.status === 200 && Number(sl.json?.total) === 3 && (sl.json?.items ?? []).length === 2, `total=${sl.json?.total} items=${(sl.json?.items ?? []).length}`)
+
+    await api('DELETE', `/api/wiki/${wB}/documents`, { token: alice.token, body: { documentIds: [fPrefix2.documentId] } })
+    const s2 = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
+    check('WK-14i 软删文档不再命中', s2.status === 200 && Number(s2.json?.total) === 2 && !(s2.json?.items ?? []).some((x) => Number(x.documentId) === fPrefix2.documentId), `total=${s2.json?.total}`)
+
+    await api('DELETE', `/api/wiki/${wA}`, { token: alice.token })
+    const s3 = await api('GET', `/api/wiki/files/search?teamId=${TID}&query=${KW}`, { token: bob.token })
+    check('WK-14j 删除知识库后其文档不再命中', s3.status === 200 && Number(s3.json?.total) === 1 && (s3.json?.items ?? []).every((x) => Number(x.wikiId) === wB), `total=${s3.json?.total}`)
+  }
+
+  // WK-15 42 种格式上传与提取（@WK-S56：默认白名单扩容——代码/配置文本纯文本兜底 + EPUB/ODT/RTF 自研提取器）
+  {
+    const wk15 = await api('POST', '/api/wiki', { token: alice.token, body: { teamId: TID, name: 'wk15_' + TS } })
+    const WID15 = Number(wk15.json?.value)
+    const rootL15 = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
+    const rootTk15 = rootL15.json.accessToken
+    const DEFAULT_TYPES15 = '.bat,.c,.conf,.cpp,.css,.csv,.docx,.epub,.go,.h,.hpp,.htm,.html,.ini,.java,.js,.json,.less,.log,.md,.markdown,.mdx,.odt,.pdf,.php,.pptx,.properties,.py,.rb,.rtf,.scss,.sh,.sql,.swift,.tex,.textpack,.ts,.txt,.xlsx,.xml,.yaml,.yml'
+    const putTypes15 = async (value) => api('PUT', '/api/settings', { token: rootTk15, body: { key: 'WIKI_ALLOWED_FILE_TYPES', value } })
+    await putTypes15(DEFAULT_TYPES15)
+
+    const readContent15 = async (documentId) => {
+      const res = await api('GET', `/api/wiki/${WID15}/documents/${documentId}/content`, { token: alice.token })
+      return res.status === 200 ? String(res.json?.value ?? '') : ''
+    }
+
+    // a. upload-limit 回显 42 种默认类型
+    const lim15 = await api('GET', '/api/wiki/upload-limit', { token: bob.token })
+    check('WK-15a upload-limit 回显 42 种默认类型', lim15.status === 200 && (lim15.json?.allowedFileTypes ?? []).join(',') === DEFAULT_TYPES15, `${JSON.stringify(lim15.json).slice(0, 200)}`)
+
+    // b. 代码文本 .py 走纯文本兜底提取
+    const pyBuf = Buffer.from(`# moai-wiki sample ${TS}\nprint("知识库代码提取 ${TS}")\n`, 'utf8')
+    const pyDoc = await uploadWikiDoc(WID15, bob.token, `sample-${TS}.py`, 'text/x-python', pyBuf)
+    check('WK-15b .py 上传提取成功且正文含代码', !!pyDoc.documentId && (await readContent15(pyDoc.documentId)).includes(`print("知识库代码提取 ${TS}")`), `${pyDoc.error ?? ''}`)
+
+    // c. 配置文本 .yaml
+    const yamlBuf = Buffer.from(`service: moai\nwiki: ${TS}\nformats:\n  - code\n  - config\n`, 'utf8')
+    const yamlDoc = await uploadWikiDoc(WID15, bob.token, `conf-${TS}.yaml`, 'application/yaml', yamlBuf)
+    check('WK-15c .yaml 提取正文保留键值', !!yamlDoc.documentId && (await readContent15(yamlDoc.documentId)).includes(`wiki: ${TS}`), `${yamlDoc.error ?? ''}`)
+
+    // d. EPUB 自研提取器（zip：mimetype + container.xml + OPF spine + xhtml 章节）
+    const epub = buildRawZip([
+      ['mimetype', 'application/epub+zip'],
+      ['META-INF/container.xml', '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'],
+      ['OEBPS/content.opf', '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="uid">moai-epub</dc:identifier><dc:title>moai-epub</dc:title></metadata><manifest><item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="ch1"/></spine></package>'],
+      ['OEBPS/chapter1.xhtml', `<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>c1</title></head><body><h1>第一章 电商运营</h1><p>EPUB 提取探针 ${TS}：青岛港吞吐量再创新高。</p><p>第二段落收尾。</p></body></html>`],
+    ])
+    const epubDoc = await uploadWikiDoc(WID15, bob.token, `book-${TS}.epub`, 'application/epub+zip', epub)
+    const epubText = await readContent15(epubDoc.documentId)
+    check('WK-15d EPUB 提取正文含章节标题与段落', !!epubDoc.documentId && epubText.includes('第一章 电商运营') && epubText.includes(`EPUB 提取探针 ${TS}`), `${epubDoc.error ?? ''}${epubText.slice(0, 120)}`)
+
+    // e. ODT 自研提取器（zip：mimetype + content.xml text:p）
+    const odt = buildRawZip([
+      ['mimetype', 'application/vnd.oasis.opendocument.text'],
+      ['content.xml', `<?xml version="1.0" encoding="UTF-8"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:h>ODT 标题${TS}</text:h><text:p>ODT 段落探针 ${TS}。</text:p></office:text></office:body></office:document-content>`],
+    ])
+    const odtDoc = await uploadWikiDoc(WID15, bob.token, `doc-${TS}.odt`, 'application/vnd.oasis.opendocument.text', odt)
+    const odtText = await readContent15(odtDoc.documentId)
+    check('WK-15e ODT 提取正文含标题段落', !!odtDoc.documentId && odtText.includes(`ODT 标题${TS}`) && odtText.includes(`ODT 段落探针 ${TS}`), `${odtDoc.error ?? ''}${odtText.slice(0, 120)}`)
+
+    // f. RTF 控制词剥离（\uN Unicode + \par 换行 + 跳过 fonttbl destination 组）
+    const rtfProbe = `RTF探针${TS}`
+    const rtfUnicode = Array.from(rtfProbe).map((ch) => `\\u${ch.charCodeAt(0)}?`).join('')
+    const rtf = `{\\rtf1\\ansi{\\fonttbl{\\f0 Arial;}}{\\colortbl;\\red0\\green0\\blue0;}\\f0\\fs24 ${rtfUnicode}\\par Line-${TS} tail\\par}`
+    const rtfDoc = await uploadWikiDoc(WID15, bob.token, `rtf-${TS}.rtf`, 'application/rtf', Buffer.from(rtf, 'utf8'))
+    const rtfOut = await readContent15(rtfDoc.documentId)
+    check('WK-15f RTF 提取 Unicode 正文与换行、跳过字体表', !!rtfDoc.documentId && rtfOut.includes(rtfProbe) && rtfOut.includes(`Line-${TS}`) && !rtfOut.includes('fonttbl'), `${rtfDoc.error ?? ''}${rtfOut.slice(0, 160)}`)
+
+    // g. 二进制伪装 .py：NUL 嗅探拒绝，不产出乱码正文
+    const binBuf = Buffer.from([0x4d, 0x5a, 0x00, 0x01, 0x00, 0x00, 0x90, 0x90])
+    const binDoc = await uploadWikiDoc(WID15, bob.token, `bin-${TS}.py`, 'application/octet-stream', binBuf)
+    const binText = await readContent15(binDoc.documentId)
+    check('WK-15g 二进制文件提取拒绝（无正文）', !!binDoc.documentId && binText === '', `${binDoc.error ?? ''}${binText.slice(0, 80)}`)
+
+    // h. 非常规扩展名 .mdx/.textpack 白名单放行
+    check('WK-15h .mdx preupload 200', (await api('POST', `/api/wiki/${WID15}/documents/preupload`, { token: bob.token, body: { fileName: `note-${TS}.mdx`, contentType: 'text/markdown', fileSize: 10, sha256: sha256Hex(`mdx-${TS}`) } })).status === 200)
+    check('WK-15i .textpack preupload 200', (await api('POST', `/api/wiki/${WID15}/documents/preupload`, { token: bob.token, body: { fileName: `pack-${TS}.textpack`, contentType: 'text/plain', fileSize: 10, sha256: sha256Hex(`pack-${TS}`) } })).status === 200)
+
+    await putTypes15(DEFAULT_TYPES15)
   }
 
   console.log(`\n===== 知识库 E2E 汇总: PASS=${PASS} FAIL=${FAIL} =====`)

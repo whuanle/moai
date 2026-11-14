@@ -81,3 +81,7 @@ comment on column team_timer_execution.is_deleted is '软删除，0=未删除';
 
 create index if not exists idx_team_timer_execution_timer_create on team_timer_execution (timer_id, create_time);
 create index if not exists idx_team_timer_execution_team_id on team_timer_execution (team_id);
+
+-- 2026-10-30 增量：定时执行落会话（Agent 应用），执行记录关联会话 id
+alter table team_timer_execution add column if not exists session_id uuid null;
+comment on column team_timer_execution.session_id is '定时执行产生的 Agent 会话 id（app_agent_session，user_type=4 timer），流程应用为 null';

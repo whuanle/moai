@@ -19,8 +19,6 @@ public partial class KnowledgeGraphEntity : IFullAudited
 
     public string Description { get; set; } = default!;
 
-    public string? TemplateKey { get; set; }
-
     public string Mode { get; set; } = default!;
 
     public string? Database { get; set; }
@@ -64,4 +62,19 @@ public partial class KnowledgeGraphEntity : IFullAudited
     /// 知识图谱向量维度（1-2000，建 hnsw 索引的硬上限）.
     /// </summary>
     public int EmbeddingDimensions { get; set; }
+
+    /// <summary>
+    /// 默认抽取模型的id（AI 导入缺省对话模型，D30 三级回退的图谱级默认）；为空表示未配置、导入时必须显式指定.
+    /// </summary>
+    public Guid? ExtractModelId { get; set; }
+
+    /// <summary>
+    /// 画布样式规则 JSON（B8：按实体类型配置节点第二行 caption 显示什么；空串=未配置、画布按默认显示类型名）.
+    /// </summary>
+    public string CanvasStyleJson { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否开启 MCP 接入（/api/teamres/knowledge-graph/{id}/mcp 与该图外部资源 key，仅托管图）；开启时自动生成/复用该图唯一的团队资源 key.
+    /// </summary>
+    public bool IsMcpEnabled { get; set; }
 }

@@ -19,6 +19,7 @@
 		<PackageReference Include="ModelContextProtocol" />
 		<PackageReference Include="ModelContextProtocol.AspNetCore" />
 		<PackageReference Include="CommunityToolkit.VectorData.PgVector" />
+		<PackageReference Include="Hangfire.Core" />
 		<PackageReference Include="Maomi.MQ.RabbitMQ" />
 		<PackageReference Include="Maomi.ToMarkdown" />
 		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />

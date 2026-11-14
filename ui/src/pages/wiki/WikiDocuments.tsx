@@ -13,11 +13,11 @@ import type { TableColumnsType } from 'antd'
 import type { UploadProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import { DataTable, feedback } from '@/design-system'
+import { AuditCell, DataTable, feedback, PageToolbar } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatFileSize } from '@/utils/format'
-import { formatDateTime } from '@/utils/datetime'
 import { BatchWorkflowModal } from './BatchWorkflowModal'
+import { WIKI_DEFAULT_FILE_TYPES } from '@/api/settings'
 import {
   getWikiDocuments,
   preUploadWikiDocument,
@@ -37,14 +37,6 @@ interface UploadStatus {
   status: 'waiting' | 'uploading' | 'success' | 'error'
   progress: number
   message?: string
-}
-
-/** 支持的文件扩展名 */
-const SUPPORTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.md', '.xls', '.xlsx', '.ppt', '.pptx', '.csv', '.json', '.xml', '.html', '.htm']
-
-const isSupported = (file: File): boolean => {
-  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
-  return SUPPORTED_EXTENSIONS.includes(ext)
 }
 
 const getErrorMessage = (error: unknown, defaultMessage: string): string => {
@@ -81,14 +73,26 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   const [uploading, setUploading] = useState(false)
   // 知识库上传文件大小上限（MB），0 表示不限制
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(0)
+  // 允许上传的文件类型（系统设置），读取失败时回退内置默认
+  const [allowedFileTypes, setAllowedFileTypes] = useState<string[]>(WIKI_DEFAULT_FILE_TYPES)
 
   useEffect(() => {
     getWikiUploadLimit()
-      .then(setMaxFileSizeMb)
+      .then(({ maxFileSizeMb: mb, allowedFileTypes: types }) => {
+        setMaxFileSizeMb(mb)
+        if (types.length > 0) {
+          setAllowedFileTypes(types)
+        }
+      })
       .catch(() => {
-        // 读取失败按不限制处理，超限时服务端仍会拦截
+        // 读取失败按默认类型与不限制处理，超限时服务端仍会拦截
       })
   }, [])
+
+  const isFileTypeAllowed = (file: File): boolean => {
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+    return allowedFileTypes.includes(ext)
+  }
 
   const load = useCallback(
     async (page = pageNo, size = pageSize, keyword = searchText, embedding = embeddingFilter) => {
@@ -120,10 +124,6 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   const handleSearch = () => {
     setPageNo(1)
     void load(1, pageSize, searchText, embeddingFilter)
-  }
-
-  const handleRefresh = () => {
-    void load(pageNo, pageSize, searchText, embeddingFilter)
   }
 
   const handleEmbeddingFilter = (value: boolean | null) => {
@@ -195,7 +195,7 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
   }
 
   const handleSelectFiles: UploadProps['beforeUpload'] = (file) => {
-    if (!isSupported(file)) {
+    if (!isFileTypeAllowed(file)) {
       feedback.error(t('wiki.doc.unsupportedType'))
       return Upload.LIST_IGNORE
     }
@@ -312,18 +312,16 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
         render: (v: string | null | undefined) => <Tag>{v || '-'}</Tag>,
       },
       {
-        title: t('wiki.doc.colCreateTime'),
-        dataIndex: 'createTime',
-        key: 'createTime',
-        width: 160,
-        render: (v: string | null | undefined) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
+        title: t('wiki.doc.colCreate'),
+        key: 'create',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.createUserName} time={record.createTime} />,
       },
       {
-        title: t('wiki.doc.colCreateUser'),
-        dataIndex: 'createUserName',
-        key: 'createUserName',
-        width: 120,
-        render: (v: string | null | undefined) => v || '-',
+        title: t('wiki.doc.colUpdate'),
+        key: 'update',
+        width: 150,
+        render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
       },
       {
         title: t('wiki.doc.colChunkCount'),
@@ -349,32 +347,20 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
       {
         title: t('wiki.doc.colActions'),
         key: 'actions',
-        width: 170,
+        width: 250,
         fixed: 'right',
         render: (_, record) => (
           <Space size={0}>
-            <Tooltip title={t('wiki.doc.vectorize')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<ThunderboltOutlined />}
-                aria-label={t('wiki.doc.vectorize')}
-                onClick={() => handleVectorize(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('wiki.doc.download')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<DownloadOutlined />}
-                aria-label={t('wiki.doc.download')}
-                onClick={() => void handleDownload(record)}
-              />
-            </Tooltip>
+            <Button type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => handleVectorize(record)}>
+              {t('wiki.doc.vectorize')}
+            </Button>
+            <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => void handleDownload(record)}>
+              {t('wiki.doc.download')}
+            </Button>
             <Popconfirm title={t('wiki.doc.deleteConfirm')} okButtonProps={{ danger: true }} onConfirm={() => void handleDelete([Number(record.documentId)])}>
-              <Tooltip title={t('wiki.doc.delete')}>
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('wiki.doc.delete')} />
-              </Tooltip>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                {t('wiki.doc.delete')}
+              </Button>
             </Popconfirm>
           </Space>
         ),
@@ -386,15 +372,10 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
 
   return (
     <>
-      <DataTable<WikiDocumentItem>
-        rowKey={(record) => String(record.documentId)}
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        sticky
-        scroll={{ x: 1050 }}
-        toolbar={
-          <Space wrap>
+      {/* 工具行裸排在页面底色上（Dify 模式），排序：搜索框 → 筛选 → 查询 → | → 操作按钮（frontend-conventions 第 7 条） */}
+      <PageToolbar
+        filters={
+          <>
             <Input
               placeholder={t('wiki.doc.searchPlaceholder')}
               allowClear
@@ -418,6 +399,15 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
                 { label: t('wiki.doc.embeddingNone'), value: 'none' },
               ]}
             />
+          </>
+        }
+        queries={
+          <Button loading={loading} onClick={handleSearch}>
+            {t('ds.query.search')}
+          </Button>
+        }
+        actions={
+          <>
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
               {t('wiki.doc.upload')}
             </Button>
@@ -437,15 +427,23 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
                 {t('wiki.doc.batchDelete')}
               </Button>
             </Popconfirm>
-          </Space>
+          </>
         }
-        onRefresh={handleRefresh}
-        refreshLoading={loading}
+      />
+      <DataTable<WikiDocumentItem>
+        rowKey={(record) => String(record.documentId)}
+        columns={columns}
+        dataSource={items}
+        loading={loading}
+        sticky
+        scroll={{ x: 1240 }}
         pagination={{
           current: pageNo,
           pageSize,
           total,
           showSizeChanger: true,
+          // 覆盖 DataTable 默认的「共 N 条」统计文案
+          showTotal: undefined,
           onChange: (page, size) => {
             setPageNo(page)
             setPageSize(size)
@@ -481,7 +479,7 @@ export function WikiDocuments({ wikiId, teamId }: { wikiId: number; teamId?: num
           </Button>,
         ]}
       >
-        <Upload.Dragger multiple showUploadList={false} beforeUpload={handleSelectFiles} accept={SUPPORTED_EXTENSIONS.join(',')}>
+        <Upload.Dragger multiple showUploadList={false} beforeUpload={handleSelectFiles} accept={allowedFileTypes.join(',')}>
           <p className="ant-upload-drag-icon">
             <UploadOutlined />
           </p>

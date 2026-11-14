@@ -57,8 +57,8 @@ describe('KnowledgeGraphSchema', () => {
     expect(await screen.findByText('服务')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /新增实体类型/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /新增关系类型/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^编辑$/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^删除$/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /编辑$/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /删除$/ })).toBeNull()
   })
 
   it('接入模式只读展示标签/关系数量与属性键，无增删改', async () => {
@@ -82,8 +82,8 @@ describe('KnowledgeGraphSchema', () => {
     expect(screen.getByText('属性键')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /新增实体类型/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /新增关系类型/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^编辑$/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^删除$/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /编辑$/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /删除$/ })).toBeNull()
   })
 
   it('详情下传 connected 时即使 schema 拉取失败也只渲染只读视图', async () => {

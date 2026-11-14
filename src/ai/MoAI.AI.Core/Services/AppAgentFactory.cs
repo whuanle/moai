@@ -17,6 +17,7 @@ using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.AI.Models;
 using MoAI.Storage.Services;
+using MoAI.TeamAgent.Models;
 
 namespace MoAI.AI.Services;
 
@@ -100,8 +101,10 @@ public sealed class AppAgentFactory
     /// <param name="toolApprovalMode">工具审批模式（auto/approval，来自对话 SSE 请求头），approval 时重要工具执行前需人工批准.</param>
     /// <param name="workflowDraft">流程应用是否按最新草稿执行（工作台「调试」Tab 请求头 X-Moai-Workflow-Draft）.</param>
     /// <param name="enableUiTools">是否注册前端展示工具（X-Moai-Ui-Tools=1）：ui_ 前缀工具后端桩执行、前端侧边栏渲染.</param>
+    /// <param name="requestedModelId">用户在对话端选择的模型 id（X-Moai-Model-Id 请求头），须在应用可选模型列表内且团队可用，否则回退默认模型.</param>
+    /// <param name="requestedTeamAgentId">用户在对话端选择的团队智能体 id（X-Moai-Team-Agent-Id 请求头），须在应用绑定列表内，否则回退默认智能体.</param>
     /// <returns>内层 Agent.</returns>
-    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false, bool enableUiTools = false)
+    public async Task<AIAgent> CreateAsync(Guid appId, int teamId, long userId, Guid sessionId, bool isDebug, int promptId, CancellationToken cancellationToken, string? toolApprovalMode = null, bool workflowDraft = false, bool enableUiTools = false, Guid? requestedModelId = null, Guid? requestedTeamAgentId = null)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == appId, cancellationToken).ConfigureAwait(false);
         if (app == null || app.TeamId != teamId)
@@ -158,10 +161,27 @@ public sealed class AppAgentFactory
             throw new BusinessException("应用尚未配置对话模型，无法对话.") { StatusCode = 400 };
         }
 
-        var pair = await _modelResolver.ResolveByIdAsync(effectiveConfig.ModelId, teamId, cancellationToken).ConfigureAwait(false);
+        // 团队智能体（team-agent Phase 2）：解析本轮生效智能体（用户切换 > 配置默认 > 列表第一个），
+        // 已发布按快照内嵌定义、调试按实时行；未绑定或定义缺失时为 null（回退通用子代理行为，不炸会话）
+        var activeTeamAgent = await ResolveActiveTeamAgentAsync(effectiveConfig, !isDebug, requestedTeamAgentId, cancellationToken).ConfigureAwait(false);
+
+        // 对话端多模型切换：所选模型须在生效配置的可选列表内且该团队可用，否则静默回退默认模型
+        // （管理员调整配置后旧会话的旧选择平滑降级，不炸会话）；默认模型也不可用才拒绝
+        var selectableModelIds = ParseSelectableModelIds(effectiveConfig);
+        var pair = await ResolveChatModelAsync(selectableModelIds, effectiveConfig.ModelId, requestedModelId, teamId, cancellationToken).ConfigureAwait(false);
         if (pair == null)
         {
             throw new BusinessException("应用的对话模型不可用，请重新配置.") { StatusCode = 400 };
+        }
+
+        // 记录本轮实际对话模型与生效团队智能体（对话端切换后回显跟随）；调试会话不落库
+        if (!isDebug)
+        {
+            await UpdateSessionLastModelIdAsync(sessionId, pair.Value.Model.Id, cancellationToken).ConfigureAwait(false);
+            if (activeTeamAgent != null)
+            {
+                await UpdateSessionLastTeamAgentIdAsync(sessionId, activeTeamAgent.Id, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         var inner = await _chatClientProvider.GetChatClientAsync(pair.Value.Model, pair.Value.Channel, cancellationToken).ConfigureAwait(false);
@@ -186,10 +206,10 @@ public sealed class AppAgentFactory
         var policy = await _appSecurityService.GetPolicyAsync(appId, cancellationToken).ConfigureAwait(false);
         var history = new PostgresChatHistoryProvider(_hotStore, _databaseContext, sessionId, policy);
 
-        // 应用默认技能由管理员配置，用户可在应用设置中取消勾选（勾选集为默认集的子集）；
-        // 未保存过用户配置时默认全部启用；调试会话不查用户配置（保持应用默认视角）.
-        var defaultSkillIds = ParsePluginIds(effectiveConfig.Skills);
-        var effectiveSkillIds = defaultSkillIds;
+        // 可选技能池 = 应用绑定 ∪ 市场公开 ∪ 本人个人（排除禁用）；用户勾选与池交集生效，绑定在前（保持配置顺序）；
+        // 未保存过用户配置时默认全部启用（绑定集）；调试会话不查用户配置（保持应用默认视角）.
+        var boundSkillIds = ParsePluginIds(effectiveConfig.Skills);
+        var effectiveSkillIds = boundSkillIds;
         if (!isDebug)
         {
             var userConfig = await _databaseContext.AppUserConfigs.AsNoTracking()
@@ -198,8 +218,41 @@ public sealed class AppAgentFactory
                 .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (userConfig != null)
             {
-                var selected = ParsePluginIds(userConfig.Skills).ToHashSet();
-                effectiveSkillIds = defaultSkillIds.Where(id => selected.Contains(id)).ToList();
+                var selectedOrdered = new List<Guid>();
+                var selectedSet = new HashSet<Guid>();
+                foreach (var id in ParsePluginIds(userConfig.Skills))
+                {
+                    if (selectedSet.Add(id))
+                    {
+                        selectedOrdered.Add(id);
+                    }
+                }
+
+                var poolIds = (await _databaseContext.Skills.AsNoTracking()
+                    .Where(x => selectedSet.Contains(x.Id) && !x.IsDisable
+                        && (boundSkillIds.Contains(x.Id) || x.IsPublic
+                            || (x.TeamId == 0 && !x.IsSystem && x.CreateUserId == userId)))
+                    .Select(x => x.Id)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false))
+                    .ToHashSet();
+                var effective = new List<Guid>();
+                foreach (var id in boundSkillIds)
+                {
+                    if (poolIds.Contains(id))
+                    {
+                        effective.Add(id);
+                    }
+                }
+
+                foreach (var id in selectedOrdered)
+                {
+                    if (!boundSkillIds.Contains(id) && poolIds.Contains(id))
+                    {
+                        effective.Add(id);
+                    }
+                }
+
+                effectiveSkillIds = effective;
             }
         }
 
@@ -207,6 +260,7 @@ public sealed class AppAgentFactory
         {
             App = app,
             Config = effectiveConfig,
+            ChatModelId = pair.Value.Model.Id,
             AppId = appId,
             TeamId = teamId,
             UserId = userId,
@@ -215,15 +269,19 @@ public sealed class AppAgentFactory
             GraphIds = ParseGraphIds(effectiveConfig.GraphIds),
             PluginIds = ParsePluginIds(effectiveConfig.Plugins),
             WorkflowAppIds = ParsePluginIds(effectiveConfig.WorkflowApps),
+            AgentAppIds = ParsePluginIds(effectiveConfig.AgentApps),
             SkillIds = effectiveSkillIds,
             ToolApprovalMode = MoAI.AI.AppToolApprovalContract.IsValidMode(toolApprovalMode)
                 ? toolApprovalMode!
                 : MoAI.AI.AppToolApprovalContract.ModeAuto,
             EnableUiTools = enableUiTools,
+            ActiveTeamAgent = activeTeamAgent,
         };
         var contextProviders = await _contextProviderFactory.BuildAsync(buildContext, cancellationToken).ConfigureAwait(false);
 
-        // 会话绑定的专家提示词追加在应用提示词之后；提示词已被删除时静默降级为仅应用提示词
+        // 会话绑定的专家提示词追加在应用提示词之后；提示词已被删除时静默降级为仅应用提示词。
+        // 团队智能体主提示词按「应用提示词 → 智能体主提示词 → 专家提示词」层级插入：
+        // 应用提示词保留应用身份与全局约束，智能体主提示词定义本轮协作角色与工作方式
         var expertPrompt = promptId == 0
             ? null
             : await _databaseContext.Prompts
@@ -231,6 +289,14 @@ public sealed class AppAgentFactory
                 .Select(x => x.Content)
                 .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         var instructions = effectiveConfig.Prompt;
+        if (activeTeamAgent != null && !string.IsNullOrWhiteSpace(activeTeamAgent.MainPrompt))
+        {
+            var teamAgentBlock = BuildTeamAgentBlock(activeTeamAgent, effectiveConfig);
+            instructions = string.IsNullOrWhiteSpace(instructions)
+                ? teamAgentBlock
+                : $"{instructions}\n\n{teamAgentBlock}";
+        }
+
         if (!string.IsNullOrWhiteSpace(expertPrompt))
         {
             instructions = string.IsNullOrWhiteSpace(instructions)
@@ -253,6 +319,205 @@ public sealed class AppAgentFactory
         var securedAgent = AppSecurityAgentMiddleware.Wrap(new ChatClientAgent(chatClient, options, _loggerFactory), policy, _appSecurityAuditWriter);
         // Debug 埋点包在脱敏中间件之外，Span 只记录脱敏后内容
         return _systemOptions.Debug ? AiObservabilityMiddleware.WrapAgent(securedAgent) : securedAgent;
+    }
+
+    /// <summary>
+    /// 解析生效配置的可选模型列表：行内 model_ids 为空时归一为仅默认模型（存量应用兼容）.
+    /// </summary>
+    /// <param name="config">生效配置行.</param>
+    /// <returns>可选模型 id 列表.</returns>
+    private static IReadOnlyList<Guid> ParseSelectableModelIds(AppAgentConfigEntity config)
+    {
+        var ids = ParsePluginIds(config.ModelIds);
+        if (ids.Count == 0)
+        {
+            ids = new List<Guid> { config.ModelId };
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 构建团队智能体注入块（绑定与子代理协作解耦，app sdd D53）：绑定即主智能体提示词生效.
+    /// 开启子代理协作且有子智能体时附名册（名称/职责 + 派发指引），主代理按描述自主决定派发（opencode 语义）；
+    /// 未开启协作或无子智能体时注明独立完成，避免模型虚构派发行为.
+    /// </summary>
+    /// <param name="teamAgent">本轮生效智能体定义.</param>
+    /// <param name="config">生效配置行（读子代理协作开关）.</param>
+    /// <returns>注入到系统提示词的文本块.</returns>
+    private static string BuildTeamAgentBlock(SnapshotTeamAgent teamAgent, AppAgentConfigEntity config)
+    {
+        var block = $"[团队智能体：{teamAgent.Name}]\n{teamAgent.MainPrompt}";
+        var subAgentEnabled = AppAgentExecutionSettings.Parse(config.ExecutionSettings).SubAgent is { Enabled: true };
+        var namedSubs = teamAgent.Subs.Where(x => !string.IsNullOrWhiteSpace(x.Key)).ToList();
+        if (!subAgentEnabled || namedSubs.Count == 0)
+        {
+            return $"{block}\n\n[派发说明] 当前未开启子代理协作（或该智能体未配置子智能体），没有子智能体可供派发，请独立完成用户任务，不要尝试委派。";
+        }
+
+        var roster = string.Join("\n", namedSubs.Select(x =>
+        {
+            var name = string.IsNullOrWhiteSpace(x.Name) ? x.Key : x.Name;
+            var description = string.IsNullOrWhiteSpace(x.Description) ? "（无职责描述）" : x.Description;
+            return $"- {name}（工具名 subagent_{x.Key}）：{description}";
+        }));
+        return $"{block}\n\n[可派发子智能体]\n{roster}\n" +
+            "派发说明：按子智能体职责自主判断是否委派（经 subagent_ 前缀派发工具），无需用户明示；" +
+            "用一句明确、可独立完成的任务描述委派，复杂任务拆成多次委派；子智能体在独立上下文中执行并仅回传最终结论，由你整合后答复用户。";
+    }
+
+    /// <summary>
+    /// 解析本轮生效的团队智能体：绑定列表为空返回 null；激活 id = 请求头选择（须在列表内）> 配置默认 > 列表第一个；
+    /// 定义来源优先快照内嵌（正式会话），缺失时按实时行解析（调试会话/存量快照）；已删除或已停用按未绑定处理.
+    /// </summary>
+    /// <param name="effectiveConfig">生效配置行（草稿或快照克隆）.</param>
+    /// <param name="preferPublished">是否正式会话（按快照内嵌定义执行）.</param>
+    /// <param name="requestedTeamAgentId">请求头选择的智能体 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>生效智能体定义，未绑定时为 null.</returns>
+    private async Task<SnapshotTeamAgent?> ResolveActiveTeamAgentAsync(AppAgentConfigEntity effectiveConfig, bool preferPublished, Guid? requestedTeamAgentId, CancellationToken cancellationToken)
+    {
+        var selectableIds = ParsePluginIds(effectiveConfig.TeamAgentIds);
+        if (selectableIds.Count == 0)
+        {
+            return null;
+        }
+
+        var activeId = requestedTeamAgentId is { } requested && requested != Guid.Empty && selectableIds.Contains(requested)
+            ? requested
+            : effectiveConfig.DefaultTeamAgentId is { } defaultId && selectableIds.Contains(defaultId)
+                ? defaultId
+                : selectableIds[0];
+
+        // 正式会话：快照内嵌定义（发布时冻结，编辑团队智能体不影响线上）
+        var defs = SnapshotTeamAgent.TryParseDefs(effectiveConfig.TeamAgentDefs);
+        if (preferPublished && defs.Count > 0)
+        {
+            return SnapshotTeamAgent.FindById(defs, activeId);
+        }
+
+        // 调试会话或存量快照无内嵌定义：按实时行解析（草稿定义跟随团队智能体编辑）
+        var row = await _databaseContext.TeamAgents.AsNoTracking()
+            .Where(x => x.Id == activeId && x.Enabled && x.TeamId == effectiveConfig.TeamId)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        if (row == null)
+        {
+            return null;
+        }
+
+        return new SnapshotTeamAgent
+        {
+            Id = row.Id,
+            Key = row.Key ?? string.Empty,
+            Name = row.Name,
+            Description = row.Description ?? string.Empty,
+            AvatarObjectKey = row.AvatarObjectKey ?? string.Empty,
+            MainPrompt = row.MainPrompt ?? string.Empty,
+            MainPluginIds = ParsePluginIds(row.MainPluginIds).ToList(),
+            MainWikiIds = ParseWikiIds(row.MainWikiIds).ToList(),
+            MainGraphIds = ParseGraphIds(row.MainGraphIds).ToList(),
+            Subs = ParseTeamAgentSubs(row.Subs),
+        };
+    }
+
+    /// <summary>解析 team_agent.subs JSON 为快照子智能体定义（camelCase 写入，Web 口径反序列化）；非法内容按空列表兜底.</summary>
+    private static List<SnapshotTeamAgentSub> ParseTeamAgentSubs(string? subsJson)
+    {
+        if (string.IsNullOrWhiteSpace(subsJson))
+        {
+            return [];
+        }
+
+        try
+        {
+            var subs = JsonSerializer.Deserialize<List<TeamAgentSubItem>>(subsJson, JsonOptions) ?? [];
+            return subs.Select(x => new SnapshotTeamAgentSub
+            {
+                Key = x.Key ?? string.Empty,
+                Name = x.Name ?? string.Empty,
+                Description = x.Description ?? string.Empty,
+                Prompt = x.Prompt ?? string.Empty,
+                PluginIds = x.PluginIds?.ToList() ?? [],
+                WikiIds = x.WikiIds?.ToList() ?? [],
+                GraphIds = x.GraphIds?.ToList() ?? [],
+            }).ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// 解析本轮对话模型：用户所选模型在可选列表内且团队可用时用之，否则回退默认模型；默认也不可用返回 null.
+    /// </summary>
+    /// <param name="selectableModelIds">生效配置的可选模型列表.</param>
+    /// <param name="defaultModelId">默认模型 id.</param>
+    /// <param name="requestedModelId">用户所选模型 id，null 表示未携带（用默认模型）.</param>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>模型与渠道.</returns>
+    private async Task<(AiModelEntity Model, AiChannelEntity Channel)?> ResolveChatModelAsync(IReadOnlyList<Guid> selectableModelIds, Guid defaultModelId, Guid? requestedModelId, int teamId, CancellationToken cancellationToken)
+    {
+        var candidates = new List<Guid>();
+        if (requestedModelId is { } requested && requested != Guid.Empty && selectableModelIds.Contains(requested))
+        {
+            candidates.Add(requested);
+        }
+
+        if (defaultModelId != Guid.Empty)
+        {
+            candidates.Add(defaultModelId);
+        }
+
+        foreach (var modelId in candidates)
+        {
+            var pair = await _modelResolver.ResolveByIdAsync(modelId, teamId, cancellationToken).ConfigureAwait(false);
+            if (pair != null)
+            {
+                return pair;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 记录本轮实际对话模型到会话行（用量回显跟随对话端切换）；仅在变化时写入，正式会话行不存在时忽略.
+    /// </summary>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="modelId">本轮实际模型 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    private async Task UpdateSessionLastModelIdAsync(Guid sessionId, Guid modelId, CancellationToken cancellationToken)
+    {
+        var sessionRow = await _databaseContext.AppAgentSessions
+            .FirstOrDefaultAsync(x => x.Id == sessionId, cancellationToken).ConfigureAwait(false);
+        if (sessionRow == null || sessionRow.LastModelId == modelId)
+        {
+            return;
+        }
+
+        sessionRow.LastModelId = modelId;
+        await _databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 记录本轮生效团队智能体到会话行（对话端切换后回显跟随）；仅在变化时写入，正式会话行不存在时忽略.
+    /// </summary>
+    /// <param name="sessionId">会话 id.</param>
+    /// <param name="teamAgentId">本轮生效团队智能体 id.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    private async Task UpdateSessionLastTeamAgentIdAsync(Guid sessionId, Guid teamAgentId, CancellationToken cancellationToken)
+    {
+        var sessionRow = await _databaseContext.AppAgentSessions
+            .FirstOrDefaultAsync(x => x.Id == sessionId, cancellationToken).ConfigureAwait(false);
+        if (sessionRow == null || sessionRow.LastTeamAgentId == teamAgentId)
+        {
+            return;
+        }
+
+        sessionRow.LastTeamAgentId = teamAgentId;
+        await _databaseContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static IReadOnlyList<long> ParseWikiIds(string? json)    {
@@ -289,7 +554,7 @@ public sealed class AppAgentFactory
     }
 
     /// <summary>
-    /// 外部应用限制克隆：技能清空、沙箱/子代理/记忆关闭，其余字段原样拷贝；返回脱管行，仅用于读取.
+    /// 外部应用限制克隆：技能清空、沙箱/子代理/记忆关闭、团队智能体解绑，其余字段原样拷贝；返回脱管行，仅用于读取.
     /// </summary>
     /// <param name="config">生效配置行（可能是变更跟踪中的草稿行，不可就地修改）.</param>
     /// <returns>应用了外部应用限制的新配置行.</returns>
@@ -306,15 +571,20 @@ public sealed class AppAgentFactory
             AppId = config.AppId,
             Prompt = config.Prompt ?? string.Empty,
             ModelId = config.ModelId,
+            ModelIds = config.ModelIds,
             WikiIds = config.WikiIds,
             GraphIds = config.GraphIds,
             Plugins = config.Plugins,
             WorkflowApps = config.WorkflowApps,
+            AgentApps = config.AgentApps,
             Skills = "[]",
             ExecutionSettings = JsonSerializer.Serialize(settings, JsonOptions),
             OpeningStatement = config.OpeningStatement ?? string.Empty,
             OpeningStatementEnabled = config.OpeningStatementEnabled,
             QuickInputs = config.QuickInputs,
+            TeamAgentIds = "[]",
+            DefaultTeamAgentId = null,
+            TeamAgentDefs = string.Empty,
             PublishedConfig = config.PublishedConfig,
             Status = config.Status,
         };

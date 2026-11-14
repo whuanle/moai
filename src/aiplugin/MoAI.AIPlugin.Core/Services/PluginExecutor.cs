@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -43,7 +44,7 @@ public class PluginExecutor : IPluginExecutor
     }
 
     /// <inheritdoc/>
-    public async Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken)
+    public async Task<PluginRunResult> ExecuteAsync(PluginInfo plugin, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken, string? toolKey = null)
     {
         using var scope = _scopeFactory.CreateScope();
 
@@ -78,13 +79,14 @@ public class PluginExecutor : IPluginExecutor
                 }
             }
 
-            var result = await RunAsync(instance, plugin, requestJson, cancellationToken).ConfigureAwait(false);
+            var result = await RunAsync(instance, plugin, requestJson, toolKey, cancellationToken).ConfigureAwait(false);
+            var responseType = plugin.IsMultiTool ? plugin.FindTool(toolKey)!.Response : plugin.Response!;
             return new PluginRunResult
             {
                 Key = plugin.Key,
                 Success = true,
-                DataJson = System.Text.Json.JsonSerializer.Serialize(result, plugin.Response),
-                ResponseType = plugin.Response.FullName,
+                DataJson = System.Text.Json.JsonSerializer.Serialize(result, responseType),
+                ResponseType = responseType.FullName,
             };
         }
 #pragma warning disable CA1031 // 插件执行引擎需吞掉插件侧异常并归一化为结果，属预期行为
@@ -100,7 +102,7 @@ public class PluginExecutor : IPluginExecutor
     }
 
     /// <inheritdoc/>
-    public async Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken)
+    public async Task<PluginRunResult> ExecuteAsync(string key, string requestJson, string? configJson, PluginRunContext? context, CancellationToken cancellationToken, string? toolKey = null)
     {
         var plugin = _registry.Get(key);
         if (plugin == null)
@@ -108,7 +110,7 @@ public class PluginExecutor : IPluginExecutor
             return new PluginRunResult { Key = key, Success = false, Error = "插件不存在" };
         }
 
-        return await ExecuteAsync(plugin, requestJson, configJson, context, cancellationToken);
+        return await ExecuteAsync(plugin, requestJson, configJson, context, cancellationToken, toolKey).ConfigureAwait(false);
     }
 
     private static async Task<string?> InitDynamicAsync(object instance, PluginInfo plugin, string configJson, CancellationToken cancellationToken)
@@ -139,26 +141,47 @@ public class PluginExecutor : IPluginExecutor
         return error as string;
     }
 
-    private static async Task<object?> RunAsync(object instance, PluginInfo plugin, string requestJson, CancellationToken cancellationToken)
+    private static async Task<object?> RunAsync(object instance, PluginInfo plugin, string requestJson, string? toolKey, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        Type requestType;
+        MethodInfo method;
+        if (plugin.IsMultiTool)
+        {
+            var tool = plugin.FindTool(toolKey);
+            if (tool == null)
+            {
+                var available = string.Join("、", plugin.Tools.Select(x => x.Key));
+                throw new BusinessException($"工具不存在：{toolKey}（可用工具：{available}）") { StatusCode = 400 };
+            }
+
+            requestType = tool.Request;
+            method = tool.Method;
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(toolKey) && !string.Equals(toolKey, "run", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new BusinessException("该插件只有一个工具，无需指定工具 key") { StatusCode = 400 };
+            }
+
+            requestType = plugin.Request!;
+            method = plugin.PluginType.GetMethod("RunAsync", new[] { requestType, typeof(CancellationToken) })
+                ?? throw new BusinessException("未找到 RunAsync 方法") { StatusCode = 400 };
+        }
+
         object? requestObj;
 #pragma warning disable CA1031 // 请求参数解析失败应归一化为业务错误而非抛出
         try
         {
-            requestObj = System.Text.Json.JsonSerializer.Deserialize(requestJson, plugin.Request, _deserializeOptions);
+            requestObj = System.Text.Json.JsonSerializer.Deserialize(requestJson, requestType, _deserializeOptions);
         }
         catch (Exception ex)
         {
             throw new BusinessException($"请求参数解析失败: {ex.Message}") { StatusCode = 400 };
         }
 #pragma warning restore CA1031
-
-        var method = plugin.PluginType.GetMethod("RunAsync", new[] { plugin.Request, typeof(CancellationToken) });
-        if (method == null)
-        {
-            throw new BusinessException("未找到 RunAsync 方法") { StatusCode = 400 };
-        }
 
         var task = (Task)method.Invoke(instance, new[] { requestObj, cancellationToken })!;
         await task.ConfigureAwait(false);

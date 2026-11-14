@@ -19,4 +19,19 @@ public class QuerySandboxLimitsCommandResponse
     /// 每个应用沙箱内存限制上限（K8s 数量格式原文，如 "8Gi"、"512Mi"）.
     /// </summary>
     public string MaxMemory { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 出站网络管控模式：app（应用自定义）/ deny（强制默认拒绝）/ intranet（默认拒绝并放行内网网段）.
+    /// </summary>
+    public string NetworkMode { get; init; } = "app";
+
+    /// <summary>
+    /// 内网网段（IP / CIDR，逗号分隔原文），intranet 模式下运行时自动放行.
+    /// </summary>
+    public string IntranetCidrs { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 平台级禁用命令清单（换行分隔模式原文，全站强制）；空表示未启用.
+    /// </summary>
+    public string DeniedCommands { get; init; } = string.Empty;
 }

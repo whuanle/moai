@@ -7,6 +7,7 @@ using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.App.Services;
+using MoAI.Prompt.Services;
 using MoAI.Team.Services;
 
 namespace MoAI.App.Handlers;
@@ -21,6 +22,8 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
     private readonly IAppUsageCounter _appUsageCounter;
+    private readonly IPromptUsageCounter _promptUsageCounter;
+    private readonly IPublicAppScopeService _publicAppScopeService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateAppSessionCommandHandler"/> class.
@@ -28,11 +31,15 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
     /// <param name="appUsageCounter">应用使用次数计数器.</param>
-    public CreateAppSessionCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAppUsageCounter appUsageCounter)
+    /// <param name="promptUsageCounter">提示词使用次数计数器.</param>
+    /// <param name="publicAppScopeService">应用市场可视范围判定服务.</param>
+    public CreateAppSessionCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAppUsageCounter appUsageCounter, IPromptUsageCounter promptUsageCounter, IPublicAppScopeService publicAppScopeService)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
         _appUsageCounter = appUsageCounter;
+        _promptUsageCounter = promptUsageCounter;
+        _publicAppScopeService = publicAppScopeService;
     }
 
     /// <inheritdoc/>
@@ -59,8 +66,9 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
 
         var myRole = await _teamService.GetMyRoleAsync(app.TeamId, request.ContextUserId, cancellationToken);
 
-        // 非团队成员仅在应用「已发布且公开到平台」时可使用
-        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1;
+        // 非团队成员仅在应用「已发布且公开到平台且在可视范围内」时可使用（团队成员不受市场可视范围限制）
+        var canUseAsPublic = app.IsPublic && app.PublishStatus == 1
+            && (myRole != null || await _publicAppScopeService.IsAllowedAsync(app.Id, request.ContextUserId, cancellationToken));
         if (myRole == null && !canUseAsPublic)
         {
             throw new BusinessException("团队不存在或你不是团队成员.") { StatusCode = 404 };
@@ -74,12 +82,10 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
 
         if (request.PromptId != 0)
         {
-            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, _teamService, request.PromptId, app.TeamId, request.ContextUserId, cancellationToken);
+            await SessionPromptHelper.EnsureUsableAsync(_databaseContext, request.PromptId, app.Id, request.ContextUserId, cancellationToken);
 
-            // 选用专家 +1 使用次数（top_used 推荐依据）；可用性已在上面校验
-            await _databaseContext.Prompts
-                .Where(x => x.Id == request.PromptId)
-                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.UseCount, x => x.UseCount + 1), cancellationToken);
+            // 选用专家 +1 使用次数（Redis 计数，统计模块批量落库；top_used 推荐依据）；可用性已在上面校验
+            await _promptUsageCounter.IncrementAsync(request.PromptId, cancellationToken);
         }
 
         var session = new AppAgentSessionEntity

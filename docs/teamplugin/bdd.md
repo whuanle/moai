@@ -74,7 +74,7 @@ Scenario: 列表返回团队自有插件与可用系统插件
   And 存在公开系统插件 S_public 与私有系统插件 S_private（已授权 T）
   When Member 查询 T 的插件列表
   Then 返回 D、C、S_public、S_private，且 D/C 标记为团队自有，S_* 标记为系统插件
-  And isTeamOwned 按来源正确
+  And isTeamOwned 按来源正确，插件头像路径（avatarPath）随项下发（未设置头像与内存静态插件为空，2026-10-30 增补）
 
 @TP-S11 @auto:e2e
 Scenario: 私有系统插件未授权则不可见
@@ -200,16 +200,18 @@ Scenario: 跨团队实例 key 冲突
   Then 返回冲突
 ```
 
-## Feature: 团队插件——前端分栏（@manual）
+## Feature: 团队插件——前端分栏（与系统插件页 UI 一致）
 
 ```gherkin
-@TP-S28 @manual
-Scenario: 团队插件页分为自定义与动态两个 Tab
+@TP-S28 @auto:vitest
+Scenario: 团队插件页与系统插件页同构
   When 团队 Owner/Admin 打开团队详情 → 插件
   Then 页面分为「自定义插件」「动态插件」两个 Tab
-  And 自定义 Tab 展示导入 MCP/OpenAPI、编辑、删除（团队自有时）
-  And 动态 Tab 展示新建实例、运行、编辑、删除（团队自有时）
-  And Member 仅可运行、查看函数与筛选，无管理入口
+  And 两个 Tab 均为 PageToolbar（搜索/类型筛选 | 刷新 | 卡片列表视图切换 + 管理操作）加独立分类标签行
+  And 卡片视图展示头像、标题/名称、类型徽标、描述、归属与分类标签、使用量与操作区
+  And 列表视图列对齐系统插件页（头像双行名称/类型/分类/归属/服务器/描述/使用量/审计/操作）
+  And 自定义 Tab 管理入口为导入 MCP/OpenAPI，动态 Tab 为新建实例与模板列表，仅团队自有可编辑/删除/刷新（刷新 MCP 收进更多菜单）
+  And Member 仅可运行、查看函数与筛选，无管理入口；系统授权插件只读并标记「系统」
 ```
 
 ## Feature: 团队插件——团队变量插值（Header/Query 值引用 {key}）
@@ -270,3 +272,27 @@ Scenario: 被授权团队成员运行系统自定义插件（指定函数）
   Then 运行成功并返回插件输出
 ```
 
+
+## Feature: 团队插件——插件使用统计（本团队口径）
+
+```gherkin
+@TP-S37 @auto:e2e
+Scenario: 团队插件统计端点门禁
+  Given 已登录用户与非成员用户
+  When 无 token 访问 GET /api/team/{teamId}/plugin/stats
+  Then 返回 401
+  When 非团队成员访问
+  Then 返回 404（团队不存在或你不是团队成员）
+  When teamId=0 访问
+  Then 返回 404（与团队插件列表端点口径一致）
+  When 团队成员（Member）访问
+  Then 返回 200 且回显 teamId
+
+@TP-S38 @auto:e2e
+Scenario: 团队统计仅覆盖本团队自有插件且结构齐全
+  Given 团队拥有动态插件「统计样本插件」，团队可用列表另含系统插件
+  When 成员查询团队统计
+  Then 概览只统计团队自有插件（totalPlugins≥1，且不超过全团队汇总）
+  And 调用量 TOP 含该样本插件且 TOP 项不带团队维度字段（无 teamId/teamName，本团队口径不显示团队名后缀）
+  And 分类分布项带 classifyId/count（未分类 classifyName 省略）
+  And 近 30 天趋势逐日补 0（items 长度 30）

@@ -1,0 +1,4 @@
+/* 风险事件未读行高亮：浅主色底，与菜单「日志事件」角标呼应 */
+.loginsafety-unread-row > td {
+  background: rgba(250, 173, 20, 0.08);
+}

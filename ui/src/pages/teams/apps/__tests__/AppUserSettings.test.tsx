@@ -14,7 +14,6 @@ function renderPanel(onSaved = vi.fn(), onClose = vi.fn(), currentPromptId = 11)
     <MemoryRouter>
       <AppUserSettings
         open
-        teamId={3}
         appId="a1"
       experts={[
         { promptId: 11, name: '写作专家', description: '文案润色', teamId: 3 },
@@ -32,11 +31,21 @@ describe('AppUserSettings（应用设置面板）', () => {
     vi.clearAllMocks()
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 11,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: ['sk-2'],
       defaultSkills: [
         { id: 'sk-1', key: 'docx_writer', name: '系统技能', description: '', isSystem: true, teamId: 0 },
         { id: 'sk-2', key: 'ppt_writer', name: '团队技能', description: '', isSystem: false, teamId: 3 },
       ],
+      skillOptions: [
+        { id: 'sk-1', key: 'docx_writer', name: '系统技能', description: '', isSystem: true, teamId: 0 },
+        { id: 'sk-2', key: 'ppt_writer', name: '团队技能', description: '', isSystem: false, teamId: 3 },
+        { id: 'sk-3', key: 'my_skill', name: '个人技能', description: '', isSystem: false, teamId: 0, isPublic: false },
+      ],
+      promptOptions: [],
       toolApprovalMode: 'auto',
       toolApprovalExemptNames: [],
       toolApprovalExemptPrefixes: [],
@@ -44,6 +53,8 @@ describe('AppUserSettings（应用设置面板）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 2,
       memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
   })
 
@@ -59,9 +70,61 @@ describe('AppUserSettings（应用设置面板）', () => {
     // 专家按当前生效值回显（currentPromptId=11，即配置中的写作专家），选中卡带 is-active
     expect(screen.getByText('写作专家')).toBeInTheDocument()
     expect(screen.getByText('写作专家').closest('.moai-chat__opt-card')).toHaveClass('is-active')
-    // 左缘拖拽手柄存在，默认宽度 460
+    // 左缘拖拽手柄存在，默认宽度 520
     expect(screen.getByRole('separator', { name: '拖动调整面板宽度' })).toBeInTheDocument()
-    expect(document.querySelector('.moai-chat__settings')).toHaveStyle({ width: '460px' })
+    expect(document.querySelector('.moai-chat__settings')).toHaveStyle({ width: '520px' })
+  })
+
+  it('来源标签：市场公开带市场标记、绑定的团队项带团队标记、个人项不带技能标记', async () => {
+    vi.mocked(getAppUserConfig).mockResolvedValue({
+      promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
+      skills: [],
+      defaultSkills: [],
+      skillOptions: [
+        { id: 'sk-m', key: 'market_skill', name: '市场技能', description: '', isSystem: false, teamId: 5, isPublic: true },
+        { id: 'sk-t', key: 'team_skill', name: '绑定团队技能', description: '', isSystem: false, teamId: 3 },
+        { id: 'sk-p', key: 'my_skill', name: '个人技能', description: '', isSystem: false, teamId: 0 },
+      ],
+      promptOptions: [],
+      toolApprovalMode: 'auto',
+      toolApprovalExemptNames: [],
+      toolApprovalExemptPrefixes: [],
+      toolApprovalAutoApprovedNames: [],
+      toolApprovalAutoApprovedPrefixes: [],
+      memoryMode: 0,
+      memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
+    })
+    render(
+      <MemoryRouter>
+        <AppUserSettings
+          open
+          appId="a1"
+          experts={[
+            { promptId: 21, name: '市场专家', description: '', teamId: 2, isPublic: true },
+            { promptId: 22, name: '绑定团队专家', description: '', teamId: 3 },
+            { promptId: 23, name: '个人专家', description: '', teamId: 0 },
+          ]}
+          currentPromptId={0}
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByText('市场专家')).toBeInTheDocument())
+    const tagOf = (name: string) =>
+      screen.getByText(name).closest('.moai-chat__opt-card')?.querySelector('.moai-chat__expert-source')?.textContent ?? ''
+    expect(tagOf('市场专家')).toBe('市场')
+    expect(tagOf('绑定团队专家')).toBe('团队')
+    expect(tagOf('个人专家')).toBe('个人')
+    expect(tagOf('市场技能')).toBe('市场')
+    expect(tagOf('绑定团队技能')).toBe('团队')
+    expect(tagOf('个人技能')).toBe('')
   })
 
   it('专家草稿以当前生效值为准：与持久化默认不同时按当前值提交', async () => {
@@ -108,8 +171,14 @@ describe('AppUserSettings（应用设置面板）', () => {
     // 当前生效专家 promptId=105 不在热度前十里（useCount=6）
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 11,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
       toolApprovalMode: 'auto',
       toolApprovalExemptNames: [],
       toolApprovalExemptPrefixes: [],
@@ -117,12 +186,13 @@ describe('AppUserSettings（应用设置面板）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 0,
       memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     const { container } = render(
       <MemoryRouter>
         <AppUserSettings
           open
-          teamId={3}
           appId="a1"
           experts={[...pool, { promptId: 11, name: '写作专家', description: '文案', teamId: 3, useCount: 2 }]}
           currentPromptId={105}
@@ -160,8 +230,14 @@ describe('AppUserSettings（应用设置面板）', () => {
     }))
     vi.mocked(getAppUserConfig).mockResolvedValue({
       promptId: 0,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
       skills: [],
       defaultSkills: skills,
+      skillOptions: skills,
+      promptOptions: [],
       toolApprovalMode: 'auto',
       toolApprovalExemptNames: [],
       toolApprovalExemptPrefixes: [],
@@ -169,12 +245,13 @@ describe('AppUserSettings（应用设置面板）', () => {
       toolApprovalAutoApprovedPrefixes: [],
       memoryMode: 0,
       memoryEnabled: false,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: false,
     })
     const { container } = render(
       <MemoryRouter>
         <AppUserSettings
           open
-          teamId={3}
           appId="a1"
           experts={[]}
           currentPromptId={0}
@@ -202,6 +279,50 @@ describe('AppUserSettings（应用设置面板）', () => {
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalledWith(11, 'auto')
       expect(onClose).toHaveBeenCalled()
+    })
+  })
+
+  it('应用允许全局接入时展示全局记忆开关，切换后随保存提交 memoryGlobalMode', async () => {
+    vi.mocked(getAppUserConfig).mockResolvedValue({
+      promptId: 11,
+      defaultModelId: '',
+      modelIds: [],
+      teamAgents: [],
+      defaultTeamAgentId: '',
+      skills: [],
+      defaultSkills: [],
+      skillOptions: [],
+      promptOptions: [],
+      toolApprovalMode: 'auto',
+      toolApprovalExemptNames: [],
+      toolApprovalExemptPrefixes: [],
+      toolApprovalAutoApprovedNames: [],
+      toolApprovalAutoApprovedPrefixes: [],
+      memoryMode: 2,
+      memoryEnabled: true,
+      memoryGlobalMode: 0,
+      memoryGlobalAllowed: true,
+    })
+    renderPanel()
+
+    // 允许时展示「全局记忆（跨应用）」分区，默认接入生效
+    await waitFor(() => expect(screen.getByText('全局记忆（跨应用）')).toBeInTheDocument())
+    // 切到「仅本应用」并保存：携带 memoryGlobalMode=1
+    fireEvent.click(screen.getByRole('button', { name: '仅本应用' }))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => {
+      expect(saveAppUserConfig).toHaveBeenCalledWith('a1', expect.objectContaining({ memoryMode: 2, memoryGlobalMode: 1 }))
+    })
+  })
+
+  it('应用未允许全局接入时不展示全局记忆开关，保存也不携带 memoryGlobalMode', async () => {
+    renderPanel()
+
+    await waitFor(() => expect(screen.getByText('长期记忆')).toBeInTheDocument())
+    expect(screen.queryByText('全局记忆（跨应用）')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => {
+      expect(saveAppUserConfig).toHaveBeenCalledWith('a1', expect.not.objectContaining({ memoryGlobalMode: expect.anything() }))
     })
   })
 })

@@ -83,6 +83,7 @@ public class OAuthBindAccountByCodeCommandHandler : IRequestHandler<OAuthBindAcc
             UserId = request.ContextUserId,
             ProviderId = request.OAuthId,
             Sub = oauthBindUserProfile.Profile.Sub,
+            UnionId = oauthBindUserProfile.Profile.UnionId,
         };
 
         await _databaseContext.UserOauthConnections.AddAsync(oauthEntity, cancellationToken);

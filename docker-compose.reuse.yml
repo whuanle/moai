@@ -1,0 +1,121 @@
+# MoAI 与其它 Mo 系列服务共用 moai 网络内的 PostgreSQL / Redis / RabbitMQ / RustFS。
+# 只启动 MoAI 自己的数据库初始化、存储桶初始化、OpenSandbox 与应用。
+name: moai
+
+services:
+  postgres-init:
+    image: ${POSTGRES_INIT_IMAGE:-pgvector/pgvector:pg16}
+    container_name: moai-postgres-init
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        export PGPASSWORD="$$POSTGRES_PASSWORD"
+        if ! psql --host "$$POSTGRES_HOST" --username "$$POSTGRES_USER" --dbname postgres --tuples-only --no-align --command "SELECT 1 FROM pg_database WHERE datname = '$$POSTGRES_DB'" | grep -q 1; then
+          psql --host "$$POSTGRES_HOST" --username "$$POSTGRES_USER" --dbname postgres --set ON_ERROR_STOP=1 --command "CREATE DATABASE \"$$POSTGRES_DB\""
+        fi
+        psql --host "$$POSTGRES_HOST" --username "$$POSTGRES_USER" --dbname "$$POSTGRES_DB" --set ON_ERROR_STOP=1 --command 'CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; CREATE EXTENSION IF NOT EXISTS pg_trgm;'
+        echo "PostgreSQL database $$POSTGRES_DB ready (extensions verified)"
+    environment:
+      POSTGRES_HOST: ${MOAI_POSTGRES_HOST:?deployment script must resolve the shared PostgreSQL container}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mopl123456}
+      POSTGRES_DB: ${POSTGRES_DB:-moai}
+    networks:
+      - moai
+
+  rustfs-init:
+    image: ${RUSTFS_INIT_IMAGE:-amazon/aws-cli:latest}
+    container_name: moai-rustfs-init
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        export AWS_ACCESS_KEY_ID="$$S3_ACCESS_KEY_ID"
+        export AWS_SECRET_ACCESS_KEY="$$S3_ACCESS_KEY_SECRET"
+        export AWS_DEFAULT_REGION="$$S3_REGION"
+        until aws --endpoint-url "http://$$RUSTFS_HOST:9000" s3api list-buckets >/dev/null 2>&1; do
+          echo "waiting for rustfs ..."
+          sleep 2
+        done
+        if ! aws --endpoint-url "http://$$RUSTFS_HOST:9000" s3api head-bucket --bucket "$$S3_BUCKET" >/dev/null 2>&1; then
+          aws --endpoint-url "http://$$RUSTFS_HOST:9000" s3 mb "s3://$$S3_BUCKET"
+        fi
+        echo "RustFS bucket $$S3_BUCKET ready"
+    environment:
+      RUSTFS_HOST: ${MOAI_RUSTFS_HOST:?deployment script must resolve the shared RustFS container}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-mopladmin}
+      S3_ACCESS_KEY_SECRET: ${S3_ACCESS_KEY_SECRET:-mopladmin123}
+      S3_BUCKET: ${S3_BUCKET:-moai}
+      S3_REGION: ${S3_REGION:-us-east-1}
+    networks:
+      - moai
+
+  opensandbox-server:
+    image: ${OPENSANDBOX_SERVER_IMAGE:-opensandbox/server:latest}
+    container_name: moai-opensandbox
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${OPENSANDBOX_PORT:-18123}:8090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./deploy/opensandbox/sandbox.toml:/etc/opensandbox/config.toml:ro
+      - opensandbox_data:/var/lib/opensandbox
+    environment:
+      SANDBOX_CONFIG_PATH: /etc/opensandbox/config.toml
+      OPENSANDBOX_INSECURE_SERVER: ${OPENSANDBOX_INSECURE_SERVER:-YES}
+    networks:
+      - moai
+
+  sandbox-image:
+    image: ${OPENSANDBOX_SANDBOX_IMAGE:-opensandbox/code-interpreter:v1.1.0}
+    profiles: ["sandbox-images"]
+    entrypoint: ["/bin/true"]
+    restart: "no"
+
+  moai:
+    image: ${MOAI_IMAGE:-whuanle/moai:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moai
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      MAI_FILE: /app/configs/system.json
+      TZ: ${TZ:-Asia/Shanghai}
+      MOAI_SERVER_URL: ${MOAI_SERVER_URL:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      POSTGRES_HOST: ${MOAI_POSTGRES_HOST:?deployment script must resolve the shared PostgreSQL container}
+      REDIS_HOST: ${MOAI_REDIS_HOST:?deployment script must resolve the shared Redis container}
+      RABBITMQ_HOST: ${MOAI_RABBITMQ_HOST:?deployment script must resolve the shared RabbitMQ container}
+      RUSTFS_HOST: ${MOAI_RUSTFS_HOST:?deployment script must resolve the shared RustFS container}
+    volumes:
+      - ${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro
+      - moai_files:/app/files
+    ports:
+      - "${MOAI_PORT:-8081}:8080"
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+      rustfs-init:
+        condition: service_completed_successfully
+      opensandbox-server:
+        condition: service_started
+    networks:
+      - moai
+
+volumes:
+  opensandbox_data:
+  moai_files:
+
+networks:
+  moai:
+    external: true
+    name: moai

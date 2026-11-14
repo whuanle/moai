@@ -6,9 +6,10 @@
 		<NoWarn>$(NoWarn);MAAI001</NoWarn>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
-		<ProjectReference Include="..\MoAI.Memory.Shared\MoAI.Memory.Shared.csproj" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
+    <ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
+    <ProjectReference Include="..\MoAI.Memory.Shared\MoAI.Memory.Shared.csproj" />
+  </ItemGroup>
 
 </Project>

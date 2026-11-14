@@ -13,7 +13,7 @@
 | @WF-S7 | local-dev/workflow-e2e.mjs（WF-10） | PASS 36/36（2026-09-17） |
 | @WF-S8 | local-dev/workflow-e2e.mjs（WF-11/12） | PASS 36/36（2026-09-17） |
 | @WF-S9 | local-dev/workflow-e2e.mjs（WF-13） | PASS 36/36（2026-09-17） |
-| @WF-S10 | local-dev/workflow-e2e.mjs（WF-15a~f，2026-09-20 起含开场白草稿/发布双轨断言） | PASS 96/96（2026-09-20） |
+| @WF-S10 | local-dev/workflow-e2e.mjs（WF-15a~i，2026-09-20 起含人设草稿/发布双轨断言；2026-11-05 扩系统提示词与快捷输入） | PASS 136 用例（2026-11-05） |
 | @WF-S11 | local-dev/workflow-e2e.mjs（WF-18a~e） | PASS 47/47（2026-09-18） |
 | @WF-S12 | local-dev/workflow-e2e.mjs（WF-18f~h） | PASS 47/47（2026-09-18） |
 | @WF-S13 | local-dev/workflow-e2e.mjs（WF-18i） | PASS 47/47（2026-09-18） |
@@ -77,3 +77,5 @@
 | @WF-S57 | tests/MoAI.AI.Core.Tests/AppSecurityAgentMiddlewareTests.cs（函数调用中间件结果脱敏）+ WorkflowNodeSecuritySanitizer（aiChat/agentApp 输出叠加模型回复范围，代码走查） | PASS 4/4（2026-10-06） |
 | @WF-S58 | tests/MoAI.App.Workflow.Tests/ImageUnderstandingNodeTests.cs（契约/温度归一/必填/失败 6 例）+ local-dev/workflow-e2e.mjs（WF-28a~h：桩视觉模型多模态全链路——指令+图片 URL 到桩、模型/温度配置、answer 输出） | PASS 6/6 / 新增 WF-28 12/12 全过（2026-10-13） |
 | @WF-S59 | local-dev/workflow-e2e.mjs（WF-28i~l：非视觉模型执行期拒绝、未配置模型、私有/越权 objectKey 来源防护） | PASS（2026-10-13） |
+| @WF-S60 | local-dev/workflow-e2e.mjs（WF-15g~i：保存系统提示词+快捷输入 200/回读去空白去重/详情旧快照下发 + WF-22m/n：发布快照 sys.prompt 注入对话回复与详情下发快捷输入 + WF-25b2/25d：草稿调试口径 sys.prompt 注入） | PASS 136 用例（新增 7 断言全过，2026-11-05；8 个存量模型依赖用例与基线一致失败，环境无真实模型属预期） |
+| @WF-S61 | @manual（浏览器走查 ：4000：新建「售后工单助手」流程应用 → 系统设置面板配置系统提示词/开场白/快捷输入 → 保存 → 调试分区欢迎态（徽标+开场白简报卡+快捷输入胶囊+附件输入卡）发送消息全链路 + 发布后 /chat 欢迎态与执行过程卡 + 工作台头部「进入对话」入口） | PASS（2026-11-05） |

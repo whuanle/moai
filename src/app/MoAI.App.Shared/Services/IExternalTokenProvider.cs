@@ -4,7 +4,7 @@ using MoAI.Database.Entities;
 namespace MoAI.App.Services;
 
 /// <summary>
-/// 外部 token 服务：签发/校验 /api/external 的 access_token 与 refresh_token.
+/// 外部 token 服务：签发/校验 /api/teamres 的 access_token 与 refresh_token.
 /// 外部 token 与内部 JWT 使用同一 RSA 私钥签发，但 audience 为 SystemOptions.Server + ExternalAuthDefaults.AudienceSuffix，
 /// 内部接口的 JWT 校验（aud = SystemOptions.Server）天然拒绝外部 token.
 /// </summary>
@@ -24,6 +24,15 @@ public interface IExternalTokenProvider
     /// <param name="accessApp">来源应用接入实体，匿名 token 为 null.</param>
     /// <returns>返回 access token、refresh token 与 access token 有效秒数.</returns>
     (string AccessToken, string RefreshToken, int ExpiresIn) GenerateUserTokens(ExternalUserEntity external, AccessAppEntity? accessApp);
+
+    /// <summary>
+    /// 为访问用户（内部应用访问点身份穿透）签发 token：sub = 真实站内用户 id，
+    /// 仅授权单个内部应用，会话归属该用户（与站内账号合并）.
+    /// </summary>
+    /// <param name="user">站内用户实体.</param>
+    /// <param name="app">目标内部应用实体.</param>
+    /// <returns>返回 access token、refresh token 与 access token 有效秒数.</returns>
+    (string AccessToken, string RefreshToken, int ExpiresIn) GenerateAccessUserTokens(UserEntity user, AppEntity app);
 
     /// <summary>
     /// 校验外部 access token（签名、issuer、audience、有效期、token 类型），并解析为 <see cref="ExternalTokenContext"/>.

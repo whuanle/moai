@@ -24,7 +24,10 @@ public class SandboxSettingsService : ISandboxSettingsService
     {
         SettingDefinitions.SandboxMaxTtlKey,
         SettingDefinitions.SandboxMaxCpuKey,
-        SettingDefinitions.SandboxMaxMemoryKey
+        SettingDefinitions.SandboxMaxMemoryKey,
+        SettingDefinitions.SandboxNetworkModeKey,
+        SettingDefinitions.SandboxIntranetCidrsKey,
+        SettingDefinitions.SandboxDeniedCommandsKey
     };
 
     private readonly DatabaseContext _databaseContext;
@@ -79,13 +82,42 @@ public class SandboxSettingsService : ISandboxSettingsService
             SandboxQuantity.TryParseMemory(maxMemory, out maxMemoryBytes);
         }
 
+        var networkMode = Resolve(SettingDefinitions.SandboxNetworkModeKey);
+        if (!NetworkModes.IsValid(networkMode))
+        {
+            networkMode = SettingDefinitions.Find(SettingDefinitions.SandboxNetworkModeKey)?.DefaultValue ?? NetworkModes.App;
+        }
+
+        networkMode = networkMode.Trim().ToLowerInvariant();
+
+        var intranetCidrs = Resolve(SettingDefinitions.SandboxIntranetCidrsKey);
+        if (!SandboxNetworkTarget.TryParseCidrList(intranetCidrs, out var cidrList))
+        {
+            intranetCidrs = SettingDefinitions.Find(SettingDefinitions.SandboxIntranetCidrsKey)?.DefaultValue ?? string.Empty;
+            SandboxNetworkTarget.TryParseCidrList(intranetCidrs, out cidrList);
+        }
+
+        // 禁用命令清单：行存在时尊重显式配置（空串 = 平台级关闭），仅行缺失才回退内置默认清单
+        string deniedRaw;
+        if (values.TryGetValue(SettingDefinitions.SandboxDeniedCommandsKey, out var deniedValue))
+        {
+            deniedRaw = deniedValue ?? string.Empty;
+        }
+        else
+        {
+            deniedRaw = SettingDefinitions.Find(SettingDefinitions.SandboxDeniedCommandsKey)?.DefaultValue ?? string.Empty;
+        }
+
         return new SandboxLimitsSettings
         {
             MaxTtlSeconds = maxTtlSeconds,
             MaxCpu = maxCpu,
             MaxMemory = maxMemory,
             MaxCpuMillicores = maxCpuMillicores,
-            MaxMemoryBytes = maxMemoryBytes
+            MaxMemoryBytes = maxMemoryBytes,
+            NetworkMode = networkMode,
+            IntranetCidrs = cidrList,
+            DeniedCommands = SandboxCommandPatterns.ParseList(deniedRaw)
         };
     }
 }

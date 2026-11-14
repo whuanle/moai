@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
@@ -38,9 +39,10 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
             TeamId = graph.TeamId,
             Name = graph.Name,
             Description = graph.Description,
-            TemplateKey = graph.TemplateKey,
             EmbeddingModelId = graph.EmbeddingModelId,
             EmbeddingDimensions = graph.EmbeddingDimensions,
+            ExtractModelId = graph.ExtractModelId,
+            CanvasStyle = ParseCanvasStyle(graph.CanvasStyleJson),
             MyRole = (int)role,
             Enabled = settings.Enabled,
             Mode = graph.Mode,
@@ -49,5 +51,34 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
             AvatarPath = graph.AvatarPath,
             CreateTime = graph.CreateTime,
         };
+    }
+
+    private static Dictionary<string, string>? ParseCanvasStyle(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("captions", out var captions) && captions.ValueKind == JsonValueKind.Object)
+            {
+                var result = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var pair in captions.EnumerateObject())
+                {
+                    result[pair.Name] = pair.Value.ValueKind == JsonValueKind.String ? pair.Value.GetString() ?? string.Empty : string.Empty;
+                }
+
+                return result;
+            }
+
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

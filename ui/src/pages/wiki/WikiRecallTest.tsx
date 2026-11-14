@@ -17,6 +17,7 @@ interface RecallFormValues {
   documentIds?: number[]
   top: number
   minScore?: number | null
+  contextWindow?: number | null
   isOptimizeQuery: boolean
   isAnswer: boolean
   aiModelId?: string | null
@@ -139,6 +140,7 @@ export function WikiRecallTest({ wikiId, teamId }: WikiRecallTestProps) {
         documentIds: values.documentIds ?? [],
         top: values.top,
         minScore: values.minScore ?? null,
+        contextWindow: values.contextWindow ?? 1,
         aiModelId: values.isOptimizeQuery || values.isAnswer ? values.aiModelId ?? null : null,
         isOptimizeQuery: values.isOptimizeQuery,
         isAnswer: values.isAnswer,
@@ -172,7 +174,7 @@ export function WikiRecallTest({ wikiId, teamId }: WikiRecallTestProps) {
     <Form
       form={form}
       layout="vertical"
-      initialValues={{ top: 5, isOptimizeQuery: false, isAnswer: false }}
+      initialValues={{ top: 5, contextWindow: 1, isOptimizeQuery: false, isAnswer: false }}
     >
       <Form.Item
         name="query"
@@ -224,6 +226,14 @@ export function WikiRecallTest({ wikiId, teamId }: WikiRecallTestProps) {
           style={{ flex: 1 }}
         >
           <InputNumber min={0} max={1} step={0.05} placeholder={t('wiki.recall.minScorePlaceholder')} style={{ width: '100%' }} />
+        </Form.Item>
+        <Form.Item
+          name="contextWindow"
+          label={t('wiki.recall.contextWindowLabel')}
+          normalize={(value) => (value === '' || value == null ? 1 : Number(value))}
+          style={{ flex: 1 }}
+        >
+          <InputNumber min={1} max={3} precision={0} style={{ width: '100%' }} />
         </Form.Item>
       </div>
       <Form.Item label={t('wiki.recall.aiTitle')} style={{ marginBottom: spacing.xs }}>
@@ -344,10 +354,16 @@ export function WikiRecallTest({ wikiId, teamId }: WikiRecallTestProps) {
                   <Tag color="purple">{t('wiki.recall.rerankScoreLabel')} {hit.rerankScore.toFixed(4)}</Tag>
                 )}
                 <Tag>{hit.documentName || t('wiki.recall.unknownDocument')}</Tag>
+                {hit.anchor && (
+                  <Tag style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hit.anchor}</Tag>
+                )}
                 {hit.chunkIndex != null && (
                   <Tag>{t('wiki.recall.chunkIndexLabel', { index: hit.chunkIndex })}{hit.documentChunkCount != null ? ` · ${hit.documentChunkCount}` : ''}</Tag>
                 )}
                 <Tag>{t(METADATA_TYPE_KEYS[hit.metadataType ?? 0] ?? METADATA_TYPE_KEYS[0])}</Tag>
+                {hit.isKeywordHit && <Tag color="cyan">{t('wiki.recall.keywordTag')}</Tag>}
+                {hit.isContentFallback && <Tag color="blue">{t('wiki.recall.contentFallbackTag')}</Tag>}
+                {hit.isStale && <Tag color="orange">{t('wiki.recall.staleTag')}</Tag>}
               </Space>
               <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }} ellipsis={{ rows: 4, expandable: true, symbol: t('wiki.recall.expand') }}>
                 {hit.content}

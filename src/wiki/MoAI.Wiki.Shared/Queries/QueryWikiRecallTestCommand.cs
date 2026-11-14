@@ -38,6 +38,11 @@ public class QueryWikiRecallTestCommand : IRequest<QueryWikiRecallTestCommandRes
     public double? MinScore { get; init; }
 
     /// <summary>
+    /// 相邻上下文窗口大小（1-3，默认 1：每个命中片段附前一片段与后一片段）.
+    /// </summary>
+    public int? ContextWindow { get; init; }
+
+    /// <summary>
     /// AI 优化问题 / 生成回答使用的对话模型 id；开启 <see cref="IsOptimizeQuery"/> 或 <see cref="IsAnswer"/> 时必填.
     /// </summary>
     public Guid? AiModelId { get; init; }
@@ -51,6 +56,12 @@ public class QueryWikiRecallTestCommand : IRequest<QueryWikiRecallTestCommandRes
     /// 是否基于召回内容生成 AI 回答.
     /// </summary>
     public bool IsAnswer { get; init; }
+
+    /// <summary>
+    /// 是否启用检索增强（检索经验复用 + 关键词混合检索）；默认 true.
+    /// 传 false 退化为纯向量召回（不走经验缓存，严格按本次向量相似度检索，用于 A/B 对比与问题排查）.
+    /// </summary>
+    public bool? IsKeywordSearch { get; init; }
 
     /// <inheritdoc/>
     public long ContextUserId { get; init; }
@@ -73,6 +84,9 @@ public class QueryWikiRecallTestCommand : IRequest<QueryWikiRecallTestCommandRes
         validate.RuleFor(x => x.MinScore)
             .InclusiveBetween(0d, 1d).WithMessage("相似度阈值必须在 0-1 之间.")
             .When(x => x.MinScore.HasValue);
+        validate.RuleFor(x => x.ContextWindow)
+            .InclusiveBetween(1, 3).WithMessage("上下文窗口必须在 1-3 之间.")
+            .When(x => x.ContextWindow.HasValue);
         validate.RuleFor(x => x.AiModelId)
             .NotEmpty().WithMessage("请选择 AI 对话模型.")
             .When(x => x.IsOptimizeQuery || x.IsAnswer);

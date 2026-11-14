@@ -12,6 +12,8 @@ import { ModelOptionsRequestBuilderRequestsMetadata, type ModelOptionsRequestBui
 // @ts-ignore
 import { TemplatesRequestBuilderRequestsMetadata, type TemplatesRequestBuilder } from './templates/index.js';
 // @ts-ignore
+import { TestConnectionRequestBuilderRequestsMetadata, type TestConnectionRequestBuilder } from './testConnection/index.js';
+// @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
@@ -30,6 +32,10 @@ export interface KnowledgeGraphRequestBuilder extends BaseRequestBuilder<Knowled
      * The templates property
      */
     get templates(): TemplatesRequestBuilder;
+    /**
+     * The testConnection property
+     */
+    get testConnection(): TestConnectionRequestBuilder;
     /**
      * Gets an item from the ApiSdk.api.knowledgeGraph.item collection
      * @param id 图谱 id.
@@ -77,6 +83,9 @@ export const KnowledgeGraphRequestBuilderNavigationMetadata: Record<Exclude<keyo
     },
     templates: {
         requestsMetadata: TemplatesRequestBuilderRequestsMetadata,
+    },
+    testConnection: {
+        requestsMetadata: TestConnectionRequestBuilderRequestsMetadata,
     },
 };
 /**

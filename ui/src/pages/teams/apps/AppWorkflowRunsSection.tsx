@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Drawer, Space, Tag, Typography, theme } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import { EyeOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { DataTable } from '@/design-system'
@@ -143,7 +143,7 @@ export function AppWorkflowRunsSection({ teamId, appId, canManage }: { teamId: n
           key: 'actions',
           width: 90,
           render: (_, record: WorkflowInstanceItem) => (
-            <Button type="link" size="small" onClick={() => void openDetail(record.instanceId as string)}>
+            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => void openDetail(record.instanceId as string)}>
               {t('appWorkspace.workflowRunDetail')}
             </Button>
           ),

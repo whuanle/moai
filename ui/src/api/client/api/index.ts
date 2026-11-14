@@ -12,8 +12,6 @@ import { AgentRequestBuilderNavigationMetadata, type AgentRequestBuilder } from 
 // @ts-ignore
 import { AiRequestBuilderNavigationMetadata, type AiRequestBuilder } from './ai/index.js';
 // @ts-ignore
-import { AigatewayRequestBuilderNavigationMetadata, type AigatewayRequestBuilder } from './aigateway/index.js';
-// @ts-ignore
 import { AppRequestBuilderNavigationMetadata, AppRequestBuilderRequestsMetadata, type AppRequestBuilder } from './app/index.js';
 // @ts-ignore
 import { AuthRequestBuilderNavigationMetadata, type AuthRequestBuilder } from './auth/index.js';
@@ -28,7 +26,17 @@ import { Feishu_appRequestBuilderNavigationMetadata, Feishu_appRequestBuilderReq
 // @ts-ignore
 import { KnowledgeGraphRequestBuilderNavigationMetadata, KnowledgeGraphRequestBuilderRequestsMetadata, type KnowledgeGraphRequestBuilder } from './knowledgeGraph/index.js';
 // @ts-ignore
+import { LoginsafetyRequestBuilderNavigationMetadata, type LoginsafetyRequestBuilder } from './loginsafety/index.js';
+// @ts-ignore
+import { MemoryRequestBuilderNavigationMetadata, type MemoryRequestBuilder } from './memory/index.js';
+// @ts-ignore
+import { MessageRequestBuilderNavigationMetadata, type MessageRequestBuilder } from './message/index.js';
+// @ts-ignore
+import { NotificationRequestBuilderNavigationMetadata, type NotificationRequestBuilder } from './notification/index.js';
+// @ts-ignore
 import { OauthconnectRequestBuilderNavigationMetadata, type OauthconnectRequestBuilder } from './oauthconnect/index.js';
+// @ts-ignore
+import { OrgRequestBuilderNavigationMetadata, type OrgRequestBuilder } from './org/index.js';
 // @ts-ignore
 import { PromptRequestBuilderNavigationMetadata, PromptRequestBuilderRequestsMetadata, type PromptRequestBuilder } from './prompt/index.js';
 // @ts-ignore
@@ -38,9 +46,17 @@ import { SettingsRequestBuilderNavigationMetadata, SettingsRequestBuilderRequest
 // @ts-ignore
 import { SkillRequestBuilderNavigationMetadata, SkillRequestBuilderRequestsMetadata, type SkillRequestBuilder } from './skill/index.js';
 // @ts-ignore
+import { StatisticsRequestBuilderNavigationMetadata, type StatisticsRequestBuilder } from './statistics/index.js';
+// @ts-ignore
 import { StorageRequestBuilderNavigationMetadata, type StorageRequestBuilder } from './storage/index.js';
 // @ts-ignore
+import { SubsystemRequestBuilderNavigationMetadata, type SubsystemRequestBuilder } from './subsystem/index.js';
+// @ts-ignore
 import { TeamRequestBuilderNavigationMetadata, TeamRequestBuilderRequestsMetadata, type TeamRequestBuilder } from './team/index.js';
+// @ts-ignore
+import { TeamAgentRequestBuilderNavigationMetadata, TeamAgentRequestBuilderRequestsMetadata, type TeamAgentRequestBuilder } from './teamAgent/index.js';
+// @ts-ignore
+import { TeamResourceKeyRequestBuilderNavigationMetadata, TeamResourceKeyRequestBuilderRequestsMetadata, type TeamResourceKeyRequestBuilder } from './teamResourceKey/index.js';
 // @ts-ignore
 import { TimerRequestBuilderNavigationMetadata, TimerRequestBuilderRequestsMetadata, type TimerRequestBuilder } from './timer/index.js';
 // @ts-ignore
@@ -79,10 +95,6 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get ai(): AiRequestBuilder;
     /**
-     * The aigateway property
-     */
-    get aigateway(): AigatewayRequestBuilder;
-    /**
      * The app property
      */
     get app(): AppRequestBuilder;
@@ -111,9 +123,29 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get knowledgeGraph(): KnowledgeGraphRequestBuilder;
     /**
+     * The loginsafety property
+     */
+    get loginsafety(): LoginsafetyRequestBuilder;
+    /**
+     * The memory property
+     */
+    get memory(): MemoryRequestBuilder;
+    /**
+     * The message property
+     */
+    get message(): MessageRequestBuilder;
+    /**
+     * The notification property
+     */
+    get notification(): NotificationRequestBuilder;
+    /**
      * The oauthconnect property
      */
     get oauthconnect(): OauthconnectRequestBuilder;
+    /**
+     * The org property
+     */
+    get org(): OrgRequestBuilder;
     /**
      * The prompt property
      */
@@ -131,13 +163,29 @@ export interface ApiRequestBuilder extends BaseRequestBuilder<ApiRequestBuilder>
      */
     get skill(): SkillRequestBuilder;
     /**
+     * The statistics property
+     */
+    get statistics(): StatisticsRequestBuilder;
+    /**
      * The storage property
      */
     get storage(): StorageRequestBuilder;
     /**
+     * The subsystem property
+     */
+    get subsystem(): SubsystemRequestBuilder;
+    /**
      * The team property
      */
     get team(): TeamRequestBuilder;
+    /**
+     * The teamAgent property
+     */
+    get teamAgent(): TeamAgentRequestBuilder;
+    /**
+     * The teamResourceKey property
+     */
+    get teamResourceKey(): TeamResourceKeyRequestBuilder;
     /**
      * The timer property
      */
@@ -183,9 +231,6 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
     ai: {
         navigationMetadata: AiRequestBuilderNavigationMetadata,
     },
-    aigateway: {
-        navigationMetadata: AigatewayRequestBuilderNavigationMetadata,
-    },
     app: {
         requestsMetadata: AppRequestBuilderRequestsMetadata,
         navigationMetadata: AppRequestBuilderNavigationMetadata,
@@ -212,8 +257,23 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
         requestsMetadata: KnowledgeGraphRequestBuilderRequestsMetadata,
         navigationMetadata: KnowledgeGraphRequestBuilderNavigationMetadata,
     },
+    loginsafety: {
+        navigationMetadata: LoginsafetyRequestBuilderNavigationMetadata,
+    },
+    memory: {
+        navigationMetadata: MemoryRequestBuilderNavigationMetadata,
+    },
+    message: {
+        navigationMetadata: MessageRequestBuilderNavigationMetadata,
+    },
+    notification: {
+        navigationMetadata: NotificationRequestBuilderNavigationMetadata,
+    },
     oauthconnect: {
         navigationMetadata: OauthconnectRequestBuilderNavigationMetadata,
+    },
+    org: {
+        navigationMetadata: OrgRequestBuilderNavigationMetadata,
     },
     prompt: {
         requestsMetadata: PromptRequestBuilderRequestsMetadata,
@@ -230,12 +290,26 @@ export const ApiRequestBuilderNavigationMetadata: Record<Exclude<keyof ApiReques
         requestsMetadata: SkillRequestBuilderRequestsMetadata,
         navigationMetadata: SkillRequestBuilderNavigationMetadata,
     },
+    statistics: {
+        navigationMetadata: StatisticsRequestBuilderNavigationMetadata,
+    },
     storage: {
         navigationMetadata: StorageRequestBuilderNavigationMetadata,
+    },
+    subsystem: {
+        navigationMetadata: SubsystemRequestBuilderNavigationMetadata,
     },
     team: {
         requestsMetadata: TeamRequestBuilderRequestsMetadata,
         navigationMetadata: TeamRequestBuilderNavigationMetadata,
+    },
+    teamAgent: {
+        requestsMetadata: TeamAgentRequestBuilderRequestsMetadata,
+        navigationMetadata: TeamAgentRequestBuilderNavigationMetadata,
+    },
+    teamResourceKey: {
+        requestsMetadata: TeamResourceKeyRequestBuilderRequestsMetadata,
+        navigationMetadata: TeamResourceKeyRequestBuilderNavigationMetadata,
     },
     timer: {
         requestsMetadata: TimerRequestBuilderRequestsMetadata,

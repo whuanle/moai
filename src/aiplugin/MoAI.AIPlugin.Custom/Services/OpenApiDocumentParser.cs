@@ -1,5 +1,5 @@
-﻿using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace MoAI.AIPlugin.Services;
 
@@ -16,25 +16,24 @@ public static class OpenApiDocumentParser
     /// <returns>解析结果.</returns>
     public static async Task<OpenApiParseResult> ParseAsync(Stream stream, CancellationToken cancellationToken)
     {
-        var reader = new OpenApiStreamReader();
-        var result = await reader.ReadAsync(stream, cancellationToken);
+        var document = await LoadDocumentAsync(stream, cancellationToken);
 
         var functions = new List<OpenApiFunctionInfo>();
-        foreach (var pathEntry in result.OpenApiDocument.Paths)
+        foreach (var pathEntry in document.Paths ?? [])
         {
             foreach (var operationEntry in pathEntry.Value.Operations)
             {
                 var operation = operationEntry.Value;
                 functions.Add(new OpenApiFunctionInfo
                 {
-                    Name = ResolveOperationName(operation.OperationId, operationEntry.Key, pathEntry.Key),
+                    Name = ResolveOperationName(operation.OperationId, operationEntry.Key.ToString().ToUpperInvariant(), pathEntry.Key),
                     Summary = operation.Summary ?? operation.Description,
-                    Path = pathEntry.Key,
+                    Path = pathEntry.Key ?? string.Empty,
                 });
             }
         }
 
-        var serverUrl = result.OpenApiDocument.Servers.FirstOrDefault()?.Url ?? string.Empty;
+        var serverUrl = document.Servers?.FirstOrDefault()?.Url ?? string.Empty;
 
         return new OpenApiParseResult
         {
@@ -51,20 +50,19 @@ public static class OpenApiDocumentParser
     /// <returns>操作信息集合.</returns>
     public static async Task<IReadOnlyList<OpenApiOperationInfo>> ParseOperationsAsync(Stream stream, CancellationToken cancellationToken)
     {
-        var reader = new OpenApiStreamReader();
-        var result = await reader.ReadAsync(stream, cancellationToken);
+        var document = await LoadDocumentAsync(stream, cancellationToken);
 
         var operations = new List<OpenApiOperationInfo>();
-        foreach (var pathEntry in result.OpenApiDocument.Paths)
+        foreach (var pathEntry in document.Paths ?? [])
         {
             foreach (var operationEntry in pathEntry.Value.Operations)
             {
                 var operation = operationEntry.Value;
                 operations.Add(new OpenApiOperationInfo
                 {
-                    Name = ResolveOperationName(operation.OperationId, operationEntry.Key, pathEntry.Key),
+                    Name = ResolveOperationName(operation.OperationId, operationEntry.Key.ToString().ToUpperInvariant(), pathEntry.Key),
                     Summary = operation.Summary ?? operation.Description,
-                    Path = pathEntry.Key,
+                    Path = pathEntry.Key ?? string.Empty,
                     Method = operationEntry.Key.ToString().ToUpperInvariant(),
                     Parameters = operation.Parameters?.Select(p => new OpenApiParameterInfo
                     {
@@ -80,7 +78,21 @@ public static class OpenApiDocumentParser
         return operations;
     }
 
-    private static string ResolveOperationName(string? operationId, OperationType operationType, string path)
-        => string.IsNullOrWhiteSpace(operationId) ? $"{operationType.ToString().ToUpperInvariant()} {path}" : operationId;
-}
+    private static async Task<OpenApiDocument> LoadDocumentAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        var settings = new OpenApiReaderSettings();
+        settings.AddYamlReader();
 
+        var result = await OpenApiDocument.LoadAsync(stream, format: null, settings: settings, cancellationToken);
+        if (result.Document == null)
+        {
+            var errors = string.Join("; ", result.Diagnostic?.Errors ?? []);
+            throw new InvalidOperationException($"OpenApi document parse failed. {errors}");
+        }
+
+        return result.Document;
+    }
+
+    private static string ResolveOperationName(string? operationId, string method, string path)
+        => string.IsNullOrWhiteSpace(operationId) ? $"{method} {path}" : operationId;
+}

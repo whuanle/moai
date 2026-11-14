@@ -992,9 +992,11 @@ export interface VariableOption {
 
 /**
  * 对话系统变量：发布应用对话时由服务端自动注入 sys.*，
- * history 为 [{role, content}] 数组，可直接作为 AI 对话节点的 history 输入.
+ * history 为 [{role, content}] 数组，可直接作为 AI 对话节点的 history 输入；
+ * prompt 为应用系统提示词（设计器「系统设置」配置，正式对话按发布快照、调试按草稿）.
  */
 export const CONVERSATION_SYS_VARIABLES: VariableOption[] = [
+  { value: 'sys.prompt', label: 'sys.prompt（系统提示词）' },
   { value: 'sys.userId', label: 'sys.userId（使用者 ID）' },
   { value: 'sys.appId', label: 'sys.appId（应用 ID）' },
   { value: 'sys.conversationId', label: 'sys.conversationId（当前对话 ID）' },
@@ -1046,7 +1048,7 @@ export function collectUpstreamVariables(
     { value: 'sys.startedAt', label: 'sys.startedAt（开始时间）' },
     { value: 'sys.currentTime', label: 'sys.currentTime（当前时间）' },
   )
-  // 对话系统变量：发布应用对话时自动注入（sys.userId/sys.appId/sys.conversationId/sys.messageId/sys.history）
+  // 对话系统变量：发布应用对话时自动注入（CONVERSATION_SYS_VARIABLES 清单，含 sys.prompt 系统提示词）
   options.push(...CONVERSATION_SYS_VARIABLES)
   for (const id of ancestors) {
     const node = byId.get(id)

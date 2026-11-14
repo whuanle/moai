@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { brandColors, colorPrimary, radius, spacing, fontFamily } from '../tokens'
 
 describe('design tokens', () => {
-  it('uses brand blue as the primary color', () => {
-    expect(colorPrimary).toBe('#2970FF')
+  it('uses brand violet as the primary color', () => {
+    expect(colorPrimary).toBe('#6D5AE6')
     expect(brandColors.primary).toBe(colorPrimary)
   })
   it('exposes a spacing scale on the 8px grid', () => {

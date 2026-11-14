@@ -55,6 +55,7 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
         }
 
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
+        IReadOnlyDictionary<string, McpToolHints> toolHints;
 
         try
         {
@@ -67,7 +68,9 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
                 Query = pluginCustomEntity.Queries.JsonToObject<IReadOnlyCollection<KeyValueString>>()!,
             };
 
-            pluginFunctionEntities = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            var syncResult = await McpServerConnector.GetPluginFunctionsAsync(connectionOptions, pluginCustomEntity.Id, _loggerFactory, cancellationToken);
+            pluginFunctionEntities = syncResult.Functions;
+            toolHints = syncResult.Hints;
         }
         catch (Exception ex)
         {
@@ -81,6 +84,9 @@ public class RefreshMcpServerPluginCommandHandler : IRequestHandler<RefreshMcpSe
 
         await _databaseContext.PluginFunctions.AddRangeAsync(pluginFunctionEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // MCP 工具注解（readOnlyHint/destructiveHint）同步到工具元数据表（只回写注解位，保留管理员配置）
+        await McpToolHintsSyncHelper.UpsertAsync(_databaseContext, pluginEntity.Id, toolHints, cancellationToken);
 
         transactionScope.Complete();
 

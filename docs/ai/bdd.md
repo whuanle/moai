@@ -183,6 +183,27 @@
 - When 会话空闲超时或被删除
 - Then 对应沙箱被销毁且不影响其他会话
 
+### @AI-S35 @auto:unit 出站网络策略归一下发
+- Given 应用配置出站策略（默认动作 + per-rule 动作/目标/端口）或旧格式 egress
+- When 沙箱创建时经 SandboxNetworkPolicyBuilder 构建并下发 NetworkPolicy
+- Then 规则逐条映射（动作/目标/端口），旧格式按默认 deny 为放行名单、否则为拒绝名单转换
+- And 默认动作留空且有规则时显式按 allow 下发（黑名单语义，避免服务端默认 deny 把黑名单变成全禁）
+
+### @AI-S36 @auto:unit 平台管控模式运行时注入
+- Given 系统设置管控模式为 deny 或 intranet
+- When 构建任意沙箱（应用沙箱与技能沙箱）的网络策略
+- Then 默认动作一律强制 deny（应用配置的默认 allow 被覆盖）
+- And intranet 模式自动注入内网网段放行（与应用同目标 allow 规则去重），应用追加的放行目标保留
+- And 管控策略在沙箱创建时统一下发，改配置对已存活沙箱不回溯（随 TTL 自然收敛）
+
+### @AI-S37 @auto:unit 沙箱命令过滤拦截
+- Given 平台级禁用命令清单（SANDBOX_DENIED_COMMANDS）与应用级 commandFilter（enabled 时）取并集
+- When 模型调用 sandbox_run_shell 或 sandbox_run_code
+- Then 执行前经 SandboxCommandGuard 匹配：shell 按操作符拆段并逐段与首词（剥 sudo）匹配、code 整段文本匹配
+- And 模式默认全词边界（rm 不误杀 confirm）、regex: 前缀原生正则、大小写不敏感
+- And 命中即不执行，返回拦截说明给模型（对话不断、结果落会话历史）；白名单命令正常执行
+- And 文件类沙箱工具与技能装载（只写文件）不经命令过滤
+
 
 ## Feature：知识图谱检索工具（图检索消费层 SP-A）
 

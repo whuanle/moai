@@ -4,15 +4,14 @@ import {
   EditOutlined,
   EyeOutlined,
   FireOutlined,
-  ReloadOutlined,
   SearchOutlined,
   SendOutlined,
   UndoOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tabs, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
-import { Card, Page, feedback, useNeutralColors } from '@/design-system'
+import { Card, Page, PageToolbar, feedback, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -101,9 +100,14 @@ export function PromptCenter() {
   }
 
   const applySearch = (value: string) => {
-    setSearchText(value)
-    setKeywords(value.trim() || undefined)
+    const next = value.trim() || undefined
+    if (next === keywords) {
+      // 关键字未变化时状态更新不触发 effect，手动重查一次
+      void load()
+      return
+    }
     setPage(1)
+    setKeywords(next)
   }
 
   const openDetail = async (record: PromptItem) => {
@@ -172,34 +176,45 @@ export function PromptCenter() {
       <Tag>{t('prompt.unclassified')}</Tag>
     )
 
+  /** 我的提示词：查看/编辑/上架/撤回/删除操作，卡片底栏使用；纯图标按钮必须带 Tooltip 说明用途 */
   const renderMineActions = (record: PromptItem) => (
     <Space size={0}>
-      <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('prompt.view')} onClick={() => void openDetail(record)} />
-      <Button
-        type="text"
-        size="small"
-        icon={<EditOutlined />}
-        aria-label={t('prompt.edit')}
-        onClick={() => navigate(`/prompts/${record.promptId}/edit`)}
-      />
-      {record.isPublic ? null : record.pendingPublicationId ? (
-        <Popconfirm title={t('prompt.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
-          <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('prompt.withdraw')} />
-        </Popconfirm>
-      ) : (
+      <Tooltip title={t('prompt.view')}>
+        <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('prompt.view')} onClick={() => void openDetail(record)} />
+      </Tooltip>
+      <Tooltip title={t('prompt.edit')}>
         <Button
           type="text"
           size="small"
-          icon={<SendOutlined />}
-          aria-label={t('prompt.apply')}
-          onClick={() => {
-            setApplyRecord(record)
-            setApplyReason('')
-          }}
+          icon={<EditOutlined />}
+          aria-label={t('prompt.edit')}
+          onClick={() => navigate(`/prompts/${record.promptId}/edit`)}
         />
+      </Tooltip>
+      {record.isPublic ? null : record.pendingPublicationId ? (
+        <Popconfirm title={t('prompt.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
+          <Tooltip title={t('prompt.withdraw')}>
+            <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('prompt.withdraw')} />
+          </Tooltip>
+        </Popconfirm>
+      ) : (
+        <Tooltip title={t('prompt.apply')}>
+          <Button
+            type="text"
+            size="small"
+            icon={<SendOutlined />}
+            aria-label={t('prompt.apply')}
+            onClick={() => {
+              setApplyRecord(record)
+              setApplyReason('')
+            }}
+          />
+        </Tooltip>
       )}
       <Popconfirm title={t('prompt.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-        <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('prompt.delete')} />
+        <Tooltip title={t('prompt.delete')}>
+          <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('prompt.delete')} />
+        </Tooltip>
       </Popconfirm>
     </Space>
   )
@@ -217,34 +232,32 @@ export function PromptCenter() {
   return (
     <Page>
       <Tabs activeKey={tab} onChange={handleTabChange} items={tabItems} />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing.sm,
-          flexWrap: 'wrap',
-          marginBottom: spacing.md,
-        }}
-      >
-        {tab === 'mine' && (
-          <Button type="primary" onClick={() => navigate('/prompts/new')}>
-            {t('prompt.create')}
+      <PageToolbar
+        filters={
+          <Input
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onPressEnter={() => applySearch(searchText)}
+            placeholder={t('prompt.searchPlaceholder')}
+            prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+            allowClear
+            maxLength={100}
+            style={{ width: 280 }}
+          />
+        }
+        queries={
+          <Button loading={loading} onClick={() => applySearch(searchText)}>
+            {t('ds.query.search')}
           </Button>
-        )}
-        <Input.Search
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onSearch={applySearch}
-          placeholder={t('prompt.searchPlaceholder')}
-          prefix={<SearchOutlined style={{ color: 'inherit' }} />}
-          allowClear
-          maxLength={100}
-          style={{ width: 280 }}
-        />
-        <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-          {t('ds.table.refresh')}
-        </Button>
-      </div>
+        }
+        actions={
+          tab === 'mine' && (
+            <Button type="primary" onClick={() => navigate('/prompts/new')}>
+              {t('prompt.create')}
+            </Button>
+          )
+        }
+      />
       <Space size={4} wrap style={{ marginBottom: spacing.md }}>
         <Tag.CheckableTag checked={promptClassId === undefined} onChange={() => { setPromptClassId(undefined); setPage(1) }}>
           {t('prompt.categoryAll')}

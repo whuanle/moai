@@ -1,11 +1,13 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Commands;
+using MoAI.TeamAgent.Services;
 
 namespace MoAI.Team.Handlers;
 
@@ -15,14 +17,20 @@ namespace MoAI.Team.Handlers;
 public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, SimpleLong>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly ITeamAgentSeeder _teamAgentSeeder;
+    private readonly ILogger<CreateTeamCommandHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateTeamCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public CreateTeamCommandHandler(DatabaseContext databaseContext)
+    /// <param name="teamAgentSeeder">内置智能体种子服务.</param>
+    /// <param name="logger">日志.</param>
+    public CreateTeamCommandHandler(DatabaseContext databaseContext, ITeamAgentSeeder teamAgentSeeder, ILogger<CreateTeamCommandHandler> logger)
     {
         _databaseContext = databaseContext;
+        _teamAgentSeeder = teamAgentSeeder;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -54,6 +62,16 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Simpl
         });
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 种入系统内置智能体（规划师/构建师）；失败不阻断团队创建，存量补种走 /api/team-agent/seed-builtin
+        try
+        {
+            await _teamAgentSeeder.EnsureSeededAsync(team.Id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "团队 {TeamId} 内置智能体种入失败，可通过 seed-builtin 端点补种.", team.Id);
+        }
 
         return new SimpleLong
         {

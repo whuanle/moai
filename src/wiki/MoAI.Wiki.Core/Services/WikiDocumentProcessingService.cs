@@ -1,7 +1,9 @@
 using Maomi;
 using Maomi.ToMarkdown;
+using Maomi.ToMarkdown.TextExtract;
 using Maomi.ToMarkdown.TextSplit;
 using Maomi.ToMarkdown.Token;
+using MoAI.Storage.TextExtract;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -9,11 +11,15 @@ using MoAI.AIChannel.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Infra.Services;
+using MoAI.Storage.Commands;
+using MoAI.Storage.Helpers;
 using MoAI.Storage.Services;
 using MoAI.Wiki.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -45,10 +51,37 @@ public class WikiDocumentProcessingService
 
 只输出 JSON，不要附加其他解释。";
 
+    /// <summary>
+    /// 内嵌图片提取支持的文档扩展名（本期不含 html：库的 HtmlExtractor 会逐张真实下载外链图片）.
+    /// </summary>
+    private static readonly string[] ImageExtractExtensions = [".pdf", ".docx", ".xlsx", ".pptx"];
+
+    /// <summary>
+    /// 允许登记为附加文件的图片扩展名，浏览器可直接渲染；.raw/.jp2 等无法还原为标准编码的跳过.
+    /// </summary>
+    private static readonly string[] SupportedImageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+
+    private static readonly Dictionary<string, string> ImageContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".png"] = "image/png",
+        [".jpg"] = "image/jpeg",
+        [".jpeg"] = "image/jpeg",
+        [".gif"] = "image/gif",
+        [".bmp"] = "image/bmp",
+        [".webp"] = "image/webp",
+    };
+
+    private static readonly MimeTypesDetection MimeTypeDetection = new();
+
+    private static readonly Regex PdfImageNameRegex = new("^page_(\\d+)_image_\\d+$", RegexOptions.Compiled);
+
+    private static readonly Regex ImageReferenceRegex = new("!\\[[^\\]]*\\]\\([^)]*\\)", RegexOptions.Compiled);
+
     private readonly DatabaseContext _databaseContext;
     private readonly IStorageService _storageService;
     private readonly IChatClientProvider _chatClientProvider;
     private readonly TextExtractionService _textExtractionService;
+    private readonly IEnumerable<ITextExtractor> _textExtractors;
     private readonly IWikiEmbeddingVectorStore _vectorStore;
     private readonly IIdProvider _idProvider;
     private readonly ILogger<WikiDocumentProcessingService> _logger;
@@ -60,6 +93,7 @@ public class WikiDocumentProcessingService
     /// <param name="storageService">存储领域服务.</param>
     /// <param name="chatClientProvider">对话客户端提供者.</param>
     /// <param name="textExtractionService">文本抽取服务.</param>
+    /// <param name="textExtractors">文本抽取器集合，内嵌图片提取需直接调用带图片参数的重载.</param>
     /// <param name="vectorStore">知识库向量存储.</param>
     /// <param name="idProvider">雪花 id 提供者.</param>
     /// <param name="logger">日志.</param>
@@ -68,6 +102,7 @@ public class WikiDocumentProcessingService
         IStorageService storageService,
         IChatClientProvider chatClientProvider,
         TextExtractionService textExtractionService,
+        IEnumerable<ITextExtractor> textExtractors,
         IWikiEmbeddingVectorStore vectorStore,
         IIdProvider idProvider,
         ILogger<WikiDocumentProcessingService> logger)
@@ -76,6 +111,7 @@ public class WikiDocumentProcessingService
         _storageService = storageService;
         _chatClientProvider = chatClientProvider;
         _textExtractionService = textExtractionService;
+        _textExtractors = textExtractors;
         _vectorStore = vectorStore;
         _idProvider = idProvider;
         _logger = logger;
@@ -83,15 +119,19 @@ public class WikiDocumentProcessingService
 
     /// <summary>
     /// 提取文档内容：从存储读取原始文件，用 Maomi.ToMarkdown 抽取 markdown 并 upsert 到 wiki_document_content.
+    /// pdf/word/excel/ppt 会同时提取内嵌图片：上传对象存储并登记到 wiki_document_image，
+    /// 正文中的图片引用被剥离，避免失效路径进入切割与向量化.
     /// </summary>
     /// <param name="wikiId">知识库 id.</param>
     /// <param name="documentId">文档 id.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>抽取出的 markdown 内容.</returns>
+    /// <returns>剥离图片引用后的 markdown 内容.</returns>
     public async Task<string> ExtractAsync(int wikiId, int documentId, CancellationToken cancellationToken = default)
     {
         var document = await LoadDocumentAsync(wikiId, documentId, cancellationToken);
-        var markdown = await ExtractMarkdownAsync(document, cancellationToken);
+
+        var (markdown, imageEntities) = await ExtractMarkdownWithImagesAsync(document, cancellationToken);
+        markdown = StripImageReferences(markdown);
 
         var content = await _databaseContext.WikiDocumentContents
             .FirstOrDefaultAsync(x => x.DocumentId == documentId && x.WikiId == wikiId, cancellationToken);
@@ -111,6 +151,7 @@ public class WikiDocumentProcessingService
             content.Content = markdown;
         }
 
+        await ReplaceDocumentImagesAsync(wikiId, documentId, imageEntities, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return markdown;
     }
@@ -168,7 +209,11 @@ public class WikiDocumentProcessingService
             sizeUnit = ToConfigValue(sizeUnit),
             tokenEncodingOrModel = sizeUnit == DocumentPartitionSizeUnit.Token ? NormalizeTokenEncodingOrModel(tokenEncodingOrModel) : null,
         });
-        await ReplaceChunksAsync(document, slices, sliceConfig, cancellationToken);
+
+        // 切片标题锚点：TextChunk.StartPosition 为原文 1-based 位置，映射标题面包屑
+        var headingMap = BuildHeadingBreadcrumbs(markdown);
+        var anchors = textChunks.Select(x => ResolveAnchor(headingMap, x.StartPosition - 1)).ToList();
+        await ReplaceChunksAsync(document, slices, sliceConfig, anchors, cancellationToken);
         return slices.Count;
     }
 
@@ -206,7 +251,10 @@ public class WikiDocumentProcessingService
             throw new InvalidOperationException("AI 未返回有效的切割结果.");
         }
 
-        await ReplaceChunksAsync(document, slices, JsonSerializer.Serialize(new { aiModelId, mode = "ai" }), cancellationToken);
+        // AI 切割切片可能重组文本：按切片文本回原文定位后取标题面包屑，定位失败锚点留空
+        var headingMap = BuildHeadingBreadcrumbs(markdown);
+        var anchors = slices.Select(s => ResolveAnchor(headingMap, LocateSlice(markdown, s))).ToList();
+        await ReplaceChunksAsync(document, slices, JsonSerializer.Serialize(new { aiModelId, mode = "ai" }), anchors, cancellationToken);
         return slices.Count;
     }
 
@@ -234,12 +282,222 @@ public class WikiDocumentProcessingService
         return content.Content;
     }
 
-    private async Task<string> ExtractMarkdownAsync(WikiDocumentEntity document, CancellationToken cancellationToken)
+    private async Task<(string Markdown, List<WikiDocumentImageEntity> Images)> ExtractMarkdownWithImagesAsync(WikiDocumentEntity document, CancellationToken cancellationToken)
     {
         var result = await _storageService.ReadAsync(document.ObjectKey, cancellationToken);
         await using (result.FileStream)
         {
-            return await _textExtractionService.ExtractAsync(result.FileStream, document.FileName, cancellationToken);
+            var extension = Path.GetExtension(document.FileName).ToLowerInvariant();
+            if (ImageExtractExtensions.Contains(extension))
+            {
+                var mimeType = MimeTypeDetection.GetFileType(document.FileName);
+                var extractor = _textExtractors.LastOrDefault(e => e.SupportsMimeType(mimeType));
+                if (extractor != null)
+                {
+                    // 图片统一落盘到临时目录再上传，用完即清理
+                    var imageDirectory = Path.Combine(Path.GetTempPath(), "moai-wiki-images", Guid.CreateVersion7().ToString("N"));
+                    Directory.CreateDirectory(imageDirectory);
+                    try
+                    {
+                        var imageFiles = new List<string>();
+                        var markdown = await extractor.ExtractAsync(result.FileStream, imageDirectory, imageFiles, cancellationToken);
+                        var images = await ExtractImagesAsync(document, imageFiles, cancellationToken);
+                        return (markdown, images);
+                    }
+                    finally
+                    {
+                        TryDeleteDirectory(imageDirectory);
+                    }
+                }
+            }
+
+            // Maomi.ToMarkdown 原生扩展名直接提取；其余（EPUB/ODT/RTF/代码配置类文本）走平台自研提取层
+            if (DocumentTextExtract.IsNativeSupported(document.FileName))
+            {
+                try
+                {
+                    return (await _textExtractionService.ExtractAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
+                }
+                catch (NotSupportedException)
+                {
+                    // 原生判定与库实际能力出现偏差时的安全网：嗅探排除二进制后按纯文本读取，与 PlainTextExtractor 行为对齐.
+                    return (await TextFileReader.ReadAsTextAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
+                }
+            }
+
+            return (await DocumentTextExtract.ExtractAsync(result.FileStream, document.FileName, cancellationToken), new List<WikiDocumentImageEntity>());
+        }
+    }
+
+    private async Task<List<WikiDocumentImageEntity>> ExtractImagesAsync(WikiDocumentEntity document, List<string> imageFiles, CancellationToken cancellationToken)
+    {
+        var entities = new List<WikiDocumentImageEntity>();
+        foreach (var imageFile in imageFiles)
+        {
+            try
+            {
+                var fileType = Path.GetExtension(imageFile).ToLowerInvariant();
+                if (!SupportedImageExtensions.Contains(fileType))
+                {
+                    continue;
+                }
+
+                var bytes = await File.ReadAllBytesAsync(imageFile, cancellationToken);
+                var sha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                var fileName = Path.GetFileName(imageFile);
+                var objectKey = FileStoreHelper.GetObjectKey(sha256: sha256, fileName: fileName, prefix: $"wiki/{document.WikiId}/image");
+
+                // 按 objectKey（内容寻址）幂等：同一图片重复提取或跨文档复用不会产生重复对象
+                var uploadResult = await _storageService.UploadStreamAsync(new UploadStreamFileCommand
+                {
+                    FileStream = new MemoryStream(bytes),
+                    ContentType = ImageContentTypes.GetValueOrDefault(fileType, "application/octet-stream"),
+                    FileSize = bytes.Length,
+                    SHA256 = sha256,
+                    ObjectKey = objectKey,
+                }, cancellationToken);
+
+                entities.Add(new WikiDocumentImageEntity
+                {
+                    WikiId = document.WikiId,
+                    DocumentId = document.Id,
+                    FileId = uploadResult.FileId,
+                    ObjectKey = objectKey,
+                    FileName = fileName,
+                    FileType = fileType,
+                    PageNumber = TryParsePdfPageNumber(fileName),
+                    ImageIndex = entities.Count,
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "知识库文档内嵌图片上传失败，已跳过: {ImageFile}", imageFile);
+            }
+        }
+
+        return entities;
+    }
+
+    /// <summary>
+    /// 替换文档的图片登记：软删旧记录、登记新记录，并清理不再被任何存活图片记录引用的旧文件
+    /// （objectKey 按内容寻址，同一图片可能被多个文档共享，须做引用检查）.
+    /// </summary>
+    private async Task ReplaceDocumentImagesAsync(int wikiId, int documentId, List<WikiDocumentImageEntity> imageEntities, CancellationToken cancellationToken)
+    {
+        var oldImages = await _databaseContext.WikiDocumentImages
+            .Where(x => x.WikiId == wikiId && x.DocumentId == documentId)
+            .ToListAsync(cancellationToken);
+        if (oldImages.Count > 0)
+        {
+            _databaseContext.RemoveRange(oldImages);
+        }
+
+        if (imageEntities.Count > 0)
+        {
+            _databaseContext.WikiDocumentImages.AddRange(imageEntities);
+        }
+
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        var oldFileIds = oldImages.Select(x => x.FileId).Distinct().ToList();
+        await CleanupOrphanImageFilesAsync(oldFileIds, cancellationToken);
+    }
+
+    /// <summary>
+    /// 删除文档的内嵌图片附件登记并清理孤儿文件（objectKey 按内容寻址，同一图片可能被多个文档共享，仅删无引用的）.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="documentIds">被删除的文档 id 集合.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>Task.</returns>
+    public async Task DeleteDocumentImagesAsync(int wikiId, IReadOnlyCollection<int> documentIds, CancellationToken cancellationToken = default)
+    {
+        if (documentIds.Count == 0)
+        {
+            return;
+        }
+
+        var images = await _databaseContext.WikiDocumentImages
+            .Where(x => x.WikiId == wikiId && documentIds.Contains(x.DocumentId))
+            .ToListAsync(cancellationToken);
+        if (images.Count == 0)
+        {
+            return;
+        }
+
+        _databaseContext.WikiDocumentImages.RemoveRange(images);
+        await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        await CleanupOrphanImageFilesAsync(images.Select(x => x.FileId).Distinct().ToList(), cancellationToken);
+    }
+
+    /// <summary>
+    /// 清理不再被任何存活图片记录引用的图片文件；清理是尽力而为，失败只留孤儿对象不抛出.
+    /// </summary>
+    private async Task CleanupOrphanImageFilesAsync(IReadOnlyCollection<long> candidateFileIds, CancellationToken cancellationToken)
+    {
+        if (candidateFileIds.Count == 0)
+        {
+            return;
+        }
+
+        var stillReferenced = await _databaseContext.WikiDocumentImages
+            .Where(x => candidateFileIds.Contains(x.FileId))
+            .Select(x => x.FileId)
+            .ToListAsync(cancellationToken);
+        var orphans = candidateFileIds.Except(stillReferenced).ToList();
+        if (orphans.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await _storageService.DeleteFilesAsync(orphans, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "清理知识库文档孤儿图片文件失败: {FileIds}", string.Join(",", orphans));
+        }
+    }
+
+    /// <summary>
+    /// 剥离正文中的 markdown 图片引用（提取库写的是临时目录路径，进切片只会污染检索），并收敛多余空行.
+    /// </summary>
+    private static string StripImageReferences(string markdown)
+    {
+        if (!markdown.Contains("![", StringComparison.Ordinal))
+        {
+            return markdown;
+        }
+
+        var stripped = ImageReferenceRegex.Replace(markdown, string.Empty);
+        return Regex.Replace(stripped, "(?:\r?\n){3,}", "\n\n");
+    }
+
+    /// <summary>
+    /// 从 PDF 提取图片的命名 page_{页码}_image_{序号} 中解析页码，其余命名返回 null.
+    /// </summary>
+    private static int? TryParsePdfPageNumber(string fileName)
+    {
+        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+        var match = PdfImageNameRegex.Match(nameWithoutExtension);
+        return match.Success ? int.Parse(match.Groups[1].Value) : null;
+    }
+
+    private void TryDeleteDirectory(string directory)
+    {
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "清理文档图片临时目录失败: {Directory}", directory);
         }
     }
 
@@ -302,7 +560,7 @@ public class WikiDocumentProcessingService
     private static string ToConfigValue(DocumentPartitionSizeUnit sizeUnit)
         => sizeUnit == DocumentPartitionSizeUnit.Token ? "token" : "character";
 
-    private async Task ReplaceChunksAsync(WikiDocumentEntity document, IReadOnlyList<string> slices, string sliceConfig, CancellationToken cancellationToken)
+    private async Task ReplaceChunksAsync(WikiDocumentEntity document, IReadOnlyList<string> slices, string sliceConfig, IReadOnlyList<string>? anchors = null, CancellationToken cancellationToken = default)
     {
         var oldChunkIds = await _databaseContext.WikiDocumentChunkContents
             .Where(x => x.DocumentId == document.Id && x.WikiId == document.WikiId && x.IsDeleted == 0)
@@ -321,8 +579,9 @@ public class WikiDocumentProcessingService
             .ExecuteDeleteAsync(cancellationToken);
 
         var order = 0;
-        foreach (var slice in slices)
+        for (var i = 0; i < slices.Count; i++)
         {
+            var slice = slices[i];
             if (string.IsNullOrEmpty(slice))
             {
                 continue;
@@ -336,13 +595,156 @@ public class WikiDocumentProcessingService
                 SliceContent = slice,
                 SliceOrder = order,
                 SliceLength = slice.Length,
+                SliceAnchor = anchors != null && i < anchors.Count ? anchors[i] ?? string.Empty : string.Empty,
             });
             order++;
         }
 
         document.SliceConfig = sliceConfig;
         document.IsEmbedding = false;
+        // 切片已重建而向量已随旧切片删除，标记内容待更新（召回命中标 IsStale，向量化完成后清除）
+        document.IsUpdate = true;
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        // 推进索引纪元：切片集合变化使该库的检索经验聚类失效
+        await _databaseContext.Wikis
+            .Where(x => x.Id == document.WikiId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.IndexEpoch, x => x.IndexEpoch + 1)
+                .SetProperty(x => x.UpdateTime, DateTimeOffset.UtcNow), cancellationToken);
+    }
+
+    /// <summary>
+    /// 扫描 markdown 标题行（# ~ ######），按文档顺序构建标题面包屑快照（标题起始字符位置 → 层级链「标题A > 标题B」）.
+    /// 代码块内的 # 行会被误识别为标题（启发式取舍，切割锚点场景可接受）.
+    /// </summary>
+    /// <param name="markdown">markdown 全文.</param>
+    /// <returns>面包屑快照列表（按位置升序）.</returns>
+    private static List<(int Position, string Breadcrumb)> BuildHeadingBreadcrumbs(string markdown)
+    {
+        var result = new List<(int Position, string Breadcrumb)>();
+        if (string.IsNullOrEmpty(markdown))
+        {
+            return result;
+        }
+
+        var stack = new List<(int Level, string Text)>();
+        var position = 0;
+        foreach (var line in markdown.Split('\n'))
+        {
+            var lineStart = position;
+            position += line.Length + 1;
+
+            var trimmed = line.TrimStart();
+            if (!trimmed.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var level = 0;
+            while (level < trimmed.Length && trimmed[level] == '#')
+            {
+                level++;
+            }
+
+            if (level > 6 || level >= trimmed.Length || trimmed[level] != ' ')
+            {
+                continue;
+            }
+
+            var text = trimmed[(level + 1)..].Trim();
+            if (text.Length == 0)
+            {
+                continue;
+            }
+
+            stack.RemoveAll(h => h.Level >= level);
+            stack.Add((level, text));
+            var breadcrumb = string.Join(" > ", stack.Select(h => h.Text));
+            if (breadcrumb.Length > 512)
+            {
+                breadcrumb = breadcrumb[..512];
+            }
+
+            result.Add((lineStart, breadcrumb));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 解析位置所在的标题面包屑：取最后一个起始位置不晚于该位置的标题快照.
+    /// </summary>
+    /// <param name="headingMap">标题面包屑快照.</param>
+    /// <param name="position">0-based 字符位置（负数返回空）.</param>
+    /// <returns>标题面包屑；未落在任何标题下返回空串.</returns>
+    private static string ResolveAnchor(List<(int Position, string Breadcrumb)> headingMap, int position)
+    {
+        if (headingMap.Count == 0 || position < 0)
+        {
+            return string.Empty;
+        }
+
+        string anchor = string.Empty;
+        foreach (var entry in headingMap)
+        {
+            if (entry.Position > position)
+            {
+                break;
+            }
+
+            anchor = entry.Breadcrumb;
+        }
+
+        return anchor;
+    }
+
+    /// <summary>
+    /// 在原文中定位切片文本（AI 切割切片可能重组文本：整段 → 前 80 字符 → 首个非空行逐级回退）.
+    /// </summary>
+    /// <param name="markdown">markdown 全文.</param>
+    /// <param name="slice">切片文本.</param>
+    /// <returns>0-based 起始位置；定位失败返回 -1.</returns>
+    private static int LocateSlice(string markdown, string slice)
+    {
+        if (string.IsNullOrWhiteSpace(slice))
+        {
+            return -1;
+        }
+
+        var trimmed = slice.Trim();
+        var found = markdown.IndexOf(trimmed, StringComparison.Ordinal);
+        if (found >= 0)
+        {
+            return found;
+        }
+
+        if (trimmed.Length > 80)
+        {
+            found = markdown.IndexOf(trimmed[..80], StringComparison.Ordinal);
+            if (found >= 0)
+            {
+                return found;
+            }
+        }
+
+        var firstLine = trimmed.Split('\n').FirstOrDefault(l => !string.IsNullOrWhiteSpace(l));
+        if (!string.IsNullOrWhiteSpace(firstLine))
+        {
+            var line = firstLine.Trim();
+            if (line.Length > 80)
+            {
+                line = line[..80];
+            }
+
+            found = markdown.IndexOf(line, StringComparison.Ordinal);
+            if (found >= 0)
+            {
+                return found;
+            }
+        }
+
+        return -1;
     }
 
     private async Task<(AiModelEntity Model, AiChannelEntity Channel)> ResolveChatAsync(Guid modelId, int teamId, CancellationToken cancellationToken)
@@ -364,7 +766,7 @@ public class WikiDocumentProcessingService
                     select new { m, c };
 
         var candidates = await query.ToListAsync(cancellationToken);
-        var model = candidates.FirstOrDefault(x => x.m.IsPublic);
+        var model = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (model == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

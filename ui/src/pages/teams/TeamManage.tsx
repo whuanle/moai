@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Avatar, Button, Form, Input, Layout, Menu, Popconfirm, Space, Tag, Typography } from 'antd'
 import type { MenuProps, TableColumnsType } from 'antd'
 import {
   AppstoreAddOutlined,
   AppstoreOutlined,
-  ApiOutlined,
   BookOutlined,
+  CloudServerOutlined,
   ClusterOutlined,
-  ClockCircleOutlined,
+  DeploymentUnitOutlined,
   GlobalOutlined,
   KeyOutlined,
   MinusCircleOutlined,
   ProfileOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
+  SearchOutlined,
   SettingOutlined,
   StopOutlined,
   TeamOutlined,
@@ -21,25 +23,26 @@ import {
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { AvatarUpload, Card as DSCard, DataTable, feedback, Page } from '@/design-system'
+import { useNavigate, useParams } from 'react-router'
+import { AvatarUpload, Card as DSCard, DataTable, feedback, Page, QueryBar, SiderHeader } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
 import { formatDateTime } from '@/utils/datetime'
+import { resolveStorageUrl } from '@/utils/storage'
 import { Variables } from '@/pages/variables/Variables'
 import { TeamTimers } from '@/pages/teams/timers/TeamTimers'
 import { TeamPrompts } from '@/pages/teams/prompts/TeamPrompts'
 import { TeamSkills } from '@/pages/teams/skills/TeamSkills'
+import { TeamAgents } from '@/pages/teams/agents/TeamAgents'
 import { TeamApps } from '@/pages/teams/apps/TeamApps'
 import { TeamExternalApps } from '@/pages/teams/apps/TeamExternalApps'
 import { TeamAccessApps } from '@/pages/teams/apps/TeamAccessApps'
-import { TeamGateway } from '@/pages/teams/TeamGateway'
+import { TeamChannels } from '@/pages/teams/channels/TeamChannels'
 import { TeamPlugins } from '@/pages/teams/plugins/TeamPlugins'
 import { TeamWikis } from '@/pages/teams/wikis/TeamWikis'
 import { TeamKnowledgeGraphs } from '@/pages/teams/knowledgegraph/TeamKnowledgeGraphs'
+import { TeamMemberAddModal } from '@/pages/teams/members/TeamMemberAddModal'
 import {
-  addTeamUser,
-  getTeamCandidates,
   getTeamDetail,
   getTeamUsers,
   removeTeamUser,
@@ -47,7 +50,7 @@ import {
   updateTeam,
   updateTeamUserRole,
   uploadTeamAvatar,
-  type TeamCandidateItem,
+  type AddTeamUsersResult,
   type TeamUserItem,
 } from '@/api/team'
 
@@ -60,7 +63,7 @@ const ROLE_ADMIN = 1
 const ROLE_MEMBER = 0
 
 /** 分区顺序：成员可见的使用分区在前，Owner/Admin 管理分区在后 */
-const SECTION_KEYS = ['apps', 'prompts', 'skills', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'timers', 'settings'] as const
+const SECTION_KEYS = ['apps', 'prompts', 'skills', 'agents', 'knowledge', 'knowledgegraph', 'externalApps', 'accessApps', 'members', 'channels', 'plugins', 'variables', 'timers', 'settings'] as const
 type SectionKey = (typeof SECTION_KEYS)[number]
 
 /** 进入团队默认落在内部应用 */
@@ -70,11 +73,7 @@ const DEFAULT_SECTION: SectionKey = 'apps'
  * 仅团队 Owner/Admin 可见的管理分区。
  * 普通成员进入团队只能「使用」：可见 内部应用 / 提示词 / 技能 / 知识库 / 知识图谱，看不到团队管理与应用配置入口。
  */
-const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'gateway', 'plugins', 'variables', 'timers', 'settings']
-
-interface MemberFormValues {
-  userId: number
-}
+const ADMIN_ONLY_SECTIONS: SectionKey[] = ['externalApps', 'accessApps', 'members', 'channels', 'plugins', 'variables', 'timers', 'settings']
 
 interface TeamDetail {
   teamId?: string | number | null
@@ -106,12 +105,10 @@ export function TeamManage() {
   const [members, setMembers] = useState<TeamUserItem[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [memberKeyword, setMemberKeyword] = useState('')
-  const [addForm] = Form.useForm<MemberFormValues>()
+  const [addModalOpen, setAddModalOpen] = useState(false)
   const [settingsForm] = Form.useForm<{ name: string; description?: string }>()
   const [savingInfo, setSavingInfo] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [candidates, setCandidates] = useState<TeamCandidateItem[]>([])
-  const [searching, setSearching] = useState(false)
 
   const loadDetail = useCallback(async () => {
     if (!Number.isFinite(teamId) || teamId <= 0) return
@@ -170,29 +167,16 @@ export function TeamManage() {
     return true
   }
 
-  const handleAddMember = async () => {
-    const values = await addForm.validateFields()
-    try {
-      await addTeamUser(teamId, { userId: values.userId, role: ROLE_MEMBER })
-      feedback.success(t('team.addSuccess'))
-      addForm.resetFields()
-      setCandidates([])
-      await reloadMembers()
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    }
+  const handleAddModalSuccess = async (result: AddTeamUsersResult) => {
+    setAddModalOpen(false)
+    if (result.addedCount > 0) await reloadMembers()
   }
 
-  const handleSearchCandidates = useCallback(async (keyword: string) => {
-    setSearching(true)
-    try {
-      setCandidates(await getTeamCandidates(teamId, keyword))
-    } catch {
-      // 错误已由全局请求中间件统一提示
-    } finally {
-      setSearching(false)
-    }
-  }, [teamId])
+  /** 成员搜索提交（QueryBar）：应用关键字过滤（昵称/用户名，前端过滤） */
+  const handleMemberSearch = (values: Record<string, unknown>) => {
+    const keyword = typeof values.memberKeyword === 'string' ? values.memberKeyword.trim() : ''
+    setMemberKeyword(keyword)
+  }
 
   const handleChangeRole = async (member: TeamUserItem, role: number) => {
     try {
@@ -273,22 +257,43 @@ export function TeamManage() {
     )
   }, [members, memberKeyword])
 
+  /** 现有成员 userId 集合（字符串化 long），添加成员弹窗据此标记「已是成员」并禁选 */
+  const memberUserIdSet = useMemo(() => new Set(members.map((m) => String(m.userId))), [members])
+
   const memberColumns: TableColumnsType<TeamUserItem> = useMemo(
     () => [
       {
         title: t('team.colMember'),
         key: 'member',
+        width: 220,
         render: (_, record) => (
           <Space size={spacing.sm}>
-            <Avatar size={32}>{(record.nickName || record.userName || '?').slice(0, 1).toUpperCase()}</Avatar>
+            <Avatar size={36} src={record.avatar ? resolveStorageUrl(record.avatar) : undefined} alt={record.userName || ''}>
+              {(record.nickName || record.userName || '?').slice(0, 1).toUpperCase()}
+            </Avatar>
             <div>
               <div style={{ fontWeight: 500 }}>{record.nickName || record.userName || '-'}</div>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.userName}
-              </Text>
+              {record.nickName && record.nickName !== record.userName && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  @{record.userName}
+                </Text>
+              )}
             </div>
           </Space>
         ),
+      },
+      {
+        title: t('team.colEmail'),
+        dataIndex: 'email',
+        width: 200,
+        ellipsis: true,
+        render: (v: string | null) => v || '-',
+      },
+      {
+        title: t('team.colPhone'),
+        dataIndex: 'phone',
+        width: 140,
+        render: (v: string | null) => v || '-',
       },
       {
         title: t('team.colRole'),
@@ -305,7 +310,7 @@ export function TeamManage() {
       {
         title: t('team.colActions'),
         key: 'actions',
-        width: 150,
+        width: 250,
         fixed: 'right' as const,
         render: (_, record) => {
           const role = record.role ?? ROLE_MEMBER
@@ -314,34 +319,34 @@ export function TeamManage() {
           if (isOwner && role !== ROLE_OWNER) {
             if (role === ROLE_ADMIN) {
               actions.push(
-                <Tooltip key="unset-admin" title={t('team.unsetAdmin')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<MinusCircleOutlined />}
-                    aria-label={t('team.unsetAdmin')}
-                    onClick={() => void handleChangeRole(record, ROLE_MEMBER)}
-                  />
-                </Tooltip>,
+                <Button
+                  key="unset-admin"
+                  type="link"
+                  size="small"
+                  icon={<MinusCircleOutlined />}
+                  onClick={() => void handleChangeRole(record, ROLE_MEMBER)}
+                >
+                  {t('team.unsetAdmin')}
+                </Button>,
               )
             } else {
               actions.push(
-                <Tooltip key="set-admin" title={t('team.setAdmin')}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<SafetyCertificateOutlined />}
-                    aria-label={t('team.setAdmin')}
-                    onClick={() => void handleChangeRole(record, ROLE_ADMIN)}
-                  />
-                </Tooltip>,
+                <Button
+                  key="set-admin"
+                  type="link"
+                  size="small"
+                  icon={<SafetyCertificateOutlined />}
+                  onClick={() => void handleChangeRole(record, ROLE_ADMIN)}
+                >
+                  {t('team.setAdmin')}
+                </Button>,
               )
             }
             actions.push(
               <Popconfirm key="transfer" title={t('team.transferConfirm')} onConfirm={() => void handleTransfer(record)}>
-                <Tooltip title={t('team.transferOwner')}>
-                  <Button type="text" size="small" icon={<UserSwitchOutlined />} aria-label={t('team.transferOwner')} />
-                </Tooltip>
+                <Button type="link" size="small" icon={<UserSwitchOutlined />}>
+                  {t('team.transferOwner')}
+                </Button>
               </Popconfirm>,
             )
           }
@@ -353,9 +358,9 @@ export function TeamManage() {
                 title={t(isSelf ? 'team.leaveConfirm' : 'team.removeConfirm')}
                 onConfirm={() => void handleRemoveMember(record)}
               >
-                <Tooltip title={label}>
-                  <Button type="text" size="small" danger icon={<StopOutlined />} aria-label={label} />
-                </Tooltip>
+                <Button type="link" size="small" danger icon={<StopOutlined />}>
+                  {label}
+                </Button>
               </Popconfirm>,
             )
           }
@@ -368,40 +373,44 @@ export function TeamManage() {
     [t, isOwner, detail, currentUserId],
   )
 
-  const menuItems: Required<MenuProps>['items'] = [
+  /** 成员可用分区菜单（key 须与 SECTION_KEYS / ADMIN_ONLY_SECTIONS 保持同步） */
+  const memberMenuItems = [
     { key: 'apps', icon: <AppstoreOutlined />, label: t('team.apps') },
     { key: 'prompts', icon: <ProfileOutlined />, label: t('team.prompts') },
     { key: 'skills', icon: <ThunderboltOutlined />, label: t('team.skills') },
+    { key: 'agents', icon: <DeploymentUnitOutlined />, label: t('team.teamAgents') },
     { key: 'knowledge', icon: <BookOutlined />, label: t('team.knowledge') },
     { key: 'knowledgegraph', icon: <ClusterOutlined />, label: t('team.knowledgeGraph') },
+  ].filter((item) => visibleSections.includes(item.key as SectionKey))
+
+  /** Owner/Admin 管理分区菜单 */
+  const adminMenuItems = [
     { key: 'externalApps', icon: <GlobalOutlined />, label: t('team.externalApps') },
     { key: 'accessApps', icon: <KeyOutlined />, label: t('team.accessApps') },
     { key: 'members', icon: <TeamOutlined />, label: t('team.membersTitle') },
-    { key: 'gateway', icon: <ApiOutlined />, label: t('team.gateway') },
+    { key: 'channels', icon: <CloudServerOutlined />, label: t('team.channels') },
     { key: 'plugins', icon: <AppstoreAddOutlined />, label: t('team.managePlugins') },
     { key: 'variables', icon: <KeyOutlined />, label: t('team.manageVariables') },
-    { key: 'timers', icon: <ClockCircleOutlined />, label: t('team.timers') },
+    { key: 'timers', icon: <RobotOutlined />, label: t('team.timers') },
     { key: 'settings', icon: <SettingOutlined />, label: t('team.settings') },
   ].filter((item) => visibleSections.includes(item.key as SectionKey))
 
+  /** 普通成员只见使用分区平铺；Owner/Admin 以分隔线+分组标题把管理分区与使用分区隔离 */
+  const menuItems: Required<MenuProps>['items'] = isAdminPlus
+    ? [
+        ...memberMenuItems,
+        { type: 'divider' as const },
+        { type: 'group' as const, label: t('team.menuGroupManage') },
+        ...adminMenuItems,
+      ]
+    : memberMenuItems
+
   return (
-    <Page
-      breadcrumb={[
-        { title: <Link to="/apps">{t('common.home')}</Link> },
-        {
-          title: (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.sm }}>
-              <Avatar size={20} src={detail?.avatar || undefined}>
-                {(detail?.name ?? '?').slice(0, 1).toUpperCase()}
-              </Avatar>
-              <span>{detail?.name ?? ''}</span>
-            </span>
-          ),
-        },
-      ]}
-    >
+    <Page>
       <Layout style={{ background: 'transparent', gap: spacing.md }}>
         <Sider width={200} style={{ background: 'transparent' }}>
+          {/* 侧栏顶部身份区：团队头像+名称 + 下方整宽返回按钮（design-system SiderHeader，与应用工作台同构） */}
+          <SiderHeader name={detail?.name} avatarSrc={detail?.avatar || undefined} backTo="/apps" backLabel={t('team.backHome')} />
           <Menu
             mode="inline"
             items={loading ? [] : menuItems}
@@ -412,19 +421,40 @@ export function TeamManage() {
         </Sider>
         <Content>
           {loading ? null : activeSection === 'apps' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamApps teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 内部应用同属使用分区：Dify 式分层（工具栏裸排 + 应用卡自带白色表面）
+            <TeamApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'externalApps' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamExternalApps teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 外部应用同使用分区口径（Dify 式分层）：工具栏裸排 + 应用卡自带白色表面
+            <TeamExternalApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'accessApps' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamAccessApps teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 应用接入同使用分区口径（Dify 式分层）：工具栏裸排 + DataTable 自带白色卡片容器
+            <TeamAccessApps teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'members' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
+            // 成员管理同使用分区口径（Dify 式分层）：QueryBar 裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）；
+            // 查询按钮自带刷新语义，不放独立刷新按钮（前端规范第 7 条）
+            <>
+              <QueryBar
+                onSearch={handleMemberSearch}
+                loading={membersLoading}
+                extra={
+                  isOwner && (
+                    <Button type="primary" icon={<UserAddOutlined />} onClick={() => setAddModalOpen(true)}>
+                      {t('team.addMember')}
+                    </Button>
+                  )
+                }
+              >
+                <Form.Item name="memberKeyword">
+                  <Input
+                    placeholder={t('team.searchMemberPlaceholder')}
+                    prefix={<SearchOutlined style={{ color: 'inherit' }} />}
+                    allowClear
+                    maxLength={50}
+                    style={{ width: 240 }}
+                  />
+                </Form.Item>
+              </QueryBar>
               <DataTable<TeamUserItem>
                 sticky
                 scroll={{ x: 'max-content' }}
@@ -432,79 +462,36 @@ export function TeamManage() {
                 columns={memberColumns}
                 dataSource={filteredMembers}
                 loading={membersLoading}
-                onRefresh={() => void reloadMembers()}
-                refreshLoading={membersLoading}
-                toolbar={
-                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
-                    <Input.Search
-                      value={memberKeyword}
-                      onChange={(e) => setMemberKeyword(e.target.value)}
-                      onSearch={(v) => setMemberKeyword(v)}
-                      placeholder={t('team.searchMemberPlaceholder')}
-                      allowClear
-                      maxLength={50}
-                      style={{ width: 220 }}
-                    />
-                    {isOwner && (
-                      <Form form={addForm} layout="inline" style={{ display: 'flex', gap: spacing.sm }}>
-                        <Form.Item
-                          name="userId"
-                          rules={[{ required: true, message: t('team.addMemberPlaceholder') }]}
-                          style={{ marginBottom: 0, flex: 1, minWidth: 240 }}
-                        >
-                          <Select
-                            showSearch
-                            placeholder={t('team.addMemberPlaceholder')}
-                            filterOption={false}
-                            onSearch={(v) => void handleSearchCandidates(v)}
-                            onFocus={() => void handleSearchCandidates('')}
-                            notFoundContent={searching ? null : t('team.addMemberNoResult')}
-                            loading={searching}
-                            options={candidates.map((c) => ({
-                              value: Number(c.userId),
-                              label: c.userName ? `${c.userName}${c.nickName ? ` (${c.nickName})` : ''}` : String(c.nickName ?? ''),
-                            }))}
-                          />
-                        </Form.Item>
-                        <Button type="primary" icon={<UserAddOutlined />} onClick={() => void handleAddMember()}>
-                          {t('team.addMember')}
-                        </Button>
-                      </Form>
-                    )}
-                  </div>
-                }
               />
-            </DSCard>
-          ) : activeSection === 'gateway' ? (
-            <TeamGateway teamId={teamId} />
+            </>
           ) : activeSection === 'prompts' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamPrompts teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 使用分区（应用/提示词/技能/智能体/知识库/知识图谱）不走外层白卡容器（Dify 式）：
+            // 工具栏/分页裸排在页面底色上，列表内容自带白色表面（卡片或 DataTable 容器），与列表内容天然分层
+            <TeamPrompts teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'skills' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamSkills teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            <TeamSkills teamId={teamId} canManage={isAdminPlus} />
+          ) : activeSection === 'agents' ? (
+            <TeamAgents teamId={teamId} canManage={isAdminPlus} />
           ) : activeSection === 'knowledge' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamWikis teamId={teamId} />
-            </DSCard>
+            <TeamWikis teamId={teamId} />
           ) : activeSection === 'knowledgegraph' ? (
-            <DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamKnowledgeGraphs teamId={teamId} />
-            </DSCard>
+            <TeamKnowledgeGraphs teamId={teamId} />
+          ) : activeSection === 'channels' ? (
+            // 模型渠道同使用分区口径（Dify 式分层）：工具栏裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）
+            <TeamChannels teamId={teamId} />
           ) : activeSection === 'plugins' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamPlugins teamId={teamId} />
-            </DSCard>
+            // 插件同使用分区口径（Dify 式分层）：Tabs/工具栏裸排在页面底色上，
+            // 插件卡与 DataTable 自带白色表面，不再外包 DSCard（避免大卡片套小卡片）
+            <TeamPlugins teamId={teamId} />
           ) : activeSection === 'variables' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <Variables teamId={teamId} />
-            </DSCard>
+            // 环境变量同使用分区口径（Dify 式分层）：QueryBar 裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）
+            <Variables teamId={teamId} />
           ) : activeSection === 'timers' ? (
-<DSCard styles={{ body: { padding: spacing.lg } }}>
-              <TeamTimers teamId={teamId} canManage={isAdminPlus} />
-            </DSCard>
+            // 自动化同使用分区口径（Dify 式分层）：工具栏裸排在页面底色上，
+            // DataTable 自带白色卡片容器，不再外包 DSCard（避免双卡片）
+            <TeamTimers teamId={teamId} canManage={isAdminPlus} />
           ) : (
             <DSCard styles={{ body: { padding: spacing.lg } }}>
               <Form form={settingsForm} layout="vertical" style={{ width: '100%', maxWidth: 480 }}>
@@ -541,6 +528,13 @@ export function TeamManage() {
           )}
         </Content>
       </Layout>
+      <TeamMemberAddModal
+        open={addModalOpen}
+        teamId={teamId}
+        memberUserIds={memberUserIdSet}
+        onCancel={() => setAddModalOpen(false)}
+        onSuccess={(result) => void handleAddModalSuccess(result)}
+      />
     </Page>
   )
 }

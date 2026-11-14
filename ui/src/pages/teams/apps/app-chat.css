@@ -192,10 +192,19 @@
 }
 
 .moai-chat__sessions-empty {
-  padding: 40px 16px;
+  padding: 48px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   text-align: center;
   color: var(--mc-text-tertiary);
   font-size: 13px;
+}
+
+.moai-chat__sessions-empty-icon {
+  font-size: 26px;
+  opacity: 0.45;
 }
 
 /* ---------------- 右侧滑出面板基础布局（应用设置） ---------------- */
@@ -283,10 +292,21 @@ body.moai-chat-resizing {
 }
 
 .moai-chat__settings-section {
-  padding: 6px 16px 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px 6px;
   font-size: 12px;
   font-weight: 600;
   color: var(--mc-text-secondary);
+}
+
+.moai-chat__settings-section::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--mc-primary), var(--mc-info));
 }
 
 .moai-chat__settings-search {
@@ -333,30 +353,32 @@ body.moai-chat-resizing {
 }
 
 /* ===== 设置面板卡片（专家/技能）===== */
-/* 卡片固定列宽（= 默认面板宽 460 时两列各占宽），拖宽面板只多排一列不拉伸卡片 */
+/* 固定两列，随面板拖宽自适应拉伸 */
 .moai-chat__opt-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 214px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 2px 12px 12px;
 }
 
+/* 轻量填充风：默认无描边只靠浅填充分区，选中态描边 + 主色底 */
 .moai-chat__opt-card {
   position: relative;
-  border: 1px solid var(--mc-border);
-  border-radius: 10px;
-  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 9px 11px;
+  background: var(--mc-fill);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .moai-chat__opt-card:hover {
-  background: var(--mc-fill);
+  background: var(--mc-fill-secondary);
 }
 
 .moai-chat__opt-card.is-active {
-  border-color: var(--mc-primary, #3b82f6);
-  background: color-mix(in srgb, var(--mc-primary, #3b82f6) 8%, transparent);
+  border-color: var(--mc-primary-border);
+  background: var(--mc-primary-bg);
 }
 
 .moai-chat__opt-card-head {
@@ -467,41 +489,48 @@ body.moai-chat-resizing {
   border-top: 1px solid var(--mc-border);
 }
 
-/* 设置面板：工具审批模式选择（自动/审批） */
+/* 设置面板：工具审批/长期记忆等两态选择（分段控件风格：整体填充槽 + 选中浮块） */
 .moai-chat__settings-modes {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 12px 10px;
+  gap: 3px;
+  margin: 4px 12px 12px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--mc-fill);
 }
 
-/* 按钮固定宽度（与卡片列宽一致），不随面板拖宽拉伸 */
+/* 选项平分整行，选中态为浮起的白色（浅色主题下）小圆块 */
 .moai-chat__settings-mode {
-  flex: none;
-  width: 214px;
+  flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 34px;
-  border: 1px solid var(--mc-border);
-  border-radius: 10px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
   background: transparent;
   color: var(--mc-text-secondary);
   font-size: 12.5px;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.moai-chat__settings-mode:hover {
-  border-color: var(--mc-primary-border);
+.moai-chat__settings-mode:hover:not(.is-active):not(:disabled) {
+  color: var(--mc-text);
 }
 
 .moai-chat__settings-mode.is-active {
-  border-color: var(--mc-primary);
-  background: var(--mc-primary-bg);
+  background: var(--mc-bg-elevated);
   color: var(--mc-primary);
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--mc-text) 12%, transparent);
+}
+
+.moai-chat__settings-mode:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .moai-chat__experts.is-open {
@@ -622,6 +651,11 @@ body.moai-chat-resizing {
 .moai-chat__expert-source.is-team {
   color: var(--mc-primary);
   background: var(--mc-primary-bg);
+}
+
+.moai-chat__expert-source.is-market {
+  color: var(--mc-warning);
+  background: var(--mc-warning-bg);
 }
 
 .moai-chat__expert-desc {
@@ -763,6 +797,70 @@ body.moai-chat-resizing {
 
 /* ---------------- 欢迎态（居中输入卡） ---------------- */
 
+/* 欢迎态环境光：顶部主色晕染 + 右上角辅助色光斑，营造干净大气的第一屏（对话页与配置页调试面板共用） */
+.moai-chat__main.is-landing,
+.moai-chat-debug__landing {
+  background:
+    radial-gradient(110% 46% at 50% 0%, color-mix(in srgb, var(--mc-primary) 8%, transparent) 0%, transparent 62%),
+    radial-gradient(36% 30% at 88% 10%, color-mix(in srgb, var(--mc-info) 8%, transparent) 0%, transparent 70%),
+    var(--mc-bg-layout);
+}
+
+/* ---------------- 配置页调试对话面板（复用真实对话界面样式） ---------------- */
+
+/* 面板主体横向布局：主对话列 + 前端展示工具侧边栏（ChatSidePanel，窄屏浮层锚定本容器） */
+.moai-chat-debug__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.moai-chat-debug__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.moai-chat-debug__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 0 10px;
+}
+
+.moai-chat-debug__head-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mc-text);
+}
+
+.moai-chat-debug__head-hint {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mc-text-tertiary);
+}
+
+/* 面板内的欢迎态：收窄内边距（外层卡片已留白），圆角贴合卡片 */
+.moai-chat-debug__landing {
+  border-radius: 12px;
+  padding: 24px 20px 32px;
+}
+
+/* 面板内对话态：消息区与输入区内边距收窄 */
+.moai-chat-debug__scroll {
+  padding: 8px 4px 8px;
+}
+
+.moai-chat-debug__composer-wrap {
+  padding: 10px 4px 4px;
+}
+
 .moai-chat__landing {
   flex: 1;
   min-height: 0;
@@ -770,31 +868,54 @@ body.moai-chat-resizing {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 28px 20px 48px;
+  padding: 32px 24px 56px;
+}
+
+/* 垂直居中：用 auto margin 撑开（内容超出视口时自动退化为顶部对齐，避免上方内容被裁掉滚不到） */
+.moai-chat__landing::before,
+.moai-chat__landing::after {
+  content: '';
+  margin: auto;
 }
 
 .moai-chat__landing-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+}
+
+/* 徽标背后的柔光晕 */
+.moai-chat__landing-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  width: 260px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--mc-primary) 18%, transparent), transparent);
+  filter: blur(8px);
+  pointer-events: none;
 }
 
 .moai-chat__landing-badge {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   color: #fff;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   background: linear-gradient(135deg, var(--mc-primary) 0%, var(--mc-info) 100%);
-  box-shadow: 0 10px 30px rgba(41, 112, 255, 0.24);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--mc-primary) 9%, transparent),
+    0 18px 44px color-mix(in srgb, var(--mc-primary) 24%, transparent);
 }
 
 .moai-chat__landing-badge img {
@@ -804,37 +925,62 @@ body.moai-chat-resizing {
 }
 
 .moai-chat__landing-title {
-  margin: 16px 0 0;
-  font-size: 22px;
+  margin: 18px 0 0;
+  font-size: 26px;
   font-weight: 700;
+  letter-spacing: 0.3px;
   color: var(--mc-text);
 }
 
-/* 应用配置的开场白：欢迎态下以居中纯文本展示（无卡片容器） */
-.moai-chat__landing-opening {
-  max-width: 520px;
-  margin: -12px auto 8px;
-  font-size: 13.5px;
-  line-height: 1.65;
+.moai-chat__landing-subtitle {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--mc-text-secondary);
-  text-align: center;
-  white-space: pre-wrap;
-  word-break: break-word;
+}
+
+/* 应用配置的开场白：Markdown 渲染为一张居中简报卡（宽度与输入区对齐） */
+.moai-chat__landing-briefing {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 0 20px;
+  padding: 18px 24px;
+  border: 1px solid var(--mc-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--mc-bg-elevated) 84%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--mc-shadow);
+}
+
+.moai-chat__landing-briefing-body {
+  color: var(--mc-text-secondary);
+  font-size: 13.5px;
+}
+
+.moai-chat__landing-briefing-body :is(h1, h2, h3, h4, strong) {
+  color: var(--mc-text);
 }
 
 .moai-chat__landing-composer {
   width: 100%;
-  max-width: 720px;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
-/* 热门专家（输入框下方，欢迎态展示） */
+/* 欢迎态输入卡：更明显的悬浮层次 */
+.moai-chat__landing .moai-chat__composer {
+  box-shadow:
+    0 12px 36px color-mix(in srgb, var(--mc-primary) 8%, transparent),
+    var(--mc-shadow);
+}
+
+/* 热门专家（输入框下方，欢迎态展示）：单行横向滚动，两端渐隐 */
 .moai-chat__hot-experts {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .moai-chat__hot-experts-label {
@@ -847,32 +993,45 @@ body.moai-chat-resizing {
 }
 
 .moai-chat__hot-experts-label .anticon {
-  color: #f97316;
+  color: var(--mc-warning);
   font-size: 13px;
 }
 
 .moai-chat__hot-experts-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 6px 14px;
+  margin: -6px -14px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+}
+
+.moai-chat__hot-experts-list::-webkit-scrollbar {
+  display: none;
 }
 
 .moai-chat__hot-expert {
+  scroll-snap-align: start;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex: 0 0 auto;
   max-width: 240px;
-  padding: 6px 12px 6px 6px;
+  padding: 5px 16px 5px 6px;
   border: 1px solid var(--mc-border);
   border-radius: 999px;
-  background: var(--mc-bg-elevated);
+  background: color-mix(in srgb, var(--mc-bg-elevated) 86%, transparent);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .moai-chat__hot-expert:hover {
   border-color: var(--mc-primary-border);
-  box-shadow: var(--mc-shadow);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--mc-primary) 12%, transparent);
+  transform: translateY(-1px);
 }
 
 .moai-chat__hot-expert.is-active {
@@ -882,8 +1041,8 @@ body.moai-chat-resizing {
 
 .moai-chat__hot-expert-avatar {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -906,7 +1065,7 @@ body.moai-chat-resizing {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--mc-primary), var(--mc-info));
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -920,8 +1079,8 @@ body.moai-chat-resizing {
 
 .moai-chat__hot-expert-name {
   max-width: 170px;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--mc-text);
   white-space: nowrap;
   overflow: hidden;
@@ -933,6 +1092,7 @@ body.moai-chat-resizing {
 }
 
 .moai-chat__hot-expert-count {
+  margin-top: 1px;
   font-size: 11px;
   color: var(--mc-text-tertiary);
 }
@@ -943,28 +1103,93 @@ body.moai-chat-resizing {
   color: var(--mc-primary);
 }
 
-/* 快捷输入（应用配置定义，欢迎态输入区下方，轻量胶囊，点击即发送） */
+/* 快捷输入（应用配置定义，欢迎态输入区下方）：两列建议卡片，点击即发送 */
 .moai-chat__suggestions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moai-chat__suggestions-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mc-text-tertiary);
+}
+
+.moai-chat__suggestions-label .anticon {
+  color: var(--mc-warning);
+  font-size: 13px;
+}
+
+.moai-chat__suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .moai-chat__suggestions-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .moai-chat__suggestion {
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
   border: 1px solid var(--mc-border);
-  border-radius: 999px;
-  background: var(--mc-bg-elevated);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mc-bg-elevated) 86%, transparent);
   color: var(--mc-text-secondary);
   font-size: 13px;
+  text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.moai-chat__suggestion-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--mc-text-tertiary);
+  transition: color 0.18s ease;
+}
+
+.moai-chat__suggestion-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moai-chat__suggestion-arrow {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--mc-primary);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .moai-chat__suggestion:hover {
   border-color: var(--mc-primary-border);
-  background: var(--mc-primary-bg);
+  background: color-mix(in srgb, var(--mc-primary-bg) 60%, var(--mc-bg-elevated));
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--mc-primary) 10%, transparent);
+  transform: translateY(-1px);
+  color: var(--mc-text);
+}
+
+.moai-chat__suggestion:hover .moai-chat__suggestion-icon {
   color: var(--mc-primary);
+}
+
+.moai-chat__suggestion:hover .moai-chat__suggestion-arrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* ---------------- 消息 ---------------- */
@@ -1209,6 +1434,159 @@ body.moai-chat-resizing {
   align-items: center;
   gap: 8px;
   padding: 2px 0 6px 22px;
+}
+
+/* 子智能体派发嵌套活动卡：容器化卡片，头部（头像+名称+子智能体徽标+状态+耗时）+ 可展开过程区 */
+.moai-chat__subagent-card {
+  margin: 2px 0 6px;
+  max-width: 720px;
+  padding: 4px 10px;
+  border: 1px solid var(--mc-border);
+  border-radius: 10px;
+  background: var(--mc-bg);
+  transition: border-color 0.15s ease;
+}
+
+.moai-chat__subagent-card.is-running {
+  border-color: var(--mc-primary-border);
+}
+
+.moai-chat__subagent-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.moai-chat__subagent-avatar {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.moai-chat__subagent-card .moai-chat__tool-card-name {
+  font-family: inherit;
+}
+
+.moai-chat__subagent-badge {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--mc-primary-bg);
+  color: var(--mc-primary);
+  font-size: 10.5px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.moai-chat__tool-card-status.is-running {
+  color: var(--mc-primary);
+}
+
+.moai-chat__tool-card-status.is-failed {
+  color: var(--mc-danger);
+}
+
+.moai-chat__subagent-elapsed {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--mc-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.moai-chat__subagent-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--mc-border);
+  font-size: 13px;
+}
+
+.moai-chat__subagent-label {
+  flex-shrink: 0;
+  color: var(--mc-text-tertiary);
+  font-size: 11.5px;
+}
+
+.moai-chat__subagent-task {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--mc-text-secondary);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* 嵌套工具步骤：名称行 + 截断结果摘要 */
+.moai-chat__subagent-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.moai-chat__subagent-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moai-chat__subagent-step-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--mc-text-secondary);
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+.moai-chat__subagent-step-result {
+  margin: 2px 0 0 22px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--mc-code-bg);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--mc-text-tertiary);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 96px;
+  overflow: auto;
+}
+
+/* 子代理正文流式输出 */
+.moai-chat__subagent-text {
+  color: var(--mc-text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.moai-chat__subagent-final {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--mc-border);
+  color: var(--mc-text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 完成后折叠态的一行结论摘要 */
+.moai-chat__subagent-summary {
+  margin: 0 0 4px;
+  padding: 2px 0;
+  color: var(--mc-text-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 复制按钮悬浮于回合右上角，不占布局空间（悬停该消息块时浮现） */

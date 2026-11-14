@@ -118,24 +118,50 @@ export async function uploadImage(file: File): Promise<string> {
  * </para>
  */
 export async function uploadChatFile(file: File): Promise<UploadedImage> {
+  return preUploadPublicFile(file, 'pre_upload_chat_file', 'uploadFileFailed')
+}
+
+/**
+ * 上传知识图谱导入文件（文档/文本提取能力全集，public/chat 目录，≤20MB），返回 ObjectKey 和可访问的完整地址.
+ * <para>
+ * 与对话附件同流程，走专用 pre_upload_graph_file 端点（后端校验扩展名白名单与大小上限）。
+ * </para>
+ */
+export async function uploadGraphFile(file: File): Promise<UploadedImage> {
+  return preUploadPublicFile(file, 'pre_upload_graph_file', 'uploadFileFailed')
+}
+
+/**
+ * 公开文件预上传公共流程：预上传 -> 直传 OSS -> 完成登记.
+ */
+async function preUploadPublicFile(
+  file: File,
+  endpoint: 'pre_upload_chat_file' | 'pre_upload_graph_file',
+  failTag: string,
+): Promise<UploadedImage> {
   const client = getApiClient()
   const buffer = await file.arrayBuffer()
   const shA256 = await sha256(buffer)
 
-  const pre = await client.api.storage.public.pre_upload_chat_file.post({
+  const payload = {
     fileName: file.name,
     contentType: file.type || 'application/octet-stream',
     fileSize: file.size,
     shA256,
-  })
+  }
+
+  const pre =
+    endpoint === 'pre_upload_chat_file'
+      ? await client.api.storage.public.pre_upload_chat_file.post(payload)
+      : await client.api.storage.public.pre_upload_graph_file.post(payload)
 
   if (!pre?.objectKey) {
-    throw new Error('uploadFileFailed')
+    throw new Error(failTag)
   }
 
   if (!pre.isExist) {
     if (!pre.uploadUrl) {
-      throw new Error('uploadFileFailed')
+      throw new Error(failTag)
     }
 
     const res = await fetch(pre.uploadUrl, {
@@ -144,7 +170,7 @@ export async function uploadChatFile(file: File): Promise<UploadedImage> {
       body: file,
     })
     if (!res.ok) {
-      throw new Error('uploadFileFailed')
+      throw new Error(failTag)
     }
 
     await client.api.storage.complate_url.post({

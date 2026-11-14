@@ -115,7 +115,17 @@ public partial class AppEntity : IFullAudited
     public bool IsAuth { get; set; }
 
     /// <summary>
+    /// 是否开启对外协议接入（ACP 与 A2A 端点，单一开关同开同关）；开启时自动生成/复用该应用唯一的团队资源 key（ACP/A2A 共用一把）.
+    /// </summary>
+    public bool IsAcpA2aEnabled { get; set; }
+
+    /// <summary>
     /// 累计使用次数（会话创建计数，删除会话不减少），由 Redis 计数器每分钟批量累加.
     /// </summary>
     public int UseCount { get; set; }
+
+    /// <summary>
+    /// 累计消息条数（会话落库的物理消息行数增量累计，删除会话不减少），由 Redis 计数器每分钟批量累加.
+    /// </summary>
+    public long MessageCount { get; set; }
 }

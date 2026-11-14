@@ -6,6 +6,8 @@ import { ApplyRequestBuilderRequestsMetadata, type ApplyRequestBuilder } from '.
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
 // @ts-ignore
+import { PendingCountRequestBuilderRequestsMetadata, type PendingCountRequestBuilder } from './pendingCount/index.js';
+// @ts-ignore
 import { ReviewRequestBuilderRequestsMetadata, type ReviewRequestBuilder } from './review/index.js';
 // @ts-ignore
 import { TakedownRequestBuilderRequestsMetadata, type TakedownRequestBuilder } from './takedown/index.js';
@@ -28,6 +30,10 @@ export interface PublicationRequestBuilder extends BaseRequestBuilder<Publicatio
      * The list property
      */
     get list(): ListRequestBuilder;
+    /**
+     * The pendingCount property
+     */
+    get pendingCount(): PendingCountRequestBuilder;
     /**
      * The review property
      */
@@ -58,6 +64,9 @@ export const PublicationRequestBuilderNavigationMetadata: Record<Exclude<keyof P
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,
+    },
+    pendingCount: {
+        requestsMetadata: PendingCountRequestBuilderRequestsMetadata,
     },
     review: {
         requestsMetadata: ReviewRequestBuilderRequestsMetadata,

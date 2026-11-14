@@ -3,7 +3,7 @@ using System.Net.Http;
 using Maomi;
 using Microsoft.Extensions.DependencyInjection;
 using MoAI.AIChannel.Services;
-using MoAI.Hangfire.Services;
+using MoAI.Statistics.Services;
 
 namespace MoAI.AIChannel;
 
@@ -26,6 +26,6 @@ public class AIChannelCoreModule : IModule
         context.Services.AddSingleton<IRerankClient, RerankClient>();
         context.Services.AddSingleton<IAiChatCompletionService, AIChatCompletionService>();
         context.Services.AddScoped<IAiModelUsageCounter, AiModelUsageCounter>();
-        context.Services.AddScoped<ICounterActivatorJob, AiModelUsageCounterActivatorJob>();
+        context.Services.AddScoped<IResourceUsageWriter, AiModelUsageCounterActivatorJob>();
     }
 }

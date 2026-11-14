@@ -47,27 +47,22 @@ public class UpdateWikiSourceCommand : IRequest<EmptyCommandResponse>, IModelVal
     public string? Description { get; init; }
 
     /// <summary>
-    /// 方式一：改绑到团队已有的飞书应用连接 id；为空表示不修改绑定.
-    /// </summary>
-    public Guid? FeishuAppId { get; init; }
-
-    /// <summary>
-    /// 方式二：新建飞书应用连接的名称.
+    /// 新建飞书应用连接的名称；提交 <see cref="NewAppId"/> 时必填，为空表示不修改绑定.
     /// </summary>
     public string? NewAppName { get; init; }
 
     /// <summary>
-    /// 方式二：飞书开放平台 AppID.
+    /// 飞书开放平台 AppID，提交时按新凭证新建连接并改绑；为空表示不修改绑定.
     /// </summary>
     public string? NewAppId { get; init; }
 
     /// <summary>
-    /// 方式二：飞书开放平台 AppSecret.
+    /// 飞书开放平台 AppSecret.
     /// </summary>
     public string? NewAppSecret { get; init; }
 
     /// <summary>
-    /// 方式二：接入域名.
+    /// 接入域名.
     /// </summary>
     public string? NewAppDomain { get; init; }
 
@@ -124,6 +119,7 @@ public class UpdateWikiSourceCommand : IRequest<EmptyCommandResponse>, IModelVal
         validate.RuleFor(x => x.Name)
             .NotEmpty().WithMessage("请输入外部源名称.")
             .MaximumLength(50).WithMessage("外部源名称不能超过 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("外部源名称仅允许中文、英文、数字和下划线.")
             .When(x => x.Name != null);
         validate.RuleFor(x => x.Description)
             .MaximumLength(255).WithMessage("描述不能超过 255 个字符.");
@@ -192,10 +188,7 @@ public class UpdateWikiSourceCommand : IRequest<EmptyCommandResponse>, IModelVal
             .MaximumLength(128).WithMessage("节点 token 不能超过 128 个字符.")
             .When(x => x.NodeToken != null);
 
-        // 两种绑定方式互斥
-        validate.RuleFor(x => x)
-            .Must(x => !x.FeishuAppId.HasValue || string.IsNullOrWhiteSpace(x.NewAppId))
-            .WithMessage("选择已有连接与新建连接只能二选一.");
+        // 改绑只支持按新凭证新建连接一种方式
         validate.RuleFor(x => x.NewAppName)
             .NotEmpty().WithMessage("请输入飞书应用连接名称.")
             .MaximumLength(50).WithMessage("连接名称不能超过 50 个字符.")

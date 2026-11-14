@@ -28,11 +28,6 @@ public class KnowledgeGraphItem
     public string? Description { get; init; }
 
     /// <summary>
-    /// 模板 key.
-    /// </summary>
-    public string? TemplateKey { get; init; }
-
-    /// <summary>
     /// 来源：managed / connected.
     /// </summary>
     public string Mode { get; init; } = KnowledgeGraphModes.Managed;

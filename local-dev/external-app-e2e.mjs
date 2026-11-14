@@ -1,6 +1,9 @@
 // 外部应用接入 · 外部 token E2E（场景 @EA-Sn）
 // 用法：node local-dev/external-app-e2e.mjs [baseUrl]（默认 http://127.0.0.1:5000，可用 APP_BASE 覆盖）
 // 前置：后端运行中，且已执行 asserts/external_app.sql 建表（新库 EnsureCreated 自动建）。
+// 接入 scopes 字段已退役：创建不传 scopes、列表无 scopes 字段（EA-30），moai-ac- key 直连全量放行。
+// is_auth 已退役：外部应用一律匿名开放（EA-08~EA-14/EA-33 语义改写，编号不复用）；
+// 按用户身份访问改走内部应用访问点（POST /api/subsys/system/app-tokens，见 internal-app-access-e2e.mjs @IA-S*）。
 import crypto from 'node:crypto'
 
 const BASE = process.env.APP_BASE ?? process.argv[2] ?? 'http://127.0.0.1:5000'
@@ -59,36 +62,55 @@ async function main() {
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'external-team-' + TS } })).json.value)
 
   // 准备：外部应用（is_auth=true）、外部应用（is_auth=false）、范围外外部应用、内部应用
-  const APP_AUTH = await mkExternalApp(owner, TID, '外部·需授权' + TS.slice(-4), true)
-  const APP_FREE = await mkExternalApp(owner, TID, '外部·免授权' + TS.slice(-4), false)
-  const APP_OUT = await mkExternalApp(owner, TID, '外部·未授权' + TS.slice(-4), true)
+  const APP_AUTH = await mkExternalApp(owner, TID, '外部_需授权' + TS.slice(-4), true)
+  const APP_FREE = await mkExternalApp(owner, TID, '外部_免授权' + TS.slice(-4), false)
+  const APP_OUT = await mkExternalApp(owner, TID, '外部_未授权' + TS.slice(-4), true)
   const APP_IN = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '内部应用' + TS.slice(-4), appType: 'agent' } })).json.value)
   // 其他团队的外部应用（用于跨团队 403 断言）
   const TID2 = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'external-team2-' + TS } })).json.value)
-  const APP_OTHER_TEAM = await mkExternalApp(owner, TID2, '外部·他团队' + TS.slice(-4), true)
+
+  // 对话模型/系统提示词必填（保存强校验）：造一个私有模型授权本团队，供 EA-29 等配置保存用（无对话流量）
+  const EA_PROMPT = '你是外部应用测试助手'
+  const eaAdminToken = (await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })).json?.accessToken ?? ''
+  let EA_MODEL_ID = ''
+  if (eaAdminToken) {
+    const chName = `ea-cfg渠道-${TS}`
+    await api('POST', '/api/ai/channel', { token: eaAdminToken, body: { providerKey: 'openai', name: chName, protocolFamily: 'openaiChatCompletions', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'ea-cfg-key', enabled: true, description: 'external-app 配置保存桩渠道' } })
+    const channels = await api('GET', '/api/ai/channel', { token: eaAdminToken })
+    const chId = String((channels.json?.items ?? []).find((c) => c.name === chName)?.id ?? '')
+    const modelName = `ea-cfg-chat-${TS}`
+    await api('POST', '/api/ai/model', { token: eaAdminToken, body: { channelId: chId, meta: { modelId: modelName, name: modelName, modelKind: 'conversation', description: 'external-app 配置保存桩模型' }, enabled: true, isPublic: false } })
+    const models = await api('GET', `/api/ai/model?channelId=${chId}`, { token: eaAdminToken })
+    EA_MODEL_ID = String((models.json?.items ?? []).find((m) => m.name === modelName)?.id ?? '')
+    const cur = await api('GET', `/api/ai/model/${EA_MODEL_ID}/authorization`, { token: eaAdminToken })
+    const teamIds = [...new Set([...(cur.json?.items ?? []).map((i) => Number(i.teamId)), TID, TID2])]
+    await api('PUT', `/api/ai/model/${EA_MODEL_ID}/authorization`, { token: eaAdminToken, body: { teamIds } })
+  }
+  const APP_OTHER_TEAM = await mkExternalApp(owner, TID2, '外部_他团队' + TS.slice(-4), true)
 
   // EA-01 未携带 token 访问外部接口
-  check('EA-01 无 token 访问 /api/external/app/list 401', (await api('GET', '/api/external/app/list')).status === 401)
+  check('EA-01 无 token 访问 /api/teamres/app/list 401', (await api('GET', '/api/teamres/app/list')).status === 401)
 
   // EA-02 内部用户 token 访问外部接口（audience 隔离：内部 aud 不被外部 scheme 接受）
-  check('EA-02 内部用户 token 访问外部接口 401', (await api('GET', '/api/external/app/list', { token: owner.token })).status === 401)
+  check('EA-02 内部用户 token 访问外部接口 401', (await api('GET', '/api/teamres/app/list', { token: owner.token })).status === 401)
 
   // EA-03 创建应用接入（团队级授权，无需绑定应用列表）
   const acc = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入', description: 'external e2e' } })
   check('EA-03 创建应用接入 200 且返回 key', acc.status === 200 && typeof acc.json?.key === 'string' && acc.json.key.startsWith('moai-ac-'), `${acc.status} ${acc.text.slice(0, 160)}`)
   const KEY = acc.json?.key
+  const SECRET = acc.json?.secret
   const ACC_ID = acc.json?.accessAppId
 
   // EA-04 错误 key 换 token
-  check('EA-04 错误 key 换 token 401', (await api('POST', '/api/external/token', { body: { accessAppKey: 'moai-ac-notexist000000000000000000' } })).status === 401)
+  check('EA-04 错误 key 换 token 401', (await api('POST', '/api/teamres/token', { body: { accessAppKey: 'moai-ac-notexist000000000000000000' } })).status === 401)
 
   // EA-05 应用 token：仅 key
-  const appTok = await api('POST', '/api/external/token', { body: { accessAppKey: KEY } })
+  const appTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY, secret: SECRET } })
   check('EA-05a 应用 token 签发 200 tokenType=app', appTok.status === 200 && appTok.json?.tokenType === 'app' && typeof appTok.json?.accessToken === 'string', `${appTok.status} ${appTok.text.slice(0, 160)}`)
   check('EA-05b expiresIn>0 且无 externalId', appTok.json?.expiresIn > 0 && appTok.json?.externalId == null)
 
   // EA-06 应用 token 访问外部接口：团队级授权，返回归属团队全部外部应用
-  const appList = await api('GET', '/api/external/app/list', { token: appTok.json.accessToken })
+  const appList = await api('GET', '/api/teamres/app/list', { token: appTok.json.accessToken })
   const teamAppIds = (appList.json?.items ?? []).map((x) => x.appId)
   check('EA-06 应用 token 查团队外部应用列表 200 含 3 个外部应用', appList.status === 200 && teamAppIds.includes(APP_AUTH) && teamAppIds.includes(APP_FREE) && teamAppIds.includes(APP_OUT), `${appList.status} ${appList.text.slice(0, 200)}`)
   check('EA-06b 团队外部应用列表不含内部应用', !teamAppIds.includes(APP_IN), JSON.stringify(teamAppIds))
@@ -96,104 +118,104 @@ async function main() {
   // EA-07 外部 token 不能访问内部接口（audience 隔离）
   check('EA-07 外部 token 访问内部 /api/app/list 401', (await api('GET', `/api/app/list?teamId=${TID}`, { token: appTok.json.accessToken })).status === 401)
 
-  // EA-08 用户 token：key + appId + externalUserId
+  // ===== 外部应用授权已退役（is_auth 下线，EA-08~EA-14 语义改写、编号不复用）=====
+  // 外部应用一律匿名开放；按用户身份访问改走内部应用访问点（POST /api/subsys/system/app-tokens，@IA-S*）
   const EXT_UID = 'erp-user-' + TS
-  const userTok = await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_AUTH, externalUserId: EXT_UID, nickname: '小明' } })
-  check('EA-08a 用户 token 签发 200 tokenType=user', userTok.status === 200 && userTok.json?.tokenType === 'user' && /^[0-9]+$/.test(String(userTok.json?.externalId)), `${userTok.status} ${userTok.text.slice(0, 160)}`)
-  check('EA-08b 返回 externalUserId', userTok.json?.externalUserId === EXT_UID)
+  const retireTok = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY, secret: SECRET, appId: APP_AUTH, externalUserId: EXT_UID, nickname: '小明' } })
+  check('EA-08a key+externalUserId 换用户 token 400（授权已退役）', retireTok.status === 400, `${retireTok.status} ${retireTok.text.slice(0, 160)}`)
+  check('EA-08b 退役提示指向内部应用访问点颁发端点', retireTok.text.includes('/api/subsys/system/app-tokens'))
+  check('EA-09 key+externalUserId 缺 appId 仍 400（退役语义）', (await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY, secret: SECRET, externalUserId: EXT_UID } })).status === 400)
 
-  // EA-09 同 key + 同 externalUserId 复用同一外部身份
-  const userTok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_AUTH, externalUserId: EXT_UID } })
-  check('EA-09 重复申请复用 externalId', userTok2.status === 200 && userTok2.json?.externalId === userTok.json.externalId, `${userTok2.status}`)
+  // EA-10 匿名 token：原需授权应用（is_auth=true）现在同样匿名换取
+  const anonTokAuth = await api('POST', '/api/teamres/token', { body: { appId: APP_AUTH, externalUserId: EXT_UID } })
+  check('EA-10a 匿名换原需授权应用 200', anonTokAuth.status === 200 && anonTokAuth.json?.tokenType === 'user', `${anonTokAuth.status} ${anonTokAuth.text.slice(0, 160)}`)
+  check('EA-10b 显式 externalUserId 原样回显', anonTokAuth.json?.externalUserId === EXT_UID)
+  const anonAuthList = await api('GET', '/api/teamres/app/list', { token: anonTokAuth.json.accessToken })
+  const anonAuthIds = (anonAuthList.json?.items ?? []).map((x) => x.appId)
+  check('EA-10c 匿名 token 查应用列表含归属团队外部应用', anonAuthList.status === 200 && anonAuthIds.includes(APP_AUTH) && anonAuthIds.includes(APP_FREE), `${anonAuthList.status} ${anonAuthList.text.slice(0, 160)}`)
 
-  // EA-10 用户 token 查应用列表：团队级授权，含归属团队全部外部应用
-  const userList = await api('GET', '/api/external/app/list', { token: userTok.json.accessToken })
-  const userListIds = (userList.json?.items ?? []).map((x) => x.appId)
-  check('EA-10 用户 token 列表含团队外部应用', userList.status === 200 && userListIds.includes(APP_AUTH) && userListIds.includes(APP_OUT), `${userList.status} ${userList.text.slice(0, 200)}`)
-
-  // EA-11 用户 token 申请其他团队的应用（团队级授权拒绝）
-  const outOfScope = await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_OTHER_TEAM, externalUserId: EXT_UID } })
-  check('EA-11 跨团队应用 403', outOfScope.status === 403, `${outOfScope.status} ${outOfScope.text.slice(0, 160)}`)
+  // EA-11 匿名 token 可换他团队已发布外部应用（匿名开放语义，无 key 门槛）
+  const anonOther = await api('POST', '/api/teamres/token', { body: { appId: APP_OTHER_TEAM, externalUserId: 'anon-other-' + TS } })
+  check('EA-11 匿名换他团队已发布外部应用 200', anonOther.status === 200, `${anonOther.status} ${anonOther.text.slice(0, 160)}`)
 
   // EA-12 参数组合校验
-  check('EA-12a key+appId 缺 externalUserId 400', (await api('POST', '/api/external/token', { body: { accessAppKey: KEY, appId: APP_AUTH } })).status === 400)
-  check('EA-12b key+externalUserId 缺 appId 400', (await api('POST', '/api/external/token', { body: { accessAppKey: KEY, externalUserId: 'x' } })).status === 400)
-  check('EA-12c 无 key 无 appId 400', (await api('POST', '/api/external/token', { body: { externalUserId: 'x' } })).status === 400)
+  check('EA-12a key+appId（无 externalUserId）→ 应用 token 200（appId 字段退役忽略）', (await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY, secret: SECRET, appId: APP_AUTH } })).status === 200)
+  check('EA-12c 无 key 无 appId 400', (await api('POST', '/api/teamres/token', { body: { externalUserId: 'x' } })).status === 400)
 
-  // EA-13 匿名方式访问 is_auth=true 应用 → 403
-  check('EA-13 免 key 匿名换 is_auth=true 应用 403', (await api('POST', '/api/external/token', { body: { appId: APP_AUTH } })).status === 403)
+  // EA-13 匿名身份续接：同 appId + 同 externalUserId 复用同一外部身份
+  const anonTokAuth2 = await api('POST', '/api/teamres/token', { body: { appId: APP_AUTH, externalUserId: EXT_UID } })
+  check('EA-13 同 externalUserId 复用同一外部身份', anonTokAuth2.status === 200 && anonTokAuth2.json?.externalId === anonTokAuth.json.externalId, `${anonTokAuth2.status}`)
 
-  // EA-14 匿名方式换 is_auth=false 应用 → 生成临时外部身份
-  const anonTok = await api('POST', '/api/external/token', { body: { appId: APP_FREE } })
+  // EA-14 匿名方式换应用 → 生成临时外部身份
+  const anonTok = await api('POST', '/api/teamres/token', { body: { appId: APP_FREE } })
   check('EA-14a 匿名 token 签发 200', anonTok.status === 200 && anonTok.json?.tokenType === 'user' && /^[0-9]+$/.test(String(anonTok.json?.externalId)), `${anonTok.status} ${anonTok.text.slice(0, 160)}`)
   check('EA-14b 匿名 externalUserId 为临时值', typeof anonTok.json?.externalUserId === 'string' && anonTok.json.externalUserId.startsWith('ext-'))
 
-  // EA-15 refresh token 刷新用户 token（旋转）
-  const refreshed = await api('POST', '/api/external/token/refresh', { body: { refreshToken: userTok.json.refreshToken } })
+  // EA-15 refresh token 刷新匿名用户 token（旋转）
+  const refreshed = await api('POST', '/api/teamres/token/refresh', { body: { refreshToken: anonTokAuth.json.refreshToken } })
   check('EA-15a 刷新 200 返回新 token 对', refreshed.status === 200 && typeof refreshed.json?.accessToken === 'string' && typeof refreshed.json?.refreshToken === 'string', `${refreshed.status} ${refreshed.text.slice(0, 160)}`)
-  check('EA-15b 刷新后身份一致', refreshed.json?.externalId === userTok.json.externalId && refreshed.json?.tokenType === 'user')
+  check('EA-15b 刷新后身份一致', refreshed.json?.externalId === anonTokAuth.json.externalId && refreshed.json?.tokenType === 'user')
 
   // EA-16 刷新后的 access token 可用
-  check('EA-16 刷新后 token 访问外部接口 200', (await api('GET', '/api/external/app/list', { token: refreshed.json.accessToken })).status === 200)
+  check('EA-16 刷新后 token 访问外部接口 200', (await api('GET', '/api/teamres/app/list', { token: refreshed.json.accessToken })).status === 200)
 
   // EA-17 access token 冒充 refresh token → 401
-  check('EA-17 access token 冒充 refresh 401', (await api('POST', '/api/external/token/refresh', { body: { refreshToken: appTok.json.accessToken } })).status === 401)
+  check('EA-17 access token 冒充 refresh 401', (await api('POST', '/api/teamres/token/refresh', { body: { refreshToken: appTok.json.accessToken } })).status === 401)
 
   // EA-18 刷新应用 token（团队级授权，签发归属团队资源访问范围）
-  const refreshedApp = await api('POST', '/api/external/token/refresh', { body: { refreshToken: appTok.json.refreshToken } })
+  const refreshedApp = await api('POST', '/api/teamres/token/refresh', { body: { refreshToken: appTok.json.refreshToken } })
   check('EA-18 应用 token 刷新 200 tokenType=app', refreshedApp.status === 200 && refreshedApp.json?.tokenType === 'app', `${refreshedApp.status} ${refreshedApp.text.slice(0, 160)}`)
 
   // EA-19 删除接入后 refresh 吊销（401），其应用 token / 用户 token 刷新均失效
   const del = await api('DELETE', `/api/access-app/${ACC_ID}`, { token: owner.token })
   check('EA-19a 删除应用接入 200', del.status === 200, `${del.status}`)
-  check('EA-19b 删除后应用 token 刷新 401', (await api('POST', '/api/external/token/refresh', { body: { refreshToken: appTok.json.refreshToken } })).status === 401)
-  check('EA-19c 删除后用户 token 刷新 401', (await api('POST', '/api/external/token/refresh', { body: { refreshToken: userTok.json.refreshToken } })).status === 401)
-  check('EA-19d 删除后 key 再换 token 401', (await api('POST', '/api/external/token', { body: { accessAppKey: KEY } })).status === 401)
+  check('EA-19b 删除后应用 token 刷新 401', (await api('POST', '/api/teamres/token/refresh', { body: { refreshToken: appTok.json.refreshToken } })).status === 401)
+  check('EA-19c 匿名 token 与接入解耦：删除接入后匿名刷新仍 200（原 key 用户 token 随授权退役不复存在）', (await api('POST', '/api/teamres/token/refresh', { body: { refreshToken: anonTokAuth2.json.refreshToken } })).status === 200)
+  check('EA-19d 删除后 key 再换 token 401', (await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY } })).status === 401)
 
-  // ===== 外部会话与对话端点（@EA-S9/S10）：重新建接入并换新 token =====
+  // ===== 外部会话与对话端点（@EA-S9/S10）：匿名 token 承载会话归属（原 key 用户 token 路径已退役）=====
   const acc2 = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入2', description: 'session e2e' } })
   const KEY2 = acc2.json?.key
 
-  // EA-20 用户 token 建外部会话
+  // EA-20 匿名 token 建外部会话
   const EXT_UID2 = 'erp-user-2-' + TS
-  const userTok3 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, appId: APP_AUTH, externalUserId: EXT_UID2 } })
-  const appTok2 = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2 } })
-  check('EA-20a 用户 token 建会话 200', userTok3.status === 200 && (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: userTok3.json.accessToken, body: { title: '外部会话' } })).status === 200)
-  const session = await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: userTok3.json.accessToken, body: {} })
+  const userTok3 = await api('POST', '/api/teamres/token', { body: { appId: APP_AUTH, externalUserId: EXT_UID2 } })
+  const appTok2 = await api('POST', '/api/teamres/token', { body: { accessAppKey: KEY2, secret: acc2.json?.secret } })
+  check('EA-20a 用户 token 建会话 200', userTok3.status === 200 && (await api('POST', `/api/teamres/agent/${APP_AUTH}/session`, { token: userTok3.json.accessToken, body: { title: '外部会话' } })).status === 200)
+  const session = await api('POST', `/api/teamres/agent/${APP_AUTH}/session`, { token: userTok3.json.accessToken, body: {} })
   const SESSION_ID = session.json?.value
   check('EA-20b 建会话返回 Guid', session.status === 200 && isGuid(SESSION_ID), `${session.status} ${session.text.slice(0, 140)}`)
 
   // EA-21 会话列表与消息
-  const list = await api('GET', `/api/external/agent/${APP_AUTH}/session/list`, { token: userTok3.json.accessToken })
+  const list = await api('GET', `/api/teamres/agent/${APP_AUTH}/session/list`, { token: userTok3.json.accessToken })
   check('EA-21a 会话列表 200 含新建会话', list.status === 200 && (list.json?.items ?? []).some((x) => x.sessionId === SESSION_ID), `${list.status} ${list.text.slice(0, 160)}`)
-  const msgs = await api('GET', `/api/external/session/${SESSION_ID}/messages`, { token: userTok3.json.accessToken })
+  const msgs = await api('GET', `/api/teamres/session/${SESSION_ID}/messages`, { token: userTok3.json.accessToken })
   check('EA-21b 会话消息 200 空列表', msgs.status === 200 && Array.isArray(msgs.json?.items) && msgs.json.items.length === 0, `${msgs.status} ${msgs.text.slice(0, 140)}`)
 
   // EA-22 会话端点鉴权与范围
-  check('EA-22a 应用 token 建会话 403', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: appTok2.json.accessToken, body: {} })).status === 403)
-  check('EA-22b 跨团队应用建会话 403', (await api('POST', `/api/external/agent/${APP_OTHER_TEAM}/session`, { token: userTok3.json.accessToken, body: {} })).status === 403)
-  check('EA-22b2 同团队其他应用建会话 200（团队级授权）', (await api('POST', `/api/external/agent/${APP_OUT}/session`, { token: userTok3.json.accessToken, body: {} })).status === 200)
-  check('EA-22c 无 token 建会话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { body: {} })).status === 401)
-  check('EA-22d 内部用户 token 建会话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: owner.token, body: {} })).status === 401)
+  check('EA-22a 应用 token 建会话 403', (await api('POST', `/api/teamres/agent/${APP_AUTH}/session`, { token: appTok2.json.accessToken, body: {} })).status === 403)
+  check('EA-22b 跨团队应用建会话 403', (await api('POST', `/api/teamres/agent/${APP_OTHER_TEAM}/session`, { token: userTok3.json.accessToken, body: {} })).status === 403)
+  check('EA-22b2 同团队其他应用建会话 200（团队级授权）', (await api('POST', `/api/teamres/agent/${APP_OUT}/session`, { token: userTok3.json.accessToken, body: {} })).status === 200)
+  check('EA-22c 无 token 建会话 401', (await api('POST', `/api/teamres/agent/${APP_AUTH}/session`, { body: {} })).status === 401)
+  check('EA-22d 内部用户 token 建会话 401', (await api('POST', `/api/teamres/agent/${APP_AUTH}/session`, { token: owner.token, body: {} })).status === 401)
 
   // EA-23 其他外部用户不能读他人会话
-  const otherTok = await api('POST', '/api/external/token', { body: { accessAppKey: KEY2, appId: APP_AUTH, externalUserId: 'erp-other-' + TS } })
-  check('EA-23 他人查会话消息 404', otherTok.status === 200 && (await api('GET', `/api/external/session/${SESSION_ID}/messages`, { token: otherTok.json.accessToken })).status === 404)
+  const otherTok = await api('POST', '/api/teamres/token', { body: { appId: APP_AUTH, externalUserId: 'erp-other-' + TS } })
+  check('EA-23 他人查会话消息 404', otherTok.status === 200 && (await api('GET', `/api/teamres/session/${SESSION_ID}/messages`, { token: otherTok.json.accessToken })).status === 404)
 
   // EA-23b 他团队 token 不能读本团队会话（团队级隔离，QueryExternalSessionMessagesCommandHandler 404 兜底）
-  const accOtherTeam = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID2, name: 'e2e接入他团队', description: 'cross-team e2e' } })
-  const otherTeamTok = await api('POST', '/api/external/token', { body: { accessAppKey: accOtherTeam.json?.key, appId: APP_OTHER_TEAM, externalUserId: EXT_UID2 } })
-  check('EA-23b 他团队 token 查会话消息 404', otherTeamTok.status === 200 && (await api('GET', `/api/external/session/${SESSION_ID}/messages`, { token: otherTeamTok.json.accessToken })).status === 404, `${otherTeamTok.status}`)
+  const otherTeamTok = await api('POST', '/api/teamres/token', { body: { appId: APP_OTHER_TEAM, externalUserId: EXT_UID2 } })
+  check('EA-23b 他团队 token 查会话消息 404', otherTeamTok.status === 200 && (await api('GET', `/api/teamres/session/${SESSION_ID}/messages`, { token: otherTeamTok.json.accessToken })).status === 404, `${otherTeamTok.status}`)
 
   // EA-24 对话端点（AG-UI SSE）鉴权与范围
-  check('EA-24a 无 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { body: {} })).status === 401)
-  check('EA-24b 无效 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { token: 'invalid-token', body: {} })).status === 401)
-  check('EA-24c 内部用户 token 对话 401', (await api('POST', `/api/external/agent/${APP_AUTH}/chat`, { token: owner.token, body: {} })).status === 401)
-  check('EA-24d 跨团队应用对话 403', (await api('POST', `/api/external/agent/${APP_OTHER_TEAM}/chat`, { token: userTok3.json.accessToken, body: {} })).status === 403)
+  check('EA-24a 无 token 对话 401', (await api('POST', `/api/teamres/agent/${APP_AUTH}/chat`, { body: {} })).status === 401)
+  check('EA-24b 无效 token 对话 401', (await api('POST', `/api/teamres/agent/${APP_AUTH}/chat`, { token: 'invalid-token', body: {} })).status === 401)
+  check('EA-24c 内部用户 token 对话 401', (await api('POST', `/api/teamres/agent/${APP_AUTH}/chat`, { token: owner.token, body: {} })).status === 401)
+  check('EA-24d 跨团队应用对话 403', (await api('POST', `/api/teamres/agent/${APP_OTHER_TEAM}/chat`, { token: userTok3.json.accessToken, body: {} })).status === 403)
 
   // EA-25 真实对话链路：AG-UI 协议体，验证外部用户 id 通过派发器会话归属校验
   // （应用未配置模型时派发器以 SSE 文本返回装配错误，HTTP 200 即说明归属校验与派发链路通）
-  const chat = await api('POST', `/api/external/agent/${APP_AUTH}/chat`, {
+  const chat = await api('POST', `/api/teamres/agent/${APP_AUTH}/chat`, {
     token: userTok3.json.accessToken,
     body: { threadId: SESSION_ID, runId: 'run-1', messages: [{ id: 'm1', role: 'user', content: '你好' }] },
   })
@@ -211,12 +233,15 @@ async function main() {
   check('EA-26d 面板宽度越界 400', (await api('PUT', `/api/app/${APP_AUTH}/access-point`, { token: owner.token, body: { position: 'bottomRight', panelWidth: 100, panelHeight: 560, enabled: true } })).status === 400)
 
   // EA-27 公开配置（匿名）
-  const pub = await api('GET', `/api/external/app/${APP_AUTH}/access-point`)
+  const pub = await api('GET', `/api/teamres/app/${APP_AUTH}/access-point`)
   check('EA-27a 公开配置 200 且生效', pub.status === 200 && pub.json?.title === '在线客服' && pub.json?.position === 'bottomLeft' && pub.json?.panelWidth === 420, `${pub.status} ${pub.text.slice(0, 160)}`)
-  check('EA-27b 公开配置含 isAuth/enabled/appName', pub.json?.isAuth === true && pub.json?.enabled === true && typeof pub.json?.appName === 'string')
+  check('EA-27b 公开配置含 authMode=open/endpoints/enabled/appName（isAuth 字段退役）', pub.json?.authMode === 'open' && pub.json?.enabled === true && typeof pub.json?.appName === 'string'
+    && typeof pub.json?.endpoints?.chat === 'string' && pub.json?.endpoints?.chat.includes('/api/teamres/agent/') && pub.json?.endpoints?.token === '',
+    JSON.stringify(pub.json?.endpoints))
   const internalAppId = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: '内部应用B' + TS.slice(-3), appType: 'agent' } })).json.value)
-  check('EA-27d 内部应用配置访问点 400', (await api('PUT', `/api/app/${internalAppId}/access-point`, { token: owner.token, body: { position: 'bottomRight', panelWidth: 380, panelHeight: 560, enabled: true } })).status === 400)
-  check('EA-27e 不存在应用公开配置 404', (await api('GET', `/api/external/app/${crypto.randomUUID()}/access-point`)).status === 404)
+  check('EA-27d 内部应用也可配置访问点（身份穿透入口）200', (await api('PUT', `/api/app/${internalAppId}/access-point`, { token: owner.token, body: { position: 'bottomRight', panelWidth: 380, panelHeight: 560, enabled: true } })).status === 200)
+  check('EA-27d2 未发布内部应用公开配置 404（不泄露存在性）', (await api('GET', `/api/teamres/app/${internalAppId}/access-point`)).status === 404)
+  check('EA-27e 不存在应用公开配置 404', (await api('GET', `/api/teamres/app/${crypto.randomUUID()}/access-point`)).status === 404)
 
   // EA-28 悬浮组件静态托管
   const widget = await fetch(`${BASE}/embed/moai-widget.js`)
@@ -226,9 +251,41 @@ async function main() {
   check('EA-28b 组件暴露 tokenProvider 拦截器（授权应用推荐接入）', widgetSrc.includes('tokenProvider'))
   check('EA-28c 组件暴露 onRequest 中间件与全局 mount', widgetSrc.includes('onRequest') && widgetSrc.includes('mount'))
 
+  // ===== 访问点显示形式与开场白（悬浮/内嵌 + 流式对话增强） =====
+  // EA-37 显示形式 displayMode：未配置行走列默认 floating；保存 inline 后内外视图与公开端点一致回显
+  {
+    const pubDefault = await api('GET', `/api/teamres/app/${APP_AUTH}/access-point`)
+    check('EA-37a 未配置 displayMode 公开回显默认 floating', pubDefault.status === 200 && pubDefault.json?.displayMode === 'floating', `${pubDefault.status} ${JSON.stringify(pubDefault.json?.displayMode)}`)
+    const saveInline = await api('PUT', `/api/app/${APP_AUTH}/access-point`, { token: owner.token, body: { title: '在线客服', position: 'bottomLeft', displayMode: 'inline', panelWidth: 420, panelHeight: 600, enabled: true } })
+    check('EA-37b 保存 displayMode=inline 200', saveInline.status === 200, `${saveInline.status} ${saveInline.text.slice(0, 140)}`)
+    const internalView = (await api('GET', `/api/app/${APP_AUTH}/access-point`, { token: owner.token })).json
+    const pubInline = await api('GET', `/api/teamres/app/${APP_AUTH}/access-point`)
+    check('EA-37c 内部视图回读 inline 且 position 归一化 camel', internalView?.displayMode === 'inline' && internalView?.position === 'bottomLeft', JSON.stringify({ displayMode: internalView?.displayMode, position: internalView?.position }))
+    check('EA-37d 公开配置回显 displayMode=inline', pubInline.json?.displayMode === 'inline', JSON.stringify(pubInline.json?.displayMode))
+  }
+
+  // EA-38 开场白公开下发（发布快照口径）：组件新会话展示开场白，不参与模型上下文
+  {
+    const osBase = { modelId: EA_MODEL_ID, prompt: EA_PROMPT, wikiIds: [], plugins: [], workflowApps: [], quickInputs: [] }
+    check('EA-38a 启用开场白并发布 200', (await api('PUT', `/api/app/${APP_FREE}/agent-config`, { token: owner.token, body: { ...osBase, openingStatement: '欢迎-快照A', openingStatementEnabled: true } })).status === 200
+      && (await api('POST', `/api/app/${APP_FREE}/publish`, { token: owner.token })).status === 200)
+    check('EA-38b 公开配置下发开场白（发布快照口径）', (await api('GET', `/api/teamres/app/${APP_FREE}/access-point`)).json?.openingStatement === '欢迎-快照A')
+    await api('PUT', `/api/app/${APP_FREE}/agent-config`, { token: owner.token, body: { ...osBase, openingStatement: '欢迎-草稿B', openingStatementEnabled: true } })
+    check('EA-38c 草稿改开场白未发布不影响公开（仍返回发布快照）', (await api('GET', `/api/teamres/app/${APP_FREE}/access-point`)).json?.openingStatement === '欢迎-快照A')
+    await api('PUT', `/api/app/${APP_FREE}/agent-config`, { token: owner.token, body: { ...osBase, openingStatement: '欢迎-关闭', openingStatementEnabled: false } })
+    await api('POST', `/api/app/${APP_FREE}/publish`, { token: owner.token })
+    check('EA-38d 开场白停用后公开为 null', (await api('GET', `/api/teamres/app/${APP_FREE}/access-point`)).json?.openingStatement == null)
+  }
+
+  // EA-39 访问点从未配置的应用：position 回退 bottomRight（camel，修复历史 kebab 默认）、displayMode 回退 floating
+  {
+    const fallback = await api('GET', `/api/teamres/app/${APP_OUT}/access-point`)
+    check('EA-39 未配置行公开回退 bottomRight/floating', fallback.status === 200 && fallback.json?.position === 'bottomRight' && fallback.json?.displayMode === 'floating', `${fallback.status} ${fallback.json?.position}/${fallback.json?.displayMode}`)
+  }
+
   // ===== 外部应用沙箱/技能限制 =====
   // EA-29 外部应用不允许技能与沙箱：保存显式携带即 400，正常保存后技能落空、沙箱关闭
-  const cfgBase = { modelId: null, prompt: '', wikiIds: [], plugins: [], workflowApps: [], openingStatement: '', openingStatementEnabled: false, quickInputs: [] }
+  const cfgBase = { modelId: EA_MODEL_ID, prompt: EA_PROMPT, wikiIds: [], plugins: [], workflowApps: [], openingStatement: '', openingStatementEnabled: false, quickInputs: [] }
   check('EA-29a 外部应用携带技能保存 400', (await api('PUT', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [crypto.randomUUID()] } })).status === 400)
   check('EA-29b 外部应用开启沙箱保存 400', (await api('PUT', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: true } } } })).status === 400)
   const okCfg = await api('PUT', `/api/app/${APP_AUTH}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: false } } } })
@@ -237,55 +294,53 @@ async function main() {
   check('EA-29d 配置回读技能为空且沙箱未启用', Array.isArray(cfgRead?.skills) && cfgRead.skills.length === 0 && cfgRead?.executionSettings?.sandbox?.enabled !== true, JSON.stringify(cfgRead)?.slice(0, 200))
   check('EA-29e 内部应用开启沙箱不受限 200', (await api('PUT', `/api/app/${internalAppId}/agent-config`, { token: owner.token, body: { ...cfgBase, skills: [], executionSettings: { sandbox: { enabled: true } } } })).status === 200)
 
-  // ===== key 直连（免换 token）：应用接入 key 直访团队资源 + 会话身份自动解析 + 网关 model 范围 =====
+  // ===== key 直连（免换 token）：应用接入 key 直访团队资源 + 会话身份自动解析（scopes 退役，全量放行） =====
   {
-    const acc3 = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入直连', description: 'key direct e2e', scopes: ['model', 'wiki_read', 'wiki_write'] } })
+    const acc3 = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name: 'e2e接入直连', description: 'key direct e2e' } })
     const KEY3 = acc3.json?.key
-    check('EA-30a 创建带 model 范围接入 200', acc3.status === 200 && typeof KEY3 === 'string', `${acc3.status} ${acc3.text.slice(0, 140)}`)
+    check('EA-30a 创建直连接入不传 scopes 200', acc3.status === 200 && typeof KEY3 === 'string', `${acc3.status} ${acc3.text.slice(0, 140)}`)
     const acc3List = (await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })).json?.items ?? []
-    check('EA-30b 列表回显 scopes 含 model', acc3List.some((x) => x.accessAppId === acc3.json?.accessAppId && (x.scopes ?? []).includes('model')), JSON.stringify(acc3List.map((x) => x.scopes)))
+    const acc3Item = acc3List.find((x) => x.accessAppId === acc3.json?.accessAppId)
+    check('EA-30b 列表项无 scopes 字段（退役）', acc3Item != null && !('scopes' in (acc3Item ?? {})), JSON.stringify(acc3Item ? Object.keys(acc3Item) : acc3List.map((x) => x.accessAppId)))
 
     const kdHeaders = (key) => ({ Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' })
 
     // EA-31 key 直连团队资源（无需换取外部 token）
-    const kdList = await fetch(`${BASE}/api/external/app/list`, { headers: kdHeaders(KEY3) })
+    const kdList = await fetch(`${BASE}/api/teamres/app/list`, { headers: kdHeaders(KEY3) })
     const kdListBody = await kdList.json().catch(() => null)
     check('EA-31a key 直连查团队外部应用列表 200', kdList.status === 200 && (kdListBody?.items ?? []).some((x) => x.appId === APP_FREE), `${kdList.status}`)
-    const kdBad = await fetch(`${BASE}/api/external/app/list`, { headers: kdHeaders('moai-ac-invalid00000000000000000000000') })
+    const kdBad = await fetch(`${BASE}/api/teamres/app/list`, { headers: kdHeaders('moai-ac-invalid00000000000000000000000') })
     check('EA-31b 伪造接入 key 直连 401', kdBad.status === 401, `${kdBad.status}`)
-    const kdHeader2 = await fetch(`${BASE}/api/external/app/list`, { headers: { 'x-api-key': KEY3 } })
+    const kdHeader2 = await fetch(`${BASE}/api/teamres/app/list`, { headers: { 'x-api-key': KEY3 } })
     check('EA-31c x-api-key 头直连 200', kdHeader2.status === 200, `${kdHeader2.status}`)
 
     // EA-32 key 直连会话（is_auth=false 应用免用户 token；身份由接入直连身份承载）
-    const kdSession = await fetch(`${BASE}/api/external/agent/${APP_FREE}/session`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({ title: '直连会话' }) })
+    const kdSession = await fetch(`${BASE}/api/teamres/agent/${APP_FREE}/session`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({ title: '直连会话' }) })
     const kdSessionBody = await kdSession.json().catch(() => null)
     const KD_SESSION = kdSessionBody?.value
     check('EA-32a key 直连免授权应用建会话 200', kdSession.status === 200 && isGuid(KD_SESSION), `${kdSession.status} ${JSON.stringify(kdSessionBody)?.slice(0, 140)}`)
-    const kdSessionList = await fetch(`${BASE}/api/external/agent/${APP_FREE}/session/list`, { headers: kdHeaders(KEY3) })
+    const kdSessionList = await fetch(`${BASE}/api/teamres/agent/${APP_FREE}/session/list`, { headers: kdHeaders(KEY3) })
     const kdSessionListBody = await kdSessionList.json().catch(() => null)
     check('EA-32b 直连身份会话列表含新会话 200', kdSessionList.status === 200 && (kdSessionListBody?.items ?? []).some((x) => x.sessionId === KD_SESSION), `${kdSessionList.status}`)
-    const kdMsgs = await fetch(`${BASE}/api/external/session/${KD_SESSION}/messages`, { headers: kdHeaders(KEY3) })
+    const kdMsgs = await fetch(`${BASE}/api/teamres/session/${KD_SESSION}/messages`, { headers: kdHeaders(KEY3) })
     const kdMsgsBody = await kdMsgs.json().catch(() => null)
     check('EA-32c 直连身份读会话消息 200', kdMsgs.status === 200 && Array.isArray(kdMsgsBody?.items), `${kdMsgs.status}`)
-    const kdChat = await fetch(`${BASE}/api/external/agent/${APP_FREE}/chat`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({ threadId: KD_SESSION, runId: 'run-kd-1', messages: [{ id: 'm1', role: 'user', content: '你好' }] }) })
+    const kdChat = await fetch(`${BASE}/api/teamres/agent/${APP_FREE}/chat`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({ threadId: KD_SESSION, runId: 'run-kd-1', messages: [{ id: 'm1', role: 'user', content: '你好' }] }) })
     check('EA-32d key 直连对话 SSE 200（归属校验通过）', kdChat.status === 200, `${kdChat.status}`)
 
-    // EA-33 需授权应用会话面：key 直连/应用 token 一律 403 引导换取用户 token
-    const kdAuthSession = await fetch(`${BASE}/api/external/agent/${APP_AUTH}/session`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({}) })
-    const kdAuthSessionBody = await kdAuthSession.json().catch(() => null)
-    check('EA-33a key 直连建需授权应用会话 403', kdAuthSession.status === 403 && kdAuthSessionBody?.error?.code === 'external_user_token_required', `${kdAuthSession.status}`)
-    check('EA-33b 应用 token 建需授权应用会话 403（既有语义不变）', (await api('POST', `/api/external/agent/${APP_AUTH}/session`, { token: appTok2.json.accessToken, body: {} })).status === 403)
-    const kdAuthList = await fetch(`${BASE}/api/external/agent/${APP_AUTH}/session/list`, { headers: kdHeaders(KEY3) })
-    check('EA-33c key 直连查需授权应用会话列表 403', kdAuthList.status === 403, `${kdAuthList.status}`)
+    // EA-33 is_auth 已退役：原「需授权应用」匿名开放，key 直连会话面语义改写（编号不复用）
+    const kdAuthSession = await fetch(`${BASE}/api/teamres/agent/${APP_AUTH}/session`, { method: 'POST', headers: kdHeaders(KEY3), body: JSON.stringify({}) })
+    check('EA-33a key 直连建原需授权应用会话 200（匿名开放）', kdAuthSession.status === 200, `${kdAuthSession.status}`)
+    check('EA-33b 应用 token 建会话 403（应用 token 无用户身份，语义不变）', (await api('POST', `/api/teamres/agent/${APP_AUTH}/session`, { token: appTok2.json.accessToken, body: {} })).status === 403)
+    const kdAuthList = await fetch(`${BASE}/api/teamres/agent/${APP_AUTH}/session/list`, { headers: kdHeaders(KEY3) })
+    check('EA-33c key 直连查会话列表 200（匿名开放）', kdAuthList.status === 200, `${kdAuthList.status}`)
 
-    // EA-34 网关：应用接入 key 勾选 model 即可直连调用模型渠道
+    // EA-34 网关：团队模型网关已整体下线，端点一律 404
     const kdGw = await fetch(`${BASE}/api/aigateway/${TID}/v1/models`, { headers: kdHeaders(KEY3) })
-    check('EA-34a 带 model 范围接入 key 调网关 models 200', kdGw.status === 200, `${kdGw.status}`)
-    const kdGwCross = await fetch(`${BASE}/api/aigateway/${TID2}/v1/models`, { headers: kdHeaders(KEY3) })
-    check('EA-34b 网关路由团队与 key 归属不一致 403', kdGwCross.status === 403, `${kdGwCross.status}`)
+    check('EA-34a 模型网关端点已下线 404', kdGw.status === 404, `${kdGw.status}`)
 
     // EA-35 团队接入 key 直连场景随 team_api_key 下线退役（编号不复用）
-    const legacyKey = await fetch(`${BASE}/api/external/app/list`, { headers: kdHeaders('moai-invalidinvalidinvalidinvalidinvalid') })
+    const legacyKey = await fetch(`${BASE}/api/teamres/app/list`, { headers: kdHeaders('moai-invalidinvalidinvalidinvalidinvalid') })
     check('EA-36 已下线团队 key 前缀(moai-)直连 401', legacyKey.status === 401, `${legacyKey.status}`)
 
     await api('DELETE', `/api/access-app/${acc3.json?.accessAppId}`, { token: owner.token })

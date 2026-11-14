@@ -30,6 +30,8 @@ ObjectKey 是否位于 `public` 目录下；**不是** `public` 目录的文件�
 
 ## 其他模块如何正确使用
 
+> 插件模块（静态内置与在线动态包）不要直接注入 `IStorageService`，改用 `MoAI.AIPlugin.Shared` 的 `IPluginFileStorageService`：保存流/字节/公网文件返回文件 id，再按 id 取下载或公开地址，插件包因此无需引用存储/S3 模块。设计见 [静态插件 SDD 插件文件存储服务](./aiplugin-static/sdd.md#插件文件存储服务2026-11-14)，用法见 [插件开发指南](./aiplugin-authoring.md#文件存储可选)。
+
 ### 上传文件时
 
 其他模块使用 `IStorageService` 上传 / 预上传文件时，如果该文件需要公开访问，

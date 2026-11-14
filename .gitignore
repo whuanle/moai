@@ -399,8 +399,11 @@ local-dev/backend-*.log
 /configs/system.runtime.json
 # 本机私有运行时配置（含内网 IP/密码/AES 密钥），同上用 system.example.json 作模板
 /configs/system.yaml
+/configs/plugins/
 /.playwright-cli
 /outputs
 /preproc.xml
 /website
 .commandcode/
+# Mimosa security scan artifacts
+.mimosa/

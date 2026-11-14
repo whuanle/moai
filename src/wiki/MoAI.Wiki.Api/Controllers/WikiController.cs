@@ -54,6 +54,20 @@ public class WikiController : ControllerBase
     }
 
     /// <summary>
+    /// 跨知识库按文件名搜索团队内的文档，仅团队成员可访问.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="query">文件名关键字.</param>
+    /// <param name="limit">返回条数上限，默认 50.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiTeamFilesCommandResponse"/>.</returns>
+    [HttpGet("files/search")]
+    public Task<QueryWikiTeamFilesCommandResponse> QueryWikiTeamFiles([FromQuery] QueryWikiTeamFilesCommand req, CancellationToken ct)
+    {
+        return _mediator.Send(req, ct);
+    }
+
+    /// <summary>
     /// 查询知识库上传文件大小上限（MB），任意登录用户可访问，供前端上传前预检.
     /// </summary>
     /// <param name="ct">取消令牌.</param>
@@ -88,6 +102,35 @@ public class WikiController : ControllerBase
     {
         var cmd = new UpdateWikiCommand { WikiId = id, Name = req.Name, Description = req.Description };
         return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询知识库 MCP 接入配置（开关 + 该库的团队资源 key），需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="WikiMcpConfigResponse"/>.</returns>
+    [HttpGet("{id}/mcp-config")]
+    public Task<WikiMcpConfigResponse> QueryWikiMcpConfig(long id, CancellationToken ct)
+    {
+        var cmd = new QueryWikiMcpConfigCommand { WikiId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 更新知识库 MCP 接入开关，开启时自动生成/复用该库的团队资源 key；需要团队 Admin 及以上角色.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">开关请求.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="WikiMcpConfigResponse"/>.</returns>
+    [HttpPut("{id}/mcp-config")]
+    public Task<WikiMcpConfigResponse> UpdateWikiMcpConfig(long id, [FromBody] UpdateWikiMcpConfigCommand req, CancellationToken ct)
+    {
+        var cmd = new UpdateWikiMcpConfigCommand { WikiId = id, IsMcpEnabled = req.IsMcpEnabled };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
     }
 
     /// <summary>
@@ -148,6 +191,8 @@ public class WikiController : ControllerBase
             AiModelId = req.AiModelId,
             IsOptimizeQuery = req.IsOptimizeQuery,
             IsAnswer = req.IsAnswer,
+            IsKeywordSearch = req.IsKeywordSearch,
+            ContextWindow = req.ContextWindow,
         };
         _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
@@ -171,6 +216,41 @@ public class WikiController : ControllerBase
             EmbeddingModelId = req.EmbeddingModelId,
             EmbeddingDimensions = req.EmbeddingDimensions,
         };
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 发起知识库向量化模型迁移：以新模型/维度重建该库全部向量（临时集合 + 事务换名），完成后更新知识库配置，仅团队 Admin 及以上可操作.
+    /// 同一知识库同时只允许一个活跃迁移任务，迁移期间该库提取/切割/向量化被阻断（409）.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="req">迁移请求（目标模型 + 维度）.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="StartWikiModelMigrationCommandResponse"/>.</returns>
+    [HttpPost("{id}/model-migration")]
+    public Task<StartWikiModelMigrationCommandResponse> StartWikiModelMigration(long id, [FromBody] StartWikiModelMigrationCommand req, CancellationToken ct)
+    {
+        var cmd = new StartWikiModelMigrationCommand
+        {
+            WikiId = id,
+            ModelId = req.ModelId,
+            Dimensions = req.Dimensions,
+        };
+        _userContextProvider.SetUserContext(cmd);
+        return _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
+    /// 查询知识库向量化模型迁移状态（当前配置 + 向量总数 + 最近任务进度），仅团队成员可访问.
+    /// </summary>
+    /// <param name="id">知识库 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryWikiModelMigrationStatusResponse"/>.</returns>
+    [HttpGet("{id}/model-migration")]
+    public Task<QueryWikiModelMigrationStatusResponse> QueryWikiModelMigrationStatus(long id, CancellationToken ct)
+    {
+        var cmd = new QueryWikiModelMigrationStatusCommand { WikiId = id };
+        _userContextProvider.SetUserContext(cmd);
         return _mediator.Send(cmd, ct);
     }
 

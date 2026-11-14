@@ -36,7 +36,8 @@ public class AiModelResolver : IAiModelResolver
                                 select new { m, c })
             .ToListAsync(cancellationToken);
 
-        var pair = candidates.FirstOrDefault(x => x.m.IsPublic);
+        // 团队可用口径：团队自有渠道 → 公开模型 → 授权模型.
+        var pair = candidates.FirstOrDefault(x => x.c.TeamId == teamId) ?? candidates.FirstOrDefault(x => x.m.IsPublic);
         if (pair == null)
         {
             var authorized = await _databaseContext.AiModelAuthorizations

@@ -27,7 +27,7 @@ public class QueryUserBoundAccountsCommandHandler : IRequestHandler<QueryUserBou
         var items = await _databaseContext.UserOauthConnections
             .Where(x => x.UserId == request.ContextUserId)
             .Join(
-                _databaseContext.OauthConnections,
+                _databaseContext.OauthConnections.Where(o => o.IsVisible),
                 x => x.ProviderId,
                 o => o.Id,
                 (x, o) => new BoundAccountInfo

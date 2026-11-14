@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>MoAI.Statistics</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Hangfire.AspNetCore" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
+		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Core\MoAI.Hangfire.Core.csproj" />
+		<ProjectReference Include="..\..\settings\MoAI.Settings.Shared\MoAI.Settings.Shared.csproj" />
+		<ProjectReference Include="..\MoAI.Statistics.Api\MoAI.Statistics.Api.csproj" />
+		<ProjectReference Include="..\MoAI.Statistics.Shared\MoAI.Statistics.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -26,7 +26,7 @@ public class CreateKnowledgeGraphCommand : IRequest<SimpleLong>, IModelValidator
     public string? Description { get; init; }
 
     /// <summary>
-    /// 模板 key，null=自定义.
+    /// 模板 key，null=自定义；仅创建时作为种子类型数据参考，不与图谱持久化关联.
     /// </summary>
     public string? TemplateKey { get; init; }
 
@@ -44,7 +44,8 @@ public class CreateKnowledgeGraphCommand : IRequest<SimpleLong>, IModelValidator
     public static void Validate(AbstractValidator<CreateKnowledgeGraphCommand> validate)
     {
         validate.RuleFor(x => x.TeamId).GreaterThan(0).WithMessage("团队 id 不正确.");
-        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.");
+        validate.RuleFor(x => x.Name).NotEmpty().WithMessage("名称不能为空.").MaximumLength(50).WithMessage("名称最长 50 个字符.")
+            .Matches("^[\u4e00-\u9fa5a-zA-Z0-9_]+$").WithMessage("知识图谱名称仅允许中文、英文、数字和下划线.");
         validate.RuleFor(x => x.Description).MaximumLength(255).WithMessage("简介最长 255 个字符.");
         validate.RuleFor(x => x.Mode).Must(KnowledgeGraphModes.IsValid).WithMessage("图谱来源不合法.");
         validate.RuleFor(x => x.Database)

@@ -87,7 +87,7 @@ async function main() {
   // 准备团队 + 知识库
   const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: 'emb-team-' + TS } })).json.value)
   await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 2 } })
-  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'emb-wiki-' + TS, description: 'embedding e2e' } })).json.value)
+  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'emb_wiki_' + TS, description: 'embedding e2e' } })).json.value)
 
   const bind = await bindFirstEmbeddingModel(owner.token, TID, WID)
   check('WK-S15/WK-S16 前置：绑定向量模型 200', bind.ok, bind.reason || bind.res?.text?.slice(0, 120))

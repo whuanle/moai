@@ -4,12 +4,18 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createEmptyCommandResponseFromDiscriminatorValue, createQueryTeamUsersCommandResponseFromDiscriminatorValue, serializeAddTeamUserCommand, serializeEmptyCommandResponse, type AddTeamUserCommand, type BusinessValidationResult, type EmptyCommandResponse, type QueryTeamUsersCommandResponse } from '../../../../models/index.js';
 // @ts-ignore
-import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
+import { BatchRequestBuilderRequestsMetadata, type BatchRequestBuilder } from './batch/index.js';
+// @ts-ignore
+import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
 /**
  * Builds and executes requests for operations under /api/team/{-id}/users
  */
 export interface UsersRequestBuilder extends BaseRequestBuilder<UsersRequestBuilder> {
+    /**
+     * The batch property
+     */
+    get batch(): BatchRequestBuilder;
     /**
      * 查询团队成员列表，仅团队成员可访问.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -51,6 +57,14 @@ export interface UsersRequestBuilder extends BaseRequestBuilder<UsersRequestBuil
  * Uri template for the request builder.
  */
 export const UsersRequestBuilderUriTemplate = "{+baseurl}/api/team/{%2Did}/users";
+/**
+ * Metadata for all the navigation properties in the request builder.
+ */
+export const UsersRequestBuilderNavigationMetadata: Record<Exclude<keyof UsersRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    batch: {
+        requestsMetadata: BatchRequestBuilderRequestsMetadata,
+    },
+};
 /**
  * Metadata for all the requests in the request builder.
  */

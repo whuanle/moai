@@ -54,9 +54,9 @@ async function main() {
   const OTHER_TID = Number((await api('POST', '/api/team', { token: outsider.token, body: { name: 'dingtalk-other-' + TS } })).json.value)
 
   // 三个团队应用：本团队 A、本团队 B、外部团队 C
-  const appA = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'da-' + TS, appType: 'agent' } })).json.value
-  const appB = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'db-' + TS, appType: 'agent' } })).json.value
-  const appC = (await api('POST', '/api/app', { token: outsider.token, body: { teamId: OTHER_TID, name: 'dc-' + TS, appType: 'agent' } })).json.value
+  const appA = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'da_' + TS, appType: 'agent' } })).json.value
+  const appB = (await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: 'db_' + TS, appType: 'agent' } })).json.value
+  const appC = (await api('POST', '/api/app', { token: outsider.token, body: { teamId: OTHER_TID, name: 'dc_' + TS, appType: 'agent' } })).json.value
 
   // DT-01 未登录
   check('DT-01 未登录查列表 401', (await api('GET', `/api/dingtalk_app/list?teamId=${TID}`)).status === 401)

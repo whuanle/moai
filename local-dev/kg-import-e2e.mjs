@@ -1,6 +1,9 @@
-// 知识图谱 AI 导入文件 + JSON 结构化导入 E2E（场景 @KG-S26、@KG-S29；后端默认 127.0.0.1:5000）
-// 覆盖：模板图建图 → model-options（团队对话模型）→ 文件三段直传（chat 公共目录）→ AI 导入（本地 OpenAI 兼容桩返回固定抽取 JSON）
-//       → 图库写入断言（节点/边/属性）→ 非法 objectKey 400 → 空白模板图（无实体类型）导入 409。
+// 知识图谱 AI 导入文件 + JSON 结构化导入 E2E（场景 @KG-S26、@KG-S41、@KG-S29；后端默认 127.0.0.1:5000）
+// 覆盖：模板图建图 → model-options（团队对话模型）→ 文件三段直传（chat 公共目录）→ AI 异步导入（登记任务 → Hangfire
+//       提取/抽取/合并，本地 OpenAI 兼容桩返回固定抽取 JSON，轮询任务终态断言）→ 图库写入断言（节点/边/属性）
+//       → 非法 objectKey 400 → 空白模板图（无实体类型）导入 409。
+//       KG-S41：42 种格式导入——pre_upload_graph_file 专用端点（.py 放行落 public/chat/、.exe 拒绝 400、对话附件通道
+//       pre_upload_chat_file 白名单不变）+ .py 纯文本兜底提取全链路导入 done。
 //       KG-S29：JSON 结构化导入（/import-json，与外部 /import 同管线）——类型名引用+autoCreateTypes、业务 key upsert、
 //       端点按 key/名称引用、逐条失败报告、预检 validateOnly 不落库、非法 JSON/超限 400、重复导入幂等。
 // 桩模式与 wiki-recall / bocha E2E 一致，无需真实模型渠道；前置依赖：后端 + 图数据库可达且 KG_ENABLED=true。
@@ -112,7 +115,7 @@ const cleanup = async () => {
 }
 try {
   // 建物流模板图（自带模型与预置数据，供导入校验目标类型）
-  const graph = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-imp-' + TS, templateKey: 'logistics' } })
+  const graph = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_imp_' + TS, templateKey: 'logistics' } })
   const GID = Number(graph.json?.value)
   check('KG-S26a 创建物流模板图 200', graph.status === 200 && GID > 0, `${graph.status}`)
 
@@ -147,9 +150,21 @@ try {
     await api('POST', '/api/storage/complate_url', { token, body: { fileId: pre.json.fileId, isSuccess: true } })
   }
 
-  // AI 导入
+  // AI 导入（异步任务：import-file 登记 job 返回任务 id，Hangfire 执行提取/抽取/合并）
+  const waitJob = async (gid, jobId, timeoutMs = 60000) => {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      const res = await api('GET', `/api/knowledge-graph/${gid}/import-jobs/${jobId}`, { token })
+      if (res.status === 200 && ['done', 'failed', 'cancelled'].includes(String(res.json?.status))) return res
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+    return null
+  }
   const imp = await api('POST', `/api/knowledge-graph/${GID}/import-file`, { token, body: { objectKey: pre.json.objectKey, fileName: `kg-imp-${TS}.txt`, aiModelId: MODEL_ID } })
-  check('KG-S26d AI 导入 200 且新增 2 节点 1 边', imp.status === 200 && Number(imp.json?.nodesCreated) === 2 && Number(imp.json?.edgesCreated) === 1, `${imp.status} ${imp.text.slice(0, 200)}`)
+  const JOB_ID = Number(imp.json?.value)
+  check('KG-S26d AI 导入登记任务 200 且返回任务 id', imp.status === 200 && JOB_ID > 0, `${imp.status} ${imp.text.slice(0, 200)}`)
+  const jobDone = JOB_ID > 0 ? await waitJob(GID, JOB_ID) : null
+  check('KG-S26d2 导入任务终态 done 且新增 2 节点 1 边', jobDone?.json?.status === 'done' && Number(jobDone.json?.result?.nodesCreated) === 2 && Number(jobDone.json?.result?.edgesCreated) === 1, `${jobDone?.json?.status} ${JSON.stringify(jobDone?.json?.result ?? null)?.slice(0, 120)} ${jobDone?.json?.error ?? ''}`)
 
   // 画布断言：模板 11 + 导入 2 = 13 节点；15 + 1 = 16 边
   const cv = await api('POST', `/api/knowledge-graph/${GID}/canvas`, { token, body: { limit: 200 } })
@@ -161,14 +176,66 @@ try {
   check('KG-S26f 导入航段带距离/价格属性', !!leg && leg.properties?.['距离公里'] === '700' && leg.properties?.['运输价格'] === '2100', JSON.stringify(leg?.properties))
 
   // 空白模板图（无实体类型）导入 → 409
-  const blank = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-imp-blank-' + TS, templateKey: 'blank' } })
+  const blank = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_imp_blank_' + TS, templateKey: 'blank' } })
   const BGID = Number(blank.json?.value)
   const impBlank = await api('POST', `/api/knowledge-graph/${BGID}/import-file`, { token, body: { objectKey: pre.json.objectKey, fileName: `kg-imp-${TS}.txt`, aiModelId: MODEL_ID } })
   check('KG-S26g 空白模板图导入 409（无实体类型）', impBlank.status === 409, `${impBlank.status} ${impBlank.text.slice(0, 120)}`)
 
+  // ===== KG-S42b B1 幂等重导：同一文档再导一遍 → 命中合并（nodesMerged=2/nodesCreated=0）、边按三元组跳过、图库不增长 =====
+  {
+    const imp2 = await api('POST', `/api/knowledge-graph/${GID}/import-file`, { token, body: { objectKey: pre.json.objectKey, fileName: `kg-imp-${TS}.txt`, aiModelId: MODEL_ID } })
+    const JOB2 = Number(imp2.json?.value)
+    check('KG-S42b1 重复导入登记任务 200', imp2.status === 200 && JOB2 > 0, `${imp2.status}`)
+    const job2 = JOB2 > 0 ? await waitJob(GID, JOB2) : null
+    const r2 = job2?.json?.result ?? {}
+    check('KG-S42b2 重导终态 done 且全部命中合并（新建 0 / 合并 2 / 新边 0）',
+      job2?.json?.status === 'done' && Number(r2.nodesCreated) === 0 && Number(r2.nodesMerged) === 2 && Number(r2.edgesCreated) === 0,
+      `${job2?.json?.status} ${JSON.stringify(r2).slice(0, 140)}`)
+    const cv2 = await api('POST', `/api/knowledge-graph/${GID}/canvas`, { token, body: { limit: 200 } })
+    check('KG-S42b3 重导后图库不增长（仍 13 节点 16 边）', cv2.status === 200 && (cv2.json?.nodes ?? []).length === 13 && (cv2.json?.edges ?? []).length === 16, JSON.stringify({ n: cv2.json?.nodes?.length, e: cv2.json?.edges?.length }))
+
+    // KG-S42c 任务列表与重试语义：列表含历史任务；对 done 任务重试 409
+    const jobs = await api('GET', `/api/knowledge-graph/${GID}/import-jobs?pageNo=1&pageSize=10`, { token })
+    check('KG-S42c1 任务列表 200 且含本次任务', jobs.status === 200 && (jobs.json?.items ?? []).some((x) => Number(x.jobId) === JOB2), `${jobs.status} 共${jobs.json?.items?.length ?? '?'}条`)
+    const retryDone = await api('POST', `/api/knowledge-graph/${GID}/import-jobs/${JOB2}/retry`, { token })
+    check('KG-S42c2 对已完成任务重试 409', retryDone.status === 409, `${retryDone.status}`)
+    const cancelDone = await api('POST', `/api/knowledge-graph/${GID}/import-jobs/${JOB2}/cancel`, { token })
+    check('KG-S42c3 对已完成任务取消 409', cancelDone.status === 409, `${cancelDone.status}`)
+  }
+
+
+  // ===== KG-S41 图导入 42 种格式：pre_upload_graph_file 专用端点 + 代码文本纯文本兜底提取全链路 =====
+  {
+    const sha256Hex41 = (s) => crypto.createHash('sha256').update(s).digest('hex')
+
+    // a. .py 经专用端点上传 200（objectKey 落 public/chat/）
+    const pyContent = Buffer.from(`# 物流代码注释\nports = {"青岛": "CNTAO", "上海": "CNSHA"}\nprint('青岛到上海航段 700 公里，运价 2100 元。探针 ${TS}')\n`, 'utf8')
+    const gpre = await api('POST', '/api/storage/public/pre_upload_graph_file', { token, body: { fileName: `kg-imp-${TS}.py`, contentType: 'text/x-python', fileSize: pyContent.length, shA256: sha256Hex41(pyContent) } })
+    check('KG-S41a .py 图导入专用端点上传 200 且落 public/chat/', gpre.status === 200 && String(gpre.json?.objectKey ?? '').startsWith('public/chat/'), `${gpre.status} ${gpre.text.slice(0, 160)}`)
+    if (gpre.status === 200 && !gpre.json?.isExist && gpre.json?.uploadUrl) {
+      await fetch(gpre.json.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'text/x-python' }, body: pyContent })
+      await api('POST', '/api/storage/complate_url', { token, body: { fileId: gpre.json.fileId, isSuccess: true } })
+    }
+
+    // b. .exe 白名单拒绝 400（报错带支持清单）
+    const exePre = await api('POST', '/api/storage/public/pre_upload_graph_file', { token, body: { fileName: `evil-${TS}.exe`, contentType: 'application/octet-stream', fileSize: 10, shA256: sha256Hex41(`exe-${TS}`) } })
+    check('KG-S41b .exe 白名单拒绝 400', exePre.status === 400, `${exePre.status} ${exePre.text.slice(0, 120)}`)
+
+    // c. 对话附件通道不受影响：.py 仍被 pre_upload_chat_file 拒绝
+    const chatPre = await api('POST', '/api/storage/public/pre_upload_chat_file', { token, body: { fileName: `kg-imp-${TS}.py`, contentType: 'text/x-python', fileSize: pyContent.length, shA256: sha256Hex41(pyContent) } })
+    check('KG-S41c 对话附件白名单不变 .py 拒绝 400', chatPre.status === 400, `${chatPre.status}`)
+
+    // d. .py AI 导入全链路（Job 内纯文本兜底提取 → 桩模型抽取 → done）
+    const impPy = await api('POST', `/api/knowledge-graph/${GID}/import-file`, { token, body: { objectKey: gpre.json?.objectKey, fileName: `kg-imp-${TS}.py`, aiModelId: MODEL_ID } })
+    const PY_JOB = Number(impPy.json?.value)
+    check('KG-S41d .py 导入登记任务 200', impPy.status === 200 && PY_JOB > 0, `${impPy.status} ${impPy.text.slice(0, 120)}`)
+    const pyJob = PY_JOB > 0 ? await waitJob(GID, PY_JOB) : null
+    check('KG-S41e .py 导入任务 done（纯文本兜底提取生效；v4.1 幂等合并后同名实体计入合并）', pyJob?.json?.status === 'done' && Number(pyJob.json?.result?.nodesCreated) + Number(pyJob.json?.result?.nodesMerged ?? 0) >= 1, `${pyJob?.json?.status} ${pyJob?.json?.error ?? ''} ${JSON.stringify(pyJob?.json?.result ?? null)?.slice(0, 120)}`)
+  }
+
   // ===== KG-S29 JSON 结构化导入（/import-json，与外部 /import 同管线）=====
   {
-    const jg = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg-imp-json-' + TS, templateKey: 'blank' } })
+    const jg = await api('POST', '/api/knowledge-graph', { token, body: { teamId: TID, name: 'kg_imp_json_' + TS, templateKey: 'blank' } })
     const JGID = Number(jg.json?.value)
     if (!Number.isFinite(JGID)) throw new Error('KG-S29 建图失败')
 

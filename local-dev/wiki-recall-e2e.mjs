@@ -1,4 +1,4 @@
-// 知识库召回测试 E2E（场景 @WK-S37 ~ @WK-S42；后端 127.0.0.1:5210）
+// 知识库召回测试 E2E（场景 @WK-S37 ~ @WK-S55；后端 127.0.0.1:5210）
 // 覆盖：参数校验（空查询/越界 topK/越界阈值/AI 优化缺模型/非法文档 id）→ 团队门禁（非成员 404）
 //       → 向量召回（得分降序）→ 文档范围过滤 → 相似度阈值 → AI 优化问题 → AI 生成回答
 //       → 重排序接入 @WK-S42（rerankScore 降序、顺序重排）→ 重排序渠道故障降级 → 相邻片段上下文与去重。
@@ -102,6 +102,9 @@ async function recall(token, wikiId, body) {
 // ===== 本地 OpenAI 兼容桩：embedding（确定性哈希向量）+ chat（固定文案） =====
 
 /** 字符级 hash 分布向量：共享词多的文本对相似度更高，便于断言排序 */
+// embedding 桩请求计数（@WK-S53 复用快速路径断言：命中聚类后再次召回不再调用 embedding）
+let embedCallCount = 0
+
 function stubEmbed(text, dims = 1024) {
   const v = new Array(dims).fill(0)
   const tokens = String(text).match(/[\u4e00-\u9fa5A-Za-z0-9]+|./g) ?? [String(text)]
@@ -124,6 +127,7 @@ function startStubServer() {
       let payload = {}
       try { payload = JSON.parse(body || '{}') } catch { /* 空载荷 */ }
       if (String(req.url).includes('/embeddings')) {
+        embedCallCount++
         const inputs = Array.isArray(payload.input) ? payload.input : [String(payload.input ?? '')]
         const dims = Math.min(Number(payload.dimensions) || 1024, 1024)
         res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -276,7 +280,7 @@ async function main() {
   const TID = Number(teamRes.json?.value)
   const addMember = await api('POST', `/api/team/${TID}/users`, { token: owner.token, body: { userId: member.userId, role: 0 } })
   check('WK-S37 前置：添加成员 200', addMember.status === 200, `${addMember.status} ${addMember.text.slice(0, 120)}`)
-  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'recall-wiki-' + TS, description: 'recall e2e' } })).json.value)
+  const WID = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: 'recall_wiki_' + TS, description: 'recall e2e' } })).json.value)
 
   // ===== 模型准备：本地桩优先，失败时回退平台既有模型（admin 自举 + 探针） =====
   const adminToken = await adminLogin()
@@ -338,7 +342,7 @@ async function main() {
   check('WK-S37a 非法文档 id 400', badDoc.status === 400, `${badDoc.status}`)
 
   // ===== @WK-S38：向量召回 / 文档范围 / 阈值（依赖 embedding 模型） =====
-  let doc1Id = null, doc2Id = null
+  let doc1Id = null, doc2Id = null, doc3Id = null
   if (hasEmb) {
     const bind = await api('PUT', `/api/wiki/${WID}/embedding-config`, {
       token: owner.token,
@@ -371,7 +375,7 @@ async function main() {
       check('WK-S38 前置：两文档向量化完成', done.ok, '120s 内未全部完成')
 
       if (done.ok) {
-        const all = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+        const all = await recall(member.token, WID, { query: '退货政策 运费', top: 10, isKeywordSearch: false })
         const items = all.json?.items ?? []
         check('WK-S38a 全库召回 200 且有命中', all.status === 200 && items.length > 0, `${all.status} items=${items.length}`)
         const scores = items.map((x) => Number(x.score ?? 0))
@@ -445,7 +449,7 @@ async function main() {
   // ===== @WK-S42：重排序接入与降级 + 相邻片段上下文（依赖 embedding + rerank 桩） =====
   const baseKey = (list) => (list ?? []).map((x) => `${x.documentId}#${x.chunkIndex}`)
   if (hasEmb && doc1Id && stubModels?.rerankModelId) {
-    const baseline = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const baseline = await recall(member.token, WID, { query: '退货政策 运费', top: 10, isKeywordSearch: false })
     const baseItems = baseline.json?.items ?? []
     check('WK-S42 前置：基线召回 200 且 ≥2 命中', baseline.status === 200 && baseItems.length >= 2, `${baseline.status} items=${baseItems.length}`)
     check('WK-S42a 未绑定重排序时无 rerankScore', baseItems.every((x) => x.rerankScore == null), JSON.stringify(baseItems.map((x) => x.rerankScore)))
@@ -457,7 +461,7 @@ async function main() {
     check('WK-S42 前置：绑定重排序模型 200', bindRerank.status === 200, `${bindRerank.status} ${bindRerank.text.slice(0, 120)}`)
 
     rerankMode = 'normal'
-    const reranked = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const reranked = await recall(member.token, WID, { query: '退货政策 运费', top: 10, isKeywordSearch: false })
     const rrItems = reranked.json?.items ?? []
     check('WK-S42a 重排序召回 200 且带 rerankScore', reranked.status === 200 && rrItems.length > 0 && rrItems.every((x) => x.rerankScore != null), `${reranked.status} rerankScores=${JSON.stringify(rrItems.map((x) => x.rerankScore))}`)
     const rrScores = rrItems.map((x) => Number(x.rerankScore))
@@ -486,7 +490,7 @@ async function main() {
     check('WK-S42b 上下文片段非空', withContext.every((x) => (x.context ?? []).every((c) => String(c.content ?? '') !== '')), '')
 
     rerankMode = 'error'
-    const degraded = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const degraded = await recall(member.token, WID, { query: '退货政策 运费', top: 10, isKeywordSearch: false })
     const dgItems = degraded.json?.items ?? []
     check('WK-S42c 重排序渠道 500 时召回仍 200', degraded.status === 200 && dgItems.length > 0, `${degraded.status}`)
     check('WK-S42c 降级后无 rerankScore', dgItems.every((x) => x.rerankScore == null), JSON.stringify(dgItems.map((x) => x.rerankScore)))
@@ -494,12 +498,222 @@ async function main() {
 
     rerankMode = 'normal'
     const unbind = await api('PUT', `/api/wiki/${WID}/rerank-model`, { token: owner.token, body: { wikiId: WID, rerankModelId: null } })
-    const unbound = await recall(member.token, WID, { query: '退货政策 运费', top: 10 })
+    const unbound = await recall(member.token, WID, { query: '退货政策 运费', top: 10, isKeywordSearch: false })
     check('WK-S42d 解绑后无 rerankScore 且顺序恢复', unbind.status === 200
       && (unbound.json?.items ?? []).every((x) => x.rerankScore == null)
       && baseKey(unbound.json?.items ?? []).join('|') === baseKey(baseItems).join('|'), `${unbind.status}`)
   } else {
     skip('WK-S42 重排序接入/降级与相邻片段上下文（无桩 rerank 模型或未向量化）')
+  }
+
+  // ===== @WK-S49：同 chunk 多 MetadataType 变体按 ChunkId 去重（依赖 embedding + conversation 模型） =====
+  if (hasEmb && hasConv && doc1Id && doc2Id) {
+    const metaWf = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, {
+      token: owner.token,
+      body: { wikiId: WID, documentIds: [doc1Id, doc2Id], isGenerateMetadata: true, metadataModelId: convModelId, isEmbedding: true, embedSourceText: true, embedMetadata: true },
+    })
+    check('WK-S49 前置：元数据生成+向量化提交 200', metaWf.status === 200, `${metaWf.status} ${metaWf.text.slice(0, 160)}`)
+    const metaDone = await waitUntil(owner.token, WID, (docs) => docs.get(doc1Id)?.isEmbedding === true && docs.get(doc2Id)?.isEmbedding === true, 180000)
+    check('WK-S49 前置：元数据向量化完成', metaDone.ok, '180s 内未完成')
+
+    const dedupRecall = await recall(member.token, WID, { query: '退货政策 运费', top: 10, isKeywordSearch: false })
+    const dedupItems = dedupRecall.json?.items ?? []
+    const dedupIds = dedupItems.map((x) => String(x.chunkId))
+    check('WK-S49a 同 chunk 多 MetadataType 变体只保留最高分（无重复切片）', dedupRecall.status === 200 && dedupIds.length > 0 && new Set(dedupIds).size === dedupIds.length, `items=${dedupIds.length} unique=${new Set(dedupIds).size}`)
+  } else {
+    skip('WK-S49 ChunkId 去重（无对话/embedding 模型）')
+  }
+
+  // ===== @WK-S51：关键词混合检索（原文 ILIKE 探针命中 + isKeywordHit 标记 + 阈值退化纯向量） =====
+  if (hasEmb && doc1Id) {
+    const d3 = await uploadWikiDoc(owner.token, WID, `recall-hybrid-${TS}.md`, makeMd('钛合金机甲骨架规格', '钛合金机甲骨架的屈服强度为 1280MPa，疲劳寿命 9000 小时，检修周期为 500 飞行小时'), 'text/markdown')
+    doc3Id = d3.documentId
+    check('WK-S51 前置：混合检索文档上传 200', Boolean(doc3Id), `${d3.ok}/${doc3Id}`)
+    if (doc3Id) {
+      const part3 = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc3Id], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' } })
+      const embed3 = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc3Id], isEmbedding: true, embedSourceText: true, embedMetadata: false } })
+      check('WK-S51 前置：切割+向量化提交 200', part3.status === 200 && embed3.status === 200, `${part3.status}/${embed3.status}`)
+      const done3 = await waitUntil(owner.token, WID, (docs) => docs.get(doc3Id)?.isEmbedding === true, 120000)
+      check('WK-S51 前置：向量化完成', done3.ok, '120s 内未完成')
+
+      if (done3.ok) {
+        const hybrid = await recall(member.token, WID, { query: '机甲骨架 检修周期', top: 20 })
+        const hybridItems = hybrid.json?.items ?? []
+        const hybridHit = hybridItems.find((x) => String(x.content ?? '').includes('机甲骨架') && Number(x.documentId) === doc3Id)
+        check('WK-S51a 关键词路径命中独特词内容', hybrid.status === 200 && hybridHit != null, `items=${hybridItems.length} hit=${hybridHit ? 'Y' : 'N'}`)
+        check('WK-S51b 关键词命中带 isKeywordHit 标记', hybridHit != null && hybridHit.isKeywordHit === true, JSON.stringify(hybridHit?.isKeywordHit))
+
+        const strict = await recall(member.token, WID, { query: '机甲骨架 检修周期', minScore: 1, top: 20 })
+        check('WK-S51c 设置相似度阈值后退化为纯向量（阈值=1 时 0 命中）', strict.status === 200 && (strict.json?.items ?? []).length === 0, `items=${(strict.json?.items ?? []).length}`)
+      }
+    }
+  } else {
+    skip('WK-S51 关键词混合检索（无 embedding 模型）')
+  }
+
+  // ===== @WK-S52：过期索引检测（重切割未重嵌 → isStale=true；重新向量化后 → isStale=false） =====
+  if (hasEmb && doc1Id) {
+    const repart = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc1Id], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' } })
+    check('WK-S52 前置：重新切割提交 200', repart.status === 200, `${repart.status} ${repart.text.slice(0, 120)}`)
+    const staleRecall = await recall(member.token, WID, { query: '退货政策 运费', documentIds: [doc1Id], top: 10 })
+    const staleItems = staleRecall.json?.items ?? []
+    check('WK-S52a 重切割后（向量已删）关键词兜底仍可命中', staleRecall.status === 200 && staleItems.length > 0, `items=${staleItems.length}`)
+    check('WK-S52b 过期命中带 isStale=true', staleItems.every((x) => x.isStale === true), JSON.stringify(staleItems.map((x) => x.isStale)))
+
+    const reembed = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc1Id], isEmbedding: true, embedSourceText: true, embedMetadata: false } })
+    check('WK-S52 前置：重新向量化提交 200', reembed.status === 200, `${reembed.status}`)
+    const reDone = await waitUntil(owner.token, WID, (docs) => docs.get(doc1Id)?.isEmbedding === true, 120000)
+    check('WK-S52 前置：重新向量化完成', reDone.ok, '120s 内未完成')
+    const freshRecall = await recall(member.token, WID, { query: '退货政策 运费', documentIds: [doc1Id], top: 10 })
+    const freshItems = freshRecall.json?.items ?? []
+    check('WK-S52c 重新向量化后 isStale=false', freshRecall.status === 200 && freshItems.length > 0 && freshItems.every((x) => x.isStale === false), JSON.stringify(freshItems.map((x) => x.isStale)))
+  } else {
+    skip('WK-S52 过期索引检测（无 embedding 模型）')
+  }
+
+  // ===== @WK-S53：检索经验沉淀与复用（同查询免 embedding 快速路径 + 来源变化自愈失效） =====
+  if (hasEmb && doc1Id && doc2Id) {
+    const queryD = '退货政策 运费说明'
+    const c0 = embedCallCount
+    const first = await recall(member.token, WID, { query: queryD, top: 10 })
+    const firstItems = first.json?.items ?? []
+    const firstKeys = firstItems.map((x) => `${x.documentId}#${x.chunkId}`)
+    check('WK-S53a 首次检索走完整链路（embedding 被调用）', first.status === 200 && firstItems.length > 0 && embedCallCount > c0, `items=${firstItems.length} calls=${c0}->${embedCallCount}`)
+
+    // 等待 MQ 消费者落库：重复检索直到计数稳定（连续两次零增长且命中一致即为复用快速路径）
+    let reuseStable = false
+    let reuseKeys = []
+    let reuseCalls = embedCallCount
+    for (let i = 0; i < 10 && !reuseStable; i++) {
+      await new Promise((r) => setTimeout(r, 1500))
+      const before = embedCallCount
+      const again = await recall(member.token, WID, { query: queryD, top: 10 })
+      const againItems = again.json?.items ?? []
+      reuseKeys = againItems.map((x) => `${x.documentId}#${x.chunkId}`)
+      reuseCalls = embedCallCount
+      if (embedCallCount === before && reuseKeys.join('|') === firstKeys.join('|')) reuseStable = true
+    }
+    check('WK-S53b 复用快速路径：同查询免 embedding 且命中一致', reuseStable, `stable=${reuseStable} calls=${reuseCalls} keys=${reuseKeys.join(',').slice(0, 120)}`)
+    const third = await recall(member.token, WID, { query: queryD, top: 10 })
+    const thirdKeys = (third.json?.items ?? []).map((x) => `${x.documentId}#${x.chunkId}`)
+    check('WK-S53c 复用稳定：再次召回仍零 embedding 且命中一致', embedCallCount === reuseCalls && thirdKeys.join('|') === firstKeys.join('|'), `calls=${reuseCalls}->${embedCallCount}`)
+
+    // 新查询未沉淀过 → 完整检索（embedding +1）
+    const cNew = embedCallCount
+    const fresh = await recall(member.token, WID, { query: '退货政策 运费时效', top: 10 })
+    check('WK-S53d 未沉淀的新查询走完整链路', fresh.status === 200 && (fresh.json?.items ?? []).length > 0 && embedCallCount > cNew, `calls=${cNew}->${embedCallCount}`)
+
+    // 来源变化自愈：删除主要命中文档后，聚类存活数不足半数被删并回落完整检索
+    if (doc1Id) {
+      const delDoc1 = await api('DELETE', `/api/wiki/${WID}/documents`, { token: owner.token, body: { documentIds: [doc1Id] } })
+      check('WK-S53 前置：删除主要命中文档 200', delDoc1.status === 200, `${delDoc1.status}`)
+      await new Promise((r) => setTimeout(r, 500))
+      const cHeal = embedCallCount
+      const healed = await recall(member.token, WID, { query: queryD, top: 10 })
+      const healedItems = healed.json?.items ?? []
+      check('WK-S53e 来源变化后聚类失效回落完整检索（embedding +1）', healed.status === 200 && embedCallCount > cHeal, `calls=${cHeal}->${embedCallCount}`)
+      check('WK-S53f 回落后命中不再包含已删文档', healedItems.every((x) => Number(x.documentId) !== doc1Id), `docs=${healedItems.map((x) => x.documentId).join(',')}`)
+      doc1Id = null
+    }
+  } else {
+    skip('WK-S53 检索经验沉淀与复用（无 embedding 模型）')
+  }
+
+  // ===== @WK-S54：内容级兜底检索（文档已提取未切割即可查；切割后由切片命中接管） =====
+  if (hasEmb && doc2Id) {
+    const d5 = await uploadWikiDoc(owner.token, WID, `recall-content-fallback-${TS}.md`, makeMd('深空探测器防热瓦规程', '深空探测器的防热瓦每 200 小时需进行无损探伤检查'), 'text/markdown')
+    const doc5Id = d5.documentId
+    check('WK-S54 前置：兜底检索文档上传 200', Boolean(doc5Id), `${d5.ok}/${doc5Id}`)
+    if (doc5Id) {
+      // 仅提取不切割：该文档无切片，切片路径与向量路径都搜不到
+      const extracted = await api('POST', `/api/wiki/${WID}/documents/${doc5Id}/extract`, { token: owner.token, body: {} })
+      check('WK-S54 前置：仅提取内容 200', extracted.status === 200, `${extracted.status} ${extracted.text.slice(0, 120)}`)
+
+      const fallback = await recall(member.token, WID, { query: '防热瓦 无损探伤', top: 10 })
+      const fallbackItems = fallback.json?.items ?? []
+      const fallbackHit = fallbackItems.find((x) => Number(x.documentId) === doc5Id)
+      check('WK-S54a 已提取未切割文档可被召回（内容兜底）', fallback.status === 200 && fallbackHit != null, `items=${fallbackItems.length} hit=${fallbackHit ? 'Y' : 'N'}`)
+      check('WK-S54b 兜底命中带 isContentFallback 标记且无切片序号', fallbackHit != null
+        && fallbackHit.isContentFallback === true
+        && fallbackHit.isKeywordHit === true
+        && fallbackHit.chunkIndex == null, JSON.stringify(fallbackHit?.isContentFallback))
+      check('WK-S54c 兜底片段包含探针词', fallbackHit != null && String(fallbackHit.content ?? '').includes('防热瓦'), `content="${String(fallbackHit?.content ?? '').slice(0, 60)}"`)
+
+      // 切割后切片候选非空，兜底不再触发，该文档由正常切片命中接管
+      const part5 = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc5Id], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' } })
+      check('WK-S54 前置：切割提交 200', part5.status === 200, `${part5.status}`)
+      const afterPart = await recall(member.token, WID, { query: '防热瓦 无损探伤', documentIds: [doc5Id], top: 10 })
+      const afterItems = afterPart.json?.items ?? []
+      check('WK-S54d 切割后由切片命中接管（兜底标记消失且有切片序号）', afterPart.status === 200
+        && afterItems.length > 0
+        && afterItems.every((x) => x.isContentFallback === false)
+        && afterItems.every((x) => Number.isInteger(x.chunkIndex)), `items=${afterItems.length} fallback=${afterItems.filter((x) => x.isContentFallback).length}`)
+
+      // 清理兜底检索文档
+      await api('DELETE', `/api/wiki/${WID}/documents`, { token: owner.token, body: { documentIds: [doc5Id] } })
+    }
+  } else {
+    skip('WK-S54 内容级兜底检索（无 embedding 模型）')
+  }
+
+  // ===== @WK-S55：切片标题锚点 + 自适应证据窗口 =====
+  if (hasEmb && doc2Id) {
+    const d6 = await uploadWikiDoc(owner.token, WID, `recall-anchor-${TS}.md`, makeMd('锚点验证文档', '锚点章节内容甲乙丙丁戊己庚辛壬癸', 30), 'text/markdown')
+    const doc6Id = d6.documentId
+    check('WK-S55 前置：锚点文档上传 200', Boolean(doc6Id), `${d6.ok}/${doc6Id}`)
+    if (doc6Id) {
+      const part6 = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc6Id], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' } })
+      const embed6 = await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc6Id], isEmbedding: true, embedSourceText: true, embedMetadata: false } })
+      check('WK-S55 前置：切割+向量化提交 200', part6.status === 200 && embed6.status === 200, `${part6.status}/${embed6.status}`)
+      const done6 = await waitUntil(owner.token, WID, (docs) => docs.get(doc6Id)?.isEmbedding === true, 120000)
+      check('WK-S55 前置：向量化完成', done6.ok, '120s 内未完成')
+
+      if (done6.ok) {
+        const anchorRecall = await recall(member.token, WID, { query: '锚点章节 内容甲乙', documentIds: [doc6Id], top: 10 })
+        const anchorItems = anchorRecall.json?.items ?? []
+        const docItems = anchorItems.filter((x) => Number(x.documentId) === doc6Id)
+        check('WK-S55a 命中带非空标题锚点且含文档标题', anchorRecall.status === 200 && docItems.length > 0
+          && docItems.every((x) => String(x.anchor ?? '') !== '')
+          && docItems.every((x) => String(x.anchor).includes('锚点验证文档')), `anchors=${JSON.stringify(docItems.map((x) => x.anchor))}`)
+
+        // 自适应证据窗口：contextWindow=2 时存在距离命中片段 ±2 的上下文（默认窗口 1 只有 ±1）
+        const wide = await recall(member.token, WID, { query: '锚点章节 内容甲乙', documentIds: [doc6Id], top: 1, contextWindow: 2 })
+        const wideHit = (wide.json?.items ?? [])[0]
+        const wideSpan = (wideHit?.context ?? []).map((c) => Math.abs((c.chunkIndex ?? 0) - (wideHit?.chunkIndex ?? 0)))
+        check('WK-S55b 上下文窗口=2 出现距离 ±2 的相邻片段', wide.status === 200 && wideHit != null && wideSpan.some((d) => d === 2), `span=${JSON.stringify(wideSpan)}`)
+        check('WK-S55c 窗口=2 上下文不超过 ±2', wideHit != null && wideSpan.every((d) => d <= 2), `span=${JSON.stringify(wideSpan)}`)
+      }
+
+      // 清理锚点文档
+      await api('DELETE', `/api/wiki/${WID}/documents`, { token: owner.token, body: { documentIds: [doc6Id] } })
+    }
+  } else {
+    skip('WK-S55 切片标题锚点与自适应证据窗口（无 embedding 模型）')
+  }
+
+  // ===== @WK-S48：删除文档向量生命周期闭环 =====
+  if (hasEmb && doc2Id) {
+    const delDoc = await api('DELETE', `/api/wiki/${WID}/documents`, { token: owner.token, body: { documentIds: [doc2Id] } })
+    check('WK-S48 前置：删除文档 200', delDoc.status === 200, `${delDoc.status} ${delDoc.text.slice(0, 120)}`)
+    const afterDel = await recall(member.token, WID, { query: '发票 开具 电子发票', top: 10 })
+    const afterDelItems = afterDel.json?.items ?? []
+    check('WK-S48a 删除文档后召回不再命中（向量同步清理）', afterDel.status === 200 && afterDelItems.every((x) => Number(x.documentId) !== doc2Id), `items=${afterDelItems.map((x) => x.documentId).join(',')}`)
+
+    // 删除后重建同内容文档：召回指向新文档的新切片
+    const d4 = await uploadWikiDoc(owner.token, WID, `recall-invoice-rebuild-${TS}.md`, makeMd('发票开具流程', '发票在订单完成后 30 天内开具，支持电子发票和纸质发票，抬头信息需准确'), 'text/markdown')
+    const doc4Id = d4.documentId
+    if (doc4Id) {
+      await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc4Id], isPartition: true, splitMode: 'markdown', chunkSize: 300, chunkOverlap: 10, overlapUnit: 'character', sizeUnit: 'character' } })
+      await api('POST', `/api/wiki/${WID}/documents/batch-workflow`, { token: owner.token, body: { wikiId: WID, documentIds: [doc4Id], isEmbedding: true, embedSourceText: true, embedMetadata: false } })
+      const rebuilt = await waitUntil(owner.token, WID, (docs) => docs.get(doc4Id)?.isEmbedding === true, 120000)
+      const rebuildRecall = await recall(member.token, WID, { query: '发票 开具 电子发票', top: 10 })
+      const rebuildItems = rebuildRecall.json?.items ?? []
+      check('WK-S48b 重建文档召回正常且指向新文档', rebuilt.ok && rebuildRecall.status === 200
+        && rebuildItems.some((x) => Number(x.documentId) === doc4Id)
+        && rebuildItems.every((x) => Number(x.documentId) !== doc2Id), `items=${rebuildItems.map((x) => `${x.documentId}#${x.chunkId}`).join(',')}`)
+    }
+  } else {
+    skip('WK-S48 删除向量生命周期（无 embedding 模型）')
   }
 
   if (stub) {

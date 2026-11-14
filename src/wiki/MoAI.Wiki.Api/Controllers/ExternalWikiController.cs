@@ -16,7 +16,7 @@ namespace MoAI.Wiki.Controllers;
 /// 知识库外部开放接口：应用 token（团队级授权）管理知识库文档（上传/提取/切割/向量化）；认证由 ExternalAuthenticationMiddleware 统一处理.
 /// </summary>
 [ApiController]
-[Route("/external/wiki")]
+[Route("/teamres/wiki")]
 [AllowAnonymous]
 public class ExternalWikiController : ControllerBase
 {
@@ -39,7 +39,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("list")]
     public async Task<QueryWikisCommandResponse> List(CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new QueryExternalWikisCommand { Caller = caller }, ct);
     }
 
@@ -52,7 +52,7 @@ public class ExternalWikiController : ControllerBase
     [HttpGet("{wikiId:long}")]
     public async Task<QueryWikiCommandResponse> Detail(long wikiId, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new QueryExternalWikiCommand { Caller = caller, WikiId = wikiId }, ct);
     }
 
@@ -66,7 +66,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPut("{wikiId:long}/embedding-config")]
     public async Task<EmptyCommandResponse> UpdateEmbeddingConfig(long wikiId, [FromBody] UpdateExternalWikiEmbeddingCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new UpdateExternalWikiEmbeddingCommand { Caller = caller, WikiId = wikiId, EmbeddingModelId = req.EmbeddingModelId, EmbeddingDimensions = req.EmbeddingDimensions }, ct);
     }
 
@@ -80,7 +80,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/list")]
     public async Task<QueryWikiDocumentsCommandResponse> ListDocuments(long wikiId, [FromBody] QueryExternalWikiDocumentsCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new QueryExternalWikiDocumentsCommand { Caller = caller, WikiId = wikiId, Query = req.Query, IsEmbedding = req.IsEmbedding, IncludeFileTypes = req.IncludeFileTypes, ExcludeFileTypes = req.ExcludeFileTypes, PageNo = req.PageNo, PageSize = req.PageSize }, ct);
     }
 
@@ -94,7 +94,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/preupload")]
     public async Task<PreUploadWikiDocumentCommandResponse> PreUploadDocument(long wikiId, [FromBody] PreUploadExternalWikiDocumentCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new PreUploadExternalWikiDocumentCommand { Caller = caller, WikiId = wikiId, FileName = req.FileName, ContentType = req.ContentType, FileSize = req.FileSize, SHA256 = req.SHA256 }, ct);
     }
 
@@ -108,7 +108,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/complete")]
     public async Task<EmptyCommandResponse> CompleteDocument(long wikiId, [FromBody] CompleteExternalWikiDocumentCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new CompleteExternalWikiDocumentCommand { Caller = caller, WikiId = wikiId, IsSuccess = req.IsSuccess, FileId = req.FileId, FileName = req.FileName }, ct);
     }
 
@@ -122,7 +122,7 @@ public class ExternalWikiController : ControllerBase
     [HttpDelete("{wikiId:long}/documents")]
     public async Task<EmptyCommandResponse> DeleteDocuments(long wikiId, [FromBody] DeleteExternalWikiDocumentsCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new DeleteExternalWikiDocumentsCommand { Caller = caller, WikiId = wikiId, DocumentIds = req.DocumentIds }, ct);
     }
 
@@ -136,7 +136,7 @@ public class ExternalWikiController : ControllerBase
     [HttpGet("{wikiId:long}/documents/{documentId:long}/content")]
     public async Task<SimpleString> GetDocumentContent(long wikiId, long documentId, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new GetExternalWikiDocumentContentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId }, ct);
     }
 
@@ -150,7 +150,7 @@ public class ExternalWikiController : ControllerBase
     [HttpGet("{wikiId:long}/documents/{documentId:long}/download")]
     public async Task<SimpleString> DownloadDocument(long wikiId, long documentId, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new DownloadExternalWikiDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId }, ct);
     }
 
@@ -165,7 +165,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPut("{wikiId:long}/documents/{documentId:long}/rename")]
     public async Task<EmptyCommandResponse> RenameDocument(long wikiId, long documentId, [FromBody] RenameExternalWikiDocumentCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new RenameExternalWikiDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId, FileName = req.FileName }, ct);
     }
 
@@ -179,7 +179,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/{documentId:long}/extract")]
     public async Task<EmptyCommandResponse> ExtractDocument(long wikiId, long documentId, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new ExtractExternalDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId }, ct);
     }
 
@@ -194,7 +194,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/{documentId:long}/partition")]
     public async Task<EmptyCommandResponse> PartitionDocument(long wikiId, long documentId, [FromBody] PartitionExternalDocumentCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new PartitionExternalDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId, SplitMode = req.SplitMode, ChunkSize = req.ChunkSize, ChunkOverlap = req.ChunkOverlap, OverlapUnit = req.OverlapUnit, SizeUnit = req.SizeUnit, TokenEncodingOrModel = req.TokenEncodingOrModel }, ct);
     }
 
@@ -209,7 +209,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/{documentId:long}/ai-partition")]
     public async Task<EmptyCommandResponse> AiPartitionDocument(long wikiId, long documentId, [FromBody] AiPartitionExternalDocumentCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new AiPartitionExternalDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId, AiModelId = req.AiModelId, PromptTemplate = req.PromptTemplate }, ct);
     }
 
@@ -224,7 +224,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/{documentId:long}/embedding")]
     public async Task<EmbeddingDocumentCommandResponse> EmbedDocument(long wikiId, long documentId, [FromBody] EmbedExternalDocumentCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new EmbedExternalDocumentCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId, IsEmbedSourceText = req.IsEmbedSourceText, IsEmbedMetadata = req.IsEmbedMetadata }, ct);
     }
 
@@ -238,7 +238,7 @@ public class ExternalWikiController : ControllerBase
     [HttpGet("{wikiId:long}/documents/{documentId:long}/embedding")]
     public async Task<QueryWikiDocumentEmbeddingCommandResponse> QueryDocumentEmbedding(long wikiId, long documentId, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new QueryExternalDocumentEmbeddingCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId }, ct);
     }
 
@@ -253,7 +253,7 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/documents/{documentId:long}/chunks/metadata/generate")]
     public async Task<SimpleInt> GenerateChunksMetadata(long wikiId, long documentId, [FromBody] GenerateExternalDocumentChunksMetadataCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: true);
+        var caller = RequireCaller();
         return await _mediator.Send(new GenerateExternalDocumentChunksMetadataCommand { Caller = caller, WikiId = wikiId, DocumentId = documentId, MetadataModelId = req.MetadataModelId, ChunkIds = req.ChunkIds, AppendExisting = req.AppendExisting, StrategyTypes = req.StrategyTypes }, ct);
     }
 
@@ -267,11 +267,16 @@ public class ExternalWikiController : ControllerBase
     [HttpPost("{wikiId:long}/recall/list")]
     public async Task<QueryExternalWikiRecallCommandResponse> Recall(long wikiId, [FromBody] QueryExternalWikiRecallCommand req, CancellationToken ct)
     {
-        var caller = RequireCaller(requireWrite: false);
+        var caller = RequireCaller();
         return await _mediator.Send(new QueryExternalWikiRecallCommand { Caller = caller, WikiId = wikiId, Query = req.Query, Top = req.Top, MinScore = req.MinScore, DocumentIds = req.DocumentIds }, ct);
     }
 
-    private ExternalWikiCaller RequireCaller(bool requireWrite)
+    /// <summary>
+    /// 读取外部调用方身份（ExternalAuthenticationMiddleware 已完成认证与资源 key 包围圈判定）：
+    /// 团队级凭证全量访问本控制器端点；资源 key（moai-tr-）只能到达绑定知识库的端点（中间件已拦截越圈），
+    /// OnlyWikiId 用于团队级列表端点过滤（资源 key 只见绑定的库）.
+    /// </summary>
+    private ExternalWikiCaller RequireCaller()
     {
         // 从 HttpContext.Items 取认证中间件写入的 token 上下文（ExternalJwtBearerAuthenticationHandler 填充）
         var tokenContext = HttpContext.Items.TryGetValue(ExternalAuthDefaults.TokenContextItemKey, out var value) ? value as ExternalTokenContext : null;
@@ -285,13 +290,11 @@ public class ExternalWikiController : ControllerBase
             throw new BusinessException("该接口仅支持应用 token.") { StatusCode = 403 };
         }
 
-        // 功能范围：读接口要求 wiki_read，写接口要求 wiki_write（旧格式 token 默认全量范围）
-        var requiredScope = requireWrite ? TeamApiKeyScopes.WikiWrite : TeamApiKeyScopes.WikiRead;
-        if (!tokenContext.Scopes.HasFlag(requiredScope))
+        return new ExternalWikiCaller
         {
-            throw new BusinessException(requireWrite ? "外部 token 未勾选知识库写权限." : "外部 token 未勾选知识库读权限.") { StatusCode = 403 };
-        }
-
-        return new ExternalWikiCaller { TeamId = tokenContext.TeamId, AccessAppId = tokenContext.AccessAppId };
+            TeamId = tokenContext.TeamId,
+            AccessAppId = tokenContext.AccessAppId,
+            OnlyWikiId = tokenContext.IsResourceKey && tokenContext.ResourceKeyType == TeamResourceType.Wiki && long.TryParse(tokenContext.ResourceKeyId, out var onlyWikiId) ? onlyWikiId : null,
+        };
     }
 }

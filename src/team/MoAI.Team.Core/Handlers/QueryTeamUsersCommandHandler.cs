@@ -40,6 +40,8 @@ public class QueryTeamUsersCommandHandler : IRequestHandler<QueryTeamUsersComman
                 x.User.UserName,
                 x.User.NickName,
                 x.User.AvatarPath,
+                x.User.Email,
+                x.User.Phone,
                 Role = (int)x.Role,
                 x.CreateTime
             })
@@ -55,9 +57,44 @@ public class QueryTeamUsersCommandHandler : IRequestHandler<QueryTeamUsersComman
                 Avatar = string.IsNullOrWhiteSpace(x.AvatarPath)
                     ? string.Empty
                     : _storageService.GetPublicFileUrl(x.AvatarPath).ToString(),
+                // 团队成员列表面向团队 Owner/Admin，不外泄完整联系方式：邮箱/手机号在服务端脱敏后返回
+                Email = MaskEmail(x.Email),
+                Phone = MaskPhone(x.Phone),
                 Role = x.Role,
                 JoinTime = x.CreateTime
             }).ToList()
         };
+    }
+
+    /// <summary>
+    /// 邮箱脱敏：本地部分仅保留首字符（如 z***@example.com），无 @ 或本地部分为空返回空串.
+    /// </summary>
+    private static string MaskEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return string.Empty;
+        }
+
+        var at = email.IndexOf('@');
+        if (at <= 0 || at == email.Length - 1)
+        {
+            return string.Empty;
+        }
+
+        return $"{email[0]}***{email[at..]}";
+    }
+
+    /// <summary>
+    /// 手机号脱敏：≥8 位保留前 3 后 4（如 138****5678），其余仅保留首字符，空返回空串.
+    /// </summary>
+    private static string MaskPhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return string.Empty;
+        }
+
+        return phone.Length >= 8 ? $"{phone[..3]}****{phone[^4..]}" : $"{phone[0]}****";
     }
 }

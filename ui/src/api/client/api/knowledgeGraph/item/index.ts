@@ -8,15 +8,23 @@ import { AvatarRequestBuilderRequestsMetadata, type AvatarRequestBuilder } from 
 // @ts-ignore
 import { CanvasRequestBuilderRequestsMetadata, type CanvasRequestBuilder } from './canvas/index.js';
 // @ts-ignore
+import { CanvasStyleRequestBuilderRequestsMetadata, type CanvasStyleRequestBuilder } from './canvasStyle/index.js';
+// @ts-ignore
 import { EdgesRequestBuilderNavigationMetadata, EdgesRequestBuilderRequestsMetadata, type EdgesRequestBuilder } from './edges/index.js';
 // @ts-ignore
 import { EmbeddingConfigRequestBuilderRequestsMetadata, type EmbeddingConfigRequestBuilder } from './embeddingConfig/index.js';
 // @ts-ignore
 import { EntityTypesRequestBuilderNavigationMetadata, EntityTypesRequestBuilderRequestsMetadata, type EntityTypesRequestBuilder } from './entityTypes/index.js';
 // @ts-ignore
+import { ExtractModelRequestBuilderRequestsMetadata, type ExtractModelRequestBuilder } from './extractModel/index.js';
+// @ts-ignore
 import { ImportFileRequestBuilderRequestsMetadata, type ImportFileRequestBuilder } from './importFile/index.js';
 // @ts-ignore
+import { ImportJobsRequestBuilderNavigationMetadata, ImportJobsRequestBuilderRequestsMetadata, type ImportJobsRequestBuilder } from './importJobs/index.js';
+// @ts-ignore
 import { ImportJsonRequestBuilderRequestsMetadata, type ImportJsonRequestBuilder } from './importJson/index.js';
+// @ts-ignore
+import { McpConfigRequestBuilderRequestsMetadata, type McpConfigRequestBuilder } from './mcpConfig/index.js';
 // @ts-ignore
 import { NodesRequestBuilderNavigationMetadata, NodesRequestBuilderRequestsMetadata, type NodesRequestBuilder } from './nodes/index.js';
 // @ts-ignore
@@ -27,6 +35,8 @@ import { RelationTypesRequestBuilderNavigationMetadata, RelationTypesRequestBuil
 import { SchemaRequestBuilderRequestsMetadata, type SchemaRequestBuilder } from './schema/index.js';
 // @ts-ignore
 import { SearchRequestBuilderRequestsMetadata, type SearchRequestBuilder } from './search/index.js';
+// @ts-ignore
+import { Text2cypherRequestBuilderRequestsMetadata, type Text2cypherRequestBuilder } from './text2cypher/index.js';
 // @ts-ignore
 import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type NavigationMetadata, type Parsable, type ParsableFactory, type RequestConfiguration, type RequestInformation, type RequestsMetadata } from '@microsoft/kiota-abstractions';
 
@@ -43,6 +53,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      */
     get canvas(): CanvasRequestBuilder;
     /**
+     * The canvasStyle property
+     */
+    get canvasStyle(): CanvasStyleRequestBuilder;
+    /**
      * The edges property
      */
     get edges(): EdgesRequestBuilder;
@@ -55,13 +69,25 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      */
     get entityTypes(): EntityTypesRequestBuilder;
     /**
+     * The extractModel property
+     */
+    get extractModel(): ExtractModelRequestBuilder;
+    /**
      * The importFile property
      */
     get importFile(): ImportFileRequestBuilder;
     /**
+     * The importJobs property
+     */
+    get importJobs(): ImportJobsRequestBuilder;
+    /**
      * The importJson property
      */
     get importJson(): ImportJsonRequestBuilder;
+    /**
+     * The mcpConfig property
+     */
+    get mcpConfig(): McpConfigRequestBuilder;
     /**
      * The nodes property
      */
@@ -82,6 +108,10 @@ export interface KnowledgeGraphItemRequestBuilder extends BaseRequestBuilder<Kno
      * The search property
      */
     get search(): SearchRequestBuilder;
+    /**
+     * The text2cypher property
+     */
+    get text2cypher(): Text2cypherRequestBuilder;
     /**
      * 删除图谱.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
@@ -150,6 +180,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
     canvas: {
         requestsMetadata: CanvasRequestBuilderRequestsMetadata,
     },
+    canvasStyle: {
+        requestsMetadata: CanvasStyleRequestBuilderRequestsMetadata,
+    },
     edges: {
         requestsMetadata: EdgesRequestBuilderRequestsMetadata,
         navigationMetadata: EdgesRequestBuilderNavigationMetadata,
@@ -161,11 +194,21 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
         requestsMetadata: EntityTypesRequestBuilderRequestsMetadata,
         navigationMetadata: EntityTypesRequestBuilderNavigationMetadata,
     },
+    extractModel: {
+        requestsMetadata: ExtractModelRequestBuilderRequestsMetadata,
+    },
     importFile: {
         requestsMetadata: ImportFileRequestBuilderRequestsMetadata,
     },
+    importJobs: {
+        requestsMetadata: ImportJobsRequestBuilderRequestsMetadata,
+        navigationMetadata: ImportJobsRequestBuilderNavigationMetadata,
+    },
     importJson: {
         requestsMetadata: ImportJsonRequestBuilderRequestsMetadata,
+    },
+    mcpConfig: {
+        requestsMetadata: McpConfigRequestBuilderRequestsMetadata,
     },
     nodes: {
         requestsMetadata: NodesRequestBuilderRequestsMetadata,
@@ -183,6 +226,9 @@ export const KnowledgeGraphItemRequestBuilderNavigationMetadata: Record<Exclude<
     },
     search: {
         requestsMetadata: SearchRequestBuilderRequestsMetadata,
+    },
+    text2cypher: {
+        requestsMetadata: Text2cypherRequestBuilderRequestsMetadata,
     },
 };
 /**

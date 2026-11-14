@@ -62,11 +62,17 @@ public class AccountController : ControllerBase
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="UserStateInfo"/>，包含用户状态信息.</returns>
     [HttpGet("userinfo")]
-    public Task<UserStateInfo> QueryUserInfo(CancellationToken ct)
+    public async Task<UserStateInfo> QueryUserInfo(CancellationToken ct)
     {
         var cmd = new QueryUserViewUserInfoCommand();
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        var result = await _mediator.Send(cmd, ct);
+
+        // 待绑定两步验证 = token 携带 mfa_pending 且尚未绑定（绑定后旧 token 立即恢复，故按当前用户态修正）
+        var claimPending = _userContextProvider.GetUserContext().Properties.TryGetValue("mfa_pending", out var mfaPending)
+            && string.Equals(mfaPending, "true", StringComparison.OrdinalIgnoreCase);
+        result.MfaPending = claimPending && !result.TwoFactorEnabled;
+        return result;
     }
 
     /// <summary>

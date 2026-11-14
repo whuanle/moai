@@ -20,6 +20,11 @@ public partial class AiChannelEntity : IFullAudited
     public Guid Id { get; set; }
 
     /// <summary>
+    /// 所属团队 id，0=系统渠道（平台统一维护），大于 0=团队自有渠道（仅该团队可用）.
+    /// </summary>
+    public int TeamId { get; set; }
+
+    /// <summary>
     /// 渠道标识，对应 models.json 中的 provider id.
     /// </summary>
     public string ProviderKey { get; set; } = default!;

@@ -142,7 +142,10 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
         // Agent 应用节点不得与当前流程构成循环嵌套（运行前拦截，运行期节点调用另有防线）
         await Services.AgentWorkflowCycleGuard.EnsureNoCycleAsync(_databaseContext, request.AppId, Services.AgentWorkflowCycleGuard.CollectAgentAppIds(definition), cancellationToken);
 
-        // 调试注入 sys.* 对话上下文：用户/应用为当前真实值，对话维度无会话故留空，保证设计器引用可解析
+        // 调试注入 sys.* 对话上下文：用户/应用为当前真实值，对话维度无会话故留空，系统提示词按草稿配置，
+        // 保证设计器引用可解析
+        var debugAgentConfig = await _databaseContext.AppAgentConfigs.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.AppId == request.AppId, cancellationToken);
         var systemContext = new JsonObject
         {
             ["userId"] = request.ContextUserId.ToString(),
@@ -150,6 +153,7 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
             ["conversationId"] = string.Empty,
             ["messageId"] = string.Empty,
             ["history"] = new JsonArray(),
+            ["prompt"] = debugAgentConfig?.Prompt ?? string.Empty,
         };
 
         // 同步执行到终态；节点失败时实例为挂起态并携带错误信息，不抛异常

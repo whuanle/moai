@@ -27,6 +27,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     private readonly IRsaProvider _rsaProvider;
     private readonly IRedisDatabase _redisDatabase;
     private readonly ITokenProvider _tokenProvider;
+    private readonly ILoginSecurityService _loginSecurityService;
     private readonly ILogger<OAuthRegisterCommandHandler> _logger;
     private readonly IUserAccountService _userAccountService;
 
@@ -38,15 +39,17 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     /// <param name="rsaProvider"></param>
     /// <param name="redisDatabase"></param>
     /// <param name="tokenProvider"></param>
+    /// <param name="loginSecurityService">登录安全策略服务.</param>
     /// <param name="logger"></param>
     /// <param name="userAccountService"></param>
-    public OAuthRegisterCommandHandler(DatabaseContext databaseContext, IMediator mediator, IRsaProvider rsaProvider, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILogger<OAuthRegisterCommandHandler> logger, IUserAccountService userAccountService)
+    public OAuthRegisterCommandHandler(DatabaseContext databaseContext, IMediator mediator, IRsaProvider rsaProvider, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILoginSecurityService loginSecurityService, ILogger<OAuthRegisterCommandHandler> logger, IUserAccountService userAccountService)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
         _rsaProvider = rsaProvider;
         _redisDatabase = redisDatabase;
         _tokenProvider = tokenProvider;
+        _loginSecurityService = loginSecurityService;
         _logger = logger;
         _userAccountService = userAccountService;
     }
@@ -115,12 +118,16 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         {
             UserId = userId.Value,
             ProviderId = oauthConnectionEntity.Id,
-            Sub = oauthBindUserProfile.Profile.Sub
+            Sub = oauthBindUserProfile.Profile.Sub,
+            UnionId = oauthBindUserProfile.Profile.UnionId
         });
 
         await _databaseContext.SaveChangesAsync();
 
         transactionScope.Complete();
+
+        // 强制 2FA 且未绑定：token 携带 mfa_pending，授权中间件只放行绑定流程相关接口
+        var mfaPending = await _loginSecurityService.IsForced2faAsync(cancellationToken) && !user.IsTotpEnabled;
 
         var userContext = new DefaultUserContext
         {
@@ -128,7 +135,10 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             UserName = user.UserName,
             NickName = user.NickName,
             Email = user.Email,
-            UserType = Infra.Models.UserType.Normal
+            UserType = Infra.Models.UserType.Normal,
+            Properties = mfaPending
+                ? new Dictionary<string, string> { ["mfa_pending"] = "true" }
+                : new Dictionary<string, string>()
         };
 
         var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
@@ -139,7 +149,8 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
             RefreshToken = refreshToken,
             UserId = user.Id,
             UserName = user.UserName,
-            ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds()
+            ExpiresIn = DateTimeOffset.Now.AddMinutes(30).ToUnixTimeMilliseconds(),
+            MfaPending = mfaPending
         };
 
         _logger.LogInformation("User login.{@Message}", new { user.Id, user.UserName, user.NickName });

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Tag } from 'antd'
+import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Modal, Popconfirm, Space, Tag } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { Card as DSCard, DataTable, feedback } from '@/design-system'
+import { AuditCell, Card as DSCard, DataTable, feedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
-import { formatDateTime } from '@/utils/datetime'
 import { AppChannelGuide } from './AppChannelGuide'
 import {
   createDingTalkApp,
@@ -19,7 +18,6 @@ interface AppDingTalkChannelsSectionProps {
   teamId: number
   appId: string
   canManage: boolean
-  isPublished: boolean
 }
 
 interface FormValues {
@@ -34,7 +32,7 @@ interface FormValues {
  * 只提供新建（创建连接即绑定到当前应用，单次调用原子生效）、编辑（名称/AppKey/密钥/描述，密钥留空保持不变）、停用/启用、删除；
  * 删除即彻底移除连接，不保留可复用的连接。
  */
-export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublished }: AppDingTalkChannelsSectionProps) {
+export function AppDingTalkChannelsSection({ teamId, appId, canManage }: AppDingTalkChannelsSectionProps) {
   const { t } = useTranslation()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(true)
@@ -154,17 +152,16 @@ export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublish
       },
     },
     {
-      title: t('appDingTalkChannels.columnBindTime'),
-      dataIndex: 'bindTime',
-      width: 170,
-      render: (value: string | null) => (value ? formatDateTime(value) : '-'),
+      title: t('appDingTalkChannels.colCreate'),
+      key: 'create',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.createUserName} time={record.bindTime} />,
     },
     {
-      title: t('appDingTalkChannels.columnCreator'),
-      dataIndex: 'createUserName',
-      width: 120,
-      ellipsis: true,
-      render: (value: string | null) => value || '-',
+      title: t('appDingTalkChannels.colUpdate'),
+      key: 'update',
+      width: 150,
+      render: (_, record) => <AuditCell user={record.updateUserName} time={record.updateTime} />,
     },
   ]
 
@@ -172,16 +169,17 @@ export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublish
     columns.push({
       title: t('appDingTalkChannels.columnActions'),
       key: 'actions',
-      width: 190,
+      width: 250,
       render: (_, record) => (
         <Space size={spacing.sm}>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
             {t('appDingTalkChannels.edit')}
           </Button>
           {record.isDisable ? (
             <Button
               type="link"
               size="small"
+              icon={<CheckCircleOutlined />}
               loading={actionKey === `enable:${record.dingTalkAppId}`}
               onClick={() => void runAction(`enable:${record.dingTalkAppId}`, () => updateDingTalkApp(record.dingTalkAppId, { name: record.name, description: record.description ?? undefined, isDisable: false }))}
             >
@@ -194,7 +192,7 @@ export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublish
               cancelText={t('appManage.cancel')}
               onConfirm={() => void runAction(`disable:${record.dingTalkAppId}`, () => updateDingTalkApp(record.dingTalkAppId, { name: record.name, description: record.description ?? undefined, isDisable: true }))}
             >
-              <Button type="link" size="small" loading={actionKey === `disable:${record.dingTalkAppId}`}>
+              <Button type="link" size="small" icon={<StopOutlined />} loading={actionKey === `disable:${record.dingTalkAppId}`}>
                 {t('appDingTalkChannels.disable')}
               </Button>
             </Popconfirm>
@@ -205,7 +203,7 @@ export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublish
             cancelText={t('appManage.cancel')}
             onConfirm={() => void runAction(`delete:${record.dingTalkAppId}`, () => deleteDingTalkApp(record.dingTalkAppId))}
           >
-            <Button type="link" size="small" danger loading={actionKey === `delete:${record.dingTalkAppId}`}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} loading={actionKey === `delete:${record.dingTalkAppId}`}>
               {t('appDingTalkChannels.delete')}
             </Button>
           </Popconfirm>
@@ -225,7 +223,6 @@ export function AppDingTalkChannelsSection({ teamId, appId, canManage, isPublish
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={spacing.md}>
-      {!isPublished && <Alert type="warning" showIcon message={t('appDingTalkChannels.unpublishedHint')} />}
       <DSCard
         title={t('appDingTalkChannels.cardTitle')}
         extra={

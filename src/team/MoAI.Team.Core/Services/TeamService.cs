@@ -53,6 +53,17 @@ public class TeamService : ITeamService
         await _redisDatabase.Database.KeyDeleteAsync(cacheKey);
     }
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyCollection<long>> GetMemberUserIdsAsync(long teamId, CancellationToken cancellationToken = default)
+    {
+        var userIds = await _databaseContext.TeamUsers
+            .Where(x => x.TeamId == teamId)
+            .Select(x => x.UserId)
+            .ToListAsync(cancellationToken);
+
+        return userIds;
+    }
+
     private static string BuildCacheKey(long teamId, long userId) => $"teamrole:{teamId}:{userId}";
 
     private sealed class RoleCache

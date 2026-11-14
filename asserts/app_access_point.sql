@@ -11,6 +11,7 @@ create table if not exists "app_access_point" (
     placeholder varchar(100) null,
     primary_color varchar(20) null,
     position varchar(20) not null default 'bottomRight',
+    display_mode varchar(20) not null default 'floating',
     launcher_text varchar(50) null,
     avatar varchar(255) null,
     panel_width int not null default 380,
@@ -32,6 +33,7 @@ comment on column "app_access_point".subtitle is '欢迎语/副标题';
 comment on column "app_access_point".placeholder is '输入框占位文案';
 comment on column "app_access_point".primary_color is '主题色，#RRGGBB';
 comment on column "app_access_point".position is '悬浮位置：bottomRight / bottomLeft';
+comment on column "app_access_point".display_mode is '显示形式：floating 悬浮组件 / inline 内嵌小窗';
 comment on column "app_access_point".launcher_text is '悬浮按钮文案，空则用图标';
 comment on column "app_access_point".avatar is '头像 objectKey（走存储）';
 comment on column "app_access_point".panel_width is '面板宽度 px';

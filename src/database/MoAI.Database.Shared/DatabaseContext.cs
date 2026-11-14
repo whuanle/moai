@@ -23,6 +23,56 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AccessAppEntity> AccessApps { get; set; }
 
     /// <summary>
+    /// 团队资源 key（应用 ACP/A2A、知识库、知识图谱外部访问凭证）.
+    /// </summary>
+    public virtual DbSet<TeamResourceKeyEntity> TeamResourceKeys { get; set; }
+
+    /// <summary>
+    /// 登录日志：每次登录尝试（成功/失败）与来源环境、风险评估结果.
+    /// </summary>
+    public virtual DbSet<LoginLogEntity> LoginLogs { get; set; }
+
+    /// <summary>
+    /// 登录风险事件：风控规则命中记录，管理员处理后标记已读.
+    /// </summary>
+    public virtual DbSet<LoginRiskEventEntity> LoginRiskEvents { get; set; }
+
+    /// <summary>
+    /// 登录 IP 封禁：风控自动封禁或管理员手动封禁.
+    /// </summary>
+    public virtual DbSet<LoginIpBanEntity> LoginIpBans { get; set; }
+
+    /// <summary>
+    /// 资源使用统计（每日）：统计模块定期批量落库，按 资源类型+资源id+日期 记录当日累计量.
+    /// </summary>
+    public virtual DbSet<ResourceUsageDailyEntity> ResourceUsageDailies { get; set; }
+
+    /// <summary>
+    /// 资源使用统计（总量）：统计模块定期批量落库，按 资源类型+资源id 累计总量，不按日隔离.
+    /// </summary>
+    public virtual DbSet<ResourceUsageTotalEntity> ResourceUsageTotals { get; set; }
+
+    /// <summary>
+    /// 子系统团队授权.
+    /// </summary>
+    public virtual DbSet<SubsystemTeamAuthEntity> SubsystemTeamAuths { get; set; }
+
+    /// <summary>
+    /// 组织.
+    /// </summary>
+    public virtual DbSet<OrgRoleEntity> OrgRoles { get; set; }
+
+    /// <summary>
+    /// 组织成员绑定.
+    /// </summary>
+    public virtual DbSet<OrgUserRoleEntity> OrgUserRoles { get; set; }
+
+    /// <summary>
+    /// 统一组织授权.
+    /// </summary>
+    public virtual DbSet<OrgGrantEntity> OrgGrants { get; set; }
+
+    /// <summary>
     /// 模型渠道.
     /// </summary>
     public virtual DbSet<AiChannelEntity> AiChannels { get; set; }
@@ -33,19 +83,9 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<AiModelEntity> AiModels { get; set; }
 
     /// <summary>
-    /// 授权模型给哪些团队使用，额度以团队为单位共享.
+    /// 授权模型给哪些团队使用.
     /// </summary>
     public virtual DbSet<AiModelAuthorizationEntity> AiModelAuthorizations { get; set; }
-
-    /// <summary>
-    /// ai模型额度规则，一行=某主体在一个重置周期内的tokens上限，只能用于系统模型.
-    /// </summary>
-    public virtual DbSet<AiModelLimitEntity> AiModelLimits { get; set; }
-
-    /// <summary>
-    /// ai模型额度余额，按规则维度记录当前周期已消耗与剩余，剩余=total_limit-used_tokens.
-    /// </summary>
-    public virtual DbSet<AiModelQuotumEntity> AiModelQuota { get; set; }
 
     /// <summary>
     /// 统计不同模型的token使用量，该表不是实时刷新的，按模型+团队+用户+业务来源维度累加.
@@ -61,6 +101,11 @@ public partial class DatabaseContext : DbContext
     /// 应用.
     /// </summary>
     public virtual DbSet<AppEntity> Apps { get; set; }
+
+    /// <summary>
+    /// 应用收藏，(app_id, user_id) 唯一（活跃行），应用广场收藏置顶排序的数据源.
+    /// </summary>
+    public virtual DbSet<AppFavoriteEntity> AppFavorites { get; set; }
 
     /// <summary>
     /// 外部应用访问点配置，与外部应用 1:1.
@@ -160,6 +205,8 @@ public partial class DatabaseContext : DbContext
 
     public virtual DbSet<KnowledgeGraphRelationTypeEntity> KnowledgeGraphRelationTypes { get; set; }
 
+    public virtual DbSet<KgImportJobEntity> KgImportJobs { get; set; }
+
     /// <summary>
     /// oauth2.0系统.
     /// </summary>
@@ -189,6 +236,16 @@ public partial class DatabaseContext : DbContext
     /// 内置插件.
     /// </summary>
     public virtual DbSet<PluginStaticEntity> PluginStatics { get; set; }
+
+    /// <summary>
+    /// 插件语义条目.
+    /// </summary>
+    public virtual DbSet<PluginSemanticNoteEntity> PluginSemanticNotes { get; set; }
+
+    /// <summary>
+    /// 插件工具元数据.
+    /// </summary>
+    public virtual DbSet<PluginToolMetaEntity> PluginToolMetas { get; set; }
 
     /// <summary>
     /// 授权私有系统插件给哪些团队使用.
@@ -241,6 +298,11 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<TeamVariableEntity> TeamVariables { get; set; }
 
     /// <summary>
+    /// 团队智能体，主智能体 + 多个子智能体的编排定义资产.
+    /// </summary>
+    public virtual DbSet<TeamAgentEntity> TeamAgents { get; set; }
+
+    /// <summary>
     /// 用户.
     /// </summary>
     public virtual DbSet<UserEntity> Users { get; set; }
@@ -266,11 +328,6 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiDocumentChunkContentEntity> WikiDocumentChunkContents { get; set; }
 
     /// <summary>
-    /// 切片向量化内容.
-    /// </summary>
-    public virtual DbSet<WikiDocumentChunkEmbeddingEntity> WikiDocumentChunkEmbeddings { get; set; }
-
-    /// <summary>
     /// 切片元数据内容表（提问/提纲/摘要）.
     /// </summary>
     public virtual DbSet<WikiDocumentChunkMetadatumEntity> WikiDocumentChunkMetadata { get; set; }
@@ -279,6 +336,11 @@ public partial class DatabaseContext : DbContext
     /// 文档内容.
     /// </summary>
     public virtual DbSet<WikiDocumentContentEntity> WikiDocumentContents { get; set; }
+
+    /// <summary>
+    /// 知识库文档内嵌图片附件，文档提取时落出的图片资产登记.
+    /// </summary>
+    public virtual DbSet<WikiDocumentImageEntity> WikiDocumentImages { get; set; }
 
     /// <summary>
     /// 知识库外部源，飞书文档/爬虫等外部数据入口，持有同步方式与工作流预设.
@@ -291,9 +353,34 @@ public partial class DatabaseContext : DbContext
     public virtual DbSet<WikiSourceDocumentEntity> WikiSourceDocuments { get; set; }
 
     /// <summary>
+    /// 知识库检索经验聚类.
+    /// </summary>
+    public virtual DbSet<WikiRecallClusterEntity> WikiRecallClusters { get; set; }
+
+    /// <summary>
     /// 工作任务.
     /// </summary>
     public virtual DbSet<WorkerTaskEntity> WorkerTasks { get; set; }
+
+    /// <summary>
+    /// 站内信：每收件人一行，已读态/软删独立，列表按接收人隔离.
+    /// </summary>
+    public virtual DbSet<MessageEntity> Messages { get; set; }
+
+    /// <summary>
+    /// 通知中心渠道.
+    /// </summary>
+    public virtual DbSet<NotificationChannelEntity> NotificationChannels { get; set; }
+
+    /// <summary>
+    /// 通知发送记录.
+    /// </summary>
+    public virtual DbSet<NotificationLogEntity> NotificationLogs { get; set; }
+
+    /// <summary>
+    /// 通知中心模板.
+    /// </summary>
+    public virtual DbSet<NotificationTemplateEntity> NotificationTemplates { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

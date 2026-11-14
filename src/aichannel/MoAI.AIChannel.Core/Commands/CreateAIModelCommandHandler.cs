@@ -29,11 +29,16 @@ public class CreateAIModelCommandHandler : IRequestHandler<CreateAIModelCommand,
     public async Task<EmptyCommandResponse> Handle(CreateAIModelCommand request, CancellationToken cancellationToken)
     {
         var channelExist = await _databaseContext.AiChannels
-            .AnyAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0, cancellationToken);
+            .AnyAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);
 
         if (!channelExist)
         {
             throw new BusinessException("未找到渠道，请检查渠道 id.") { StatusCode = 404 };
+        }
+
+        if (request.TeamId > 0 && request.IsPublic)
+        {
+            throw new BusinessException("团队自有渠道模型不支持公开，仅本团队可用.") { StatusCode = 400 };
         }
 
         var exist = await _databaseContext.AiModels

@@ -5,7 +5,6 @@ using MoAI.AI;
 using MoAI.AIChannel;
 using MoAI.AIPlugin;
 using MoAI.AIPlugin.Custom;
-using MoAI.AIPlugin.Dynamic;
 using MoAI.AIPlugin.Static;
 using MoAI.App;
 using MoAI.Auth;
@@ -15,19 +14,25 @@ using MoAI.Database;
 using MoAI.DingTalk;
 using MoAI.Feishu;
 using MoAI.Filters;
-using MoAI.Gateway;
 using MoAI.Hangfire;
 using MoAI.Infra;
 using MoAI.KnowledgeGraph;
+using MoAI.LoginSafety;
 using MoAI.Memory;
+using MoAI.Message;
 using MoAI.Modules;
+using MoAI.Notification;
 using MoAI.OauthConnect;
+using MoAI.Org;
 using MoAI.Publication;
 using MoAI.Prompt;
 using MoAI.Settings;
 using MoAI.Skill;
+using MoAI.Statistics;
 using MoAI.Storage;
+using MoAI.Subsystem;
 using MoAI.Team;
+using MoAI.TeamAgent;
 using MoAI.TeamPlugin;
 using MoAI.Timer;
 using MoAI.Variable;
@@ -49,14 +54,18 @@ namespace MoAI;
 [InjectModule<MoAI.App.Workflow.WorkflowCoreModule>]
 [InjectModule<SettingsCoreModule>]
 [InjectModule<OauthConnectCoreModule>]
+[InjectModule<SubsystemCoreModule>]
+[InjectModule<OrgCoreModule>]
+[InjectModule<MessageCoreModule>]
+[InjectModule<NotificationCoreModule>]
 [InjectModule<AIChannelCoreModule>]
-[InjectModule<GatewayCoreModule>]
 [InjectModule<TeamCoreModule>]
 [InjectModule<WikiCoreModule>]
 [InjectModule<KnowledgeGraphCoreModule>]
 [InjectModule<MemoryCoreModule>]
 [InjectModule<VariableCoreModule>]
 [InjectModule<SkillCoreModule>]
+[InjectModule<TeamAgentCoreModule>]
 [InjectModule<TimerCoreModule>]
 [InjectModule<TeamPluginCoreModule>]
 [InjectModule<AIPluginCoreModule>]
@@ -68,8 +77,9 @@ namespace MoAI;
 [InjectModule<PromptCoreModule>]
 [InjectModule<ClassifyCoreModule>]
 [InjectModule<StaticPluginsModule>]
-[InjectModule<DynamicPluginsModule>]
 [InjectModule<CustomPluginModule>]
+[InjectModule<StatisticsCoreModule>]
+[InjectModule<LoginSafetyCoreModule>]
 [InjectModule<HangfireCoreModule>]
 [InjectModule<ApiModule>]
 public partial class MainModule : IModule

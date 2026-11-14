@@ -26,7 +26,7 @@ public enum AiModelUseType
     Workflow = 3,
 
     /// <summary>
-    /// 开放接口（应用接入 key 调用模型网关），use_resource_id 记录 access_app.id.
+    /// 开放接口直连模型（已下线的团队模型网关，存量数据保留此类型），use_resource_id 记录 access_app.id.
     /// </summary>
     OpenApi = 4,
 }

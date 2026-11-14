@@ -1,10 +1,11 @@
 // 应用 A2A（Google Agent2Agent）E2E（场景 @A2A-S01 ~ @A2A-S14；后端 127.0.0.1:5000）
-// 覆盖：认证与 scope 门禁（无凭证 401 / 无 app_a2a 403 / GET JSON-RPC 端点 405 / 非法 JSON -32700 / 未知方法 -32601）
+// 覆盖：认证与包围圈门禁（无凭证 401 / wiki 资源 key 越圈 403 / GET JSON-RPC 端点 405 / 非法 JSON -32700 / 未知方法 -32601；
+//       接入 scopes（app_a2a/app_chat）已退役：moai-ac- 全量 key 放行）
 //       → Agent Card（agent.json：name/url/protocolVersion/streaming）→ 应用门禁（跨团队 404 / 未发布 403）
 //       → Agent 应用对话：message/send（无 contextId 自动建会话，task completed + artifacts 回显 + contextId）
 //       → 续聊（携带 contextId）→ 会话消息落库 → tasks/get（completed / 幽灵 -32001）
 //       → message/stream（SSE：Task working → artifact-update 增量 → status-update completed final → 最终 Task）
-//       → tasks/cancel 中断慢速流（SLOW 桩）→ 用户 token 路径 → 范围缓存立即性（授权/吊销即生效）→ 默认范围含 app_a2a。
+//       → tasks/cancel 中断慢速流（SLOW 桩）→ 用户 token 路径 → 资源 key 停用/启用即时生效（401/200）→ 列表无 scopes 字段（退役）。
 // 模型策略：内置本地 OpenAI 兼容桩（/v1/chat/completions 固定回显文案，SLOW 标记触发慢速流），无需真实模型渠道。
 import crypto from 'node:crypto'
 import http from 'node:http'
@@ -56,7 +57,7 @@ function a2aHeaders(cred) {
 }
 
 async function a2a(cred, appId, body, method = 'POST') {
-  const res = await fetch(`${BASE}/api/external/app/${appId}/a2a`, { method, headers: a2aHeaders(cred), body: method === 'GET' ? undefined : JSON.stringify(body) })
+  const res = await fetch(`${BASE}/api/teamres/app/${appId}/a2a`, { method, headers: a2aHeaders(cred), body: method === 'GET' ? undefined : JSON.stringify(body) })
   const text = await res.text()
   let json = null
   try { json = JSON.parse(text) } catch { /* 非 JSON */ }
@@ -65,7 +66,7 @@ async function a2a(cred, appId, body, method = 'POST') {
 
 /** Agent Card（GET /a2a/agent.json） */
 async function agentCard(cred, appId) {
-  const res = await fetch(`${BASE}/api/external/app/${appId}/a2a/agent.json`, { headers: a2aHeaders(cred) })
+  const res = await fetch(`${BASE}/api/teamres/app/${appId}/a2a/agent.json`, { headers: a2aHeaders(cred) })
   const text = await res.text()
   let json = null
   try { json = JSON.parse(text) } catch { /* 非 JSON */ }
@@ -74,7 +75,7 @@ async function agentCard(cred, appId) {
 
 /** message/stream（SSE）：收集事件（result.kind 区分 task/status-update/artifact-update） */
 async function a2aStream(cred, appId, body, onFirstEvent) {
-  const res = await fetch(`${BASE}/api/external/app/${appId}/a2a`, { method: 'POST', headers: a2aHeaders(cred), body: JSON.stringify(body) })
+  const res = await fetch(`${BASE}/api/teamres/app/${appId}/a2a`, { method: 'POST', headers: a2aHeaders(cred), body: JSON.stringify(body) })
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('text/event-stream')) {
     const text = await res.text()
@@ -180,7 +181,7 @@ async function main() {
   const adminLogin = await api('POST', '/api/auth/login', { body: { userName: 'admin', password: rsa('abcd123456') } })
   const adminToken = adminLogin.json?.accessToken ?? ''
 
-  const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: `a2a-team-${TS}` } })).json.value)
+  const TID = Number((await api('POST', '/api/team', { token: owner.token, body: { name: `a2a_team_${TS}` } })).json.value)
 
   // 桩渠道 + conversation 模型并授权给团队
   const stub = await startStubServer()
@@ -200,51 +201,63 @@ async function main() {
   await api('PUT', `/api/ai/model/${MODEL_ID}/authorization`, { token: adminToken, body: { modelId: MODEL_ID, teamIds: [...new Set([...(auth.json?.items ?? []).map((i) => Number(i.teamId)), TID])] } })
 
   // 应用：Agent（已发布 A1 / 未发布 A2）+ 外部应用 A3
-  const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-agent-${TS}`, appType: 'agent' } })).json.value)
+  const A1 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a_agent_${TS}`, appType: 'agent' } })).json.value)
   await api('PUT', `/api/app/${A1}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A1}/publish`, { token: owner.token })
+  // 开启 A1 的 A2A 功能（key 唯一生成时机=开启功能；未开启的 A2A 端点一律 403 feature_disabled）
+  await api('PUT', `/api/app/${A1}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
-  const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-draft-${TS}`, appType: 'agent' } })).json.value)
+  const A2 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a_draft_${TS}`, appType: 'agent' } })).json.value)
 
-  const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a-ext-${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
+  const A3 = String((await api('POST', '/api/app', { token: owner.token, body: { teamId: TID, name: `a2a_ext_${TS}`, appType: 'agent', isExternal: true, isAuth: false } })).json.value)
   await api('PUT', `/api/app/${A3}/agent-config`, { token: owner.token, body: { modelId: MODEL_ID, prompt: '你是回声助手', wikiIds: [], plugins: [] } })
   await api('POST', `/api/app/${A3}/publish`, { token: owner.token })
+  // A3 开启 A2A（用户 token 会话场景）
+  await api('PUT', `/api/app/${A3}/feature`, { token: owner.token, body: { isAcpA2aEnabled: true } })
 
-  // 接入 key：K1（app_a2a+app_chat）、K2（无 app_a2a）、K3（不传=默认全量）、K4（跨团队）
-  const mkKey = async (name, scopes) => {
-    const body = { teamId: TID, name }
-    if (scopes) body.scopes = scopes
-    const r = await api('POST', '/api/access-app', { token: owner.token, body })
-    return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? '') }
+  // 接入 key：scopes 字段已退役，moai-ac- 一律全量（K1/K2/K3 同构，仅命名区分用途）；K4（跨团队）
+  const mkKey = async (name) => {
+    const r = await api('POST', '/api/access-app', { token: owner.token, body: { teamId: TID, name } })
+    return { id: String(r.json?.accessAppId ?? ''), key: String(r.json?.key ?? ''), secret: String(r.json?.secret ?? '') }
   }
-  const K1 = await mkKey(`a2a-k1-${TS}`, ['app_a2a', 'app_chat'])
-  const K2 = await mkKey(`a2a-k2-${TS}`, ['wiki_read'])
-  const K3 = await mkKey(`a2a-k3-${TS}`, null)
+  const K1 = await mkKey(`a2a_k1_${TS}`)
+  const K2 = await mkKey(`a2a_k2_${TS}`)
+  const K3 = await mkKey(`a2a_k3_${TS}`)
   const owner2 = await mkuser('bo')
-  const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `a2a-team2-${TS}` } })).json.value)
-  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `a2a-k4-${TS}`, scopes: ['app_a2a'] } })
+  const TID2 = Number((await api('POST', '/api/team', { token: owner2.token, body: { name: `a2a_team2_${TS}` } })).json.value)
+  const K4r = await api('POST', '/api/access-app', { token: owner2.token, body: { teamId: TID2, name: `a2a_k4_${TS}` } })
   const K4 = { id: String(K4r.json?.accessAppId ?? ''), key: String(K4r.json?.key ?? '') }
+
+  // 知识库 + 其资源 key（moai-tr-）：A2A 包围圈反例（wiki 资源 key 越圈 403）
+  // wiki 资源 key 唯一生成时机=开启该库 MCP（PUT mcp-config 自动生成/复用）
+  const WIKI = Number((await api('POST', '/api/wiki', { token: owner.token, body: { teamId: TID, name: `a2a_wiki_${TS}`, description: 'a2a e2e' } })).json?.value)
+  await api('PUT', `/api/wiki/${WIKI}/mcp-config`, { token: owner.token, body: { isMcpEnabled: true } })
+  const kW = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'wiki', resourceId: String(WIKI) } })
+  const WIKI_RES_KEY = String(kW.json?.key ?? '')
+  const WIKI_RES_ROW = String(kW.json?.teamResourceKeyId ?? '')
 
   // ===== A2A-S01 认证门禁 =====
   check('A2A-S01a 无凭证 401', (await a2a(null, A1, { jsonrpc: '2.0', id: 1, method: 'message/send', params: {} })).status === 401)
   check('A2A-S01b 无凭证 agent.json 401', (await agentCard(null, A1)).status === 401)
 
-  // ===== A2A-S02 无 app_a2a 范围 403 =====
-  const noScope = await a2a({ key: K2.key }, A1, { jsonrpc: '2.0', id: 1, method: 'message/send', params: {} })
-  check('A2A-S02 无 app_a2a 范围 403 insufficient_scope',
-    noScope.status === 403 && noScope.json?.error?.code === 'insufficient_scope', JSON.stringify(noScope.json).slice(0, 140))
+  // ===== A2A-S02 包围圈：moai-ac- 全量 key 放行（scopes 退役）/ wiki 资源 key 越圈 403 =====
+  const fullKeyCard = await agentCard({ key: K2.key }, A1)
+  check('A2A-S02a moai-ac- 全量 key agent.json 200（scopes 退役）', fullKeyCard.status === 200, `${fullKeyCard.status} ${fullKeyCard.text.slice(0, 140)}`)
+  const wikiKeyHit = await a2a({ key: WIKI_RES_KEY }, A1, { jsonrpc: '2.0', id: 1, method: 'message/send', params: {} })
+  check('A2A-S02b wiki 资源 key 越圈打 A2A 403 insufficient_scope',
+    wikiKeyHit.status === 403 && wikiKeyHit.json?.error?.code === 'insufficient_scope', JSON.stringify(wikiKeyHit.json).slice(0, 140))
 
   // ===== A2A-S03 Agent Card =====
   const card = await agentCard({ key: K1.key }, A1)
   check('A2A-S03 agent.json：name/url/protocolVersion/streaming',
-    card.status === 200 && card.json?.protocolVersion === '0.3.0' && String(card.json?.url ?? '').endsWith(`/api/external/app/${A1}/a2a`)
-    && card.json?.capabilities?.streaming === true && Array.isArray(card.json?.skills) && card.json.name?.includes('a2a-agent'),
+    card.status === 200 && card.json?.protocolVersion === '0.3.0' && String(card.json?.url ?? '').endsWith(`/api/teamres/app/${A1}/a2a`)
+    && card.json?.capabilities?.streaming === true && Array.isArray(card.json?.skills) && card.json.name?.includes('a2a_agent'),
     JSON.stringify(card.json).slice(0, 220))
 
   // ===== A2A-S04 协议基础 =====
-  const getRpc = await fetch(`${BASE}/api/external/app/${A1}/a2a`, { method: 'GET', headers: a2aHeaders({ key: K1.key }) })
+  const getRpc = await fetch(`${BASE}/api/teamres/app/${A1}/a2a`, { method: 'GET', headers: a2aHeaders({ key: K1.key }) })
   check('A2A-S04a JSON-RPC 端点 GET 404/405（无 GET 路由）', getRpc.status === 404 || getRpc.status === 405)
-  const badJson = await fetch(`${BASE}/api/external/app/${A1}/a2a`, { method: 'POST', headers: a2aHeaders({ key: K1.key }), body: '{bad json' })
+  const badJson = await fetch(`${BASE}/api/teamres/app/${A1}/a2a`, { method: 'POST', headers: a2aHeaders({ key: K1.key }), body: '{bad json' })
   check('A2A-S04b 非法 JSON -32700', badJson.status === 200 && (await badJson.json())?.error?.code === -32700)
   const unknown = await a2a({ key: K1.key }, A1, { jsonrpc: '2.0', id: 2, method: 'frobnicate', params: {} })
   check('A2A-S04c 未知方法 -32601', unknown.status === 200 && unknown.json?.error?.code === -32601, JSON.stringify(unknown.json).slice(0, 140))
@@ -280,7 +293,7 @@ async function main() {
     JSON.stringify(send2.json?.result).slice(0, 200))
 
   // ===== A2A-S08 会话消息落库（两轮用户消息）=====
-  const msgs = await api('GET', `/api/external/session/${CONTEXT}/messages`, { token: K1.key })
+  const msgs = await api('GET', `/api/teamres/session/${CONTEXT}/messages`, { token: K1.key })
   const userMsgs = (msgs.json?.items ?? []).filter((m) => m.role === 'user')
   check('A2A-S08 会话消息落库（两轮用户消息）', msgs.status === 200 && userMsgs.length === 2, `status=${msgs.status} items=${(msgs.json?.items ?? []).length}`)
 
@@ -326,35 +339,41 @@ async function main() {
   const canceledFinal = streamC.finalTask?.status?.state === 'canceled' || streamC.events.some((e) => e.kind === 'status-update' && e.status?.state === 'canceled')
   check('A2A-S11 tasks/cancel 中断（canceled 状态）', canceledFinal, JSON.stringify(streamC.finalTask).slice(0, 200))
 
-  // ===== A2A-S12 用户 token 路径（外部应用 A3）=====
+  // ===== A2A-S12 外部应用用户面（用户 token 随授权退役改匿名 token，语义改写编号不复用）=====
   const EXT_UID = `a2a-user-${TS}`
-  const tok = await api('POST', '/api/external/token', { body: { accessAppKey: K1.key, appId: A3, externalUserId: EXT_UID, nickname: 'a2a用户' } })
+  const tok = await api('POST', '/api/teamres/token', { body: { appId: A3, externalUserId: EXT_UID } })
   const userToken = String(tok.json?.accessToken ?? '')
   const sendU = await a2a({ token: userToken }, A3, {
     jsonrpc: '2.0', id: 12, method: 'message/send',
     params: { message: { role: 'user', kind: 'message', messageId: `m-${TS}-5`, parts: [{ kind: 'text', text: `用户token${TS}` }] } },
   })
-  check('A2A-S12 用户 token message/send completed',
+  check('A2A-S12 匿名 token 外部应用 message/send completed',
     tok.status === 200 && sendU.json?.result?.status?.state === 'completed', JSON.stringify(sendU.json?.result).slice(0, 160))
 
-  // ===== A2A-S13 范围缓存立即性 =====
-  await api('PUT', `/api/access-app/${K2.id}`, { token: owner.token, body: { name: `a2a-k2-${TS}`, scopes: ['wiki_read', 'app_a2a'] } })
-  const granted = await a2a({ key: K2.key }, A1, {
-    jsonrpc: '2.0', id: 13, method: 'message/send',
-    params: { message: { role: 'user', kind: 'message', messageId: `m-${TS}-6`, parts: [{ kind: 'text', text: `授权后${TS}` }] } },
-  })
-  check('A2A-S13a 授权 app_a2a 后立即放行（K2 message/send completed）', granted.json?.result?.status?.state === 'completed', JSON.stringify(granted.json?.result).slice(0, 160))
-  await api('PUT', `/api/access-app/${K2.id}`, { token: owner.token, body: { name: `a2a-k2-${TS}`, scopes: ['wiki_read'] } })
-  const revoked = await a2a({ key: K2.key }, A1, { jsonrpc: '2.0', id: 14, method: 'tasks/get', params: { id: task1?.id } })
-  check('A2A-S13b 吊销 app_a2a 后立即 403', revoked.status === 403 && revoked.json?.error?.code === 'insufficient_scope', JSON.stringify(revoked.json).slice(0, 120))
+  // ===== A2A-S13 资源 key 重置即时吊销（key 无启停状态、不可删除：旧 key 立即 401、新 key 200，行 id 不变） =====
+  const kAppRes = await api('POST', '/api/team-resource-key', { token: owner.token, body: { teamId: TID, resourceType: 'app', resourceId: A1 } })
+  const APP_RES_KEY = String(kAppRes.json?.key ?? '')
+  const APP_RES_ROW = String(kAppRes.json?.teamResourceKeyId ?? '')
+  const acpRes = await agentCard({ key: APP_RES_KEY }, A1)
+  check('A2A-S13a app 资源 key（moai-tr-）agent.json 200', acpRes.status === 200, `${acpRes.status} ${acpRes.text.slice(0, 120)}`)
 
-  // ===== A2A-S14 默认范围含 app_a2a =====
+  const resetRes = APP_RES_ROW ? await api('POST', `/api/team-resource-key/${APP_RES_ROW}/reset`, { token: owner.token }) : { status: 0 }
+  const resetHit = await agentCard({ key: APP_RES_KEY }, A1)
+  const APP_RES_KEY_NEW = String(resetRes.json?.key ?? '')
+  const reHit = await agentCard({ key: APP_RES_KEY_NEW }, A1)
+  check('A2A-S13b 资源 key 重置后 A2A 立即 401、新 key 恢复 200',
+    resetRes.status === 200 && resetRes.json?.teamResourceKeyId === APP_RES_ROW
+    && resetHit.status === 401 && APP_RES_KEY_NEW.startsWith('moai-tr-') && reHit.status === 200,
+    `reset=${resetRes.status} hit=${resetHit.status} re=${reHit.status}`)
+
+  // ===== A2A-S14 scopes 字段退役：接入列表项不再回显 scopes =====
   const accList = await api('GET', `/api/access-app/list?teamId=${TID}`, { token: owner.token })
   const k3item = (accList.json?.items ?? []).find((i) => i.accessAppId === K3.id)
-  check('A2A-S14 默认范围回显含 app_a2a', Array.isArray(k3item?.scopes) && k3item.scopes.includes('app_a2a'), JSON.stringify(k3item?.scopes))
+  check('A2A-S14 接入列表项无 scopes 字段（退役）', accList.status === 200 && k3item != null && !('scopes' in (k3item ?? {})), JSON.stringify(k3item ? Object.keys(k3item) : accList.text.slice(0, 120)))
 
   // ===== 清理 =====
   if (CH_ID) await api('DELETE', `/api/ai/channel/${CH_ID}`, { token: adminToken })
+  // key 不支持删除（吊销=重置或关闭功能开关）：清理段不再删 key 行，随资源保留
   for (const k of [K1, K2, K3, K4]) {
     if (k.id) await api('DELETE', `/api/access-app/${k.id}`, { token: owner.token })
   }

@@ -115,6 +115,7 @@ public partial class DatabaseContext
         ClassifySeed.Apply(modelBuilder);
         SettingSeed.Apply(modelBuilder);
         SkillSeed.Apply(modelBuilder);
+        NotificationTemplateSeed.Apply(modelBuilder);
     }
 
     /// <summary>

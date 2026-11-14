@@ -100,7 +100,7 @@ describe('WikiSources', () => {
   it('点击立即同步后调用同步接口并刷新列表', async () => {
     renderSources()
 
-    const syncButton = await screen.findByRole('button', { name: '立即同步' })
+    const syncButton = await screen.findByRole('button', { name: /立即同步$/ })
     fireEvent.click(syncButton)
 
     await waitFor(() => {
@@ -115,7 +115,7 @@ describe('WikiSources', () => {
   it('删除外部源需要确认，确认后调用删除接口', async () => {
     renderSources()
 
-    const deleteButton = await screen.findByRole('button', { name: '删除' })
+    const deleteButton = await screen.findByRole('button', { name: /删除$/ })
     fireEvent.click(deleteButton)
 
     // Popconfirm 的确认按钮文案由 antd 的 okText 默认值提供，用 title 定位弹层后取主按钮
@@ -190,11 +190,19 @@ describe('WikiSources', () => {
     fireEvent.click(await screen.findByRole('button', { name: /新建飞书源/ }))
     expect(await screen.findByText('飞书文档节点 Token')).toBeTruthy()
     expect(screen.queryByText('起始地址')).toBeNull()
+    // 「已有飞书应用连接 id」入口已下线：只保留完整填写新建连接三件套
+    expect(screen.queryByText('已有飞书应用连接 id')).toBeNull()
+    expect(screen.getByText('连接名称')).toBeTruthy()
 
     fireEvent.change(screen.getByPlaceholderText('请输入外部源名称'), { target: { value: '新飞书源' } })
     fireEvent.change(screen.getByPlaceholderText('从飞书知识库文档链接中获取'), {
       target: { value: 'tok-123' },
     })
+    fireEvent.change(screen.getByPlaceholderText('例如：知识库同步机器人'), {
+      target: { value: '连接一' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('cli_xxxxxxxx'), { target: { value: 'cli_fake' } })
+    fireEvent.change(screen.getByPlaceholderText('AppSecret'), { target: { value: 'secret-fake' } })
 
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
@@ -205,13 +213,37 @@ describe('WikiSources', () => {
     expect(payload.sourceType).toBe(WIKI_SOURCE_TYPE_FEISHU)
     expect(payload.name).toBe('新飞书源')
     expect(payload.nodeToken).toBe('tok-123')
+    expect(payload.newAppName).toBe('连接一')
+    expect(payload.newAppId).toBe('cli_fake')
+    expect(payload.newAppSecret).toBe('secret-fake')
     expect(payload.crawler).toBeUndefined()
+  })
+
+  it('新建飞书源缺 AppID/AppSecret 时不提交并提示必填', async () => {
+    renderSources()
+
+    fireEvent.click(await screen.findByRole('button', { name: /新建飞书源/ }))
+    expect(await screen.findByText('连接名称')).toBeTruthy()
+
+    fireEvent.change(screen.getByPlaceholderText('请输入外部源名称'), { target: { value: '缺密钥源' } })
+    fireEvent.change(screen.getByPlaceholderText('从飞书知识库文档链接中获取'), {
+      target: { value: 'tok-123' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('请输入连接名称')).toBeTruthy()
+    })
+    expect(screen.getByText('请输入飞书 AppID')).toBeTruthy()
+    expect(screen.getByText('请输入飞书 AppSecret')).toBeTruthy()
+    expect(createWikiSource).not.toHaveBeenCalled()
   })
 
   it('编辑外部源时按现状回填爬虫配置', async () => {
     renderSources()
 
-    fireEvent.click(await screen.findByRole('button', { name: '编辑' }))
+    fireEvent.click(await screen.findByRole('button', { name: /编辑$/ }))
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('官网文档')).toBeTruthy()
@@ -223,7 +255,7 @@ describe('WikiSources', () => {
   it('关闭定时同步后提交空 cron 表示不再自动抓取', async () => {
     renderSources()
 
-    fireEvent.click(await screen.findByRole('button', { name: '编辑' }))
+    fireEvent.click(await screen.findByRole('button', { name: /编辑$/ }))
     await waitFor(() => {
       expect(screen.getByDisplayValue('官网文档')).toBeTruthy()
     })

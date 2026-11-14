@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createSimpleLongFromDiscriminatorValue, serializeCreateWikiCommand, serializeSimpleLong, type BusinessValidationResult, type CreateWikiCommand, type SimpleLong } from '../../models/index.js';
 // @ts-ignore
+import { FilesRequestBuilderNavigationMetadata, type FilesRequestBuilder } from './files/index.js';
+// @ts-ignore
 import { ItemRequestBuilderNavigationMetadata, ItemRequestBuilderRequestsMetadata, type ItemRequestBuilder } from './item/index.js';
 // @ts-ignore
 import { ListRequestBuilderRequestsMetadata, type ListRequestBuilder } from './list/index.js';
@@ -18,6 +20,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/wiki
  */
 export interface WikiRequestBuilder extends BaseRequestBuilder<WikiRequestBuilder> {
+    /**
+     * The files property
+     */
+    get files(): FilesRequestBuilder;
     /**
      * The list property
      */
@@ -68,6 +74,9 @@ export const WikiRequestBuilderNavigationMetadata: Record<Exclude<keyof WikiRequ
         requestsMetadata: ItemRequestBuilderRequestsMetadata,
         navigationMetadata: ItemRequestBuilderNavigationMetadata,
         pathParametersMappings: ["%2Did"],
+    },
+    files: {
+        navigationMetadata: FilesRequestBuilderNavigationMetadata,
     },
     list: {
         requestsMetadata: ListRequestBuilderRequestsMetadata,

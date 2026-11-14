@@ -105,6 +105,14 @@
 
 @CLS-S14 @auto:vitest
 
+### Scenario: 粘贴自定义表情
+
+- Given 我是管理员，且新增分类弹窗已打开
+- When 我在表情面板顶部的输入框中粘贴自定义表情并保存
+- Then 分类保存成功，且刷新列表该分类名称旁展示该表情；粘贴多个 emoji 时仅保留第一个完整表情，普通文本被忽略
+
+@CLS-S15 @auto:vitest
+
 ## Feature: 权限与校验
 
 ### Scenario: 非管理员访问被拒

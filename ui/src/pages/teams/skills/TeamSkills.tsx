@@ -1,20 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  DeleteOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  EyeOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  SendOutlined,
-  UndoOutlined,
-} from '@ant-design/icons'
-import { Button, Form, Input, Modal, Popconfirm, Space, Tag, Typography } from 'antd'
-import type { TableColumnsType } from 'antd'
+import { DeleteOutlined, DownloadOutlined, EditOutlined, EyeOutlined, SearchOutlined, SendOutlined, UndoOutlined } from '@ant-design/icons'
+import { Avatar, Button, Col, Empty, Form, Input, Modal, Pagination, Popconfirm, Row, Space, Spin, Tag, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { DataTable, QueryBar, feedback } from '@/design-system'
+import { Card, QueryBar, feedback, useNeutralColors } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { formatDateTime } from '@/utils/datetime'
+import { resolveStorageUrl } from '@/utils/storage'
 import { applyPublication, withdrawPublication } from '@/api/publication'
 import {
   deleteSkill,
@@ -27,19 +18,25 @@ import {
 import { SkillDetailModal } from '@/pages/skills/SkillDetailModal'
 import { SkillEditModal } from '@/pages/skills/SkillEditModal'
 
-const { Text } = Typography
+const { Text, Paragraph } = Typography
+
+const CARD_PAGE_DEFAULT_SIZE = 12
+const CARD_PAGE_SIZE_OPTIONS = [12, 24, 48]
 
 interface SkillFilters extends Record<string, unknown> {
   keywords?: string
 }
 
-/** 团队技能：团队管理员创建管理，团队成员全部可见可用，支持申请上架到技能市场 */
+/** 团队技能：团队管理员创建管理，团队成员全部可见可用；卡片列表（同提示词/智能体），支持申请上架到技能市场 */
 export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: boolean }) {
   const { t } = useTranslation()
+  const neutral = useNeutralColors()
 
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<SkillListItem[]>([])
   const [keywords, setKeywords] = useState<string | undefined>(undefined)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(CARD_PAGE_DEFAULT_SIZE)
   const [detail, setDetail] = useState<SkillDetail | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -130,94 +127,97 @@ export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: b
     return <Tag>{t('skills.statusPrivate')}</Tag>
   }
 
-  const applyFilters = () => {
-    const values = filterForm.getFieldsValue()
-    setKeywords(typeof values.keywords === 'string' && values.keywords.trim() ? values.keywords.trim() : undefined)
-  }
-
-  const columns: TableColumnsType<SkillListItem> = useMemo(
-    () => [
-      {
-        title: t('skills.colName'),
-        key: 'name',
-        width: 200,
-        render: (_, record) => (
-          <Space size={spacing.sm}>
-            <span style={{ fontWeight: 500 }}>{record.name || '-'}</span>
-            <Text code style={{ fontSize: 12 }}>
-              {record.key}
-            </Text>
-          </Space>
-        ),
-      },
-      { title: t('skills.colDescription'), dataIndex: 'description', ellipsis: true, render: (v: string | null) => v || '-' },
-      { title: t('skills.colStatus'), key: 'status', width: 100, render: (_, record) => renderStatus(record) },
-      { title: t('skills.colFileCount'), dataIndex: 'fileCount', width: 80, render: (v: number | null) => v ?? 0 },
-      {
-        title: t('skills.colUpdateTime'),
-        dataIndex: 'updateTime',
-        width: 160,
-        render: (v: string | null) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(v)}</span>,
-      },
-      {
-        title: t('skills.colActions'),
-        key: 'actions',
-        width: 220,
-        fixed: 'right' as const,
-        render: (_, record) => (
-          <Space size={0}>
-            <Button type="text" size="small" icon={<EyeOutlined />} aria-label={`${t('skills.detail')}-${record.key ?? ''}`} onClick={() => void openDetail(record)} />
-            {canManage && (
-              <>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  aria-label={`${t('skills.edit')}-${record.key ?? ''}`}
-                  onClick={() => {
-                    setEditTarget(record.id ?? null)
-                    setEditOpen(true)
-                  }}
-                />
-                {record.isPublic ? null : record.pendingPublicationId ? (
-                  <Popconfirm title={t('skills.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
-                    <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('skills.withdraw')} />
-                  </Popconfirm>
-                ) : (
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<SendOutlined />}
-                    aria-label={t('skills.apply')}
-                    onClick={() => {
-                      setApplyRecord(record)
-                      applyForm.resetFields()
-                    }}
-                  />
-                )}
-                <Popconfirm title={t('skills.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={`${t('skills.delete')}-${record.key ?? ''}`} />
-                </Popconfirm>
-              </>
-            )}
+  /** 查看/编辑/上架/撤回/删除/下载操作，卡片底栏使用（紧凑卡片场景：纯图标 + Tooltip + aria-label） */
+  const renderActions = (record: SkillListItem) => (
+    <Space size={0}>
+      <Tooltip title={t('skills.detail')}>
+        <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('skills.detail')} onClick={() => void openDetail(record)} />
+      </Tooltip>
+      {canManage && (
+        <>
+          <Tooltip title={t('skills.edit')}>
             <Button
               type="text"
               size="small"
-              icon={<DownloadOutlined />}
-              aria-label={`${t('skills.download')}-${record.key ?? ''}`}
-              onClick={() => void handleDownload(record)}
+              icon={<EditOutlined />}
+              aria-label={t('skills.edit')}
+              onClick={() => {
+                setEditTarget(record.id ?? null)
+                setEditOpen(true)
+              }}
             />
-          </Space>
-        ),
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, canManage],
+          </Tooltip>
+          {record.isPublic ? null : record.pendingPublicationId ? (
+            <Popconfirm title={t('skills.withdrawConfirm')} onConfirm={() => void handleWithdraw(record)}>
+              <Tooltip title={t('skills.withdraw')}>
+                <Button type="text" size="small" icon={<UndoOutlined />} aria-label={t('skills.withdraw')} />
+              </Tooltip>
+            </Popconfirm>
+          ) : (
+            <Tooltip title={t('skills.apply')}>
+              <Button
+                type="text"
+                size="small"
+                icon={<SendOutlined />}
+                aria-label={t('skills.apply')}
+                onClick={() => {
+                  setApplyRecord(record)
+                  applyForm.resetFields()
+                }}
+              />
+            </Tooltip>
+          )}
+          <Popconfirm title={t('skills.deleteConfirm')} onConfirm={() => void handleDelete(record)}>
+            <Tooltip title={t('skills.delete')}>
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label={t('skills.delete')} />
+            </Tooltip>
+          </Popconfirm>
+        </>
+      )}
+      <Tooltip title={t('skills.download')}>
+        <Button
+          type="text"
+          size="small"
+          icon={<DownloadOutlined />}
+          aria-label={t('skills.download')}
+          onClick={() => void handleDownload(record)}
+        />
+      </Tooltip>
+    </Space>
+  )
+
+  const applyFilters = () => {
+    const values = filterForm.getFieldsValue()
+    setKeywords(typeof values.keywords === 'string' && values.keywords.trim() ? values.keywords.trim() : undefined)
+    setPage(1)
+  }
+
+  const total = items.length
+  const cardPageCount = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(page, cardPageCount)
+  const pagedItems = useMemo(
+    () => items.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [items, safePage, pageSize],
   )
 
   return (
     <>
-      <QueryBar form={filterForm} onSearch={applyFilters} onReset={applyFilters} loading={loading}>
+      {/* 工具栏单行：搜索框 → 查询 → | → 新建技能；仅一个搜索框不传 onReset（规范 §7），查询按钮自带刷新语义不另设刷新 */}
+      <QueryBar
+        form={filterForm}
+        onSearch={applyFilters}
+        loading={loading}
+        extra={
+          canManage ? (
+            <Button type="primary" onClick={() => {
+              setEditTarget(null)
+              setEditOpen(true)
+            }}>
+              {t('skills.create')}
+            </Button>
+          ) : undefined
+        }
+      >
         <Form.Item name="keywords">
           <Input
             placeholder={t('skills.searchPlaceholder')}
@@ -228,33 +228,109 @@ export function TeamSkills({ teamId, canManage }: { teamId: number; canManage: b
           />
         </Form.Item>
       </QueryBar>
-      <DataTable<SkillListItem>
-        rowKey="id"
-        columns={columns}
-        dataSource={items}
-        loading={loading}
-        sticky
-        scroll={{ x: 980 }}
-        toolbar={
-          <Space size={12}>
-            {canManage && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setEditTarget(null)
-                  setEditOpen(true)
-                }}
-              >
-                {t('skills.create')}
-              </Button>
-            )}
-            <Text type="secondary">{t('ds.table.total', { total: items.length })}</Text>
-          </Space>
-        }
-        onRefresh={() => void load()}
-        refreshLoading={loading}
-      />
+      <Spin spinning={loading}>
+        {pagedItems.length === 0 ? (
+          <Empty description={t('skills.empty')} />
+        ) : (
+          <Row gutter={[spacing.md, spacing.md]}>
+            {pagedItems.map((record) => {
+              const name = record.name || record.key || '-'
+              return (
+                <Col key={String(record.id ?? '')} xs={24} sm={12} md={8} lg={6} xl={4} xxl={4}>
+                  <Card
+                    style={{ height: '100%' }}
+                    styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, height: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                        <Avatar shape="square" size={44} src={record.avatarPath ? resolveStorageUrl(record.avatarPath) : undefined} alt={name}>
+                          {name.slice(0, 1).toUpperCase()}
+                        </Avatar>
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            title={name}
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 15,
+                              lineHeight: 1.4,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {name}
+                          </div>
+                          <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {renderStatus(record)}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
+                        <Tag>{t('skills.fileCountBadge', { count: record.fileCount ?? 0 })}</Tag>
+                        <Tag>{t('skills.useCountBadge', { count: record.useCount ?? 0 })}</Tag>
+                        <Text code style={{ fontSize: 12 }}>
+                          {record.key}
+                        </Text>
+                      </div>
+                      <Paragraph type="secondary" style={{ fontSize: 13, marginBottom: 0, minHeight: 38 }} ellipsis={{ rows: 2 }}>
+                        {record.description || '-'}
+                      </Paragraph>
+                      <div
+                        style={{
+                          marginTop: 'auto',
+                          paddingTop: spacing.sm,
+                          borderTop: `1px solid ${neutral.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: spacing.sm,
+                        }}
+                      >
+                        {canManage ? (
+                          renderActions(record)
+                        ) : (
+                          <Space size={0}>
+                            <Tooltip title={t('skills.detail')}>
+                              <Button type="text" size="small" icon={<EyeOutlined />} aria-label={t('skills.detail')} onClick={() => void openDetail(record)} />
+                            </Tooltip>
+                            <Tooltip title={t('skills.download')}>
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<DownloadOutlined />}
+                                aria-label={t('skills.download')}
+                                onClick={() => void handleDownload(record)}
+                              />
+                            </Tooltip>
+                          </Space>
+                        )}
+                        <span title={t('skills.colUpdateTime')} style={{ whiteSpace: 'nowrap', fontSize: 12, color: neutral.textSecondary }}>
+                          {formatDateTime(record.updateTime)}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                </Col>
+              )
+            })}
+          </Row>
+        )}
+      </Spin>
+      {total > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.md }}>
+          <Pagination
+            current={safePage}
+            pageSize={pageSize}
+            total={total}
+            onChange={(next, nextSize) => {
+              setPage(nextSize !== pageSize ? 1 : next)
+              setPageSize(nextSize)
+            }}
+            showSizeChanger
+            pageSizeOptions={CARD_PAGE_SIZE_OPTIONS.map(String)}
+          />
+        </div>
+      )}
       <SkillDetailModal open={detailOpen} detail={detail} onClose={() => setDetailOpen(false)} />
       <SkillEditModal
         open={editOpen}

@@ -23,6 +23,10 @@ const pre = await fetch(`${BASE}/api/storage/public/pre_upload_image`, {
   body: JSON.stringify({ fileName: `audit${ts}.png`, contentType: 'image/png', fileSize: png.length, sha256 }),
 }).then((r) => r.json())
 check('预上传返回 fileId/objectKey/uploadUrl', pre?.fileId > 0 && /public\/images\//.test(pre?.objectKey ?? '') && Boolean(pre?.uploadUrl))
+const signedUploadExpiry = new URL(pre.uploadUrl).searchParams.get('X-Amz-Expires')
+const responseExpirySeconds = (Date.parse(pre.expiration) - Date.now()) / 1000
+check('预签名上传地址固定 60 秒有效', signedUploadExpiry === '60' && responseExpirySeconds > 45 && responseExpirySeconds <= 60,
+  `signature=${signedUploadExpiry ?? 'missing'} response=${responseExpirySeconds.toFixed(1)}s`)
 
 // 2. PUT 直传预签名地址（不带 Authorization）
 const put = await fetch(pre.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png })

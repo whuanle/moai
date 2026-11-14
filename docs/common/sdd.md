@@ -11,7 +11,7 @@
 
 | 方法 | 路由 | 鉴权 | 说明 |
 |---|---|---|---|
-| GET | `/common/serverinfo` | 匿名 | name / serviceUrl / publicStoreUrl / rsaPublic / maxUploadFileSize |
+| GET | `/common/serverinfo` | 匿名 | name / logoPath / loginBackgroundPath / serviceUrl / publicStoreUrl / rsaPublic / maxUploadFileSize / registerEmailCodeRequired / passwordResetEnabled |
 | GET | `/common/build_guid` | 需登录 | 返回 `Guid.CreateVersion7()`（时间有序 UUID） |
 
 | 字段 | 来源 | 消费方 |
@@ -20,6 +20,8 @@
 | `serviceUrl` | `SystemOptions.Server` | 前端拼接接口/静态地址（`{serviceUrl}/static/{osskey}`） |
 | `publicStoreUrl` | `new Uri(new Uri(Server), "static")`（`StaticRoutePrefix="/static"` 相对拼接） | 公有文件直链前缀（storage 静态中转，见 [../storage-file-layout.md](../storage-file-layout.md)） |
 | `maxUploadFileSize` | `SystemOptions.MaxUploadFileSize`（默认 100MB=104857600 字节） | 预留；前端 store 未保留该字段，暂无消费方 |
+| `registerEmailCodeRequired` | `SMTP_ENABLED` 与 `REGISTER_EMAIL_CODE_ENABLED` 两个设置项合成（直查 `setting` 表，与 logoPath 等同模式），缺失回退内置默认 | 前端注册页显隐验证码输入与发送按钮（[auth/sdd 决策 7](../auth/sdd.md)） |
+| `passwordResetEnabled` | 仅取决于 `SMTP_ENABLED`（未启用时找回密码由管理员在用户管理重置） | 前端登录页显隐「忘记密码」入口、找回密码页可用性 |
 
 ## 组件
 

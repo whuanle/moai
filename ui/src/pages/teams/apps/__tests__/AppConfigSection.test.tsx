@@ -3,20 +3,31 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { AppConfigSection, type AppDetail } from '../AppConfigSection'
 import { getAppAgentConfig, getAppSecurity, getApps, getSandboxLimits, publishApp, saveAppAgentConfig, saveAppSecurity } from '@/api/app'
-import { getTeamGatewayModels } from '@/api/gateway'
+import { getTeamAvailableModels } from '@/api/aichannel'
 import { getTeamPlugins } from '@/api/team-plugin'
 import { getSkillOptions } from '@/api/skills'
 import { getWikis } from '@/api/wiki'
 import { getKnowledgeGraphs } from '@/api/knowledgeGraph'
+import { getTeamAgents } from '@/api/team-agent'
+import { getTeamPrompts, getPromptMarketList } from '@/api/prompt'
+
+vi.mock('@/api/team-agent', () => ({
+  // 团队智能体绑定候选（team-agent Phase 2）：默认空列表，绑定链路用例按需覆盖
+  getTeamAgents: vi.fn().mockResolvedValue({ myRole: 2, items: [] }),
+}))
 
 vi.mock('@/api/app', () => ({
   getAppDetail: vi.fn(),
   getAppAgentConfig: vi.fn(),
   getApps: vi.fn(),
   getCompactionDefaults: vi.fn().mockResolvedValue({
+    compactionMode: 'auto',
+    toolEvictionRatio: 0.5,
+    summarizeTriggerRatio: 0.8,
+    summarizeTargetRatio: 0.5,
+    truncationRatio: 0.95,
     toolResultTriggerMessages: 16,
     summarizeTriggerTokens: 16000,
-    preserveTurns: 8,
     hardTokenLimit: 64000,
     enableSummarization: false,
     summarizerModelId: '',
@@ -25,6 +36,25 @@ vi.mock('@/api/app', () => ({
   saveAppAgentConfig: vi.fn().mockResolvedValue(undefined),
   publishApp: vi.fn().mockResolvedValue(undefined),
   createDebugSession: vi.fn().mockResolvedValue('s1'),
+  // 调试对话面板经 userconfig 取草稿可选模型（rounds 299~324 起）
+  getAppUserConfig: vi.fn().mockResolvedValue({
+    promptId: 0,
+    defaultModelId: '',
+    modelIds: [],
+    teamAgents: [],
+    defaultTeamAgentId: '',
+    skills: [],
+    defaultSkills: [],
+    toolApprovalMode: 'auto',
+    toolApprovalExemptNames: [],
+    toolApprovalExemptPrefixes: [],
+    toolApprovalAutoApprovedNames: [],
+    toolApprovalAutoApprovedPrefixes: [],
+    memoryMode: 0,
+    memoryEnabled: false,
+    memoryGlobalMode: 0,
+    memoryGlobalAllowed: false,
+  }),
   getAppSecurity: vi.fn().mockResolvedValue({
     appId: 'a1',
     enabled: false,
@@ -35,7 +65,7 @@ vi.mock('@/api/app', () => ({
     rules: [],
     modelOutputRules: [],
   }),
-  getMemoryDefaults: vi.fn().mockResolvedValue({ prompt: '平台默认记忆提示词' }),
+  getMemoryDefaults: vi.fn().mockResolvedValue({ prompt: '平台默认记忆提示词', platformEnabled: true, embeddingModelName: '平台统一向量模型', embeddingDimensions: 1024 }),
   saveAppSecurity: vi.fn().mockResolvedValue(undefined),
   SECURITY_RULE_TYPES: ['phone', 'idCard', 'email', 'bankCard', 'custom'],
   SECURITY_STRATEGIES: ['redact', 'mask', 'hash', 'block', 'flag'],
@@ -47,8 +77,8 @@ vi.mock('@/api/agentChat', () => ({
   abortAppChat: vi.fn(),
 }))
 
-vi.mock('@/api/gateway', () => ({
-  getTeamGatewayModels: vi.fn(),
+vi.mock('@/api/aichannel', () => ({
+  getTeamAvailableModels: vi.fn(),
 }))
 
 vi.mock('@/api/team-plugin', () => ({
@@ -74,6 +104,11 @@ vi.mock('@/api/knowledgeGraph', () => ({
 
 vi.mock('@/api/skills', () => ({
   getSkillOptions: vi.fn(),
+}))
+
+vi.mock('@/api/prompt', () => ({
+  getTeamPrompts: vi.fn().mockResolvedValue([]),
+  getPromptMarketList: vi.fn().mockResolvedValue([]),
 }))
 
 const MODEL_ID = '1c6780ce-2ce5-425f-899e-1d76135cfd81'
@@ -121,16 +156,21 @@ describe('AppConfigSection（应用配置分区）', () => {
       maxTtlSeconds: 86400,
       maxCpu: '2',
       maxMemory: '2Gi',
+      networkMode: 'app',
+      intranetCidrs: '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16',
     })
-    vi.mocked(getTeamGatewayModels).mockResolvedValue([
-      { aiModelId: MODEL_ID, name: 'Qwen3.5 9B', modelId: 'qwen/qwen3.5-9b' },
+    vi.mocked(getTeamAvailableModels).mockResolvedValue([
+      // 对话模型下拉只列 conversation 类型（isTeamChannel=false 归「系统渠道模型」分组）
+      { aiModelId: MODEL_ID, name: 'Qwen3.5 9B', modelId: 'qwen/qwen3.5-9b', modelKind: 'conversation', channelName: '系统渠道', isTeamChannel: false },
     ] as never)
     vi.mocked(getTeamPlugins).mockResolvedValue({
       teamId: 3,
       myRole: 2,
       canManage: true,
       items: [
-        { pluginId: 'p1', pluginName: 'weather', title: '天气查询', kind: 'static' },
+        { pluginId: 'p1', pluginName: 'weather', title: '天气查询', kind: 'static', avatarPath: 'public/plugins/p1.png', isTeamOwned: true },
+        // 系统插件（公开或已授权）：isTeamOwned=false，下拉归「系统插件」分组
+        { pluginId: 'sys-1', pluginName: 'web_search', title: '网页搜索', kind: 'dynamic', isTeamOwned: false, isSystem: true, isPublic: true },
         // 空 Guid 为内存静态插件，无 DB 记录，不可作为绑定目标，应被过滤
         { pluginId: '00000000-0000-0000-0000-000000000000', pluginName: 'memory', title: '内存插件', kind: 'static' },
       ],
@@ -154,7 +194,7 @@ describe('AppConfigSection（应用配置分区）', () => {
       ],
     })
     vi.mocked(getSkillOptions).mockResolvedValue([
-      { id: 'sk1', key: 'docx_writer', name: '文档撰写', description: '', isSystem: true, teamId: 0 },
+      { id: 'sk1', key: 'docx_writer', name: '文档撰写', description: '', isSystem: true, teamId: 0, avatarPath: 'public/skills/sk1.png' },
     ])
     vi.mocked(getApps).mockResolvedValue({
       teamId: 3,
@@ -164,30 +204,34 @@ describe('AppConfigSection（应用配置分区）', () => {
         { appId: 'wf1', teamId: 3, name: '工单分派流程', appType: 'workflow', publishStatus: 1 },
         // 未发布的流程应用不能绑定为工具，应被过滤
         { appId: 'wf2', teamId: 3, name: '草稿流程', appType: 'workflow', publishStatus: 0 },
+        // Agent 应用绑定候选：已发布的其它 Agent 应用（带头像字段）
+        { appId: 'a2', teamId: 3, name: '数据分析助手', appType: 'agent', publishStatus: 1, avatarPath: 'public/apps/avatar-a2.png' },
+        // 未发布的 Agent 应用不能绑定为工具，应被过滤
+        { appId: 'a3', teamId: 3, name: '草稿助手', appType: 'agent', publishStatus: 0 },
       ],
     })
   })
 
-  it('呈现七张收缩卡片（基础配置/用户提示/能力扩展/沙箱/安全审批/内容脱敏/长期记忆），前五张默认展开、内容脱敏与长期记忆默认收起', async () => {
+  it('呈现六张收缩卡片（基础配置/提示词/能力扩展/沙箱/内容脱敏/长期记忆），前四张默认展开、内容脱敏与长期记忆默认收起', async () => {
     renderSection()
 
     expect(await screen.findByText('基础配置')).toBeTruthy()
-    expect(screen.getByText('用户提示')).toBeTruthy()
+    expect(screen.getByText('提示词')).toBeTruthy()
     expect(screen.getByText('能力扩展')).toBeTruthy()
     expect(screen.getByText('沙箱')).toBeTruthy()
-    expect(screen.getByText('安全审批')).toBeTruthy()
     expect(screen.getByText('内容脱敏')).toBeTruthy()
     expect(screen.getByText('长期记忆')).toBeTruthy()
-    expect(document.querySelectorAll('.ant-collapse').length).toBe(7)
-    // 「内容脱敏」「长期记忆」为后并入的收缩卡片，默认收起；其余五张默认展开
+    expect(document.querySelectorAll('.ant-collapse').length).toBe(6)
+    // 「内容脱敏」「长期记忆」为后并入的收缩卡片，默认收起；其余四张默认展开
     const headers = Array.from(document.querySelectorAll('.ant-collapse-header')) as HTMLElement[]
     const collapsedTitles = ['内容脱敏', '长期记忆']
     headers.forEach((node) => {
       const collapsed = collapsedTitles.some((title) => node.textContent?.includes(title))
       expect(node.getAttribute('aria-expanded')).toBe(collapsed ? 'false' : 'true')
     })
-    expect(screen.getByText('对话模型')).toBeTruthy()
-    expect(screen.getByText('提示词')).toBeTruthy()
+    // 对话模型/系统提示词必填，标题旁带红色 * 标记（requiredLabel 嵌套 span，不影响标题文本匹配）
+    expect(screen.getByText('默认模型')).toBeTruthy()
+    expect(screen.getByText('系统提示词')).toBeTruthy()
     expect(screen.getByText('插件')).toBeTruthy()
     expect(screen.getByText('流程应用')).toBeTruthy()
     expect(screen.getByText('默认技能')).toBeTruthy()
@@ -240,27 +284,29 @@ describe('AppConfigSection（应用配置分区）', () => {
     // 面板加载完成即注册 memory 节回调：先刷出注册 effect 再交互
     await act(async () => {})
 
-    // 开启总开关（表单项内定位，避免命中页面其他卡片的开关）并选定向量化模型
+    // 开启总开关（表单项内定位，避免命中页面其他卡片的开关）；模型/维度统一在系统设置，无应用侧选择控件
     const masterItem = screen.getByText('开启长期记忆').closest('.ant-form-item')
     fireEvent.click(masterItem!.querySelector('button[role="switch"]')!)
-    await screen.findByText('向量化模型')
-    fireEvent.mouseDown(screen.getByText('选择该团队可用的向量化模型'))
-    fireEvent.click(await screen.findByText('桩向量模型'))
+    await screen.findByText('向量化模型（系统设置统一配置）')
 
     // 面板无独立保存/发布按钮，统一走页面「保存设置」：memory 节并入 agent-config 一次提交
     expect(screen.queryByRole('button', { name: /^保\s*存$/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /重新发布/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^发\s*布$/ })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
         expect.objectContaining({
           executionSettings: expect.objectContaining({
-            memory: expect.objectContaining({ enabled: true, embeddingModelId: 'emb-1' }),
+            memory: expect.objectContaining({ enabled: true }),
           }),
         }),
       ),
     )
+    // 向量化模型/维度统一由系统设置决定：memory 节不携带模型字段
+    const memoryPayload = (vi.mocked(saveAppAgentConfig).mock.calls[0][1].executionSettings?.memory ?? {}) as Record<string, unknown>
+    expect(memoryPayload.embeddingModelId).toBeUndefined()
+    expect(memoryPayload.embeddingDimensions).toBeUndefined()
   })
 
   it('长期记忆未展开（未注册回调）时保存不携带 memory 节，保持加载时原值', async () => {
@@ -289,13 +335,14 @@ describe('AppConfigSection（应用配置分区）', () => {
     renderSection()
 
     expect(await screen.findByText('Qwen3.5 9B')).toBeTruthy()
-    expect(screen.getByText('产品文档')).toBeTruthy()
-    expect(screen.getByText('天气查询')).toBeTruthy()
-    await waitFor(() => expect(getTeamGatewayModels).toHaveBeenCalledWith(3))
+    // 绑定资源名出现在选择器标签与自动放通列表行两处
+    expect((await screen.findAllByText('产品文档')).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('天气查询').length).toBeGreaterThanOrEqual(1)
+    await waitFor(() => expect(getTeamAvailableModels).toHaveBeenCalledWith(3))
   })
 
-  it('未选择模型（后端全零 Guid）显示占位符而非裸串，保存按未选择提交', async () => {
-    // 新建应用/清空模型时后端回 Guid.Empty 全零串，界面须归一为未选择
+  it('未选择模型（后端全零 Guid）显示占位符而非裸串，保存被拦截不提交', async () => {
+    // 新建应用/清空模型时后端回 Guid.Empty 全零串，界面须归一为未选择；对话模型必填，保存被前端拦截
     vi.mocked(getAppAgentConfig).mockResolvedValue({
       appId: 'a1',
       teamId: 3,
@@ -314,12 +361,27 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect(screen.queryByText('00000000-0000-0000-0000-000000000000')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
-    await waitFor(() =>
-      expect(saveAppAgentConfig).toHaveBeenCalledWith(
-        'a1',
-        expect.objectContaining({ modelId: null }),
-      ),
-    )
+    await waitFor(() => expect(saveAppAgentConfig).not.toHaveBeenCalled())
+  })
+
+  it('系统提示词为空时保存被拦截不提交', async () => {
+    // 系统提示词必填（与后端保存强校验同语义）
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => expect(saveAppAgentConfig).not.toHaveBeenCalled())
   })
 
   it('开启沙箱后展示存活时间、资源与网络等参数', async () => {
@@ -352,6 +414,126 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect(screen.getByText('出站网络默认动作')).toBeTruthy()
     await waitFor(() => expect(screen.getByDisplayValue('2Gi')).toBeTruthy())
     expect(screen.queryByText('沙箱镜像')).toBeNull()
+  })
+
+  it('旧格式 egress 回显为规则行，新增规则后保存 rules 格式', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+      executionSettings: {
+        sandbox: {
+          enabled: true,
+          network: { defaultAction: 'deny', egress: ['pypi.org'] },
+        },
+      },
+    })
+
+    renderSection()
+
+    // 旧格式按旧语义转换：默认 deny → 放行名单（allow 行）
+    const legacyRow = await screen.findByDisplayValue('pypi.org')
+    expect(legacyRow).toBeTruthy()
+
+    // 新增一条带端口的 IP 段放行规则
+    fireEvent.click(screen.getByRole('button', { name: /添加规则/ }))
+    const targetInputs = screen.getAllByPlaceholderText('pypi.org / 10.0.0.0/8')
+    const portsInputs = screen.getAllByPlaceholderText('443,80（可选）')
+    expect(targetInputs).toHaveLength(2)
+    fireEvent.change(targetInputs[1], { target: { value: '10.0.0.0/8' } })
+    fireEvent.change(portsInputs[1], { target: { value: '443' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            sandbox: expect.objectContaining({
+              network: {
+                defaultAction: 'deny',
+                rules: [
+                  { action: 'allow', target: 'pypi.org' },
+                  { action: 'allow', target: '10.0.0.0/8', ports: [443] },
+                ],
+              },
+            }),
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('平台管控模式下展示强制拒绝提示', async () => {
+    vi.mocked(getSandboxLimits).mockResolvedValue({
+      maxTtlSeconds: 86400,
+      maxCpu: '2',
+      maxMemory: '2Gi',
+      networkMode: 'intranet',
+      intranetCidrs: '10.0.0.0/8',
+    })
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+      executionSettings: { sandbox: { enabled: true } },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('出站网络默认动作')).toBeTruthy()
+    expect(screen.getByText(/平台已强制默认拒绝出站/)).toBeTruthy()
+  })
+
+  it('命令过滤配置回显为清单文本域，编辑后随保存提交', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      myRole: 2,
+      executionSettings: {
+        sandbox: {
+          enabled: true,
+          commandFilter: { enabled: true, deny: ['rm', 'shutdown'] },
+        },
+      },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('命令过滤')).toBeTruthy()
+    // 含换行的字符串经 ByDisplayValue 归一后不匹配，用 aria-label 关联查询
+    const denyText = await screen.findByRole('textbox', { name: '禁用命令清单' })
+    expect((denyText as HTMLTextAreaElement).value).toBe('rm\nshutdown')
+
+    fireEvent.change(denyText, { target: { value: 'rm\nshutdown\nmkfs' } })
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            sandbox: expect.objectContaining({
+              commandFilter: { enabled: true, deny: ['rm', 'shutdown', 'mkfs'] },
+            }),
+          }),
+        }),
+      ),
+    )
   })
 
   it('外部应用不展示技能与沙箱配置，保存固定技能为空、沙箱关闭', async () => {
@@ -387,7 +569,15 @@ describe('AppConfigSection（应用配置分区）', () => {
           skills: [],
           executionSettings: expect.objectContaining({
             sandbox: { enabled: false },
-            toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: false },
+            toolApproval: {
+              autoApprovePlugins: [],
+              autoApproveWorkflowApps: [],
+              autoApproveAgentApps: [],
+              autoApproveSkills: [],
+              autoApproveWikis: [],
+              autoApproveGraphs: [],
+              sandboxAutoApproved: false,
+            },
           }),
         }),
       ),
@@ -397,7 +587,7 @@ describe('AppConfigSection（应用配置分区）', () => {
   it('提示词、插件、知识库与模型同区保存，一次提交完整配置', async () => {
     renderSection()
 
-    const textarea = await screen.findByPlaceholderText('请输入系统提示词（可选）')
+    const textarea = await screen.findByPlaceholderText('请输入系统提示词')
     expect((textarea as HTMLTextAreaElement).value).toBe('你是客服助手')
 
     fireEvent.change(textarea, { target: { value: '你是售前客服' } })
@@ -406,31 +596,46 @@ describe('AppConfigSection（应用配置分区）', () => {
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith('a1', {
         modelId: MODEL_ID,
+        // 多模型（rounds 299~324 起）：回显 modelIds 为空时归一为仅默认模型，随保存提交
+        modelIds: [MODEL_ID],
         prompt: '你是售前客服',
         wikiIds: [7],
         graphIds: [],
+        // 团队智能体绑定（team-agent Phase 2）：未绑定时保存携带空列表与空默认项
+        teamAgentIds: [],
+        defaultTeamAgentId: null,
         plugins: ['p1'],
         workflowApps: [],
+        agentApps: [],
         skills: [],
+        prompts: [],
         openingStatement: '',
         openingStatementEnabled: false,
         quickInputs: [],
         executionSettings: {
+          compactionMode: 'auto',
           toolResultTriggerMessages: 16,
           summarizeTriggerTokens: 16000,
-          preserveTurns: 8,
           hardTokenLimit: 64000,
           enableSummarization: false,
           summarizerModelId: '',
           sandbox: { enabled: false, renewOnAccess: true },
-          toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: false },
+          toolApproval: {
+            autoApprovePlugins: [],
+            autoApproveWorkflowApps: [],
+            autoApproveAgentApps: [],
+            autoApproveSkills: [],
+            autoApproveWikis: [],
+            autoApproveGraphs: [],
+            sandboxAutoApproved: false,
+          },
           subAgent: { enabled: false },
         },
       }),
     )
   })
 
-  it('审批策略：回显自动放行插件与沙箱开关，随保存一并提交', async () => {
+  it('审批策略：绑定资源下方生成自动放通列表，回显勾选、行内切换并随保存提交', async () => {
     vi.mocked(getAppAgentConfig).mockResolvedValue({
       appId: 'a1',
       teamId: 3,
@@ -438,18 +643,56 @@ describe('AppConfigSection（应用配置分区）', () => {
       prompt: '你是客服助手',
       modelId: MODEL_ID,
       wikiIds: [7],
+      graphIds: [11],
       plugins: ['p1'],
+      workflowApps: ['wf1'],
+      agentApps: ['a2'],
+      skills: ['sk1'],
       myRole: 2,
       executionSettings: {
-        toolApproval: { autoApprovePlugins: ['p1'], sandboxAutoApproved: true },
+        toolApproval: {
+          autoApprovePlugins: ['p1'],
+          autoApproveWorkflowApps: ['wf1'],
+          autoApproveAgentApps: [],
+          autoApproveSkills: [],
+          autoApproveWikis: [7],
+          autoApproveGraphs: [],
+          sandboxAutoApproved: true,
+        },
       },
     })
 
     renderSection()
 
-    expect(await screen.findByText('安全审批')).toBeTruthy()
+    // 六类绑定资源逐行进入自动放通列表（名称 + 右侧自动放通勾选）；
+    // 选择器标签与列表行同名，按「行内含勾选框」唯一定位自动放通行
+    const rowOf = (name: string) => {
+      const rows = screen
+        .getAllByText(name)
+        .map((node) => node.closest('div'))
+        .filter((div) => div != null && div.querySelector('input[type="checkbox"]') != null)
+      expect(rows.length).toBe(1)
+      return rows[0]!
+    }
+    expect((await screen.findAllByText('天气查询')).length).toBeGreaterThanOrEqual(1)
+    expect((await screen.findAllByText('工单分派流程')).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('数据分析助手').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('文档撰写').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('产品文档').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('支付域图谱').length).toBeGreaterThanOrEqual(1)
+    // 回显：插件/流程应用/知识库白名单勾选，Agent 应用/技能/图谱未勾选
+    const checked = (name: string) => (rowOf(name).querySelector('input[type="checkbox"]') as HTMLInputElement).checked
+    expect(checked('天气查询')).toBe(true)
+    expect(checked('工单分派流程')).toBe(true)
+    expect(checked('产品文档')).toBe(true)
+    expect(checked('数据分析助手')).toBe(false)
+    expect(checked('文档撰写')).toBe(false)
+    expect(checked('支付域图谱')).toBe(false)
     expect(screen.getByText('沙箱自动放行')).toBeTruthy()
-    expect(screen.getByText('自动放行插件')).toBeTruthy()
+
+    // 行内切换：勾选 Agent 应用、取消知识库勾选
+    fireEvent.click(rowOf('数据分析助手').querySelector('input[type="checkbox"]')!)
+    fireEvent.click(rowOf('产品文档').querySelector('input[type="checkbox"]')!)
 
     fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
@@ -458,14 +701,22 @@ describe('AppConfigSection（应用配置分区）', () => {
         'a1',
         expect.objectContaining({
           executionSettings: expect.objectContaining({
-            toolApproval: { autoApprovePlugins: ['p1'], sandboxAutoApproved: true },
+            toolApproval: {
+              autoApprovePlugins: ['p1'],
+              autoApproveWorkflowApps: ['wf1'],
+              autoApproveAgentApps: ['a2'],
+              autoApproveSkills: [],
+              autoApproveWikis: [],
+              autoApproveGraphs: [],
+              sandboxAutoApproved: true,
+            },
           }),
         }),
       ),
     )
   })
 
-  it('审批策略：自动放行插件收敛为本次绑定插件的子集，未绑定项被剔除', async () => {
+  it('审批策略：自动放通白名单收敛为本次绑定资源的子集，未绑定项被剔除', async () => {
     vi.mocked(getAppAgentConfig).mockResolvedValue({
       appId: 'a1',
       teamId: 3,
@@ -476,22 +727,113 @@ describe('AppConfigSection（应用配置分区）', () => {
       plugins: [],
       myRole: 2,
       executionSettings: {
-        toolApproval: { autoApprovePlugins: ['p1'], sandboxAutoApproved: false },
+        toolApproval: {
+          autoApprovePlugins: ['p1'],
+          autoApproveWorkflowApps: ['wf1'],
+          autoApproveAgentApps: ['a2'],
+          autoApproveSkills: ['sk1'],
+          autoApproveWikis: [999],
+          autoApproveGraphs: [888],
+          sandboxAutoApproved: false,
+        },
       },
     })
 
     renderSection()
 
-    expect(await screen.findByText('安全审批')).toBeTruthy()
+    expect(await screen.findByText('基础配置')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
 
-    // 未绑定的插件从自动放行白名单中剔除（后端强校验，前端先收敛）
+    // 未绑定的资源从自动放通白名单中剔除（后端强校验，前端先收敛）
     await waitFor(() =>
       expect(saveAppAgentConfig).toHaveBeenCalledWith(
         'a1',
         expect.objectContaining({
           executionSettings: expect.objectContaining({
-            toolApproval: { autoApprovePlugins: [], sandboxAutoApproved: false },
+            toolApproval: {
+              autoApprovePlugins: [],
+              autoApproveWorkflowApps: [],
+              autoApproveAgentApps: [],
+              autoApproveSkills: [],
+              autoApproveWikis: [],
+              autoApproveGraphs: [],
+              sandboxAutoApproved: false,
+            },
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('审批策略：「全部放通」总开关一键全选/全清，半选态随部分勾选呈现', async () => {
+    // 前置：知识库绑定 2 项（7 勾选、8 未勾选 → 总开关呈半选态），插件绑定 1 项已勾选
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [7, 8],
+      plugins: ['p1'],
+      myRole: 2,
+      executionSettings: {
+        toolApproval: {
+          autoApprovePlugins: ['p1'],
+          autoApproveWorkflowApps: [],
+          autoApproveAgentApps: [],
+          autoApproveSkills: [],
+          autoApproveWikis: [7],
+          autoApproveGraphs: [],
+          sandboxAutoApproved: false,
+        },
+      },
+    })
+
+    renderSection()
+
+    expect(await screen.findByText('基础配置')).toBeTruthy()
+    // 等两类资源列表就绪：插件（p1 全选态）与知识库（7 勾/8 未勾 → 半选态）各有一个「全部放通」总开关
+    const allBoxes = () => screen.getAllByRole('checkbox', { name: '全部放通' }) as HTMLInputElement[]
+    await waitFor(() => expect(allBoxes().length).toBe(2))
+    await waitFor(() => {
+      expect(allBoxes().some((b) => b.indeterminate)).toBe(true)
+      expect(allBoxes().filter((b) => b.checked && !b.indeterminate).length).toBe(1)
+    })
+
+    // 勾选知识库（半选态）的总开关 → 7、8 全部进入白名单，半选态转为全选
+    const wikiAll = allBoxes().find((b) => b.indeterminate)!
+    expect(wikiAll).toBeTruthy()
+    fireEvent.click(wikiAll)
+    await waitFor(() => expect(allBoxes().every((b) => b.checked && !b.indeterminate)).toBe(true))
+
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            toolApproval: expect.objectContaining({ autoApproveWikis: [7, 8] }),
+          }),
+        }),
+      ),
+    )
+
+    // 再点一次取消 → 全部清空（恢复人工批准）：经产品文档行反查其所在列表容器的表头总开关（知识库区段）
+    const wikiRow = screen
+      .getAllByText('产品文档')
+      .map((node) => node.closest('div'))
+      .filter((div) => div != null && div.querySelector('input[type="checkbox"]') != null)[0]!
+    const wikiMaster = wikiRow.parentElement!.parentElement!.querySelector('input')!
+    expect(wikiMaster.checked).toBe(true)
+    fireEvent.click(wikiMaster)
+    await waitFor(() => expect(wikiMaster.checked).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenLastCalledWith(
+        'a1',
+        expect.objectContaining({
+          executionSettings: expect.objectContaining({
+            toolApproval: expect.objectContaining({ autoApproveWikis: [] }),
           }),
         }),
       ),
@@ -580,19 +922,28 @@ describe('AppConfigSection（应用配置分区）', () => {
     expect(screen.queryByText('开场白内容')).toBeNull()
   })
 
-  it('插件选项只取团队可访问插件：空 Guid 的内存静态插件被过滤', async () => {
+  it('插件选项只取团队可访问插件：空 Guid 的内存静态插件被过滤，来源分组团队在前系统在后', async () => {
     renderSection()
-    await screen.findByText('天气查询')
+    await screen.findAllByText('天气查询')
 
-    // 六个下拉依次为 对话模型 / 插件 / 流程应用 / 默认技能 / 知识库 / 知识图谱
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[1])
+    // 十一个下拉依次为 可选模型 / 默认模型 / 压缩策略 / 团队智能体（D53 起固定渲染，不再收在子代理协作内）/ 可选专家（提示词分组）/ 插件 / 流程应用 / Agent 应用 / 默认技能 / 知识库 / 知识图谱（rounds 299~324 起顶部插入可选模型多选）
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[5])
 
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
       const texts = Array.from(options).map((node) => node.textContent ?? '')
       expect(texts.some((text) => text.includes('天气查询'))).toBe(true)
       expect(texts.some((text) => text.includes('内存插件'))).toBe(false)
+      // 系统插件（isTeamOwned=false，公开或已授权）进入下拉
+      expect(texts.some((text) => text.includes('网页搜索'))).toBe(true)
+      // 分组展示：团队插件组在前、系统插件组在后（antd 组头 .ant-select-item-group）
+      const groups = Array.from(document.querySelectorAll('.ant-select-item-group')).map((node) => node.textContent ?? '')
+      expect(groups).toEqual(['团队插件', '系统插件'])
     })
+
+    // 插件选项以「头像 + 标题」展示：有头像走图片，无头像回退首字母节点
+    expect(document.querySelectorAll('.ant-select-item-option .ant-avatar').length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('.ant-select-item-option .ant-avatar img').length).toBeGreaterThan(0)
   })
 
   it('知识图谱选项只取本团队托管图：接入图不开放绑定，回显与保存携带 graphIds', async () => {
@@ -600,7 +951,8 @@ describe('AppConfigSection（应用配置分区）', () => {
       appId: 'a1',
       teamId: 3,
       appType: 'agent',
-      prompt: '',
+      // 对话模型与系统提示词必填（保存前置校验），空提示词会被拦截
+      prompt: '你是客服助手',
       modelId: MODEL_ID,
       wikiIds: [],
       graphIds: [11],
@@ -609,10 +961,10 @@ describe('AppConfigSection（应用配置分区）', () => {
     })
 
     renderSection()
-    // 已绑定托管图回显为选中标签
-    expect(await screen.findByText('支付域图谱')).toBeTruthy()
+    // 已绑定托管图回显为选中标签与自动放通行
+    expect((await screen.findAllByText('支付域图谱')).length).toBeGreaterThanOrEqual(1)
 
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[5])
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[10])
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
       const texts = Array.from(options).map((node) => node.textContent ?? '')
@@ -630,6 +982,47 @@ describe('AppConfigSection（应用配置分区）', () => {
     )
   })
 
+  it('可选专家绑定：候选含团队/市场来源后缀、回显已绑定项并随保存提交', async () => {
+    vi.mocked(getTeamPrompts).mockResolvedValue([
+      { promptId: 21, name: '售前专家', description: '', teamId: 3 },
+    ] as never)
+    vi.mocked(getPromptMarketList).mockResolvedValue([
+      { promptId: 22, name: '行业分析专家', description: '', teamId: 0, isPublic: true },
+    ] as never)
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      prompts: [21],
+      myRole: 2,
+    })
+    renderSection()
+
+    // 回显已绑定专家（选中项 chip 以「名称（来源）」展示）
+    await waitFor(() => expect(screen.getByText(/售前专家/)).toBeInTheDocument())
+
+    // 可选专家下拉（提示词分组，第 5 个 combobox：可选模型/默认模型/压缩策略/团队智能体/可选专家）：
+    // 团队提示词带（团队）后缀、市场公开带（市场）后缀
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[4])
+    await waitFor(() => {
+      const texts = Array.from(document.querySelectorAll('.ant-select-item-option')).map((node) => node.textContent ?? '')
+      expect(texts.some((text) => text.includes('售前专家（团队）'))).toBe(true)
+      expect(texts.some((text) => text.includes('行业分析专家（市场）'))).toBe(true)
+    })
+
+    // 勾选市场专家后保存，prompts=[21, 22] 随保存提交
+    const marketOption = Array.from(document.querySelectorAll('.ant-select-item-option'))
+      .find((node) => (node.textContent ?? '').includes('行业分析专家')) as HTMLElement
+    fireEvent.click(marketOption)
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() => {
+      const payload = vi.mocked(saveAppAgentConfig).mock.calls[0][1]
+      expect(payload.prompts).toEqual([21, 22])
+    })
+  })
+
   it('流程应用选项只取本团队已发布流程应用，回显已绑定项并随保存提交', async () => {
     vi.mocked(getAppAgentConfig).mockResolvedValue({
       appId: 'a1',
@@ -644,10 +1037,10 @@ describe('AppConfigSection（应用配置分区）', () => {
     })
 
     renderSection()
-    // 已绑定项回显为选中标签
-    expect(await screen.findByText('工单分派流程')).toBeTruthy()
+    // 已绑定项回显为选中标签与自动放通行
+    expect((await screen.findAllByText('工单分派流程')).length).toBeGreaterThanOrEqual(1)
 
-    fireEvent.mouseDown(screen.getAllByRole('combobox')[2])
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[6])
     await waitFor(() => {
       const options = document.querySelectorAll('.ant-select-item-option')
       const texts = Array.from(options).map((node) => node.textContent ?? '')
@@ -666,7 +1059,113 @@ describe('AppConfigSection（应用配置分区）', () => {
     )
   })
 
-  it('已发布且有未发布配置变更：警告条提供「重新发布」，点击后草稿上线并清除警告', async () => {
+  it('Agent 应用选项只取本团队已发布的其它 Agent 应用（排除自身），回显已绑定项并随保存提交', async () => {
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      agentApps: ['a2'],
+      myRole: 2,
+    })
+
+    renderSection()
+    // 已绑定项回显为选中标签（带头像）与自动放通行
+    expect((await screen.findAllByText('数据分析助手')).length).toBeGreaterThanOrEqual(1)
+
+    // 十个下拉依次为 可选模型 / 默认模型 / 压缩策略 / 团队智能体 / 插件 / 流程应用 / Agent 应用 / 默认技能 / 知识库 / 知识图谱
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[7])
+    await waitFor(() => {
+      const options = document.querySelectorAll('.ant-select-item-option')
+      const texts = Array.from(options).map((node) => node.textContent ?? '')
+      expect(texts.some((text) => text.includes('数据分析助手'))).toBe(true)
+      // 自身不可绑定（客服助手 = 当前应用 a1），未发布 Agent 与流程应用不在候选内
+      expect(texts.some((text) => text.includes('客服助手'))).toBe(false)
+      expect(texts.some((text) => text.includes('草稿助手'))).toBe(false)
+      expect(texts.some((text) => text.includes('工单分派流程'))).toBe(false)
+    })
+
+    // 选项与选中标签均以「头像 + 名称」展示：有头像走图片，无头像回退首字母
+    const optionAvatars = document.querySelectorAll('.ant-select-item-option .ant-avatar')
+    expect(optionAvatars.length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('.ant-select-item-option .ant-avatar img').length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('.ant-select-selection-item .ant-avatar').length).toBeGreaterThan(0)
+
+    // 技能多选（第七个下拉）同款头像渲染
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[8])
+    await waitFor(() => {
+      expect(document.querySelectorAll('.ant-select-item-option .ant-avatar img').length).toBeGreaterThan(0)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({ agentApps: ['a2'] }),
+      ),
+    )
+  })
+
+  it('团队智能体绑定独立于子代理协作（D53）：协作关闭时绑定区照常渲染与保存，切换协作不清空绑定', async () => {
+    vi.mocked(getTeamAgents).mockResolvedValue({
+      myRole: 2,
+      items: [
+        { id: 'ta-1', teamId: 3, key: 'plan', name: '规划师 Plan', description: '任务规划', enabled: true, isSystem: true },
+      ],
+    } as never)
+    vi.mocked(getAppAgentConfig).mockResolvedValue({
+      appId: 'a1',
+      teamId: 3,
+      appType: 'agent',
+      prompt: '你是客服助手',
+      modelId: MODEL_ID,
+      wikiIds: [],
+      plugins: [],
+      teamAgentIds: [],
+      // 子代理协作关闭（D53：绑定不再要求开启协作）
+      executionSettings: { subAgent: { enabled: false } },
+      myRole: 2,
+    })
+
+    renderSection()
+
+    // 绑定区不再收在子代理协作开关内：协作关闭时照常展示
+    expect(await screen.findByText('团队智能体')).toBeTruthy()
+
+    // 选择规划师 Plan 作为绑定项
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[3])
+    const option = (await screen.findAllByText('规划师 Plan'))[0]
+    fireEvent.click(option)
+
+    // 开启再关闭子代理协作：绑定保留（旧版关闭即清空绑定）
+    const subAgentItem = screen.getByText('子代理协作').closest('.ant-form-item')
+    const subAgentSwitch = subAgentItem?.querySelector('.ant-switch')
+    expect(subAgentSwitch).toBeTruthy()
+    fireEvent.click(subAgentSwitch!)
+    await waitFor(() => expect(subAgentSwitch).toHaveClass('ant-switch-checked'))
+    fireEvent.click(subAgentSwitch!)
+    await waitFor(() => expect(subAgentSwitch).not.toHaveClass('ant-switch-checked'))
+    expect(screen.getAllByText('规划师 Plan').length).toBeGreaterThan(0)
+
+    // 协作关闭的绑定照常保存（旧版本地拦截+后端 400）
+    fireEvent.click(screen.getByRole('button', { name: /保存设置/ }))
+    await waitFor(() =>
+      expect(saveAppAgentConfig).toHaveBeenCalledWith(
+        'a1',
+        expect.objectContaining({
+          teamAgentIds: ['ta-1'],
+          executionSettings: expect.objectContaining({
+            subAgent: expect.objectContaining({ enabled: false }),
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('已发布且有未发布配置变更：警告条提供「发布」，点击后草稿上线并清除警告', async () => {
     vi.mocked(getAppAgentConfig).mockResolvedValue({
       appId: 'a1',
       teamId: 3,
@@ -683,7 +1182,7 @@ describe('AppConfigSection（应用配置分区）', () => {
     renderSection({ ...AGENT_DETAIL, publishStatus: 1 })
 
     expect(await screen.findByText(/已有未发布的配置修改/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: '重新发布' }))
+    fireEvent.click(screen.getByRole('button', { name: /^发\s*布$/ }))
 
     await waitFor(() => expect(publishApp).toHaveBeenCalledWith('a1'))
     await waitFor(() => expect(screen.queryByText(/已有未发布的配置修改/)).toBeNull())
@@ -692,8 +1191,8 @@ describe('AppConfigSection（应用配置分区）', () => {
   it('流程应用配置区仅提示未开放（基础信息在「信息」分区维护）', async () => {    renderSection({ ...AGENT_DETAIL, appId: 'a2', name: '审批流', description: '', appType: 'workflow', isPublic: false })
 
     expect(screen.getByText(/流程应用的配置能力尚未开放/)).toBeTruthy()
-    expect(screen.queryByText('对话模型')).toBeNull()
-    expect(screen.queryByText('提示词')).toBeNull()
+    expect(screen.queryByText('默认模型')).toBeNull()
+    expect(screen.queryByText('系统提示词')).toBeNull()
     expect(getAppAgentConfig).not.toHaveBeenCalled()
   })
 

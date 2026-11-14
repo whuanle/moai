@@ -29,6 +29,8 @@ public class BatchUpdateAIModelCommandHandler : IRequestHandler<BatchUpdateAIMod
             .Where(x => request.ModelIds.Contains(x.Id) && x.IsDeleted == 0)
             .ToListAsync(cancellationToken);
 
+        await EnsureModelsInTeamScopeAsync(models, request.TeamId, cancellationToken);
+
         foreach (var model in models)
         {
             model.Enabled = request.Enabled;
@@ -37,5 +39,21 @@ public class BatchUpdateAIModelCommandHandler : IRequestHandler<BatchUpdateAIMod
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
         return EmptyCommandResponse.Default;
+    }
+
+    private async Task EnsureModelsInTeamScopeAsync(List<MoAI.Database.Entities.AiModelEntity> models, int teamId, CancellationToken cancellationToken)
+    {
+        if (teamId <= 0 || models.Count == 0)
+        {
+            return;
+        }
+
+        var channelIds = models.Select(x => x.ChannelId).Distinct().ToList();
+        var foreignCount = await _databaseContext.AiChannels
+            .CountAsync(x => channelIds.Contains(x.Id) && x.TeamId != teamId, cancellationToken);
+        if (foreignCount > 0)
+        {
+            throw new MoAI.Infra.Exceptions.BusinessException("包含不在本团队渠道下的模型.") { StatusCode = 404 };
+        }
     }
 }

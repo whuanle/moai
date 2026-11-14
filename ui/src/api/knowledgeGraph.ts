@@ -6,7 +6,6 @@ export interface KnowledgeGraphItem {
   teamId?: string | number | null
   name?: string | null
   description?: string | null
-  templateKey?: string | null
   mode?: string | null
   database?: string | null
   readOnly?: boolean | null
@@ -26,7 +25,6 @@ export interface KnowledgeGraphDetail {
   teamId?: string | number | null
   name?: string | null
   description?: string | null
-  templateKey?: string | null
   mode?: string | null
   database?: string | null
   readOnly?: boolean | null
@@ -36,6 +34,10 @@ export interface KnowledgeGraphDetail {
   createTime?: string | null
   /** 向量化模型 id（托管图配置后参与向量检索；未配置为空） */
   embeddingModelId?: string | null
+  /** 默认抽取模型 id（AI 导入缺省对话模型）；为空未配置 */
+  extractModelId?: string | null
+  /** 画布样式规则（键=实体类型 id 字符串，值=属性名 / "__type__"=类型名 / ""=不显示第二行）；null 未配置 */
+  canvasStyle?: Record<string, string> | null
   /** 向量维度（1-2000） */
   embeddingDimensions?: number | null
 }
@@ -104,6 +106,8 @@ export interface KnowledgeGraphNodeItem {
   entityLabel?: string | null
   name?: string | null
   description?: string | null
+  /** 节点度数（邻接边总数；画布/邻接查询携带，接入图为 0） */
+  degree?: number | null
   /** 实例属性值（键为实体类型定义的属性名，值均为字符串） */
   properties?: Record<string, string> | null
 }
@@ -135,6 +139,31 @@ export async function getKnowledgeGraphs(teamId: number): Promise<KnowledgeGraph
   return { teamId: res?.teamId, myRole: res?.myRole, enabled: res?.enabled ?? false, items: res?.items ?? [] }
 }
 
+// ==================== 图数据库连通性测试（系统设置开启前预检） ====================
+
+/** 图数据库连通性测试结果（连接失败不抛错，ok=false 携带原因） */
+export interface KnowledgeGraphConnectionTestResult {
+  ok: boolean
+  latencyMs: number
+  dialect: string
+  error?: string | null
+}
+
+/** 测试图数据库连通性（仅超级管理员）；字段留空回退系统设置已保存值，便于保存前直接用表单值测试 */
+export async function testKnowledgeGraphConnection(
+  payload: { uri?: string; username?: string; password?: string; dialect?: string },
+): Promise<KnowledgeGraphConnectionTestResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.testConnection.post({
+    uri: payload.uri || undefined,
+    username: payload.username || undefined,
+    password: payload.password || undefined,
+    dialect: payload.dialect || undefined,
+  })
+  // Kiota 对保留字 error 转义为 errorEscaped
+  return { ok: res?.ok ?? false, latencyMs: Number(res?.latencyMs ?? 0), dialect: res?.dialect ?? 'memgraph', error: res?.errorEscaped ?? null }
+}
+
 export async function createKnowledgeGraph(payload: {
   teamId: number
   name: string
@@ -164,12 +193,48 @@ export async function getKnowledgeGraphTemplates(): Promise<KnowledgeGraphTempla
 export async function getKnowledgeGraphDetail(kgId: number): Promise<KnowledgeGraphDetail> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).get()
-  return { ...res, avatarPath: res?.avatarPath ?? '' } as KnowledgeGraphDetail
+  // Kiota 把 Dictionary<string,string>（canvasStyle）收进 additionalData（同节点 properties 坑），归一化
+  const rawStyle = (res as { canvasStyle?: unknown })?.canvasStyle as Record<string, string> | undefined
+  const inner = (rawStyle as { additionalData?: Record<string, string> } | undefined)?.additionalData
+  const canvasStyle = (inner ?? rawStyle) as KnowledgeGraphDetail['canvasStyle']
+  return { ...res, avatarPath: res?.avatarPath ?? '', canvasStyle: canvasStyle && Object.keys(canvasStyle).length > 0 ? canvasStyle : null } as KnowledgeGraphDetail
 }
 
 export async function updateKnowledgeGraph(kgId: number, payload: { name: string; description?: string }): Promise<void> {
   const client = getApiClient()
   await client.api.knowledgeGraph.byId(String(kgId)).put({ name: payload.name, description: payload.description })
+}
+
+/** 知识图谱 MCP 接入配置：开关 + 该图的团队资源 key（开启过 MCP 才有） */
+export interface KnowledgeGraphMcpConfig {
+  isMcpEnabled?: boolean | null
+  teamResourceKeyId?: string | null
+  key?: string | null
+  keyPrefix?: string | null
+}
+
+/** 查询知识图谱 MCP 接入配置（仅团队 Admin+） */
+export async function getKnowledgeGraphMcpConfig(kgId: number): Promise<KnowledgeGraphMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).mcpConfig.get()
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+  }
+}
+
+/** 更新知识图谱 MCP 接入开关（仅托管图）；开启时后端自动生成/复用该图的团队资源 key */
+export async function updateKnowledgeGraphMcpConfig(kgId: number, isMcpEnabled: boolean): Promise<KnowledgeGraphMcpConfig> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).mcpConfig.put({ isMcpEnabled })
+  return {
+    isMcpEnabled: res?.isMcpEnabled,
+    teamResourceKeyId: res?.teamResourceKeyId,
+    key: res?.key,
+    keyPrefix: res?.keyPrefix,
+  }
 }
 
 export async function deleteKnowledgeGraph(kgId: number): Promise<void> {
@@ -356,10 +421,10 @@ export interface KnowledgeGraphSubgraph {
   truncated: boolean
 }
 
-/** 画布有界子图查询（托管图按类型过滤，接入图按标签过滤） */
+/** 画布有界子图查询（托管图按类型过滤，接入图按标签过滤；depth=2 托管图以种子集再扩一跳） */
 export async function getKnowledgeGraphCanvas(
   kgId: number,
-  params: { entityTypeId?: number | null; label?: string | null; relationTypeId?: number | null; keyword?: string; limit?: number },
+  params: { entityTypeId?: number | null; label?: string | null; relationTypeId?: number | null; keyword?: string; limit?: number; depth?: number },
 ): Promise<KnowledgeGraphSubgraph> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).canvas.post({
@@ -368,8 +433,34 @@ export async function getKnowledgeGraphCanvas(
     relationTypeId: params.relationTypeId != null ? String(params.relationTypeId) : undefined,
     keyword: params.keyword,
     limit: params.limit ?? 200,
+    depth: params.depth ?? 1,
   })
   return { nodes: (res?.nodes ?? []).map((x) => ({ ...x, properties: flattenNodeProperties(x.properties) }) as KnowledgeGraphNodeItem), edges: res?.edges ?? [], truncated: res?.truncated ?? false }
+}
+
+/** 实体合并结果统计 */
+export interface KnowledgeGraphMergeResult {
+  rehungEdges?: number | null
+  droppedSelfLoopEdges?: number | null
+  removedNodes?: number | null
+}
+
+/** 实体合并：源节点合并进目标（描述/属性深合并、边重挂同三元组去重、源删除；不可逆） */
+export async function mergeKnowledgeGraphNodes(
+  kgId: number,
+  payload: { targetNodeId: string; sourceNodeIds: string[]; confirm?: boolean },
+): Promise<KnowledgeGraphMergeResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).nodes.merge.post({
+    targetNodeId: payload.targetNodeId,
+    sourceNodeIds: payload.sourceNodeIds,
+    confirm: payload.confirm ?? true,
+  })
+  return {
+    rehungEdges: res?.rehungEdges ?? 0,
+    droppedSelfLoopEdges: res?.droppedSelfLoopEdges ?? 0,
+    removedNodes: res?.removedNodes ?? 0,
+  }
 }
 
 /** 节点一跳邻接展开（托管图按节点 id，接入图按 elementId） */
@@ -413,6 +504,58 @@ export async function updateKnowledgeGraphEmbeddingConfig(
     embeddingModelId: payload.embeddingModelId,
     embeddingDimensions: payload.embeddingDimensions,
   })
+}
+
+// ==================== 画布问图（Text2Cypher，B7/D31） ====================
+
+/** Text2Cypher 问图结果 */
+export interface KnowledgeGraphText2CypherResult {
+  ok?: boolean | null
+  cypher?: string | null
+  columns?: string[] | null
+  rows?: Record<string, unknown>[] | null
+  rowCount?: number | null
+  truncated?: boolean | null
+  /** 结果中识别出的本图节点 id（供画布高亮） */
+  nodeIds?: string[] | null
+  error?: string | null
+}
+
+/** 画布问图：自然语言 → 模型生成只读 Cypher（守卫 + $kgId 隔离执行）→ 表格结果与节点 id（Member 可用，仅托管图） */
+export async function text2CypherQuery(
+  kgId: number,
+  payload: { question: string; aiModelId?: string | null },
+): Promise<KnowledgeGraphText2CypherResult> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).text2cypher.post({
+    question: payload.question,
+    aiModelId: payload.aiModelId ?? null,
+  })
+  return {
+    ok: res?.ok ?? false,
+    cypher: res?.cypher ?? '',
+    columns: (res?.columns as string[] | undefined) ?? [],
+    rows: (res?.rows as Record<string, unknown>[] | undefined) ?? [],
+    rowCount: res?.rowCount ?? 0,
+    truncated: res?.truncated ?? false,
+    nodeIds: (res?.nodeIds as string[] | undefined) ?? [],
+    // Kiota 把 error 属性名转义为 errorEscaped（保留名冲突）
+    error: res?.errorEscaped ?? null,
+  }
+}
+
+// ==================== 默认抽取模型（设置页，D30 三级回退的图谱级默认） ====================
+
+/** 配置知识图谱默认抽取模型（仅托管图 Owner/Admin）；extractModelId 传 null 清除默认 */
+export async function updateKnowledgeGraphExtractModel(kgId: number, extractModelId: string | null): Promise<void> {
+  const client = getApiClient()
+  await client.api.knowledgeGraph.byId(String(kgId)).extractModel.put({ extractModelId })
+}
+
+/** 配置画布样式规则（B8，仅托管图 Owner/Admin）：键=实体类型 id 字符串，值=属性名 / "__type__" / ""（不显示）；传 null 清除全部 */
+export async function updateKnowledgeGraphCanvasStyle(kgId: number, captions: Record<string, string> | null): Promise<void> {
+  const client = getApiClient()
+  await client.api.knowledgeGraph.byId(String(kgId)).canvasStyle.put({ captions })
 }
 
 // ==================== 语义检索（向量 topK + 一跳扩展） ====================
@@ -479,6 +622,7 @@ export async function searchKnowledgeGraph(
 
 export interface KnowledgeGraphImportResult {
   nodesCreated?: number | null
+  nodesMerged?: number | null
   edgesCreated?: number | null
   skippedNodes?: number | null
   skippedEdges?: number | null
@@ -487,26 +631,68 @@ export interface KnowledgeGraphImportResult {
   message?: string | null
 }
 
-/** AI 导入文件生成图谱：objectKey 须为已直传到公开 chat 目录的文档文件 */
+/** AI 导入任务（B2 异步状态机）：pending/extracting/parsing/merging/done/failed/cancelled */
+export interface KnowledgeGraphImportJob {
+  jobId?: number | string | null
+  type?: string | null
+  fileName?: string | null
+  status?: string | null
+  totalRows?: number | null
+  doneRows?: number | null
+  error?: string | null
+  result?: KnowledgeGraphImportResult | null
+  createTime?: string | null
+}
+
+/** AI 导入文件生成图谱（异步任务）：objectKey 须为已直传到公开 chat 目录的文档文件；aiModelId 可空回退图谱默认抽取模型；返回任务 id，轮询任务详情取进度与统计 */
 export async function importKnowledgeGraphFile(
   kgId: number,
-  payload: { objectKey: string; fileName: string; aiModelId: string },
-): Promise<KnowledgeGraphImportResult> {
+  payload: { objectKey: string; fileName: string; aiModelId?: string | null },
+): Promise<number> {
   const client = getApiClient()
   const res = await client.api.knowledgeGraph.byId(String(kgId)).importFile.post({
     objectKey: payload.objectKey,
     fileName: payload.fileName,
-    aiModelId: payload.aiModelId,
+    aiModelId: payload.aiModelId ?? null,
+  })
+  return Number(res?.value ?? 0)
+}
+
+/** 导入任务列表（分页倒序） */
+export async function getKnowledgeGraphImportJobs(
+  kgId: number,
+  params: { pageNo?: number; pageSize?: number } = {},
+): Promise<PagedResult<KnowledgeGraphImportJob>> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).importJobs.get({
+    queryParameters: { pageNo: params.pageNo ?? 1, pageSize: params.pageSize ?? 10 },
   })
   return {
-    nodesCreated: res?.nodesCreated ?? 0,
-    edgesCreated: res?.edgesCreated ?? 0,
-    skippedNodes: res?.skippedNodes ?? 0,
-    skippedEdges: res?.skippedEdges ?? 0,
-    contentLength: res?.contentLength ?? 0,
-    truncated: res?.truncated ?? false,
-    message: res?.message ?? null,
+    items: ((res?.items ?? []) as unknown as KnowledgeGraphImportJob[]).map((x) => ({
+      ...x,
+      result: (x.result ?? null) as KnowledgeGraphImportResult | null,
+    })),
+    total: Number(res?.total ?? 0),
   }
+}
+
+/** 导入任务详情 */
+export async function getKnowledgeGraphImportJob(kgId: number, jobId: number): Promise<KnowledgeGraphImportJob> {
+  const client = getApiClient()
+  const res = await client.api.knowledgeGraph.byId(String(kgId)).importJobs.byJobId(String(jobId)).get()
+  return { ...res, result: (res?.result ?? null) as KnowledgeGraphImportResult | null } as KnowledgeGraphImportJob
+}
+
+/** 重试导入任务（仅失败/已取消；幂等重跑合并不重复） */
+export async function retryKnowledgeGraphImportJob(kgId: number, jobId: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.knowledgeGraph.byId(String(kgId)).importJobs.byJobId(String(jobId)).retry.post()
+}
+
+/** 取消导入任务（pending 立即生效；执行中在阶段间隙生效） */
+export async function cancelKnowledgeGraphImportJob(kgId: number, jobId: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.knowledgeGraph.byId(String(kgId)).importJobs.byJobId(String(jobId)).cancel.post()
 }
 
 /** JSON 结构化导入逐行结果 */
@@ -606,6 +792,7 @@ export async function recallKnowledgeGraphTest(
     query: string
     top?: number
     minScore?: number | null
+    neighborTopK?: number
     aiModelId?: string | null
     isOptimizeQuery?: boolean
     isAnswer?: boolean
@@ -616,6 +803,7 @@ export async function recallKnowledgeGraphTest(
     query: payload.query,
     top: payload.top ?? 5,
     minScore: payload.minScore ?? null,
+    neighborTopK: payload.neighborTopK ?? 0,
     aiModelId: payload.aiModelId || null,
     isOptimizeQuery: payload.isOptimizeQuery ?? false,
     isAnswer: payload.isAnswer ?? false,

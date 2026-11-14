@@ -31,6 +31,7 @@ public class WikiSourceSyncService
     private readonly WikiSourceContentWriter _contentWriter;
     private readonly WikiSourceCrawlerService _crawlerService;
     private readonly WikiSourceWorkflowRunner _workflowRunner;
+    private readonly WikiDocumentRemovalService _removalService;
     private readonly ILogger<WikiSourceSyncService> _logger;
 
     /// <summary>
@@ -41,6 +42,7 @@ public class WikiSourceSyncService
     /// <param name="contentWriter">外部源内容落库器.</param>
     /// <param name="crawlerService">网页爬虫同步器.</param>
     /// <param name="workflowRunner">外部源工作流执行器.</param>
+    /// <param name="removalService">文档删除领域服务（源中已消失的文档随同步下线）.</param>
     /// <param name="logger">日志.</param>
     public WikiSourceSyncService(
         DatabaseContext databaseContext,
@@ -48,6 +50,7 @@ public class WikiSourceSyncService
         WikiSourceContentWriter contentWriter,
         WikiSourceCrawlerService crawlerService,
         WikiSourceWorkflowRunner workflowRunner,
+        WikiDocumentRemovalService removalService,
         ILogger<WikiSourceSyncService> logger)
     {
         _databaseContext = databaseContext;
@@ -55,6 +58,7 @@ public class WikiSourceSyncService
         _contentWriter = contentWriter;
         _crawlerService = crawlerService;
         _workflowRunner = workflowRunner;
+        _removalService = removalService;
         _logger = logger;
     }
 
@@ -270,7 +274,20 @@ public class WikiSourceSyncService
             return Fail(source, ex is BusinessException business ? business.Message : $"爬取失败：{ex.Message}");
         }
 
+        // 删除同步：源中已消失的页面随本轮同步下线；仅全量覆盖（未截断、未熔断、无静默放弃的链接）时执行，防止把尚未抓到的页面误删
+        var removed = 0;
+        if (!result.Truncated && !result.BreakerTripped && !result.CoverageIncomplete)
+        {
+            var presentKeys = result.Items.Select(x => x.Url).ToHashSet();
+            removed = await RemoveMissingSourceDocumentsAsync(source.WikiId, source.Id, presentKeys, cancellationToken);
+        }
+
         var summary = result.BuildSummary();
+        if (removed > 0)
+        {
+            summary += $"，删除 {removed}";
+        }
+
         source.LastSyncTime = DateTimeOffset.UtcNow;
         source.LastSyncStatus = result.Failed > 0 ? (int)WikiSourceSyncStatus.Failed : (int)WikiSourceSyncStatus.Success;
         source.LastSyncMessage = Truncate(summary, 1000);
@@ -284,6 +301,7 @@ public class WikiSourceSyncService
             Unchanged = result.Unchanged,
             Skipped = result.Skipped,
             Failed = result.Failed,
+            Removed = removed,
             WorkflowTriggered = result.WorkflowTriggered,
             Message = summary,
             Items = result.Items.Select(x => new SyncWikiSourceDocumentResult
@@ -308,9 +326,10 @@ public class WikiSourceSyncService
         }
 
         List<(FeishuWikiNode Node, string Path)> nodes;
+        var traversalTruncated = false;
         try
         {
-            nodes = await CollectNodesAsync(config, cancellationToken);
+            (nodes, traversalTruncated) = await CollectNodesAsync(config, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -426,7 +445,20 @@ public class WikiSourceSyncService
             }
         }
 
+        // 删除同步：源中已消失的文档随本轮同步下线；仅完整遍历（未达深度/数量上限）时执行，防止截断误删
+        var removed = 0;
+        if (!traversalTruncated)
+        {
+            var presentKeys = nodes.Select(x => x.Node.NodeToken).ToHashSet();
+            removed = await RemoveMissingSourceDocumentsAsync(wiki.Id, source.Id, presentKeys, cancellationToken);
+        }
+
         var summary = $"共 {nodes.Count} 个文档：新建 {created}，更新 {updated}，无变化 {unchanged}，跳过 {skipped}，失败 {failed}" + (triggered > 0 ? $"，触发工作流 {triggered}" : string.Empty);
+        if (removed > 0)
+        {
+            summary += $"，删除 {removed}";
+        }
+
         source.LastSyncTime = DateTimeOffset.UtcNow;
         source.LastSyncStatus = failed > 0 ? (int)WikiSourceSyncStatus.Failed : (int)WikiSourceSyncStatus.Success;
         source.LastSyncMessage = Truncate(summary, 1000);
@@ -445,10 +477,50 @@ public class WikiSourceSyncService
             Unchanged = unchanged,
             Skipped = skipped,
             Failed = failed,
+            Removed = removed,
             WorkflowTriggered = triggered,
             Message = summary,
             Items = items,
         };
+    }
+
+    /// <summary>
+    /// 删除同步：本轮遍历中已从外部源消失的文档（映射 ExternalKey 不在存活集合中）连同向量、
+    /// 切片、元数据、OSS 等关联数据一并下线.
+    /// </summary>
+    /// <param name="wikiId">知识库 id.</param>
+    /// <param name="sourceId">外部源 id.</param>
+    /// <param name="presentKeys">本轮遍历到仍然存活的 ExternalKey 集合.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>删除的文档数.</returns>
+    private async Task<int> RemoveMissingSourceDocumentsAsync(long wikiId, Guid sourceId, IReadOnlySet<string> presentKeys, CancellationToken cancellationToken)
+    {
+        var mappings = await _databaseContext.WikiSourceDocuments
+            .Where(x => x.SourceId == sourceId)
+            .Select(x => new { x.DocumentId, x.ExternalKey })
+            .ToListAsync(cancellationToken);
+
+        var missingDocumentIds = mappings
+            .Where(x => !presentKeys.Contains(x.ExternalKey))
+            .Select(x => x.DocumentId)
+            .Distinct()
+            .ToList();
+        if (missingDocumentIds.Count == 0)
+        {
+            return 0;
+        }
+
+        var documents = await _databaseContext.WikiDocuments
+            .Where(x => missingDocumentIds.Contains(x.Id) && x.IsDeleted == 0)
+            .ToArrayAsync(cancellationToken);
+        if (documents.Length == 0)
+        {
+            return 0;
+        }
+
+        _logger.LogInformation("外部源删除同步：{Count} 个文档已从源中消失并下线. SourceId={SourceId}, DocumentIds={DocumentIds}", documents.Length, sourceId, string.Join(",", documents.Select(x => x.Id)));
+        await _removalService.RemoveDocumentsAsync((int)wikiId, documents, cancellationToken);
+        return documents.Length;
     }
 
     /// <summary>
@@ -460,8 +532,8 @@ public class WikiSourceSyncService
     /// </remarks>
     /// <param name="config">飞书文档源配置.</param>
     /// <param name="cancellationToken">取消令牌.</param>
-    /// <returns>节点与路径列表.</returns>
-    private async Task<List<(FeishuWikiNode Node, string Path)>> CollectNodesAsync(WikiSourceFeishuConfig config, CancellationToken cancellationToken)
+    /// <returns>节点与路径列表，以及是否因深度/数量上限截断（截断时本轮不可执行删除同步）.</returns>
+    private async Task<(List<(FeishuWikiNode Node, string Path)> Nodes, bool Truncated)> CollectNodesAsync(WikiSourceFeishuConfig config, CancellationToken cancellationToken)
     {
         var root = await _feishuDriveClient.GetWikiNodeAsync(config.FeishuAppId, config.NodeToken, cancellationToken);
         if (root == null)
@@ -472,7 +544,7 @@ public class WikiSourceSyncService
         var result = new List<(FeishuWikiNode Node, string Path)> { (root, root.Title) };
         if (!config.IncludeSubNodes)
         {
-            return result;
+            return (result, false);
         }
 
         var limit = config.MaxDocuments > 0
@@ -483,11 +555,12 @@ public class WikiSourceSyncService
 
         if (string.IsNullOrWhiteSpace(spaceId))
         {
-            return result;
+            return (result, false);
         }
 
         var queue = new Queue<(string NodeToken, string Path, int Depth)>();
         queue.Enqueue((root.NodeToken, root.Title, 1));
+        var depthSkipped = false;
 
         while (queue.Count > 0 && result.Count < limit)
         {
@@ -496,6 +569,8 @@ public class WikiSourceSyncService
 
             if (depth > maxDepth)
             {
+                // 深度钳制：该节点的子节点未被发现，本轮覆盖不完整（删除同步据此跳过，防止误删）
+                depthSkipped = true;
                 continue;
             }
 
@@ -517,7 +592,8 @@ public class WikiSourceSyncService
             }
         }
 
-        return result;
+        // 队列仍有待展开节点（数量上限提前收束）或存在深度钳制跳过的节点，本轮遍历不完整
+        return (result, queue.Count > 0 || depthSkipped);
     }
 
     private SyncWikiSourceCommandResponse Fail(WikiSourceEntity source, string message)

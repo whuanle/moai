@@ -81,7 +81,7 @@ public class CreateWikiSourceCommandHandler : IRequestHandler<CreateWikiSourceCo
 
         var isFeishu = request.SourceType == WikiSourceType.FeishuDoc;
 
-        // 飞书文档源需先确定使用的飞书应用连接（已有连接或新建连接）；爬虫源无需绑定飞书应用
+        // 飞书文档源按 AppID/AppSecret 新建连接；爬虫源无需绑定飞书应用
         var feishuAppId = Guid.Empty;
         if (isFeishu)
         {
@@ -89,7 +89,6 @@ public class CreateWikiSourceCommandHandler : IRequestHandler<CreateWikiSourceCo
                 wiki.TeamId,
                 request.ContextUserId,
                 request.ContextUserType,
-                request.FeishuAppId,
                 request.NewAppName,
                 request.NewAppId,
                 request.NewAppSecret,

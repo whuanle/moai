@@ -5,7 +5,7 @@
 
 ## 目标
 
-在已有 `aiplugin` 插件引擎（`PluginRegistry` + `PluginExecutor`）与静态插件能力之上，落地**动态插件**实例化管理。动态插件模板（如 `dynamic_greet`）存在于内存注册表，无实例时不可直接运行；需**先创建实例并填入配置**，一个模板可创建多个实例，实例 key 全局唯一。
+MoAI 不再在宿主中内置动态插件模板；插件实现统一由 `F:\workspace\mo_plugins` 制作并发布到 MoPlatform。管理员可在 MoAI 插件页浏览在线目录并安装包；MoAI 校验摘要与包路径、保存元数据和图标、将包落在 `configs/plugins/{key}`，启动时用共享契约隔离加载上下文自动发现。动态插件包仍可作为模板供现有实例配置流程使用，实例 key 全局唯一。
 
 需要实现：
 1. **动态插件实例列表**：查询已创建的实例（DB `plugin_dynamic ⋈ plugin`），展示实例 key、模板 key、标题、分类、配置。
@@ -22,10 +22,14 @@ src/aiplugin/
 │   ├── Commands/DeleteDynamicPluginCommand.cs       {pluginKey} → EmptyCommandResponse
 │   ├── Commands/UpdatePluginAvatarCommand.cs        {pluginId(路由回填),objectKey} → EmptyCommandResponse
 │   └── Queries/Responses/QueryPluginManageListCommandResponseItem.cs  （增强：+TempleteKey,+Config,+ConfigExample,+AvatarPath）
-├── MoAI.AIPlugin.Dynamic/                            内置模板宿主（Models/ 各模板模型 + Plugins/ 模板实现）
+├── MoAI.AIPlugin.Dynamic/                            历史内置模板源码（不再被 MoAI 宿主引用）
 ├── MoAI.AIPlugin.Core/
 │   ├── Commands/RunPluginCommandHandler.cs          （增强：key 未命中注册表时走实例解析器）
 │   └── Services/IDynamicInstanceResolver.cs         {Resolve(instanceKey) → (Template,ConfigJson)}
+│   ├── Services/PluginMarketplaceService.cs          MoPlatform 目录、安装、上架/下架
+│   ├── Services/PluginPackageArchive.cs              SHA-256 后安全解压、rootPath 与包内信息检查
+│   ├── Services/PluginPackageRuntimeLoader.cs        非可回收 ALC、共享契约复用默认加载上下文
+│   └── Services/PluginPackageStartupLoader.cs        启动扫描安装记录并逐包加载，故障隔离
 ├── MoAI.AIPlugin.Custom/
 │   ├── Commands/SaveDynamicPluginCommandHandler.cs  校验 + 创建/更新实例
 │   ├── Commands/DeleteDynamicPluginCommandHandler.cs 软删除
@@ -59,6 +63,10 @@ ui/src/
 | GET | `/api/ai/plugin`（`QueryAll`） | admin | 返回注册表模板列表，含 `configExample/paramsExample/isDynamic`（前端模板下拉） |
 | GET | `/api/ai/plugin/manage/list` | admin | 动态实例列表（`kind=dynamic`），带 `templeteKey/config/configExample`；**仅系统侧记录**（`team_id=0`），团队自有实例不进此列表（@DYN-S70） |
 | POST | `/api/ai/plugin/manage/{id}/avatar` | admin | `{objectKey}` → `EmptyCommandResponse`，设置插件头像（`plugin.avatar_path`，custom/dynamic/static 共用） |
+| GET | `/api/ai/plugin/online/catalog` | admin | 服务端以稳定安装指纹查询 MoPlatform 已上架目录；不向浏览器暴露平台调用 |
+| POST | `/api/ai/plugin/online/install` | admin | `{platformPluginId}` → 校验 manifest/SHA-256/ZIP，保存描述和版本快照到 `plugin_package`，图标上传 MoAI OSS，包写入 `configs/plugins/{key}` |
+| GET | `/api/ai/plugin/online/installed` | admin | 本地已安装包、版本、SHA-256、图标与启停状态 |
+| POST | `/api/ai/plugin/online/status` | admin | `{pluginKey,enabled}` 上架/下架；无卸载端点，文件与已加载程序集保留 |
 
 > 控制器 `[Route("/ai/plugin/...")]` 之上还有全局 `/api` 路由前缀，实际路径以 `/api/ai/plugin/...` 为准（早期文档漏写 `/api`，2026-09-11 依 OpenAPI 实测修正）。
 
@@ -80,8 +88,23 @@ ui/src/
 8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 系统侧实例、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
 9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
 10. **创建态头像**：插件记录保存前无 id 可登记，保存命令带可选 `avatarPath`（创建直接落库；更新仅传了才覆盖，不传不改动），Handler 同样校验 `Files` 表已登记（404 防伪造，校验先于任何写入，失败不建实例）。前端共享模态在系统侧新建态渲染 `PluginAvatarPendingUpload`（仅直传暂存 objectKey，随保存提交），编辑态保留 `PluginAvatarUpload`（选图即登记）；团队侧保存命令无此字段、暂不开放（团队列表亦未展示头像）。
+11. **在线目录隔离**：MoAI 后端通过 `MoPlatformPluginClient` 调用 MoPlatform `/api/client/plugin/*`，每次带 `X-MoAI-Client-Fingerprint`；指纹由 Infra 单例持久化到 `configs/mo-platform-client.fingerprint`，不使用管理员密码、PAT 或 JWT。指纹只用于 Redis 配额归并，不作为密码学认证。
+12. **安装快照与存储**：`plugin_package` 保存平台插件/版本 id、版本、包 SHA-256、兼容清单、本地描述、启用状态与 MoAI OSS 图标 key；完整包与 `moai.plugin.json` 写在 `configs/plugins/{key}`。MoAI 不在展示时重拉平台图片/描述。
+13. **加载和下架**：启动扫描 `configs/plugins` 下每个非隐藏子目录，以 `moai.plugin.json` 中的入口路径加载主程序集；DB 安装记录用于校验摘要并提供启停状态，但不限制目录发现。入口由 `AssemblyDependencyResolver` 解析私有依赖，`MoAI.*`/`Maomi.*`/MediatR 共用默认加载上下文，包故障隔离且不阻断宿主。在线安装落盘并提交 DB 后立即动态加载当前进程；下架不删除包、不卸载 ALC，也不提供在线覆盖/卸载。
+14. **内置动态模板退役**：`MainModule` 不再注册 `DynamicPluginsModule`，历史模板源码与回归材料保留但不进入宿主；从 MoPlatform 安装的动态包通过同一插件契约进入模板/运行时。
 
-## 内置动态模板
+## MoPlatform 在线插件分发
+
+- MoAI 服务端用 `MoAI:MoPlatform:Endpoint` + `configs/plugins/.client-fingerprint` 持久化指纹访问 MoPlatform 的独立 client 区；Docker 部署持久化挂载整个 `configs/plugins`，浏览器只请求 MoAI API。在线包安装固定 manifest 版本，先校验版本、TFM、宿主依赖、下载 authority、大小与 SHA-256，再安全解压到 `configs/plugins/{key}`。
+- `plugin_package` 保存包版本/摘要/清单/平台来源/本地描述与 OSS 图标 key；包目录的 `moai.plugin.json` 是启动扫描快照。插件包是进程内代码，安装前必须信任发布者；MoPlatform 静态分析不代表恶意代码沙箱。
+- 每个包由不可回收的 `AssemblyLoadContext` 加载；MoAI/AiPlugin/Maomi/MediatR 契约从默认上下文共享，私有依赖由包目录的 `.deps.json` 解析。`CustomPluginModule` 注册的启动服务扫描 `configs/plugins` 下每个非隐藏子目录，以 `moai.plugin.json` 中的入口路径加载主程序集；DB 安装记录用于校验摘要并提供启停状态，但不限制目录发现。单包错误只隔离该包。
+- 在线安装在包目录落盘并提交 DB 后，立即在当前进程创建独立 `AssemblyLoadContext`、加载入口程序集并注册插件；无需重启。运行时下架只禁用注册态，不卸载程序集或删除目录。
+- 本地 `moai.plugin.json` 由 Web JSON 选项序列化为 camelCase；运行时读取必须使用同一选项，避免 key 等必需字段被默认的大小写敏感反序列化静默置空。
+- 上架/下架切换注册表可用态并同步数据库，不卸载程序集、不删除文件。在线覆盖与卸载不开放；同 key 已安装时需先下架或保持现状，包升级流程后续另行定义。
+
+## 历史内置动态模板（已退役）
+
+> 历史实现清单，仅供旧实例配置迁移与代码审阅；`DynamicPluginsModule` 已从 MoAI 宿主移除，表内源码不会随宿主发布。新的插件能力从 MoPlatform 安装，见本 SDD「MoPlatform 在线插件分发」。
 
 模板 key 全局唯一、发布后不可变；「模板」只描述代码能力，「实例」才承载 API Key 等敏感配置（存 `plugin_dynamic.config`）。
 
@@ -298,7 +321,7 @@ ui/src/
 `base64_decode` 细节（Base64 解码模板，证据 `tests/MoAI.AIPlugin.Dynamic.Tests/Base64DecodePluginTests.cs`，@DYN-S117~S120）：
 
 1. **形态三分**（`Base64ContentDetector`）：严格 UTF-8 判定（解码失败或含 NUL 等控制字符即非文本）→ 文本直接回填 `Text`；图片魔数（PNG/JPEG/GIF/WebP/BMP/ICO/TIFF）与 SVG 文本特判（SVG 是文本但按图片处理才能在对话渲染）→ 转存 `public/images`；其余二进制 → 转存 `public/files`，`Kind` 标记 text/image/binary。
-2. **图片/二进制不回 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL，且大负载直接撑爆模型上下文——统一经 `IStorageService.UploadStreamAsync` 按 SHA-256 内容寻址转存（同内容幂等去重），响应回 `/static` 公开地址与 `Markdown` 引用（图片 `![image](url)`、其它 `[file](url)`）。这是动态插件首个构造注入 `IStorageService` 的模板（csproj 增 `MoAI.Storage.Shared` 引用）。
+2. **图片/二进制不回 data URL**：前端 react-markdown 默认 `urlTransform` 会剥 `data:` URL，且大负载直接撑爆模型上下文——统一经 `IPluginFileStorageService.SaveAsync` 按 SHA-256 内容寻址转存（同内容幂等去重），响应回 `/static` 公开地址与 `Markdown` 引用（图片 `![image](url)`、其它 `[file](url)`）。插件只依赖 `MoAI.AIPlugin.Shared`；文件服务契约由 Core 适配 `IStorageService`，插件包不再引用存储模块（2026-11-14 起，见 [静态插件 SDD 插件文件存储服务](../aiplugin-static/sdd.md#插件文件存储服务2026-11-14)）。
 3. **输入宽容**：允许空白与换行（`Convert.FromBase64String` 语义）、自动剥离 `data:<mime>;base64,` 前缀；二进制形态有类型声明时信任声明定扩展名（application/pdf → .pdf 等白名单），无声明按 octet-stream/.bin；`FileName` 仅取扩展名参与 ObjectKey 与回显，不进地址。
 4. **护栏**：解码前按「原始长度/4×3」粗估上界（原始长度 ≥ 有效字符数不会低估，杜绝超大输入先占内存）；解码后精确比对 `MaxDecodeBytes`（`InitAsync` 钳制 1024-32MB）；文本按 `TextMaxLength` 截断（100-200000）置 `TextTruncated`；空白/非法 Base64/超限均 `BusinessException(400)` 归一且不发生转存。
 
@@ -315,3 +338,59 @@ ui/src/
 - `imap_email_query` 列表模式为信封级摘要（无正文/无附件标志），snippet 与附件列表只在 detail 模式提供；若后续需要「列表即摘要」，可改走 BODYSTRUCTURE+部分取（协议面更宽，暂不做）。
 - `yahoo_finance` 按雅虎财经公开端点（v8 chart / v1 search）样例报文实现；本机直连雅虎被地域拦截、代理未启动时无法实测真实上游，**真实字段若有出入仍需一次人工走查**（同博查/墨迹口径）。国内部署直连官方地址大概率被拦，建议实例配置镜像地址。
 - `news_hot_board` 渠道解析已按官方报文桩全量覆盖（@DYN-S106~S116），且 E2E 调试期间曾以真实上游全 16 渠道拉通（310 条真实数据解析正确）；但热榜接口均为网页端非公开接口，**平台风控或结构变化会导致单渠道失败**——已有失败隔离兜底（进 `Errors` 不影响其它来源），渠道修复属常规维护。
+
+### 插件管理页重构与使用量统计（2026-11-01，@DYN-S121~S124）
+
+- 管理页三列表页签统一 `PageToolbar`（filters/queries/actions）+ CheckableTag 分类行 + 卡片/列表双视图（`PluginCardView` 共享卡片组件；卡片头部 标题/插件 key/接入地址 各占一行独立省略，超长不互相挤压）；操作收纳：内联高频（查看函数/编辑/运行/删除 Popconfirm）、「更多」下拉收纳低频（刷新函数/授权团队）；形态分目标——列表操作列 图标+文字（规则 9），卡片底栏 图标+Tooltip（rounds 268 明确卡片底栏不属操作列约束，同提示词/技能卡片）
+- 统计页签 `PluginStatsPanel`：数据口径 = `GET /ai/plugin/manage/list`（全 kind）客户端聚合（type/classifyId/counter/functionCount）；`QueryPluginManageListCommandResponseItem` 新增 `counter`/`functionCount`、`PluginBaseInfoItem` 新增 `functionCount`（自定义=函数表计数、静态/动态=注册可用计 1）
+- ~~统计页签数据口径=manage/list 客户端聚合~~ → **2026-11-02 起改为后端聚合端点**（见下节「插件使用统计」），前端只做展示不再拼装
+- 使用量计数接线（修复 counter 恒 0）：`IPluginUsageCounter` 接入三执行点（Agent 工具调用闭包直持实体 id；管理端/团队端运行入口解析实体 id，团队端复用可用性查询结果）；新增 Shared 命令 `IncrementPluginUsageCommand` + `.Custom` 层 Handler（`.Core` 不引用 Database 的分层约束）
+- 已知限制：调用趋势/活跃插件需按日统计表（plugin_usage_daily）支撑，本轮以空态占位；团队侧镜像页（teams/plugins）未同步重构，下一轮跟进
+
+### 插件使用统计（2026-11-02，@DYN-S125~S126）
+
+用户需求：「系统插件-统计……系统插件查看的是所有团队汇总的数据，显示被调用插件名称时，可以附加一个团队的名称 `{插件名称}-({团队名称})`；团队插件页面也要增加一个统计 tab，直接显示插件名称和自己团队的插件调用统计」。
+
+- **新增端点** `GET /api/ai/plugin/manage/stats`（仅管理员，`EnsureAdminAsync` 门禁）：`QueryPluginStatsCommand`（Shared）→ `QueryPluginStatsCommandHandler`（`.Custom/Queries`，DB 聚合）。**全团队汇总口径** = `plugin` 全表（系统侧 team_id=0 + 全部团队自有）+ 内存注册表静态插件合并（与 manage/list 同款合并逻辑）。
+- **出参** `QueryPluginStatsCommandResponse`：概览（totalPlugins/mcpCount/openApiCount/totalCalls=Σcounter/totalFunctions）+ TOP5（id/name=Title||PluginName/**teamId+teamName**（join Teams，系统侧 teamName 空）/counter/avatarPath）+ 分类分布（classifyId/classifyName/count）+ 近 30 天趋势（逐日补 0）。趋势查统一统计日表 `resource_usage_daily`（name=plugin-usage，resource_id ∈ 范围内插件 id），只读不写。
+- **统计口径不在列表端点做**：`GET /ai/plugin/manage/list` 保持 `TeamId == 0` 系统侧过滤不变（@DYN-S70 团队隔离修复），汇总口径走独立 stats 端点，两个 Tab 列表不受影响。
+- **前端**：`PluginStatsPanel` 改为薄封装（取数 `pluginApi.getPluginStats()`，`ui/src/api/plugin.ts` 归一 `normalizePluginStats`——long 生成物可能为 string、DateOnly 统一 unknown 归一）；渲染逻辑抽出共享组件 **`PluginStatsView`**（`ui/src/pages/plugins/components/`，团队插件页统计 Tab 同构复用，见 [../teamplugin/sdd.md](../teamplugin/sdd.md) 4d）。TOP 名称渲染规则：`showTeamName && teamName` 时显示 `{name}-({teamName})`，系统侧与团队端只显示名称。分类分布标签改用后端 classifyName（未分类 key=0 兜底文案），统计页签不再依赖 `classifyApi`。
+- 证据：`local-dev/team-plugin-e2e.mjs` TP-37a/b（门禁）+ TP-38a~d（全团队口径/结构），场景 [@DYN-S125](./bdd.md#dyn-s125)、[@DYN-S126](./bdd.md#dyn-s126)。
+
+## 多工具动态插件（2026-11-04，@DYN-S127~S136）
+
+需求：一个动态插件模板对外暴露多个工具（如雅虎财经拆 quote/news/search），每个工具可独立调试且拥有独立的参数运行示例接口；与既有「接口+特性」风格一致，且 37 个存量单工具模板零改动兼容。
+
+1. **契约**：新接口 `IDynamicPluginToolsRuntime<TConfig>`（`GetConfigExampleValue` + `InitAsync` 语义与单工具动态插件完全一致）；模板类在公开实例方法上标 `[AiPluginTool(key, Title, Description, ParamsExample?)]`，签名约定 `Task<TResponse> XxxAsync(TRequest request, CancellationToken ct)`。参数示例取值：特性 `ParamsExample` 内联 > 请求类型 `static GetParamsExampleValue()`（与 `GetConfigExampleValue` 同款带注释 JSON 风格）。
+2. **发现**：`PluginTypeHelper.TryGetPluginInfo` 识别三接口（static/dynamic/multi-tools）；`DiscoverTools` 按声明顺序（MetadataToken）扫描，重复 key、签名不符、零工具均在注册期抛 `InvalidOperationException` 快速失败。`PluginInfo.Request/Response` 改可空（多工具为 null，参数/响应类型在 `Tools` 各项上），新增 `Tools`/`IsMultiTool`/`FindTool`。
+3. **执行**：`IPluginExecutor.ExecuteAsync` 增可选 `toolKey`——多工具按 key 路由到对应方法（未知 key 400 且列出可用工具）；单工具仅接受空/run。响应序列化按命中工具的 Response 类型。`RunPluginCommand.Function` 兼作动态插件 toolKey（原语义：自定义插件函数名）。
+4. **AI 侧**：`PluginAppToolProvider` 对多工具实例展开为 N 个 `AppTool`，名称 `{实例key}__{toolKey}`（与自定义插件 `FunctionToolName` 同款），各带自己的 description/paramsExample；单工具路径不变。
+5. **接口**：`GET /ai/plugin/tools?key=`（模板 key 或实例 key；单工具固定返回一个 `run` 项，前端工具选择统一形态）与 `GET /ai/plugin/tool/example?key=&toolKey=`（每工具独立示例端点，用户点名要求）；均 admin 门禁挂在 `PluginController`。
+6. **演示模板**：`text_toolkit`（slugify/word_count/reverse，无外部依赖）承载契约验证与 E2E；37 个存量模板零改动（自动包装为单工具）。
+7. 已知：多工具仅开放给动态插件（`IStaticPluginRuntime` 未扩）；多工具模板的插件级 `ParamsExample` 为 null（示例在工具上）。
+
+## 插件语义配置（2026-11-04，@DYN-S137~S144）
+
+需求：管理员可为任意插件维护「语义处理」——使用须知、结构化语义条目（库表用途/字段说明/术语/示例问答）、工具级补充说明与调用限制，随工具注入 AI 上下文或在调用前拦截；与插件类型解耦（插件后续动态化/平台托管不受影响）。
+
+1. **数据**（存量库执行 `asserts/plugin_semantic.sql`）：
+   - `plugin.usage_notes`：插件级使用须知（≤2000 字符）。
+   - `plugin_semantic_note`：语义条目 `{plugin_id, tool_key(''=插件级), title, content(markdown), mode(0=always 常驻注入,1=on_demand 按需取回), sort_order}`。
+   - `plugin_tool_meta`：工具元数据 `{plugin_id, tool_key, extra_notes, call_policy, read_only_hint, destructive_hint}`；tool_key 口径——MCP/OpenAPI=函数名、多工具动态=模板工具 key、单工具=run。
+2. **调用策略**：`PluginToolCallPolicy` JSON `{denyPatterns:[正则], action: block|confirm|audit}`（Shared 层模型，保存校验与运行时预检共用）；策略是语义引导与纵深防御，**不构成安全边界**（真正强制靠执行层，如只读数据库账号）。
+3. **API**：`GET/PUT /ai/plugin/manage/{id}/semantic`（admin；PUT 整体覆盖：条目按 id 集合差软删、元数据按 toolKey 集合差软删）；查询响应附工具清单（`QueryPluginSemanticCommandHandler` 按插件类型组装，口径与 AI 侧展开一致）。⚠️ 命令不校验 PluginId（路由回填字段，自动验证先于回填——见 cqrs skill 路由参数时序坑），缺失由 Handler 404 兜底。
+4. **注入**（`PluginAppToolProvider` 装配 → `AppToolContextProvider` 呈现）：
+   - 插件级使用须知 + 插件级 always 条目 → 系统提示「插件使用须知」段（同一插件的多工具共享一份文本，注入时按文本去重）；
+   - 工具级 `ExtraNotes` + 工具级 always 条目 → `list_tools` 该工具 description 追加「【使用说明】」（字段由 provider 填充、呈现层统一合并，单一职责）；
+   - on_demand 条目 → 系统提示「语义资料目录」（`noteId={Guid:N}：标题`）+ 仅当存在条目时注册 `plugin_note(noteId)` 元工具按需取回正文（大 schema 不撑上下文，`describe_table` 场景的通用化形态）。
+5. **拦截**：`call_tool` 分发处按 `AppTool.CallPolicy` 预检——denyPatterns 命中参数 JSON 即按 action 处置；`block`（或无审批链/非审批模式）直接拒绝并向模型返回可读信息；`confirm` 复用既有工具人工审批链（自动模式下等价 block）；`audit` 当前等价放行。
+6. **MCP 注解采集**：导入/更新/刷新 MCP 连接器读取 `ToolAnnotations`（readOnlyHint/destructiveHint）落 `plugin_tool_meta`（`McpToolHintsSyncHelper` 只回写注解位，保留管理员配置）；注解为提示不构成安全保证（MCP 规范口径）。
+7. **管理 UI**：系统插件三个页签（自定义/动态/静态）行操作新增「语义配置」抽屉（使用须知 + 工具 Collapse：补充说明/拒绝规则/动作/只读·破坏性开关 + 语义条目增删改）；保存走整体覆盖。
+8. **已知问题**：①策略命中未接 `app_security_event` 审计（后续接 `AppSecurityAuditWriter`）；②`confirm` 依赖审批模式，自动模式下等价 block；③AI 会话内注入/取回/拦截由单测覆盖，未铺桩模型端到端场景。
+
+## 团队插件语义配置（2026-11-04b，@DYN-S154~S158）
+
+1. **端点**：`GET/PUT /team/{teamId}/plugin/{pluginId}/semantic`（teamplugin 模块）。查询=团队成员；保存=团队 Owner/Admin；**仅团队自有插件**（`plugin.team_id == teamId`，否则 403）——系统授权插件的语义属全局数据影响全平台，团队侧不可改（与编辑/删除权限同口径）。
+2. **实现**：teamplugin 薄命令（路由回填 TeamId/PluginId 不校验）经 MediatR 进程内转发 aiplugin 的 `QueryPluginSemanticCommand`/`SavePluginSemanticCommand`——同一存储、同一校验、同一注入链路（`PluginAppToolProvider` 本就不区分团队/系统，团队实例早已生效），零逻辑复制。
+3. **前端**：`PluginSemanticModal` 加 `teamId` prop 分流读写端点；团队动态/自定义两面板行操作「语义配置」（`canManage && isTeamOwned`）。
+4. 运维坑：`TaskStop` 只杀 shell 不杀 dotnet 子进程，重启后端须 `taskkill` 残留 PID，否则新进程绑定 5000 失败 exit 1（且旧进程继续以旧代码服务，排查时先核对端口归属）。

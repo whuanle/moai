@@ -52,6 +52,20 @@ public class InfraExternalHttpModule : IModule
         context.Services.AddTransient<ExternalHttpMessageHandler>();
         context.Services.AddSingleton(settings);
 
+        // MoPlatform 插件分发由后端服务端调用，并用持久化安装指纹限频，不向浏览器暴露平台请求凭据。
+        context.Services.AddSingleton<MoPlatformClientFingerprint>();
+        context.Services.AddSingleton<MoPlatformPluginClient>();
+        context.Services.AddHttpClient(MoPlatformPluginClient.HttpClientName, (serviceProvider, client) =>
+        {
+            var systemOptions = serviceProvider.GetRequiredService<SystemOptions>();
+            client.BaseAddress = new Uri(systemOptions.MoPlatform.Endpoint.TrimEnd('/') + "/", UriKind.Absolute);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        context.Services.AddHttpClient(MoPlatformPluginClient.DownloadHttpClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromHours(1);
+        });
+
         // OAuth 发现端点、令牌端点、用户信息端点地址是动态的，无法使用固定的 BaseAddress 注册，
         // 因此通过工厂在调用时根据实际地址动态创建客户端.
         context.Services.AddTransient<IOAuthClientFactory, OAuthClientFactory>();
@@ -59,28 +73,34 @@ public class InfraExternalHttpModule : IModule
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
+        // 飞书登录服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var feishuEndpoint = context.Configuration["MoAI:Feishu:Endpoint"];
         context.Services.AddRefitClient<IFeishuAuthClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(feishuEndpoint) ? "https://open.feishu.cn" : feishuEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
         context.Services.AddRefitClient<IFeishuApiClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(feishuEndpoint) ? "https://open.feishu.cn" : feishuEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
         context.Services.AddRefitClient<IFeishuWebHookClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://open.feishu.cn"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(feishuEndpoint) ? "https://open.feishu.cn" : feishuEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
+        // 企业微信 API 服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var weixinWorkEndpoint = context.Configuration["MoAI:WeixinWork:Endpoint"];
         context.Services.AddRefitClient<IWeixinWorkClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://qyapi.weixin.qq.com"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(weixinWorkEndpoint) ? "https://qyapi.weixin.qq.com" : weixinWorkEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 
+        // 钉钉登录/通讯录服务地址允许被配置覆盖（默认官方地址）：便于本地联调、指向代理或在 E2E 中指向桩服务.
+        var dingTalkEndpoint = context.Configuration["MoAI:DingTalk:Endpoint"];
         context.Services.AddRefitClient<IDingTalkClient>(settings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.dingtalk.com"))
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(string.IsNullOrWhiteSpace(dingTalkEndpoint) ? "https://api.dingtalk.com" : dingTalkEndpoint))
             .AddHttpMessageHandler<ExternalHttpMessageHandler>()
             .SetHandlerLifetime(TimeSpan.FromSeconds(30));
 

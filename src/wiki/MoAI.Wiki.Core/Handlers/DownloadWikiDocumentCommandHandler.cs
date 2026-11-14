@@ -56,7 +56,7 @@ public class DownloadWikiDocumentCommandHandler : IRequestHandler<DownloadWikiDo
             throw new BusinessException("未找到文档文件.") { StatusCode = 404 };
         }
 
-        var url = await _storageService.GetDownloadUrlAsync(documentFile.ObjectKey, document.FileName, TimeSpan.FromMinutes(2), cancellationToken);
+        var url = await _storageService.GetDownloadUrlAsync(documentFile.ObjectKey, document.FileName, TimeSpan.FromMinutes(1), cancellationToken);
 
         return new SimpleString
         {

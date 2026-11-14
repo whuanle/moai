@@ -7,15 +7,16 @@
 
 	<ItemGroup>
 		<PackageReference Include="ModelContextProtocol" />
-		<PackageReference Include="Microsoft.OpenApi.Readers" />
+		<PackageReference Include="Microsoft.OpenApi.YamlReader" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
 		<ProjectReference Include="..\..\database\MoAI.Database.Shared\MoAI.Database.Shared.csproj" />
-		<ProjectReference Include="..\..\hangfire\MoAI.Hangfire.Shared\MoAI.Hangfire.Shared.csproj" />
+		<ProjectReference Include="..\..\statistics\MoAI.Statistics.Shared\MoAI.Statistics.Shared.csproj" />
 		<ProjectReference Include="..\..\classify\MoAI.Classify.Shared\MoAI.Classify.Shared.csproj" />
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Shared\MoAI.Infra.Shared.csproj" />
+		<ProjectReference Include="..\..\infra\MoAI.Infra.ExternalHttp\MoAI.Infra.ExternalHttp.csproj" />
 		<ProjectReference Include="..\..\storage\MoAI.Storage.Shared\MoAI.Storage.Shared.csproj" />
 		<ProjectReference Include="..\..\variable\MoAI.Variable.Shared\MoAI.Variable.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.AIPlugin.Shared\MoAI.AIPlugin.Shared.csproj" />

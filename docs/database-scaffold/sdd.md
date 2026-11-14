@@ -53,7 +53,7 @@ init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker ini
 | `classify` | id int identity | name/type 普通索引 |
 | `file` | id bigint identity | idx_file_file_sha256 (bytea)、idx_file_object_key |
 | `oauth_connection` | id uuid 默认 uuid_generate_v4() | — |
-| `user_oauth_connection` | id bigint identity | 唯一 (provider_id, sub, is_deleted) |
+| `user_oauth_connection` | id bigint identity | 唯一 (provider_id, sub, is_deleted) + (provider_id, union_id) 普通索引（2026-10-28 后加列，幂等 DDL） |
 
 全部表含审计五件套列（create_user_id/create_time/update_user_id/update_time/is_deleted）。种子（HasData，随 EnsureCreated 写入，[@DB-S4](./bdd.md#db-s4)）：admin（id=1、IsAdmin=true、密码为 abcd123456 的 PBKDF2 哈希，**上线即改**）；setting 5 行（`root=1`、`OPEN_NEO4J=false`、`NEO4J_URI`/`NEO4J_USERNAME`/`NEO4J_PASSWORD`=空串）；classify **99 行**（33 名称 × prompt/plugin/app）。新设置项先注册进 `SettingDefinitions`；HasData 不回填存量库（[@DB-S5](./bdd.md#db-s5)）。
 
@@ -69,7 +69,7 @@ init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker ini
 
 ## 本地环境
 
-docker-compose `postgres` 服务：镜像 `pgvector/pgvector:pg16`，容器 `moai-postgres`，5432、用户 postgres、密码 moai123456、库 moai；`init-pgvector.sql` 只读挂载 `/docker-entrypoint-initdb.d/`（仅首次建卷执行）。`HasPostgresExtension("vector")/("uuid-ossp")` 使 EnsureCreated 亦会补建扩展（双保险）。
+docker-compose `postgres` 服务：镜像 `pgvector/pgvector:pg16`，容器 `moai-postgres`，5432、用户 `POSTGRES_USER`（默认 postgres）、密码 `POSTGRES_PASSWORD`（与 Mo 系列共享部署默认 `mopl123456`）、库 `moai`；`init-pgvector.sql` 只读挂载 `/docker-entrypoint-initdb.d/`（仅首次建卷执行）。复用已有 `moai` 网络时，`postgres-init` 在共享 PostgreSQL 中幂等创建独立 `moai` 库及扩展。`HasPostgresExtension("vector")/("uuid-ossp")` 使 EnsureCreated 亦会补建扩展（双保险）。
 
 ## 已知问题
 

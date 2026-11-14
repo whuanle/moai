@@ -108,6 +108,21 @@ public class UserManageController : ControllerBase
         return await _mediator.Send(cmd, ct);
     }
 
+    /// <summary>
+    /// 重置用户两步验证（仅管理员可访问）：清空 TOTP 绑定，用户下次登录后需重新绑定（丢失认证器兜底）.
+    /// </summary>
+    /// <param name="id">用户 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPut("user/{id}/reset_2fa")]
+    public async Task<EmptyCommandResponse> ResetTwoFactor(long id, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        var cmd = new ResetUserTwoFactorCommand { UserId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
     private async Task EnsureAdminAsync(CancellationToken ct)
     {
         var userState = await _userAccountService.GetUserStateAsync(_userContextProvider.GetUserContext().UserId, ct);
