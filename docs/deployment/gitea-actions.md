@@ -59,6 +59,7 @@ env:
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `ZOT_REGISTRY_TARGET` | 同 `ZOT_REGISTRY` | **部署机视角**的 registry；部署机与构建机看到的地址不同时（NAT/VPN/Tailnet）在这里覆盖 |
+| `SOURCE_BASE_URL` | `github.server_url` | 构建机拉源码归档用的 Gitea 基地址；**构建机解析不了 Gitea 域名时必配**（如 `http://<gitea-host>:3000`） |
 | `MINI_SSH_KNOWN_HOST` | 空 | 目标机 known_hosts 行；配置后启用 `StrictHostKeyChecking=yes`，留空则 `accept-new` |
 | `MOAI_APP_DIR` | `moai` | 部署机目录，相对 `$HOME` → `~/moai` |
 
@@ -179,6 +180,7 @@ git push gitea v0.1.0
 |---|---|---|
 | 打 tag 后没有运行 | tag 不是 `v*` / 数字开头，或该 tag 对应的提交里没有工作流文件 | 用 `X.Y.Z`/`vX.Y.Z`；确认 tag 指向含 `.gitea/workflows/deploy.yml` 的提交 |
 | 作业开头直接失败「缺少仓库变量/密钥」 | 变量/密钥未配或放错类别（变量 vs 密钥） | 仓库 → 设置 → Actions：6 个变量 + `ZOT_PASSWORD`/`MINI_SSH_RSA` 两个密钥 |
+| 「准备源码」步骤秒退 / curl 报错 | 构建机解析不了 `github.server_url` 的域名，或该地址证书不可信 | 配仓库变量 `SOURCE_BASE_URL` 指向内网 Gitea（如 `http://<gitea-host>:3000`） |
 | 工作流列表为空 / 无 Run workflow | Actions 未开、缺 `repo.actions`、runner 未注册或 Gitea 版本过低 | 检查 `app.ini`、站点管理 → Actions 的 runner 在线状态 |
 | 作业一直 queued | 没有 `linux_local` 标签的 runner | `--labels linux_local` 注册，或改 `runs-on` 与之匹配 |
 | 构建卡在拉基础镜像 | Docker Hub 出口受限 | 确认 buildkitd 配置里的 `docker.m.daocloud.io` 镜像可用 |
