@@ -58,6 +58,13 @@ env:
   MINI_SSH_PORT: ${{ vars.MINI_SSH_PORT }}
   MINI_SSH_KNOWN_HOST: ${{ vars.MINI_SSH_KNOWN_HOST }}
   MOAI_APP_DIR: ${{ vars.MOAI_APP_DIR || 'moai' }}
+  # Gitea 不保证把这几项注入到 shell 环境（mo_platform 也是显式映射），这里统一补齐，
+  # 避免 set -u 下取未定义变量直接退出
+  GITHUB_SERVER_URL: ${{ github.server_url }}
+  GITHUB_REPOSITORY: ${{ github.repository }}
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
+  GITHUB_REF_NAME: ${{ github.ref_name }}
 
 jobs:
   build-and-deploy:
@@ -113,7 +120,7 @@ jobs:
         if: ${{ inputs.deploy_only != 'true' }}
         run: |
           set -euo pipefail
-          SRC="$RUNNER_TEMP/moai-src-$GITHUB_RUN_ID"
+          SRC="$RUNNER_TEMP/moai-src"
           rm -rf "$SRC" && mkdir -p "$SRC"
           # 用 Actions 自动注入的 token 走 HTTP 拉本仓库（不依赖第三方 action）
           curl -fsSL -H "Authorization: token ${{ github.token }}" \
@@ -129,8 +136,8 @@ jobs:
         run: |
           set -euo pipefail
           BUILDER_NAME=moai
-          DOCKER_CONFIG_DIR="$RUNNER_TEMP/zot-docker-config-$GITHUB_RUN_ID"
-          BUILDKITD_CONFIG="$RUNNER_TEMP/moai-buildkitd-$GITHUB_RUN_ID.toml"
+          DOCKER_CONFIG_DIR="$RUNNER_TEMP/zot-docker-config"
+          BUILDKITD_CONFIG="$RUNNER_TEMP/moai-buildkitd.toml"
           cleanup() { rm -rf "$DOCKER_CONFIG_DIR" "$BUILDKITD_CONFIG"; }
           trap cleanup EXIT
 
