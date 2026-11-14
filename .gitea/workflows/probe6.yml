@@ -1,0 +1,16 @@
+name: probe-g2
+on:
+  push:
+    tags: ['tf*']
+concurrency:
+  group: probe-g2
+  cancel-in-progress: false
+jobs:
+  build-and-deploy:
+    runs-on: linux_local
+    timeout-minutes: 120
+    steps:
+      - name: hello
+        run: |
+          set -euo pipefail
+          echo "probe-g2 ok"
