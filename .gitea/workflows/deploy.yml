@@ -5,9 +5,14 @@
 #   1) build-push：buildx 构建前后端一体镜像，推送到内网 Zot（纯 HTTP LAN）
 #   2) deploy：经 SSH 把 compose 文件同步到目标机，登录 Zot 拉镜像 → 复用/完整栈 compose 切换
 #
-# 触发：Gitea 仓库页 → Actions → deploy-moai → Run workflow（可先切到要发布的分支再触发）
+# 触发：
+#   1) 打版本 tag 自动构建并部署（tag 名必须 X.Y.Z 或 vX.Y.Z，镜像版本 = 去掉 v 的版本号）
+#   2) Gitea 仓库页 → Actions → deploy-moai → Run workflow（可先切到要发布的分支再触发）
 #
-# 仓库变量（与 mo_platform 完全同名，可直接复用；公开仓库不写死任何地址）：
+# 变量来源：Gitea「站点管理 → 工作流 → 变量」的**全局变量**（不是仓库环境变量）
+#   Gitea 会把 global + 组织/用户 + 仓库三层变量合并进 vars 上下文，同名时低层级优先，
+#   所以 ${{ vars.X }} 直接就能读到全局变量；本仓库不需要任何仓库级变量。
+#   与 mo_platform 完全同名，可直接复用（公开仓库不写死任何地址）：
 #   ZOT_REGISTRY         构建机可访问的 OCI registry host:port
 #   ZOT_REGISTRY_URL     完整 URL（备用/人工排查）
 #   ZOT_USERNAME / ZOT_PASSWORD
@@ -15,7 +20,7 @@
 #   MINI_SSH_RSA         部署机 SSH 私钥全文（也可放 Secrets）
 #   MINI_SSH_HOST        部署机地址
 #   MINI_SSH_PORT        部署机 SSH 端口
-# 可选变量：
+# 可选变量（同样取全局变量，缺省走默认值）：
 #   ZOT_REGISTRY_TARGET  部署机视角的 registry（默认同 ZOT_REGISTRY）
 #   MINI_SSH_KNOWN_HOST  目标机 known_hosts 行（建议配置，避免首次指纹信任）
 #   MOAI_APP_DIR         目标机部署目录（相对 $HOME），默认 moai
@@ -23,6 +28,9 @@
 name: deploy-moai
 
 on:
+  push:
+    # 打版本 tag 即触发（分支 push 不触发，避免日常提交直接上线）
+    tags: ['v*', '[0-9]*']
   workflow_dispatch:
     inputs:
       image_tag:
@@ -34,9 +42,15 @@ on:
         required: false
         default: 'false'
 
+concurrency:
+  # 同一时间只跑一个构建部署；连续打 tag 或手动触发会排队而不是互相打断
+  group: deploy-moai
+  cancel-in-progress: false
+
 env:
   IMAGE_NAME: moai
-  # 仓库「变量管理」优先，兼容写在 Secrets 里的同名值
+  # 全部取自 Gitea 全局变量（vars 上下文自动合并 global/组织/仓库，低层级优先），
+  # 兼容历史写在 Secrets 里的同名值
   ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY || secrets.ZOT_REGISTRY }}
   ZOT_REGISTRY_URL: ${{ vars.ZOT_REGISTRY_URL || secrets.ZOT_REGISTRY_URL }}
   ZOT_USERNAME: ${{ vars.ZOT_USERNAME || secrets.ZOT_USERNAME }}
@@ -54,7 +68,7 @@ jobs:
     runs-on: linux_local
     timeout-minutes: 120
     steps:
-      - name: 校验仓库变量
+      - name: 校验全局变量
         run: |
           set -euo pipefail
           missing=""
@@ -63,8 +77,9 @@ jobs:
             [ -n "$value" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
-            echo "缺少仓库变量/密钥:$missing"
-            echo "在 Gitea 仓库 → 设置 → Actions 中补齐（与 mo_platform 同名可直接复用）。"
+            echo "缺少全局变量/密钥:$missing"
+            echo "在 Gitea「站点管理 → 工作流 → 变量」补齐全局变量（与 mo_platform 同名可直接复用；"
+            echo "同名时仓库级/组织级变量会覆盖全局值，不需要为本仓库单独配置）。"
             exit 1
           fi
           echo "变量齐备（部署目标已脱敏，不在日志中回显）"
@@ -72,12 +87,30 @@ jobs:
       - name: 解析镜像 tag
         run: |
           set -euo pipefail
-          TAG="${{ inputs.image_tag }}"
-          if [ -z "$TAG" ]; then TAG="sha-$(printf '%s' "$GITHUB_SHA" | cut -c1-7)"; fi
+          SHORT_SHA="$(printf '%s' "$GITHUB_SHA" | cut -c1-7)"
+          case "$GITHUB_REF" in
+            refs/tags/*)
+              # tag 触发：镜像版本 = 去掉前缀 v 的 tag 名，且必须是 X.Y.Z
+              TAG="${GITHUB_REF_NAME#v}"
+              if ! printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                echo "tag $GITHUB_REF_NAME 不符合 X.Y.Z / vX.Y.Z 格式" >&2
+                exit 1
+              fi
+              ;;
+            *)
+              TAG="${{ inputs.image_tag }}"
+              if [ -z "$TAG" ]; then TAG="sha-$SHORT_SHA"; fi
+              ;;
+          esac
           case "$TAG" in *[!A-Za-z0-9._-]*) echo "非法 tag：$TAG"; exit 1;; esac
-          echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
-          echo "本次构建：${GITHUB_REF_NAME} @ $(printf '%s' "$GITHUB_SHA" | cut -c1-7)"
-          echo "推送镜像：${ZOT_REGISTRY}/${IMAGE_NAME}:${TAG}"
+          { echo "IMAGE_TAG=$TAG"; echo "SHORT_SHA=$SHORT_SHA"; } >> "$GITHUB_ENV"
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] || printf '%s' "$GITHUB_REF" | grep -q '^refs/tags/'; then
+            echo "触发方式：tag ${GITHUB_REF_NAME}"
+          else
+            echo "触发方式：手动（${GITHUB_REF_NAME}）"
+          fi
+          echo "本次提交：${SHORT_SHA}"
+          echo "推送镜像：${ZOT_REGISTRY}/${IMAGE_NAME}:${TAG}（同时打 :sha-${SHORT_SHA} 与 :latest，便于回滚）"
 
       - name: 准备源码
         if: ${{ inputs.deploy_only != 'true' }}
@@ -133,6 +166,8 @@ jobs:
           docker buildx inspect --bootstrap "$BUILDER_NAME"
 
           BUILD_LOG="$RUNNER_TEMP/buildx-build.log"
+          SHORT_SHA="${SHORT_SHA:-$(printf '%s' "$GITHUB_SHA" | cut -c1-7)}"
+          TAG_ARGS=(-t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:sha-$SHORT_SHA" -t "$IMAGE:latest")
           if docker buildx build \
             --builder "$BUILDER_NAME" \
             --progress=plain \
@@ -143,8 +178,8 @@ jobs:
             --cache-to "type=inline,mode=max" \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            -t "$IMAGE:$IMAGE_TAG" \
-            -t "$IMAGE:latest" \
+            --label "org.opencontainers.image.version=$IMAGE_TAG" \
+            "${TAG_ARGS[@]}" \
             "$SRC" >"$BUILD_LOG" 2>&1; then
             tail -n 30 "$BUILD_LOG"
           else
@@ -152,7 +187,7 @@ jobs:
             tail -n 160 "$BUILD_LOG" >&2
             exit 1
           fi
-          echo "已推送 ${IMAGE}:${IMAGE_TAG} 与 :latest"
+          echo "已推送：${TAG_ARGS[*]}"
 
       - name: 部署到目标机
         run: |
@@ -216,8 +251,9 @@ jobs:
           {
             echo "### MoAI 部署完成"
             echo ""
-            echo "- 分支/提交：\`${GITHUB_REF_NAME}\` @ \`$(printf '%s' "$GITHUB_SHA" | cut -c1-7)\`"
+            echo "- 触发：\`${GITHUB_REF}\`"
+            echo "- 分支/提交：\`${GITHUB_REF_NAME}\` @ \`${SHORT_SHA}\`"
             echo "- 镜像：\`${DEPLOY_IMAGE:-registry 上已有 tag}\`"
-            echo "- 目标机：\`${MINI_SSH_USER}@${MINI_SSH_HOST}:${MINI_SSH_PORT}\` 目录 \`~/$MOAI_APP_DIR\`"
+            echo "- 目标机：\`***\` 目录 \`~/$MOAI_APP_DIR\`（地址取全局变量，不回显）"
             echo "- 仅部署（未构建）：\`${{ inputs.deploy_only }}\`"
           } >> "$GITHUB_STEP_SUMMARY" || true
