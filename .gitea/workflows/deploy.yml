@@ -65,6 +65,9 @@ env:
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_NAME: ${{ github.ref_name }}
+  # 取源码用的 Gitea 基地址：默认用 github.server_url；构建机解析不了该域名（如 git.xxx.local
+  # 只写在个别机器 hosts）时，在仓库变量里用内网地址覆盖，例如 http://<gitea-host>:3000
+  SOURCE_BASE_URL: ${{ vars.SOURCE_BASE_URL || github.server_url }}
 
 jobs:
   build-and-deploy:
@@ -123,9 +126,9 @@ jobs:
           SRC="$RUNNER_TEMP/moai-src"
           rm -rf "$SRC" && mkdir -p "$SRC"
           # 直接拉本仓库的归档（公开仓库匿名可取；Gitea 的 github.token 不适用于该下载口，
-          # 带上反而 401，故不加 Authorization 头）
-          curl -fsSL \
-            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
+          # 带上反而 401，故不加 Authorization 头）。构建机解析不了默认域名时用 SOURCE_BASE_URL 覆盖
+          curl -fsSL --retry 3 \
+            "$SOURCE_BASE_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
             -o "$RUNNER_TEMP/moai-src.tar.gz"
           tar -xzf "$RUNNER_TEMP/moai-src.tar.gz" --strip-components=1 -C "$SRC"
           echo "SRC=$SRC" >> "$GITHUB_ENV"
@@ -248,7 +251,7 @@ jobs:
           {
             printf 'export MOAI_IMAGE_REF=%q MOAI_APP_DIR=%q MOAI_PULL=1 ZOT_REGISTRY_TARGET=%q ZOT_USERNAME=%q ZOT_PASSWORD=%q\n' \
               "$IMAGE_REF" "$MOAI_APP_DIR" "$ZOT_REGISTRY_TARGET" "$ZOT_USERNAME" "$ZOT_PASSWORD"
-            cat deploy/gitea/remote-deploy.sh
+            cat "$SRC/deploy/gitea/remote-deploy.sh"
           } | dssh bash
 
       - name: 结果汇总
