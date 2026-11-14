@@ -98,6 +98,8 @@ services:
       RUSTFS_HOST: ${MOAI_RUSTFS_HOST:?deployment script must resolve the shared RustFS container}
     volumes:
       - ${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro
+      # 在线插件包与 MoPlatform 安装指纹跨容器重建持久化（与完整栈一致）
+      - ./configs/plugins:/app/configs/plugins
       - moai_files:/app/files
     ports:
       - "${MOAI_PORT:-8081}:8080"

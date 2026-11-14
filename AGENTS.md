@@ -84,6 +84,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 - 前端：`cd ui && npm run dev`（4000）
 - 子系统 .NET 客户端再生成：`node clients/sync-api.mjs`（后端运行中；只重写 `clients/MoAI.Subsystem.Client/Generated/`，手写包装 DI/配置/token 管理不参与生成），用法见 [clients/MoAI.Subsystem.Client/README.md](./clients/MoAI.Subsystem.Client/README.md)
 - 一体部署：`bash deploy/deploy-compose.sh`（无 `moai` 网络则部署完整基础设施；网络存在则复用 PostgreSQL/Redis/RabbitMQ/RustFS，为 MoAI 单独创建数据库和对象桶）；配置以 `.env` 为来源生成并挂载 `configs/system.json`，Web 默认加载的 `appsettings.json` 保持独立。详见 [docs/deployment/docker.md](./docs/deployment/docker.md)。图数据库（Memgraph）不内置，按需接入
+- CI/CD：内网 Gitea 手动触发构建并部署到目标服务器，见 [docs/deployment/gitea-actions.md](./docs/deployment/gitea-actions.md)（`.gitea/workflows/deploy.yml` + `deploy/gitea/remote-deploy.sh`）
 - 种子账号：admin / abcd123456（root）
 - i18n：`dotnet run --project tool/I18nScanner` 扫描 BusinessException 消息生成 `src/MoAI/i18n/{zh-CN,en-US}.json`（已有翻译保留），后端拦截器按 Accept-Language 翻译返回，见 [tool/I18nScanner/README.md](./tool/I18nScanner/README.md)
 - git 需代理：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 fetch`
