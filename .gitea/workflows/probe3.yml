@@ -1,0 +1,25 @@
+# 临时探针 3：push 事件下使用 inputs 上下文的步骤 if（验证后删除）
+name: probe-inputs
+on:
+  push:
+    tags: ['tc*']
+  workflow_dispatch:
+    inputs:
+      deploy_only:
+        required: false
+        default: 'false'
+jobs:
+  probe:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - name: always
+        run: |
+          set -euo pipefail
+          echo "probe-inputs ok: inputs.deploy_only=[${{ inputs.deploy_only }}]"
+
+      - name: conditional
+        if: ${{ inputs.deploy_only != 'true' }}
+        run: |
+          set -euo pipefail
+          echo "conditional ran"
