@@ -1,0 +1,54 @@
+name: probe-env2
+on:
+  push:
+    tags: ['[0-9]*']
+env:
+  IMAGE_NAME: moai
+  ZOT_REGISTRY: ${{ vars.ZOT_REGISTRY }}
+  ZOT_USERNAME: ${{ vars.ZOT_USERNAME }}
+  ZOT_PASSWORD: ${{ secrets.ZOT_PASSWORD }}
+  MINI_SSH_USER: ${{ vars.MINI_SSH_USER }}
+  MINI_SSH_RSA: ${{ secrets.MINI_SSH_RSA }}
+  MINI_SSH_HOST: ${{ vars.MINI_SSH_HOST }}
+  MINI_SSH_PORT: ${{ vars.MINI_SSH_PORT }}
+  GITHUB_SERVER_URL: ${{ github.server_url }}
+  GITHUB_REPOSITORY: ${{ github.repository }}
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
+  GITHUB_REF_NAME: ${{ github.ref_name }}
+jobs:
+  runner-temp:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${RUNNER_TEMP:-}" ] || { echo "RUNNER_TEMP unset"; exit 1; }
+          echo "RUNNER_TEMP=$RUNNER_TEMP"
+  github-env:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${GITHUB_ENV:-}" ] || { echo "GITHUB_ENV unset"; exit 1; }
+          echo "GITHUB_ENV=$GITHUB_ENV"
+  workspace:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${GITHUB_WORKSPACE:-}" ] || { echo "GITHUB_WORKSPACE unset"; exit 1; }
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+  curl-archive:
+    runs-on: linux_local
+    timeout-minutes: 10
+    steps:
+      - run: |
+          set -euo pipefail
+          echo "url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz"
+          curl -fsSL "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" -o /tmp/moai-probe.tgz
+          ls -l /tmp/moai-probe.tgz
+          tar -tzf /tmp/moai-probe.tgz | head -3
+          test -f /tmp/moai-probe.tgz
