@@ -1,0 +1,42 @@
+name: probe-ssh-env
+on:
+  push:
+    tags: ['pz*']
+env:
+  HOST_VAR: ${{ vars.MINI_SSH_HOST }}
+  HOST_SECRET: ${{ secrets.MINI_SSH_HOST }}
+  PORT_VAR: ${{ vars.MINI_SSH_PORT }}
+  PORT_SECRET: ${{ secrets.MINI_SSH_PORT }}
+jobs:
+  host-var:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${HOST_VAR:-}" ] || { echo "HOST_VAR missing"; exit 1; }
+          echo "HOST_VAR set"
+  host-secret:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${HOST_SECRET:-}" ] || { echo "HOST_SECRET missing"; exit 1; }
+          echo "HOST_SECRET set"
+  port-var:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${PORT_VAR:-}" ] || { echo "PORT_VAR missing"; exit 1; }
+          echo "PORT_VAR set"
+  port-secret:
+    runs-on: linux_local
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          [ -n "${PORT_SECRET:-}" ] || { echo "PORT_SECRET missing"; exit 1; }
+          echo "PORT_SECRET set"
