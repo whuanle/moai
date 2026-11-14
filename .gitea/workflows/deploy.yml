@@ -122,9 +122,10 @@ jobs:
           set -euo pipefail
           SRC="$RUNNER_TEMP/moai-src"
           rm -rf "$SRC" && mkdir -p "$SRC"
-          # 用 Actions 自动注入的 token 走 HTTP 拉本仓库（不依赖第三方 action）
-          curl -fsSL -H "Authorization: token ${{ github.token }}" \
-            "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
+          # 直接拉本仓库的归档（公开仓库匿名可取；Gitea 的 github.token 不适用于该下载口，
+          # 带上反而 401，故不加 Authorization 头）
+          curl -fsSL \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
             -o "$RUNNER_TEMP/moai-src.tar.gz"
           tar -xzf "$RUNNER_TEMP/moai-src.tar.gz" --strip-components=1 -C "$SRC"
           echo "SRC=$SRC" >> "$GITHUB_ENV"
