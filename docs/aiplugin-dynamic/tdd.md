@@ -149,6 +149,7 @@ node local-dev/hot-board-e2e.mjs
 | @DYN-S164 | @manual（下架刷新后复用 DB 描述/OSS 图标且不访问 MoPlatform，见 sop.md） | 待执行 |
 | @DYN-S165 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageRuntimeLoaderTests.cs（camelCase 安装快照字段正确反序列化） | PASS 1/1（2026-11-14） |
 | @DYN-S166 | tests/MoAI.AIPlugin.Dynamic.Tests/PluginPackageRuntimeLoaderTests.cs（启动目录扫描发现插件目录并跳过隐藏暂存目录） | PASS 1/1（2026-11-14） |
+| @DYN-S167 | ui/src/api/__tests__/pluginMarketplace.test.ts（目录查询串携带 keyword/categoryId/pageNo/pageSize、空值不下发）+ ui/src/pages/plugins/__tests__/PluginMarketplacePanel.test.tsx（搜索框关键字提交与分类过滤） | PASS 8/8（2026-11-15） |
 
 ## 前端测试
 

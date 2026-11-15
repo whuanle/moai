@@ -28,7 +28,7 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
 
 - 生成路径 = `.env` 的 `MOAI_CONFIG_FILE`（默认 `./configs/system.json`，可填绝对路径）；每次生成前把旧文件备份为 `<路径>.bak`。
 - `docker-compose.yml` 挂载 `${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro`；后端通过 `MAI_FILE`（默认 `/app/configs/system.json`）加载。
-- Compose 同时持久化挂载 `./configs/plugins:/app/configs/plugins`，保存 MoPlatform 在线插件包与客户端指纹；备份/迁移 MoAI 时需保留该目录。
+- Compose 把宿主机 `${MOAI_CONFIG_DIR}`（默认 `/data/moai/configs`，可在 `.env` 覆盖）整目录挂到容器 `/app/configs`：运行期生成的 `rsa_private.key`（JWT 签名私钥）与在线插件包都落在这里，必须跨容器重建保留，否则每次换镜像部署都会重新生成密钥、所有在线会话 token 立即失效（全员被踢回登录页）。备份/迁移 MoAI 时保留该目录即可。存量部署首次升级时，`deploy-compose.sh` / `remote-deploy.sh` 会在重建容器前尝试把旧容器层里的 `rsa_private.key` 与旧 `./configs/plugins` 迁到该目录（成功则在线会话与已装插件都不受影响；无法迁出或全新安装则生成新密钥，所有人需重登一次）。
 - 仓库内 `configs/system.example.json` 是参考模板，也是镜像内置兜底（无挂载时复制为 `/app/configs/system.json.template`）。
 
 `.env` 中与配置相关的变量：
@@ -36,6 +36,7 @@ Compose 部署**以 `.env` 为唯一配置来源**，由 `deploy/deploy-compose.
 | 变量 | 作用 | 默认 |
 |---|---|---|
 | `MOAI_SERVER_URL` | MoAI 对外访问地址（**含协议**，如 `https://moai.example.com`），写入 `Server`/`WebUI` | 留空自动探测本机 IP → `http://<IP>:<MOAI_PORT>` |
+| `MOAI_CONFIG_DIR` | 宿主机配置目录（整目录挂到容器 `/app/configs`）：JWT 私钥 `rsa_private.key`、在线插件包 `plugins/`。必须跨部署保留 | `/data/moai/configs` |
 | `MOAI_PORT` | MoAI 容器映射到宿主机的端口（也用于自动探测时拼接） | 独立模式 `8080`；复用模式 `8081` |
 | `MOAI_AES_KEY` | AES 加密密钥 | `please-change-this-aes-key` |
 | `POSTGRES_*` / `RABBITMQ_*` | 数据库 / MQ 连接 | 见 `.env.example`；复用模式必须与共享实例凭据一致 |
@@ -141,6 +142,7 @@ curl -i -X OPTIONS "https://<oss-domain>/<bucket>/test.png" \
 # 1) 准备配置：cp configs/system.example.json configs/system.json，
 #    再把 Database/Redis/RabbitMQ/Storage/OpenSandBox 的 host 改成你的外部服务
 #    （对外地址可用 -e MOAI_SERVER_URL 注入，也可直接写死）
+#    mkdir -p /data/moai/configs  # 持久化 JWT 私钥与在线插件包（首次执行即可）
 # 2) 启动
 docker run -d \
   --name moai \
@@ -150,6 +152,7 @@ docker run -d \
   -e MOAI_SERVER_URL=https://moai.example.com \
   -e TZ=Asia/Shanghai \
   --add-host host.docker.internal:host-gateway \
+  -v /data/moai/configs:/app/configs \
   -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
   -v moai_files:/app/files \
   whuanle/moai:latest
@@ -308,6 +311,8 @@ docker exec moai-postgres pg_dump -U postgres moai > moai-$(date +%F).sql
 docker run --rm -v moai_rustfs_data:/data -v "$PWD":/backup alpine tar czf /backup/rustfs-data.tgz /data
 # 备份上传文件卷
 docker run --rm -v moai_moai_files:/data -v "$PWD":/backup alpine tar czf /backup/moai-files.tgz /data
+# 备份配置目录（JWT 私钥 rsa_private.key + 在线插件包，默认 /data/moai/configs）
+sudo tar czf /backup/moai-configs.tgz -C /data/moai configs
 ```
 
 > 卷名前缀为 compose 项目名（`name: moai`），实际卷名为 `moai_rustfs_data`、`moai_moai_files` 等，可用 `docker volume ls` 核对。

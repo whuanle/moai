@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Org.Commands;
 using MoAI.Org.Handlers;
@@ -18,7 +19,7 @@ public class DeleteOrgRoleCommandHandlerTests
         db.Context.OrgRoles.Add(OrgTestSeed.Role(1, "集团A", null, "/1/"));
         db.Context.OrgRoles.Add(OrgTestSeed.Role(2, "销售部", 1, "/1/2/"));
         await db.Context.SaveChangesAsync();
-        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 1 }, CancellationToken.None));
@@ -34,7 +35,7 @@ public class DeleteOrgRoleCommandHandlerTests
         db.Context.OrgRoles.Add(OrgTestSeed.Role(3, "华东组", 2, "/1/2/3/"));
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(100, 3));
         await db.Context.SaveChangesAsync();
-        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 3 }, CancellationToken.None);
 
@@ -46,7 +47,7 @@ public class DeleteOrgRoleCommandHandlerTests
     public async Task Delete_RoleMissing_Throws404()
     {
         using var db = TestSqliteContext.Create();
-        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 999 }, CancellationToken.None));

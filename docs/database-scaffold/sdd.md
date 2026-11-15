@@ -8,7 +8,7 @@
 database 层为全部领域模块统一装配 PostgreSQL 数据访问与 Redis 缓存：
 
 1. **EF Core 上下文**：`DatabaseContext`（partial 三文件）+ `PostgresDatabaseContext`（Postgres Provider 差异）。
-2. **启动初始化**：`DatabasPostgresModule` 装配期 `EnsureCreated()`（建库建表+种子）并执行全库序列重置（[@DB-S1](./bdd.md#db-s1)）。
+2. **启动初始化**：`DatabasPostgresModule` 装配期 `EnsureCreated()`（建库建表+种子）+ 手写幂等 DDL + **`SchemaReconciler` 存量库补全**（按 EF 模型与 `information_schema` 差集补齐缺失表/列/索引）+ 全库序列重置（[@DB-S1](./bdd.md#db-s1)、[@DB-S26](./bdd.md#db-s26)）。
 3. **Redis**：`DatabaseCoreModule` 注册默认客户端（键前缀 `moai:`，[@DB-S18](./bdd.md#db-s18)）。
 4. **DB-first 工作流**：`tool/PostgresScaffold` 从既有库逆向生成实体/配置/DbContext 并分发回 `src/database/`；`init-pgvector.sql` 提供扩展初始化。
 
@@ -26,9 +26,13 @@ src/database/
 │   └── Helper/                  TransactionScopeHelper（Required+AsyncFlow，RepeatableRead）
 ├── MoAI.Database.Postgres/      Npgsql EF 10.0.3；双程序集 ApplyConfigurations + vector/uuid-ossp 扩展
 │                                + UTF8 collation；DatabasPostgresModule（Npgsql 开关 + 初始化）
+│   └── Schema/                  SchemaScriptParser（解析 GenerateCreateScript）/ SchemaDdl（幂等 DDL）
+│                                / SchemaReconciler（存量库差集补全，dryRun 预检）
 └── MoAI.Database.Core/          DatabaseCoreModule：注册 Redis（见下）
 
 tool/PostgresScaffold/           独立 console（Exe）：EF 逆向工程 + 自定义 T4 模板 + 分发
+tool/SchemaSync/                 独立 console（Exe）：由模型生成 asserts/schema-sync.sql（script）、
+                                 预检库差异（diff）、直接补全（apply）、真实库回归探针（probe）
 init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker initdb 挂载）
 ```
 
@@ -43,6 +47,7 @@ init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker ini
 5. **初始化用 EnsureCreated 而非 EF Migrations**（`Migrate()` 被注释）：无迁移历史表、不做增量演进；`HasData` 种子以显式 Id INSERT 不推进 identity 序列，故启动期 DO 块全库 `setval(seq, max(id)+1, false)`（[@DB-S6](./bdd.md#db-s6)~[@DB-S8](./bdd.md#db-s8)）；初始化失败 LogCritical 后 rethrow 终止进程（[@DB-S3](./bdd.md#db-s3)）。
 6. **Npgsql 兼容开关**：`EnableLegacyTimestampBehavior` / `DisableDateTimeInfinityConversions`（全局 AppContext）。
 7. **Redis 注册**：`SystemTextJsonSerializer` + 默认库单例；`KeyPrefix="moai:"`、PoolSize=10、ConnectTimeout=5000——运维 DEL 勿漏前缀。
+8. **存量库 schema 自动补全**：`EnsureCreated` 对已有库零动作，手写幂等 DDL 清单必然滞后于模型，升级部署后实体查询报 `42P01`（表不存在）/`42703`（列不存在）导致接口 500。为此启动期以 `GenerateCreateScript()` 的模型为真源，与 `information_schema` / `pg_indexes` 做差集，只对真正缺失的对象下 DDL：缺表执行 `CREATE TABLE`、缺列 `ADD COLUMN`（NOT NULL 无默认值时按类型补兜底默认值，未知类型降级可空）、缺索引 `CREATE INDEX`（唯一索引遇存量脏数据只告警不阻断）、`character varying(n)` 只在变宽时 `ALTER TYPE`（[@DB-S26](./bdd.md#db-s26)~[@DB-S32](./bdd.md#db-s32)）。原则：**只增不删、绝不改窄、二次启动零变更**；表/列失败即抛错终止启动（暴露数据层不一致），索引失败仅告警。
 
 ## 表与种子（psql 实测，与 Configuration 源码一致）
 
@@ -60,8 +65,9 @@ init-pgvector.sql                CREATE EXTENSION vector; uuid-ossp（docker ini
 ## 迁移策略（EnsureCreated 取舍，as-built）
 
 - schema 变更 = 手写 DDL 改库 → PostgresScaffold 逆向再生成（DB-first，EF 模型是库结构的投影，[@DB-S20](./bdd.md#db-s20)）。
-- 代价：EnsureCreated 对已存在的库零动作（[@DB-S2](./bdd.md#db-s2)）；线上 DDL 与回滚人工管理；无版本化升级脚本。
-- 好处：无迁移文件负担；工具一键全量重绘；库与代码强一致。
+- 升级部署 = 启动期 `SchemaReconciler` 按模型差集自动补表/补列/补索引（[@DB-S26](./bdd.md#db-s26)），运维也可用 `tool/SchemaSync` 生成 `asserts/schema-sync.sql` 手工执行或 `diff` 预检；**只增不删**，删列/改名仍需人工脚本（`asserts/*.sql`）。
+- 代价：EnsureCreated 对已存在的库零动作（[@DB-S2](./bdd.md#db-s2)）；无版本化迁移历史；自动补全不处理数据迁移与删除。
+- 好处：无迁移文件负担；工具一键全量重绘；库与代码强一致；旧库升级不再漏表漏列。
 
 ## PostgresScaffold 工具
 
@@ -74,7 +80,7 @@ docker-compose `postgres` 服务：镜像 `pgvector/pgvector:pg16`，容器 `moa
 ## 已知问题
 
 1. `EnableSensitiveDataLogging()` + `EnableDetailedErrors()` 无条件开启（不区分环境），SQL 参数可能进入日志——生产按环境关闭。
-2. EnsureCreated 无法演进既有库，新增实体/列不生效（见迁移策略）。
+2. EnsureCreated 无法演进既有库，新增实体/列不生效——由 `SchemaReconciler` 在启动期补齐（只增不删；数据迁移与删列仍需人工脚本，见迁移策略）。
 3. PostgresScaffold 依赖 `src/MoAI/appsettings.Development.json`（gitignore），克隆后开箱不可用。
 4. 分发步骤**先删除再重建** `Shared/Entities` 与 `Postgres/Data`——未提交手改被覆盖（[@DB-S23](./bdd.md#db-s23)）；手改应放 partial 或生成后立即提交。
 5. `Program.cs` 命名空间为 `MysqlScaffold`（MySQL→PostgreSQL 历史遗留）。

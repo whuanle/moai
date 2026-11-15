@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Org.Commands;
 using MoAI.Org.Core.Services;
@@ -33,7 +34,7 @@ public class OrgGrantServiceTests
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(103, 3));
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(103, 4));
         db.Context.SaveChanges();
-        return (db.Context, new OrgGrantService(db.Context, new InMemoryOrgGrantCache()));
+        return (db.Context, new OrgGrantService(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher()));
     }
 
     private static OrgGrantItem Grant(int roleId, OrgGrantScope scope) => new() { OrgRoleId = roleId, Scope = scope };
@@ -196,9 +197,9 @@ public class OrgGrantServiceTests
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(101, 2));
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(104, 4));
         db.Context.SaveChanges();
-        var moveHandler = new UpdateOrgRoleCommandHandler(db.Context, cache);
+        var moveHandler = new UpdateOrgRoleCommandHandler(db.Context, cache, new NullAccessEventPublisher());
 
-        var grantService = new OrgGrantService(db.Context, cache);
+        var grantService = new OrgGrantService(db.Context, cache, new NullAccessEventPublisher());
         await grantService.ReplaceGrantsAsync(OrgGrantResourceType.Wiki, 800, [Grant(3, OrgGrantScope.Up)]);
         Assert.True(await grantService.IsAllowedAsync(OrgGrantResourceType.Wiki, 800, 101));
 
@@ -219,11 +220,11 @@ public class OrgGrantServiceTests
         db.Context.Users.Add(OrgTestSeed.User(100, "u100", "用户100"));
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(100, 3));
         db.Context.SaveChanges();
-        var grantService = new OrgGrantService(db.Context, cache);
+        var grantService = new OrgGrantService(db.Context, cache, new NullAccessEventPublisher());
         await grantService.ReplaceGrantsAsync(OrgGrantResourceType.Wiki, 800, [Grant(3, OrgGrantScope.Self)]);
         Assert.True(await grantService.IsAllowedAsync(OrgGrantResourceType.Wiki, 800, 100));
 
-        var deleteHandler = new DeleteOrgRoleCommandHandler(db.Context, cache);
+        var deleteHandler = new DeleteOrgRoleCommandHandler(db.Context, cache, new NullAccessEventPublisher());
         await deleteHandler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 3 }, CancellationToken.None);
 
         Assert.Empty(await grantService.GetGrantsAsync(OrgGrantResourceType.Wiki, 800));

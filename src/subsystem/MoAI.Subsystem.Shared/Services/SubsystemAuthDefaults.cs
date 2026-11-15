@@ -66,6 +66,16 @@ public static class SubsystemAuthDefaults
     public const string CallerContextItemKey = "MoAI.SubsysCallerContext";
 
     /// <summary>
+    /// 机器端 SignalR Hub 的认证方案名（/hub/subsys）.
+    /// </summary>
+    public const string HubScheme = "SubsysHub";
+
+    /// <summary>
+    /// 机器端 SignalR Hub 路由.
+    /// </summary>
+    public const string HubPath = "/hub/subsys";
+
+    /// <summary>
     /// 构造接入 token 的 audience.
     /// </summary>
     /// <param name="server">服务器地址（SystemOptions.Server）.</param>

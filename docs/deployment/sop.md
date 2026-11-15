@@ -30,14 +30,16 @@ curl http://localhost:8080/api/common/serverinfo   # 独立模式默认端口；
 
 # 形态 A：Docker 单容器（仅前后端，外部提供 PG/Redis/MQ/OSS）
 cp configs/system.example.json configs/system.json   # 再按外部服务改 host
+mkdir -p /data/moai/configs                          # JWT 私钥与在线插件包持久化目录
 docker run -d --name moai -p 8080:8080 \
   --add-host host.docker.internal:host-gateway \
+  -v /data/moai/configs:/app/configs \
   -v "$(pwd)/configs/system.json:/app/configs/system.json:ro" \
   -v moai_files:/app/files \
   whuanle/moai:latest
 ```
 
-要点：Compose 以 `.env` 为唯一来源生成 `configs/system.json`（挂载路径由 `MOAI_CONFIG_FILE` 指定）；存在网络 `moai` 时脚本复用 PostgreSQL/Redis/RabbitMQ/RustFS，不再启动第二套基础设施，并在共享 PostgreSQL 中自动创建独立 `moai` 数据库、在共享 RustFS 中幂等建 `S3_BUCKET`；各服务的数据库、桶和 Redis 前缀独立。共享账号凭据需一致。存储端点须浏览器可达；OpenSandbox 独立部署；详见 [docker.md](./docker.md)。
+要点：Compose 以 `.env` 为唯一来源生成 `configs/system.json`（挂载路径由 `MOAI_CONFIG_FILE` 指定），并把宿主机 `MOAI_CONFIG_DIR`（默认 `/data/moai/configs`）整目录挂到 `/app/configs` 持久化 JWT 私钥与在线插件包；存在网络 `moai` 时脚本复用 PostgreSQL/Redis/RabbitMQ/RustFS，不再启动第二套基础设施，并在共享 PostgreSQL 中自动创建独立 `moai` 数据库、在共享 RustFS 中幂等建 `S3_BUCKET`；各服务的数据库、桶和 Redis 前缀独立。共享账号凭据需一致。存储端点须浏览器可达；OpenSandbox 独立部署；详见 [docker.md](./docker.md)。
 
 ## 3. 升级 / 回滚
 
@@ -58,6 +60,8 @@ docker exec moai-postgres pg_dump -U postgres moai > moai-$(date +%F).sql
 # 对象存储（RustFS）与上传文件卷；卷名前缀为 compose 项目名 moai_
 docker run --rm -v moai_rustfs_data:/data -v "$PWD":/backup alpine tar czf /backup/rustfs-data.tgz /data
 docker run --rm -v moai_moai_files:/data -v "$PWD":/backup alpine tar czf /backup/moai-files.tgz /data
+# 配置目录（JWT 私钥 + 在线插件包，默认 /data/moai/configs；丢了 = 全员重新登录、插件需重装）
+sudo tar czf /backup/moai-configs.tgz -C /data/moai configs
 ```
 
 ## 5. 排障
@@ -65,6 +69,7 @@ docker run --rm -v moai_moai_files:/data -v "$PWD":/backup alpine tar czf /backu
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | 容器报 `$MAI_FILE 是目录` / 启动即退 | 宿主机缺 `configs/system.json`，docker 把挂载点建成了目录 | 补齐文件；挂载须 `文件:文件`（[@DEP-S15](./bdd.md#dep-s15)，[docker.md 3](./docker.md)） |
+| 换镜像部署后全员被踢回登录页 | `/app/configs` 未持久化（旧版本只挂 `system.json`），容器重建后重新生成 `rsa_private.key`，旧 token 全部验签失败 | 确认 compose 有 `${MOAI_CONFIG_DIR:-/data/moai/configs}:/app/configs`，且宿主机该目录下 `rsa_private.key` 跨部署不变（[@DEP-S21](./bdd.md#dep-s21)） |
 | 上传 404 NoSuchBucket | RustFS 桶未创建 | 查 `docker logs moai-rustfs-init`；或控制台/`mc mb` 手动建桶（[@DEP-S14](./bdd.md#dep-s14)） |
 | 上传 500 或浏览器直传 403/失败 | `Storage.Endpoint` 仅容器可达（如 `rustfs:9000`） | 改为浏览器可达地址（[docker.md 3.1](./docker.md)） |
 | 沙箱工具超时 / 创建后连不上 | MoAI 容器无法回连宿主机端口 | 给 moai 加 `host.docker.internal:host-gateway`；确认 `sandbox.toml` `resolve_internal=false` |

@@ -637,10 +637,18 @@ async function marketplaceRequest<T>(
 ): Promise<T> {
   const adapter = createAiPluginRequestAdapter()
   const request = new RequestInformation()
-  request.URL = new URL(`/api/ai/plugin/online/${path}`, Env.serverUrl).toString()
+  // Kiota 的 URL getter 在 uri 已赋值时直接返回该地址、不再展开 queryParameters，
+  // 所以查询串必须拼进 URL，否则 keyword/分页/分类条件会被静默丢弃（搜索与翻页失效）。
+  const url = new URL(`/api/ai/plugin/online/${path}`, Env.serverUrl)
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      if (value === undefined || value === null || value === '') continue
+      url.searchParams.set(key, String(value))
+    }
+  }
+  request.URL = url.toString()
   request.httpMethod = method
   request.headers.add('Accept', 'application/json')
-  if (query) request.setQueryStringParametersFromRawObject(query)
   if (body !== undefined) {
     const bytes = new TextEncoder().encode(JSON.stringify(body))
     request.setStreamContent(bytes.buffer as ArrayBuffer, 'application/json')

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra;
+using MoAI.Database.Schema;
 using Npgsql;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 
@@ -641,6 +642,11 @@ public class DatabasPostgresModule : IModule
                     END LOOP;
                 END $$;
                 """);
+
+            // 存量库 schema 自动补全：上面手写的幂等 DDL 只覆盖当期已知的补表/补列，总会滞后于模型；
+            // 这里再用 EF Core 模型与 information_schema 做差集，把任何缺失的表/列/索引就地补齐（只增不删），
+            // 避免升级部署后实体查询报 42P01（表不存在）/42703（列不存在）导致接口 500.
+            SchemaReconciler.Apply(dbContext, _logger);
         }
         catch (Exception ex)
         {

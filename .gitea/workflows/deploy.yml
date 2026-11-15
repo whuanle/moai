@@ -314,7 +314,7 @@ jobs:
               deploy/deploy-compose.sh \
               deploy/opensandbox/sandbox.toml \
               .env.example \
-            | rssh "mkdir -p ~/$MOAI_APP_DIR/deploy/opensandbox ~/$MOAI_APP_DIR/configs/plugins && tar -xzf - -C ~/$MOAI_APP_DIR"
+            | rssh "mkdir -p ~/$MOAI_APP_DIR/deploy/opensandbox ~/$MOAI_APP_DIR/configs && tar -xzf - -C ~/$MOAI_APP_DIR"
             echo "==> compose 文件已同步到 ~/$MOAI_APP_DIR"
           fi
 

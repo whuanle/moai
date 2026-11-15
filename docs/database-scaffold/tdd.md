@@ -19,6 +19,9 @@
 | @DB-S19 | 配置走查（ConnectTimeout=5000） | PASS（2026-09-01，代码级） |
 | @DB-S20 ~ @DB-S23 | `dotnet build tool/PostgresScaffold/PostgresScaffold.csproj` 0 错误 + 生成物与分发目标一致性抽查（User/Setting/File）+ csproj 编译边界走查 | PASS（2026-09-01，见覆盖率说明） |
 | @DB-S24、@DB-S25 | `dotnet build tool/PostgresScaffold/PostgresScaffold.csproj --no-restore` 0 错误 + `ResolveScaffoldTables`/`IsIgnoredTable` 走查（前缀黑名单 → `DatabaseModelFactoryOptions.Tables` 白名单入参、空清单中止分支） | PASS（2026-09-11，代码级 + 构建级，见覆盖率说明） |
+| @DB-S26、@DB-S27、@DB-S30、@DB-S31、@DB-S32 | `dotnet run --project tool/SchemaSync -- probe <admin 连接串>`（空库建全量 → 删 dingtalk_app/wiki_source_document、删 access_app.level/app_type、publication_review.publish_version、notification_log.recipients、删 teamres_key 索引、name 缩窄为 varchar(20) → 再补全 → 再跑一次） | PASS（2026-11-15）：空库 77 表/1062 列/142 索引；修复重建 2 表 + 4 列 + 1 索引 + 1 加宽，目录计数回到 77/1062/219；二次 0 变更；全量脚本执行无错 |
+| @DB-S28、@DB-S29 | `dotnet test tests/MoAI.Database.Tests`（BuildAddColumnDefinition 兜底默认值/降级可空、index/table 幂等改写、多行字面量切分） | PASS 14/14（2026-11-15） |
+| @DB-S33 | `dotnet run --project tool/SchemaSync -- diff <连接串>` 只读预检 + `script` 产物 `asserts/schema-sync.sql` 在探针库整段执行 | PASS（2026-11-15）：dev 库 `moai_v2` 预检 `schema up to date`；脚本全量执行无错 |
 
 ## 回归命令
 
@@ -27,6 +30,12 @@ dotnet build src/MoAI/MoAI.csproj                             # 0 错误（2026-
 dotnet build tool/PostgresScaffold/PostgresScaffold.csproj    # 0 错误（2026-09-01 实测，56.01s）
 docker exec moai-postgres psql -U postgres -d moai -c "\dt" -c "SELECT count(*) FROM classify;"
 docker exec moai-redis redis-cli --scan --pattern "moai:*" | head
+
+# 存量库 schema 补全（2026-11-15 新增）
+dotnet test tests/MoAI.Database.Tests                                    # 14/14
+dotnet run --project tool/SchemaSync                                     # 生成 asserts/schema-sync.sql
+dotnet run --project tool/SchemaSync -- diff <连接串>                     # 只读预检库差异
+dotnet run --project tool/SchemaSync -- probe <admin 连接串>              # 真实库回归（自建/自删临时库）
 ```
 
 ## 覆盖率说明

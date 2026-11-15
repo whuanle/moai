@@ -12,6 +12,8 @@ MoAI.Subsystem.Client/
 ├─ SubsysAuthRetryHandler.cs               ← 401 作废缓存重试一次 + 错误转换（业务管道用）
 ├─ SubsysClientServiceCollectionExtensions.cs ← AddMoaiSubsysClient(...) DI 注册
 ├─ SubsysClientFactory.cs                  ← 静态工厂（用户委托 token 等固定凭据场景）
+├─ Events/                                 ← SignalR 事件客户端（/hub/subsys、lastEventId、断线重连）
+├─ Resources/                              ← 授权快照/事件补发/团队成员补充接口
 └─ SubsysException.cs                      ← 失败异常（状态码 + error.type/error.code）
 ```
 
@@ -127,6 +129,58 @@ var userClient = SubsysClientFactory.CreateWithAccessToken("https://moai.example
 await userClient.Api.Subsys.System.Users.List.GetAsync();
 ```
 
+## 6. 实时事件订阅（推荐）
+
+`AddMoaiSubsysClient` 同时注册 `ISubsysEventClient` 与 `SubsysResourceClient`。事件客户端主动外连 MoAI
+`/hub/subsys`，按 appId 分组接收，断线自动重连并按 `lastEventId` 补发；游标失效时触发 `ResyncRequired`。
+
+```csharp
+public sealed class MyEventHandler(ISubsysEventClient events, SubsysResourceClient resources, SubsysClient client)
+{
+    public async Task StartAsync(CancellationToken ct)
+    {
+        events.EventReceived += async e =>
+        {
+            // 事件只带主体/关联 ID 与轻量上下文，详情按需回查
+            switch (e.Event)
+            {
+                case "subsys.user.status_changed":
+                    // e.Data 内含 userId/disabled，可直接更新本地状态
+                    break;
+                case "subsys.team.member_added":
+                    var teamId = e.Data?.GetProperty("teamId").GetString();
+                    var members = await resources.GetTeamUsersAsync(long.Parse(teamId!));
+                    break;
+            }
+        };
+        events.ResyncRequired += async reason =>
+        {
+            // 首次连接/游标过期/补发超限：按业务做全量对账
+            var grants = await resources.GetGrantsAsync();
+            var users = await client.Api.Subsys.System.Users.List.GetAsync();
+            // ...
+        };
+
+        await events.StartAsync(ct);
+    }
+}
+```
+
+游标默认保存在进程内；需要跨重启续传时注册自己的 `ISubsysEventCursorStore`（Redis/数据库）：
+
+```csharp
+services.AddSingleton<ISubsysEventCursorStore, MyRedisCursorStore>();
+```
+
+补充资源接口：
+
+- `SubsysResourceClient.GetGrantsAsync()` → `/api/subsys/grants`（团队范围/授权团队/组织授权）
+- `SubsysResourceClient.GetEventsAsync(afterId, limit)` → `/api/subsys/events`（REST 补发兜底）
+- `SubsysResourceClient.GetTeamUsersAsync(teamId)` → `/api/subsys/system/teams/{teamId}/users`（成员对账）
+
+> 子系统多实例建议：每个实例都可连接事件；若副作用必须只执行一次，用事件 `Id` 做共享去重，或只让 leader 实例连接。
+> 事件处理失败不会推进游标，下次重连会重新补发。
+
 ## 接口变更后：重新生成
 
 ```bash
@@ -154,4 +208,4 @@ node clients/sync-api.mjs http://127.0.0.1:5210/openapi/subsys.json
 dotnet test tests/MoAI.Subsystem.Client.Tests
 ```
 
-8 个用例覆盖：token 换取/主动刷新/轮换失败回退、appid 直连、401 重试、403 错误语义、heartbeat 请求形状、DI 装配，全部走内存桩 handler，无需真实后端。
+12 个用例覆盖：token 换取/主动刷新/轮换失败回退、appid 直连、401 重试、403 错误语义、heartbeat 请求形状、DI 装配、授权快照/事件补发/团队成员补充接口与事件游标，全部走内存桩 handler，无需真实后端。

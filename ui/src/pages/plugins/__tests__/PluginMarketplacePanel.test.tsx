@@ -70,6 +70,16 @@ describe('PluginMarketplacePanel', () => {
     await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('', 1, 20, '12'))
   })
 
+  it('submits the keyword from the search box and resets to the first page', async () => {
+    const user = userEvent.setup()
+    renderMarketplace()
+
+    await user.type(await screen.findByPlaceholderText('搜索在线插件'), '  飞书  ')
+    await user.click(screen.getByRole('button', { name: /查询/ }))
+
+    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('飞书', 1, 20, ''))
+  })
+
   it('installs a published package from its card', async () => {
     const user = userEvent.setup()
     renderMarketplace()

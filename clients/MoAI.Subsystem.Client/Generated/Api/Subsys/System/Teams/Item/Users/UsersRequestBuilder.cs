@@ -47,6 +47,37 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Teams.Item.Users
         {
         }
         /// <summary>
+        /// 查询团队成员清单（team_read）：供系统级接入做成员对账.
+        /// </summary>
+        /// <returns>A <see cref="global::MoAI.Subsystem.Client.ApiSdk.Models.QueryTeamUsersCommandResponse"/></returns>
+        /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
+        /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+        /// <exception cref="global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult">When receiving a 400 status code</exception>
+        /// <exception cref="global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult">When receiving a 401 status code</exception>
+        /// <exception cref="global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult">When receiving a 403 status code</exception>
+        /// <exception cref="global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult">When receiving a 409 status code</exception>
+        /// <exception cref="global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult">When receiving a 500 status code</exception>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public async Task<global::MoAI.Subsystem.Client.ApiSdk.Models.QueryTeamUsersCommandResponse?> GetAsync(Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default, CancellationToken cancellationToken = default)
+        {
+#nullable restore
+#else
+        public async Task<global::MoAI.Subsystem.Client.ApiSdk.Models.QueryTeamUsersCommandResponse> GetAsync(Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default, CancellationToken cancellationToken = default)
+        {
+#endif
+            var requestInfo = ToGetRequestInformation(requestConfiguration);
+            var errorMapping = new Dictionary<string, ParsableFactory<IParsable>>
+            {
+                { "400", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
+                { "401", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
+                { "403", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
+                { "409", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
+                { "500", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
+            };
+            return await RequestAdapter.SendAsync<global::MoAI.Subsystem.Client.ApiSdk.Models.QueryTeamUsersCommandResponse>(requestInfo, global::MoAI.Subsystem.Client.ApiSdk.Models.QueryTeamUsersCommandResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
         /// 添加/更新团队成员（team_write）：幂等 upsert，已在本团队时更新角色.
         /// </summary>
         /// <returns>A <see cref="global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse"/></returns>
@@ -80,6 +111,25 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Teams.Item.Users
             return await RequestAdapter.SendAsync<global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse>(requestInfo, global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
+        /// 查询团队成员清单（team_read）：供系统级接入做成员对账.
+        /// </summary>
+        /// <returns>A <see cref="RequestInformation"/></returns>
+        /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public RequestInformation ToGetRequestInformation(Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default)
+        {
+#nullable restore
+#else
+        public RequestInformation ToGetRequestInformation(Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default)
+        {
+#endif
+            var requestInfo = new RequestInformation(Method.GET, UrlTemplate, PathParameters);
+            requestInfo.Configure(requestConfiguration);
+            requestInfo.Headers.TryAdd("Accept", "application/json");
+            return requestInfo;
+        }
+        /// <summary>
         /// 添加/更新团队成员（team_write）：幂等 upsert，已在本团队时更新角色.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
@@ -109,6 +159,14 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Teams.Item.Users
         public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Teams.Item.Users.UsersRequestBuilder WithUrl(string rawUrl)
         {
             return new global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.System.Teams.Item.Users.UsersRequestBuilder(rawUrl, RequestAdapter);
+        }
+        /// <summary>
+        /// Configuration for the request such as headers, query parameters, and middleware options.
+        /// </summary>
+        [Obsolete("This class is deprecated. Please use the generic RequestConfiguration class generated by the generator.")]
+        [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
+        public partial class UsersRequestBuilderGetRequestConfiguration : RequestConfiguration<DefaultQueryParameters>
+        {
         }
         /// <summary>
         /// Configuration for the request such as headers, query parameters, and middleware options.

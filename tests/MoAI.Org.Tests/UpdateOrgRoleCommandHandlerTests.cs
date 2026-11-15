@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Org.Commands;
 using MoAI.Org.Handlers;
@@ -26,7 +27,7 @@ public class UpdateOrgRoleCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         SeedTree(db.Context);
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "市场部", ParentId = 1 }, CancellationToken.None);
 
@@ -43,7 +44,7 @@ public class UpdateOrgRoleCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         SeedTree(db.Context);
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 4 }, CancellationToken.None);
 
@@ -60,7 +61,7 @@ public class UpdateOrgRoleCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         SeedTree(db.Context);
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = null }, CancellationToken.None);
 
@@ -76,7 +77,7 @@ public class UpdateOrgRoleCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         SeedTree(db.Context);
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         // 把 A(1) 移到 C(3) 之下：C 是 A 的后代，成环
         var ex = await Assert.ThrowsAsync<BusinessException>(
@@ -90,7 +91,7 @@ public class UpdateOrgRoleCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         SeedTree(db.Context);
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 2 }, CancellationToken.None));
@@ -105,7 +106,7 @@ public class UpdateOrgRoleCommandHandlerTests
         SeedTree(db.Context);
         db.Context.OrgRoles.Add(OrgTestSeed.Role(5, "销售部", 4, "/4/5/"));
         db.Context.SaveChanges();
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 4 }, CancellationToken.None));
@@ -117,7 +118,7 @@ public class UpdateOrgRoleCommandHandlerTests
     public async Task Update_RoleMissing_Throws404()
     {
         using var db = TestSqliteContext.Create();
-        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 999, Name = "不存在", ParentId = null }, CancellationToken.None));

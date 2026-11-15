@@ -27,7 +27,7 @@ public class QueryTeamAllCommandHandler : IRequestHandler<QueryTeamAllCommand, Q
     {
         var teams = await _databaseContext.Teams
             .OrderBy(x => x.Id)
-            .Select(x => new { x.Id, x.Name, x.IsDisable, x.AvatarPath })
+            .Select(x => new { x.Id, x.Name, x.Description, x.IsDisable, x.AvatarPath })
             .ToListAsync(cancellationToken);
 
         var teamIds = teams.Select(x => x.Id).ToList();
@@ -43,6 +43,7 @@ public class QueryTeamAllCommandHandler : IRequestHandler<QueryTeamAllCommand, Q
             {
                 TeamId = x.Id,
                 Name = x.Name,
+                Description = x.Description,
                 IsDisable = x.IsDisable,
                 MemberCount = counts.GetValueOrDefault(x.Id),
                 Avatar = x.AvatarPath ?? string.Empty,

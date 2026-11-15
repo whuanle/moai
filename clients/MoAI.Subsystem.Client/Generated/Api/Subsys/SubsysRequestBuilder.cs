@@ -2,6 +2,8 @@
 #pragma warning disable CS0618
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions;
+using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events;
+using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Grants;
 using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Heartbeat;
 using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Info;
 using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Sso;
@@ -19,6 +21,16 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class SubsysRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>The events property</summary>
+        public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.EventsRequestBuilder Events
+        {
+            get => new global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.EventsRequestBuilder(PathParameters, RequestAdapter);
+        }
+        /// <summary>The grants property</summary>
+        public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Grants.GrantsRequestBuilder Grants
+        {
+            get => new global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Grants.GrantsRequestBuilder(PathParameters, RequestAdapter);
+        }
         /// <summary>The heartbeat property</summary>
         public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Heartbeat.HeartbeatRequestBuilder Heartbeat
         {

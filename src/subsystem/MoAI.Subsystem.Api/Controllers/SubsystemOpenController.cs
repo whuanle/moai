@@ -87,6 +87,39 @@ public class SubsystemOpenController : ControllerBase
     }
 
     /// <summary>
+    /// 查询当前接入自身的授权快照（团队范围/授权团队/组织授权）.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySubsysGrantsCommandResponse"/>.</returns>
+    [HttpGet("grants")]
+    [AllowAnonymous]
+    public Task<QuerySubsysGrantsCommandResponse> Grants(CancellationToken ct)
+    {
+        var caller = RequireCaller();
+        return _mediator.Send(new QuerySubsysGrantsCommand { SubsystemId = caller.Id }, ct);
+    }
+
+    /// <summary>
+    /// 查询当前接入可见的最近事件（REST 补发兜底）.
+    /// </summary>
+    /// <param name="afterId">上次收到的事件 id，可选.</param>
+    /// <param name="limit">返回条数上限.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySubsysEventsCommandResponse"/>.</returns>
+    [HttpGet("events")]
+    [AllowAnonymous]
+    public Task<QuerySubsysEventsCommandResponse> Events([FromQuery] string? afterId, [FromQuery] int limit = 200, CancellationToken ct = default)
+    {
+        var caller = RequireCaller();
+        return _mediator.Send(new QuerySubsysEventsCommand
+        {
+            SubsystemId = caller.Id,
+            AfterId = afterId,
+            Limit = limit,
+        }, ct);
+    }
+
+    /// <summary>
     /// 委托码兑换用户委托 token：一次性消费，返回 access/refresh 与用户基本资料（仅配置回调地址的子系统可用）.
     /// </summary>
     /// <param name="req">兑换请求体.</param>

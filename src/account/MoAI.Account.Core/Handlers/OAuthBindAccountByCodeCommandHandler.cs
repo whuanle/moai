@@ -6,6 +6,7 @@ using MoAI.Auth.Models;
 using MoAI.Auth.Services;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
@@ -18,6 +19,7 @@ public class OAuthBindAccountByCodeCommandHandler : IRequestHandler<OAuthBindAcc
 {
     private readonly IOAuthUserProfileService _profileService;
     private readonly DatabaseContext _databaseContext;
+    private readonly IAccessEventPublisher _eventPublisher;
     private readonly ILogger<OAuthBindAccountByCodeCommandHandler> _logger;
 
     /// <summary>
@@ -25,11 +27,13 @@ public class OAuthBindAccountByCodeCommandHandler : IRequestHandler<OAuthBindAcc
     /// </summary>
     /// <param name="profileService"></param>
     /// <param name="databaseContext"></param>
+    /// <param name="eventPublisher">接入事件发布器.</param>
     /// <param name="logger"></param>
-    public OAuthBindAccountByCodeCommandHandler(IOAuthUserProfileService profileService, DatabaseContext databaseContext, ILogger<OAuthBindAccountByCodeCommandHandler> logger)
+    public OAuthBindAccountByCodeCommandHandler(IOAuthUserProfileService profileService, DatabaseContext databaseContext, IAccessEventPublisher eventPublisher, ILogger<OAuthBindAccountByCodeCommandHandler> logger)
     {
         _profileService = profileService;
         _databaseContext = databaseContext;
+        _eventPublisher = eventPublisher;
         _logger = logger;
     }
 
@@ -88,6 +92,7 @@ public class OAuthBindAccountByCodeCommandHandler : IRequestHandler<OAuthBindAcc
 
         await _databaseContext.UserOauthConnections.AddAsync(oauthEntity, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+        await _eventPublisher.PublishUserOAuthLinkedAsync(oauthEntity.UserId, oauthEntity.ProviderId, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

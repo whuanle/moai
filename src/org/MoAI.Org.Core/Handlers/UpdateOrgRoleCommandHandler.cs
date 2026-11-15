@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Org.Commands;
@@ -15,16 +16,19 @@ public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand,
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IOrgGrantCache _orgGrantCache;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOrgRoleCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="orgGrantCache">组织授权缓存（子树迁移重写 path 需失效）.</param>
-    public UpdateOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public UpdateOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _orgGrantCache = orgGrantCache;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -65,6 +69,7 @@ public class UpdateOrgRoleCommandHandler : IRequestHandler<UpdateOrgRoleCommand,
 
         // 子树迁移重写 path 后失效全量 path 缓存（改名不动 path 也一并失效，操作低频）
         await _orgGrantCache.RemoveRolePathsAsync(cancellationToken);
+        await _eventPublisher.PublishOrgRoleUpdatedAsync(role.Id, role.ParentId, parentChanged, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

@@ -39,7 +39,7 @@ namespace MoAI.Subsystem.Client.ApiSdk
             ApiClientBuilder.RegisterDefaultDeserializer<FormParseNodeFactory>();
             if (string.IsNullOrEmpty(RequestAdapter.BaseUrl))
             {
-                RequestAdapter.BaseUrl = "http://127.0.0.1:5000";
+                RequestAdapter.BaseUrl = "http://127.0.0.1:5210";
             }
             PathParameters.TryAdd("baseurl", RequestAdapter.BaseUrl);
         }

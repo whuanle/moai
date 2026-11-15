@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Commands;
@@ -14,14 +15,17 @@ namespace MoAI.Team.Handlers;
 public class UpdateTeamAvatarCommandHandler : IRequestHandler<UpdateTeamAvatarCommand, EmptyCommandResponse>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateTeamAvatarCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public UpdateTeamAvatarCommandHandler(DatabaseContext databaseContext)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public UpdateTeamAvatarCommandHandler(DatabaseContext databaseContext, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -46,6 +50,7 @@ public class UpdateTeamAvatarCommandHandler : IRequestHandler<UpdateTeamAvatarCo
 
         team.AvatarPath = request.ObjectKey;
         await _databaseContext.SaveChangesAsync(cancellationToken);
+        await _eventPublisher.PublishTeamUpdatedAsync(team.Id, ["avatar"], cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

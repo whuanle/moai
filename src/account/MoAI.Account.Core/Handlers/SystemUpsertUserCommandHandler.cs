@@ -8,6 +8,7 @@ using MoAI.Account.Commands;
 using MoAI.Account.Queries.Responses;
 using MoAI.Account.Services;
 using MoAI.Database;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
 
@@ -25,6 +26,7 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
     private readonly DatabaseContext _databaseContext;
     private readonly IUserAccountService _userAccountService;
     private readonly IEnumerable<IUserRegistrationHook> _registrationHooks;
+    private readonly IAccessEventPublisher _eventPublisher;
     private readonly ILogger<SystemUpsertUserCommandHandler> _logger;
 
     /// <summary>
@@ -33,16 +35,19 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="userAccountService">用户账号服务.</param>
     /// <param name="registrationHooks">注册增强钩子（组织默认角色等）.</param>
+    /// <param name="eventPublisher">接入事件发布器.</param>
     /// <param name="logger">日志.</param>
     public SystemUpsertUserCommandHandler(
         DatabaseContext databaseContext,
         IUserAccountService userAccountService,
         IEnumerable<IUserRegistrationHook> registrationHooks,
+        IAccessEventPublisher eventPublisher,
         ILogger<SystemUpsertUserCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _userAccountService = userAccountService;
         _registrationHooks = registrationHooks;
+        _eventPublisher = eventPublisher;
         _logger = logger;
     }
 
@@ -63,6 +68,7 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
                 : await CreateAsync(request, cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
+            await PublishChangeEventsAsync(request, result, cancellationToken);
             return result;
         }
         catch
@@ -298,6 +304,51 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
         var (hashedPassword, saltBase64) = PBKDF2Helper.ToHash(password);
         salt = saltBase64;
         return hashedPassword;
+    }
+
+    private async Task PublishChangeEventsAsync(SystemUpsertUserCommand request, SystemUpsertUserCommandResponse result, CancellationToken cancellationToken)
+    {
+        if (result.Created)
+        {
+            await _eventPublisher.PublishUserCreatedAsync(result.UserId, request.UserName, cancellationToken);
+            if (request.IsDisable == true)
+            {
+                await _eventPublisher.PublishUserStatusChangedAsync(result.UserId, request.UserName, true, cancellationToken);
+            }
+        }
+        else
+        {
+            var fields = new List<string>();
+            if (!string.IsNullOrEmpty(request.NickName))
+            {
+                fields.Add("nickName");
+            }
+
+            if (!string.IsNullOrEmpty(request.Email))
+            {
+                fields.Add("email");
+            }
+
+            if (!string.IsNullOrEmpty(request.Phone))
+            {
+                fields.Add("phone");
+            }
+
+            if (fields.Count > 0)
+            {
+                await _eventPublisher.PublishUserUpdatedAsync(result.UserId, request.UserName, fields, cancellationToken);
+            }
+
+            if (request.IsDisable.HasValue)
+            {
+                await _eventPublisher.PublishUserStatusChangedAsync(result.UserId, request.UserName, request.IsDisable.Value, cancellationToken);
+            }
+        }
+
+        if (result.OauthBound && request.OauthProviderId is Guid providerId)
+        {
+            await _eventPublisher.PublishUserOAuthLinkedAsync(result.UserId, providerId, cancellationToken);
+        }
     }
 
     private static string GeneratePlaceholderPhone(string userName)

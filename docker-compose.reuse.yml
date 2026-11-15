@@ -97,9 +97,11 @@ services:
       RABBITMQ_HOST: ${MOAI_RABBITMQ_HOST:?deployment script must resolve the shared RabbitMQ container}
       RUSTFS_HOST: ${MOAI_RUSTFS_HOST:?deployment script must resolve the shared RustFS container}
     volumes:
+      # 整个 configs 目录落宿主机（默认 /data/moai/configs，可由 .env 的 MOAI_CONFIG_DIR 覆盖）：
+      # rsa_private.key（JWT 签名私钥）必须跨容器重建保留，否则每次部署换镜像都会重新生成密钥、
+      # 所有在线会话立即失效；在线插件包与安装指纹也在该目录下（configs/plugins）。
+      - ${MOAI_CONFIG_DIR:-/data/moai/configs}:/app/configs
       - ${MOAI_CONFIG_FILE:-./configs/system.json}:/app/configs/system.json:ro
-      # 在线插件包与 MoPlatform 安装指纹跨容器重建持久化（与完整栈一致）
-      - ./configs/plugins:/app/configs/plugins
       - moai_files:/app/files
     ports:
       - "${MOAI_PORT:-8081}:8080"

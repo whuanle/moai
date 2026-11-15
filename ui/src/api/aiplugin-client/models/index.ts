@@ -160,6 +160,24 @@ export function createImportOpenApiPluginCommandFromDiscriminatorValue(parseNode
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {InstalledPluginItem}
+ */
+// @ts-ignore
+export function createInstalledPluginItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoInstalledPluginItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {InstallOnlinePluginCommand}
+ */
+// @ts-ignore
+export function createInstallOnlinePluginCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoInstallOnlinePluginCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {KeyValueBool}
  */
 // @ts-ignore
@@ -219,6 +237,33 @@ export function createPluginBaseInfoItemFromDiscriminatorValue(parseNode: ParseN
 // @ts-ignore
 export function createPluginFunctionItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoPluginFunctionItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginMarketplaceCategory}
+ */
+// @ts-ignore
+export function createPluginMarketplaceCategoryFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginMarketplaceCategory;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginMarketplaceItem}
+ */
+// @ts-ignore
+export function createPluginMarketplaceItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginMarketplaceItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {PluginMarketplacePage}
+ */
+// @ts-ignore
+export function createPluginMarketplacePageFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoPluginMarketplacePage;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -520,6 +565,15 @@ export function createSaveStaticPluginCommandFromDiscriminatorValue(parseNode: P
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {SetOnlinePluginStatusCommand}
+ */
+// @ts-ignore
+export function createSetOnlinePluginStatusCommandFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoSetOnlinePluginStatusCommand;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {SimpleGuid}
  */
 // @ts-ignore
@@ -700,6 +754,34 @@ export function deserializeIntoImportOpenApiPluginCommand(importOpenApiPluginCom
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoInstalledPluginItem(installedPluginItem: Partial<InstalledPluginItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        ...deserializeIntoAuditsInfo(installedPluginItem),
+        "avatarPath": n => { installedPluginItem.avatarPath = n.getStringValue(); },
+        "description": n => { installedPluginItem.description = n.getStringValue(); },
+        "enabled": n => { installedPluginItem.enabled = n.getBooleanValue(); },
+        "name": n => { installedPluginItem.name = n.getStringValue(); },
+        "packageSha256": n => { installedPluginItem.packageSha256 = n.getStringValue(); },
+        "pluginKey": n => { installedPluginItem.pluginKey = n.getStringValue(); },
+        "summary": n => { installedPluginItem.summary = n.getStringValue(); },
+        "version": n => { installedPluginItem.version = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoInstallOnlinePluginCommand(installOnlinePluginCommand: Partial<InstallOnlinePluginCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "platformPluginId": n => { installOnlinePluginCommand.platformPluginId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoKeyValueBool(keyValueBool: Partial<KeyValueBool> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoKeyValueOfStringAndBoolean(keyValueBool),
@@ -787,6 +869,49 @@ export function deserializeIntoPluginFunctionItem(pluginFunctionItem: Partial<Pl
         "path": n => { pluginFunctionItem.path = n.getStringValue(); },
         "pluginId": n => { pluginFunctionItem.pluginId = n.getGuidValue(); },
         "summary": n => { pluginFunctionItem.summary = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPluginMarketplaceCategory(pluginMarketplaceCategory: Partial<PluginMarketplaceCategory> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "emoji": n => { pluginMarketplaceCategory.emoji = n.getStringValue(); },
+        "id": n => { pluginMarketplaceCategory.id = n.getStringValue(); },
+        "name": n => { pluginMarketplaceCategory.name = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPluginMarketplaceItem(pluginMarketplaceItem: Partial<PluginMarketplaceItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "categoryEmoji": n => { pluginMarketplaceItem.categoryEmoji = n.getStringValue(); },
+        "categoryId": n => { pluginMarketplaceItem.categoryId = n.getStringValue(); },
+        "categoryName": n => { pluginMarketplaceItem.categoryName = n.getStringValue(); },
+        "downloadCount": n => { pluginMarketplaceItem.downloadCount = n.getStringValue(); },
+        "iconUrl": n => { pluginMarketplaceItem.iconUrl = n.getStringValue(); },
+        "isInstalled": n => { pluginMarketplaceItem.isInstalled = n.getBooleanValue(); },
+        "key": n => { pluginMarketplaceItem.key = n.getStringValue(); },
+        "latestVersion": n => { pluginMarketplaceItem.latestVersion = n.getStringValue(); },
+        "name": n => { pluginMarketplaceItem.name = n.getStringValue(); },
+        "pluginId": n => { pluginMarketplaceItem.pluginId = n.getStringValue(); },
+        "summary": n => { pluginMarketplaceItem.summary = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoPluginMarketplacePage(pluginMarketplacePage: Partial<PluginMarketplacePage> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { pluginMarketplacePage.items = n.getCollectionOfObjectValues<PluginMarketplaceItem>(createPluginMarketplaceItemFromDiscriminatorValue); },
+        "total": n => { pluginMarketplacePage.total = n.getStringValue(); },
     }
 }
 /**
@@ -1249,6 +1374,17 @@ export function deserializeIntoSaveStaticPluginCommand(saveStaticPluginCommand: 
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoSetOnlinePluginStatusCommand(setOnlinePluginStatusCommand: Partial<SetOnlinePluginStatusCommand> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "enabled": n => { setOnlinePluginStatusCommand.enabled = n.getBooleanValue(); },
+        "pluginKey": n => { setOnlinePluginStatusCommand.pluginKey = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoSimpleGuid(simpleGuid: Partial<SimpleGuid> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         ...deserializeIntoSimpleOfGuid(simpleGuid),
@@ -1369,6 +1505,52 @@ export interface ImportOpenApiPluginCommand extends Parsable {
      * 插件标题，可中文.
      */
     title?: string | null;
+}
+/**
+ * MoAI 本地安装的在线插件.
+ */
+export interface InstalledPluginItem extends AuditsInfo, Parsable {
+    /**
+     * 本地 OSS 图标对象 key.
+     */
+    avatarPath?: string | null;
+    /**
+     * AI 使用提示.
+     */
+    description?: string | null;
+    /**
+     * 是否已上架.
+     */
+    enabled?: boolean | null;
+    /**
+     * 名称.
+     */
+    name?: string | null;
+    /**
+     * SHA-256.
+     */
+    packageSha256?: string | null;
+    /**
+     * 插件 key.
+     */
+    pluginKey?: string | null;
+    /**
+     * 人读用途简介.
+     */
+    summary?: string | null;
+    /**
+     * 当前安装版本.
+     */
+    version?: string | null;
+}
+/**
+ * 安装一个 MoPlatform 在线插件.
+ */
+export interface InstallOnlinePluginCommand extends Parsable {
+    /**
+     * MoPlatform 插件 id.
+     */
+    platformPluginId?: string | null;
 }
 /**
  * KeyValueBool.
@@ -1516,6 +1698,85 @@ export interface PluginFunctionItem extends Parsable {
      * 描述.
      */
     summary?: string | null;
+}
+/**
+ * MoPlatform 在线插件分类.
+ */
+export interface PluginMarketplaceCategory extends Parsable {
+    /**
+     * 分类图标.
+     */
+    emoji?: string | null;
+    /**
+     * 分类 id（long 字符串）.
+     */
+    id?: string | null;
+    /**
+     * 分类名称.
+     */
+    name?: string | null;
+}
+/**
+ * 在线插件摘要.
+ */
+export interface PluginMarketplaceItem extends Parsable {
+    /**
+     * MoPlatform 分类图标.
+     */
+    categoryEmoji?: string | null;
+    /**
+     * MoPlatform 分类 id.
+     */
+    categoryId?: string | null;
+    /**
+     * MoPlatform 分类名称.
+     */
+    categoryName?: string | null;
+    /**
+     * 平台下载计数.
+     */
+    downloadCount?: string | null;
+    /**
+     * 当前平台图标地址，仅用于预览；安装后使用包内图标并保存到 MoAI OSS.
+     */
+    iconUrl?: string | null;
+    /**
+     * 是否已在本机安装.
+     */
+    isInstalled?: boolean | null;
+    /**
+     * 插件 key.
+     */
+    key?: string | null;
+    /**
+     * 最新包版本.
+     */
+    latestVersion?: string | null;
+    /**
+     * 插件名.
+     */
+    name?: string | null;
+    /**
+     * MoPlatform 插件 id（long 字符串）.
+     */
+    pluginId?: string | null;
+    /**
+     * 人读简介，用于在线插件列表和卡片展示.
+     */
+    summary?: string | null;
+}
+/**
+ * MoPlatform 在线插件分页结果.
+ */
+export interface PluginMarketplacePage extends Parsable {
+    /**
+     * 插件条目.
+     */
+    items?: PluginMarketplaceItem[] | null;
+    /**
+     * 总数.
+     */
+    total?: string | null;
 }
 /**
  * 插件执行结果。响应数据以 JSON 字符串形式承载，便于序列化任意类型.
@@ -1779,7 +2040,7 @@ export interface QueryPluginListCommandResponseItem extends Parsable {
      */
     configType?: string | null;
     /**
-     * 插件描述.
+     * 人读用途简介；AI 使用提示仍由插件工具元数据单独提供.
      */
     description?: string | null;
     /**
@@ -2120,7 +2381,7 @@ export interface QueryPluginToolItem extends Parsable {
  */
 export interface QueryPluginToolsCommandResponse extends Parsable {
     /**
-     * 插件描述.
+     * AI 使用提示，供模型理解插件的能力与调用方式.
      */
     description?: string | null;
     /**
@@ -2418,6 +2679,34 @@ export function serializeImportOpenApiPluginCommand(writer: SerializationWriter,
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeInstalledPluginItem(writer: SerializationWriter, installedPluginItem: Partial<InstalledPluginItem> | undefined | null = {}) : void {
+    if (installedPluginItem) {
+        serializeAuditsInfo(writer, installedPluginItem)
+        writer.writeStringValue("avatarPath", installedPluginItem.avatarPath);
+        writer.writeStringValue("description", installedPluginItem.description);
+        writer.writeBooleanValue("enabled", installedPluginItem.enabled);
+        writer.writeStringValue("name", installedPluginItem.name);
+        writer.writeStringValue("packageSha256", installedPluginItem.packageSha256);
+        writer.writeStringValue("pluginKey", installedPluginItem.pluginKey);
+        writer.writeStringValue("summary", installedPluginItem.summary);
+        writer.writeStringValue("version", installedPluginItem.version);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeInstallOnlinePluginCommand(writer: SerializationWriter, installOnlinePluginCommand: Partial<InstallOnlinePluginCommand> | undefined | null = {}) : void {
+    if (installOnlinePluginCommand) {
+        writer.writeStringValue("platformPluginId", installOnlinePluginCommand.platformPluginId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeKeyValueBool(writer: SerializationWriter, keyValueBool: Partial<KeyValueBool> | undefined | null = {}) : void {
     if (keyValueBool) {
         serializeKeyValueOfStringAndBoolean(writer, keyValueBool)
@@ -2505,6 +2794,49 @@ export function serializePluginFunctionItem(writer: SerializationWriter, pluginF
         writer.writeStringValue("path", pluginFunctionItem.path);
         writer.writeGuidValue("pluginId", pluginFunctionItem.pluginId);
         writer.writeStringValue("summary", pluginFunctionItem.summary);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePluginMarketplaceCategory(writer: SerializationWriter, pluginMarketplaceCategory: Partial<PluginMarketplaceCategory> | undefined | null = {}) : void {
+    if (pluginMarketplaceCategory) {
+        writer.writeStringValue("emoji", pluginMarketplaceCategory.emoji);
+        writer.writeStringValue("id", pluginMarketplaceCategory.id);
+        writer.writeStringValue("name", pluginMarketplaceCategory.name);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePluginMarketplaceItem(writer: SerializationWriter, pluginMarketplaceItem: Partial<PluginMarketplaceItem> | undefined | null = {}) : void {
+    if (pluginMarketplaceItem) {
+        writer.writeStringValue("categoryEmoji", pluginMarketplaceItem.categoryEmoji);
+        writer.writeStringValue("categoryId", pluginMarketplaceItem.categoryId);
+        writer.writeStringValue("categoryName", pluginMarketplaceItem.categoryName);
+        writer.writeStringValue("downloadCount", pluginMarketplaceItem.downloadCount);
+        writer.writeStringValue("iconUrl", pluginMarketplaceItem.iconUrl);
+        writer.writeBooleanValue("isInstalled", pluginMarketplaceItem.isInstalled);
+        writer.writeStringValue("key", pluginMarketplaceItem.key);
+        writer.writeStringValue("latestVersion", pluginMarketplaceItem.latestVersion);
+        writer.writeStringValue("name", pluginMarketplaceItem.name);
+        writer.writeStringValue("pluginId", pluginMarketplaceItem.pluginId);
+        writer.writeStringValue("summary", pluginMarketplaceItem.summary);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializePluginMarketplacePage(writer: SerializationWriter, pluginMarketplacePage: Partial<PluginMarketplacePage> | undefined | null = {}) : void {
+    if (pluginMarketplacePage) {
+        writer.writeCollectionOfObjectValues<PluginMarketplaceItem>("items", pluginMarketplacePage.items, serializePluginMarketplaceItem);
+        writer.writeStringValue("total", pluginMarketplacePage.total);
     }
 }
 /**
@@ -2967,6 +3299,17 @@ export function serializeSaveStaticPluginCommand(writer: SerializationWriter, sa
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeSetOnlinePluginStatusCommand(writer: SerializationWriter, setOnlinePluginStatusCommand: Partial<SetOnlinePluginStatusCommand> | undefined | null = {}) : void {
+    if (setOnlinePluginStatusCommand) {
+        writer.writeBooleanValue("enabled", setOnlinePluginStatusCommand.enabled);
+        writer.writeStringValue("pluginKey", setOnlinePluginStatusCommand.pluginKey);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeSimpleGuid(writer: SerializationWriter, simpleGuid: Partial<SimpleGuid> | undefined | null = {}) : void {
     if (simpleGuid) {
         serializeSimpleOfGuid(writer, simpleGuid)
@@ -3036,6 +3379,19 @@ export function serializeUpdatePluginTeamAuthorizationCommand(writer: Serializat
         writer.writeGuidValue("pluginId", updatePluginTeamAuthorizationCommand.pluginId);
         writer.writeCollectionOfPrimitiveValues<number>("teamIds", updatePluginTeamAuthorizationCommand.teamIds);
     }
+}
+/**
+ * 上架或下架已安装在线插件；不提供卸载操作.
+ */
+export interface SetOnlinePluginStatusCommand extends Parsable {
+    /**
+     * 是否上架.
+     */
+    enabled?: boolean | null;
+    /**
+     * 插件 key.
+     */
+    pluginKey?: string | null;
 }
 /**
  * SimpleGuid.

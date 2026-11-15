@@ -25,6 +25,10 @@
 | @SUB-S67 ~ @SUB-S70（单测侧） | CreateSubsysAppCommandHandlerTests（已登记 objectKey 落库/未登记与未完成上传 404/缺省空串/255 上限校验）+ SubsysAppCommandsHandlerTests（更新 null=不修改/伪造 404/已登记替换） | PASS 53/53（2026-11-04） |
 | @SUB-S53 ~ @SUB-S55（UI 侧） | [AdminIntegrations.test.tsx](../../ui/src/pages/admin/__tests__/AdminIntegrations.test.tsx)（单列表无 Tab/类型列/实例数展示/非 root 重定向） | PASS 3/3（2026-11-01） |
 | @SUB-S67 ~ @SUB-S70 | [local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)（SUB-97 ~ SUB-103：创建携带头像落库回显/创建与更新携带未登记 objectKey 404/替换头像回显新 key/更新不携带字段头像不变/缺省空串与应用接入同构回显；走 pre_upload_image→PUT→complate_url 真实存储链路，存储不可用时整段跳过） | PASS 109/109（2026-11-04） |
+| @SUB-S71、@SUB-S73 | [local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)（SUB-104 ~ SUB-110：未开放登录/不存在统一 unavailable 不 401、匿名可用 login_required、redirect_uri 指定入口、未注册 callback_mismatch、授权用户 ok、未授权 not_authorized） | PASS 117/117（2026-11-15） |
+| @SUB-S72 | 同上（SUB-111：指定团队且团队/组织授权均为空直接 no_grants） | PASS 117/117（2026-11-15） |
+| @SUB-S74 | [SsoAuthorize.test.tsx](../../ui/src/pages/sso/__tests__/SsoAuthorize.test.tsx)（11 例：预检不可用/未授权停在本页不跳登录不回跳、需登录先登录并清理过期登录态、放行后才签发委托码、预检/签发失败提示） | PASS 11/11（2026-11-15） |
+| @SUB-S75 | MoAI.Subsystem.Tests（CreateSubsysAppCommandHandlerTests 指定团队范围落库断言；SubsystemSsoHandlerTests 预检 10 例） | PASS 63/63（2026-11-15） |
 
 ## 场景映射表（SAA）
 
@@ -50,16 +54,23 @@
 | 创建子系统（自填 appid/哈希/重复 409/团队 400/校验器）+ 创建应用接入（自动 appid/忽略子系统字段） | [MoAI.Subsystem.Tests](../../tests/MoAI.Subsystem.Tests/)（CreateSubsysAppCommandHandlerTests 6 例；断言改掩码+v2 密文可解+结构化 appid 35 字符 HMAC 可反解主键） | PASS 45/45（2026-11-01） |
 | 合并 CRUD（更新按类型分字段/软删/列表回显与类型过滤/在线实例数） | 同上（SubsysAppCommandsHandlerTests 6 例） | PASS 45/45（2026-11-01） |
 | 统一 token 换取（子系统/应用接入/停用 403/重置失效） | 同上（SubsystemTokenCommandHandlerTests 7 例，含存量哈希行校验） | PASS 45/45（2026-11-01） |
-| 组织授权并集门禁/委托/回显、SSO 全链（含应用接入行 404） | 同上（SubsystemSsoHandlerTests 15 例） | PASS 45/45（2026-11-01） |
+| 组织授权并集门禁/委托/回显、SSO 全链（含应用接入行 404）、进入前预检（匿名/登录态/回调/无授权） | 同上（SubsystemSsoHandlerTests 25 例） | PASS 63/63（2026-11-15） |
 | 团队可用列表（仅 appType=subsystem） | 同上（QueryTeamAvailableSubsystemsCommandHandlerTests 4 例） | PASS 45/45（2026-11-01） |
 | 统一表回归 | teamres-key-e2e.mjs（TR-S8 应用接入 key 换 token 携 secret、TR-S27 资源 key 不可换 token、TR-S29 伪造/旧前缀 401）+ org-e2e 回归 | 全绿（2026-11-04，TR 31/31、ORG 53/53；原 team-apikey-scope-e2e TA-40~42 随 scope 体系退役删除，TA 编号不复用） |
+| @SUB-S76 | [local-dev/subsys-event-e2e.mjs](../../local-dev/subsys-event-e2e.mjs)（EVT-03/26/27） | PASS 28/28（2026-11-15） |
+| @SUB-S77 | 同上（EVT-05~07/10） | PASS 28/28（2026-11-15） |
+| @SUB-S78 | 同上（EVT-09/12/13） | PASS 28/28（2026-11-15） |
+| @SUB-S79 | 同上（EVT-15/18/19/24/25/28） | PASS 28/28（2026-11-15） |
+| @SUB-S80 | 同上（EVT-16/17/20/21） | PASS 28/28（2026-11-15） |
+| @SUB-S81 | 同上（EVT-14/15/16/17） | PASS 28/28（2026-11-15） |
 
 ## 回归命令
 
 ```bash
 node local-dev/subsystem-e2e.mjs              # 需后端运行中（默认 :5000），零外部依赖
+node local-dev/subsys-event-e2e.mjs           # @SUB-S76~S81 事件推送 28 断言（SignalR + Redis Stream + 协作面对账）
 node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000   # 应用接入 + 系统资源接口（合并模型后同为 :5000）
-dotnet test tests/MoAI.Subsystem.Tests        # 后端单测（48 例）
+dotnet test tests/MoAI.Subsystem.Tests        # 后端单测（63 例）
 node local-dev/subsys-demo-seed.mjs           # demo 数据重建 + 功能验证（11 例）
 cd ui && npx vitest run src/pages/admin/__tests__/AdminAccessApps.test.tsx src/pages/admin/__tests__/AdminIntegrations.test.tsx src/pages/teams/apps/__tests__/TeamAccessApps.test.tsx
 ```

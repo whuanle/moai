@@ -111,7 +111,11 @@ label 不带 `:docker://` 即 host 模式；容器模式也能跑（工作流的
 
 ```bash
 ssh -p <ssh-port> <deploy-user>@<deploy-host>
-mkdir -p ~/moai/{configs/plugins,deploy/opensandbox} && cd ~/moai
+mkdir -p ~/moai/{configs,deploy/opensandbox} && cd ~/moai
+
+# JWT 私钥与在线插件包的持久化目录（写进 .env 的 MOAI_CONFIG_DIR，默认如下）；
+# 需部署用户可写，或先 sudo 建好并 chown 给部署用户：
+#   sudo mkdir -p /data/moai/configs && sudo chown -R <deploy-user>: /data/moai/configs
 
 # 首次目录为空时，从仓库拷一次 compose 相关文件（之后由流水线同步）：
 #   docker-compose.yml docker-compose.reuse.yml init-pgvector.sql
@@ -123,6 +127,7 @@ vi .env
 #   MOAI_SERVER_URL=https://<moai-domain>
 #   S3_ENDPOINT=https://<oss-domain>      （预签名地址，须浏览器可达）
 #   MOAI_PORT=8080                        （与 Caddy / 反代一致）
+#   MOAI_CONFIG_DIR=/data/moai/configs    （JWT 私钥 + 在线插件包持久化目录）
 #   POSTGRES_* / RABBITMQ_* / S3_ACCESS_* / MOAI_AES_KEY
 #   RUSTFS_CORS_ALLOWED_ORIGINS=https://<moai-domain>
 

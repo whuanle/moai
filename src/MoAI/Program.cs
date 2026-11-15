@@ -9,6 +9,8 @@ using MoAI.AI.Acp;
 using MoAI.KnowledgeGraph;
 using MoAI.KnowledgeGraph.Mcp;
 using MoAI.Message.Hubs;
+using MoAI.Subsystem.Hubs;
+using MoAI.Subsystem.Services;
 using MoAI.Wiki;
 using Scalar.AspNetCore;
 
@@ -176,6 +178,13 @@ app.MapControllers();
 // 站内信/平台事件推送 Hub（/hub/moai）：只推事件不推数据，JWT 经 access_token 查询参数鉴权
 // （见 ConfigureAuthorizaModule.OnMessageReceived），多实例经 Redis backplane 共享连接状态
 app.MapHub<MoAIEventHub>("/hub/moai").RequireAuthorization();
+
+// 系统级接入事件 Hub（/hub/subsys）：机器 token/appid 鉴权，按 appId 分组推送，Redis backplane 多实例
+app.MapHub<SubsysEventHub>(SubsystemAuthDefaults.HubPath)
+    .RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute
+    {
+        AuthenticationSchemes = SubsystemAuthDefaults.HubScheme,
+    });
 
 
 // Agent 应用对话（AG-UI SSE 端点 /api/app/{appId}/chat）

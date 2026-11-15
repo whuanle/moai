@@ -73,6 +73,10 @@ public class CreateSubsysAppCommandHandlerTests
 
         var auths = db.Context.SubsystemTeamAuths.Where(x => x.SubsystemId == response.Id).ToList();
         Assert.Equal([1, 2], auths.Select(x => x.TeamId).OrderBy(x => x).ToList());
+
+        // 创建时团队范围必须落库（否则指定团队会被库默认值覆盖为全员可用）
+        var entity = await db.Context.AccessApps.FindAsync(response.Id);
+        Assert.Equal(SubsystemTeamScope.SpecifiedTeams, entity!.TeamScope);
     }
 
     [Fact]

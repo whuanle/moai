@@ -13,6 +13,8 @@
 # 说明：
 #   - 以 .env 为唯一配置来源，生成 ${MOAI_CONFIG_FILE}（默认 ./configs/system.json）
 #     并挂载进容器 /app/configs/system.json，用户无需手写 system.json。
+#   - 宿主机 ${MOAI_CONFIG_DIR}（默认 /data/moai/configs）整目录挂到容器 /app/configs：
+#     存放 JWT 私钥 rsa_private.key 与在线插件包，跨容器重建保留。
 #   - 会拉取全部依赖镜像：postgres=pgvector/pgvector:pg16、opensandbox/server、
 #     opensandbox/code-interpreter（仅拉取不部署）、rustfs/redis/rabbitmq/aws-cli。
 # ============================================================
@@ -152,6 +154,32 @@ if [ -z "${MOAI_SERVER_URL}" ]; then
 fi
 
 # 由 .env 生成应用配置
+# compose 把宿主机 MOAI_CONFIG_DIR（默认 /data/moai/configs）整目录挂到容器 /app/configs：
+# rsa_private.key（JWT 私钥）与在线插件包都落在这里，跨容器重建保留
+#（否则每次换镜像部署都会因密钥轮换把所有人踢下线）
+MOAI_CONFIG_DIR="${MOAI_CONFIG_DIR:-/data/moai/configs}"
+export MOAI_CONFIG_DIR
+if ! mkdir -p "${MOAI_CONFIG_DIR}" 2>/dev/null; then
+  echo "==> 警告：无法创建 ${MOAI_CONFIG_DIR}（权限不足）；将由 docker 以 root 创建，建议先 sudo mkdir -p ${MOAI_CONFIG_DIR} 并 chown 给部署用户"
+fi
+# 兼容旧部署：在线插件包原先持久化在 ./configs/plugins（现已统一到配置目录下）
+if [ -d configs/plugins ] && [ ! -d "${MOAI_CONFIG_DIR}/plugins" ]; then
+  if mkdir -p "${MOAI_CONFIG_DIR}/plugins" 2>/dev/null && cp -a configs/plugins/. "${MOAI_CONFIG_DIR}/plugins/" 2>/dev/null; then
+    echo "==> 已将 ./configs/plugins 迁移到 ${MOAI_CONFIG_DIR}/plugins"
+  else
+    echo "==> 警告：无法迁移 ./configs/plugins 到 ${MOAI_CONFIG_DIR}/plugins（权限不足）。" >&2
+    echo "    请执行 sudo mkdir -p ${MOAI_CONFIG_DIR} && sudo cp -a configs/plugins ${MOAI_CONFIG_DIR}/ 后重跑，否则已安装的在线插件会找不到包。" >&2
+  fi
+fi
+# 兼容旧部署：旧版本把私钥写在容器层（/app/configs 未持久化）。重建容器前先捞出来，
+# 避免本次升级因密钥轮换把所有在线用户踢下线
+if [ ! -f "${MOAI_CONFIG_DIR}/rsa_private.key" ] && docker inspect moai >/dev/null 2>&1; then
+  if docker cp moai:/app/configs/rsa_private.key "${MOAI_CONFIG_DIR}/rsa_private.key" 2>/dev/null; then
+    echo "==> 已从现有容器迁移 rsa_private.key 到 ${MOAI_CONFIG_DIR}（保持在线会话有效）"
+  else
+    echo "==> 提示：现有容器内没有可迁移的 rsa_private.key，首次启动将生成新密钥（在线用户需重新登录）" >&2
+  fi
+fi
 mkdir -p "$(dirname "${MOAI_CONFIG_FILE}")"
 if [ -f "${MOAI_CONFIG_FILE}" ]; then
   cp "${MOAI_CONFIG_FILE}" "${MOAI_CONFIG_FILE}.bak"

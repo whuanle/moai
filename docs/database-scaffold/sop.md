@@ -52,7 +52,10 @@ docker compose down -v && docker compose up -d
 |---|---|---|
 | 首次建库报 `42P01 relation "external_id_seq" does not exist` | `external_user.id` 默认值 `nextval('external_id_seq')` 引用的序列未在 EF 模型声明，`EnsureCreated` 只建模型里声明过的序列 | ✅ **已修复**：`PostgresDatabaseContext` 增 `HasSequence<long>("external_id_seq")`；若已产生半套表，按第 2 节重建库 |
 | 自增主键 duplicate key | 显式 Id 种子未推进序列 | 重启后端即自愈（启动 DO 块 setval，[@DB-S7](./bdd.md#db-s7)）；诊断比对 `last_value` 与 `max(id)` |
-| 新表/新列没出现 | EnsureCreated 对存量库零动作（[@DB-S2](./bdd.md#db-s2)） | 手写 DDL → 逆向生成（第 1 节） |
+| 新表/新列没出现 | EnsureCreated 对存量库零动作（[@DB-S2](./bdd.md#db-s2)） | 现由启动期 `SchemaReconciler` 自动补齐（[@DB-S26](./bdd.md#db-s26)，只增不删）；仍缺则看启动日志 `Schema sync applied` 与告警行 |
+| 接口报 500、日志 `42P01 relation "xxx" does not exist` / `42703 column "xxx" does not exist` | 线上库早于该模块，缺表/缺列（旧部署未执行 asserts 脚本） | 升级到含 `SchemaReconciler` 的版本后重启即自愈；紧急恢复可用 `tool/SchemaSync apply <连接串>` 或 `psql -f asserts/schema-sync.sql`（见第 9 节） |
+| 启动日志 `Schema sync warning: 建索引 xxx 失败` | 唯一索引与存量脏数据冲突（如重复路径/重复 key） | 先清理重复行再重启；不阻断启动，仅缺该索引 |
+| 启动报 `存量库 schema 自动补全失败` | 补列/建表 DDL 被库拒绝（权限、类型冲突、锁超时） | 按异常里的表.列名人工处理（`asserts/*.sql` 或 psql），修复后重启 |
 | 工具报"未找到数据库连接字符串" | 缺 appsettings.Development.json（[@DB-S22](./bdd.md#db-s22)） | 本地自建该文件（gitignore） |
 | 工具报"没有需要生成实体的表，已中止以免清空 src/database" | 库为空，或全部表都在 `IgnoredTableNamePrefixes` 黑名单内（[@DB-S25](./bdd.md#db-s25)） | 确认库已连对；若表名确为动态表则应如此，先手工建静态表再跑 |
 | 动态表被生成为实体 | 表名前缀不在黑名单（[@DB-S24](./bdd.md#db-s24)） | 改 `Program.cs` 的 `IgnoredTableNamePrefixes` 补前缀后重跑；手写文件仍会被分发覆盖 |
@@ -89,3 +92,29 @@ docker compose down -v && docker compose up -d
 | 2026-09-01 | 初版（轮 10，as-built 回溯整理） |
 | 2026-09-02 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@DB-S1~S23）、四件互链、职责瘦身 |
 | 2026-09-11 | 新增动态表（`__` 前缀）不生成实体的规则：BDD @DB-S24/S25、SOP 第 1/4 节同步 |
+| 2026-11-15 | 新增存量库 schema 自动补全：BDD @DB-S26~S33、SDD 决策 8、SOP 第 9 节与排障表同步 |
+
+## 9. 存量库升级：schema 自动补全与手工补全
+
+触发场景：老部署升级到新版本后接口 500，日志出现 `42P01`（表不存在）/`42703`（列不存在）——根因是 `EnsureCreated` 不给既有库补表补列，而 `asserts/*.sql` 未在该库执行。
+
+**默认自愈（无需操作）**：启动期 `SchemaReconciler` 用 EF 模型与 `information_schema`/`pg_indexes` 做差集，自动建缺失表、补缺失列、建缺失索引；只增不删，重复启动零变更。日志关键字 `Schema sync applied: N table(s)...` / `Schema sync warning:`。失败即终止启动（表/列），索引失败仅告警。
+
+**运维工具（`tool/SchemaSync`）**：
+
+```bash
+# 1) 只读预检：列出线上库相对当前模型缺什么（不执行 DDL）
+dotnet run --project tool/SchemaSync -- diff "Host=<host>;Port=5432;Username=postgres;Password=<pwd>;Database=moai"
+
+# 2) 直接补全（等价于启动时的自动补齐）
+dotnet run --project tool/SchemaSync -- apply "Host=<host>;...;Database=moai"
+
+# 3) 生成人工可执行脚本（禁止手改，模型变更后重新生成）
+dotnet run --project tool/SchemaSync            # 输出 asserts/schema-sync.sql
+docker exec -i <pg 容器|psql> psql -U postgres -d moai < asserts/schema-sync.sql
+
+# 4) 真实库回归：自建临时库 moai_schema_probe，建全量→破坏→修复→幂等校验→删库
+dotnet run --project tool/SchemaSync -- probe "Host=<host>;...;Database=postgres"
+```
+
+边界：自动补全**不删表/列、不改窄类型、不做数据迁移、不补种子数据**（如 `subsystem` 并入 `access_app`、`scopes` 退役需人工脚本；HasData 种子仍只在建库时写入，新增设置项/内置模板照样按 `asserts/*.sql` 补种）。这类变更仍按 `asserts/*.sql` 人工执行。`asserts/schema-sync.sql` 由模型生成、全文件幂等，可在任意旧库整段执行。

@@ -190,6 +190,26 @@ export async function setSubsystemOrgGrants(subsystemId: string, grants: Array<{
   })
 }
 
+/** 委托 SSO 进入前预检结果（reason 原因码：ok/login_required/unavailable/callback_mismatch/no_grants/not_authorized） */
+export interface SubsystemSsoAccessResult {
+  /** 当前访问者是否可继续进入子系统（匿名时仅代表系统级可用性） */
+  allowed?: boolean | null
+  /** 是否需先登录（匿名访问且子系统可用） */
+  requiresLogin?: boolean | null
+  name?: string | null
+  reason?: string | null
+}
+
+/** 委托 SSO 进入前预检：在跳转登录页/回跳子系统之前拦截不可用与未授权场景 */
+export async function subsystemSsoCheck(subsystemKey: string, redirectUri?: string): Promise<SubsystemSsoAccessResult> {
+  const client = getApiClient()
+  const res = await client.api.subsystem.sso.check.post({
+    subsystemKey,
+    redirectUri: redirectUri || undefined,
+  })
+  return { allowed: res?.allowed, requiresLogin: res?.requiresLogin, name: res?.name, reason: res?.reason }
+}
+
 /** 委托 SSO：登录用户为子系统签发一次性委托码（redirectUri 指定本次回跳入口，须在注册列表内；缺省取第一个） */
 export async function subsystemSsoAuthorizeCode(subsystemKey: string, state?: string, redirectUri?: string): Promise<SubsystemSsoAuthorizeResult> {
   const client = getApiClient()

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
@@ -26,6 +27,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     private readonly IRsaProvider _rsaProvider;
     private readonly IEmailCodeService _emailCodeService;
     private readonly IReadOnlyList<IUserRegistrationHook> _registrationHooks;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RegisterUserCommandHandler"/> class.
@@ -35,13 +37,15 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     /// <param name="rsaProvider"></param>
     /// <param name="emailCodeService">邮箱验证码服务（注册验证码开关开启时校验）.</param>
     /// <param name="registrationHooks">注册增强钩子（默认角色等），无实现时为空集合.</param>
-    public RegisterUserCommandHandler(DatabaseContext dbContext, ILogger<RegisterUserCommandHandler> logger, IRsaProvider rsaProvider, IEmailCodeService emailCodeService, IEnumerable<IUserRegistrationHook> registrationHooks)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public RegisterUserCommandHandler(DatabaseContext dbContext, ILogger<RegisterUserCommandHandler> logger, IRsaProvider rsaProvider, IEmailCodeService emailCodeService, IEnumerable<IUserRegistrationHook> registrationHooks, IAccessEventPublisher eventPublisher)
     {
         _dbContext = dbContext;
         _logger = logger;
         _rsaProvider = rsaProvider;
         _emailCodeService = emailCodeService;
         _registrationHooks = registrationHooks.ToList();
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -134,6 +138,12 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
             catch (Exception hookEx)
             {
                 _logger.LogWarning(hookEx, "用户注册增强钩子执行失败，跳过附加动作.{UserId}", userEntity.Id);
+            }
+
+            // 外层有环境事务（如 OAuth 注册）时由外层提交后统一发事件，避免回滚产生幽灵事件
+            if (System.Transactions.Transaction.Current == null)
+            {
+                await _eventPublisher.PublishUserCreatedAsync(userEntity.Id, userEntity.UserName, cancellationToken);
             }
 
             return new SimpleLong

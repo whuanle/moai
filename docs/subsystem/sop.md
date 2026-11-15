@@ -35,6 +35,7 @@ EOF
 6. **委托 SSO 登录（用户登录子系统）**：
    - root 在编辑弹窗维护「登录回调地址列表」（可多个入口：测试/生产等，最多 10 个），未配置=不开放；
    - 子系统引导用户跳 `https://<moai>/sso/authorize?client=<appid>&redirect_uri=<可选，指定本次入口须在注册列表内>&state=<可选透传>`；缺省回跳注册列表第一个；
+   - 跳转页会先调用 `POST /api/subsystem/sso/check`（匿名可调用）做**进入前预检**：子系统不可用、回调未注册或当前用户未获授权时直接停在 MoAI 错误页，**不进入登录流程、不回跳子系统**；
    - MoAI 侧自动完成登录→签发 60s 一次性委托码→回跳 `回调地址?code=...&state=...`；
    - 子系统后端（持机器 token）`POST /api/subsys/sso/exchange {code}` 兑换用户 access（2h）/refresh（7d）与用户资料；
    - 会话续期 `POST /api/subsys/sso/refresh {refreshToken}`；refresh 失效时重新引导用户走一遍 SSO 跳转。
@@ -54,15 +55,19 @@ EOF
 | 团队看不到子系统 | 未授权或子系统停用 | root 调整团队/组织授权或启用 |
 | 委托码兑换 401 | 码过期（60s）/已使用/兑换方非签发对象 | 重新引导用户走 SSO 跳转获取新码 |
 | 委托码签发 403/404 | 停用/未配置回调/用户未获授权；应用接入行不参与 SSO（404） | root 启用、配置回调或调整授权；确认对象是子系统行 |
+| 用户在跳转页被拦截（预检不可用/未授权） | 预检 `reason`：unavailable=不存在/停用/未开放登录；callback_mismatch=回调未注册；no_grants=指定团队但无任何授权；not_authorized=用户团队与组织均未获授权 | root 核对状态/回调/授权清单；预检不通过时不会跳登录或回跳子系统 |
 | 刷新 401/403 | refresh 过期、接入停用或用户被禁用 | 重新 SSO；仍失败查 root 列表与用户状态 |
 | 查看密钥 400 | 存量 PBKDF2 哈希行不可回显 | 重置密钥（重置后转为可查看格式） |
 | 换取 token 429 | 换取失败触发限流：(IP, appid) 10 次/60s 或 IP 50 次/60s | 停止重试，60s 窗口自愈；核对 appid/密钥后再试 |
+| 事件连接 401/反复断开 | 凭据非系统级接入、已停用/删除、token 过期，或反代未放行 WebSocket | 查 `/api/subsys/info` 与 access_app 状态；确认 `/hub/subsys` Upgrade；重连时换新 token |
+| 重连后收不到补发 | `lastEventId` 早于 Redis Stream 窗口、补发超过 200 条或 Redis 不可达 | 收到 `subsys.resync_required` 后按 [access-events.md](./access-events.md) §6 全量对账；检查 RabbitMQ/Redis |
 
 ## 4. 验收流程（发版后执行）
 
 ```bash
 # 后端运行中（默认 :5000）
 node local-dev/subsystem-e2e.mjs                                 # 期望 PASS=90 FAIL=0（SUB-01~90，含心跳 v2 与合并模型 @SUB-S53~S62）
+node local-dev/subsys-event-e2e.mjs                              # 期望 PASS=28 FAIL=0（@SUB-S76~S81 事件推送）
 node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000   # 期望 58 通过 / 0 失败（@SAA，scope 分档用例已退役）
 dotnet test tests/MoAI.Subsystem.Tests                           # 期望 40/40
 cd ui && npm run typecheck && npx vitest run src/pages/admin/__tests__/AdminAccessApps.test.tsx src/pages/admin/__tests__/AdminIntegrations.test.tsx src/pages/teams/apps/__tests__/TeamAccessApps.test.tsx src/pages/sso/__tests__/SsoAuthorize.test.tsx  # 期望 19/19
@@ -80,6 +85,7 @@ cd ui && npm run typecheck && npx vitest run src/pages/admin/__tests__/AdminAcce
    - 用户治理：`POST /api/subsys/system/users`（**按 userName 幂等 upsert**，ERP 定时推送主入口；未带密码自动生成一次性初始密码；可选携带 `oauthProviderId/oauthSub/oauthUnionId` 幂等绑定第三方身份，响应 `oauthBound`）、`GET /users/list`、`GET /users/{id}`、`PUT /users/{id}/disable`（root 受保护）；
    - 内部应用访问用户 token：`POST /api/subsys/system/app-tokens`（`{appId, oauthProviderId, oauthSub, oauthUnionId?, nickName?}` → 按第三方绑定换算站内用户并颁发绑定单应用的 token；未绑定时在本次请求内自动建户并绑定，返回 `userCreated=true`，重复请求返回 `userCreated=false`）；
    - 组织：`GET|POST /api/subsys/system/org/roles`、`PUT|DELETE /org/roles/{id}`、`GET /org/roles/{id}/users`、`GET|PUT /org/users/{userId}/roles`；
-   - 团队：`GET /api/subsys/system/teams/list`、`POST /teams`、`PUT /teams/{id}`、`POST /teams/{id}/users`（成员幂等 upsert）、`DELETE /teams/{id}/users/{userId}`（Owner 受保护）。
+   - 团队：`GET /api/subsys/system/teams/list`、`POST /teams`、`PUT /teams/{id}`、`GET /teams/{id}/users`（成员对账）、`POST /teams/{id}/users`（成员幂等 upsert）、`DELETE /teams/{id}/users/{userId}`（Owner 受保护）；
+   - 事件/授权对账：`GET /api/subsys/grants`（自身团队/组织授权快照）、`GET /api/subsys/events?afterId=&limit=`（REST 补发兜底）；实时事件走 `/hub/subsys`（见 [access-events.md](./access-events.md)）。
 4. `GET /api/subsys/info` 自省（身份/类型/状态/在线实例数，可用性探测）；可选心跳接入同一 `/api/subsys/heartbeat`。
 5. 停用后双轨凭据即时 403；删除后双轨与 refresh 均即时 401。变更即时生效。

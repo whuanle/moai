@@ -689,3 +689,95 @@ Feature: 系统应用接入（系统级接入 key）
     Then 弹窗同时展示 appid 与一次性密钥
     When 点击重置密钥并确认
     Then 弹窗一次性展示新密钥
+```
+
+```gherkin
+Feature: 委托 SSO 进入前预检（登录前拦截）
+  @SUB-S71 @auto:e2e
+  Scenario: 匿名预检判断子系统可用性
+    Given 未登录访问者请求预检某子系统
+    When 子系统启用且已配置回调地址
+    Then 返回允许继续并要求先登录
+    When 子系统不存在、已停用或未开放登录
+    Then 统一返回不可用（不区分原因，避免匿名枚举探测）
+    When 计划回跳地址不在注册列表内
+    Then 返回回调地址未注册
+
+  @SUB-S72 @auto:e2e
+  Scenario: 指定团队但未配置任何授权
+    Given 子系统为指定团队范围且团队与组织授权均为空
+    When 未登录访问者请求预检
+    Then 直接返回未配置授权（不进入登录流程）
+
+  @SUB-S73 @auto:e2e
+  Scenario: 登录用户预检授权
+    Given 用户已登录
+    When 用户所在团队或组织获授权时请求预检
+    Then 返回放行且无需先签发委托码
+    When 用户未获授权时请求预检
+    Then 返回未获授权并要求不跳转
+
+  @SUB-S74 @auto:vitest
+  Scenario: 跳转页进入前预检
+    Given 子系统以 /sso/authorize?client=<appid> 引导用户到 MoAI
+    When 预检判定不可用或当前用户未获授权
+    Then 停在错误页展示原因，不进入登录流程、不回跳子系统
+    When 预检要求登录
+    Then 清理本地过期登录态后跳转登录页
+    When 预检放行且已登录
+    Then 签发委托码并回跳注册回调
+
+  @SUB-S75 @auto:unit
+  Scenario: 创建时团队范围落库
+    When root 以指定团队范围创建子系统
+    Then 团队范围与授权团队一并落库（不被默认值覆盖为全员可用）
+
+Feature: 系统级接入事件推送
+  @SUB-S76 @auto:e2e
+  Scenario: 机器端 Hub 建连
+    Given 系统级接入持有效机器 token 或 moai-sa- appid
+    When 接入连接 /hub/subsys
+    Then 建连成功并收到 onReady（首次要求全量对账）
+    When 团队级接入、用户 token 或停用接入尝试连接
+    Then 拒绝建连
+
+  @SUB-S77 @auto:e2e
+  Scenario: 用户事件推送
+    Given 接入已连接事件 Hub
+    When 系统接口创建用户、更新资料、禁用用户、覆盖组织角色或绑定第三方身份
+    Then 依次收到 user.created / user.updated / user.status_changed / user.org_roles_changed / user.oauth_*
+    And 事件只携带主体或关联 ID 与轻量上下文
+
+  @SUB-S78 @auto:e2e
+  Scenario: 组织与团队事件推送
+    Given 接入已连接事件 Hub
+    When 创建/更新/删除组织角色或调整用户角色
+    Then 收到对应 org.* 事件
+    When 创建团队、增删改成员或转让 Owner
+    Then 收到对应 team.* 事件
+
+  @SUB-S79 @auto:e2e
+  Scenario: 接入自身事件与停用最终投递
+    Given 接入已连接事件 Hub
+    When 修改接入资料、团队授权或重置密钥
+    Then 目标接入收到 access_app.* 事件（含关联 teamIds/orgRoleIds）
+    When root 停用该接入
+    Then 接入最后一次收到 status_changed(disabled)
+    And 之后 REST 调用立即被拒绝
+
+  @SUB-S80 @auto:e2e
+  Scenario: 断线补发与过期游标
+    Given 接入断开期间产生了新事件
+    When 接入携带 lastEventId 重连
+    Then 从最近事件窗口补发缺失事件
+    When 携带早于窗口起点的游标重连
+    Then 收到 resync_required（cursor_expired）
+
+  @SUB-S81 @auto:e2e
+  Scenario: 协作面对账接口
+    Given 系统级接入持有效凭据
+    When 查询自身授权快照、事件补发或团队成员
+    Then 返回团队范围/授权团队/组织授权、最近事件与成员清单
+    When 不携带游标查询事件
+    Then 返回需要全量对账
+```

@@ -101,6 +101,7 @@ ui/src/
 - 在线安装在包目录落盘并提交 DB 后，立即在当前进程创建独立 `AssemblyLoadContext`、加载入口程序集并注册插件；无需重启。运行时下架只禁用注册态，不卸载程序集或删除目录。
 - 本地 `moai.plugin.json` 由 Web JSON 选项序列化为 camelCase；运行时读取必须使用同一选项，避免 key 等必需字段被默认的大小写敏感反序列化静默置空。
 - 上架/下架切换注册表可用态并同步数据库，不卸载程序集、不删除文件。在线覆盖与卸载不开放；同 key 已安装时需先下架或保持现状，包升级流程后续另行定义。
+- 管理端在线插件页（`ui/src/pages/plugins/PluginMarketplacePanel.tsx`）把关键字、MoPlatform 分类 id 与分页参数原样透传给 `/api/ai/plugin/online/catalog`：手写封装不经 Kiota 生成代码，`RequestInformation.URL` 一旦显式赋值其 getter 便原样返回、不再展开 `queryParameters`，因此查询串必须拼进 URL，否则搜索/分类/翻页静默失效。页面整体高度固定为视口高度，卡片列表在页内滚动、分页条固定在底部。
 
 ## 历史内置动态模板（已退役）
 

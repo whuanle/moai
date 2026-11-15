@@ -7,15 +7,17 @@
 | 现象 | 定位 | 处理 | 场景 |
 |---|---|---|---|
 | 登录报"密码解密失败" | 持久化的 rsaPublic 过期（后端换密钥） | 清 localStorage `moai-web-store` 重新登录；根治需加时效 | [@FE-AUTH-S4](./bdd.md#fe-auth-s4) |
-| 登录成功又立刻被踢回 /login | access+refresh 同时过期，或某接口 401 | 看 Network 哪个接口 401；后端重启后 token 失效属预期 | [@FE-AUTH-S11](./bdd.md#fe-auth-s11) |
+| 登录成功又立刻被踢回 /login | access+refresh 同时过期，或某接口 401（后端重启/换 RSA 密钥后旧 token 全部失效） | 看 Network 哪个接口 401；单容器部署须把宿主机配置目录挂到 `/app/configs`（默认 `/data/moai/configs`，`rsa_private.key` 跨部署保留），否则每次换镜像部署都会把所有会话踢掉，见 [../../docs/deployment/docker.md](../../docs/deployment/docker.md) | [@FE-AUTH-S11](./bdd.md#fe-auth-s11) |
 | 第三方回调停在 loading | code 被消费两次或 state 解析失败 | 确认 StrictMode ref 守卫生效；检查回调 URL 的 state | [@FE-AUTH-S15](./bdd.md#fe-auth-s15) |
 | 绑定弹窗无反应 | opener 跨域 → 走了登录分支 | 保证账号设置页与弹窗同 origin | [@FE-AUTH-S19](./bdd.md#fe-auth-s19) |
+| 页面每隔约 30 分钟被踢回 /login（线上） | Release 构建 access token 只有 30 分钟，旧逻辑在令牌过期后才续期，期间任意请求 401 即清态 | 升级到提前 5 分钟续期版本（[@FE-AUTH-S24](./bdd.md#fe-auth-s24)）；若仍复现，检查部署是否多实例且 `rsa_private.key` 不一致 | [@FE-AUTH-S24](./bdd.md#fe-auth-s24) |
 | 页面频繁闪跳 /login | checkToken 周期失败 | 检查 refresh token 是否被后端拒（用户被禁用/删除） | [@FE-AUTH-S10](./bdd.md#fe-auth-s10) |
 | 登录/刷新后看不到管理员菜单或资料陈旧 | 登录响应只带 token；资料重取失败或被跳过 | Network 确认进入应用时是否请求 `/api/account/userinfo`；失败看该接口状态码 | [@FE-AUTH-S22](./bdd.md#fe-auth-s22)/[@FE-AUTH-S23](./bdd.md#fe-auth-s23) |
 
 ## 2. 联调注意
 
 - 后端 DEBUG 编译下 access token 7 天有效——联调"续期"需 Release 或临时改 TokenProvider。
+- 前端续期口径：access token 剩余不足 5 分钟即换新（`TOKEN_REFRESH_AHEAD_SECONDS=300`），60 秒周期复检 + 页面回前台/聚焦/恢复联网时补检；要观察续期请求，把 store 里 accessToken 换成"剩余 2 分钟"的 JWT 等下一周期。
 - 本地后端 5210：`ui/.env.local` 设 `VITE_ServerUrl=http://127.0.0.1:5210`（`.env.development` 遗留 5000，`.env.local` 优先级更高；删除该变量则回退同源模式）。
 - 清登录态：DevTools → Application → Local Storage → 删 `moai-web-store`、`moai-web-theme`、`moai-web-locale`。
 
@@ -31,11 +33,12 @@
 
 1. 未登录访问：清 localStorage 后打开受路由 URL → 重定向 /login（[@FE-AUTH-S8](./bdd.md#fe-auth-s8)）。
 2. 登录/注册走查：正确凭据落 /apps 且立即出现管理菜单（管理员账号）；错误密码停留本页仅提示（[@FE-AUTH-S1](./bdd.md#fe-auth-s1)/[@FE-AUTH-S2](./bdd.md#fe-auth-s2)/[@FE-AUTH-S22](./bdd.md#fe-auth-s22)）；注册两次不一致被拦（[@FE-AUTH-S5](./bdd.md#fe-auth-s5)）。
-3. 续期无感：人工把 store 里 accessToken 置为过期 JWT 后等下一周期 → 出现 refresh 请求且页面不跳转（[@FE-AUTH-S10](./bdd.md#fe-auth-s10)）。
+3. 续期无感：人工把 store 里 accessToken 置为"剩余 2 分钟"的 JWT 后等下一周期 → 出现 refresh 请求且页面不跳转、资料（isAdmin/昵称）不丢（[@FE-AUTH-S10](./bdd.md#fe-auth-s10)/[@FE-AUTH-S24](./bdd.md#fe-auth-s24)）。
 4. 登出/失效：退出清态回 /login；改坏 refreshToken 刷新 → 清态回 /login（[@FE-AUTH-S11](./bdd.md#fe-auth-s11)）。
-5. 401 拦截：篡改 accessToken 后触发业务请求 → 整页跳 /login（[@FE-AUTH-S21](./bdd.md#fe-auth-s21)）。
+5. 401 拦截：把 accessToken 换成伪造值（refresh 也无效）后触发业务请求 → 重试一次仍 401，整页跳 /login（[@FE-AUTH-S21](./bdd.md#fe-auth-s21)）；若 refresh 有效，则 Network 里可见「业务请求 401 → refresh_token 200 → 原请求带新 token 重试 200」，页面不跳转（[@FE-AUTH-S27](./bdd.md#fe-auth-s27)）。
 6. 资料重取：篡改 localStorage `moai-web-store` 的 userInfo（isAdmin=false、改昵称）后刷新页面 → 角色与资料被服务端数据校正（[@FE-AUTH-S23](./bdd.md#fe-auth-s23)）。
-7. 回归命令见 [TDD](./tdd.md)（typecheck/lint/test + E2E）。
+7. 休眠恢复：令牌过期状态下切走标签页数分钟再切回 → 先看到刷新请求，再正常加载页面数据，不跳 /login（[@FE-AUTH-S25](./bdd.md#fe-auth-s25)）。
+8. 回归命令见 [TDD](./tdd.md)（typecheck/lint/test + E2E）。
 
 ## 5. 历史验收存档（L3 证据，保留原始记录）
 

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Org.Commands;
 using MoAI.Org.Handlers;
@@ -25,7 +26,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         Seed(db.Context);
-        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateOrgUserRolesCommand { UserId = 100, RoleIds = [1, 2] }, CancellationToken.None);
         var first = await db.Context.OrgUserRoles.Where(x => x.UserId == 100).Select(x => x.RoleId).OrderBy(x => x).ToListAsync();
@@ -43,7 +44,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
         Seed(db.Context);
         db.Context.OrgUserRoles.Add(OrgTestSeed.Binding(100, 1));
         await db.Context.SaveChangesAsync();
-        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateOrgUserRolesCommand { UserId = 100, RoleIds = [] }, CancellationToken.None);
 
@@ -55,7 +56,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         Seed(db.Context);
-        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateOrgUserRolesCommand { UserId = 100, RoleIds = [1, 1, 2] }, CancellationToken.None);
 
@@ -67,7 +68,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         Seed(db.Context);
-        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new UpdateOrgUserRolesCommand { UserId = 999, RoleIds = [1] }, CancellationToken.None));
@@ -80,7 +81,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
     {
         using var db = TestSqliteContext.Create();
         Seed(db.Context);
-        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache());
+        var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
             () => handler.Handle(new UpdateOrgUserRolesCommand { UserId = 100, RoleIds = [1, 999] }, CancellationToken.None));

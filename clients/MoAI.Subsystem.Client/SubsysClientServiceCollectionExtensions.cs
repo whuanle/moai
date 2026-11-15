@@ -1,10 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
 using MoAI.Subsystem.Client.ApiSdk;
+using MoAI.Subsystem.Client.Events;
+using MoAI.Subsystem.Client.Resources;
 
 namespace MoAI.Subsystem.Client;
 
@@ -100,6 +103,11 @@ public static class SubsysClientServiceCollectionExtensions
             return adapter;
         });
         services.AddSingleton<SubsysClient>();
+
+        // 事件客户端：SignalR 长连接 + lastEventId 游标 + 断线重连；资源客户端补齐授权/事件/成员对账接口
+        services.TryAddSingleton<ISubsysEventCursorStore, InMemorySubsysEventCursorStore>();
+        services.AddSingleton<ISubsysEventClient, SubsysEventClient>();
+        services.AddSingleton<SubsysResourceClient>();
         return services;
     }
 

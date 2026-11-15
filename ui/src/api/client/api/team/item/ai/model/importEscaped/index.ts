@@ -12,7 +12,7 @@ import { type BaseRequestBuilder, type Parsable, type ParsableFactory, type Requ
 export interface ImportRequestBuilder extends BaseRequestBuilder<ImportRequestBuilder> {
     /**
      * 批量导入模型列表（默认停用）.
-     * @param body 批量导入模型列表（前端从 opencode models.json 解析后提交）.
+     * @param body 批量导入模型列表（前端提交用户确认后的模型元数据）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {Promise<EmptyCommandResponse>}
      * @throws {BusinessValidationResult} error when the service returns a 400 status code
@@ -24,7 +24,7 @@ export interface ImportRequestBuilder extends BaseRequestBuilder<ImportRequestBu
      post(body: ImportAIModelCommand, requestConfiguration?: RequestConfiguration<object> | undefined) : Promise<EmptyCommandResponse | undefined>;
     /**
      * 批量导入模型列表（默认停用）.
-     * @param body 批量导入模型列表（前端从 opencode models.json 解析后提交）.
+     * @param body 批量导入模型列表（前端提交用户确认后的模型元数据）.
      * @param requestConfiguration Configuration for the request such as headers, query parameters, and middleware options.
      * @returns {RequestInformation}
      */

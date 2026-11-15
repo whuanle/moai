@@ -16,6 +16,11 @@ public class QueryTeamAllCommandResponseItem
     public string Name { get; set; } = default!;
 
     /// <summary>
+    /// 团队简介.
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
     /// 是否禁用.
     /// </summary>
     public bool IsDisable { get; set; }

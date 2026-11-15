@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Commands;
@@ -18,6 +19,7 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Simpl
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamAgentSeeder _teamAgentSeeder;
+    private readonly IAccessEventPublisher _eventPublisher;
     private readonly ILogger<CreateTeamCommandHandler> _logger;
 
     /// <summary>
@@ -25,11 +27,13 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Simpl
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamAgentSeeder">内置智能体种子服务.</param>
+    /// <param name="eventPublisher">接入事件发布器.</param>
     /// <param name="logger">日志.</param>
-    public CreateTeamCommandHandler(DatabaseContext databaseContext, ITeamAgentSeeder teamAgentSeeder, ILogger<CreateTeamCommandHandler> logger)
+    public CreateTeamCommandHandler(DatabaseContext databaseContext, ITeamAgentSeeder teamAgentSeeder, IAccessEventPublisher eventPublisher, ILogger<CreateTeamCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _teamAgentSeeder = teamAgentSeeder;
+        _eventPublisher = eventPublisher;
         _logger = logger;
     }
 
@@ -73,6 +77,7 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Simpl
             _logger.LogWarning(ex, "团队 {TeamId} 内置智能体种入失败，可通过 seed-builtin 端点补种.", team.Id);
         }
 
+        await _eventPublisher.PublishTeamCreatedAsync(team.Id, request.ContextUserId, cancellationToken);
         return new SimpleLong
         {
             Value = team.Id

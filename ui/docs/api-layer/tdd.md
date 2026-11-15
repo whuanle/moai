@@ -9,7 +9,7 @@
 |---|---|---|
 | @FE-API-S3 | [Feedback/__tests__/feedback.test.ts](../../src/design-system/components/Feedback/__tests__/feedback.test.ts)：parseApiErrorResponse / resolveErrorMessage 优先级 / 4xx→message、5xx→notification 路由 | PASS 14/14（2026-09-01） |
 | @FE-API-S4 | 同上：isNetworkError 判定 + 网络错误→notification 路由 | PASS（2026-09-01） |
-| @FE-API-S1、@FE-API-S2、@FE-API-S5 | `ui/src/api/kiota.ts` FilterRequestHandler 走查（401 豁免/清态跳转/异常分流三分支） | PASS（2026-09-01，代码级） |
+| @FE-API-S1、@FE-API-S2、@FE-API-S5 | `ui/src/api/kiota.ts` FilterRequestHandler 走查（401 豁免/续期重试/清态跳转/异常分流）+ `ui/src/api/__tests__/sessionRetry.test.ts`（401 → refresh → 新 token 重试断言） | PASS（2026-11-15，代码级 + vitest） |
 | @FE-API-S6、@FE-API-S7 | kiota.ts 工厂走查（Bearer/匿名 Provider、baseUrl） | PASS（2026-09-01，代码级） |
 | @FE-API-S8 | 生成物现状快照：typecheck 0 错 + lock 版本/目录走查（本轮未重跑 syncapi，避免覆盖生成物） | PASS（2026-09-01，快照级） |
 | @FE-API-S9 | 历史实测（1.34.x 必挂，见 [../../../docs/user-management/tdd.md](../../../docs/user-management/tdd.md)）；当前依赖精确锁 preview.93 | 历史证实（2026-09-01） |

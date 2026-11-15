@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>MoAI.SchemaSync</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\database\MoAI.Database.Postgres\MoAI.Database.Postgres.csproj" />
+	</ItemGroup>
+
+</Project>

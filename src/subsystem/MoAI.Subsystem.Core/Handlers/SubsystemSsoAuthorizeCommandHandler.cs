@@ -67,29 +67,9 @@ public class SubsystemSsoAuthorizeCommandHandler : IRequestHandler<SubsystemSsoA
                 ?? throw new BusinessException("回调地址未在子系统注册列表内.") { StatusCode = 403 };
         }
 
-        // 授权门禁：团队维度与组织维度任一命中即放通（并集）
-        // 团队维度：全员范围要求用户至少加入一个团队；指定范围要求用户团队与授权清单有交集
-        var userTeamIds = await _databaseContext.TeamUsers
-            .Where(x => x.UserId == request.ContextUserId)
-            .Select(x => x.TeamId)
-            .ToListAsync(cancellationToken);
-        bool teamHit;
-        if (subsystem.TeamScope == SubsystemTeamScope.SpecifiedTeams)
-        {
-            var authorizedTeamIds = await _databaseContext.SubsystemTeamAuths
-                .Where(x => x.SubsystemId == subsystem.Id)
-                .Select(x => x.TeamId)
-                .ToListAsync(cancellationToken);
-            teamHit = userTeamIds.Intersect(authorizedTeamIds).Any();
-        }
-        else
-        {
-            teamHit = userTeamIds.Count > 0;
-        }
-
-        // 组织维度：统一组织授权表（org_grant，资源类型 subsystem）按角色方向规则（self/up/down）判定
-        var orgHit = await _orgGrantService.IsAllowedAsync(OrgGrantResourceType.Subsystem, subsystem.Id, request.ContextUserId, cancellationToken);
-        if (!teamHit && !orgHit)
+        // 授权门禁：团队维度与组织维度任一命中即放通（并集），与 SSO 预检共用同一判定规则
+        var allowed = await SubsystemSsoAccessRules.IsUserAllowedAsync(_databaseContext, _orgGrantService, subsystem, request.ContextUserId, cancellationToken);
+        if (!allowed)
         {
             throw new BusinessException(subsystem.TeamScope == SubsystemTeamScope.SpecifiedTeams
                 ? "你所在的团队或组织未获授权使用该子系统."

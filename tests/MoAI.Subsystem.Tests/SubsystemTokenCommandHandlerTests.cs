@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Subsystem.Commands;
 using MoAI.Subsystem.Core.Services;
@@ -113,7 +114,7 @@ public class SubsystemTokenCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var entity = await TestSeeds.SeedSubsysAppAsync(db.Context, "report");
         await SetSecretAsync(db, "report", TestSecret);
-        var resetHandler = new ResetSubsysAppSecretCommandHandler(db.Context, TestSeeds.CreateCipher(), Mock.Of<ISubsysTokenRateLimiter>());
+        var resetHandler = new ResetSubsysAppSecretCommandHandler(db.Context, TestSeeds.CreateCipher(), Mock.Of<ISubsysTokenRateLimiter>(), new NullAccessEventPublisher());
         await resetHandler.Handle(new ResetSubsysAppSecretCommand { Id = entity.Id }, CancellationToken.None);
 
         // 旧密钥失效 401，新密钥（重置后从库内回显）可用

@@ -21,6 +21,14 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public string Avatar { get; set; }
 #endif
+        /// <summary>团队简介.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public string? Description { get; set; }
+#nullable restore
+#else
+        public string Description { get; set; }
+#endif
         /// <summary>是否禁用.</summary>
         public bool? IsDisable { get; set; }
         /// <summary>成员数量.</summary>
@@ -60,6 +68,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "avatar", n => { Avatar = n.GetStringValue(); } },
+                { "description", n => { Description = n.GetStringValue(); } },
                 { "isDisable", n => { IsDisable = n.GetBoolValue(); } },
                 { "memberCount", n => { MemberCount = n.GetIntValue(); } },
                 { "name", n => { Name = n.GetStringValue(); } },
@@ -74,6 +83,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
         {
             _ = writer ?? throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("avatar", Avatar);
+            writer.WriteStringValue("description", Description);
             writer.WriteBoolValue("isDisable", IsDisable);
             writer.WriteIntValue("memberCount", MemberCount);
             writer.WriteStringValue("name", Name);

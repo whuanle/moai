@@ -15,8 +15,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true
+    let lastCheckAt = 0
 
     const runCheck = async (redirectOnFail: boolean, withProfile = false) => {
+      lastCheckAt = Date.now()
       let ok = false
       try {
         ok = await checkToken()
@@ -46,9 +48,29 @@ export function RequireAuth({ children }: { children: ReactNode }) {
       void runCheck(true)
     }, TOKEN_CHECK_INTERVAL)
 
+    // 休眠/标签页长时间挂起后定时器会停滞，恢复时业务请求可能早于下一次复检，
+    // 带着过期 token 命中 401 被全局中间件清态。回到前台/窗口聚焦/恢复联网时补检一次
+    //（令牌有效时只做本地解码，不发网络请求）。
+    const recheck = () => {
+      if (Date.now() - lastCheckAt < 5_000) return
+      void runCheck(true)
+    }
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') recheck()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', recheck)
+    window.addEventListener('online', recheck)
+    window.addEventListener('pageshow', recheck)
+
     return () => {
       active = false
       window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', recheck)
+      window.removeEventListener('online', recheck)
+      window.removeEventListener('pageshow', recheck)
     }
   }, [navigate])
 

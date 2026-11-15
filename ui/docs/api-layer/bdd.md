@@ -9,7 +9,9 @@ Feature: 请求中间件（FilterRequestHandler，位于默认中间件最前）
   Scenario: 业务接口返回 401
     Given 已登录，某接口返回 401 且 URL 不含 "login"
     When 响应经过中间件
-    Then 清空登录态并整页跳转 /login
+    Then 先调用会话静默续期（`trySessionRefresh`，由 api/auth.ts 注册）并用新 token 重试该请求一次
+    And 重试成功则返回正常结果（不跳转）
+    And 续期失败或重试仍 401 时清空登录态并整页跳转 /login
 
   @FE-API-S2 @manual
   Scenario: 登录接口本身 401（密码错误）

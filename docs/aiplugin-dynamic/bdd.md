@@ -1331,4 +1331,12 @@
     When 插件模块枚举启动时需要加载的插件目录
     Then 每个插件目录都进入加载流程
     And 隐藏暂存目录不会被当成已安装插件
+
+  @DYN-S167 @auto:unit
+  Scenario: 在线插件目录的搜索、分类与分页条件真正下发到 MoPlatform
+    Given 管理员在在线插件页输入关键字、选择分类或翻页
+    When 前端调用在线插件目录接口
+    Then 请求查询串携带 keyword、categoryId、pageNo、pageSize
+    And 关键字与分类为空时不携带对应查询串
+    And 卡片列表在页内滚动且分页条固定在页面底部
 ```

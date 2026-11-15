@@ -231,6 +231,10 @@ async function main() {
   const noCb = await api('POST', '/api/subsystem/sso/code', { token: ownerA.token, body: { subsystemKey: KEY } })
   check('SUB-38 未配置回调地址时签发委托码 403', noCb.status === 403, `${noCb.status} ${noCb.text.slice(0, 120)}`)
 
+  const accessNoCb = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: KEY } })
+  check('SUB-104 未开放登录时匿名预检直接判不可用（不 401，无需登录）', accessNoCb.status === 200 && accessNoCb.json?.allowed === false && accessNoCb.json?.reason === 'unavailable', `${accessNoCb.status} ${accessNoCb.text.slice(0, 160)}`)
+
+
   const CALLBACK = `https://report.local/cb?ts=${TS}`
   const setCb = await api('PUT', `/api/subsystem/${RECREATED_ID}`, { token: root, body: { name: '复用标识', description: 'e2e 子系统', status: 'enabled', teamScope: 'allTeams', teamIds: [], callbackUrls: [CALLBACK] } })
   check('SUB-39 root 配置登录回调地址 200', setCb.status === 200, `${setCb.status} ${setCb.text.slice(0, 120)}`)
@@ -260,6 +264,30 @@ async function main() {
 
   const authorizeFirst = await api('POST', '/api/subsystem/sso/code', { token: ownerA.token, body: { subsystemKey: KEY } })
   check('SUB-94 缺省回跳注册列表第一个', authorizeFirst.status === 200 && authorizeFirst.json?.callbackUrl === CALLBACK, `${authorizeFirst.status} ${authorizeFirst.text.slice(0, 160)}`)
+
+  // ---- 进入前预检：无需登录即可判断子系统可用性，登录用户直接判定是否获授权 ----
+  const accessAnon = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: KEY } })
+  check(
+    'SUB-105 匿名预检可用子系统：允许继续并要求先登录',
+    accessAnon.status === 200 && accessAnon.json?.allowed === true && accessAnon.json?.requiresLogin === true && accessAnon.json?.reason === 'login_required' && accessAnon.json?.name === '复用标识',
+    `${accessAnon.status} ${accessAnon.text.slice(0, 160)}`,
+  )
+
+  const accessAnonTest = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: KEY, redirectUri: CALLBACK_TEST } })
+  check('SUB-106 匿名预检支持 redirect_uri 指定入口', accessAnonTest.status === 200 && accessAnonTest.json?.allowed === true && accessAnonTest.json?.requiresLogin === true, `${accessAnonTest.status} ${accessAnonTest.text.slice(0, 160)}`)
+
+  const accessBadRedirect = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: KEY, redirectUri: 'https://evil.local/cb' } })
+  check('SUB-107 预检发现回跳地址未注册时直接拒绝', accessBadRedirect.status === 200 && accessBadRedirect.json?.allowed === false && accessBadRedirect.json?.reason === 'callback_mismatch', `${accessBadRedirect.status} ${accessBadRedirect.text.slice(0, 160)}`)
+
+  const accessOwner = await api('POST', '/api/subsystem/sso/check', { token: ownerA.token, body: { subsystemKey: KEY } })
+  check('SUB-108 已授权登录用户预检放行（无需先签发委托码）', accessOwner.status === 200 && accessOwner.json?.allowed === true && accessOwner.json?.requiresLogin === false && accessOwner.json?.reason === 'ok', `${accessOwner.status} ${accessOwner.text.slice(0, 160)}`)
+
+  const accessNoTeam = await api('POST', '/api/subsystem/sso/check', { token: user.token, body: { subsystemKey: KEY } })
+  check('SUB-109 未获授权用户预检直接拒绝（不跳登录、不回跳子系统）', accessNoTeam.status === 200 && accessNoTeam.json?.allowed === false && accessNoTeam.json?.requiresLogin === false && accessNoTeam.json?.reason === 'not_authorized', `${accessNoTeam.status} ${accessNoTeam.text.slice(0, 160)}`)
+
+  const accessGhost = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: `ghost${TS}` } })
+  check('SUB-110 不存在的子系统预检统一返回不可用（不泄露原因）', accessGhost.status === 200 && accessGhost.json?.allowed === false && accessGhost.json?.reason === 'unavailable' && !accessGhost.json?.name, `${accessGhost.status} ${accessGhost.text.slice(0, 160)}`)
+
 
   check('SUB-42 委托码兑换需子系统 token 401', (await api('POST', '/api/subsys/sso/exchange', { body: { code: CODE } })).status === 401)
 
@@ -312,6 +340,10 @@ async function main() {
   const orgSub = await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'subsystem', key: orgKey, name: '组织授权子系统', teamScope: 'specifiedTeams', teamIds: [], callbackUrls: [CALLBACK] } })
   const ORG_ID = orgSub.json?.id
   check('SUB-55 指定团队空清单创建 200（仅组织授权待配置）', orgSub.status === 200 && !!ORG_ID, `${orgSub.status} ${orgSub.text.slice(0, 120)}`)
+
+  const accessNoGrants = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: orgKey } })
+  check('SUB-111 指定团队且未配置任何授权时预检判 no_grants', accessNoGrants.status === 200 && accessNoGrants.json?.allowed === false && accessNoGrants.json?.reason === 'no_grants', `${accessNoGrants.status} ${accessNoGrants.text.slice(0, 160)}`)
+
 
   const dupGrant = await api('PUT', `/api/subsystem/${ORG_ID}/org-grants`, { token: root, body: { grants: [{ orgRoleId: PID, scope: 'down' }, { orgRoleId: PID, scope: 'up' }] } })
   check('SUB-56 同一组织角色重复授权 400', dupGrant.status === 400, `${dupGrant.status} ${dupGrant.text.slice(0, 120)}`)

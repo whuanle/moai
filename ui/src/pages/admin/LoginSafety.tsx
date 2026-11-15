@@ -69,6 +69,24 @@ export function LoginSafety() {
 
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') ?? 'loginlog'
+  // 风险事件待阅读数量：与侧边栏「日志事件」角标共用 badge store（60s 轮询 + 面板内标记已读即时刷新）
+  const riskUnread = useBadgeStore((state) => state.counts.logEvents ?? 0)
+  const setBadge = useBadgeStore((state) => state.setBadge)
+
+  // 进入页面先拉一次，避免落在「登录日志」Tab 时角标要等下一轮轮询（风险事件面板此时还未挂载）
+  useEffect(() => {
+    let disposed = false
+    void getRiskEventUnreadCount()
+      .then((count) => {
+        if (!disposed) setBadge('logEvents', count)
+      })
+      .catch(() => {
+        // 静默，等下一轮轮询
+      })
+    return () => {
+      disposed = true
+    }
+  }, [setBadge])
 
   if (!isAdmin) {
     return <Navigate to="/apps" replace />
@@ -86,7 +104,16 @@ export function LoginSafety() {
         style={{ minHeight: panelHeight }}
         items={[
           { key: 'loginlog', label: t('loginsafety.tabLoginLog'), children: <LoginLogPanel /> },
-          { key: 'riskevent', label: t('loginsafety.tabRiskEvent'), children: <RiskEventPanel /> },
+          {
+            key: 'riskevent',
+            label: (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: spacing.xxs }}>
+                {t('loginsafety.tabRiskEvent')}
+                {riskUnread > 0 && <Badge count={riskUnread} overflowCount={99} size="small" />}
+              </span>
+            ),
+            children: <RiskEventPanel />,
+          },
           { key: 'ipban', label: t('loginsafety.tabIpBan'), children: <IpBanPanel /> },
         ]}
       />

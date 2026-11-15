@@ -23,6 +23,7 @@
 | @DEP-S17 | `docker run -v system.json ... whuanle/moai:latest` → `curl /api/common/serverinfo` 200 | 待执行（2026-09-23 新增） |
 | @DEP-S18 | `bash deploy/publish.sh` 推送成功后 `docker manifest inspect whuanle/moai:latest` | 待执行（2026-09-23 新增） |
 | @DEP-S20 | 两份 Compose 静态解析；部署脚本解析 moai 网络服务标签；共享 PostgreSQL 创建独立数据库与扩展 | 待部署环境验收 |
+| @DEP-S21 | `docker compose config` 确认 `${MOAI_CONFIG_DIR:-/data/moai/configs}:/app/configs` 挂载；两次 `up -d moai` 后 `md5sum /data/moai/configs/rsa_private.key` 不变；旧 token 仍可访问 `/api/account/userinfo` | 待部署环境验收（2026-11-15 新增） |
 
 ## 回归命令
 
@@ -35,6 +36,7 @@ curl -s http://127.0.0.1:5210/api/common/serverinfo | head -c 200    # 本地形
 docker compose up -d && docker compose ps                # 全服务 Up（@DEP-S13）
 docker logs moai-rustfs-init                             # bucket ready（@DEP-S14）
 docker exec moai cat /app/configs/system.json            # 与宿主机一致（@DEP-S15）
+docker exec moai md5sum /app/configs/rsa_private.key     # 换镜像重建容器后应保持不变（@DEP-S21，宿主机 ${MOAI_CONFIG_DIR:-/data/moai/configs}/rsa_private.key）
 docker compose --profile sandbox-images pull sandbox-image   # 沙箱镜像预拉（@DEP-S16）
 bash deploy/publish.sh                                   # 发布镜像（@DEP-S18）
 ```

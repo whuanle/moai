@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Org.Handlers;
 using MoAI.Org.Services;
@@ -23,16 +24,19 @@ public class OrgGrantService : IOrgGrantService
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IOrgGrantCache _cache;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OrgGrantService"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="cache">组织授权缓存.</param>
-    public OrgGrantService(DatabaseContext databaseContext, IOrgGrantCache cache)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public OrgGrantService(DatabaseContext databaseContext, IOrgGrantCache cache, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _cache = cache;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -188,6 +192,16 @@ public class OrgGrantService : IOrgGrantService
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
         await _cache.RemoveResourceGrantsAsync(OrgGrantCacheKeys.ResourceKey(resourceType, resourceIdString), cancellationToken);
+
+        // 子系统组织授权变更：单点发事件，覆盖管理面与通用 /org/grant 两条入口
+        if (resourceType == OrgGrantResourceType.Subsystem && Guid.TryParse(resourceIdString, out var subsystemId))
+        {
+            await _eventPublisher.PublishAccessAppGrantsChangedAsync(
+                subsystemId,
+                "org",
+                orgRoleIds: grants.Select(x => x.OrgRoleId),
+                cancellationToken: cancellationToken);
+        }
     }
 
     private async Task<IReadOnlyList<OrgGrantInfo>> GetGrantsCoreAsync(OrgGrantResourceType resourceType, string resourceIdString, CancellationToken cancellationToken)

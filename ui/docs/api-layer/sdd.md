@@ -23,7 +23,7 @@ ui/src/api/
 - `getApiClient()`：Bearer token 取自 zustand `userInfo.accessToken`，无 token 退化为匿名 Provider；**每次调用新建 client/adapter**（无全局单例），token 刷新后下一次取客户端即拿到新值（[@FE-API-S6](./bdd.md#fe-api-s6)）；`AllowedHostsValidator` 无参构造=放行所有 host。
 - `getAnonymousClient()`：登录/注册/serverinfo/refresh_token 等匿名端点专用（[@FE-API-S7](./bdd.md#fe-api-s7)）；两工厂共用显式注册 `application/json` 的序列化注册表。
 - `FilterRequestHandler` 经 `unshift` 排在默认中间件**最前**：
-  - 401 且 URL 不含字符串 `login` → 清登录态 + 整页跳 `/login`（[@FE-API-S1](./bdd.md#fe-api-s1)）；
+  - 业务接口 401 且 URL 不含字符串 `login` / `refresh_token`：先调 `trySessionRefresh()`（`api/sessionRefresh.ts` 注册表，实现由 `api/auth.ts` 用 refresh_token 换新并合并登录态）→ 成功则**用新 token 覆盖 Authorization 重试一次**（adapter 只在首次发送前调 authenticateRequest，故需显式覆盖）→ 重试仍 401 才清登录态 + 整页跳 `/login`（[@FE-API-S1](./bdd.md#fe-api-s1)）；
   - 其余 `!ok` → `parseApiErrorResponse` 归一化后 `feedback.handleError`（业务 4xx→message，500/网络→notification）并抛出（[@FE-API-S3](./bdd.md#fe-api-s3)）；
   - 请求异常（无响应）→ handleError 后重抛；**非网络异常额外清登录态**（防御性，[@FE-API-S5](./bdd.md#fe-api-s5)）。
 - baseUrl=`Env.serverUrl`（`VITE_ServerUrl` 优先，否则 `window.location.origin` 同源）。生成物内置兜底 `http://127.0.0.1:5210` 实践中永不生效（kiota.ts 总是显式赋值）。
@@ -72,5 +72,5 @@ cd ui && npm run syncapi [openapi-url]   # 默认 http://127.0.0.1:5000/openapi/
 
 其余：
 
-5. 401 判定用 `url.includes('login')` 粗匹配——路径含 "login" 的其它接口会被误豁免（[@FE-API-S12](./bdd.md#fe-api-s12)）；`/auth/refresh_token` 不在豁免之列（详见 [../auth-flow/sdd.md](../auth-flow/sdd.md)）。
+5. 401 判定用 `url.includes('login')` 粗匹配——路径含 "login" 的其它接口会被误豁免（[@FE-API-S12](./bdd.md#fe-api-s12)）；`/auth/refresh_token` 单独按续期端点豁免（不参与 401 续期重试，避免递归，详见 [../auth-flow/sdd.md](../auth-flow/sdd.md)）。
 6. 每次请求新建 client/adapter 有轻微开销，换来 token 即时生效（as-built 取舍）。

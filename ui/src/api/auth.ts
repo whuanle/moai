@@ -1,4 +1,5 @@
 import { getAnonymousClient, getApiClient } from '@/api/kiota'
+import { registerSessionRefreshHandler } from '@/api/sessionRefresh'
 import { useAppStore, type ServerInfo, type UserInfo } from '@/store/app'
 import { isTokenExpired } from '@/utils/jwt'
 import { rsaEncrypt } from '@/utils/rsa'
@@ -180,14 +181,41 @@ export async function resetPasswordByEmail(email: string, code: string, newPassw
   await client.api.auth.reset_password.post({ email, code, newPassword: encryptedPassword })
 }
 
+/** 到期前多久开始静默续期（秒）：早于真实过期换新，避免请求带着过期 token 拿到 401 被强制登出 */
+const TOKEN_REFRESH_AHEAD_SECONDS = 300
+
+/** 静默续期的单飞闸门：并发检查（周期复检/窗口聚焦/多页面）复用同一次刷新，避免同时轮换出多份 refresh_token */
+let refreshing: Promise<UserInfo | null> | null = null
+
 export async function refreshAccessToken(refreshToken: string): Promise<UserInfo | null> {
   const client = getAnonymousClient()
   const res = await client.api.auth.refresh_token.post({ refreshToken })
-  if (!res) return null
-  const userInfo = toUserInfo(res)
+  // 刷新被拒（refresh_token 过期/用户禁用）时后端返回 401，请求层已在跳登录页，这里不再写入半截登录态
+  if (!res?.accessToken) return null
+  // 续期响应只含 token 与基本标识，不含 isAdmin/isRoot/头像昵称：合并而不是整体覆盖，
+  // 否则静默续期一次后管理菜单/头像会从登录态里消失（页面刷新重取资料才恢复）
+  const current = useAppStore.getState().userInfo ?? {}
+  const userInfo: UserInfo = { ...current, ...toUserInfo(res) }
   useAppStore.getState().setUserInfo(userInfo)
   return userInfo
 }
+
+function refreshAccessTokenOnce(refreshToken: string): Promise<UserInfo | null> {
+  refreshing ??= refreshAccessToken(refreshToken).finally(() => {
+    refreshing = null
+  })
+  return refreshing
+}
+
+/** 会话静默续期（单飞）：refresh token 缺失/已过期时直接返回 null，不打后端 */
+export async function refreshSession(): Promise<UserInfo | null> {
+  const userInfo = useAppStore.getState().userInfo
+  if (!userInfo?.refreshToken || isTokenExpired(userInfo.refreshToken)) return null
+  return refreshAccessTokenOnce(userInfo.refreshToken)
+}
+
+// 请求层 401 兜底：鉴权接口返回 401 时先静默续期并重试一次（休眠唤醒/时钟偏差/令牌刚过期）
+registerSessionRefreshHandler(async () => (await refreshSession()) !== null)
 
 export function applyLoginResponse(
   res: {
@@ -253,10 +281,16 @@ export async function refreshUserProfile(): Promise<UserInfo | null> {
 export async function checkToken(): Promise<boolean> {
   const userInfo = useAppStore.getState().userInfo
   if (!userInfo?.accessToken) return false
-  if (!isTokenExpired(userInfo.accessToken)) return true
-  if (!userInfo.refreshToken || isTokenExpired(userInfo.refreshToken)) return false
-  const refreshed = await refreshAccessToken(userInfo.refreshToken)
-  return refreshed !== null
+  // 提前续期：线上 Release 构建 access token 只有 30 分钟，等到真正过期再刷会留下一段 401 窗口（任意请求都会清态踢回登录页）
+  if (!isTokenExpired(userInfo.accessToken, TOKEN_REFRESH_AHEAD_SECONDS)) return true
+  try {
+    const refreshed = await refreshSession()
+    return refreshed !== null
+  } catch {
+    // 刷新请求网络异常/服务端 5xx（重启、反向代理 502、休眠唤醒）不代表会话失效：
+    // access token 尚未真正过期就继续沿用，下一个复检周期再续，避免一次抖动就把用户踢下线
+    return !isTokenExpired(userInfo.accessToken)
+  }
 }
 
 /** 两步验证（2FA）状态 */

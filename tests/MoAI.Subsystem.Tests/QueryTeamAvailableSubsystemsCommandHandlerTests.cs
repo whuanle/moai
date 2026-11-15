@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MoAI.Database;
+using MoAI.Infra.Events;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
 using MoAI.Subsystem.Commands;
@@ -76,7 +77,7 @@ public class QueryTeamAvailableSubsystemsCommandHandlerTests
         TestSeeds.SeedTeam(db.Context, 1);
         var subsystem = await TestSeeds.SeedSubsysAppAsync(db.Context, "specified", scope: SubsystemTeamScope.SpecifiedTeams, teamIds: [1]);
 
-        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), new NullAccessEventPublisher());
         await handler.Handle(new UpdateSubsysAppCommand
         {
             Id = subsystem.Id,

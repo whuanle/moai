@@ -83,6 +83,7 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 - 文档：`http://127.0.0.1:5000/openapi/v1.json` ｜ Scalar：`/scalar/v1`
 - 前端：`cd ui && npm run dev`（4000）
 - 子系统 .NET 客户端再生成：`node clients/sync-api.mjs`（后端运行中；只重写 `clients/MoAI.Subsystem.Client/Generated/`，手写包装 DI/配置/token 管理不参与生成），用法见 [clients/MoAI.Subsystem.Client/README.md](./clients/MoAI.Subsystem.Client/README.md)
+- 存量库 schema 自愈：启动期 `SchemaReconciler` 按 EF 模型与 `information_schema` 差集自动补表/补列/补索引（只增不删）；预检 `dotnet run --project tool/SchemaSync -- diff <连接串>`，手工脚本由 `dotnet run --project tool/SchemaSync` 生成到 `asserts/schema-sync.sql`，见 [docs/database-scaffold/sop.md](./docs/database-scaffold/sop.md) 第 9 节
 - 一体部署：`bash deploy/deploy-compose.sh`（无 `moai` 网络则部署完整基础设施；网络存在则复用 PostgreSQL/Redis/RabbitMQ/RustFS，为 MoAI 单独创建数据库和对象桶）；配置以 `.env` 为来源生成并挂载 `configs/system.json`，Web 默认加载的 `appsettings.json` 保持独立。详见 [docs/deployment/docker.md](./docs/deployment/docker.md)。图数据库（Memgraph）不内置，按需接入
 - CI/CD：内网 Gitea 手动触发构建并部署到目标服务器，见 [docs/deployment/gitea-actions.md](./docs/deployment/gitea-actions.md)（`.gitea/workflows/deploy.yml` + `deploy/gitea/remote-deploy.sh`；打版本 tag `X.Y.Z`/`vX.Y.Z` 自动构建部署，也可手动 Run workflow；变量/密钥取仓库「设置 → Actions」，与 mo_platform 同名）
 - 种子账号：admin / abcd123456（root）
@@ -93,7 +94,8 @@ docs/ ui/docs/    规范与领域文档    local-dev/  E2E 脚本    tests/  .NE
 
 ```bash
 dotnet build src/MoAI/MoAI.csproj                 # 0 error
-dotnet test tests/MoAI.Subsystem.Client.Tests     # 子系统 .NET 客户端库 8 用例（内存桩，无需后端）
+dotnet test tests/MoAI.Database.Tests            # schema 补全解析/DDL 生成 14 用例（不需要数据库）
+dotnet test tests/MoAI.Subsystem.Client.Tests     # 子系统 .NET 客户端库 12 用例（内存桩，无需后端）
 cd ui && npm run typecheck && npm run lint && npm run test
 # E2E（需后端运行中）
 node local-dev/user-management-e2e.mjs   # UM 37
@@ -136,7 +138,8 @@ node local-dev/skill-market-e2e.mjs      # SM 29（技能市场：市场/详情/
 node local-dev/teamres-key-e2e.mjs       # TR 39（团队外部接入：moai-ac- 去范围化全量访问 /api/teamres（不传/传 scopes 均 200、列表无 scopes 回显、wiki 读写+KG+token 兑换+用户 token 无 app_chat）+ 统一团队资源 key teamres_key（key 唯一生成时机=开启资源功能：未开启建 key 400、PUT mcp-config/feature 开启自动生成并在 GET 回显、get-or-create 幂等/一资源一把（不同应用 key 不同）/归属 404/包围圈：wiki key 本库 REST+MCP 放行越库 403 与 list 过滤、app key 绑定应用仅其 ACP/A2A（打其它应用 403）/越圈 403/关闭功能后 key 403 feature_disabled 且 moai-ac- 同拒、重开复用原 key/重置旧行 id 不变旧 key 401/不可换 token/伪造与旧 moai- 前缀 401/跨团队 404；key 无启停状态且不可删除，TR-S26/S28 已退役，吊销=重置或关闭开关）；TA 系列整体退役不复用）
 node local-dev/ai-channel-auth-e2e.mjs    # AC 23（渠道级批量授权：授权视图统计+并集回显/全量替换所有私有模型/公开模型不受影响/模型列表 authorizedTeamNames 回显/团队可用性联动（/ai/model/available）/清空/admin 门禁/团队渠道 400）
 node local-dev/team-aichannel-e2e.mjs     # TC 38（团队自有模型渠道：门禁/渠道模型 CRUD/同步导入桩/聚合可用模型 isTeamChannel 标记（/ai/model/available）/模型网关下线断言/scopes 字段退役被忽略创建 200 @TC-S5/团队隔离/额度端点下线 + 渠道 tokens 统计字段与审计人名回显 @TC-S8；内置 OpenAI 兼容桩，零真实依赖）
-node local-dev/subsystem-e2e.mjs          # SUB 101（系统级接入合并模型：root 门禁/子系统自填 appid+密钥（AES 可逆存储仅回掩码，reveal-secret RSA+AES 信封随时回显原文）/统一 /api/subsys/token 换取+refresh 轮换 @SUB-S45/心跳 v2 按实例 ZSET（缺实例标识 400/单双实例在线实例数 @SUB-S61~S62）/停用即拒/密钥重置/团队授权全员与指定/删除释放 appid + 委托 SSO 全链路与门禁 + 组织授权（org_grant：方向 self/up/down/团队∪组织并集 @SUB-S46~S52）+ 合并模型 @SUB-S53~S60：应用接入自动 moai-sa- appid/同表回显不漏原文/直连轨仅限应用接入/资源面全量（scope 分档下线）/旧端点下线/子系统专属端点 404/应用接入心跳；零外部依赖）
+node local-dev/subsys-event-e2e.mjs      # EVT 28（系统级接入事件推送：/hub/subsys 建连/onReady + 用户/组织/团队/自身事件 + 断线补发与过期游标 + grants/events/团队成员对账 + 停用最终事件；内置 SignalR Node 客户端，零外部依赖）
+node local-dev/subsystem-e2e.mjs          # SUB 117（系统级接入合并模型：root 门禁/子系统自填 appid+密钥（AES 可逆存储仅回掩码，reveal-secret RSA+AES 信封随时回显原文）/统一 /api/subsys/token 换取+refresh 轮换 @SUB-S45/心跳 v2 按实例 ZSET（缺实例标识 400/单双实例在线实例数 @SUB-S61~S62）/停用即拒/密钥重置/团队授权全员与指定/删除释放 appid + 委托 SSO 全链路与门禁 + 进入前预检 @SUB-S71~S73（不可用/未授权/回调未注册/无授权直接拦截，不跳登录不回跳）+ 组织授权（org_grant：方向 self/up/down/团队∪组织并集 @SUB-S46~S52）+ 合并模型 @SUB-S53~S60：应用接入自动 moai-sa- appid/同表回显不漏原文/直连轨仅限应用接入/资源面全量（scope 分档下线）/旧端点下线/子系统专属端点 404/应用接入心跳；零外部依赖）
 node local-dev/subsys-demo-seed.mjs       # DEMO（清空并重建演示数据：子系统×2（双回调/指定团队）+应用接入×2+组织授权，末尾功能验证：token/直连/心跳在线/信封回显/redirect_uri/限流 429；可重复执行）
 node local-dev/demo-data-analysis-app.mjs # DEMO（商业数据分析演示：每次新建团队+团队智能体「商业数据分析组」（1主+5子：指标拆解师/趋势分析师/可视化顾问/行业情报员/报告撰写员）+Agent 应用（绑定智能体/开协作/开场白/快捷输入/发布）+真实 SSE 冒烟（派发+moai.subagent 事件）；环境无 conversation 模型时自动建本地桩保底；可重复执行）
 node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000  # SAA 58（应用接入：管理门禁/创建一次性 appid+密钥/列表前缀回显/appid 直连与 access_token 双轨 @SAA-S17~S29/refresh 轮换/停用双轨 403/资源面全量访问+子系统 token 互通+心跳 @SAA-S60~S62/系统资源接口：用户 upsert 幂等推送+禁用+root 保护 @SAA-S34~S42、组织角色 @SAA-S43~S49、团队与成员治理 @SAA-S50~S56；scope 分档用例已退役 @SAA-S3/S18/S58；零外部依赖，需后端运行中）

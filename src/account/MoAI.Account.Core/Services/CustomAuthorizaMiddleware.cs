@@ -36,6 +36,13 @@ public class CustomAuthorizaMiddleware : IMiddleware
     /// <inheritdoc/>
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
+        // 系统级接入事件 Hub 由机器端认证方案自行校验，不走站内用户态
+        if (context.Request.Path.StartsWithSegments("/hub/subsys", StringComparison.OrdinalIgnoreCase))
+        {
+            await next(context);
+            return;
+        }
+
         var userContext = _userContextProvider.GetUserContext();
 
         var endpoint = context.GetEndpoint();

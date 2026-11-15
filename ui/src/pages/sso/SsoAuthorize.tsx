@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { Alert, Button, Card, Space, Spin, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { radius, spacing } from '@/design-system/theme'
-import { subsystemSsoAuthorizeCode } from '@/api/subsystem'
+import { subsystemSsoAuthorizeCode, subsystemSsoCheck } from '@/api/subsystem'
 import { useAppStore } from '@/store/app'
 
 const { Text, Title } = Typography
@@ -23,15 +23,33 @@ type SsoState =
   | { phase: 'redirecting'; name?: string | null }
   | { phase: 'error'; message: string }
 
+/** 预检原因码 → i18n 文案键（未知原因按不可用处理） */
+function reasonMessageKey(reason?: string | null): string {
+  switch (reason) {
+    case 'callback_mismatch':
+      return 'sso.reasonCallbackMismatch'
+    case 'no_grants':
+      return 'sso.reasonNoGrants'
+    case 'not_authorized':
+      return 'sso.reasonNotAuthorized'
+    case 'unavailable':
+    default:
+      return 'sso.reasonUnavailable'
+  }
+}
+
 /**
- * 子系统委托 SSO 跳转页（公开路由）：子系统以 `/sso/authorize?client=<appid>&state=<可选>` 引导用户来此，
- * MoAI 登录态下自动签发一次性委托码并回跳子系统注册的回调地址（回跳地址取注册值，防开放重定向）。
+ * 子系统委托 SSO 跳转页（公开路由）：子系统以 `/sso/authorize?client=<appid>&state=<可选>` 引导用户来此。
+ * 先做进入前预检（子系统存在/启用/回调/当前用户授权），不可用时直接停在错误页，不进入登录流程、不回跳子系统；
+ * 预检通过后：未登录先去登录页（登录成功回到本页），已登录则签发一次性委托码并回跳注册回调地址
+ * （回跳地址取注册值，防开放重定向）。
  */
 export function SsoAuthorize() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const accessToken = useAppStore((state) => state.userInfo?.accessToken)
+  const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const [state, setState] = useState<SsoState>({ phase: 'loading' })
   const startedRef = useRef(false)
 
@@ -42,7 +60,30 @@ export function SsoAuthorize() {
 
   const redirect = useCallback(
     async (subsystemKey: string, passthrough: string) => {
-      setState({ phase: 'loading' })
+      // 1) 进入前预检：不可用/未授权直接停在本页，不进入登录流程、不回跳子系统
+      let check
+      try {
+        check = await subsystemSsoCheck(subsystemKey, redirectUri || undefined)
+      } catch {
+        setState({ phase: 'error', message: t('sso.checkFailed') })
+        return
+      }
+
+      if (!check.allowed) {
+        setState({ phase: 'error', message: t(reasonMessageKey(check.reason)) })
+        return
+      }
+
+      if (check.requiresLogin) {
+        // 本地残留的过期 token 由服务端判定为未认证：清理后重新登录，登录成功回到本页继续
+        if (accessToken) clearUserInfo()
+        const current = `${window.location.pathname}${window.location.search}`
+        navigate(`/login?redirect=${encodeURIComponent(current)}`, { replace: true })
+        return
+      }
+
+      // 2) 已登录且获授权：签发委托码并回跳
+      setState({ phase: 'redirecting', name: check.name })
       try {
         const res = await subsystemSsoAuthorizeCode(subsystemKey, passthrough || undefined, redirectUri || undefined)
         if (!res.code || !res.callbackUrl) {
@@ -50,14 +91,13 @@ export function SsoAuthorize() {
           return
         }
 
-        setState({ phase: 'redirecting', name: res.name })
         window.location.replace(buildCallbackRedirect(res.callbackUrl, res.code, passthrough || undefined))
       } catch {
         // 错误已由全局请求中间件统一提示（子系统不存在/未开放/团队未授权等）
         setState({ phase: 'error', message: t('sso.authorizeFailed') })
       }
     },
-    [t],
+    [accessToken, clearUserInfo, navigate, redirectUri, t],
   )
 
   useEffect(() => {
@@ -68,15 +108,8 @@ export function SsoAuthorize() {
       return
     }
 
-    if (!accessToken) {
-      // 未登录：去登录页，登录成功后带着原地址回来
-      const current = `${window.location.pathname}${window.location.search}`
-      navigate(`/login?redirect=${encodeURIComponent(current)}`, { replace: true })
-      return
-    }
-
     void redirect(client, passState)
-  }, [accessToken, client, passState, navigate, redirect, t])
+  }, [client, passState, redirect, t])
 
   return (
     <div

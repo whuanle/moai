@@ -183,4 +183,72 @@ Feature: PostgresScaffold 逆向工程
     When 运行工具
     Then 报错 "没有需要生成实体的表，已中止以免清空 src/database"
     And src/database 不被改写（分发步骤未执行）
+
+Feature: 存量库 schema 自动补全（升级部署自愈）
+  Background:
+    Given 线上库由旧版本创建，缺少后加的表与列
+    And EnsureCreated 对既有库零动作
+
+  @DB-S26 @manual
+  Scenario: 缺表补建
+    Given 库中不存在后加模块的表（如 dingtalk_app）
+    When 应用启动
+    Then 按 EF 模型建表并建其索引
+    And 依赖该表的查询不再报 42P01
+
+  @DB-S27 @manual
+  Scenario: 缺列补列
+    Given 表缺少后加列（如 access_app.level、publication_review.publish_version）
+    When 应用启动
+    Then 逐列执行 ALTER TABLE ... ADD COLUMN IF NOT EXISTS
+    And 实体全字段查询不再报 42703
+
+  @DB-S28 @auto:unit
+  Scenario Outline: NOT NULL 无默认值列的兜底
+    Given 待补列声明为 NOT NULL 且模型未给默认值
+    And 目标表已有数据
+    When 生成补列语句
+    Then 按类型补兜底默认值 <默认值>
+    Examples:
+      | 类型                       | 默认值 |
+      | character varying(50)      | ''     |
+      | integer                    | 0      |
+      | boolean                    | false  |
+      | uuid                       | 零值   |
+      | jsonb                      | {}     |
+      | timestamp with time zone   | now()  |
+
+  @DB-S29 @auto:unit
+  Scenario: 无法推断默认值的类型降级为可空
+    Given 待补列类型为 vector 且声明 NOT NULL、无默认值
+    When 生成补列语句
+    Then 去掉 NOT NULL 以可空列补入，不因存量行无值而阻断启动
+
+  @DB-S30 @manual
+  Scenario: 字符串列加宽
+    Given 库中 access_app.name 为 varchar(20)，模型为 varchar(50)
+    When 应用启动
+    Then 执行 ALTER COLUMN TYPE varchar(50)
+    But 反向变窄不做任何变更
+
+  @DB-S31 @manual
+  Scenario: 只增不删（不做破坏性变更）
+    Given 库中存在模型已移除的列/表（如 access_app.scopes）
+    When 应用启动
+    Then 不删除该列/表，也不修改其结构
+    But 删除/改名仍由人工 asserts 脚本执行
+
+  @DB-S32 @manual
+  Scenario: 幂等与索引容错
+    Given 库已补齐到当前模型
+    When 再次启动
+    Then 不产生任何 DDL（零变更）
+    But 唯一索引因存量脏数据建失败时仅记录告警，不阻断启动
+
+  @DB-S33 @manual
+  Scenario: 运维预检与手工执行
+    Given 运维需要确认线上库与模型的差异
+    When 运行 tool/SchemaSync diff <连接串>
+    Then 只读比对并列出缺失的表/列/索引（不执行 DDL）
+    And 用 script 生成 asserts/schema-sync.sql 后经 psql 全量执行同样幂等
 ```

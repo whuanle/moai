@@ -20,6 +20,12 @@ import { JsonParseNodeFactory, JsonSerializationWriterFactory } from '@microsoft
 import { Env } from '@/config/env'
 import { useAppStore } from '@/store/app'
 import { feedback, isNetworkError, parseApiErrorResponse } from '@/design-system/components/Feedback'
+import { trySessionRefresh } from '@/api/sessionRefresh'
+
+/** 登录/续期自身返回的 401 不参与续期重试（否则递归） */
+function isAuthEndpoint(url: string): boolean {
+  return url.includes('login') || url.includes('refresh_token')
+}
 
 class FilterRequestHandler implements Middleware {
   next: Middleware | undefined
@@ -49,6 +55,32 @@ class FilterRequestHandler implements Middleware {
       }
       console.error('[api] request error:', error)
       throw error
+    }
+
+    // 401 先静默续期并重试一次：休眠唤醒、时钟偏差、令牌刚过期等场景不应直接把用户踢回登录页。
+    // 续期本身失败（refresh_token 过期/用户被禁用/密钥轮换）才走清态跳转。
+    if (response.status === 401 && !isAuthEndpoint(url)) {
+      let refreshed = false
+      try {
+        refreshed = await trySessionRefresh()
+      } catch {
+        refreshed = false
+      }
+      if (refreshed) {
+        try {
+          // adapter 只在首次发送前调用一次 authenticateRequest，重试要用续期后的 token 覆盖鉴权头
+          const retryHeaders = new Headers(requestInit.headers)
+          const newToken = useAppStore.getState().userInfo?.accessToken
+          if (newToken) {
+            retryHeaders.set('Authorization', `Bearer ${newToken}`)
+          }
+          response = await this.next.execute(url, { ...requestInit, headers: retryHeaders }, requestOptions)
+        } catch (error) {
+          feedback.handleError(error)
+          console.error('[api] retry request error:', error)
+          throw error
+        }
+      }
     }
 
     if (response.status === 401 && !url.includes('login')) {
@@ -88,7 +120,8 @@ function buildAdapter(): FetchRequestAdapter {
   const token = useAppStore.getState().userInfo?.accessToken
   const authProvider = token
     ? new BaseBearerTokenAuthenticationProvider({
-        getAuthorizationToken: async () => token,
+        // 每次请求现取 store 里的 token：静默续期/换号后旧 adapter 也能带上新 token（401 重试依赖此行为）
+        getAuthorizationToken: async () => useAppStore.getState().userInfo?.accessToken ?? '',
         getAllowedHostsValidator: () => new AllowedHostsValidator(),
       })
     : new AnonymousAuthenticationProvider()

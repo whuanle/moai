@@ -12,6 +12,12 @@ import {
 
 const { Text } = Typography
 
+// 在线插件页嵌在 Plugins 的 Tabs 内：整页不滚动，卡片列表内部滚动、分页固定在底部
+// AppLayout Content 上下 padding 24*2 + antd 顶部 Tabs（导航 46 + 默认下间距 16）
+const pageVerticalPadding = spacing.lg * 2
+const tabsBarHeight = 46 + 16
+const panelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight}px)`
+
 export function PluginMarketplacePanel() {
   const { t } = useTranslation()
   const feedback = useFeedback()
@@ -135,126 +141,130 @@ export function PluginMarketplacePanel() {
   }
 
   return (
-    <>
-      <PageToolbar
-        filters={<Input value={searchText} onChange={(event) => setSearchText(event.target.value)} onPressEnter={handleSearch} allowClear maxLength={100} placeholder={t('plugins.online.searchPlaceholder')} style={{ width: 260 }} />}
-        queries={<Button icon={<SearchOutlined />} loading={catalogLoading} onClick={handleSearch}>{t('plugins.online.search')}</Button>}
-        actions={(
-          <Space size="middle">
-            <Checkbox
-              checked={selectedAllOnPage}
-              indeterminate={selectedSomeOnPage && !selectedAllOnPage}
-              disabled={catalogLoading || batchInstalling || installableItems.length === 0}
-              onChange={(event) => setSelectedPluginIds(event.target.checked ? new Set(installableItems.map((item) => item.pluginId)) : new Set())}
-            >
-              {t('plugins.online.selectAllInstallable')}
-            </Checkbox>
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              aria-label={t('plugins.online.installSelected', { count: selectedInstallableItems.length })}
-              loading={batchInstalling}
-              disabled={selectedInstallableItems.length === 0 || Boolean(busyKey)}
-              onClick={() => void handleBatchInstall()}
-            >
-              {t('plugins.online.installSelected', { count: selectedInstallableItems.length })}
-            </Button>
-          </Space>
-        )}
-      />
-      <Spin spinning={categoriesLoading}>
-        <Space size={4} wrap style={{ marginBottom: spacing.md }}>
-          <Tag.CheckableTag
-            checked={!categoryId}
-            onChange={() => {
-              setCategoryId('')
-              setSelectedPluginIds(new Set())
-              setPageNo(1)
-            }}
-          >
-            {t('plugins.online.categoryAll')}
-          </Tag.CheckableTag>
-          {categories.map((category) => (
+    <div style={{ display: 'flex', flexDirection: 'column', height: panelHeight, minHeight: 0 }}>
+      <div style={{ flexShrink: 0 }}>
+        <PageToolbar
+          filters={<Input value={searchText} onChange={(event) => setSearchText(event.target.value)} onPressEnter={handleSearch} allowClear maxLength={100} placeholder={t('plugins.online.searchPlaceholder')} style={{ width: 260 }} />}
+          queries={<Button icon={<SearchOutlined />} loading={catalogLoading} onClick={handleSearch}>{t('plugins.online.search')}</Button>}
+          actions={(
+            <Space size="middle">
+              <Checkbox
+                checked={selectedAllOnPage}
+                indeterminate={selectedSomeOnPage && !selectedAllOnPage}
+                disabled={catalogLoading || batchInstalling || installableItems.length === 0}
+                onChange={(event) => setSelectedPluginIds(event.target.checked ? new Set(installableItems.map((item) => item.pluginId)) : new Set())}
+              >
+                {t('plugins.online.selectAllInstallable')}
+              </Checkbox>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                aria-label={t('plugins.online.installSelected', { count: selectedInstallableItems.length })}
+                loading={batchInstalling}
+                disabled={selectedInstallableItems.length === 0 || Boolean(busyKey)}
+                onClick={() => void handleBatchInstall()}
+              >
+                {t('plugins.online.installSelected', { count: selectedInstallableItems.length })}
+              </Button>
+            </Space>
+          )}
+        />
+        <Spin spinning={categoriesLoading}>
+          <Space size={4} wrap style={{ marginBottom: spacing.md }}>
             <Tag.CheckableTag
-              key={category.id}
-              checked={categoryId === category.id}
+              checked={!categoryId}
               onChange={() => {
-                setCategoryId(category.id)
+                setCategoryId('')
                 setSelectedPluginIds(new Set())
                 setPageNo(1)
               }}
             >
-              {[category.emoji, category.name].filter(Boolean).join(' ')}
+              {t('plugins.online.categoryAll')}
             </Tag.CheckableTag>
-          ))}
-        </Space>
-      </Spin>
-      <Spin spinning={catalogLoading}>
-        {catalog.length === 0 && !catalogLoading ? (
-          <Empty description={t('plugins.online.emptyCatalog')} />
-        ) : (
-          <Row gutter={[spacing.md, spacing.md]}>
-            {catalog.map((item) => (
-              <Col key={item.pluginId} xs={24} sm={12} lg={8} xxl={6}>
-                <Card
-                  hoverable
-                  style={{ height: '100%' }}
-                  styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    {!item.isInstalled ? (
-                      <Checkbox
-                        checked={selectedPluginIds.has(item.pluginId)}
-                        disabled={batchInstalling || Boolean(busyKey)}
-                        aria-label={t('plugins.online.selectPlugin', { name: item.name || item.key })}
-                        onChange={(event) => {
-                          setSelectedPluginIds((current) => {
-                            const next = new Set(current)
-                            if (event.target.checked) next.add(item.pluginId)
-                            else next.delete(item.pluginId)
-                            return next
-                          })
-                        }}
-                      />
-                    ) : null}
-                    {item.iconUrl ? <Image src={item.iconUrl} width={44} height={44} preview={false} alt={item.name} /> : <Avatar shape="square" size={44}>{(item.name || item.key).slice(0, 1)}</Avatar>}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <Text strong ellipsis={{ tooltip: item.name || item.key }} style={{ display: 'block' }}>{item.name || item.key}</Text>
-                      <Text type="secondary" ellipsis={{ tooltip: item.key }} style={{ display: 'block', fontFamily: 'monospace', fontSize: 12 }}>{item.key}</Text>
-                    </div>
-                  </div>
-                  <Text
-                    type="secondary"
-                    style={{ marginTop: spacing.sm, minHeight: 44, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                    title={item.summary}
-                  >
-                    {item.summary || '-'}
-                  </Text>
-                  <Space size={4} wrap style={{ marginTop: spacing.sm }}>
-                    {item.categoryName ? <Tag>{[item.categoryEmoji, item.categoryName].filter(Boolean).join(' ')}</Tag> : null}
-                    <Tag>{t('plugins.online.versionLabel', { version: item.latestVersion || '-' })}</Tag>
-                    <Tag>{t('plugins.online.downloadsLabel', { count: Number(item.downloadCount || 0) })}</Tag>
-                  </Space>
-                  <div style={{ marginTop: 'auto', paddingTop: spacing.sm, display: 'flex', justifyContent: 'flex-end' }}>
-                    {item.isInstalled ? (
-                      <Tag color="green">{t('plugins.online.installed')}</Tag>
-                    ) : (
-                      <Button type="link" size="small" icon={<DownloadOutlined />} aria-label={t('plugins.online.installPlugin', { name: item.name || item.key })} loading={busyKey === item.key} disabled={batchInstalling} onClick={() => void handleInstall(item)}>
-                        {t('plugins.online.install')}
-                      </Button>
-                    )}
-                  </div>
-                </Card>
-              </Col>
+            {categories.map((category) => (
+              <Tag.CheckableTag
+                key={category.id}
+                checked={categoryId === category.id}
+                onChange={() => {
+                  setCategoryId(category.id)
+                  setSelectedPluginIds(new Set())
+                  setPageNo(1)
+                }}
+              >
+                {[category.emoji, category.name].filter(Boolean).join(' ')}
+              </Tag.CheckableTag>
             ))}
-          </Row>
-        )}
-      </Spin>
-      {total > pageSize ? (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.md }}>
+          </Space>
+        </Spin>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', paddingRight: spacing.xs }}>
+        <Spin spinning={catalogLoading}>
+          {catalog.length === 0 && !catalogLoading ? (
+            <Empty description={t('plugins.online.emptyCatalog')} />
+          ) : (
+            <Row gutter={[spacing.md, spacing.md]}>
+              {catalog.map((item) => (
+                <Col key={item.pluginId} xs={24} sm={12} lg={8} xxl={6}>
+                  <Card
+                    hoverable
+                    style={{ height: '100%' }}
+                    styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                      {!item.isInstalled ? (
+                        <Checkbox
+                          checked={selectedPluginIds.has(item.pluginId)}
+                          disabled={batchInstalling || Boolean(busyKey)}
+                          aria-label={t('plugins.online.selectPlugin', { name: item.name || item.key })}
+                          onChange={(event) => {
+                            setSelectedPluginIds((current) => {
+                              const next = new Set(current)
+                              if (event.target.checked) next.add(item.pluginId)
+                              else next.delete(item.pluginId)
+                              return next
+                            })
+                          }}
+                        />
+                      ) : null}
+                      {item.iconUrl ? <Image src={item.iconUrl} width={44} height={44} preview={false} alt={item.name} /> : <Avatar shape="square" size={44}>{(item.name || item.key).slice(0, 1)}</Avatar>}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text strong ellipsis={{ tooltip: item.name || item.key }} style={{ display: 'block' }}>{item.name || item.key}</Text>
+                        <Text type="secondary" ellipsis={{ tooltip: item.key }} style={{ display: 'block', fontFamily: 'monospace', fontSize: 12 }}>{item.key}</Text>
+                      </div>
+                    </div>
+                    <Text
+                      type="secondary"
+                      style={{ marginTop: spacing.sm, minHeight: 44, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                      title={item.summary}
+                    >
+                      {item.summary || '-'}
+                    </Text>
+                    <Space size={4} wrap style={{ marginTop: spacing.sm }}>
+                      {item.categoryName ? <Tag>{[item.categoryEmoji, item.categoryName].filter(Boolean).join(' ')}</Tag> : null}
+                      <Tag>{t('plugins.online.versionLabel', { version: item.latestVersion || '-' })}</Tag>
+                      <Tag>{t('plugins.online.downloadsLabel', { count: Number(item.downloadCount || 0) })}</Tag>
+                    </Space>
+                    <div style={{ marginTop: 'auto', paddingTop: spacing.sm, display: 'flex', justifyContent: 'flex-end' }}>
+                      {item.isInstalled ? (
+                        <Tag color="green">{t('plugins.online.installed')}</Tag>
+                      ) : (
+                        <Button type="link" size="small" icon={<DownloadOutlined />} aria-label={t('plugins.online.installPlugin', { name: item.name || item.key })} loading={busyKey === item.key} disabled={batchInstalling} onClick={() => void handleInstall(item)}>
+                          {t('plugins.online.install')}
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Spin>
+      </div>
+      {total > 0 ? (
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', paddingTop: spacing.md }}>
           <Pagination current={pageNo} pageSize={pageSize} total={total} onChange={(page) => { setSelectedPluginIds(new Set()); setPageNo(page) }} showSizeChanger={false} />
         </div>
       ) : null}
-    </>
+    </div>
   )
 }

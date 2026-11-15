@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Account.Services;
 using MoAI.Database;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
@@ -15,16 +16,19 @@ public class UpdateUserAvatarCommandHandler : IRequestHandler<UpdateUserAvatarCo
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IUserAccountService _userAccountService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateUserAvatarCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="userAccountService"></param>
-    public UpdateUserAvatarCommandHandler(DatabaseContext databaseContext, IUserAccountService userAccountService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public UpdateUserAvatarCommandHandler(DatabaseContext databaseContext, IUserAccountService userAccountService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _userAccountService = userAccountService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -55,6 +59,7 @@ public class UpdateUserAvatarCommandHandler : IRequestHandler<UpdateUserAvatarCo
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         await _userAccountService.RemoveUserStateAsync(request.ContextUserId, cancellationToken);
+        await _eventPublisher.PublishUserUpdatedAsync(user.Id, user.UserName, ["avatar"], cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

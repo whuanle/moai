@@ -6,6 +6,7 @@ using MoAI.Account.Services;
 using MoAI.Database;
 using MoAI.Database.Helper;
 using MoAI.Infra.Defaults;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Services;
 using MoAI.Auth.Commands;
@@ -30,6 +31,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     private readonly ILoginSecurityService _loginSecurityService;
     private readonly ILogger<OAuthRegisterCommandHandler> _logger;
     private readonly IUserAccountService _userAccountService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OAuthRegisterCommandHandler"/> class.
@@ -42,7 +44,8 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     /// <param name="loginSecurityService">登录安全策略服务.</param>
     /// <param name="logger"></param>
     /// <param name="userAccountService"></param>
-    public OAuthRegisterCommandHandler(DatabaseContext databaseContext, IMediator mediator, IRsaProvider rsaProvider, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILoginSecurityService loginSecurityService, ILogger<OAuthRegisterCommandHandler> logger, IUserAccountService userAccountService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public OAuthRegisterCommandHandler(DatabaseContext databaseContext, IMediator mediator, IRsaProvider rsaProvider, IRedisDatabase redisDatabase, ITokenProvider tokenProvider, ILoginSecurityService loginSecurityService, ILogger<OAuthRegisterCommandHandler> logger, IUserAccountService userAccountService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _mediator = mediator;
@@ -52,6 +55,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         _loginSecurityService = loginSecurityService;
         _logger = logger;
         _userAccountService = userAccountService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -125,6 +129,10 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
         await _databaseContext.SaveChangesAsync();
 
         transactionScope.Complete();
+
+        // RegisterUser 在环境事务内不发事件，提交后由这里以最终用户名统一发创建 + 绑定事件
+        await _eventPublisher.PublishUserCreatedAsync(user.Id, user.UserName, cancellationToken);
+        await _eventPublisher.PublishUserOAuthLinkedAsync(user.Id, oauthConnectionEntity.Id, cancellationToken);
 
         // 强制 2FA 且未绑定：token 携带 mfa_pending，授权中间件只放行绑定流程相关接口
         var mfaPending = await _loginSecurityService.IsForced2faAsync(cancellationToken) && !user.IsTotpEnabled;

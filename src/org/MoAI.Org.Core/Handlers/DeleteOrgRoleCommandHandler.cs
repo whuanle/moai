@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Org.Commands;
@@ -16,16 +17,19 @@ public class DeleteOrgRoleCommandHandler : IRequestHandler<DeleteOrgRoleCommand,
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IOrgGrantCache _orgGrantCache;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteOrgRoleCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="orgGrantCache">组织授权缓存（角色树与授权记录变更需失效）.</param>
-    public DeleteOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public DeleteOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _orgGrantCache = orgGrantCache;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -75,6 +79,7 @@ public class DeleteOrgRoleCommandHandler : IRequestHandler<DeleteOrgRoleCommand,
             await _orgGrantCache.RemoveUserRoleIdsAsync(userId, cancellationToken);
         }
 
+        await _eventPublisher.PublishOrgRoleDeletedAsync(role.Id, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

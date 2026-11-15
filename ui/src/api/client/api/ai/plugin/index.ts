@@ -12,6 +12,8 @@ import { type WithPluginItemRequestBuilder, WithPluginItemRequestBuilderNavigati
 // @ts-ignore
 import { ManageRequestBuilderNavigationMetadata, type ManageRequestBuilder } from './manage/index.js';
 // @ts-ignore
+import { OnlineRequestBuilderNavigationMetadata, type OnlineRequestBuilder } from './online/index.js';
+// @ts-ignore
 import { RunRequestBuilderRequestsMetadata, type RunRequestBuilder } from './run/index.js';
 // @ts-ignore
 import { StaticRequestBuilderNavigationMetadata, type StaticRequestBuilder } from './static/index.js';
@@ -38,6 +40,10 @@ export interface PluginRequestBuilder extends BaseRequestBuilder<PluginRequestBu
      * The manage property
      */
     get manage(): ManageRequestBuilder;
+    /**
+     * The online property
+     */
+    get online(): OnlineRequestBuilder;
     /**
      * The run property
      */
@@ -100,6 +106,9 @@ export const PluginRequestBuilderNavigationMetadata: Record<Exclude<keyof Plugin
     },
     manage: {
         navigationMetadata: ManageRequestBuilderNavigationMetadata,
+    },
+    online: {
+        navigationMetadata: OnlineRequestBuilderNavigationMetadata,
     },
     run: {
         requestsMetadata: RunRequestBuilderRequestsMetadata,

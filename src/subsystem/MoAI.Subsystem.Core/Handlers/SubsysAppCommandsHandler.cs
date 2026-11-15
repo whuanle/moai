@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Subsystem.Commands;
@@ -78,6 +79,7 @@ public class CreateSubsysAppCommandHandler : IRequestHandler<CreateSubsysAppComm
             SecretSalt = string.Empty,
             SecretMask = _secretCipher.Mask(secret),
             Status = AccessAppStatus.Enabled,
+            TeamScope = isSubsystem ? request.TeamScope : SubsystemTeamScope.AllTeams,
             CallbackUrls = isSubsystem ? SubsystemCallbacks.Serialize(request.CallbackUrls) : "[]",
             AvatarPath = avatarPath,
         };
@@ -116,16 +118,19 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ISubsystemOnlineService _onlineService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateSubsysAppCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="onlineService">在线在场服务.</param>
-    public UpdateSubsysAppCommandHandler(DatabaseContext databaseContext, ISubsystemOnlineService onlineService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public UpdateSubsysAppCommandHandler(DatabaseContext databaseContext, ISubsystemOnlineService onlineService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _onlineService = onlineService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -135,6 +140,16 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
             .Where(x => x.Level == AccessAppLevel.System)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
             ?? throw new BusinessException("接入不存在.") { StatusCode = 404 };
+
+        var oldName = app.Name;
+        var oldDescription = app.Description;
+        var oldStatus = app.Status;
+        var oldAvatar = app.AvatarPath;
+        var oldCallbackUrls = app.CallbackUrls;
+        var oldTeamScope = app.TeamScope;
+        var teamAuthChanged = false;
+        IReadOnlyList<int>? grantedTeamIds = null;
+        string? grantedTeamScope = null;
 
         app.Name = request.Name;
         app.Description = request.Description ?? string.Empty;
@@ -151,6 +166,8 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
             var teamIds = await SubsystemTeamsGuard.NormalizeAsync(request.TeamScope, request.TeamIds, _databaseContext, cancellationToken);
             app.TeamScope = request.TeamScope;
             app.CallbackUrls = SubsystemCallbacks.Serialize(request.CallbackUrls);
+            grantedTeamIds = teamIds;
+            grantedTeamScope = request.TeamScope == SubsystemTeamScope.AllTeams ? "allTeams" : "specifiedTeams";
 
             // 授权团队列表整体覆盖：全员范围清空，指定范围按差集增删
             var existingAuths = await _databaseContext.SubsystemTeamAuths
@@ -161,7 +178,7 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
                 : existingAuths.Where(x => !teamIds.Contains(x.TeamId)).ToList();
             _databaseContext.SubsystemTeamAuths.RemoveRange(removeAuths);
 
-            var addTeamIds = teamIds.Where(id => existingAuths.All(x => x.TeamId != id));
+            var addTeamIds = teamIds.Where(id => existingAuths.All(x => x.TeamId != id)).ToList();
             foreach (var teamId in addTeamIds)
             {
                 _databaseContext.SubsystemTeamAuths.Add(new SubsystemTeamAuthEntity
@@ -171,9 +188,47 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
                     TeamId = teamId,
                 });
             }
+
+            teamAuthChanged = oldTeamScope != request.TeamScope || removeAuths.Count > 0 || addTeamIds.Count > 0;
         }
 
         await _databaseContext.SaveChangesAsync(cancellationToken);
+
+        var fields = new List<string>();
+        if (oldName != app.Name)
+        {
+            fields.Add("name");
+        }
+
+        if (oldDescription != app.Description)
+        {
+            fields.Add("description");
+        }
+
+        if (oldAvatar != app.AvatarPath)
+        {
+            fields.Add("avatar");
+        }
+
+        if (oldCallbackUrls != app.CallbackUrls)
+        {
+            fields.Add("callbackUrls");
+        }
+
+        if (fields.Count > 0)
+        {
+            await _eventPublisher.PublishAccessAppUpdatedAsync(app.Id, fields, cancellationToken);
+        }
+
+        if (oldStatus != app.Status)
+        {
+            await _eventPublisher.PublishAccessAppStatusChangedAsync(app.Id, app.Status == AccessAppStatus.Enabled, cancellationToken);
+        }
+
+        if (teamAuthChanged)
+        {
+            await _eventPublisher.PublishAccessAppGrantsChangedAsync(app.Id, "teams", grantedTeamIds, null, grantedTeamScope, cancellationToken);
+        }
 
         // 停用即时生效：清除在线在场集合，机器面调用随中间件实时校验一并拒绝
         if (request.Status == AccessAppStatus.Disabled)
@@ -193,6 +248,7 @@ public class ResetSubsysAppSecretCommandHandler : IRequestHandler<ResetSubsysApp
     private readonly DatabaseContext _databaseContext;
     private readonly ISubsystemSecretCipher _secretCipher;
     private readonly ISubsysTokenRateLimiter _rateLimiter;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ResetSubsysAppSecretCommandHandler"/> class.
@@ -200,11 +256,13 @@ public class ResetSubsysAppSecretCommandHandler : IRequestHandler<ResetSubsysApp
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="secretCipher">密钥可逆加密服务.</param>
     /// <param name="rateLimiter">换取限流服务.</param>
-    public ResetSubsysAppSecretCommandHandler(DatabaseContext databaseContext, ISubsystemSecretCipher secretCipher, ISubsysTokenRateLimiter rateLimiter)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public ResetSubsysAppSecretCommandHandler(DatabaseContext databaseContext, ISubsystemSecretCipher secretCipher, ISubsysTokenRateLimiter rateLimiter, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _secretCipher = secretCipher;
         _rateLimiter = rateLimiter;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -224,6 +282,7 @@ public class ResetSubsysAppSecretCommandHandler : IRequestHandler<ResetSubsysApp
 
         // 新密钥换取不被旧失败计数误伤（清限流窗口）
         await _rateLimiter.ResetAllAsync();
+        await _eventPublisher.PublishAccessAppSecretResetAsync(app.Id, cancellationToken);
         return new ResetSubsysAppSecretCommandResponse { SecretMask = app.SecretMask };
     }
 }
@@ -236,6 +295,7 @@ public class DeleteSubsysAppCommandHandler : IRequestHandler<DeleteSubsysAppComm
     private readonly DatabaseContext _databaseContext;
     private readonly ISubsystemOnlineService _onlineService;
     private readonly ISubsysTokenRateLimiter _rateLimiter;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteSubsysAppCommandHandler"/> class.
@@ -243,11 +303,13 @@ public class DeleteSubsysAppCommandHandler : IRequestHandler<DeleteSubsysAppComm
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="onlineService">在线在场服务.</param>
     /// <param name="rateLimiter">换取限流服务.</param>
-    public DeleteSubsysAppCommandHandler(DatabaseContext databaseContext, ISubsystemOnlineService onlineService, ISubsysTokenRateLimiter rateLimiter)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public DeleteSubsysAppCommandHandler(DatabaseContext databaseContext, ISubsystemOnlineService onlineService, ISubsysTokenRateLimiter rateLimiter, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _onlineService = onlineService;
         _rateLimiter = rateLimiter;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -273,6 +335,7 @@ public class DeleteSubsysAppCommandHandler : IRequestHandler<DeleteSubsysAppComm
         await _onlineService.RemoveAsync(app.Id);
         // 同名 appid 重建不被残留限流计数误伤
         await _rateLimiter.ResetAllAsync();
+        await _eventPublisher.PublishAccessAppDeletedAsync(app.Id, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

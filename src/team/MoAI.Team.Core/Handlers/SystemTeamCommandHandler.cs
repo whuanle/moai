@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Team.Commands;
@@ -16,14 +17,17 @@ namespace MoAI.Team.Handlers;
 public class SystemCreateTeamCommandHandler : IRequestHandler<SystemCreateTeamCommand, SimpleLong>
 {
     private readonly DatabaseContext _databaseContext;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SystemCreateTeamCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
-    public SystemCreateTeamCommandHandler(DatabaseContext databaseContext)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public SystemCreateTeamCommandHandler(DatabaseContext databaseContext, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -46,6 +50,7 @@ public class SystemCreateTeamCommandHandler : IRequestHandler<SystemCreateTeamCo
 
         _databaseContext.Teams.Add(team);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+        await _eventPublisher.PublishTeamCreatedAsync(team.Id, null, cancellationToken);
 
         return new SimpleLong { Value = team.Id };
     }
@@ -58,16 +63,19 @@ public class SystemAddTeamUserCommandHandler : IRequestHandler<SystemAddTeamUser
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SystemAddTeamUserCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public SystemAddTeamUserCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public SystemAddTeamUserCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -91,6 +99,7 @@ public class SystemAddTeamUserCommandHandler : IRequestHandler<SystemAddTeamUser
         var member = await _databaseContext.TeamUsers
             .FirstOrDefaultAsync(x => x.TeamId == request.TeamId && x.UserId == request.UserId, cancellationToken);
 
+        var added = member == null;
         if (member == null)
         {
             _databaseContext.TeamUsers.Add(new TeamUserEntity
@@ -114,6 +123,15 @@ public class SystemAddTeamUserCommandHandler : IRequestHandler<SystemAddTeamUser
 
         await _teamService.RemoveRoleCacheAsync(request.TeamId, request.UserId, cancellationToken);
 
+        if (added)
+        {
+            await _eventPublisher.PublishTeamMemberAddedAsync(request.TeamId, [request.UserId], (int)request.Role, cancellationToken);
+        }
+        else
+        {
+            await _eventPublisher.PublishTeamMemberUpdatedAsync(request.TeamId, request.UserId, (int)request.Role, cancellationToken);
+        }
+
         return EmptyCommandResponse.Default;
     }
 }
@@ -125,16 +143,19 @@ public class SystemRemoveTeamUserCommandHandler : IRequestHandler<SystemRemoveTe
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SystemRemoveTeamUserCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public SystemRemoveTeamUserCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public SystemRemoveTeamUserCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -157,6 +178,7 @@ public class SystemRemoveTeamUserCommandHandler : IRequestHandler<SystemRemoveTe
         await _databaseContext.SaveChangesAsync(cancellationToken);
 
         await _teamService.RemoveRoleCacheAsync(request.TeamId, request.UserId, cancellationToken);
+        await _eventPublisher.PublishTeamMemberRemovedAsync(request.TeamId, request.UserId, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

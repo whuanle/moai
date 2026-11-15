@@ -5,6 +5,7 @@ using MoAI.Account.Commands;
 using MoAI.Auth.Models;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -21,6 +22,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
     private readonly DatabaseContext _databaseContext;
     private readonly ILogger<OAuthBindExistAccountCommandHandler> _logger;
     private readonly IRedisDatabase _redisDatabase;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OAuthBindExistAccountCommandHandler"/> class.
@@ -29,12 +31,14 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
     /// <param name="databaseContext"></param>
     /// <param name="logger"></param>
     /// <param name="redisDatabase"></param>
-    public OAuthBindExistAccountCommandHandler(IUserContextProvider userContextProvider, DatabaseContext databaseContext, ILogger<OAuthBindExistAccountCommandHandler> logger, IRedisDatabase redisDatabase)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public OAuthBindExistAccountCommandHandler(IUserContextProvider userContextProvider, DatabaseContext databaseContext, ILogger<OAuthBindExistAccountCommandHandler> logger, IRedisDatabase redisDatabase, IAccessEventPublisher eventPublisher)
     {
         _userContextProvider = userContextProvider;
         _databaseContext = databaseContext;
         _logger = logger;
         _redisDatabase = redisDatabase;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -90,6 +94,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
 
         await _databaseContext.UserOauthConnections.AddAsync(oauthEntity, cancellationToken);
         await _databaseContext.SaveChangesAsync(cancellationToken);
+        await _eventPublisher.PublishUserOAuthLinkedAsync(oauthEntity.UserId, oauthEntity.ProviderId, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

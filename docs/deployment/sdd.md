@@ -37,7 +37,7 @@
 - `opensandbox-server`：官方 `opensandbox/server:latest`，挂载 `docker.sock` + `deploy/opensandbox/sandbox.toml`（`resolve_internal=false`、`host_ip=host.docker.internal`），独立容器避免 .NET 侧持有 Docker 能力（[@DEP-S16](./bdd.md#dep-s16)）。
 - `sandbox-image`：`profiles: ["sandbox-images"]`，仅供 `pull`（沙箱运行时镜像只拉取不部署）。
 - `postgres-init`：幂等创建独立数据库 `POSTGRES_DB`，校验/创建 pgvector、uuid-ossp、pg_trgm 扩展；完整模式依赖 Compose PostgreSQL，复用模式连接共享 PostgreSQL。
-- `moai`：默认镜像 `whuanle/moai:latest`（本地可 build），等待 postgres-init、rustfs-init 与 `opensandbox-server`；bind-mount `${MOAI_CONFIG_FILE}`（默认 `configs/system.json`）；volume `moai_files:/app/files`。
+- `moai`：默认镜像 `whuanle/moai:latest`（本地可 build），等待 postgres-init、rustfs-init 与 `opensandbox-server`；bind-mount `${MOAI_CONFIG_DIR:-/data/moai/configs}:/app/configs`（持久化 `rsa_private.key` 与在线插件包，避免重建容器后旧 token 全部失效）与 `${MOAI_CONFIG_FILE}`（默认 `configs/system.json`，只读覆盖）；volume `moai_files:/app/files`。
 - 图数据库（Memgraph）**不内置**，按 [docker.md 第 7 节](./docker.md) 单独部署接入。
 - 网络服务名 `moai-network`，Docker network 固定名 `moai`；完整模式创建，复用模式声明 external；named volume：postgres_data/redis_data/rabbitmq_data/rustfs_data/rustfs_logs/opensandbox_data/moai_files。
 - `.env.example` 与 MoPlatform 等 Mo 系列服务统一使用 `POSTGRES_*`、`REDIS_*`、`RABBITMQ_*`、`S3_*`、`RUSTFS_*` 变量；跨服务共享中间件时账号密码相同、数据库/桶/Redis 前缀各自隔离。MoAI 仍通过部署脚本生成并挂载 `configs/system.json`，应用宿主的 `appsettings.json` 由 ASP.NET Core 默认加载，不取代该文件。

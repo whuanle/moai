@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Database;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Account.Services;
@@ -15,16 +16,19 @@ public class UpdateUserIsDisableCommandHandler : IRequestHandler<UpdateUserIsDis
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IUserAccountService _userAccountService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateUserIsDisableCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext"></param>
     /// <param name="userAccountService"></param>
-    public UpdateUserIsDisableCommandHandler(DatabaseContext databaseContext, IUserAccountService userAccountService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public UpdateUserIsDisableCommandHandler(DatabaseContext databaseContext, IUserAccountService userAccountService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _userAccountService = userAccountService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -60,6 +64,7 @@ public class UpdateUserIsDisableCommandHandler : IRequestHandler<UpdateUserIsDis
         user.IsDisable = request.IsDisable;
         await _databaseContext.SaveChangesAsync(cancellationToken);
         await _userAccountService.RemoveUserStateAsync(user.Id, cancellationToken);
+        await _eventPublisher.PublishUserStatusChangedAsync(user.Id, user.UserName, user.IsDisable, cancellationToken);
 
         return EmptyCommandResponse.Default;
     }

@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra.Events;
 using MoAI.Org.Commands;
 using MoAI.Org.Queries.Responses;
 using MoAI.Org.Services;
@@ -15,16 +16,19 @@ public class CreateOrgRoleCommandHandler : IRequestHandler<CreateOrgRoleCommand,
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IOrgGrantCache _orgGrantCache;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateOrgRoleCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="orgGrantCache">组织授权缓存（角色树变更需失效）.</param>
-    public CreateOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public CreateOrgRoleCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _orgGrantCache = orgGrantCache;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -58,6 +62,7 @@ public class CreateOrgRoleCommandHandler : IRequestHandler<CreateOrgRoleCommand,
 
         // 角色树新增节点，失效全量 path 缓存
         await _orgGrantCache.RemoveRolePathsAsync(cancellationToken);
+        await _eventPublisher.PublishOrgRoleCreatedAsync(entity.Id, entity.ParentId, cancellationToken);
 
         return new CreateOrgRoleCommandResponse { OrgRoleId = entity.Id, Path = entity.Path };
     }

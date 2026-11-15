@@ -144,4 +144,13 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Then 部署脚本复用共享服务，仅启动 MoAI 专属服务
     And 共享 PostgreSQL 中存在独立的 POSTGRES_DB 数据库及所需扩展
     And MoAI 使用生成并挂载的 configs/system.json 连接共享基础设施
+
+  @DEP-S21 @manual
+  Scenario: JWT 签名私钥跨容器重建持久化
+    Given docker-compose 将宿主机 MOAI_CONFIG_DIR（默认 /data/moai/configs）整目录挂到 moai 容器 /app/configs
+    When 首次启动在该目录生成 rsa_private.key 签名私钥
+    And 换镜像重新创建容器（docker compose up -d moai）
+    Then 新容器仍使用同一把 rsa_private.key（宿主机文件未变）
+    And 旧容器签发的 access/refresh token 继续有效，不会被集体踢回登录页
+    But 删除宿主机该文件等同于轮换密钥，所有在线会话立即失效（预期行为）
 ```

@@ -76,14 +76,44 @@ Feature: RequireAuth 守卫（受保护路由 /）
     And 资料接口偶发失败时沿用本地快照进入应用（不作为登出理由）
 
   @FE-AUTH-S10 @manual
-  Scenario: access 过期、refresh 有效
-    When 挂载或每 60 秒周期检查
-    Then 静默换新 token 并覆盖登录态（用户无感，页面不跳转）
+  Scenario: access 即将过期、refresh 有效
+    When 挂载或每 60 秒周期检查发现 access token 剩余有效期不足 5 分钟
+    Then 提前静默换新 token 并覆盖登录态（用户无感，页面不跳转）
+    And 续期响应不含的角色/头像/昵称沿用本地登录态，不被覆盖成空
+
+  @FE-AUTH-S24 @manual
+  Scenario: 不在 token 过期后才续期（线上 30 分钟必掉线修复）
+    Given 线上 Release 构建签发的 access token 有效期为 30 分钟（DEBUG 构建为 7 天）
+    When 页面长时间停留且持续有业务请求
+    Then 续期发生在令牌到期前（剩余 5 分钟内），业务请求不会带着过期 token 命中 401
+    And 不存在"每 30 分钟被强制跳回 /login"的窗口
+
+  @FE-AUTH-S25 @manual
+  Scenario: 休眠/标签页挂起恢复后补检
+    Given 浏览器标签页长时间不可见或整机休眠，周期定时器已停滞
+    When 用户回到页面（可见性变化/窗口聚焦/恢复联网/页面恢复）
+    Then 立即补做一次 token 检查（5 秒内不重复触发）
+    And access token 已过期时先静默续期再交给业务请求
 
   @FE-AUTH-S11 @manual
   Scenario: refresh token 也过期或刷新失败
     When token 检查返回失败
     Then 清空登录态并跳转 /login
+
+  @FE-AUTH-S26 @manual
+  Scenario: 续期请求偶发失败不误登出
+    Given access token 还有剩余有效期、refresh token 未过期
+    When 续期请求遇到网络异常/服务端 5xx（后端重启、反代 502、断网）
+    Then 本次检查沿用现有登录态，下个周期再续，不跳转 /login
+    And access token 已真正过期且续期仍失败时才清态跳 /login
+
+  @FE-AUTH-S27 @manual
+  Scenario: 业务请求 401 时先续期再重试
+    Given 本地仍有可用的 refresh token
+    When 任一鉴权业务请求返回 401（令牌刚过期/休眠唤醒/浏览器时钟偏差）
+    Then 请求层先静默续期，并用新 token 自动重试该请求一次
+    And 重试成功时用户无感、页面不跳转；重试仍 401 才清态跳 /login
+    And 登录/续期接口自身的 401 不参与该重试，避免递归
 
 Feature: 第三方登录回调（/oauth_login）
   @FE-AUTH-S12 @manual

@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Org.Commands;
@@ -16,16 +17,19 @@ public class UpdateOrgUserRolesCommandHandler : IRequestHandler<UpdateOrgUserRol
 {
     private readonly DatabaseContext _databaseContext;
     private readonly IOrgGrantCache _orgGrantCache;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateOrgUserRolesCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="orgGrantCache">组织授权缓存（用户角色变更需失效）.</param>
-    public UpdateOrgUserRolesCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public UpdateOrgUserRolesCommandHandler(DatabaseContext databaseContext, IOrgGrantCache orgGrantCache, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _orgGrantCache = orgGrantCache;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -71,6 +75,7 @@ public class UpdateOrgUserRolesCommandHandler : IRequestHandler<UpdateOrgUserRol
 
         // 用户组织变更后失效其角色缓存，授权判定即时生效
         await _orgGrantCache.RemoveUserRoleIdsAsync(request.UserId, cancellationToken);
+        await _eventPublisher.PublishUserOrgRolesChangedAsync(request.UserId, roleIds, cancellationToken);
         return EmptyCommandResponse.Default;
     }
 }

@@ -16,7 +16,7 @@
 ## 2. 密钥与有效期
 
 - RSA 私钥 `{AppPath}/configs/rsa_private.key`，首启自动生成 2048 位；公钥经 `/api/common/serverinfo` 下发，前端每次登录前现取（不缓存公钥）。
-- access 30 分钟（**DEBUG 编译 7 天**——本地"token 一直不过期"即此原因）；refresh 7 天；前端每 60 秒自查并静默续期。
+- access 30 分钟（**DEBUG 编译 7 天**——本地"token 一直不过期"即此原因）；refresh 7 天；前端每 60 秒自查，**剩余不足 5 分钟即静默续期**（不再等真正过期，避免过期后请求 401 被强制登出）。
 - 登录响应 `expiresIn` 是**毫秒时间戳**（now+30min），前端 `jwt.ts` 按毫秒解析。
 
 ## 3. 排障
@@ -24,6 +24,8 @@
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | 前端登录 401 但密码确认正确 | RSA 公钥过期/服务端换钥/多实例私钥不一致 | 刷新页面重拉 serverinfo；核对各实例 rsa_private.key |
+| 线上每隔约 30 分钟被踢回登录页 | Release 构建 access token 30 分钟，旧前端在过期后才续期，期间请求 401 即清态 | 升级到提前 5 分钟续期版本（前端 `TOKEN_REFRESH_AHEAD_SECONDS`）；本地 DEBUG 7 天 token 不复现属正常 |
+| 每次部署/重启容器后全员被踢 | 容器重建后 `/app/configs/rsa_private.key` 未持久化，重新生成密钥导致旧 token 验签失败 | 确认 compose 挂载了 `${MOAI_CONFIG_DIR:-/data/moai/configs}:/app/configs`（见 [../deployment/docker.md](../deployment/docker.md)），宿主机该目录下 `rsa_private.key` 应存在且跨部署不变；多实例部署须共享同一私钥 |
 | 登录 403 次数过多 | 5 次失败锁定 | 等 5 分钟或删 Redis key（第 1 节） |
 | oauth 回调报「不合法的跳转地址」 | redirectUrl 非 http/https | 修正前端来源（该守卫已随 221 轮修复生效，[@AUTH-S14](./bdd.md#auth-s14)） |
 | 飞书登录/绑定报「第三方接口错误」 | 授权与换 token 的 `redirect_uri` 不一致（飞书要求两步逐字符相同，2026-10-27 已修复：两步均拼 `{来源}/oauth_login`）；或飞书开放平台重定向白名单未含 `{前端域名}/oauth_login` | 升级后端后重试；仍失败则核对飞书后台「重定向 URL」白名单与日志 `Get openid error`（[@AUTH-S14](./bdd.md#auth-s14)） |
@@ -51,3 +53,4 @@
 | 2026-09-01 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构：场景编号化（@AUTH-S1~S23）、四件互链、职责瘦身 |
 | 2026-10-27 | 飞书第三方登录 `redirect_uri` 不一致缺陷修复（授权地址去除多余 `?redirectUri=` 后缀 + 删伪 PKCE `code_verifier`）；排障表补飞书行、清理 AUTH-S14 过期备注 |
 | 2026-11-03 | 登录一体化改造（@AUTH-S42 退役 → S43~S46）+ 图形验证码分级递进（S48~S53）；运维表补图形验证码限流清理行；lockout 脚本改 Redis 直连 |
+| 2026-11-15 | 线上"隔一段时间自动退出"排查：前端续期改为到期前 5 分钟（原为过期后 60 秒宽限），续期响应合并本地资料，续期网络异常不误登出；部署文档补 `/app/configs` 持久化 RSA 私钥（定时掉线/部署后全员退出） |

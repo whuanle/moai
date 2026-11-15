@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Models;
 using MoAI.Team.Commands;
 using MoAI.Team.Queries.Responses;
@@ -17,16 +18,19 @@ public class AddTeamUsersCommandHandler : IRequestHandler<AddTeamUsersCommand, A
 {
     private readonly DatabaseContext _databaseContext;
     private readonly ITeamService _teamService;
+    private readonly IAccessEventPublisher _eventPublisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AddTeamUsersCommandHandler"/> class.
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="teamService">团队领域服务.</param>
-    public AddTeamUsersCommandHandler(DatabaseContext databaseContext, ITeamService teamService)
+    /// <param name="eventPublisher">接入事件发布器.</param>
+    public AddTeamUsersCommandHandler(DatabaseContext databaseContext, ITeamService teamService, IAccessEventPublisher eventPublisher)
     {
         _databaseContext = databaseContext;
         _teamService = teamService;
+        _eventPublisher = eventPublisher;
     }
 
     /// <inheritdoc/>
@@ -63,6 +67,8 @@ public class AddTeamUsersCommandHandler : IRequestHandler<AddTeamUsersCommand, A
             {
                 await _teamService.RemoveRoleCacheAsync(request.TeamId, userId, cancellationToken);
             }
+
+            await _eventPublisher.PublishTeamMemberAddedAsync(request.TeamId, addIds, (int)request.Role, cancellationToken);
         }
 
         return new AddTeamUsersCommandResponse

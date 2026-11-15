@@ -72,6 +72,20 @@ public class SystemTeamController : ControllerBase
     }
 
     /// <summary>
+    /// 查询团队成员清单（team_read）：供系统级接入做成员对账.
+    /// </summary>
+    /// <param name="teamId">团队 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryTeamUsersCommandResponse"/>.</returns>
+    [HttpGet("{teamId:long}/users")]
+    [AllowAnonymous]
+    public Task<QueryTeamUsersCommandResponse> Users([FromRoute] long teamId, CancellationToken ct)
+    {
+        SystemFaceGuard.RequireCaller(HttpContext);
+        return _mediator.Send(new QueryTeamUsersCommand { TeamId = teamId }, ct);
+    }
+
+    /// <summary>
     /// 添加/更新团队成员（team_write）：幂等 upsert，已在本团队时更新角色.
     /// </summary>
     /// <param name="teamId">团队 id.</param>

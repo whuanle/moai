@@ -61,6 +61,8 @@ public class SubsystemSsoHandlerTests
             .ReturnsAsync(allowed);
         mock.Setup(x => x.IsAllowedAsync(It.IsAny<OrgGrantResourceType>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(allowed);
+        mock.Setup(x => x.GetGrantsAsync(It.IsAny<OrgGrantResourceType>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<OrgGrantInfo>() as IReadOnlyList<OrgGrantInfo>);
         return mock.Object;
     }
 
@@ -466,5 +468,176 @@ public class SubsystemSsoHandlerTests
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new QuerySubsystemOrgGrantsCommand { SubsystemId = app.Id }, CancellationToken.None));
         Assert.Equal(404, ex.StatusCode);
+    }
+
+    // ---- 委托 SSO 进入前预检（匿名/登录用户统一入口） ----
+
+    private static QuerySubsystemSsoAccessCommandHandler CreateAccessHandler(DatabaseContext context, IOrgGrantService? orgGrants = null)
+    {
+        return new QuerySubsystemSsoAccessCommandHandler(context, orgGrants ?? FakeOrgGrants());
+    }
+
+    [Fact]
+    public async Task AccessCheck_AnonymousAvailable_RequiresLogin()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context);
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+        }, CancellationToken.None);
+
+        Assert.True(response.Allowed);
+        Assert.True(response.RequiresLogin);
+        Assert.Equal(subsystem.Name, response.Name);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonLoginRequired, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_Disabled_Unavailable()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context, status: AccessAppStatus.Disabled);
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+        }, CancellationToken.None);
+
+        Assert.False(response.Allowed);
+        Assert.False(response.RequiresLogin);
+        Assert.Null(response.Name);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonUnavailable, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_NoCallback_Unavailable()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context, callback: "");
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+        }, CancellationToken.None);
+
+        Assert.False(response.Allowed);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonUnavailable, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_NotFound_Unavailable()
+    {
+        using var db = TestSqliteContext.Create();
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = "ghost",
+        }, CancellationToken.None);
+
+        Assert.False(response.Allowed);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonUnavailable, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_RedirectUriNotRegistered_CallbackMismatch()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context);
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+            RedirectUri = "https://evil.local/cb",
+        }, CancellationToken.None);
+
+        Assert.False(response.Allowed);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonCallbackMismatch, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_SpecifiedTeamsWithoutAnyGrant_NoGrants()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context, scope: SubsystemTeamScope.SpecifiedTeams);
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+        }, CancellationToken.None);
+
+        Assert.False(response.Allowed);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonNoGrants, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_SpecifiedTeamsWithOrgGrant_PassesSystemLevel()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context, scope: SubsystemTeamScope.SpecifiedTeams);
+        var service = new Mock<IOrgGrantService>();
+        service.Setup(x => x.GetGrantsAsync(OrgGrantResourceType.Subsystem, subsystem.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new OrgGrantInfo { OrgRoleId = 3, Scope = OrgGrantScope.Self }]);
+
+        var response = await CreateAccessHandler(db.Context, service.Object).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+        }, CancellationToken.None);
+
+        Assert.True(response.Allowed);
+        Assert.True(response.RequiresLogin);
+    }
+
+    [Fact]
+    public async Task AccessCheck_AuthorizedUser_Allowed()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context);
+        await SeedMemberAsync(db.Context, 1, 10);
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+            ContextUserId = 10,
+        }, CancellationToken.None);
+
+        Assert.True(response.Allowed);
+        Assert.False(response.RequiresLogin);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonOk, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_UnauthorizedUser_NotAuthorized()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context);
+        await SeedUserAsync(db.Context, 10);
+
+        var response = await CreateAccessHandler(db.Context).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+            ContextUserId = 10,
+        }, CancellationToken.None);
+
+        Assert.False(response.Allowed);
+        Assert.False(response.RequiresLogin);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonNotAuthorized, response.Reason);
+    }
+
+    [Fact]
+    public async Task AccessCheck_UserAllowedByOrgGrant_Allowed()
+    {
+        using var db = TestSqliteContext.Create();
+        var subsystem = await SeedSubsystemAsync(db.Context);
+
+        var response = await CreateAccessHandler(db.Context, FakeOrgGrants(allowed: true)).Handle(new QuerySubsystemSsoAccessCommand
+        {
+            SubsystemKey = subsystem.Key,
+            ContextUserId = 10,
+        }, CancellationToken.None);
+
+        Assert.True(response.Allowed);
+        Assert.Equal(QuerySubsystemSsoAccessCommandResponse.ReasonOk, response.Reason);
     }
 }

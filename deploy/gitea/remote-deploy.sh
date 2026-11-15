@@ -234,6 +234,25 @@ else
   echo "==> 使用 .env 配置的宿主端口 MOAI_PORT=$(get_env MOAI_PORT)"
 fi
 
+# 兼容旧部署：/app/configs 以前未持久化（JWT 私钥在容器层、在线插件包在 ./configs/plugins）。
+# 容器重建前迁移到宿主机配置目录，避免升级后全员被踢下线 / 在线插件找不到包。
+CONFIG_DIR="$(get_env MOAI_CONFIG_DIR)"
+CONFIG_DIR="${CONFIG_DIR:-/data/moai/configs}"
+if [ ! -f "${CONFIG_DIR}/rsa_private.key" ] && docker inspect moai >/dev/null 2>&1; then
+  if sudo mkdir -p "$CONFIG_DIR" && sudo docker cp moai:/app/configs/rsa_private.key "$CONFIG_DIR/rsa_private.key" 2>/dev/null; then
+    echo "==> 已迁移 rsa_private.key 到 ${CONFIG_DIR}（在线会话保持有效）"
+  else
+    echo "==> 提示：未能迁移旧 rsa_private.key，首次启动将生成新密钥（在线用户需重新登录）"
+  fi
+fi
+if [ -d "$APP_DIR/configs/plugins" ] && [ ! -d "${CONFIG_DIR}/plugins" ]; then
+  if sudo mkdir -p "${CONFIG_DIR}/plugins" && sudo cp -a "$APP_DIR/configs/plugins/." "${CONFIG_DIR}/plugins/" 2>/dev/null; then
+    echo "==> 已迁移在线插件包到 ${CONFIG_DIR}/plugins"
+  else
+    echo "!! 警告：未能迁移在线插件包到 ${CONFIG_DIR}/plugins，已安装的在线插件可能找不到包，请手工 sudo cp -a 后重试" >&2
+  fi
+fi
+
 echo "==> 切换镜像：${PREV_IMAGE:-<未设置>} → ${IMAGE_REF}"
 # 不带 --no-deps：让 postgres-init（建库+扩展）与 rustfs-init（建桶）每次幂等跑一遍
 docker compose "${COMPOSE[@]}" up -d moai

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database.Enums;
+using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Subsystem.Commands;
 using MoAI.Subsystem.Core.Services;
@@ -25,7 +26,7 @@ public class SubsysAppCommandsHandlerTests
     {
         using var db = TestSqliteContext.Create();
         var created = await TestSeeds.SeedSubsysAppAsync(db.Context, "moai-sa-App", MoAI.Database.Enums.AccessAppType.App);
-        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateSubsysAppCommand
         {
@@ -54,7 +55,7 @@ public class SubsysAppCommandsHandlerTests
         TestSeeds.SeedTeam(db.Context, 1);
         TestSeeds.SeedTeam(db.Context, 2);
         var created = await TestSeeds.SeedSubsysAppAsync(db.Context, "report", teamIds: [1]);
-        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), new NullAccessEventPublisher());
 
         await handler.Handle(new UpdateSubsysAppCommand
         {
@@ -91,7 +92,7 @@ public class SubsysAppCommandsHandlerTests
         var created = await TestSeeds.SeedSubsysAppAsync(db.Context, "report");
         created.AvatarPath = "images/old.png";
         await db.Context.SaveChangesAsync();
-        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), new NullAccessEventPublisher());
 
         // null=不修改（停用切换等不带头像字段的调用不受影响）
         await handler.Handle(new UpdateSubsysAppCommand
@@ -140,7 +141,7 @@ public class SubsysAppCommandsHandlerTests
     public async Task Update_Missing_Throws404()
     {
         using var db = TestSqliteContext.Create();
-        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>());
+        var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new UpdateSubsysAppCommand
         {
@@ -157,7 +158,7 @@ public class SubsysAppCommandsHandlerTests
         var cipher = TestSeeds.CreateCipher();
         var created = await TestSeeds.SeedSubsysAppAsync(db.Context, "report");
         var rateLimiter = new Mock<ISubsysTokenRateLimiter>();
-        var handler = new ResetSubsysAppSecretCommandHandler(db.Context, cipher, rateLimiter.Object);
+        var handler = new ResetSubsysAppSecretCommandHandler(db.Context, cipher, rateLimiter.Object, new NullAccessEventPublisher());
 
         var response = await handler.Handle(new ResetSubsysAppSecretCommand { Id = created.Id }, CancellationToken.None);
         Assert.Contains("****", response.SecretMask, StringComparison.Ordinal);
@@ -178,7 +179,7 @@ public class SubsysAppCommandsHandlerTests
         using var db = TestSqliteContext.Create();
         var created = await TestSeeds.SeedSubsysAppAsync(db.Context, "report", teamIds: [1]);
         var rateLimiter = new Mock<ISubsysTokenRateLimiter>();
-        var handler = new DeleteSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), rateLimiter.Object);
+        var handler = new DeleteSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), rateLimiter.Object, new NullAccessEventPublisher());
 
         await handler.Handle(new DeleteSubsysAppCommand { Id = created.Id }, CancellationToken.None);
         rateLimiter.Verify(x => x.ResetAllAsync(), Times.Once);

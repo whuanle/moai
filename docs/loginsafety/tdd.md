@@ -17,6 +17,7 @@
 | @LS-S19b~S19c | 同上（用户站内信到达 /api/message/list + 内置模板标题与正文） | PASS（2026-11-02） |
 | @LS-S20~S20b | 同上（SMTP 渠道按告警收件人 LS_NOTIFY_EMAILS 发告警邮件 + MIME encoded-word 解码断言内置模板标题，邮件主题=告警标题无渠道前缀） | PASS（2026-11-02） |
 | @LS-S21 | 同上（批量标记已读后未读数减少） | PASS（2026-11-02） |
+| @LS-S21（前端角标） | `ui/src/pages/admin/__tests__/LoginSafety.test.tsx`（未读计数 → 「风险事件」Tab 角标渲染 / 未读 0 不渲染 / 非管理员不进入页面） | PASS 3/3（2026-11-15） |
 | @LS-S22~S23 | 同上（手动封禁 403 → 解封恢复） | PASS（2026-11-02） |
 | @LS-S24 | 同上（LS_ENABLED=false：日志照记、riskLevel=0、无新事件） | PASS（2026-11-02） |
 | @LS-S25 | 同上（阈值 0/开关非布尔/天数越界/渠道 ID 非法/告警收件人邮箱非法 LS-S25e 均 400） | PASS（2026-11-02） |
@@ -24,7 +25,7 @@
 | @LS-S27 | 同上（直连登录落库 IP 无 `::ffff:` 前缀，`ClientInfoProvider` IPv4-mapped IPv6 归一化；修复前同一客户端存在 `::ffff:127.0.0.1`/`::1` 双形态） | PASS 40/40（2026-11-03） |
 | 后端构建 | `dotnet build src/MoAI/MoAI.csproj` | PASS 0 error（2026-11-02） |
 | 前端构建 | ui：`npm run typecheck` / `lint`（0 error）/ `test` | PASS（2026-11-02） |
-| 菜单角标/页面走查 | @manual（浏览器走查，见 sop.md 第 4 节） | 待走查（2026-11-02） |
+| 菜单/Tab 角标 | @manual（浏览器走查，见 sop.md 第 4 节；Tab 角标另有前端单测覆盖，见 @LS-S21 行） | 待走查（2026-11-02） |
 
 回归命令：
 
