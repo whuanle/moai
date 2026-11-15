@@ -120,7 +120,10 @@ jobs:
         if: ${{ inputs.deploy_only != 'true' }}
         run: |
           set -euo pipefail
-          BUILDER_NAME=moai
+          # builder 名称带 registry 指纹：buildkitd.toml 只在 create 时生效，如果一直复用
+          # 旧的 moai builder，换 registry 地址后就会按 https 去敲纯 HTTP 端口
+          # （报 http: server gave HTTP response to HTTPS client）。换地址即换 builder。
+          BUILDER_NAME="moai-$(printf '%s' "$ZOT_REGISTRY" | tr -c 'A-Za-z0-9' '-')"
           DOCKER_CONFIG_DIR="$RUNNER_TEMP/zot-docker-config"
           BUILDKITD_CONFIG="$RUNNER_TEMP/moai-buildkitd.toml"
           cleanup() { rm -rf "$DOCKER_CONFIG_DIR" "$BUILDKITD_CONFIG"; }
@@ -133,14 +136,24 @@ jobs:
           export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"
 
           IMAGE="$ZOT_REGISTRY/$IMAGE_NAME"
-          cat > "$BUILDKITD_CONFIG" <<EOF
-          [registry."$ZOT_REGISTRY"]
-          http = true
-          insecure = true
 
-          [registry."docker.io"]
-          mirrors = ["docker.m.daocloud.io"]
-          EOF
+          # 构建机要访问的 registry 可能不止一个（ZOT_REGISTRY 推送、ZOT_REGISTRY_URL 可能是
+          # 另一个可达地址/同名不同入口），全部按纯 HTTP + insecure 声明。
+          REGISTRY_HOSTS="$ZOT_REGISTRY"
+          if [ -n "${ZOT_REGISTRY_URL:-}" ]; then
+            extra_host="${ZOT_REGISTRY_URL#*://}"
+            extra_host="${extra_host%%/*}"
+            if [ -n "$extra_host" ] && ! printf ' %s ' "$REGISTRY_HOSTS" | grep -Fq " $extra_host "; then
+              REGISTRY_HOSTS="$REGISTRY_HOSTS $extra_host"
+            fi
+          fi
+
+          {
+            for host in $REGISTRY_HOSTS; do
+              printf '[registry."%s"]\nhttp = true\ninsecure = true\n\n' "$host"
+            done
+            printf '[registry."docker.io"]\nmirrors = ["docker.m.daocloud.io"]\n'
+          } > "$BUILDKITD_CONFIG"
 
           if docker buildx inspect "$BUILDER_NAME" >/dev/null 2>&1; then
             echo "复用 Buildx builder $BUILDER_NAME 及其层缓存"
