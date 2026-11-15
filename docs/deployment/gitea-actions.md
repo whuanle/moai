@@ -193,7 +193,7 @@ git push gitea v0.1.0
 | 工作流列表为空 / 无 Run workflow | Actions 未开、缺 `repo.actions`、runner 未注册或 Gitea 版本过低 | 检查 `app.ini`、站点管理 → Actions 的 runner 在线状态 |
 | 作业一直 queued | 没有 `linux_local` 标签的 runner | `--labels linux_local` 注册，或改 `runs-on` 与之匹配 |
 | 构建卡在拉基础镜像 | Docker Hub 出口受限 | 确认 buildkitd 配置里的 `docker.m.daocloud.io` 镜像可用 |
-| push 报 `http: server gave HTTP response to HTTPS client` | registry 纯 HTTP 未声明 | buildkitd 配置已含 `[registry."<host>"].http = true / insecure = true`；确认 `ZOT_REGISTRY` 与实际一致 |
+| push 报 `http: server gave HTTP response to HTTPS client` | BuildKit 用了 https 访问纯 HTTP registry：通常是复用了旧 builder（buildkitd 配置只在 create 时生效） | builder 名已带 registry 指纹（`moai-192-168-50-199-5011`），换地址即换 builder；确认 `ZOT_REGISTRY` 与实际一致 |
 | 目标机 pull 报 `Head "https://<registry>/v2/...": i/o timeout` | 部署机根本连不到该 registry（与 http/https 无关）：部署机与构建机不在同一网段/路由时，构建机视角的地址部署机不可达 | 先看作业日志里 `!! 部署机访问不到 registry` 的预检结果；把仓库变量 `ZOT_REGISTRY_TARGET` 设成**部署机可达**的同一 Zot 地址（host:port），或让 registry 在该网络上可达 |
 | 目标机 pull 报 401 | registry 凭据错误 | 检查 `ZOT_USERNAME`/`ZOT_PASSWORD`；脚本用临时 `DOCKER_CONFIG`，不污染 `~/.docker` |
 | 目标机 pull 报 `server gave HTTP response to HTTPS client` | registry 是纯 HTTP，但部署机 daemon 没把它当 insecure registry | 脚本会按 `ZOT_REGISTRY_URL` 推导 host:port 写入 `insecure-registries`（HUP 不生效时自动重启 docker）；确认 `ZOT_REGISTRY_URL`（如 `http://<host>:5011`）与实际一致 |
@@ -202,3 +202,27 @@ git push gitea v0.1.0
 | 部署后端口从 8080 变 8081 | `.env` 明确写了 `MOAI_PORT=8081` | 脚本只在为空时沿用旧端口，改成目标端口后重跑 |
 | 健康检查失败已回滚 | 应用启动异常（配置/迁移/连不上中间件） | 看作业日志里的 `docker compose logs --tail=100 moai` |
 | 上传 CORS 报错 | 共享 RustFS 未放行站点域名 | 见 4.1，追加域名并重建 RustFS |
+
+### 7.1 在目标机上手动验证拉取（排查用）
+
+流水线会自动配 `insecure-registries` 与临时登录，正常发版不需要手工操作；怀疑网络/证书/凭据时按下面顺序验：
+
+```bash
+# 1) 纯 HTTP 声明（列表里填「部署机可达」的地址）
+sudo tee /etc/docker/daemon.json >/dev/null <<'JSON'
+{
+  "insecure-registries": ["<deploy-visible-host>:5011"]
+}
+JSON
+sudo systemctl restart docker          # 注意：部分版本 SIGHUP 不重载 insecure-registries
+docker info --format '{{json .RegistryConfig.IndexConfigs}}' | python3 -m json.tool | grep -A2 5011
+
+# 2) 登录（registry 返回 401 时必需）
+docker login <deploy-visible-host>:5011 -u "<ZOT_USERNAME>" -p "<ZOT_PASSWORD>"
+
+# 3) 拉取（引用只有 host:port/名字:tag，不要写 /v2/.../manifests/...）
+docker pull <deploy-visible-host>:5011/moai:<tag>
+```
+
+判读：`i/o timeout`＝网络不通（与 http/https 无关）；`server gave HTTP response to HTTPS client`＝未声明 insecure；
+`401`＝缺登录；`manifest unknown`＝该地址的 registry 里没有这个 tag（推/拉不是同一实例）。
