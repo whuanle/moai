@@ -59,7 +59,6 @@ env:
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `ZOT_REGISTRY_TARGET` | 同 `ZOT_REGISTRY` | **部署机视角**的 registry；部署机与构建机看到的地址不同时（NAT/VPN/Tailnet）在这里覆盖 |
-| `SOURCE_BASE_URL` | `github.server_url` | 构建机拉源码归档用的 Gitea 基地址；**构建机解析不了 Gitea 域名时必配**（如 `http://<gitea-host>:3000`） |
 | `MINI_SSH_KNOWN_HOST` | 空 | 目标机 known_hosts 行；配置后启用 `StrictHostKeyChecking=yes`，留空则 `accept-new` |
 | `MOAI_APP_DIR` | `moai` | 部署机目录，相对 `$HOME` → `~/moai` |
 
@@ -94,6 +93,15 @@ act_runner register --no-interactive \
 label 不带 `:docker://` 即 host 模式；容器模式也能跑（工作流的 SSH 步骤只依赖宿主 `docker` 与 `/usr/bin/ssh`）。
 
 构建机需要：Docker + buildx、`docker.m.daocloud.io` 可达（Docker Hub 基础镜像镜像）、npm/NuGet/`mcr.microsoft.com` 直连、可推 `<registry>`、可 SSH 到 `<deploy-host>:<ssh-port>`。
+
+源码不需要在构建机上落盘，也**不需要宿主装 `curl` / `wget` / `git` / `tar`**（与 mo_platform 同款做法）：
+
+- **构建**：`docker buildx build "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git#$GITHUB_SHA"` —— 构建上下文是 git 远程地址，由 BuildKit 容器自己 clone 那个 commit。
+- **部署**：整个「下载归档 → 解包 → 打包 compose 文件 → SSH 同步 → 执行 remote-deploy.sh」都在 `node:22-bookworm-slim` 容器内完成（用 Node 内置 `fetch`，宿主的 `ssh` 二进制只读挂载进容器）。
+
+仓库地址一律取 Actions 内置的 `github.server_url` / `github.repository` / `github.sha`，不另外定义变量。
+
+只需确认：构建机（BuildKit 容器内）能匿名 clone 该仓库，即 Gitea 侧仓库公开或允许匿名读。
 
 ## 4. 部署机准备（一次性）
 
@@ -180,7 +188,8 @@ git push gitea v0.1.0
 |---|---|---|
 | 打 tag 后没有运行 | tag 不是 `v*` / 数字开头，或该 tag 对应的提交里没有工作流文件 | 用 `X.Y.Z`/`vX.Y.Z`；确认 tag 指向含 `.gitea/workflows/deploy.yml` 的提交 |
 | 作业开头直接失败「缺少仓库变量/密钥」 | 变量/密钥未配或放错类别（变量 vs 密钥） | 仓库 → 设置 → Actions：6 个变量 + `ZOT_PASSWORD`/`MINI_SSH_RSA` 两个密钥 |
-| 「准备源码」步骤秒退 / curl 报错 | 构建机解析不了 `github.server_url` 的域名，或该地址证书不可信 | 配仓库变量 `SOURCE_BASE_URL` 指向内网 Gitea（如 `http://<gitea-host>:3000`） |
+| 构建报 `failed to solve: failed to read dockerfile` / clone 401、403 | BuildKit 拿不到仓库：Gitea 仓库不公开且未允许匿名 clone，或构建机解析/可信不了 `github.server_url` | 仓库改为公开可读；或让构建机能解析并信任该域名（hosts / 内部 CA），地址本身不要改 |
+| 「部署到目标机」报 `archive download failed: HTTP 404/401` | 同上：归档地址就是 `github.server_url`，构建机解析不到该域名或证书不可信 | 同上，修构建机对该域名的解析与证书信任 |
 | 工作流列表为空 / 无 Run workflow | Actions 未开、缺 `repo.actions`、runner 未注册或 Gitea 版本过低 | 检查 `app.ini`、站点管理 → Actions 的 runner 在线状态 |
 | 作业一直 queued | 没有 `linux_local` 标签的 runner | `--labels linux_local` 注册，或改 `runs-on` 与之匹配 |
 | 构建卡在拉基础镜像 | Docker Hub 出口受限 | 确认 buildkitd 配置里的 `docker.m.daocloud.io` 镜像可用 |

@@ -65,9 +65,6 @@ env:
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_NAME: ${{ github.ref_name }}
-  # 取源码用的 Gitea 基地址：默认用 github.server_url；构建机解析不了该域名（如 git.xxx.local
-  # 只写在个别机器 hosts）时，在仓库变量里用内网地址覆盖，例如 http://<gitea-host>:3000
-  SOURCE_BASE_URL: ${{ vars.SOURCE_BASE_URL || github.server_url }}
 
 jobs:
   build-and-deploy:
@@ -119,22 +116,6 @@ jobs:
           echo "本次提交：${SHORT_SHA}"
           echo "推送镜像：${ZOT_REGISTRY}/${IMAGE_NAME}:${TAG}（同时打 :sha-${SHORT_SHA} 与 :latest，便于回滚）"
 
-      - name: 准备源码
-        if: ${{ inputs.deploy_only != 'true' }}
-        run: |
-          set -euo pipefail
-          SRC="$RUNNER_TEMP/moai-src"
-          rm -rf "$SRC" && mkdir -p "$SRC"
-          # 直接拉本仓库的归档（公开仓库匿名可取；Gitea 的 github.token 不适用于该下载口，
-          # 带上反而 401，故不加 Authorization 头）。构建机解析不了默认域名时用 SOURCE_BASE_URL 覆盖
-          curl -fsSL --retry 3 \
-            "$SOURCE_BASE_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" \
-            -o "$RUNNER_TEMP/moai-src.tar.gz"
-          tar -xzf "$RUNNER_TEMP/moai-src.tar.gz" --strip-components=1 -C "$SRC"
-          echo "SRC=$SRC" >> "$GITHUB_ENV"
-          ls "$SRC" | head -20
-          test -f "$SRC/Dockerfile"
-
       - name: 构建并推送到 Zot
         if: ${{ inputs.deploy_only != 'true' }}
         run: |
@@ -176,6 +157,9 @@ jobs:
           BUILD_LOG="$RUNNER_TEMP/buildx-build.log"
           SHORT_SHA="${SHORT_SHA:-$(printf '%s' "$GITHUB_SHA" | cut -c1-7)}"
           TAG_ARGS=(-t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:sha-$SHORT_SHA" -t "$IMAGE:latest")
+          # 构建上下文用 git 远程地址（与 mo_platform 同款）：由 BuildKit 自己 clone 该 commit，
+          # 宿主不需要 curl/wget/git，也不需要把源码落到本地磁盘。
+          BUILD_CONTEXT="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git#$GITHUB_SHA"
           if docker buildx build \
             --builder "$BUILDER_NAME" \
             --progress=plain \
@@ -188,7 +172,7 @@ jobs:
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --label "org.opencontainers.image.version=$IMAGE_TAG" \
             "${TAG_ARGS[@]}" \
-            "$SRC" >"$BUILD_LOG" 2>&1; then
+            "$BUILD_CONTEXT" >"$BUILD_LOG" 2>&1; then
             tail -n 30 "$BUILD_LOG"
           else
             echo '构建失败，最后 160 行：' >&2
@@ -198,6 +182,9 @@ jobs:
           echo "已推送：${TAG_ARGS[*]}"
 
       - name: 部署到目标机
+        env:
+          # 传给容器内部脚本，控制“是否同步 compose 文件”
+          DEPLOY_ONLY: ${{ inputs.deploy_only }}
         run: |
           set -euo pipefail
           if [ "${{ inputs.deploy_only }}" = "true" ]; then
@@ -208,51 +195,79 @@ jobs:
           IMAGE_REF="$ZOT_REGISTRY_TARGET/$IMAGE_NAME:$TAG"
           echo "DEPLOY_IMAGE=$IMAGE_REF" >> "$GITHUB_ENV"
 
-          # 与 mo_platform 相同的 SSH 通道：仅挂载宿主 ssh 二进制，避免依赖 job 容器内的 ssh
-          dssh() {
-            docker run --rm -i --network host \
-              -v /usr/bin/ssh:/host/ssh:ro \
-              -v /usr/lib/x86_64-linux-gnu:/host/lib:ro \
-              -v /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2:/host/ld-linux:ro \
-              -e MINI_SSH_USER -e MINI_SSH_RSA -e MINI_SSH_HOST -e MINI_SSH_PORT -e MINI_SSH_KNOWN_HOST \
-              node:22-bookworm-slim bash -c '
-                set -euo pipefail
-                ssh() { /host/ld-linux --library-path /host/lib /host/ssh "$@"; }
-                key=/tmp/deploy_key; kh=/tmp/known_hosts
-                printf "%s\n" "$MINI_SSH_RSA" > "$key"; chmod 600 "$key"
-                if [ -n "${MINI_SSH_KNOWN_HOST:-}" ]; then
-                  printf "%s\n" "$MINI_SSH_KNOWN_HOST" > "$kh"
-                  hostkey=StrictHostKeyChecking=yes
-                else
-                  : > "$kh"
-                  hostkey=StrictHostKeyChecking=accept-new
-                fi
-                ssh -i "$key" -p "$MINI_SSH_PORT" \
-                    -o UserKnownHostsFile="$kh" -o "$hostkey" \
-                    -o ConnectTimeout=20 \
-                    "$MINI_SSH_USER@$MINI_SSH_HOST" "$@"
-              ' -- "$@"
+          # 与 mo_platform 同款：下载归档（node fetch）、解包、打包、SSH 全部在 node 容器内完成，
+          # 宿主只需要 docker（不需要 curl / wget / git / tar）。归档匿名可取，Gitea 的
+          # github.token 不适用于该下载口（带上反而 401），故不带 Authorization 头。
+          docker run --rm -i --network host \
+            -v /usr/bin/ssh:/host/ssh:ro \
+            -v /usr/lib/x86_64-linux-gnu:/host/lib:ro \
+            -v /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2:/host/ld-linux:ro \
+            -e GITHUB_SHA -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e DEPLOY_ONLY \
+            -e MINI_SSH_USER -e MINI_SSH_RSA -e MINI_SSH_HOST -e MINI_SSH_PORT -e MINI_SSH_KNOWN_HOST \
+            -e MOAI_APP_DIR -e MOAI_IMAGE_REF="$IMAGE_REF" \
+            -e ZOT_REGISTRY_TARGET -e ZOT_USERNAME -e ZOT_PASSWORD \
+            node:22-bookworm-slim bash -s <<'SH'
+          set -euo pipefail
+
+          # 仅挂载宿主 ssh 二进制（node slim 镜像不带 ssh 客户端）
+          cat > /tmp/ssh <<'SSH'
+          #!/bin/sh
+          exec /host/ld-linux --library-path /host/lib /host/ssh "$@"
+          SSH
+          chmod 755 /tmp/ssh
+          export PATH="/tmp:$PATH"
+
+          key=/tmp/deploy_key; kh=/tmp/known_hosts
+          printf '%s\n' "$MINI_SSH_RSA" > "$key"; chmod 600 "$key"
+          if [ -n "${MINI_SSH_KNOWN_HOST:-}" ]; then
+            printf '%s\n' "$MINI_SSH_KNOWN_HOST" > "$kh"
+            hostkey=StrictHostKeyChecking=yes
+          else
+            : > "$kh"
+            hostkey=StrictHostKeyChecking=accept-new
+          fi
+          rssh() {
+            ssh -i "$key" -p "$MINI_SSH_PORT" \
+                -o UserKnownHostsFile="$kh" -o "$hostkey" \
+                -o ConnectTimeout=20 \
+                "$MINI_SSH_USER@$MINI_SSH_HOST" "$@"
           }
 
+          # 取源码快照：构建与“仅部署”都需要其中的 remote-deploy.sh
+          echo "==> 下载源码归档：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/archive/${GITHUB_SHA}.tar.gz"
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const url = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/archive/${process.env.GITHUB_SHA}.tar.gz`;
+          (async () => {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`archive download failed: HTTP ${response.status} (${url})`);
+            fs.writeFileSync('/tmp/moai-src.tar.gz', Buffer.from(await response.arrayBuffer()));
+          })().catch((error) => { console.error(error); process.exit(1); });
+          NODE
+          rm -rf /tmp/moai-src && mkdir -p /tmp/moai-src
+          tar -xzf /tmp/moai-src.tar.gz --strip-components=1 -C /tmp/moai-src
+          test -f /tmp/moai-src/deploy/gitea/remote-deploy.sh
+
           # 1) 同步 compose 相关文件（以仓库为准；不覆盖 .env / configs）
-          if [ "${{ inputs.deploy_only }}" != "true" ]; then
-            tar -C "$SRC" -czf - \
+          if [ "${DEPLOY_ONLY:-false}" != "true" ]; then
+            tar -C /tmp/moai-src -czf - \
               docker-compose.yml \
               docker-compose.reuse.yml \
               init-pgvector.sql \
               deploy/deploy-compose.sh \
               deploy/opensandbox/sandbox.toml \
               .env.example \
-            | dssh "mkdir -p ~/$MOAI_APP_DIR/deploy/opensandbox ~/$MOAI_APP_DIR/configs/plugins && tar -xzf - -C ~/$MOAI_APP_DIR"
+            | rssh "mkdir -p ~/$MOAI_APP_DIR/deploy/opensandbox ~/$MOAI_APP_DIR/configs/plugins && tar -xzf - -C ~/$MOAI_APP_DIR"
             echo "==> compose 文件已同步到 ~/$MOAI_APP_DIR"
           fi
 
           # 2) 执行目标机部署脚本（登录 Zot → pull → 复用/完整栈切换 → 探活回滚）
           {
             printf 'export MOAI_IMAGE_REF=%q MOAI_APP_DIR=%q MOAI_PULL=1 ZOT_REGISTRY_TARGET=%q ZOT_USERNAME=%q ZOT_PASSWORD=%q\n' \
-              "$IMAGE_REF" "$MOAI_APP_DIR" "$ZOT_REGISTRY_TARGET" "$ZOT_USERNAME" "$ZOT_PASSWORD"
-            cat "$SRC/deploy/gitea/remote-deploy.sh"
-          } | dssh bash
+              "$MOAI_IMAGE_REF" "$MOAI_APP_DIR" "$ZOT_REGISTRY_TARGET" "$ZOT_USERNAME" "$ZOT_PASSWORD"
+            cat /tmp/moai-src/deploy/gitea/remote-deploy.sh
+          } | rssh bash
+          SH
 
       - name: 结果汇总
         run: |
