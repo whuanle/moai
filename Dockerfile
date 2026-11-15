@@ -31,6 +31,10 @@ WORKDIR /src
 COPY ["Directory.Packages.props", "."]
 COPY ["Directory.Build.props", "."]
 COPY ["src/", "src/"]
+# 登录风控的 IP 归属地离线库（约 11MB，仓库跟踪）：不 COPY 进来 dotnet build 会在
+# MoAI.csproj 的 Content 复制处报 MSB3030（镜像里没有 /src/configs/ip2region.xdb）。
+# 运行时 compose 只挂载 system.json 与 plugins 目录，故该文件需内置进镜像。
+COPY ["configs/ip2region.xdb", "configs/"]
 RUN dotnet restore "./src/MoAI/MoAI.csproj"
 WORKDIR "/src/src/MoAI"
 RUN dotnet build "./MoAI.csproj" -c $BUILD_CONFIGURATION -o /app/build
