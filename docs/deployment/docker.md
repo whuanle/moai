@@ -279,7 +279,7 @@ PUSH=0 bash deploy/publish.sh
 公开仓库用 GitHub Actions 自动发布，无需本地 Docker：`.github/workflows/docker-publish.yml`。
 
 - **触发**：推送 tag（`X.Y.Z` / `vX.Y.Z`，可带 `-rc.1` 等预发布后缀）即构建并推送；分支 push 不触发。也可在 Actions 页 `Run workflow` 手动执行（`tag` 留空 = 当前分支，产物 `sha-<短哈希>`；`push=false` 可只构建不推送）。
-- **密钥**（仓库 Settings → Secrets and variables → Actions）：`DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`（Docker Hub Access Token，权限 Read & Write，不要用登录密码）。
+- **密钥**（仓库 Settings → Secrets and variables → Actions）：`DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`（Docker Hub Access Token，权限 Read & Write，不要用登录密码）。当前配置在 **环境 `docker` 的环境级密钥** 下，工作流 job 已声明 `environment: docker`；若改用仓库级密钥也可，同名时环境级优先。
 - **可选变量**：`DOCKERHUB_NAMESPACE`（镜像命名空间，缺省用密钥里的账号）、`DOCKERHUB_REPO`（默认 `moai`，即 `<namespace>/moai`）、`DOCKER_PLATFORMS`（默认 `linux/amd64`）。
 - **产物 tag**：`<version>`（去掉前缀 `v`）+ `sha-<7 位>`；仅稳定版（不含 `-`）额外更新 `latest`，预发布不会顶掉 latest。
 - **平台**：托管 runner 是原生 amd64，故默认只出 amd64；`linux/arm64` 需 QEMU 仿真，而本项目 dotnet restore 在仿真下已知会 SIGSEGV/MSB4184（见 [sdd](./sdd.md)「Apple Silicon 构建注意事项」），要 arm64 建议用自建 arm64 runner。

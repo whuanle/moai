@@ -6,9 +6,10 @@
 #       也可在 Actions 页手动 Run workflow（默认构建当前分支并打 sha-<短哈希>）
 #
 # 仓库「Settings → Secrets and variables → Actions」：
-#   密钥（Secrets）：
+#   密钥（Environment secrets，作用环境 docker；job 已声明 environment: docker）：
 #     DOCKERHUB_USERNAME  Docker Hub 账号
 #     DOCKERHUB_TOKEN     Docker Hub Access Token（权限 Read & Write，勿用登录密码）
+#   注：若改放到 Repository secrets，同样可用；两处同名时环境级优先。
 #   变量（Variables，可选）：
 #     DOCKERHUB_NAMESPACE 镜像命名空间，默认用 DOCKERHUB_USERNAME
 #     DOCKERHUB_REPO      镜像仓库名，默认 moai（即 <namespace>/moai，与 deploy/publish.sh 一致）
@@ -57,6 +58,9 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # Docker Hub 凭据是「环境级密钥」（Settings → Environments → docker），
+    # job 必须声明同名 environment 才能读到 DOCKERHUB_USERNAME / DOCKERHUB_TOKEN
+    environment: docker
     timeout-minutes: 90
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -90,6 +94,7 @@ jobs:
             echo "到 GitHub 仓库 → Settings → Secrets and variables → Actions 添加："
             echo "  DOCKERHUB_USERNAME = Docker Hub 账号"
             echo "  DOCKERHUB_TOKEN    = Docker Hub Access Token（Read & Write）"
+            echo "  可放 Environment secrets（环境 docker，与 job 的 environment 对应）或 Repository secrets"
             exit 1
           fi
 
