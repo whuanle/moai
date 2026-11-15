@@ -2,7 +2,7 @@
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md) ｜ [SOP](./sop.md) ｜ 证据：[local-dev/loginsafety-e2e.mjs](../../local-dev/loginsafety-e2e.mjs)
 
-前置：后端以 ForwardedHeaders 开启运行（E2E 头部注释含完整启动命令），`configs/ip2region.xdb` 在位；脚本自带本地 SMTP 桩与 HTTP webhook 桩，零真实外部依赖。
+前置：后端以 ForwardedHeaders 开启运行（E2E 头部注释含完整启动命令）；IP 归属地库已内嵌进 `MoAI.LoginSafety.Core` 程序集（无需在 `configs/` 放文件）；脚本自带本地 SMTP 桩与 HTTP webhook 桩，零真实外部依赖。
 
 | 场景 | 验证物 | 结果（日期） |
 |---|---|---|

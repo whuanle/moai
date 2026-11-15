@@ -9,7 +9,7 @@
 //   MAI_FILE=local-dev/system.local.json ASPNETCORE_ENVIRONMENT=Development \
 //   MoAI__Port=5213 MoAI__Server=http://127.0.0.1:5213 MoAI__ForwardedHeaders__Enabled=true \
 //   dotnet run --project src/MoAI/MoAI.csproj
-//   且 configs/ip2region.xdb 存在（geo 用例依赖归属地；文件缺失时 geo 用例会 FAIL 提示安装）。
+//   IP 归属地库已内嵌进 MoAI.LoginSafety.Core 程序集，geo 用例无需在 configs/ 放文件（缺失/损坏时相应用例会 FAIL）。
 // 种子账号 admin / abcd123456（root）。开头快照 LS_* 设置原值，结束时恢复并删除临时通知渠道（共享开发实例不破坏配置）。
 import net from 'node:net'
 import http from 'node:http'

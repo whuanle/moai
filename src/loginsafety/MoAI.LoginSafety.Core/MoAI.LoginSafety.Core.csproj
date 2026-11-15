@@ -23,4 +23,13 @@
 		<Folder Include="Services\" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- IP 归属地离线库（ip2region v3 xdb，约 11MB）：作为嵌入资源随程序集分发，
+		     不落 configs（那里是挂载/配置目录），不需要 Dockerfile COPY 或部署机投文件。
+		     Exists 条件保护：稀疏检出里没有该文件时不阻断构建，运行期自动降级。 -->
+		<EmbeddedResource Include="Resources\ip2region.xdb"
+		                  LogicalName="MoAI.LoginSafety.Resources.ip2region.xdb"
+		                  Condition="Exists('Resources\ip2region.xdb')" />
+	</ItemGroup>
+
 </Project>

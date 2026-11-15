@@ -72,17 +72,6 @@
 		<ProjectReference Include="..\prompt\MoAI.Prompt.Core\MoAI.Prompt.Core.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<!-- 登录风控 IP 归属地离线库（ip2region v3 xdb，缺失时地理相关规则自动降级）。
-		     用 Exists 条件保护：镜像/稀疏检出里没有该文件时不能让 dotnet build 直接 MSB3030 失败
-		     （Dockerfile 若需要内置，会在 backend 阶段 COPY configs/ip2region.xdb）。 -->
-		<Content Include="..\..\configs\ip2region.xdb" Link="configs\ip2region.xdb"
-		         Condition="Exists('$(MSBuildThisFileDirectory)..\..\configs\ip2region.xdb')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-		</Content>
-	</ItemGroup>
-
 	<!-- i18n 资源：tool/I18nScanner 扫描 BusinessException 生成的语言文件，运行时由 Maomi.I18n 按文件名加载 -->
 	<ItemGroup>
 		<Content Update="i18n/**/*.json">

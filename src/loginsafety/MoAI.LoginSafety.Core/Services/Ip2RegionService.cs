@@ -50,6 +50,9 @@ public interface IIpLocationService
 
 /// <summary>
 /// ip2region xdb（structure 3.0）读取器：启动时将 xdb 全量载入内存（约 11MB）.
+/// <para>数据来源优先嵌入资源 <c>MoAI.LoginSafety.Resources.ip2region.xdb</c>（随程序集分发，
+/// 不依赖 configs 目录或部署机投文件）；若运维显式放置了文件（环境变量
+/// <c>LS_IP2REGION_XDB_PATH</c> 或 configs/ip2region.xdb）则优先使用文件，便于不重发版更新数据.</para>
 /// <para>xdb 3.0 布局 = 256 字节定长头 + 向量索引区(256*256*8) + 段索引/数据区；
 /// 段索引项 14 字节（起始IP4 + 结束IP4 + 数据长度2 + 数据指针4），数据区为归属地原文（国家|省份|城市|ISP|国家码）。</para>
 /// <para>xdb 缺失或损坏时自动降级（IsAvailable=false），不影响登录流程.</para>
@@ -60,6 +63,14 @@ public class Ip2RegionService : IIpLocationService
     private const int VectorIndexLength = 256 * 256 * 8;
     private const int SegmentIndexSize = 14;
 
+    /// <summary>
+    /// 嵌入资源名（见 LoginSafety.Core.csproj 的 LogicalName）.
+    /// </summary>
+    public const string EmbeddedResourceName = "MoAI.LoginSafety.Resources.ip2region.xdb";
+
+    /// <summary>
+    /// 运维覆盖文件的候选路径（存在时优先于嵌入资源）.
+    /// </summary>
     private static readonly string[] CandidatePaths =
     {
         Path.Combine(AppContext.BaseDirectory, "configs", "ip2region.xdb"),
@@ -81,17 +92,16 @@ public class Ip2RegionService : IIpLocationService
 
         try
         {
-            var path = CandidatePaths.FirstOrDefault(File.Exists);
-            if (path == null)
+            var (data, source) = ReadLibrary();
+            if (data == null)
             {
-                logger.LogWarning("ip2region.xdb 数据文件不存在，IP 归属地解析与异地登录检测不可用（可将 xdb 放置于 configs/ip2region.xdb）.");
+                logger.LogWarning("ip2region.xdb 数据不可用（嵌入资源缺失且未放置覆盖文件），IP 归属地解析与异地登录检测降级.");
                 return;
             }
 
-            var data = File.ReadAllBytes(path);
             if (data.Length < HeaderLength + VectorIndexLength)
             {
-                logger.LogWarning("ip2region.xdb 文件不完整（{Size} 字节），IP 归属地解析不可用.", data.Length);
+                logger.LogWarning("ip2region.xdb 数据不完整（{Size} 字节，来源 {Source}），IP 归属地解析不可用.", data.Length, source);
                 return;
             }
 
@@ -100,18 +110,46 @@ public class Ip2RegionService : IIpLocationService
             var ipVersion = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(16, 2));
             if (structureVersion != 3 || ipVersion != 4)
             {
-                logger.LogWarning("ip2region.xdb 结构版本不支持（structure={Structure}, ipVersion={IpVersion}），IP 归属地解析不可用.", structureVersion, ipVersion);
+                logger.LogWarning("ip2region.xdb 结构版本不支持（structure={Structure}, ipVersion={IpVersion}，来源 {Source}），IP 归属地解析不可用.", structureVersion, ipVersion, source);
                 return;
             }
 
             _data = data;
-            logger.LogInformation("ip2region.xdb 已加载：{Path}（{Size} 字节）.", path, data.Length);
+            logger.LogInformation("ip2region.xdb 已加载：{Source}（{Size} 字节）.", source, data.Length);
         }
         catch (Exception ex)
         {
             _data = null;
             logger.LogError(ex, "ip2region.xdb 加载失败，IP 归属地解析不可用.");
         }
+    }
+
+    /// <summary>
+    /// 读取库数据：运维覆盖文件优先，其次嵌入资源.
+    /// </summary>
+    private (byte[]? Data, string Source) ReadLibrary()
+    {
+        var overridePath = Environment.GetEnvironmentVariable("LS_IP2REGION_XDB_PATH");
+        if (!string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath))
+        {
+            return (File.ReadAllBytes(overridePath), overridePath);
+        }
+
+        var path = CandidatePaths.FirstOrDefault(File.Exists);
+        if (path != null)
+        {
+            return (File.ReadAllBytes(path), path);
+        }
+
+        using var stream = typeof(Ip2RegionService).Assembly.GetManifestResourceStream(EmbeddedResourceName);
+        if (stream == null)
+        {
+            return (null, EmbeddedResourceName);
+        }
+
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return (buffer.ToArray(), "嵌入资源 " + EmbeddedResourceName);
     }
 
     /// <inheritdoc/>

@@ -4,7 +4,7 @@
 
 ## 1. 部署与配置
 
-1. **IP 归属地库**：`configs/ip2region.xdb`（随仓库分发，构建自动拷贝到输出目录 `configs/`）。缺失时服务正常启动，日志出现「ip2region.xdb 数据文件不存在」警告，R4/R5（异地/疾速旅行）自动停用，其余规则不受影响。更新数据：从 ip2region 官方仓库下载 structure 3.0 的 IPv4 xdb 覆盖后重启。
+1. **IP 归属地库**：以**嵌入资源**随 `MoAI.LoginSafety.Core` 程序集分发（仓库路径 `src/loginsafety/MoAI.LoginSafety.Core/Resources/ip2region.xdb`），不落 `configs/`（那里是挂载/配置目录），也不需要部署机投文件。缺失时服务正常启动，日志出现「ip2region.xdb 数据不可用」警告，R4/R5（异地/疾速旅行）自动停用，其余规则不受影响。更新数据：从 ip2region 官方仓库下载 structure 3.0 的 IPv4 xdb 覆盖后重发版；临时热更新可在部署机放 `configs/ip2region.xdb` 或指定 `LS_IP2REGION_XDB_PATH`（文件优先于嵌入资源，重启生效）。
 2. **反向代理穿透**：部署在 nginx 等反代之后时，配置 `MoAI:ForwardedHeaders:Enabled=true`（否则所有登录 IP 都是代理地址，风控失效）。可信代理 IP 固定时填 `MoAI:ForwardedHeaders:KnownProxies`；公网直连暴露端口时**切勿开启**（IP 可被伪造）。compose 一体部署默认未开启，见 [deployment/docker.md](../deployment/docker.md)。
 3. **风险通知**：受影响用户固定收**站内信**提醒；高风险事件额外推「系统设置 → 登录安全」卡片勾选的通知中心渠道（`LS_NOTIFY_CHANNEL_IDS`，勾选 SMTP 渠道即告警邮件——SMTP 连接配置在通知中心渠道自带，与「邮箱验证」绑定无关）。通知内容内置多语言默认中文模板。
 4. **阈值**：默认 IP 失败 20 次/10 分钟、撞库 5 用户名、封禁 30 分钟、新 IP 回看 90 天、旅行窗口 120 分钟；在「系统设置 → 登录安全」卡片调整。

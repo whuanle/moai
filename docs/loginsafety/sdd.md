@@ -25,7 +25,7 @@ src/infra/MoAI.Infra.Shared               IClientContext（IP/UA，init-only）+
                                           AutoAssignUserIdFilter（src/MoAI/Filters/）统一回填
 src/database                              login_log / login_risk_event / login_ip_ban 三表
                                           （后加表：DatabasPostgresModule 幂等补建 + asserts/loginsafety.sql）
-configs/ip2region.xdb                     ip2region 离线库（structure 3.0，IPv4，约 11MB）；缺失自动降级
+configs/ip2region.xdb                     可选覆盖文件（默认不用；真源为程序集嵌入资源，缺失自动降级）
 ```
 
 ## 3. 数据
