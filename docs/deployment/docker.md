@@ -274,9 +274,20 @@ PUSH=0 bash deploy/publish.sh
 - 默认平台 `linux/amd64`；多平台需 `buildx` + QEMU（Apple Silicon 上仿真 amd64 构建已知不稳定，见 [SOP 排障](./sop.md)）。
 - 发布后，服务器 `docker compose pull moai && docker compose up -d moai` 即可升级。
 
-### 6.1 内网 Gitea Actions 构建部署
+### 6.1 GitHub Actions：打 tag 自动发布
 
-不走 Docker Hub、由内网 Gitea 手动触发：构建机 buildx 推送内网 Zot（纯 HTTP LAN），部署机经 Tailnet 拉取并复用 `moai` 网络切换容器。详见 [gitea-actions.md](./gitea-actions.md)（`.gitea/workflows/deploy.yml` + `deploy/gitea/remote-deploy.sh`，变量与 mo_platform 同名：`ZOT_*` / `MINI_SSH_*`，含 runner、insecure registry、复用矩阵与排障）。
+公开仓库用 GitHub Actions 自动发布，无需本地 Docker：`.github/workflows/docker-publish.yml`。
+
+- **触发**：推送 tag（`X.Y.Z` / `vX.Y.Z`，可带 `-rc.1` 等预发布后缀）即构建并推送；分支 push 不触发。也可在 Actions 页 `Run workflow` 手动执行（`tag` 留空 = 当前分支，产物 `sha-<短哈希>`；`push=false` 可只构建不推送）。
+- **密钥**（仓库 Settings → Secrets and variables → Actions）：`DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`（Docker Hub Access Token，权限 Read & Write，不要用登录密码）。
+- **可选变量**：`DOCKERHUB_NAMESPACE`（镜像命名空间，缺省用密钥里的账号）、`DOCKERHUB_REPO`（默认 `moai`，即 `<namespace>/moai`）、`DOCKER_PLATFORMS`（默认 `linux/amd64`）。
+- **产物 tag**：`<version>`（去掉前缀 `v`）+ `sha-<7 位>`；仅稳定版（不含 `-`）额外更新 `latest`，预发布不会顶掉 latest。
+- **平台**：托管 runner 是原生 amd64，故默认只出 amd64；`linux/arm64` 需 QEMU 仿真，而本项目 dotnet restore 在仿真下已知会 SIGSEGV/MSB4184（见 [sdd](./sdd.md)「Apple Silicon 构建注意事项」），要 arm64 建议用自建 arm64 runner。
+- 首次使用建议先 `Run workflow` 传 `push=false` 试跑一次，确认构建通过后再打 tag。
+
+### 6.2 内网 Gitea Actions 构建部署（示例服务器）
+
+不走 Docker Hub、由内网 Gitea 自动触发：**push 到 `main` 即构建并部署到示例服务器**（手动 Run workflow 可指定 tag 重放/回滚）。构建机 buildx 推送内网 Zot（纯 HTTP LAN），部署机经 Tailnet 拉取并复用 `moai` 网络切换容器。详见 [gitea-actions.md](./gitea-actions.md)（`.gitea/workflows/deploy.yml` + `deploy/gitea/remote-deploy.sh`，变量与 mo_platform 同名：`ZOT_*` / `MINI_SSH_*`，含 runner、insecure registry、复用矩阵与排障）。
 
 ## 7. 知识图谱（可选接入 Memgraph）
 

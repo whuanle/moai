@@ -12,7 +12,7 @@
 | B. Docker Compose 自动部署 | 无共享网络时启动完整栈；存在 `moai` 网络时复用 PostgreSQL/Redis/RabbitMQ/RustFS，并只部署 MoAI 专属服务 | 待执行（[@DEP-S13](./bdd.md#dep-s13)、[@DEP-S20](./bdd.md#dep-s20)） |
 | 本地开发 | 后端 `dotnet run`（MAI_FILE 注入）+ 前端 `npm run dev` + 基础设施容器 | ✅ 当前实际可用形态（[@DEP-S12](./bdd.md#dep-s12)） |
 
-覆盖对象：`Dockerfile`、`docker-entrypoint.sh`、`docker-compose.yml`、`.env.example`、`init-pgvector.sql`、`configs/system.example.json`（生成物 `configs/system.json` 已 gitignore）、`deploy/{publish.sh,deploy-compose.sh,opensandbox/*}`。操作细则见 [docker.md](./docker.md)。
+覆盖对象：`Dockerfile`、`docker-entrypoint.sh`、`docker-compose.yml`、`.env.example`、`init-pgvector.sql`、`configs/system.example.json`（生成物 `configs/system.json` 已 gitignore）、`deploy/{publish.sh,deploy-compose.sh,opensandbox/*}`、`.github/workflows/docker-publish.yml`（GitHub tag 自动发布）。操作细则见 [docker.md](./docker.md)。
 
 ## 配置注入链（核心设计）
 

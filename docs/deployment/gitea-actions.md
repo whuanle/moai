@@ -1,8 +1,10 @@
-# 内网 Gitea Actions：手动构建并部署（OCI registry + SSH）
+# 内网 Gitea Actions：main 分支自动构建并部署（OCI registry + SSH）
 
 > 适用：源码在公网 Git，构建与部署走内网 Gitea Actions；构建机推镜像到内网 registry，
 > 部署机经 SSH 拉取并切换容器。与 `mo_platform` 的 `.gitea/workflows/build-image.yml` **同构**，
 > 仓库变量/密钥完全同名（变量 6 个 + 密钥 2 个），可直接复用。
+> 分工：**Gitea 面向示例服务器，main 分支每次 push 自动构建并部署**；**GitHub 只负责生产镜像，
+> 打 tag 才发布到 Docker Hub**（[docker.md 6.1](./docker.md)）。
 > 关联：[Docker 部署](./docker.md) ｜ [SOP](./sop.md) ｜ 落地文件：`.gitea/workflows/deploy.yml`、`deploy/gitea/remote-deploy.sh`
 
 > ⚠️ 本仓库是公开仓库：**任何真实主机名、IP、端口、域名、用户名、指纹、凭据都不能写进被跟踪的文件**。
@@ -12,11 +14,11 @@
 
 ```
 公网 Git 仓库 ──(镜像同步/定期)──> 内网 Gitea <gitea-host>
-                                      │ 手动 Run workflow（可选分支）
+                                      │ push 到 main 自动触发（或手动 Run workflow）
                                       ▼
                         act_runner「linux_local」（内网构建机）
                         buildx 构建前后端一体镜像
-                        push ──> <registry>/moai:<sha>|:latest
+                        push ──> <registry>/moai:sha-<7位>|:latest
                                       │
                                       │ SSH（MINI_SSH_RSA）
                                       ▼
@@ -164,34 +166,33 @@ bash deploy/deploy-compose.sh   # 生成 configs/system.json + 建库建桶 + �
 
 ## 6. 触发与参数
 
-### 6.1 打 tag 自动构建并部署（主路径）
+### 6.1 主线：main 分支 push 自动构建并部署
 
 ```bash
-git tag v0.1.0            # 也接受不带 v 的 0.1.0；必须 X.Y.Z
-git push gitea v0.1.0
+git push gitea main        # 任何进入 main 的提交都会自动构建 + 部署到示例服务器
 ```
 
-- 只对 **版本 tag** 触发（`v*` / 数字开头），普通分支 push **不触发**，日常提交不会直接上线。
-- tag 名必须是 `X.Y.Z` 或 `vX.Y.Z`（去掉 `v` 后作为镜像版本），不符合直接失败，防止误打 `latest`、`release` 之类。
-- 推镜像：`:0.1.0`（版本）+ `:sha-<7位>`（回溯）+ `:latest`；部署机使用 `:0.1.0`。
-- `concurrency: deploy-moai`：连续打 tag 会排队执行，不会互相打断。
+- **main 即示例环境**：push 到 `main` 直接触发，日常提交即上线（不回滚历史、不额外审批）。
+- 镜像 tag：`:sha-<7位提交>`（可回溯）+ `:latest`；部署机使用 `:sha-<7位>`。
+- `concurrency: deploy-moai` + `cancel-in-progress: true`：连续提交时取消排队/进行中的旧运行，避免示例服务器被过期代码覆盖；最终停留在最新提交。
+- 生产镜像不在这里发布：打 tag 由 GitHub Actions 推 Docker Hub（[docker.md 6.1](./docker.md)）。
 
-### 6.2 手动触发（重放 / 回滚 / 不发布版本）
+### 6.2 手动触发（重放 / 回滚 / 指定 tag）
 
 仓库 → Actions → `deploy-moai` → Run workflow（先切换分支再点运行）。
 
 | 参数 | 用途 |
 |---|---|
-| `image_tag` | 指定镜像 tag（留空 = `sha-<7位>`）；回滚时填上一个版本或 sha |
+| `image_tag` | 指定镜像 tag（留空 = `sha-<7位>`）；回滚时填上一个 sha |
 | `deploy_only` | `true` 时跳过构建，直接部署 registry 上已有的 tag（默认 `latest`，用于回滚/重放） |
 
-回滚：`deploy_only=true` + `image_tag=<上一个 sha 或版本号>`。
+回滚：`deploy_only=true` + `image_tag=sha-<上一个提交>`。
 
 ## 7. 排障
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| 打 tag 后没有运行 | tag 不是 `v*` / 数字开头，或该 tag 对应的提交里没有工作流文件 | 用 `X.Y.Z`/`vX.Y.Z`；确认 tag 指向含 `.gitea/workflows/deploy.yml` 的提交 |
+| push main 后没有运行 | 提交里没有工作流文件，或 Gitea 侧分支名不是 `main` | 确认 `.gitea/workflows/deploy.yml` 已在 main 上；仓库默认分支确为 `main` |
 | 作业开头直接失败「缺少仓库变量/密钥」 | 变量/密钥未配或放错类别（变量 vs 密钥） | 仓库 → 设置 → Actions：6 个变量 + `ZOT_PASSWORD`/`MINI_SSH_RSA` 两个密钥 |
 | 构建报 `failed to solve: failed to read dockerfile` / clone 401、403 | BuildKit 拿不到仓库：Gitea 仓库不公开且未允许匿名 clone，或构建机解析/可信不了 `github.server_url` | 仓库改为公开可读；或让构建机能解析并信任该域名（hosts / 内部 CA），地址本身不要改 |
 | 「部署到目标机」报 `archive download failed: HTTP 404/401` | 同上：归档地址就是 `github.server_url`，构建机解析不到该域名或证书不可信 | 同上，修构建机对该域名的解析与证书信任 |

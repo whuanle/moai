@@ -1,0 +1,223 @@
+# ============================================================
+# MoAI 镜像发布（GitHub Actions）
+#
+# 触发：推送版本 tag（X.Y.Z / vX.Y.Z，可带 -rc.1 之类预发布后缀）
+#       → buildx 构建前后端一体镜像 → 推送 Docker Hub
+#       也可在 Actions 页手动 Run workflow（默认构建当前分支并打 sha-<短哈希>）
+#
+# 仓库「Settings → Secrets and variables → Actions」：
+#   密钥（Secrets）：
+#     DOCKERHUB_USERNAME  Docker Hub 账号
+#     DOCKERHUB_TOKEN     Docker Hub Access Token（权限 Read & Write，勿用登录密码）
+#   变量（Variables，可选）：
+#     DOCKERHUB_NAMESPACE 镜像命名空间，默认用 DOCKERHUB_USERNAME
+#     DOCKERHUB_REPO      镜像仓库名，默认 moai（即 <namespace>/moai，与 deploy/publish.sh 一致）
+#     DOCKER_PLATFORMS    构建平台，默认 linux/amd64；需要 arm64 时设 linux/amd64,linux/arm64
+#
+# 产物 tag：
+#   <version>    去掉前缀 v 的 tag 名（如 1.2.3、1.2.3-rc.1）
+#   sha-<7 位>   每次构建都打，便于回滚到任意提交
+#   latest       仅稳定版（tag 不含 - 预发布后缀）才更新，避免 rc 顶掉 latest
+#
+# 注意：本仓库构建在 QEMU 仿真下不稳定（dotnet restore 会 SIGSEGV / MSB4184，
+#       见 docs/deployment/sdd.md「Apple Silicon 构建注意事项」）。GitHub 托管
+#       runner 是原生 amd64，故默认只构建 linux/amd64；多平台请自备 arm64 runner，
+#       或接受较慢且有失败风险的 QEMU 仿真。
+# ============================================================
+name: docker-publish
+
+on:
+  push:
+    # 与 .gitea/workflows/deploy.yml 同口径：只有打 tag 才发布，分支 push 不触发
+    tags: ['v*', '[0-9]*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 tag（如 v1.2.3；留空 = 当前分支，产物为 sha-<短哈希>）'
+        required: false
+        default: ''
+      platforms:
+        description: '构建平台（留空 = 仓库变量 DOCKER_PLATFORMS，再缺省 linux/amd64）'
+        required: false
+        default: ''
+      push:
+        description: '推送到 Docker Hub（false = 只构建不推送，用于试跑）'
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  # 连续打 tag 时排队而不是互相打断：并行构建既抢层缓存，也可能让 latest 被先完成的旧构建覆盖
+  group: docker-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      # 镜像命名空间：优先仓库变量（组织号可与账号不同），否则用密钥里的账号，再退回仓库所有者
+      IMAGE_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME || github.repository_owner }}
+      IMAGE_REPO: ${{ vars.DOCKERHUB_REPO || 'moai' }}
+      PLATFORMS: ${{ inputs.platforms || vars.DOCKER_PLATFORMS || 'linux/amd64' }}
+      INPUT_TAG: ${{ inputs.tag }}
+      SHOULD_PUSH: ${{ github.event_name == 'push' || inputs.push }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 1
+
+      - name: 校验密钥
+        run: |
+          set -euo pipefail
+          if [ "$SHOULD_PUSH" != "true" ]; then
+            echo "试跑模式：只构建不推送，跳过密钥校验"
+            exit 0
+          fi
+          missing=""
+          [ -n "${DOCKERHUB_USERNAME:-}" ] || missing="$missing DOCKERHUB_USERNAME"
+          [ -n "${DOCKERHUB_TOKEN:-}" ] || missing="$missing DOCKERHUB_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::缺少仓库密钥:$missing"
+            echo "到 GitHub 仓库 → Settings → Secrets and variables → Actions 添加："
+            echo "  DOCKERHUB_USERNAME = Docker Hub 账号"
+            echo "  DOCKERHUB_TOKEN    = Docker Hub Access Token（Read & Write）"
+            exit 1
+          fi
+
+      - name: 解析版本与镜像 tag
+        id: meta
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          # platforms 允许写成 "linux/amd64, linux/arm64"（逗号后带空格），规范化后再交给 buildx
+          PLATFORMS="$(printf '%s' "${PLATFORMS:-}" | tr -d '[:space:]')"
+          [ -n "$PLATFORMS" ] || PLATFORMS=linux/amd64
+          REF="$GITHUB_REF"
+          # 手动触发且填了 tag：按 tag 语义处理（等价于 tag 推送）
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ -n "${INPUT_TAG:-}" ]; then
+            REF="refs/tags/$INPUT_TAG"
+          fi
+
+          case "$REF" in
+            refs/tags/*)
+              VERSION="${REF#refs/tags/}"
+              VERSION="${VERSION#v}"
+              # 允许 1.2.3 / 1.2.3-rc.1 / 1.2.3+build.7（构建元数据不入 docker tag）
+              VERSION="${VERSION%%+*}"
+              if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+                echo "::error::tag $REF 不符合 X.Y.Z / vX.Y.Z（可带 -rc.1）格式，拒绝发布"
+                exit 1
+              fi
+              ;;
+            *)
+              VERSION="sha-$SHORT_SHA"
+              ;;
+          esac
+
+          IMAGE="${IMAGE_NAMESPACE}/${IMAGE_REPO}"
+
+          # 预发布（含 -）不更新 latest
+          IS_STABLE=true
+          case "$VERSION" in
+            *-*) IS_STABLE=false ;;
+          esac
+
+          TAGS="$IMAGE:$VERSION"
+          if [ "sha-$SHORT_SHA" != "$VERSION" ]; then
+            TAGS="$TAGS"$'\n'"$IMAGE:sha-$SHORT_SHA"
+          fi
+          if [ "$IS_STABLE" = true ] && [ "$SHOULD_PUSH" = true ]; then
+            TAGS="$TAGS"$'\n'"$IMAGE:latest"
+          fi
+
+          {
+            echo "image=$IMAGE"
+            echo "version=$VERSION"
+            echo "commit_sha=$(git rev-parse HEAD)"
+            echo "short_sha=$SHORT_SHA"
+            echo "stable=$IS_STABLE"
+            echo "platforms=$PLATFORMS"
+            echo "tags<<EOF"
+            printf '%s\n' "$TAGS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "触发方式：${GITHUB_EVENT_NAME} / ${REF}"
+          echo "平台：$PLATFORMS"
+          echo "推送：$SHOULD_PUSH"
+          echo "镜像 tag："
+          printf '  - %s\n' $TAGS
+
+      - name: 准备 QEMU（仅多平台含 arm64 时）
+        if: contains(env.PLATFORMS, 'arm64')
+        uses: docker/setup-qemu-action@v4
+
+      - name: 准备 buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          # 使用 docker-container 驱动，才能导出 gha 缓存与多平台 manifest
+          driver: docker-container
+
+      - name: 登录 Docker Hub
+        if: env.SHOULD_PUSH == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 构建并推送
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ steps.meta.outputs.platforms }}
+          push: ${{ env.SHOULD_PUSH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=MoAI
+            org.opencontainers.image.description=开源 AI 应用平台
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.commit_sha || github.sha }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # 不生成 provenance/SBOM：避免 Docker Hub 上多出 unknown/unknown 平台条目干扰 docker pull
+          provenance: false
+          sbom: false
+
+      - name: 结果汇总
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### MoAI 镜像发布"
+            echo ""
+            echo "- 触发：\`${GITHUB_REF}\`（${GITHUB_EVENT_NAME}）"
+            echo "- 提交：\`${{ steps.meta.outputs.short_sha || github.sha }}\`"
+            echo "- 平台：\`${{ steps.meta.outputs.platforms }}\`"
+            if [ "${BUILD_OUTCOME:-}" != "success" ]; then
+              echo "- 结果：构建失败或未执行（${BUILD_OUTCOME:-skipped}），查看上方日志"
+            elif [ "$SHOULD_PUSH" = "true" ]; then
+              echo "- 已推送："
+              printf -- '- `%s`\n' $IMAGE_TAGS
+              echo "- Digest：\`${{ steps.build.outputs.digest }}\`"
+              echo ""
+              echo "服务器升级：\`docker compose pull moai && docker compose up -d moai\`"
+            else
+              echo "- 试跑模式：构建通过，未推送（push=false）"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

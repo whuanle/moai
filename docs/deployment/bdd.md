@@ -153,4 +153,26 @@ Feature: 一体部署（RustFS + OpenSandbox + 配置挂载）
     Then 新容器仍使用同一把 rsa_private.key（宿主机文件未变）
     And 旧容器签发的 access/refresh token 继续有效，不会被集体踢回登录页
     But 删除宿主机该文件等同于轮换密钥，所有在线会话立即失效（预期行为）
+
+  @DEP-S22 @manual
+  Scenario: GitHub tag 触发自动构建并发布 Docker Hub
+    Given 仓库 Secrets 已配置 DOCKERHUB_USERNAME 与 DOCKERHUB_TOKEN（Read & Write）
+    When 推送 tag v1.2.3（或手动 Run workflow 并填写该 tag）
+    Then .github/workflows/docker-publish.yml 以 linux/amd64 构建前后端一体镜像并推送
+    And Docker Hub 上存在 <username>/moai:1.2.3、<username>/moai:sha-<短哈希> 与 <username>/moai:latest
+    When 推送带预发布后缀的 tag（如 v1.3.0-rc.1）
+    Then 推送 1.3.0-rc.1 与 sha-<短哈希>，但不更新 latest
+    When 手动 Run workflow 且 push=false
+    Then 仅构建不推送
+    But tag 不符合 X.Y.Z / vX.Y.Z 格式时流水线直接失败，不产出镜像
+
+  @DEP-S23 @manual
+  Scenario: Gitea main 分支 push 自动构建并部署示例服务器
+    Given Gitea 仓库变量/密钥（ZOT_* / MINI_SSH_*）已配置，且 linux_local runner 在线
+    When 推送提交到 main（git push gitea main）
+    Then deploy-moai 流水线自动构建镜像并推送内网 Zot（:sha-<短哈希> 与 :latest）
+    And SSH 切换到示例服务器上的新镜像并通过端口探活
+    When 连续推送多个提交
+    Then 只保留最新一次构建部署（cancel-in-progress=true），示例服务器最终停在最新提交
+    But 打 tag 不会触发 Gitea 流水线；生产镜像由 GitHub Actions 的 tag 流水线负责
 ```

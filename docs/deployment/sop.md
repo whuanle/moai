@@ -44,8 +44,14 @@ docker run -d --name moai -p 8080:8080 \
 ## 3. 升级 / 回滚
 
 ```bash
-# 发布方：构建并推送 whuanle/moai:<tag> 与 :latest
+# 发布方（本地）：构建并推送 whuanle/moai:<tag> 与 :latest
 bash deploy/publish.sh
+
+# 发布方（GitHub）：打 tag 自动构建生产镜像并推 Docker Hub（.github/workflows/docker-publish.yml，@DEP-S22）
+git tag v1.2.3 && git push origin v1.2.3
+
+# 示例服务器（Gitea）：push main 自动构建并部署（.gitea/workflows/deploy.yml，@DEP-S23）
+git push gitea main
 
 # 部署方：拉取新镜像并重启
 docker compose pull moai && docker compose up -d moai
@@ -93,7 +99,7 @@ sudo tar czf /backup/moai-configs.tgz -C /data/moai configs
 3. [local-dev/user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs)（后端 5210 运行中）全绿。
 4. 前端 `npm run typecheck && npm run lint && npm run test` 全绿。
 5. `docker compose up -d` 后全服务 Up、`rustfs-init` 建桶成功、`system.json` 挂载生效、页面可登录（[@DEP-S13](./bdd.md#dep-s13)~[@DEP-S16](./bdd.md#dep-s16)）。
-6. `bash deploy/publish.sh` 推送成功后服务器可 `docker compose pull moai`（[@DEP-S18](./bdd.md#dep-s18)）。
+6. 发布：`bash deploy/publish.sh` 或推 GitHub tag 由 Actions 发布生产镜像（[@DEP-S18](./bdd.md#dep-s18)、[@DEP-S22](./bdd.md#dep-s22)）；示例服务器由 Gitea main push 自动构建部署（[@DEP-S23](./bdd.md#dep-s23)）。
 
 ## 7. 远端部署实例：154 服务器（154.8.214.31）
 

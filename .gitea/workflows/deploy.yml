@@ -1,13 +1,17 @@
 # ============================================================
-# MoAI 手动构建并部署（Gitea Actions）
+# MoAI main 分支自动构建并部署（Gitea Actions）
+#
+# 分工：
+#   - GitHub（.github/workflows/docker-publish.yml）：只在打 tag 时发布生产镜像到 Docker Hub
+#   - Gitea（本文件）：示例服务器，main 分支每次 push 自动构建并部署
 #
 # 与 mo_platform 的 .gitea/workflows/build-image.yml 同构：
 #   1) build-push：buildx 构建前后端一体镜像，推送到内网 Zot（纯 HTTP LAN）
 #   2) deploy：经 SSH 把 compose 文件同步到目标机，登录 Zot 拉镜像 → 复用/完整栈 compose 切换
 #
 # 触发：
-#   1) 打版本 tag 自动构建并部署（tag 名必须 X.Y.Z 或 vX.Y.Z，镜像版本 = 去掉 v 的版本号）
-#   2) Gitea 仓库页 → Actions → deploy-moai → Run workflow（可先切到要发布的分支再触发）
+#   1) push 到 main 分支自动构建并部署（镜像 tag = sha-<短哈希>，同时更新 :latest）
+#   2) Gitea 仓库页 → Actions → deploy-moai → Run workflow（可切分支/指定 tag 重放或回滚）
 #
 # 变量来源：Gitea 仓库「设置 → Actions」（仓库级变量/密钥，非全局变量）
 #   变量（Variables）：
@@ -26,8 +30,8 @@ name: deploy-moai
 
 on:
   push:
-    # 打版本 tag 即触发（分支 push 不触发，避免日常提交直接上线）
-    tags: ['v*', '[0-9]*']
+    # main 即示例服务器环境：合并/提交到 main 就直接构建并部署
+    branches: ['main']
   workflow_dispatch:
     inputs:
       image_tag:
@@ -40,9 +44,9 @@ on:
         default: 'false'
 
 concurrency:
-  # 同一时间只跑一个构建部署；连续打 tag 或手动触发会排队而不是互相打断
+  # 连续提交时只保留最新的构建部署：取消排队中的旧提交，避免示例服务器被过期代码覆盖
   group: deploy-moai
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   IMAGE_NAME: moai
@@ -92,27 +96,12 @@ jobs:
         run: |
           set -euo pipefail
           SHORT_SHA="$(printf '%s' "$GITHUB_SHA" | cut -c1-7)"
-          case "$GITHUB_REF" in
-            refs/tags/*)
-              # tag 触发：镜像版本 = 去掉前缀 v 的 tag 名，且必须是 X.Y.Z
-              TAG="${GITHUB_REF_NAME#v}"
-              if ! printf '%s' "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-                echo "tag $GITHUB_REF_NAME 不符合 X.Y.Z / vX.Y.Z 格式" >&2
-                exit 1
-              fi
-              ;;
-            *)
-              TAG="${{ inputs.image_tag }}"
-              if [ -z "$TAG" ]; then TAG="sha-$SHORT_SHA"; fi
-              ;;
-          esac
+          # main push 用提交哈希作镜像版本；手动触发可显式指定（回滚/重放）
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="sha-$SHORT_SHA"; fi
           case "$TAG" in *[!A-Za-z0-9._-]*) echo "非法 tag：$TAG"; exit 1;; esac
           { echo "IMAGE_TAG=$TAG"; echo "SHORT_SHA=$SHORT_SHA"; } >> "$GITHUB_ENV"
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] || printf '%s' "$GITHUB_REF" | grep -q '^refs/tags/'; then
-            echo "触发方式：tag ${GITHUB_REF_NAME}"
-          else
-            echo "触发方式：手动（${GITHUB_REF_NAME}）"
-          fi
+          echo "触发：${GITHUB_REF_NAME}（${GITHUB_REF}）"
           echo "本次提交：${SHORT_SHA}"
           echo "推送镜像：${ZOT_REGISTRY}/${IMAGE_NAME}:${TAG}（同时打 :sha-${SHORT_SHA} 与 :latest，便于回滚）"
 
