@@ -192,7 +192,16 @@ jobs:
           else
             TAG="$IMAGE_TAG"
           fi
-          IMAGE_REF="$ZOT_REGISTRY_TARGET/$IMAGE_NAME:$TAG"
+          # 部署机视角的 registry：ZOT_REGISTRY_TARGET > ZOT_REGISTRY_URL 的 host:port > ZOT_REGISTRY。
+          # 构建机可推、部署机不可达时（如 Zot 在 .193、公网只通 .199 再转发），只配 ZOT_REGISTRY_URL 
+          # 就能让拉取地址自动切换，不需要额外再加一个变量。
+          DEPLOY_REGISTRY="${ZOT_REGISTRY_TARGET:-}"
+          if [ -z "$DEPLOY_REGISTRY" ] && [ -n "${ZOT_REGISTRY_URL:-}" ]; then
+            DEPLOY_REGISTRY="${ZOT_REGISTRY_URL#*://}"
+            DEPLOY_REGISTRY="${DEPLOY_REGISTRY%%/*}"
+          fi
+          [ -n "$DEPLOY_REGISTRY" ] || DEPLOY_REGISTRY="$ZOT_REGISTRY"
+          IMAGE_REF="$DEPLOY_REGISTRY/$IMAGE_NAME:$TAG"
           echo "DEPLOY_IMAGE=$IMAGE_REF" >> "$GITHUB_ENV"
 
           # 与 mo_platform 同款：下载归档（node fetch）、解包、打包、SSH 全部在 node 容器内完成，

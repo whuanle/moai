@@ -36,7 +36,7 @@
 | 类型 | 名称 | 说明 |
 |---|---|---|
 | 变量 | `ZOT_REGISTRY` | 构建机可访问的 registry `host:port`（纯 HTTP 也可以） |
-| 变量 | `ZOT_REGISTRY_URL` | 同上完整 URL（备用/排查） |
+| 变量 | `ZOT_REGISTRY_URL` | 同上完整 URL（如 `http://<host>:5011`）；**同时用于部署机拉取地址与 insecure-registries 推导**（部署机可达地址与构建机不同时填它即可） |
 | 变量 | `ZOT_USERNAME` | registry 用户名 |
 | 变量 | `MINI_SSH_USER` | 部署机 SSH 用户 |
 | 变量 | `MINI_SSH_HOST` | 部署机地址 |
@@ -58,7 +58,7 @@ env:
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `ZOT_REGISTRY_TARGET` | 同 `ZOT_REGISTRY` | **部署机视角**的 registry；部署机与构建机看到的地址不同时（NAT/VPN/Tailnet）在这里覆盖 |
+| `ZOT_REGISTRY_TARGET` | 空 | **部署机视角**的 registry `host:port`；留空时自动取 `ZOT_REGISTRY_URL` 的 `host:port`（再退 `ZOT_REGISTRY`）。构建机与部署机看到的地址不同时（NAT/VPN/端口转发）配这个或 `ZOT_REGISTRY_URL` |
 | `MINI_SSH_KNOWN_HOST` | 空 | 目标机 known_hosts 行；配置后启用 `StrictHostKeyChecking=yes`，留空则 `accept-new` |
 | `MOAI_APP_DIR` | `moai` | 部署机目录，相对 `$HOME` → `~/moai` |
 

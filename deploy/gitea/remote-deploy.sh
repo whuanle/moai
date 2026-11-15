@@ -101,26 +101,23 @@ fi
 
 # ---------- 拉取镜像（Zot 为纯 HTTP LAN registry） ----------
 if [ "$PULL" = "1" ]; then
-  # registry 地址：优先 ZOT_REGISTRY_URL（完整 URL，带 http:// 时纯 HTTP），
-  # 其次 ZOT_REGISTRY_TARGET / 镜像引用里的 host:port。
-  REGISTRY_HOSTPORT=""
-  if [ -n "${ZOT_REGISTRY_URL:-}" ]; then
-    REGISTRY_HOSTPORT="${ZOT_REGISTRY_URL#*://}"
-    REGISTRY_HOSTPORT="${REGISTRY_HOSTPORT%%/*}"
-  elif [ -n "${ZOT_REGISTRY_TARGET:-}" ]; then
-    REGISTRY_HOSTPORT="$ZOT_REGISTRY_TARGET"
-  else
-    REGISTRY_HOSTPORT="${IMAGE_REF%%/*}"
-  fi
+  # registry 地址：镜像引用里的 host:port 才是 docker 真正要连的（部署机视角），
+  # 优先用它；ZOT_REGISTRY_URL（完整 URL）与 ZOT_REGISTRY_TARGET 一并加入 insecure 列表。
+  REGISTRY_HOSTPORT="${IMAGE_REF%%/*}"
 
   # 预检：先确认部署机到 registry 的 TCP/HTTP 可达，避免 docker 报
   # "Head https://...: i/o timeout" 这种既误导又难查的错误。
   probe_registry_http() {
     local hostport="$1" host="${1%%:*}" port="${1##*:}"
     if command -v curl >/dev/null 2>&1; then
-      curl -s -o /dev/null --max-time 5 -w '%{http_code}' "http://${hostport}/v2/" 2>/dev/null || echo 000
+      # curl 失败时仍会打印 000，不能再 || echo 000（会拼成 000000）
+      curl -s -o /dev/null --max-time 5 -w '%{http_code}' "http://${hostport}/v2/" 2>/dev/null || true
     elif command -v wget >/dev/null 2>&1; then
-      wget -q -O /dev/null --timeout=5 "http://${hostport}/v2/" >/dev/null 2>&1 && echo 200 || echo 000
+      if wget -q -O /dev/null --timeout=5 "http://${hostport}/v2/" >/dev/null 2>&1; then
+        echo 200
+      else
+        echo 000
+      fi
     else
       timeout 5 bash -c "cat < /dev/null > /dev/tcp/${host}/${port}" >/dev/null 2>&1 && echo 200 || echo 000
     fi
@@ -128,10 +125,14 @@ if [ "$PULL" = "1" ]; then
 
   PROBE_CODE="$(probe_registry_http "$REGISTRY_HOSTPORT")"
   case "$PROBE_CODE" in
+    ''|*[!0-9]*) PROBE_CODE=000 ;;
+  esac
+  case "$PROBE_CODE" in
     000)
       echo "!! 部署机访问不到 registry：http://${REGISTRY_HOSTPORT}/v2/ 连接失败（超时/拒绝）"
-      echo "   排查：registry 是否监听该地址、防火墙/安全组、部署机到该网段的路由（VPN/专线）"
-      echo "   若部署机视角的地址不同，请设置仓库变量 ZOT_REGISTRY_TARGET（host:port）指向可达地址"
+      echo "   排查：registry 是否在该地址可达（防火墙/安全组/端口转发/路由）"
+      echo "   若部署机视角的地址与构建机不同，把 ZOT_REGISTRY_URL 设为部署机可达的完整地址（如 http://<可达地址>:5011），"
+      echo "   或设置 ZOT_REGISTRY_TARGET=<host:port>；镜像引用会使用该地址"
       exit 3
       ;;
     400)
@@ -146,9 +147,11 @@ if [ "$PULL" = "1" ]; then
 
   # 幂等确保 daemon 把 registry 当 insecure registry（纯 HTTP）
   INSECURE_HOSTPORTS="$REGISTRY_HOSTPORT"
-  if [ -n "${ZOT_REGISTRY_TARGET:-}" ] && [ "$ZOT_REGISTRY_TARGET" != "$REGISTRY_HOSTPORT" ]; then
-    INSECURE_HOSTPORTS="$INSECURE_HOSTPORTS $ZOT_REGISTRY_TARGET"
-  fi
+  for extra in "${ZOT_REGISTRY_TARGET:-}" "$(printf '%s' "${ZOT_REGISTRY_URL:-}" | sed -e 's#^[a-z]*://##' -e 's#/.*$##')"; do
+    if [ -n "$extra" ] && ! printf '%s' " $INSECURE_HOSTPORTS " | grep -Fq " $extra "; then
+      INSECURE_HOSTPORTS="$INSECURE_HOSTPORTS $extra"
+    fi
+  done
 
   sudo install -d -m 755 /etc/docker
   if [ -f /etc/docker/daemon.json ]; then
