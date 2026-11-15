@@ -85,7 +85,7 @@ ui/src/
 5. **编辑不可改实例 key**：更新只改 `templeteKey/config/title/description/classifyId`；实例 key 作为主键定位。系统侧 save/delete 只允许操作 `team_id=0` 的系统实例，命中团队自有实例（`team_id≠0`）时 403（@DYN-S70，团队实例走 teamplugin 链路）。
 6. **分类校验**：`classifyId` 非 0 需在 `classify` 表存在且 `Type=plugin`，否则 400。
 7. **删除**：软删除 `plugin_dynamic` 与该实例关联的 `plugin` 行（`IsDeleted=1`）。
-8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**实例数前端聚合**（系统侧 manage/list 系统侧实例、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
+8. **前端**：动态 Tab 用 `DynamicPluginPanel`；运行复用 `PluginRunDrawer`（`paramsExample` 来自模板）。模板列表页 `PluginTemplates` 双模式（无 `teamId`=系统/管理员，带 `?teamId=`=团队/可管理成员，非可管理成员重定向回团队插件）；**模板卡片展示补充信息**由后端 `IPluginTemplateMetaProvider` 统一补齐：图标（`plugin_package.avatar_path`，前端 `resolveStorageUrl` 拼 OSS 地址）、安装版本（`plugin_package.version`）、本地分类名（系统侧 `plugin` 行 `classify_id` → 分类名）与工具数（注册表 `ToolCount`），图标缺失回退名称首字头像；系统与团队两个模板查询端点同口径，内置模板（无安装包）这些字段为空。**实例数前端聚合**（系统侧 manage/list 系统侧实例、团队侧 team list 过滤 `isTeamOwned`），不设后端聚合端点；创建/编辑表单收敛为共享 `DynamicPluginInstanceModal`（scope 决定保存端点、kg 绑定与头像能力）。i18n zh/en 同步。
 9. **头像走全站统一 objectKey 管线**（与用户/应用/团队/wiki/知识图谱/提示词头像同模式）：前端 `uploadImageWithKey` 直传公开图片（`public/images/{sha256}.{ext}`）→ `POST /ai/plugin/manage/{id}/avatar` 只登记 `objectKey`；Handler 校验 `Files` 表 `ObjectKey+IsUploaded`（404 防伪造），**不删除旧头像文件**（与既有头像端点一致）。端点挂在 `PluginManageController`（跨 custom/dynamic/static 共用一个端点，`plugin` 行主键 `Id` 定位）；静态侧说明见 [../aiplugin-static/sdd.md](../aiplugin-static/sdd.md)。
 10. **创建态头像**：插件记录保存前无 id 可登记，保存命令带可选 `avatarPath`（创建直接落库；更新仅传了才覆盖，不传不改动），Handler 同样校验 `Files` 表已登记（404 防伪造，校验先于任何写入，失败不建实例）。前端共享模态在系统侧新建态渲染 `PluginAvatarPendingUpload`（仅直传暂存 objectKey，随保存提交），编辑态保留 `PluginAvatarUpload`（选图即登记）；团队侧保存命令无此字段、暂不开放（团队列表亦未展示头像）。
 11. **在线目录隔离**：MoAI 后端通过 `MoPlatformPluginClient` 调用 MoPlatform `/api/client/plugin/*`，每次带 `X-MoAI-Client-Fingerprint`；指纹由 Infra 单例持久化到 `configs/mo-platform-client.fingerprint`，不使用管理员密码、PAT 或 JWT。指纹只用于 Redis 配额归并，不作为密码学认证。
@@ -101,7 +101,8 @@ ui/src/
 - 在线安装在包目录落盘并提交 DB 后，立即在当前进程创建独立 `AssemblyLoadContext`、加载入口程序集并注册插件；无需重启。运行时下架只禁用注册态，不卸载程序集或删除目录。
 - 本地 `moai.plugin.json` 由 Web JSON 选项序列化为 camelCase；运行时读取必须使用同一选项，避免 key 等必需字段被默认的大小写敏感反序列化静默置空。
 - 上架/下架切换注册表可用态并同步数据库，不卸载程序集、不删除文件。在线覆盖与卸载不开放；同 key 已安装时需先下架或保持现状，包升级流程后续另行定义。
-- 管理端在线插件页（`ui/src/pages/plugins/PluginMarketplacePanel.tsx`）把关键字、MoPlatform 分类 id 与分页参数原样透传给 `/api/ai/plugin/online/catalog`：手写封装不经 Kiota 生成代码，`RequestInformation.URL` 一旦显式赋值其 getter 便原样返回、不再展开 `queryParameters`，因此查询串必须拼进 URL，否则搜索/分类/翻页静默失效。页面整体高度固定为视口高度，卡片列表在页内滚动、分页条固定在底部。
+- 管理端在线插件页（`ui/src/pages/plugins/PluginMarketplacePanel.tsx`）把关键字、MoPlatform 分类 id 与分页参数原样透传给 `/api/ai/plugin/online/catalog`：手写封装不经 Kiota 生成代码，`RequestInformation.URL` 一旦显式赋值其 getter 便原样返回、不再展开 `queryParameters`，因此查询串必须拼进 URL，否则搜索/分类/翻页静默失效。页面整体高度固定为视口高度，卡片列表在页内滚动、分页条固定在底部；底部分页开启每页条数选择（12/20/24/48），切页数即回第 1 页重查。
+- **「仅未安装」筛选由 MoAI 后端聚合实现**：MoPlatform 目录接口没有安装状态过滤参数，`QueryCatalogAsync` 在该开关打开时按平台上限 `pageSize=100` 逐页拉取（最多 20 页 / 2000 条，防目录异常失控），用本地 `plugin_package` 安装 key 集合排除已安装后按请求 `pageNo/pageSize` 返回，`total` 为过滤后的未安装总数；关闭开关时保持平台原生分页（不做额外拉取）。
 
 ## 历史内置动态模板（已退役）
 

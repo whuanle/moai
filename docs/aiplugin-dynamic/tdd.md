@@ -404,3 +404,12 @@ node local-dev/clickstack-e2e.mjs                             # ClickStack 查�
 - E2E：`team-plugin-e2e.mjs` → **68/68**（TSM-1 非成员 404 / TSM-2 成员可读 / TSM-3 成员写 403 / TSM-4~5 Owner 保存回显 / TSM-6 策略校验 400 / TSM-7 跨团队 404）；`plugin-multi-tool-semantic-e2e.mjs` 回归 **30/30**；主客户端 `npm run syncapi` 重建（新端点进生成物）。
 - 口径说明：团队侧语义仅限团队自有插件；系统授权插件在团队侧不可配置（其语义影响全平台），这与编辑/删除权限口径一致。
 - 已知留白：AI 会话内 plugin_note 取回与 CallPolicy 拦截的真实对话链路由单测覆盖（`AppToolContextProviderTests`），未铺桩模型端到端；CallPolicy 命中未接 app_security_event 审计。
+
+### 2026-11-15 模板卡片补充信息 + 在线目录未安装筛选与页数自定义（@DYN-S168~S170）
+
+- 后端：`QueryPluginListCommandResponseItem` 增 `AvatarPath/Version/CategoryName`；新增 `IPluginTemplateMetaProvider`（Shared）与 `PluginTemplateMetaProvider`（Custom，查 `plugin_package` 图标/版本 + 系统侧 `plugin` 行分类名）；`QueryPluginListCommandHandler` 与 `QueryTeamDynamicTemplatesCommandHandler` 注入后统一补齐，系统/团队两个模板查询端点同口径。
+- 在线目录：`QueryPluginMarketplaceCommand` 增 `OnlyUninstalled`，`IPluginMarketplaceService.QueryCatalogAsync` 透传；开关打开时 `PluginMarketplaceService` 按平台 `pageSize=100` 聚合（上限 20 页），用本地安装 key 过滤后按请求页码分页，`total` 为过滤后总数；关闭时保持原生平台分页。
+- 前端：`PluginTemplates` 卡片展示头像（`resolveStorageUrl(avatarPath)`，缺失回退首字 Avatar）、分类/版本/工具数 Tag；`PluginMarketplacePanel` 工具栏加「全部插件 / 仅未安装」Segmented，底部分页开启 `showSizeChanger`（12/20/24/48），切页数回第 1 页；`getCatalog` 手写封装补 `onlyUninstalled` 查询参数（空值不下发）；i18n zh/en 同步（`plugins.online.filterAll/filterUninstalled`、`plugins.templateToolCount`）。
+- 验证：`dotnet build src/MoAI/MoAI.csproj` → 0 error（新增文件零告警）；`dotnet test tests/MoAI.AIPlugin.Dynamic.Tests` → **402/402**；`ui` typecheck 0 error、lint 0 error（18 条既有 warning）、全量 vitest **845/845**（110 文件；`PluginTemplates.test.tsx` 图标/分类/版本/工具数断言 + `PluginMarketplacePanel.test.tsx` 未安装筛选/页数切换）；`npm run syncapi`（临时实例 :5210）重生成 aiplugin-client，`QueryPluginListCommandResponseItem` 新增 `avatarPath/version/categoryName`，`online/catalog` 生成 `onlyUninstalled` 查询参数。
+- 真实接口实测（:5210 + 开发库）：`GET /api/ai/plugin` 模板项回显 `avatarPath/version/categoryName/toolCount`（临时上架 `redis_query` 验证后恢复下架）；`online/catalog` 全量 total=222、`onlyUninstalled=true` total=220 且无已安装项、`pageSize=48` 返回 48 条。
+- 实踩坑：Kiota 生成物里的 `QueryPluginListCommandResponseItem` 新增字段必须重新生成后才能被前端读取（`npm run syncapi`，后端运行中或离线 MoAI.json）。

@@ -118,13 +118,16 @@ export interface AdminTransferTeamOwnerCommand extends Parsable {
      */
     userId?: string | null;
 }
+/**
+ * Represents a context entry providing additional information to the agent.
+ */
 export interface AGUIContext extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the context entry.
      */
     description?: string | null;
     /**
-     * The value property
+     * Gets or sets the value of the context entry.
      */
     value?: string | null;
 }
@@ -152,21 +155,24 @@ export interface AGUIResume extends Parsable {
      */
     status?: string | null;
 }
+/**
+ * Represents a tool available for the agent to use.
+ */
 export interface AGUITool extends Parsable {
     /**
-     * The description property
+     * Gets or sets the description of the tool.
      */
     description?: string | null;
     /**
-     * The metadata property
+     * Gets or sets arbitrary tool metadata (e.g. a2ui schema).
      */
     metadata?: UntypedNode | null;
     /**
-     * The name property
+     * Gets or sets the name of the tool.
      */
     name?: string | null;
     /**
-     * The parameters property
+     * Gets or sets the JSON Schema describing the tool's parameters.
      */
     parameters?: UntypedNode | null;
 }
@@ -11578,6 +11584,8 @@ export function deserializeIntoQueryPluginListCommandResponse(queryPluginListCom
 // @ts-ignore
 export function deserializeIntoQueryPluginListCommandResponseItem(queryPluginListCommandResponseItem: Partial<QueryPluginListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { queryPluginListCommandResponseItem.avatarPath = n.getStringValue(); },
+        "categoryName": n => { queryPluginListCommandResponseItem.categoryName = n.getStringValue(); },
         "configExample": n => { queryPluginListCommandResponseItem.configExample = n.getStringValue(); },
         "configType": n => { queryPluginListCommandResponseItem.configType = n.getStringValue(); },
         "description": n => { queryPluginListCommandResponseItem.description = n.getStringValue(); },
@@ -11589,6 +11597,7 @@ export function deserializeIntoQueryPluginListCommandResponseItem(queryPluginLis
         "responseType": n => { queryPluginListCommandResponseItem.responseType = n.getStringValue(); },
         "toolCount": n => { queryPluginListCommandResponseItem.toolCount = n.getNumberValue(); },
         "tools": n => { queryPluginListCommandResponseItem.tools = n.getCollectionOfObjectValues<QueryPluginToolItem>(createQueryPluginToolItemFromDiscriminatorValue); },
+        "version": n => { queryPluginListCommandResponseItem.version = n.getStringValue(); },
     }
 }
 /**
@@ -19937,6 +19946,14 @@ export interface QueryPluginListCommandResponse extends Parsable {
  */
 export interface QueryPluginListCommandResponseItem extends Parsable {
     /**
+     * 模板图标对象路径（在线插件包安装时保存到 MoAI OSS 的对象 key；内置模板为空）.
+     */
+    avatarPath?: string | null;
+    /**
+     * 模板在系统侧插件记录上的本地分类名（未分类或内置模板为空）.
+     */
+    categoryName?: string | null;
+    /**
      * 配置示例 JSON，静态插件为 null.
      */
     configExample?: string | null;
@@ -19980,6 +19997,10 @@ export interface QueryPluginListCommandResponseItem extends Parsable {
      * 工具清单（单工具插件固定一个 key=run 的项）.
      */
     tools?: QueryPluginToolItem[] | null;
+    /**
+     * 模板来源在线插件包的安装版本（内置模板为空）.
+     */
+    version?: string | null;
 }
 /**
  * 插件管理列表查询响应.
@@ -22122,41 +22143,44 @@ export interface ReviewPublicationCommand extends Parsable {
      */
     reviewComment?: string | null;
 }
+/**
+ * Input payload for running an AG-UI agent.
+ */
 export interface RunAgentInput extends Parsable {
     /**
-     * The context property
+     * Gets or sets contextual information for the agent.
      */
     context?: AGUIContext[] | null;
     /**
-     * The forwardedProps property
+     * Gets or sets additional forwarded properties from the client.
      */
     forwardedProps?: UntypedNode | null;
     /**
-     * The messages property
+     * Gets or sets the conversation messages.
      */
     messages?: AGUIMessage[] | null;
     /**
-     * The parentRunId property
+     * Gets or sets the parent run identifier for branching/time travel.
      */
     parentRunId?: string | null;
     /**
-     * The resume property
+     * Gets or sets the resume entries for continuing an interrupted run.Each entry addresses one interrupt from the previous run.
      */
     resume?: AGUIResume[] | null;
     /**
-     * The runId property
+     * Gets or sets the run identifier.
      */
     runId?: string | null;
     /**
-     * The state property
+     * Gets or sets the state to pass to the agent.
      */
     state?: UntypedNode | null;
     /**
-     * The threadId property
+     * Gets or sets the thread identifier.
      */
     threadId?: string | null;
     /**
-     * The tools property
+     * Gets or sets the tools available to the agent.
      */
     tools?: AGUITool[] | null;
 }
@@ -26826,6 +26850,8 @@ export function serializeQueryPluginListCommandResponse(writer: SerializationWri
 // @ts-ignore
 export function serializeQueryPluginListCommandResponseItem(writer: SerializationWriter, queryPluginListCommandResponseItem: Partial<QueryPluginListCommandResponseItem> | undefined | null = {}) : void {
     if (queryPluginListCommandResponseItem) {
+        writer.writeStringValue("avatarPath", queryPluginListCommandResponseItem.avatarPath);
+        writer.writeStringValue("categoryName", queryPluginListCommandResponseItem.categoryName);
         writer.writeStringValue("configExample", queryPluginListCommandResponseItem.configExample);
         writer.writeStringValue("configType", queryPluginListCommandResponseItem.configType);
         writer.writeStringValue("description", queryPluginListCommandResponseItem.description);
@@ -26837,6 +26863,7 @@ export function serializeQueryPluginListCommandResponseItem(writer: Serializatio
         writer.writeStringValue("responseType", queryPluginListCommandResponseItem.responseType);
         writer.writeNumberValue("toolCount", queryPluginListCommandResponseItem.toolCount);
         writer.writeCollectionOfObjectValues<QueryPluginToolItem>("tools", queryPluginListCommandResponseItem.tools, serializeQueryPluginToolItem);
+        writer.writeStringValue("version", queryPluginListCommandResponseItem.version);
     }
 }
 /**

@@ -660,11 +660,17 @@ async function marketplaceRequest<T>(
 
 /** MoPlatform 在线插件目录与 MoAI 本地安装管理（请求经 Kiota adapter 和统一鉴权/错误中间件）. */
 export const pluginMarketplaceApi = {
-  getCatalog: (keyword = '', pageNo = 1, pageSize = 20, categoryId = '') =>
+  getCatalog: (keyword = '', pageNo = 1, pageSize = 20, categoryId = '', onlyUninstalled = false) =>
     marketplaceRequest<{ items: OnlinePluginItem[]; total: string | number }>(
       'catalog',
       HttpMethod.GET,
-      { keyword: keyword || undefined, pageNo, pageSize, categoryId: categoryId || undefined },
+      {
+        keyword: keyword || undefined,
+        pageNo,
+        pageSize,
+        categoryId: categoryId || undefined,
+        onlyUninstalled: onlyUninstalled || undefined,
+      },
     ),
   getCategories: () => marketplaceRequest<OnlinePluginCategory[]>('categories', HttpMethod.GET),
   getInstalled: () => marketplaceRequest<InstalledOnlinePlugin[]>('installed', HttpMethod.GET),

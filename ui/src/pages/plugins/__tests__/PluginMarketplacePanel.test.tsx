@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from 'antd'
 import { FeedbackBridge } from '@/design-system'
@@ -67,7 +67,7 @@ describe('PluginMarketplacePanel', () => {
     const categoryLabels = await screen.findAllByText('🔎 Search')
     await user.click(categoryLabels[0])
 
-    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('', 1, 20, '12'))
+    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('', 1, 20, '12', false))
   })
 
   it('submits the keyword from the search box and resets to the first page', async () => {
@@ -77,7 +77,37 @@ describe('PluginMarketplacePanel', () => {
     await user.type(await screen.findByPlaceholderText('搜索在线插件'), '  飞书  ')
     await user.click(screen.getByRole('button', { name: /查询/ }))
 
-    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('飞书', 1, 20, ''))
+    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('飞书', 1, 20, '', false))
+  })
+
+  it('filters the catalog down to plugins that are not installed yet', async () => {
+    const user = userEvent.setup()
+    renderMarketplace()
+
+    await screen.findByText('Demo Search')
+    await user.click(screen.getByText('仅未安装'))
+
+    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('', 1, 20, '', true))
+  })
+
+  it('changes the page size from the bottom pagination and reloads from the first page', async () => {
+    vi.mocked(pluginMarketplaceApi.getCatalog).mockResolvedValue({
+      items: [{
+        pluginId: '44', key: 'demo.search', name: 'Demo Search', summary: 'Search tools',
+        iconUrl: '', latestVersion: '1.2.0', downloadCount: '8', isInstalled: false,
+        categoryId: '12', categoryName: 'Search', categoryEmoji: '🔎',
+      }],
+      total: 60,
+    })
+    renderMarketplace()
+
+    await screen.findByText('Demo Search')
+    const sizeChanger = document.querySelector('.ant-pagination .ant-select input[role="combobox"]') as HTMLElement | null
+    expect(sizeChanger).toBeTruthy()
+    fireEvent.mouseDown(sizeChanger!)
+    fireEvent.click(await screen.findByText('48 / page'))
+
+    await waitFor(() => expect(pluginMarketplaceApi.getCatalog).toHaveBeenLastCalledWith('', 1, 48, '', false))
   })
 
   it('installs a published package from its card', async () => {

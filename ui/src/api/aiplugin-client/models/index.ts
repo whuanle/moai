@@ -1077,6 +1077,8 @@ export function deserializeIntoQueryPluginListCommandResponse(queryPluginListCom
 // @ts-ignore
 export function deserializeIntoQueryPluginListCommandResponseItem(queryPluginListCommandResponseItem: Partial<QueryPluginListCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "avatarPath": n => { queryPluginListCommandResponseItem.avatarPath = n.getStringValue(); },
+        "categoryName": n => { queryPluginListCommandResponseItem.categoryName = n.getStringValue(); },
         "configExample": n => { queryPluginListCommandResponseItem.configExample = n.getStringValue(); },
         "configType": n => { queryPluginListCommandResponseItem.configType = n.getStringValue(); },
         "description": n => { queryPluginListCommandResponseItem.description = n.getStringValue(); },
@@ -1088,6 +1090,7 @@ export function deserializeIntoQueryPluginListCommandResponseItem(queryPluginLis
         "responseType": n => { queryPluginListCommandResponseItem.responseType = n.getStringValue(); },
         "toolCount": n => { queryPluginListCommandResponseItem.toolCount = n.getNumberValue(); },
         "tools": n => { queryPluginListCommandResponseItem.tools = n.getCollectionOfObjectValues<QueryPluginToolItem>(createQueryPluginToolItemFromDiscriminatorValue); },
+        "version": n => { queryPluginListCommandResponseItem.version = n.getStringValue(); },
     }
 }
 /**
@@ -2032,6 +2035,14 @@ export interface QueryPluginListCommandResponse extends Parsable {
  */
 export interface QueryPluginListCommandResponseItem extends Parsable {
     /**
+     * 模板图标对象路径（在线插件包安装时保存到 MoAI OSS 的对象 key；内置模板为空）.
+     */
+    avatarPath?: string | null;
+    /**
+     * 模板在系统侧插件记录上的本地分类名（未分类或内置模板为空）.
+     */
+    categoryName?: string | null;
+    /**
      * 配置示例 JSON，静态插件为 null.
      */
     configExample?: string | null;
@@ -2075,6 +2086,10 @@ export interface QueryPluginListCommandResponseItem extends Parsable {
      * 工具清单（单工具插件固定一个 key=run 的项）.
      */
     tools?: QueryPluginToolItem[] | null;
+    /**
+     * 模板来源在线插件包的安装版本（内置模板为空）.
+     */
+    version?: string | null;
 }
 /**
  * 插件管理列表查询响应.
@@ -3002,6 +3017,8 @@ export function serializeQueryPluginListCommandResponse(writer: SerializationWri
 // @ts-ignore
 export function serializeQueryPluginListCommandResponseItem(writer: SerializationWriter, queryPluginListCommandResponseItem: Partial<QueryPluginListCommandResponseItem> | undefined | null = {}) : void {
     if (queryPluginListCommandResponseItem) {
+        writer.writeStringValue("avatarPath", queryPluginListCommandResponseItem.avatarPath);
+        writer.writeStringValue("categoryName", queryPluginListCommandResponseItem.categoryName);
         writer.writeStringValue("configExample", queryPluginListCommandResponseItem.configExample);
         writer.writeStringValue("configType", queryPluginListCommandResponseItem.configType);
         writer.writeStringValue("description", queryPluginListCommandResponseItem.description);
@@ -3013,6 +3030,7 @@ export function serializeQueryPluginListCommandResponseItem(writer: Serializatio
         writer.writeStringValue("responseType", queryPluginListCommandResponseItem.responseType);
         writer.writeNumberValue("toolCount", queryPluginListCommandResponseItem.toolCount);
         writer.writeCollectionOfObjectValues<QueryPluginToolItem>("tools", queryPluginListCommandResponseItem.tools, serializeQueryPluginToolItem);
+        writer.writeStringValue("version", queryPluginListCommandResponseItem.version);
     }
 }
 /**

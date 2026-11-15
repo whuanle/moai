@@ -13,7 +13,7 @@ public sealed class QueryPluginMarketplaceCommandHandler : IRequestHandler<Query
     public QueryPluginMarketplaceCommandHandler(IPluginMarketplaceService service) => _service = service;
 
     public Task<PluginMarketplacePage> Handle(QueryPluginMarketplaceCommand request, CancellationToken cancellationToken) =>
-        _service.QueryCatalogAsync(request.Keyword, request.CategoryId, request.PageNo, request.PageSize, cancellationToken);
+        _service.QueryCatalogAsync(request.Keyword, request.CategoryId, request.PageNo, request.PageSize, request.OnlyUninstalled, cancellationToken);
 }
 
 /// <summary>MoPlatform 在线插件分类查询.</summary>

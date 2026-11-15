@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { Avatar, Button, Card, Checkbox, Col, Empty, Image, Input, Pagination, Row, Space, Spin, Tag, Typography } from 'antd'
+import { Avatar, Button, Card, Checkbox, Col, Empty, Image, Input, Pagination, Row, Segmented, Space, Spin, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { PageToolbar, useFeedback } from '@/design-system'
 import { spacing } from '@/design-system/theme'
@@ -18,6 +18,10 @@ const pageVerticalPadding = spacing.lg * 2
 const tabsBarHeight = 46 + 16
 const panelHeight = `calc(100vh - ${pageVerticalPadding + tabsBarHeight}px)`
 
+/** 在线插件目录默认每页条数与可选页数（分页组件支持自定义切换） */
+const DEFAULT_PAGE_SIZE = 20
+const PAGE_SIZE_OPTIONS = [12, 20, 24, 48]
+
 export function PluginMarketplacePanel() {
   const { t } = useTranslation()
   const feedback = useFeedback()
@@ -31,9 +35,10 @@ export function PluginMarketplacePanel() {
   const [searchText, setSearchText] = useState('')
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [onlyUninstalled, setOnlyUninstalled] = useState(false)
   const [pageNo, setPageNo] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [total, setTotal] = useState(0)
-  const pageSize = 20
   const installableItems = useMemo(() => catalog.filter((item) => !item.isInstalled), [catalog])
   const selectedInstallableItems = useMemo(
     () => installableItems.filter((item) => selectedPluginIds.has(item.pluginId)),
@@ -45,15 +50,21 @@ export function PluginMarketplacePanel() {
   const loadCatalog = useCallback(async () => {
     setCatalogLoading(true)
     try {
-      const response = await pluginMarketplaceApi.getCatalog(keyword, pageNo, pageSize, categoryId)
-      setCatalog(response.items ?? [])
-      setTotal(Number(response.total ?? 0))
+      const response = await pluginMarketplaceApi.getCatalog(keyword, pageNo, pageSize, categoryId, onlyUninstalled)
+      const items = response.items ?? []
+      const nextTotal = Number(response.total ?? 0)
+      setCatalog(items)
+      setTotal(nextTotal)
+      // 安装/筛选后当前页可能已越过末页：回退一页重新拉取，避免空白页
+      if (items.length === 0 && nextTotal > 0 && pageNo > 1) {
+        setPageNo(pageNo - 1)
+      }
     } catch {
       // 错误由 Kiota 中间件统一反馈
     } finally {
       setCatalogLoading(false)
     }
-  }, [categoryId, keyword, pageNo])
+  }, [categoryId, keyword, onlyUninstalled, pageNo, pageSize])
 
   const loadCategories = useCallback(async () => {
     setCategoriesLoading(true)
@@ -144,7 +155,23 @@ export function PluginMarketplacePanel() {
     <div style={{ display: 'flex', flexDirection: 'column', height: panelHeight, minHeight: 0 }}>
       <div style={{ flexShrink: 0 }}>
         <PageToolbar
-          filters={<Input value={searchText} onChange={(event) => setSearchText(event.target.value)} onPressEnter={handleSearch} allowClear maxLength={100} placeholder={t('plugins.online.searchPlaceholder')} style={{ width: 260 }} />}
+          filters={(
+            <Space size={spacing.sm} wrap>
+              <Input value={searchText} onChange={(event) => setSearchText(event.target.value)} onPressEnter={handleSearch} allowClear maxLength={100} placeholder={t('plugins.online.searchPlaceholder')} style={{ width: 260 }} />
+              <Segmented
+                value={onlyUninstalled ? 'uninstalled' : 'all'}
+                options={[
+                  { value: 'all', label: t('plugins.online.filterAll') },
+                  { value: 'uninstalled', label: t('plugins.online.filterUninstalled') },
+                ]}
+                onChange={(value) => {
+                  setOnlyUninstalled(value === 'uninstalled')
+                  setSelectedPluginIds(new Set())
+                  setPageNo(1)
+                }}
+              />
+            </Space>
+          )}
           queries={<Button icon={<SearchOutlined />} loading={catalogLoading} onClick={handleSearch}>{t('plugins.online.search')}</Button>}
           actions={(
             <Space size="middle">
@@ -262,7 +289,22 @@ export function PluginMarketplacePanel() {
       </div>
       {total > 0 ? (
         <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', paddingTop: spacing.md }}>
-          <Pagination current={pageNo} pageSize={pageSize} total={total} onChange={(page) => { setSelectedPluginIds(new Set()); setPageNo(page) }} showSizeChanger={false} />
+          <Pagination
+            current={pageNo}
+            pageSize={pageSize}
+            total={total}
+            onChange={(page, size) => {
+              setSelectedPluginIds(new Set())
+              if (size !== pageSize) {
+                setPageSize(size)
+                setPageNo(1)
+                return
+              }
+              setPageNo(page)
+            }}
+            showSizeChanger
+            pageSizeOptions={PAGE_SIZE_OPTIONS.map(String)}
+          />
         </div>
       ) : null}
     </div>

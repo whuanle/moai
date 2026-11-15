@@ -12,5 +12,7 @@
 | @PLGM-S6 | `PluginPackageSemanticTests#ExtractAsync_ReadsSemanticBundle / ExtractAsync_RejectsInvalidSemanticMode`；`PluginMarketplaceService.InstallAsync` 同事务写入分类、UsageNotes/PluginSemanticNotes/PluginToolMetas 代码走查 | MoAI.AIPlugin.Static.Tests 9/9；语义包解析/校验 PASS；安装服务集成测试待补充（2026-11-14） |
 | @PLGM-S7 | `ui/src/pages/plugins/__tests__/PluginMarketplacePanel.test.tsx`（MoPlatform 分类加载与筛选、卡片、隐藏已安装页签和刷新）；MoAI Custom 模块与宿主编译 | PASS 3/3、typecheck 通过；模块构建 0 警告，宿主构建 0 错误（2026-11-14） |
 | @PLGM-S8 | `ui/src/pages/plugins/__tests__/PluginMarketplacePanel.test.tsx`（选择本页未安装项、顺序安装、失败隔离与失败项保留） | PASS 1/1（2026-11-14） |
+| @PLGM-S9 | 后端 `PluginMarketplaceService.QueryCatalogAsync(onlyUninstalled)` 聚合过滤；临时实例 :5210 实测 `GET /api/ai/plugin/online/catalog?pageNo=1&pageSize=5` total=222，`&onlyUninstalled=true` total=220 且无 `isInstalled=true` 项 | PASS（2026-11-15） |
+| @PLGM-S10 | `ui/src/pages/plugins/__tests__/PluginMarketplacePanel.test.tsx`（底部分页切 48 条/页 → `getCatalog('',1,48,'',false)`） | PASS 1/1（2026-11-15） |
 
 构建与测试命令见仓库根 [AGENTS.md](../../AGENTS.md)。MoPlatform 完整在线插件 e2e 会写入运行数据库/对象存储，只有在确认测试环境后执行。

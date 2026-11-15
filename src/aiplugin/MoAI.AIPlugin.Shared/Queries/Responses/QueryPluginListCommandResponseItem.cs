@@ -26,6 +26,21 @@ public class QueryPluginListCommandResponseItem
     public bool IsDynamic { get; init; }
 
     /// <summary>
+    /// 模板图标对象路径（在线插件包安装时保存到 MoAI OSS 的对象 key；内置模板为空）.
+    /// </summary>
+    public string AvatarPath { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 模板来源在线插件包的安装版本（内置模板为空）.
+    /// </summary>
+    public string Version { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 模板在系统侧插件记录上的本地分类名（未分类或内置模板为空）.
+    /// </summary>
+    public string CategoryName { get; init; } = string.Empty;
+
+    /// <summary>
     /// 请求参数类型.
     /// </summary>
     public string? RequestType { get; init; }

@@ -27,8 +27,8 @@ vi.mock('@/api/classify', () => ({
 }))
 
 const MOCK_TEMPLATES = [
-  { key: 'dynamic_greet', name: '动态问候', description: '问候插件模板', isDynamic: true, configExample: '{"Prefix":"Hello"}' },
-  { key: 'postgres_query', name: 'Postgres 查询', description: '', isDynamic: true, configExample: '{}' },
+  { key: 'dynamic_greet', name: '动态问候', description: '问候插件模板', isDynamic: true, configExample: '{"Prefix":"Hello"}', avatarPath: '', version: '1.2.0', categoryName: '消息通知', toolCount: 2 },
+  { key: 'postgres_query', name: 'Postgres 查询', description: '', isDynamic: true, configExample: '{}', avatarPath: '', version: '', categoryName: '', toolCount: 1 },
 ]
 
 function renderPage(initialEntry = '/plugin/templates') {
@@ -66,6 +66,10 @@ describe('PluginTemplates（系统模式）', () => {
     expect(await screen.findByText('dynamic_greet')).toBeInTheDocument()
     expect(screen.getByText('动态问候')).toBeInTheDocument()
     expect(screen.getByText('问候插件模板')).toBeInTheDocument()
+    // 模板卡片同时展示来源包版本、工具数与本地分类（来自模板补充信息）
+    expect(screen.getByText('版本 1.2.0')).toBeInTheDocument()
+    expect(screen.getByText('工具 2 个')).toBeInTheDocument()
+    expect(screen.getByText('消息通知')).toBeInTheDocument()
     // greet_cn/greet_en 两个实例同属 dynamic_greet 模板
     expect(screen.getByText('已有实例：2')).toBeInTheDocument()
     expect(screen.getByText('已有实例：1')).toBeInTheDocument()

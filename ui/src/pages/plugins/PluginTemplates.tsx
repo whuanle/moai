@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Col, Empty, Row, Spin, Tag, Typography } from 'antd'
+import { Avatar, Button, Col, Empty, Row, Space, Spin, Tag, Typography } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useParams } from 'react-router'
@@ -9,6 +9,7 @@ import { getTeamDynamicTemplates, getTeamPlugins } from '@/api/team-plugin'
 import { BackLink, Card, Page } from '@/design-system'
 import { spacing } from '@/design-system/theme'
 import { useAppStore } from '@/store/app'
+import { resolveStorageUrl } from '@/utils/storage'
 import { DynamicPluginInstanceModal } from './components/DynamicPluginInstanceModal'
 
 const { Text, Paragraph } = Typography
@@ -109,20 +110,35 @@ export function PluginTemplates() {
       ) : templates.length === 0 ? (
         <Empty description={t('plugins.templateEmpty')} />
       ) : (
-        <Row gutter={[16, 16]}>
+        <Row gutter={[spacing.md, spacing.md]}>
           {templates.map((tp) => (
             <Col xs={24} sm={12} lg={8} xl={6} key={tp.key}>
-              <Card style={{ height: '100%' }}>
-                <div style={{ marginBottom: spacing.xs, display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                  <Tag color="blue">{tp.key}</Tag>
+              <Card style={{ height: '100%' }} styles={{ body: { padding: spacing.md, display: 'flex', flexDirection: 'column', height: '100%' } }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                  <Avatar
+                    shape="square"
+                    size={44}
+                    src={resolveStorageUrl(tp.avatarPath) || undefined}
+                    alt={tp.name || tp.key || undefined}
+                  >
+                    {(tp.name || tp.key || '?').slice(0, 1)}
+                  </Avatar>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <Text strong ellipsis={{ tooltip: tp.name || '-' }} style={{ display: 'block', fontSize: 16 }}>
+                      {tp.name || '-'}
+                    </Text>
+                    <Tag color="blue" style={{ marginTop: spacing.xs }}>{tp.key}</Tag>
+                  </div>
                 </div>
-                <Text strong style={{ display: 'block', fontSize: 16 }}>
-                  {tp.name || '-'}
-                </Text>
-                <Paragraph type="secondary" style={{ marginTop: spacing.xs, marginBottom: 0, minHeight: 44 }}>
+                <Paragraph type="secondary" style={{ marginTop: spacing.sm, marginBottom: 0, minHeight: 44 }}>
                   {tp.description || t('plugins.templateNoDescription')}
                 </Paragraph>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+                <Space size={spacing.xs} wrap style={{ marginTop: spacing.sm }}>
+                  {tp.categoryName ? <Tag>{tp.categoryName}</Tag> : null}
+                  {tp.version ? <Tag>{t('plugins.online.versionLabel', { version: tp.version })}</Tag> : null}
+                  <Tag>{t('plugins.templateToolCount', { count: tp.toolCount ?? 1 })}</Tag>
+                </Space>
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginTop: 'auto', paddingTop: spacing.sm }}>
                   <Text type="secondary">
                     {t('plugins.templateInstanceCount', { total: instanceCounts[tp.key ?? ''] ?? 0 })}
                   </Text>

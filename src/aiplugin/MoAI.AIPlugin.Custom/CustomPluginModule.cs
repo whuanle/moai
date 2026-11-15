@@ -19,6 +19,7 @@ public class CustomPluginModule : IModule
         context.Services.AddScoped<IPluginRunContextAccessor, PluginRunContextAccessor>();
         context.Services.AddScoped<IDynamicInstanceResolver, DynamicInstanceResolver>();
         context.Services.AddScoped<IPluginMarketplaceService, PluginMarketplaceService>();
+        context.Services.AddScoped<IPluginTemplateMetaProvider, PluginTemplateMetaProvider>();
         context.Services.AddHostedService<PluginPackageStartupLoader>();
         context.Services.AddScoped<McpToolCallService>();
         context.Services.AddScoped<OpenApiToolCallService>();

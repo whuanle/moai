@@ -7,7 +7,7 @@ namespace MoAI.AIPlugin.Services;
 public interface IPluginMarketplaceService
 {
     /// <summary>搜索在线插件目录.</summary>
-    Task<PluginMarketplacePage> QueryCatalogAsync(string? keyword, string? categoryId, int pageNo, int pageSize, CancellationToken cancellationToken);
+    Task<PluginMarketplacePage> QueryCatalogAsync(string? keyword, string? categoryId, int pageNo, int pageSize, bool onlyUninstalled, CancellationToken cancellationToken);
 
     /// <summary>查询 MoPlatform 插件分类.</summary>
     Task<IReadOnlyList<PluginMarketplaceCategory>> QueryCategoriesAsync(CancellationToken cancellationToken);

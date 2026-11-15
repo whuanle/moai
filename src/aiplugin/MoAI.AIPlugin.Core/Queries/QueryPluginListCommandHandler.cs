@@ -15,20 +15,28 @@ namespace MoAI.AIPlugin.Queries;
 public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListCommand, QueryPluginListCommandResponse>
 {
     private readonly IPluginRegistry _registry;
+    private readonly IPluginTemplateMetaProvider _templateMetaProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryPluginListCommandHandler"/> class.
     /// </summary>
     /// <param name="registry">插件注册表.</param>
-    public QueryPluginListCommandHandler(IPluginRegistry registry)
+    /// <param name="templateMetaProvider">模板展示补充信息提供者（图标/版本/分类）.</param>
+    public QueryPluginListCommandHandler(IPluginRegistry registry, IPluginTemplateMetaProvider templateMetaProvider)
     {
         _registry = registry;
+        _templateMetaProvider = templateMetaProvider;
     }
 
     /// <inheritdoc/>
-    public Task<QueryPluginListCommandResponse> Handle(QueryPluginListCommand request, CancellationToken cancellationToken)
+    public async Task<QueryPluginListCommandResponse> Handle(QueryPluginListCommand request, CancellationToken cancellationToken)
     {
-        var items = _registry.GetAll()
+        var plugins = _registry.GetAll();
+        var metas = await _templateMetaProvider
+            .GetAsync(plugins.Select(x => x.Key).ToList(), cancellationToken)
+            .ConfigureAwait(false);
+
+        var items = plugins
             .Select(x => new QueryPluginListCommandResponseItem
             {
                 Key = x.Key,
@@ -42,9 +50,12 @@ public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListComm
                 ConfigExample = x.IsDynamic ? PluginTypeHelper.GetStaticExample(x.PluginType, "GetConfigExampleValue") : null,
                 ToolCount = x.IsMultiTool ? x.Tools.Count : 1,
                 Tools = PluginTypeHelper.BuildToolItems(x),
+                AvatarPath = metas.TryGetValue(x.Key, out var meta) ? meta.AvatarPath : string.Empty,
+                Version = metas.TryGetValue(x.Key, out var versionMeta) ? versionMeta.Version : string.Empty,
+                CategoryName = metas.TryGetValue(x.Key, out var categoryMeta) ? categoryMeta.CategoryName : string.Empty,
             })
             .ToList();
 
-        return Task.FromResult(new QueryPluginListCommandResponse { Items = items });
+        return new QueryPluginListCommandResponse { Items = items };
     }
 }

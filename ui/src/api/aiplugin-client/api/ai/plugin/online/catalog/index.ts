@@ -41,6 +41,10 @@ export interface CatalogRequestBuilderGetQueryParameters {
      */
     keyword?: string;
     /**
+     * 只看未安装插件（平台目录不支持安装状态过滤，由 MoAI 聚合平台分页结果后本地过滤）.
+     */
+    onlyUninstalled?: boolean;
+    /**
      * 页码.
      */
     pageNo?: number;
@@ -52,13 +56,14 @@ export interface CatalogRequestBuilderGetQueryParameters {
 /**
  * Uri template for the request builder.
  */
-export const CatalogRequestBuilderUriTemplate = "{+baseurl}/api/ai/plugin/online/catalog{?CategoryId*,Keyword*,PageNo*,PageSize*}";
+export const CatalogRequestBuilderUriTemplate = "{+baseurl}/api/ai/plugin/online/catalog{?CategoryId*,Keyword*,OnlyUninstalled*,PageNo*,PageSize*}";
 /**
  * Mapper for query parameters from symbol name to serialization name represented as a constant.
  */
 const CatalogRequestBuilderGetQueryParametersMapper: Record<string, string> = {
     "categoryId": "CategoryId",
     "keyword": "Keyword",
+    "onlyUninstalled": "OnlyUninstalled",
     "pageNo": "PageNo",
     "pageSize": "PageSize",
 };

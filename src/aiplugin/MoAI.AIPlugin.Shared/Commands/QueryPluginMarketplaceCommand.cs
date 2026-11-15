@@ -20,6 +20,9 @@ public sealed class QueryPluginMarketplaceCommand : IRequest<PluginMarketplacePa
     /// <summary>每页条数.</summary>
     public int PageSize { get; init; } = 20;
 
+    /// <summary>只看未安装插件（平台目录不支持安装状态过滤，由 MoAI 聚合平台分页结果后本地过滤）.</summary>
+    public bool OnlyUninstalled { get; init; }
+
     /// <inheritdoc/>
     public static void Validate(AbstractValidator<QueryPluginMarketplaceCommand> validate)
     {

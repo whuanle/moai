@@ -23,6 +23,12 @@ namespace MoAI.AIPlugin.Custom.Services;
 /// <summary>在线插件查询、安装与下架生命周期；任何状态变更都不删除插件包或卸载程序集.</summary>
 public sealed partial class PluginMarketplaceService : IPluginMarketplaceService
 {
+    /// <summary>聚合未安装筛选时平台单页大小上限.</summary>
+    private const int MarketplacePlatformPageSize = 100;
+
+    /// <summary>聚合未安装筛选时最多拉取的平台页数（防止平台目录异常时无限翻页）.</summary>
+    private const int MarketplaceMaxAggregatePages = 20;
+
     private readonly DatabaseContext _databaseContext;
     private readonly MoAI.Infra.MoPlatformPluginClient _platformClient;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -53,54 +59,77 @@ public sealed partial class PluginMarketplaceService : IPluginMarketplaceService
     }
 
     /// <inheritdoc/>
-    public async Task<PluginMarketplacePage> QueryCatalogAsync(string? keyword, string? categoryId, int pageNo, int pageSize, CancellationToken cancellationToken)
+    public async Task<PluginMarketplacePage> QueryCatalogAsync(string? keyword, string? categoryId, int pageNo, int pageSize, bool onlyUninstalled, CancellationToken cancellationToken)
     {
-        using var pageDocument = await _platformClient.GetPublishedPluginsAsync(keyword, categoryId, pageNo, pageSize, cancellationToken).ConfigureAwait(false);
-        var pageRoot = pageDocument.RootElement;
-        var pageItems = new List<PluginMarketplaceItem>();
-        if (TryGet(pageRoot, "items", out var onlineItems) && onlineItems.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var item in onlineItems.EnumerateArray())
-            {
-                pageItems.Add(new PluginMarketplaceItem
-                {
-                    PluginId = ReadString(item, "pluginId"),
-                    Key = ReadString(item, "key"),
-                    Name = ReadString(item, "name"),
-                    // summary is the human-readable purpose shown in marketplace listings.
-                    Summary = ReadString(item, "summary"),
-                    IconUrl = ReadString(item, "iconUrl"),
-                    LatestVersion = ReadString(item, "latestVersion"),
-                    DownloadCount = ReadString(item, "downloadCount", "0"),
-                    CategoryId = ReadString(item, "categoryId"),
-                    CategoryName = ReadString(item, "categoryName"),
-                    CategoryEmoji = ReadString(item, "categoryEmoji"),
-                });
-            }
-        }
-
         var installedKeys = (await _databaseContext.PluginPackages
                 .Select(x => x.PluginKey)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!onlyUninstalled)
+        {
+            using var pageDocument = await _platformClient.GetPublishedPluginsAsync(keyword, categoryId, pageNo, pageSize, cancellationToken).ConfigureAwait(false);
+            var pageRoot = pageDocument.RootElement;
+            var pageItems = new List<PluginMarketplaceItem>();
+            if (TryGet(pageRoot, "items", out var onlineItems) && onlineItems.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in onlineItems.EnumerateArray())
+                {
+                    pageItems.Add(ToMarketplaceItem(item, installedKeys));
+                }
+            }
+
+            return new PluginMarketplacePage
+            {
+                Total = ReadLong(pageRoot, "total"),
+                Items = pageItems,
+            };
+        }
+
+        // MoPlatform 目录不支持按安装状态过滤：逐页聚合全量后本地排除已安装，再按请求页码分页。
+        // 这样「未安装」筛选的总数与页数才与真实结果一致（仅过滤当前页会导致总数与翻页错乱）。
+        var allItems = new List<PluginMarketplaceItem>();
+        var platformTotal = 0L;
+        for (var platformPageNo = 1; platformPageNo <= MarketplaceMaxAggregatePages; platformPageNo++)
+        {
+            using var pageDocument = await _platformClient
+                .GetPublishedPluginsAsync(keyword, categoryId, platformPageNo, MarketplacePlatformPageSize, cancellationToken)
+                .ConfigureAwait(false);
+            var pageRoot = pageDocument.RootElement;
+            var total = ReadLong(pageRoot, "total");
+            if (total > 0)
+            {
+                platformTotal = total;
+            }
+
+            if (!TryGet(pageRoot, "items", out var onlineItems) || onlineItems.ValueKind != JsonValueKind.Array)
+            {
+                break;
+            }
+
+            var pageItemCount = 0;
+            foreach (var item in onlineItems.EnumerateArray())
+            {
+                pageItemCount++;
+                var mapped = ToMarketplaceItem(item, installedKeys);
+                if (!mapped.IsInstalled)
+                {
+                    allItems.Add(mapped);
+                }
+            }
+
+            if (pageItemCount == 0 || (platformTotal > 0 && platformPageNo * MarketplacePlatformPageSize >= platformTotal))
+            {
+                break;
+            }
+        }
+
+        var skip = (long)(pageNo - 1) * pageSize;
         return new PluginMarketplacePage
         {
-            Total = ReadLong(pageRoot, "total"),
-            Items = pageItems.Select(x => new PluginMarketplaceItem
-            {
-                PluginId = x.PluginId,
-                Key = x.Key,
-                Name = x.Name,
-                Summary = x.Summary,
-                IconUrl = x.IconUrl,
-                LatestVersion = x.LatestVersion,
-                DownloadCount = x.DownloadCount,
-                IsInstalled = installedKeys.Contains(x.Key),
-                CategoryId = x.CategoryId,
-                CategoryName = x.CategoryName,
-                CategoryEmoji = x.CategoryEmoji,
-            }).ToArray(),
+            Total = allItems.Count,
+            Items = allItems.Skip((int)Math.Min(skip, allItems.Count)).Take(pageSize).ToArray(),
         };
     }
 
@@ -731,6 +760,27 @@ public sealed partial class PluginMarketplaceService : IPluginMarketplaceService
     {
         var text = ReadString(element, propertyName);
         return long.TryParse(text, out var value) ? value : 0;
+    }
+
+    /// <summary>将平台目录条目映射为在线插件摘要，并标记本地安装状态.</summary>
+    private static PluginMarketplaceItem ToMarketplaceItem(JsonElement item, HashSet<string> installedKeys)
+    {
+        var key = ReadString(item, "key");
+        return new PluginMarketplaceItem
+        {
+            PluginId = ReadString(item, "pluginId"),
+            Key = key,
+            Name = ReadString(item, "name"),
+            // summary is the human-readable purpose shown in marketplace listings.
+            Summary = ReadString(item, "summary"),
+            IconUrl = ReadString(item, "iconUrl"),
+            LatestVersion = ReadString(item, "latestVersion"),
+            DownloadCount = ReadString(item, "downloadCount", "0"),
+            IsInstalled = installedKeys.Contains(key),
+            CategoryId = ReadString(item, "categoryId"),
+            CategoryName = ReadString(item, "categoryName"),
+            CategoryEmoji = ReadString(item, "categoryEmoji"),
+        };
     }
 
     private static InstalledPluginItem ToInstalledItem(PluginPackageEntity package) => new()
