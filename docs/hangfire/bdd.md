@@ -1,7 +1,7 @@
 # 定时任务领域（Hangfire，HF）行为规格（BDD，Gherkin）
 
 > 关联：[SDD](./sdd.md) ｜ [BDD](./bdd.md) ｜ [TDD](./tdd.md)（场景→验证映射） ｜ [SOP](./sop.md)（操作与验收流程）
-> 编号规则与标签语义见 [../DOC-STANDARD.md](../DOC-STANDARD.md) 第 3 节。当前无业务 job 接入：已在跑的机制场景有 redis-cli 实测证据（见 TDD）；接入契约场景在首个业务接入时按此验收。
+> 编号规则与标签语义见 [../DOC-STANDARD.md](../DOC-STANDARD.md) 第 3 节。业务已接入 Wiki 外部源同步、团队定时器与资源使用统计落库；机制场景有 redis-cli 实测证据（见 TDD），接入契约场景在新增业务 job 时按此验收。
 
 ```gherkin
 Feature: 调度基础设施（随主进程启动）
@@ -26,48 +26,33 @@ Feature: 调度基础设施（随主进程启动）
     When 请求任意 /hangfire 路径
     Then 返回 404（未配置 Dashboard；观测走 Redis 键与日志）
 
-Feature: 内置 counter 任务（计数器冲刷）
-  @HF-S4 @manual
-  Scenario: 应用启动后自动注册
-    When 应用启动完毕
-    Then recurring job "counter" 注册（Job=CounterActivatorJobHandler.InvokeAsync，Queue=default，TimeZone=UTC）
-    And Redis moai:hangfirerecurring-job:counter 可查到定义
+Feature: 资源使用统计落库任务（统计模块注册）
+  @HF-S19 @manual
+  Scenario: 自动清理任务体已不存在的遗留定义
+    Given 存量 Redis 中存在某个 recurring job，其任务体类型/方法已在当前版本删除
+    When 应用启动完成（或运行满 1 小时后的兜底扫描）
+    Then 该定义 LoadException 非空且 CreatedAt 早于 24 小时宽限期时被 RemoveIfExists 幂等删除，记 Warning（任务Id/创建时间/原因）
+    And 之后不再出现 JobLoadException 每 10 秒重试
+    And 创建时间在宽限期内的定义被跳过（滚动发布不误删新版本任务）
+    And 只删定义，不动 moai:counter:* 计数与历史执行记录
+    And 无遗留定义的环境不产生任何删除与告警
 
-  @HF-S5 @manual
-  Scenario: 无激活器实现时空转成功
-    Given 全仓库无 ICounterActivatorJob 实现
-    When counter 任务触发
-    Then 任务正常返回且统计 succeeded 持续递增，不产生 Failed
+  @HF-S20 @manual
+  Scenario: 注册每分钟统计落库任务
+    When 应用启动完成
+    Then recurring job "resource-usage-flush" 注册（Job=ResourceUsageFlushJobHandler.InvokeAsync，Cron=`0 * * * * ?`，Queue=default，TimeZone=UTC）
+    And 任务体带 DisableConcurrentExecution(300) 防重叠
+    And 执行结果写入资源自身表与统一统计表，失败回补 Redis 下轮重试（见 ../statistics/sop.md）
 
-  @HF-S6 @manual
-  Scenario: counter 实际执行节奏（实测发现）
-    When counter 任务按 cron "* * * * ? *" 触发
-    Then 该表达式为含秒 6 段式，语义是每秒而非源码注释声称的每分钟（缺陷记录：注释与实际不符）
-    And 受 10 秒轮询钳制，实测相邻执行间隔约 10.1 秒（偶发不足 1 秒的重复）
-    And recurring 定义中 NextExecution - LastExecution = 1000 毫秒
-
-  @HF-S7 @manual
-  Scenario: 计数器差量冲刷（机制契约）
-    Given 业务已向 moai:counter:{name} 写入若干增量
-    And 存在返回该 name 的激活器
-    When counter 任务触发
-    Then 激活器收到当前 hash 中全量正值字段（含历史未冲刷值）
-    And 冲刷完成后各 field 值 = 新值 - 旧值（下限 0）
-    And 冲刷期间新写入的增量被保留到下一轮
-
-  @HF-S8 @manual
-  Scenario: 单个激活器异常不影响他人
-    Given 激活器 A 正常、激活器 B 抛异常
-    When counter 任务触发
-    Then B 的异常被捕获并记 Error 日志
-    And A 正常执行，job 状态仍为成功
-
+Feature: cron 表达式语义
   @HF-S9 @manual
   Scenario: cron 段数语义（防坑）
-    When 使用 6 段式含秒表达式 "* * * * ? *"
-    Then 语义为每秒（被 10 秒轮询钳制为约 10 秒一次），不是每分钟
-    When 需要每分钟执行时
-    Then 应使用 5 段式 "0 * * * *"
+    When 使用 6 段式含秒表达式 "0 * * * * ?"
+    Then 语义为每分钟第 0 秒执行
+    When 使用 5 段式 "0 * * * *"
+    Then 语义同为每小时第 0 分（Hangfire 兼容两种段数，按需选型）
+
+> 已退役场景（编号不复用）：@HF-S4~@HF-S8（内置 counter 任务注册/空转/执行节奏/差量冲刷/异常隔离）、@HF-S17~@HF-S18（IncrementCounterActivatorCommand 写入与校验）——对应实现已随统一统计模块改造删除，能力由 @HF-S19/@HF-S20 与 [../statistics/bdd.md](../statistics/bdd.md) 承接。
 
 Feature: 新增周期任务（接入契约，接入即验收）
   Background:
@@ -116,17 +101,4 @@ Feature: 延时与一次性任务（接入契约）
   Scenario: 一次性任务
     When 以（key、startTime、params）注册（无 cron）
     Then 到点执行一次后任务自删
-
-Feature: 计数器写入（供业务高频计数）
-  @HF-S17 @manual
-  Scenario: 批量自增
-    When 发送计数命令 { Name, Counters: { a1: 1, a2: 3 } }
-    Then Redis hash moai:counter:{Name} 的各 field 原子自增对应值（batch 提交）
-
-  @HF-S18 @manual
-  Scenario: 参数校验
-    When Name 为空
-    Then 模型校验拒绝（名称不能为空）
-    When Counters 为空字典
-    Then 直接返回，不产生 Redis 调用
 ```

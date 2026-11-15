@@ -13,10 +13,10 @@
    - 一次性/延时：`(key, startTime, params)` 重载，只精确到分钟（[@HF-S15](./bdd.md#hf-s15)/[@HF-S16](./bdd.md#hf-s16)）。
    - 取消/查询：`RemoveRecurringJobAsync(key)` / `QueryJobAsync(key)`（[@HF-S14](./bdd.md#hf-s14)）。
 
-### 方式 B：计数器（高频计数削峰，[@HF-S7](./bdd.md#hf-s7)/[@HF-S17](./bdd.md#hf-s17)）
+### 方式 B：高频计数削峰 + 批量落库（统一统计模块）
 
-1. 写入侧：发 `IncrementCounterActivatorCommand { Name, Counters }`（MediatR），`moai:counter:{Name}` 原子自增。
-2. 落库侧：实现 `ICounterActivatorJob`（`GetNameAsync` 返回同一 Name；`ActivateAsync` **事务落库**，失败抛异常保留计数下轮重试）并注册 DI；内置 counter 任务自动冲刷（实测 ≈10s/轮），无需自己注册。
+1. 写入侧：调用统计模块 `IResourceUsageService.RecordAsync/RemoveAsync`（对话内工具用 `IResourceUsageCollector.Record`），由模块写到 `moai:counter:{name}`，**不要**自建 Redis 计数。
+2. 落库侧：实现 `IResourceUsageWriter`（`GetNameAsync` 返回资源类型名、`WriteAsync` 事务落库）并在模块 DI 注册；统计模块已注册每分钟任务 `"resource-usage-flush"` 自动冲刷，无需自己注册。详见 [../statistics/sop.md](../statistics/sop.md)（[@HF-S20](./bdd.md#hf-s20)）。
 
 ## 2. 排查「job 不跑」（按序检查）
 
@@ -26,28 +26,31 @@
 | 2 任务注册了吗 | `docker exec moai-redis redis-cli HGETALL moai:hangfirerecurring-job:{key}` | 无键 = 注册代码没执行（[@HF-S4](./bdd.md#hf-s4)） |
 | 3 cron 对吗 | 上一步的 Cron/TimeZoneId | TimeZoneId 应为 UTC；分钟粒度注意时区换算（[@HF-S9](./bdd.md#hf-s9)） |
 | 4 到底跑没跑 | `HGET …:{key} LastJobId` → `HGET moai:hangfirejob:{id} State`；`GET moai:hangfirestats:succeeded` 隔 ~15s 再看 | State=Succeeded 但业务没生效 = **大概率 Handler 抛异常被吞** |
-| 5 看日志（关键） | 后端日志搜 `Task error,Key:{key}` 或 `Counter activation execution failed` | job 体异常不进 Failed，只能靠日志（[@HF-S12](./bdd.md#hf-s12)） |
+| 5 看日志（关键） | 后端日志搜 `Task error,Key:{key}` 或 `资源使用统计落库失败` | job 体异常不进 Failed，只能靠日志（[@HF-S12](./bdd.md#hf-s12)） |
 | 6 轮询延迟 | `moai:hangfireserver:{server}:queues` | 轮询 10s + WorkerCount=CPU*2，峰值秒级延迟属正常 |
+| 7 类型解析失败 | 日志出现 `JobLoadException: Could not resolve type '…'`，同一条每 10s 重复 | 任务体类型已删除/改名但 Redis 定义残留：`ObsoleteRecurringJobCleaner` 会在启动后自动清理（定义创建满 24h 后），急用可手工 `ZREM` 该 id（[@HF-S19](./bdd.md#hf-s19)） |
 
-常见坑：cron 全按 UTC（本地时间直接写差 8 小时）；Hangfire 兼容 5 段与含秒 6 段两种表达式，内置 counter 的 `* * * * ? *` 是 6 段"每秒"语义（实测被 10s 轮询钳制约 10s 一跑，**源码注释"每分钟"是错的**），要每分钟写 `0 * * * *`；Handler 抛异常 = 永远 Succeeded（自动重试不可用，需 Handler 内自实现）；`moai:` 与 `moai:hangfire` 前缀并存，`--scan --pattern 'moai:hangfire*'` 批量删除前先确认（[@HF-S2](./bdd.md#hf-s2)）；一次性任务只精确到分钟；多实例部署每实例都起 server 抢同一队列（注册幂等，见 [@HF-S13](./bdd.md#hf-s13)）。
+常见坑：cron 全按 UTC（本地时间直接写差 8 小时）；Hangfire 兼容 5 段与含秒 6 段两种表达式（统计落库任务用 `0 * * * * ?` = 每分钟第 0 秒），要每小时写 `0 * * * *`；Handler 抛异常 = 永远 Succeeded（自动重试不可用，需 Handler 内自实现）；`moai:` 与 `moai:hangfire` 前缀并存，`--scan --pattern 'moai:hangfire*'` 批量删除前先确认（[@HF-S2](./bdd.md#hf-s2)）；一次性任务只精确到分钟；多实例部署每实例都起 server 抢同一队列（注册幂等，见 [@HF-S13](./bdd.md#hf-s13)）；**删除/改名任何 recurring job 必须同步清理存量定义**，否则调度器会无限重试已不存在的类型。
 
 ## 3. 运维命令速查
 
 ```bash
 docker exec moai-redis redis-cli ZRANGE moai:hangfirerecurring-jobs 0 -1 WITHSCORES   # 列出全部 recurring job
-docker exec moai-redis redis-cli HGETALL moai:hangfirerecurring-job:counter           # 任务详情（Cron/NextExecution/LastJobId）
+docker exec moai-redis redis-cli HGETALL moai:hangfirerecurring-job:resource-usage-flush  # 任务详情（Cron/NextExecution/LastJobId）
 docker exec moai-redis redis-cli MGET moai:hangfirestats:succeeded moai:hangfirestats:failed
 docker exec moai-redis redis-cli LRANGE moai:hangfiresucceeded 0 9                    # 最近成功 job id
 docker exec moai-redis redis-cli ZREM moai:hangfirerecurring-jobs {key}               # 手动摘除任务（等价 RemoveRecurringJobAsync）
+docker exec moai-redis redis-cli DEL moai:hangfirerecurring-job:counter              # 清理遗留定义（任务体已删除时，配合 ZREM）
 ```
 
 注意：业务异常也计入 succeeded（[@HF-S12](./bdd.md#hf-s12)）。
 
 ## 4. 验收流程
 
-1. 基础设施/counter：跑 [TDD 回归命令](./tdd.md)（server 存活、counter 定义与执行链、succeeded 递增）。
+1. 基础设施/统计落库：跑 [TDD 回归命令](./tdd.md)（server 存活、`resource-usage-flush` 定义与执行链、succeeded 递增）。
 2. 新接入任务（[@HF-S10](./bdd.md#hf-s10)~[@HF-S16](./bdd.md#hf-s16)）：注册 → 等 NextExecution 到点 → `LastJobId` 有值且 State=Succeeded → 业务副作用可见 → `RemoveRecurringJobAsync` 后 `IsExist=false`。
-3. `dotnet build src/MoAI/MoAI.csproj` 0 错误。
+3. 升级回归（[@HF-S19](./bdd.md#hf-s19)）：启动后日志不再出现 `JobLoadException` 重试；`HGETALL moai:hangfirerecurring-job:counter` 应无键。
+4. `dotnet build src/MoAI/MoAI.csproj` 0 错误。
 
 ## 5. 历史验收存档（L3 证据，保留原始记录）
 
@@ -60,3 +63,4 @@ docker exec moai-redis redis-cli ZREM moai:hangfirerecurring-jobs {key}         
 |---|---|
 | 2026-09-01 | 初版（轮 8，as-built）：机制梳理 + Redis 实测自检 T1~T7 |
 | 2026-09-01 | 按 [DOC-STANDARD](../DOC-STANDARD.md) 重构四件套（场景编号化、四件互链） |
+| 2026-11-15 | 计数器迁移：`counter`/`ICounterActivatorJob` 退役，改由统计模块 `resource-usage-flush` 承接；新增 `ObsoleteRecurringJobCleaner` 自动清理任务体已不存在的遗留定义（启动 + 每小时，24h 宽限期），修复 `JobLoadException` 无限重试（[@HF-S19](./bdd.md#hf-s19)/[@HF-S20](./bdd.md#hf-s20)） |

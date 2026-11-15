@@ -51,5 +51,8 @@ public class HangfireCoreModule : IModule
             // 工作者数量
             options.WorkerCount = Environment.ProcessorCount * 2;
         });
+
+        // 启动后自动清理任务体已不存在的遗留 recurring job 定义（避免 JobLoadException 无限重试）
+        context.Services.AddHostedService<ObsoleteRecurringJobCleaner>();
     }
 }

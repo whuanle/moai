@@ -10,18 +10,18 @@
 | @HF-S1 | `redis-cli SMEMBERS moai:hangfireservers` | PASS（2026-09-01，1 个 server：`192:47661:dc42f2ff-…`） |
 | @HF-S2 | `redis-cli --scan --pattern 'moai:hangfire*'` | PASS（2026-09-01，键形 job:/servers/recurring-job 均无额外冒号） |
 | @HF-S3 | 代码走查 `Program.cs` 无 UseHangfireDashboard | PASS（2026-09-01） |
-| @HF-S4 | `redis-cli HGETALL moai:hangfirerecurring-job:counter` | PASS（2026-09-01，Job=CounterActivatorJobHandler.InvokeAsync、Cron=`* * * * ? *`、TimeZoneId=UTC、Queue=default） |
-| @HF-S5 | `GET moai:hangfirestats:succeeded`（65s 内 2453→2462）+ `grep -rn 'ICounterActivatorJob\|RecuringJobCommand' src`（排除 src/hangfire） | PASS（2026-09-01，succeeded 持续递增；业务实现零命中） |
-| @HF-S6 | `LRANGE moai:hangfiresucceeded 0 6` + `HMGET moai:hangfirejob:{id} CreatedAt RecurringJobId Type` | PASS（2026-09-01，相邻间隔 10102/10080/10098/9188/374/10101ms≈10s+偶发重复；NextExecution−LastExecution=1000ms——**cron 为含秒 6 段式每秒语义，被 10s 轮询钳制；源码注释"每分钟"与实际不符**） |
-| @HF-S7 ~ @HF-S9 | @manual 代码走查（CounterActivatorJobHandler 差量算法与异常隔离；Cronos 段数语义） | PASS（2026-09-01） |
-| @HF-S10 ~ @HF-S16 | @manual 接入契约（无业务 job，首个接入时按 [SOP 第 4 节](./sop.md) 验收；机制走查与 SDD 一致） | 走查 PASS（2026-09-01），待接入实测 |
-| @HF-S17、@HF-S18 | @manual 代码走查（IncrementCounterActivatorCommandHandler：FluentValidation + Redis batch） | PASS（2026-09-01） |
+| @HF-S9 | @manual 代码走查（Cronos 段数语义） | PASS（2026-09-01） |
+| @HF-S10 ~ @HF-S16 | @manual 接入契约（Wiki 源同步 / 团队定时器使用同一注册通道，见各自模块 TDD） | 走查 PASS（2026-09-01） |
+| @HF-S19 | 代码走查 `ObsoleteRecurringJobCleaner`：LoadException 判定 + 24h 宽限期 + `RemoveIfExists` 幂等；升级后日志 `JobLoadException` 停止重试、`HGETALL moai:hangfirerecurring-job:counter` 无键 | PASS（2026-11-15，修复 counter 遗留定义无限重试） |
+| @HF-S20 | `redis-cli HGETALL moai:hangfirerecurring-job:resource-usage-flush` + `dotnet build src/MoAI/MoAI.csproj` | PASS（2026-11-15，Cron=`0 * * * * ?`、TimeZoneId=UTC；build 0 error，仅运行中进程占用输出文件时复制失败） |
+
+> 已退役：@HF-S4~@HF-S8、@HF-S17~@HF-S18（实现随统计模块改造删除，证据保留于 [SOP 第 5 节](./sop.md) 历史存档）。
 
 ## 回归命令
 
 ```bash
 docker exec moai-redis redis-cli SMEMBERS moai:hangfireservers          # 服务器存活
-docker exec moai-redis redis-cli HGETALL moai:hangfirerecurring-job:counter
+docker exec moai-redis redis-cli HGETALL moai:hangfirerecurring-job:resource-usage-flush
 docker exec moai-redis redis-cli GET moai:hangfirestats:succeeded      # 隔 ~15s 再取，应增长
 docker exec moai-redis redis-cli LRANGE moai:hangfiresucceeded 0 0     # 队首 job id
 dotnet build src/MoAI/MoAI.csproj                                      # 期望 0 错误
@@ -29,5 +29,5 @@ dotnet build src/MoAI/MoAI.csproj                                      # 期望 
 
 ## 覆盖率说明
 
-- 基础设施/counter 均有 Redis 实测证据；Activator 桥接由队首 job 的 Invocation 类型（仅可经 DI 构造注入）间接证明。
-- 接入契约场景（@HF-S10 ~ @HF-S16）无业务消费方，暂以代码走查为准——接入第一个业务 job 后必须回补实测。
+- 基础设施与统计落库任务有代码走查 + build 证据；Activator 桥接由队首 job 的 Invocation 类型（仅可经 DI 构造注入）间接证明。
+- 接入契约场景（@HF-S10 ~ @HF-S16）由 Wiki 源同步与团队定时器消费，各自模块 TDD 覆盖端到端行为。
