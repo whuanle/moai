@@ -381,6 +381,9 @@ local-dev/system.*-e2e.json
 # Kiota 生成的 debug 端点目录需入库，避免被上面的 [Dd]ebug/ 构建产物规则误伤
 !ui/src/api/client/**/debug/
 !ui/src/api/client/**/debug/**
+# Kiota 生成的 log 端点目录（notification/log）同理，别被 [Ll]og/ 构建产物规则吃掉
+!ui/src/api/client/**/[Ll]og/
+!ui/src/api/client/**/[Ll]og/**
 .tmpbuild/
 /.zcode/plans
 /.tmp-ddl
