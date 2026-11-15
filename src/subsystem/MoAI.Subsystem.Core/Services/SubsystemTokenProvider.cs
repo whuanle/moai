@@ -57,7 +57,7 @@ public class SubsystemTokenProvider : ISubsystemTokenProvider
     }
 
     /// <inheritdoc/>
-    public (string AccessToken, string RefreshToken, int ExpiresIn) GenerateUserTokens(AccessAppEntity subsysApp, long userId)
+    public (string AccessToken, string RefreshToken, int ExpiresIn) GenerateUserTokens(AccessAppEntity subsysApp, long userId, long authVersion)
     {
         var accessClaims = new List<Claim>
         {
@@ -65,16 +65,18 @@ public class SubsystemTokenProvider : ISubsystemTokenProvider
             new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(SubsystemAuthDefaults.ClaimSubsystemId, subsysApp.Id.ToString()),
             new(SubsystemAuthDefaults.ClaimAppKey, subsysApp.Key),
+            new(AppConst.AuthVersionClaim, authVersion.ToString()),
             new(SubsystemAuthDefaults.ClaimTokenType, SubsystemAuthDefaults.TokenTypeUserAccess),
         };
         var accessToken = CreateToken(accessClaims, SubsystemAuthDefaults.TokenTypeUserAccess, UserAccessTokenLifetime);
 
-        // refresh 仅保留主体信息，刷新时按数据库当前状态（接入启用/用户可用）重验
+        // refresh 仅保留主体信息，刷新时按数据库当前状态（接入启用/用户可用/鉴权版本）重验
         var refreshClaims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(SubsystemAuthDefaults.ClaimSubsystemId, subsysApp.Id.ToString()),
+            new(AppConst.AuthVersionClaim, authVersion.ToString()),
             new(SubsystemAuthDefaults.ClaimTokenType, SubsystemAuthDefaults.TokenTypeUserRefresh),
         };
         var refreshToken = CreateToken(refreshClaims, SubsystemAuthDefaults.TokenTypeUserRefresh, UserRefreshTokenLifetime);
@@ -83,10 +85,11 @@ public class SubsystemTokenProvider : ISubsystemTokenProvider
     }
 
     /// <inheritdoc/>
-    public bool TryValidateUserRefreshToken(string token, out Guid subsysAppId, out long userId)
+    public bool TryValidateUserRefreshToken(string token, out Guid subsysAppId, out long userId, out long authVersion)
     {
         subsysAppId = Guid.Empty;
         userId = 0;
+        authVersion = 0;
         var claimMap = ValidateClaims(token, SubsystemAuthDefaults.TokenTypeUserRefresh);
         if (claimMap == null)
         {
@@ -96,6 +99,11 @@ public class SubsystemTokenProvider : ISubsystemTokenProvider
         if (!claimMap.TryGetValue(SubsystemAuthDefaults.ClaimSubsystemId, out var sidValue) || !Guid.TryParse(sidValue, out subsysAppId))
         {
             return false;
+        }
+
+        if (claimMap.TryGetValue(AppConst.AuthVersionClaim, out var authVersionValue) && long.TryParse(authVersionValue, out var parsedVersion))
+        {
+            authVersion = parsedVersion;
         }
 
         return claimMap.TryGetValue(JwtRegisteredClaimNames.Sub, out var subValue) && long.TryParse(subValue, out userId);

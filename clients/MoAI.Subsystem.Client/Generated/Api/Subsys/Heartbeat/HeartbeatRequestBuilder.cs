@@ -34,9 +34,9 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Heartbeat
         {
         }
         /// <summary>
-        /// 接入心跳（多实例存活探针）：按 instanceId 记录 Redis 在场，判定窗口内未续期视为离线.
+        /// 接入心跳（多实例存活探针）：按 instanceId 记录 Redis 在场，判定窗口内未续期视为离线；响应回显服务端时间、在线实例数与窗口口径.
         /// </summary>
-        /// <returns>A <see cref="global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse"/></returns>
+        /// <returns>A <see cref="global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommandResponse"/></returns>
         /// <param name="body">系统级接入心跳（机器面，接入 token 鉴权）：按实例记录 Redis 在场（ZSET），判定窗口内未续期视为离线.</param>
         /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
         /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
@@ -47,11 +47,11 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Heartbeat
         /// <exception cref="global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult">When receiving a 500 status code</exception>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
-        public async Task<global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse?> PostAsync(global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommand body, Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default, CancellationToken cancellationToken = default)
+        public async Task<global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommandResponse?> PostAsync(global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommand body, Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default, CancellationToken cancellationToken = default)
         {
 #nullable restore
 #else
-        public async Task<global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse> PostAsync(global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommand body, Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default, CancellationToken cancellationToken = default)
+        public async Task<global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommandResponse> PostAsync(global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommand body, Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default, CancellationToken cancellationToken = default)
         {
 #endif
             _ = body ?? throw new ArgumentNullException(nameof(body));
@@ -64,10 +64,10 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Heartbeat
                 { "409", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
                 { "500", global::MoAI.Subsystem.Client.ApiSdk.Models.BusinessValidationResult.CreateFromDiscriminatorValue },
             };
-            return await RequestAdapter.SendAsync<global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse>(requestInfo, global::MoAI.Subsystem.Client.ApiSdk.Models.EmptyCommandResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
+            return await RequestAdapter.SendAsync<global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommandResponse>(requestInfo, global::MoAI.Subsystem.Client.ApiSdk.Models.SubsystemHeartbeatCommandResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
-        /// 接入心跳（多实例存活探针）：按 instanceId 记录 Redis 在场，判定窗口内未续期视为离线.
+        /// 接入心跳（多实例存活探针）：按 instanceId 记录 Redis 在场，判定窗口内未续期视为离线；响应回显服务端时间、在线实例数与窗口口径.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="body">系统级接入心跳（机器面，接入 token 鉴权）：按实例记录 Redis 在场（ZSET），判定窗口内未续期视为离线.</param>

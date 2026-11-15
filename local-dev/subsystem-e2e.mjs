@@ -3,7 +3,7 @@
 //       列表仅回显掩码，原文经 reveal-secret RSA+AES 信封加密随时查看）/ 统一 token 换取 /
 //       心跳 v2（按实例 ZSET，多实例在线实例数）/ 团队授权（全员与指定团队）/
 //       组织授权（统一组织授权表 org_grant：角色+方向 self/up/down，团队∪组织并集门禁）/
-//       停用即拒 / 密钥重置 / 删除释放 appid / 团队可用列表门禁 / 委托 SSO /
+//       停用即拒 / 密钥重置 / 删除释放 appid / 团队可用列表门禁 / 委托 SSO / 用户面门户（可进入子系统列表）/
 //       应用接入同表同接口（appid 直连、全量资源面、子系统专属端点 404）/
 //       接入头像（创建携带/防伪 404/替换/不携带不变/缺省空串；存储不可用时跳过）。
 // 前置：后端运行中；种子账号 admin / abcd123456（root）。全部用例零真实外部依赖。
@@ -288,6 +288,31 @@ async function main() {
   const accessGhost = await api('POST', '/api/subsystem/sso/check', { body: { subsystemKey: `ghost${TS}` } })
   check('SUB-110 不存在的子系统预检统一返回不可用（不泄露原因）', accessGhost.status === 200 && accessGhost.json?.allowed === false && accessGhost.json?.reason === 'unavailable' && !accessGhost.json?.name, `${accessGhost.status} ${accessGhost.text.slice(0, 160)}`)
 
+  // ---- 用户面门户：当前用户可进入的子系统（启用 + 已开放登录 + 团队∪组织授权放通，与 SSO 门禁同口径）----
+  const portalAnon = await api('GET', '/api/subsystem/available')
+  check('SUB-112 未登录查询可进入子系统 401', portalAnon.status === 401, `${portalAnon.status} ${portalAnon.text.slice(0, 120)}`)
+
+  const portalOwner = await api('GET', '/api/subsystem/available', { token: ownerA.token })
+  const portalOwnerItem = (portalOwner.json?.items ?? []).find((x) => x.key === KEY)
+  check(
+    'SUB-113 授权用户门户可见已启用并开放登录的子系统（回显 appid/名称/描述/头像）',
+    portalOwner.status === 200 && !!portalOwnerItem && portalOwnerItem.name === '复用标识'
+      && portalOwnerItem.description === 'e2e 子系统' && typeof portalOwnerItem.avatarPath === 'string',
+    `${portalOwner.status} ${portalOwner.text.slice(0, 200)}`,
+  )
+
+  const portalNoTeam = await api('GET', '/api/subsystem/available', { token: user.token })
+  check('SUB-114 无团队且无组织授权的用户门户不可见该子系统', portalNoTeam.status === 200 && !(portalNoTeam.json?.items ?? []).some((x) => x.key === KEY), `${portalNoTeam.status} ${portalNoTeam.text.slice(0, 200)}`)
+
+  const noCbKey = `nocb${TS}`
+  const noCbSub = await api('POST', '/api/subsystem/create', { token: root, body: { appType: 'subsystem', key: noCbKey, name: '未开放登录', teamScope: 'allTeams' } })
+  const portalNoCb = await api('GET', '/api/subsystem/available', { token: ownerA.token })
+  check(
+    'SUB-115 未配置回调（未开放登录）的子系统不下发门户',
+    noCbSub.status === 200 && !(portalNoCb.json?.items ?? []).some((x) => x.key === noCbKey),
+    `${noCbSub.status} ${portalNoCb.text.slice(0, 200)}`,
+  )
+
 
   check('SUB-42 委托码兑换需子系统 token 401', (await api('POST', '/api/subsys/sso/exchange', { body: { code: CODE } })).status === 401)
 
@@ -323,6 +348,9 @@ async function main() {
   await api('PUT', `/api/subsystem/${RECREATED_ID}`, { token: root, body: { name: '复用标识', status: 'disabled', teamScope: 'allTeams', teamIds: [], callbackUrls: [CALLBACK] } })
   check('SUB-49 停用后签发委托码 403', (await api('POST', '/api/subsystem/sso/code', { token: ownerB.token, body: { subsystemKey: KEY } })).status === 403)
   check('SUB-50 停用后用户委托 refresh 403', (await api('POST', '/api/subsys/sso/refresh', { token: R_TOKEN, body: { refreshToken: USER_REFRESH } })).status === 403)
+
+  const portalDisabled = await api('GET', '/api/subsystem/available', { token: ownerB.token })
+  check('SUB-116 停用后门户不再下发该子系统', portalDisabled.status === 200 && !(portalDisabled.json?.items ?? []).some((x) => x.key === KEY), `${portalDisabled.status} ${portalDisabled.text.slice(0, 200)}`)
 
   // ---- 组织授权：统一组织授权表（org_grant，资源类型 subsystem），团队与组织任一命中即可使用 ----
   const roleP = await api('POST', '/api/org/role/create', { token: root, body: { name: `e2e-parent-${TS}`, parentId: null } })

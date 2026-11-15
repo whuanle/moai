@@ -13,6 +13,14 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class UserStateInfo : IParsable
     {
+        /// <summary>当前鉴权版本：token 携带签发时的版本，与当前值不一致即视为会话已吊销.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public string? AuthVersion { get; set; }
+#nullable restore
+#else
+        public string AuthVersion { get; set; }
+#endif
         /// <summary>头像地址.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -91,6 +99,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
         {
             return new Dictionary<string, Action<IParseNode>>
             {
+                { "authVersion", n => { AuthVersion = n.GetStringValue(); } },
                 { "avatar", n => { Avatar = n.GetStringValue(); } },
                 { "email", n => { Email = n.GetStringValue(); } },
                 { "isAdmin", n => { IsAdmin = n.GetBoolValue(); } },
@@ -112,6 +121,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
         public virtual void Serialize(ISerializationWriter writer)
         {
             _ = writer ?? throw new ArgumentNullException(nameof(writer));
+            writer.WriteStringValue("authVersion", AuthVersion);
             writer.WriteStringValue("avatar", Avatar);
             writer.WriteStringValue("email", Email);
             writer.WriteBoolValue("isAdmin", IsAdmin);

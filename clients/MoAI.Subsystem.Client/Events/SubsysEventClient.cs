@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,24 +6,26 @@ using Microsoft.Extensions.Options;
 namespace MoAI.Subsystem.Client.Events;
 
 /// <summary>
-/// SignalR 事件客户端实现：主动外连 MoAI，按 appId 分组接收；断线后按当前 lastEventId 重连补发.
+/// SignalR 事件客户端实现：主动外连 MoAI，按 appId 分组接收；断线后按当前 lastEventId 重连补发。
+/// 处理顺序：控制事件 → 去重 → 本地过滤 → 回调 → 推进游标（失败不推进，重连可重试）。
 /// </summary>
 public sealed class SubsysEventClient : ISubsysEventClient
 {
-    private const string HubPath = "/hub/subsys";
     private const string OnEvent = "onEvent";
     private const string OnReady = "onReady";
-    private const string ResyncEvent = "subsys.resync_required";
 
     private readonly MoaiSubsysClientOptions _options;
     private readonly ISubsysTokenProvider _tokenProvider;
     private readonly ISubsysEventCursorStore _cursorStore;
+    private readonly ISubsysEventDeduplicator _deduplicator;
     private readonly ILogger<SubsysEventClient> _logger;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
 
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
     private HubConnection? _connection;
+    private TaskCompletionSource _connectedSignal = CreateSignal();
+    private volatile bool _stopping;
     private bool _disposed;
 
     /// <summary>
@@ -33,16 +34,19 @@ public sealed class SubsysEventClient : ISubsysEventClient
     /// <param name="options">客户端配置.</param>
     /// <param name="tokenProvider">机器 token 提供器.</param>
     /// <param name="cursorStore">lastEventId 存储.</param>
+    /// <param name="deduplicator">事件去重器.</param>
     /// <param name="logger">日志.</param>
     public SubsysEventClient(
         IOptions<MoaiSubsysClientOptions> options,
         ISubsysTokenProvider tokenProvider,
         ISubsysEventCursorStore cursorStore,
+        ISubsysEventDeduplicator deduplicator,
         ILogger<SubsysEventClient> logger)
     {
         _options = options.Value;
         _tokenProvider = tokenProvider;
         _cursorStore = cursorStore;
+        _deduplicator = deduplicator;
         _logger = logger;
     }
 
@@ -51,6 +55,9 @@ public sealed class SubsysEventClient : ISubsysEventClient
 
     /// <inheritdoc/>
     public event Func<SubsysReadyItem, Task>? Ready;
+
+    /// <inheritdoc/>
+    public event Func<Exception?, Task>? Disconnected;
 
     /// <inheritdoc/>
     public event Func<string, Task>? ResyncRequired;
@@ -70,6 +77,8 @@ public sealed class SubsysEventClient : ISubsysEventClient
                 return;
             }
 
+            _stopping = false;
+            _connectedSignal = CreateSignal();
             _loopCts = new CancellationTokenSource();
             _loopTask = RunLoopAsync(_loopCts.Token);
         }
@@ -87,12 +96,17 @@ public sealed class SubsysEventClient : ISubsysEventClient
         await _lifecycleGate.WaitAsync(cancellationToken);
         try
         {
+            _stopping = true;
             loopTask = _loopTask;
             connection = _connection;
             _loopTask = null;
             _connection = null;
-            _loopCts?.Cancel();
-            _loopCts?.Dispose();
+            if (_loopCts is not null)
+            {
+                await _loopCts.CancelAsync();
+                _loopCts.Dispose();
+            }
+
             _loopCts = null;
         }
         finally
@@ -125,6 +139,19 @@ public sealed class SubsysEventClient : ISubsysEventClient
     }
 
     /// <inheritdoc/>
+    public async Task WaitForConnectedAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (IsConnected)
+        {
+            return;
+        }
+
+        await _connectedSignal.Task.WaitAsync(timeout, cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
         if (_disposed)
@@ -143,14 +170,15 @@ public sealed class SubsysEventClient : ISubsysEventClient
         while (!cancellationToken.IsCancellationRequested)
         {
             HubConnection? connection = null;
+            var started = false;
             try
             {
-                connection = BuildConnection();
+                connection = await BuildConnectionAsync(cancellationToken);
                 connection.On<SubsysEventItem>(OnEvent, HandleEventAsync);
                 connection.On<SubsysReadyItem>(OnReady, HandleReadyAsync);
 
                 var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                connection.Closed += ex =>
+                connection.Closed += async ex =>
                 {
                     if (ex is not null)
                     {
@@ -158,12 +186,15 @@ public sealed class SubsysEventClient : ISubsysEventClient
                     }
 
                     closed.TrySetResult();
-                    return Task.CompletedTask;
+                    _connectedSignal = CreateSignal();
+                    await RaiseDisconnectedAsync(ex);
                 };
 
                 await connection.StartAsync(cancellationToken);
                 _connection = connection;
+                started = true;
                 attempt = 0;
+                _connectedSignal.TrySetResult();
                 _logger.LogInformation("接入事件连接已建立. AppId={AppId}", _options.AppId);
 
                 using var registration = cancellationToken.Register(() => closed.TrySetCanceled(cancellationToken));
@@ -177,6 +208,10 @@ public sealed class SubsysEventClient : ISubsysEventClient
             {
                 _logger.LogWarning(ex, "接入事件连接失败，将重试. AppId={AppId}", _options.AppId);
                 _tokenProvider.Invalidate();
+                if (!started)
+                {
+                    await RaiseDisconnectedAsync(ex);
+                }
             }
             finally
             {
@@ -194,7 +229,7 @@ public sealed class SubsysEventClient : ISubsysEventClient
 
             try
             {
-                await Task.Delay(Backoff(attempt++), cancellationToken);
+                await Task.Delay(_options.Events.GetReconnectDelay(attempt++), cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -203,10 +238,11 @@ public sealed class SubsysEventClient : ISubsysEventClient
         }
     }
 
-    private HubConnection BuildConnection()
+    private async Task<HubConnection> BuildConnectionAsync(CancellationToken cancellationToken)
     {
-        var url = $"{_options.BaseUrl.TrimEnd('/')}{HubPath}";
-        var lastEventId = _cursorStore.GetLastEventId();
+        var hubPath = NormalizeHubPath(_options.Events.HubPath);
+        var url = $"{_options.BaseUrl.TrimEnd('/')}{hubPath}";
+        var lastEventId = await _cursorStore.GetLastEventIdAsync(cancellationToken);
         if (!string.IsNullOrEmpty(lastEventId))
         {
             url += $"?lastEventId={Uri.EscapeDataString(lastEventId)}";
@@ -228,22 +264,33 @@ public sealed class SubsysEventClient : ISubsysEventClient
     {
         try
         {
-            if (string.Equals(item.Event, ResyncEvent, StringComparison.Ordinal))
+            if (item.IsResyncRequired())
             {
-                await RaiseResyncAsync(ReadReason(item));
-                // 控制事件 id 不是 Stream 游标；清空后下一次连接按首次连接走全量对账
-                _cursorStore.ClearLastEventId();
+                await RaiseResyncAsync(item.GetResyncReason() ?? "unknown");
+
+                // 控制事件 id 不是补发游标；清空后下一次连接按首次连接走全量对账
+                _deduplicator.Clear();
+                await _cursorStore.ClearLastEventIdAsync();
                 return;
             }
 
-            if (EventReceived is not null)
+            var eventId = item.Id;
+            if (!string.IsNullOrEmpty(eventId) && _deduplicator.IsSeen(eventId))
+            {
+                _logger.LogDebug("忽略重复接入事件. Event={Event}, Id={Id}", item.Event, eventId);
+                return;
+            }
+
+            // 本地过滤只减少回调噪音，仍然推进游标，避免重连时反复补发被过滤事件
+            if (_options.Events.IsEventAccepted(item.Event) && EventReceived is not null)
             {
                 await EventReceived(item);
             }
 
-            if (!string.IsNullOrEmpty(item.Id))
+            if (!string.IsNullOrEmpty(eventId))
             {
-                _cursorStore.SaveLastEventId(item.Id);
+                await _cursorStore.SaveLastEventIdAsync(eventId);
+                _deduplicator.MarkSeen(eventId);
             }
         }
         catch (Exception ex)
@@ -274,25 +321,29 @@ public sealed class SubsysEventClient : ISubsysEventClient
         }
     }
 
-    private static string ReadReason(SubsysEventItem item)
+    private async Task RaiseDisconnectedAsync(Exception? exception)
     {
-        if (item.Data is JsonElement data
-            && data.ValueKind == JsonValueKind.Object
-            && data.TryGetProperty("reason", out var reason)
-            && reason.ValueKind == JsonValueKind.String)
+        if (_stopping || Disconnected is null)
         {
-            return reason.GetString() ?? "unknown";
+            return;
         }
 
-        return "unknown";
+        try
+        {
+            await Disconnected(exception);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "处理接入事件断线回调失败.");
+        }
     }
 
-    private static TimeSpan Backoff(int attempt) => attempt switch
+    private static string NormalizeHubPath(string? hubPath)
     {
-        0 => TimeSpan.Zero,
-        1 => TimeSpan.FromSeconds(2),
-        2 => TimeSpan.FromSeconds(5),
-        3 => TimeSpan.FromSeconds(10),
-        _ => TimeSpan.FromSeconds(30),
-    };
+        var path = string.IsNullOrWhiteSpace(hubPath) ? "/hub/subsys" : hubPath.Trim();
+        return path.StartsWith('/') ? path : "/" + path;
+    }
+
+    private static TaskCompletionSource CreateSignal()
+        => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

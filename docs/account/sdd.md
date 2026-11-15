@@ -28,7 +28,7 @@ ui/src/                   api/account.ts、pages/account/{AccountPage,Messages,A
 
 | 方法 | 路由 | 说明 |
 |---|---|---|
-| GET | `/account/userinfo` | 返回 `UserStateInfo`（userId/userName/email/nickName/phone/avatar/isDisable/isAdmin/isRoot/isDeleted） |
+| GET | `/account/userinfo` | 返回 `UserStateInfo`（userId/userName/email/nickName/phone/avatar/isDisable/isAdmin/isRoot/isDeleted/authVersion） |
 | POST | `/account/update_userinfo` | `{nickName?, phone?}`；昵称非空白才覆盖，phone `null` 不动、传值（含空串）覆盖 |
 | POST | `/account/reset_password` | `{oldPassword, newPassword}`（均 RSA 密文） |
 | POST | `/account/avatar` | `{objectKey}`；须为 storage 已完成上传的对象键 |
@@ -41,8 +41,8 @@ ui/src/                   api/account.ts、pages/account/{AccountPage,Messages,A
 
 ## 关键决策
 
-1. **用户态缓存**：`UserAccountService.GetUserStateAsync` 缓存 Redis `moai:userstate:{userId}`（TTL 1h），未命中查库回填；`IsRoot` 由 `setting.key="root"` 实时比对，`IsAdmin = user.IsAdmin || isRoot`；用户不存在返回 `IsDeleted=IsDisable=true` 占位。
-2. **禁用拦截**：`CustomAuthorizaMiddleware` 对 `[Authorize]` 端点每请求查用户态，`IsDeleted || IsDisable` → 403「账号已被禁用」；查询异常保持放行（容错决策）。因此**写操作后必须 `RemoveUserStateAsync`**，否则前端 userinfo 最长滞后 1h。
+1. **用户态缓存（分布式）**：`UserAccountService.GetUserStateAsync` 缓存 Redis `moai:userstate:{userId}`（TTL 1h），未命中查库回填；`IsRoot` 由 `setting.key="root"` 实时比对，`IsAdmin = user.IsAdmin || isRoot`；用户不存在返回 `IsDeleted=IsDisable=true` 占位。**安全字段独立缓存**：`IUserSecurityStateService` 用 Redis `moai:userstate:security:{userId}` 保存 `isDisable/isDeleted/authVersion`，读取命中直接返回、未命中回库回填；写入只在 DB 提交后写穿透，Lua 单调版本保护（新版本 < 缓存版本时拒绝覆盖）避免并发读把旧值回写。**无进程内缓存**，任意 MoAI 实例共享同一 Redis 状态。
+2. **禁用/强制下线拦截**：`CustomAuthorizaMiddleware` 对 `[Authorize]` 端点每请求查用户态：`IsDeleted || IsDisable` → 403「账号已被禁用」；token 的 `auth_version` 与共享安全态不一致 → 401「登录状态已失效，请重新登录」。查询异常保持放行（容错决策）。因此**写操作后必须 `RemoveUserStateAsync`**，否则前端 userinfo 最长滞后 1h；安全态另由写穿透保证即时。
 3. **自助改密**：旧密文解密（异常同样 400「原密码错误」）→ PBKDF2 校验 → 新密码解密后强度正则（8-20 含字母数字）→ 重新加盐落库 → 失效缓存。
 4. **头像只登记不传文件**：前端先走 storage 预上传（SHA-256 → `pre_upload_image` → 直传 OSS → `complate_url`），再 `POST /account/avatar` 登记 objectKey；Handler 校验 file 表存在（[@ACC-S12](./bdd.md#acc-s12)）。
 5. **OAuth 绑定双模式**：code 模式经 `IOAuthUserProfileService` 换 sub；临时 id 模式读 Redis `oauth:bind:{guid}`（登录流程写入，10 分钟）。冲突规则：sub 已被他人绑定 400「第三方账号已被其它账号绑定」；绑定到本人幂等；同供应商已绑其它 sub 400「用户已绑定过其它账号」。
@@ -51,7 +51,7 @@ ui/src/                   api/account.ts、pages/account/{AccountPage,Messages,A
 
 ## 已知问题
 
-- **改密/重置后不吊销其他会话的存量 token**：旧 Access Token 在剩余有效期内仍可用（无黑名单机制，全局遗留观察，见 [../auth/sdd.md](../auth/sdd.md)）。
+- **改密/重置后不递增鉴权版本**：旧 Access Token 在剩余有效期内仍可用；禁用/启用/强制下线已递增 `auth_version` 立即吊销，改密场景可由管理员「强制下线」兜底（后续可把改密并入同一版本机制，见 [../auth/sdd.md](../auth/sdd.md)）。
 - OAuth 绑定成功链路依赖真实第三方授权码，自动化需 mock Provider（环境依赖）。
 - 修复史（均已回归）：
   - 禁用中间件曾整体 fail-open（禁用不生效），已修复为按用户态拦截；

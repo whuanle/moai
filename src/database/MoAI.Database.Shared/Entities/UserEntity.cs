@@ -70,6 +70,11 @@ public partial class UserEntity : IFullAudited
     public bool IsTotpEnabled { get; set; }
 
     /// <summary>
+    /// 鉴权版本：禁用/启用、强制下线、改密等安全事件时递增；token 携带签发时的版本，版本不一致立即失效.
+    /// </summary>
+    public long AuthVersion { get; set; }
+
+    /// <summary>
     /// 计算密码值的salt.
     /// </summary>
     public string PasswordSalt { get; set; } = default!;

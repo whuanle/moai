@@ -25,6 +25,14 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public List<string> CallbackUrls { get; set; }
 #endif
+        /// <summary>事件通道自描述：Hub 路径、REST 补发路径、信封版本与窗口上限.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo? Events { get; set; }
+#nullable restore
+#else
+        public global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo Events { get; set; }
+#endif
         /// <summary>接入 id.</summary>
         public Guid? Id { get; set; }
         /// <summary>接入标识（appid）.</summary>
@@ -72,6 +80,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
                 { "appType", n => { AppType = n.GetEnumValue<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessAppType>(); } },
                 { "authorizedTeamCount", n => { AuthorizedTeamCount = n.GetIntValue(); } },
                 { "callbackUrls", n => { CallbackUrls = n.GetCollectionOfPrimitiveValues<string>()?.AsList(); } },
+                { "events", n => { Events = n.GetObjectValue<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo>(global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo.CreateFromDiscriminatorValue); } },
                 { "id", n => { Id = n.GetGuidValue(); } },
                 { "key", n => { Key = n.GetStringValue(); } },
                 { "name", n => { Name = n.GetStringValue(); } },
@@ -91,6 +100,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             writer.WriteEnumValue<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessAppType>("appType", AppType);
             writer.WriteIntValue("authorizedTeamCount", AuthorizedTeamCount);
             writer.WriteCollectionOfPrimitiveValues<string>("callbackUrls", CallbackUrls);
+            writer.WriteObjectValue<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo>("events", Events);
             writer.WriteGuidValue("id", Id);
             writer.WriteStringValue("key", Key);
             writer.WriteStringValue("name", Name);

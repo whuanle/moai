@@ -18,7 +18,7 @@
 
 不选轮询：延迟与无效请求不可接受。不选 Webhook：MoAI 要维护子系统地址、出站白名单/SSRF 防护、签名、重试与死信，成本明显更高；可作为后续离线兜底，不作为主通道。
 
-**边界**：SignalR 断线期间不保证送达。本文用「Redis Stream 最近事件补发 + 全量对账」兜底，语义是 **at-most-once 实时推送 + 可恢复**，不是 exactly-once。事件是变更信号 + 轻量上下文（可带主体/关联 ID），**接收方按需回查 MoAI 取详情**，不把事件当数据快照。
+**边界**：SignalR 断线期间不保证送达。本文用「Redis 分代事件索引补发（同实体只留最新一条）+ 全量对账」兜底，语义是 **at-most-once 实时推送 + 可恢复**，不是 exactly-once。事件是变更信号 + 轻量上下文（可带主体/关联 ID），**接收方按需回查 MoAI 取详情**，不把事件当数据快照。
 
 ## 2. 总体架构
 
@@ -26,7 +26,7 @@
 业务模块 Handler（account/org/team/subsystem/auth）
         │  IAccessEventPublisher.PublishAsync(...)
         ▼
-AccessEventPublisher ──XADD──▶ Redis Stream: subsys:events（MAXLEN≈10000）
+AccessEventPublisher ──Lua 原子写──▶ Redis 分代索引: moai:subsys:evt:{yyyyMMdd}:latest/index/seq\n         │                                  （同实体最新覆盖；按天换键，2 天 TTL）
         │ Maomi.MQ  subsys.event
         ▼
 AccessEventPushConsumer ──IHubContext<SubsysEventHub>──▶ Redis backplane
@@ -40,13 +40,13 @@ AccessEventPushConsumer ──IHubContext<SubsysEventHub>──▶ Redis backpla
 ```
 src/infra/MoAI.Infra.Shared/Events/   纯契约：IAccessEventPublisher、AccessEvent、AccessEventNames、AccessEventAudience、扩展方法
 src/subsystem/MoAI.Subsystem.Shared/  Events/AccessEventPushMessage（MQ）、Queries/QuerySubsysGrants|Events（+Responses）
-src/subsystem/MoAI.Subsystem.Core/    Services/AccessEventPublisher、AccessEventStream；Consumers/AccessEventPushConsumer；
+src/subsystem/MoAI.Subsystem.Core/    Services/AccessEventPublisher、AccessEventStore（Hash+ZSet 分代索引）；Consumers/AccessEventPushConsumer；
                                       Hubs/SubsysEventHub、SubsysHubAuthenticationHandler；Handlers/QuerySubsys*
 src/subsystem/MoAI.Subsystem.Api/     SubsystemOpenController（/subsys/grants、/subsys/events）、SystemTeamController（{teamId}/users）
-src/MoAI/                            SubsystemCoreModule（Hub 认证方案 + MemoryCache）、Program.cs（MapHub /hub/subsys）、
+src/MoAI/                            SubsystemCoreModule（Hub 认证方案）、Program.cs（MapHub /hub/subsys）、
                                       ConfigureAuthorizaModule（机器面 JWT 失败降为 Debug）
 clients/MoAI.Subsystem.Client/        Events/SubsysEventClient（SignalR、lastEventId、重连对账）、Resources/SubsysResourceClient
-local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/授权/补发/过期游标/停用最终事件）
+local-dev/subsys-event-e2e.mjs        30 断言（建连/用户/组织/团队/授权/补发/过期游标/停用最终事件）
 ```
 
 > 契约放在 `MoAI.Infra.Shared/Events`，account/org/team/auth/subsystem 均只依赖该共享程序集，避免反向项目依赖成环。
@@ -91,7 +91,7 @@ local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/�
 }
 ```
 
-- `id`：不透明字符串，客户端只用于**去重**和**回传 `lastEventId`**，不解析。正常为 Redis Stream ID；Redis 不可用时回落 Guid v7。
+- `id`：不透明字符串，客户端只用于**去重**和**回传 `lastEventId`**，不解析。正常为 `yyyyMMdd:seq`（分代序号）；Redis 不可用时回落 Guid v7。
 - `event`：小写点分，统一 `subsys.` 前缀，见 §5。**追加式演进，永不复用/改名**。
 - `time`：事件发生时间（UTC，`DateTimeOffset`）。
 - `schemaVersion`：信封版本，当前 `1`；只做加法演进。
@@ -122,15 +122,18 @@ local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/�
 
 ### 4.3 重连补发
 
-- 客户端连接 URL 可带 `lastEventId=<上次收到的事件 id>`。
-- 服务端 `OnConnectedAsync` 从 Redis Stream `XRANGE subsys:events (lastId + COUNT 200`，过滤 `audience=all || target=appId` 后逐条 `onEvent` 补发；单次最多扫描 2000 条、补发 200 条。
-- 游标已不在 Stream 窗口内 / 补发超限 / Redis 不可用 → 发 `subsys.resync_required`，客户端走全量对账。
+- 客户端连接 URL 可带 `lastEventId=<上次收到的事件 id>`；id 为 `yyyyMMdd:seq`（按 UTC 天分代）。
+- 服务端 `OnConnectedAsync` 读当天分代索引：`ZRANGEBYSCORE index (seq +inf LIMIT 200` → `HMGET latest`，过滤 `audience=all || target=appId` 后逐条 `onEvent` 补发。**同一事件名 + 同一主体只存最新一条**（禁用→启用→禁用 只补发最后一次）。
+- 游标跨天/格式非法/Redis 序号被清理/Redis 不可用 → 发 `subsys.resync_required`，客户端走全量对账；补发超限给 `overflow`。
 - 首次连接（无 `lastEventId`）→ `onReady.requiresFullSync=true`。
-- REST 兜底：`GET /api/subsys/events?afterId=&limit=` 返回同一 Stream 的过滤结果，供不使用 SignalR 的客户端或排障使用。
-- **配套查询接口**（本次一并补）：
+- REST 兜底：`GET /api/subsys/events?afterId=&limit=` 返回同一分代索引的过滤结果，供不使用 SignalR 的客户端或排障使用；支持 `event`（精确）/`eventPrefix`（前缀）过滤，过滤发生在取 `limit` 之前（先扫窗口再裁剪），因此不会出现「前 N 条被过滤导致空页但实际有匹配事件」。
+- **分页游标**：响应新增 `nextCursor`（有更多时=本次返回末条 id；达到单次扫描上限但命中不足 limit 时=扫描边界）。客户端应优先使用 `nextCursor` 翻页，避免事件被过滤时空页无法推进。
+- **按天重新生成**：键名带 `{yyyyMMdd}`，跨天自动写新代；旧代 2 天后过期，不需要手工清洗任务。跨天后的旧游标一律触发全量对账。
+- **配套查询接口（已实现）**：
   - `GET /api/subsys/grants` → `{ teamScope, teamIds: [], orgRoleIds: [] }`，供自身授权对账（现有 `info` 只有计数）。
   - `GET /api/subsys/system/teams/{teamId}/users` → `{ items: [{ userId, userName, role }] }`，补齐团队成员对账面。
-  - `POST /api/subsys/token` / `GET /api/subsys/info` 响应增加 `events: { hubPath: "/hub/subsys", schemaVersion: 1 }`，客户端无需硬编码路径。
+  - `POST /api/subsys/token` / `GET /api/subsys/info` 响应增加 `events: { hubPath, restPath, catalogPath, schemaVersion, retentionDays, maxReplay }`，客户端无需硬编码路径/版本/窗口。
+  - `POST /api/subsys/heartbeat` 响应回显 `serverTime / onlineInstances / windowSeconds(60) / recommendedIntervalSeconds(20)`，接入方据此调整心跳间隔并确认在线实例数。
 
 ### 4.4 载荷规则（可带关联 ID，不推大对象）
 
@@ -174,9 +177,35 @@ local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/�
 { "teamIds": ["... 1200 个 ..."] }
 ```
 
+### 4.5 事件目录与接入方自描述
+
+`GET /api/subsys/events/catalog` 返回机器可读的事件注册表：
+
+```json
+{
+  "schemaVersion": 1,
+  "retentionDays": 2,
+  "items": [
+    { "event": "subsys.user.created", "audience": "all", "dataFields": ["userId", "userName"] },
+    { "event": "subsys.user.status_changed", "audience": "all", "dataFields": ["userId", "userName", "disabled", "authVersion"] },
+    { "event": "subsys.user.session_revoked", "audience": "all", "dataFields": ["userId", "userName", "authVersion", "reason"] },
+    { "event": "subsys.team.member_added", "audience": "all", "dataFields": ["teamId", "userIds", "userIdsCount", "role", "truncated"] },
+    { "event": "subsys.access_app.grants_changed", "audience": "target", "dataFields": ["appId", "changed", "teamScope", "teamIds", "teamCount", "orgRoleIds", "orgRoleCount", "truncated"] },
+    { "event": "subsys.resync_required", "audience": "control", "dataFields": ["reason"] }
+  ]
+}
+```
+
+约束与用途：
+
+- 目录是**运行时契约**：新增事件必须同时在服务端 `AccessEventNames` 与 `SubsystemEventCatalog` 登记，单测断言事件名唯一且统一 `subsys.` 前缀。
+- `audience`：`all`=所有启用中的系统级接入、`target`=仅事件主体接入、`control`=服务端控制事件。
+- `dataFields` 只列字段名（不列值），含条件字段（如 `userIds` 与超限退化后的 `userIdsCount`）。接收方不得把目录当作数据快照说明，字段语义见 §4.4/§5。
+- 客户端可缓存目录用于生成订阅过滤与未知字段告警；**仍必须忽略未知事件与未知字段**（向前兼容）。
+
 ## 5. 事件目录
 
-约定：`all` = 所有启用中的系统级接入（`AppType=subsystem` 与 `app` 都收）；`target` = 仅事件主体接入。所有 ID 以字符串传输；关联 ID 数组受 ≤50 上限约束，超限退化计数（见 §4.4）。
+约定：`all` = 所有启用中的系统级接入（`AppType=subsystem` 与 `app` 都收）；`target` = 仅事件主体接入；`control` = 服务端控制事件。所有 ID 以字符串传输；关联 ID 数组受 ≤50 上限约束，超限退化计数（见 §4.4）。本节事件均登记在 `GET /api/subsys/events/catalog`（§4.5），以目录为机器可读真源。
 
 ### 5.1 接入自身（target）
 
@@ -197,7 +226,8 @@ local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/�
 |---|---|---|
 | `subsys.user.created` | 注册、系统 upsert 新建、OAuth 首次建户、app-tokens 自动建户 | `{ userId, userName }` |
 | `subsys.user.updated` | 昵称/邮箱/手机/头像等资料变更 | `{ userId, userName, fields: [...] }` |
-| `subsys.user.status_changed` | 禁用/启用 | `{ userId, userName, disabled: true 或 false }` |
+| `subsys.user.status_changed` | 禁用/启用 | `{ userId, userName, disabled: true 或 false, authVersion }` |
+| `subsys.user.session_revoked` | 强制下线（不改禁用状态） | `{ userId, userName, authVersion, reason }`；`reason=force_logout` |
 | `subsys.user.org_roles_changed` | 用户组织角色整体覆盖（含注册默认角色） | `{ userId, roleIds: [...] }`；`roleIds` ≤50，超限给 `roleCount + truncated` |
 | `subsys.user.oauth_linked` | 第三方身份绑定/自动绑定 | `{ userId, providerId }` |
 | `subsys.user.oauth_unlinked` | 第三方身份解绑 | `{ userId, providerId }` |
@@ -232,7 +262,7 @@ local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/�
 
 | 事件 | 接收方回查 |
 |---|---|
-| `user.created` / `user.updated` / `user.status_changed` | `GET /api/subsys/system/users/{userId}` |
+| `user.created` / `user.updated` / `user.status_changed` / `user.session_revoked` | `GET /api/subsys/system/users/{userId}`（含 `authVersion`）；收到版本变化应清理本地缓存的该用户会话 |
 | `user.org_roles_changed` | 带 `roleIds` 可直接覆盖本地；`truncated` 或缺失时 `GET /api/subsys/system/org/users/{userId}/roles` |
 | `user.oauth_linked` / `user.oauth_unlinked` | 接收方本地绑定表按 `userId + providerId` 处理；用户资料以用户接口为准 |
 | `org.role_created` / `org.role_updated` / `org.role_deleted` | `GET /api/subsys/system/org/roles`；需要角色成员时 `GET /api/subsys/system/org/roles/{roleId}/users` |
@@ -250,15 +280,22 @@ local-dev/subsys-event-e2e.mjs        28 断言（建连/用户/组织/团队/�
 ## 6. 投递语义与一致性
 
 - **实时推送 best-effort**：MQ 消费失败重试耗尽后 Ack 放弃，不投死信；不阻塞业务请求。
-- **最近事件窗口**：Redis Stream `subsys:events`，`MAXLEN ~ 10000` 长度滚动；只用于短时断线补发，不是审计日志（Redis 侧可按部署补 TTL）。
+- **分代最新事件索引**：`moai:subsys:evt:{yyyyMMdd}:latest/index/seq`。Hash 保存「事件名+主体」的最新事件，ZSet 以序号索引；同一实体同类事件只留最新一条，天然压缩禁用/启用抖动。旧代 2 天 TTL，跨天自动换键，不需要清洗任务。\n- **分布式**：Redis 是 MoAI 已有的共享基础设施，所有实例写同一套键；序号用 `INCR`、写 Hash/ZSet 用 Lua 原子脚本，不存在实例本地状态。Redis 不可用时实时 MQ 仍尽力推送，补发降级为 `resync_required`。
 - **最终一致性**：任何无法补齐的场景（首次连接、游标过期、Redis 丢失、客户端实现异常）都走**全量对账**：
-  1. `GET /api/subsys/info` + `GET /api/subsys/grants`（新增，取自身授权快照）；
+  1. `GET /api/subsys/info` + `GET /api/subsys/grants`（取自身授权快照）；
   2. `GET /api/subsys/system/users/list`（分页）；
   3. `GET /api/subsys/system/org/roles`；
-  4. `GET /api/subsys/system/teams/list` + `GET /api/subsys/system/teams/{teamId}/users`（新增，现有协作面缺团队成员查询）。
+  4. `GET /api/subsys/system/teams/list` + `GET /api/subsys/system/teams/{teamId}/users`。
 - **顺序**：不保证跨实例严格有序。事件只是「去取最新状态」的提示，客户端按业务状态幂等处理；不要用事件顺序推导状态机。
 - **重复/乱序**：MQ 重投、补发与实时推送叠加都可能重复或乱序。客户端应用**已见 id 集合/LRU**去重，不能简单用「id 大于 lastId 才处理」丢弃迟到的低 id 事件；`lastEventId` 只用于补发游标，取已处理的最大 id 即可。
 - **背压**：客户端应把事件放入本地队列并合并同实体短时间内的重复刷新（如 200ms debounce），避免事件风暴打爆 REST。
+
+### 6.1 为什么不用 Redis Stream
+
+- Redis Stream 是**追加日志**：同一用户一天内禁用→启用→禁用会堆三条，回放仍是三条；它能裁剪、能消费组，但不能按“实体”原地压缩。
+- Stream 的消费组语义适合“每条消息都要处理”，本场景是“每个实体只需要最新状态”，数据模型不匹配；问题不在分布式能力，Redis Stream 本身在分布式部署下是可用的。
+- 现方案用 **Redis Hash + ZSet 分代索引**：`INCR` 分配共享序号、Lua 原子写 Hash/ZSet，所有 MoAI 实例共享同一 Redis；键用 `{yyyyMMdd}` hash tag，Redis Cluster 下三个键同 slot；同实体同类事件覆盖，按 UTC 天换键、旧代 2 天过期。
+- 若未来需要持久审计或跨天可靠重放，再落 PostgreSQL outbox（`(audience,target,entity_key)` 唯一 + `seq` upsert），Redis 索引只做加速层；V1 不建表。
 
 ## 7. 发送端设计
 
@@ -280,9 +317,9 @@ public interface IAccessEventPublisher
 - **不抛异常**：业务已提交后再发事件，发布失败只记日志（实时提示丢失由对账兜底），不能反向让业务请求失败。
 - **事务边界**：`SystemUpsertUserCommandHandler` 等显式事务的 Handler 必须在 `CommitAsync` 之后发布；禁止在事务内发事件，避免回滚后仍推送。非事务 Handler 在 `SaveChangesAsync` 之后发布。
 - `source` 由 Publisher 从 `IHttpContextAccessor` 读取 `SubsysCallerContext` 自动填充；无调用方上下文时为空。请求头 `X-MoAI-Event-Echo: false` 时置 `suppressEcho=true`（默认回推）。
-- 发布顺序：先 `XADD` 拿 `id`，再发 MQ `subsys.event`；Redis 不可用时生成 Guid v7 继续发 MQ（补发能力降级）。
-- Stream 记录字段：`event/audience/target/source/suppress/time/data`；实时推送与重连补发使用同一套 audience + suppress 过滤，避免被抑制的回声在重连时又补回来。
-- **载荷守卫**：关联 ID 数组构造侧先判长度，>50 直接降级为 `count + truncated`；Publisher 序列化 `data` 后 >2 KB 记 warning，>8 KB **拒绝发送该事件**并记 error（实时信号丢失由对账兜底），不允许大对象进入 Stream/MQ。
+- 发布顺序：先 Lua 原子写分代索引（`INCR seq` → `HSET` 实体最新事件 → `ZADD` 序号）拿 `id=yyyyMMdd:seq`，再发 MQ `subsys.event`；Redis 不可用时生成 Guid v7 继续发 MQ（补发能力降级）。
+- 索引记录：Hash 值为 `{item, audience, target, suppress}`，字段键 = `事件名:主体ID`（主体优先取 appId/roleId/teamId/userId/providerId）；同键再次写入覆盖旧事件并更新 ZSet 分数。实时推送与重连补发使用同一套 audience + suppress 过滤。
+- **载荷守卫**：关联 ID 数组构造侧先判长度，>50 直接降级为 `count + truncated`；Publisher 序列化 `data` 后 >2 KB 记 warning，>8 KB **拒绝发送该事件**并记 error（实时信号丢失由对账兜底），不允许大对象进入索引/MQ。
 
 ### 7.2 消费与路由
 
@@ -293,7 +330,7 @@ public interface IAccessEventPublisher
 4. `status_changed=disabled` / `deleted` 走 target 组直发，跳过启用过滤，且不受 `suppressEcho` 影响（必须是最后一次投递）。
 5. 失败重试耗尽后 Ack 放弃并记日志。
 
-### 7.3 触发点（需要改动的 Handler）
+### 7.3 触发点（已接入的 Handler）
 
 > 下表事件名为简写，实际发送时统一加 `subsys.` 前缀（如 `user.created` → `subsys.user.created`）。
 
@@ -302,7 +339,8 @@ public interface IAccessEventPublisher
 | auth | `RegisterUserCommandHandler` → `user.created` |
 | account | `SystemUpsertUserCommandHandler` → `user.created` / `user.updated` / `user.status_changed` / `user.oauth_linked`（按实际分支） |
 | account | `UpdateUserInfoCommandHandler`、`UpdateUserAvatarCommandHandler` → `user.updated` |
-| account | `UpdateUserIsDisableCommandHandler`、`SystemSetUserDisableCommandHandler` → `user.status_changed` |
+| account | `UpdateUserIsDisableCommandHandler`、`SystemSetUserDisableCommandHandler` → `user.status_changed`（带 `authVersion`，并推 `auth.revoked` 站内事件） |
+| account | `ForceLogoutUserCommandHandler` → `user.session_revoked`（带 `authVersion`，并推 `auth.revoked` 站内事件） |
 | account | `OAuthBindExistAccountCommandHandler`、`OAuthBindAccountByCodeCommandHandler`、`UnbindUserOAuthCommandHandler` → `user.oauth_linked` / `oauth_unlinked` |
 | app | app-tokens 自动建户/绑定 → `user.created` + `user.oauth_linked` |
 | org | `Create/Update/DeleteOrgRoleCommandHandler` → `org.role_*` |
@@ -327,16 +365,18 @@ public interface IAccessEventPublisher
 
 - 事件名 **append-only**：新增只加不改；废弃先文档标注并保留至少一个大版本，编号不复用。
 - 信封只做加法；客户端必须忽略未知字段与未知事件。
-- 后续可选：按接入订阅过滤、Webhook 兜底、持久化事件审计、连接注册表与强制断连、事件指标（连接数/发布数/补发数/对账次数）。
-- 配套客户端：`clients/MoAI.Subsystem.Client` 已提供 `ISubsysEventClient`（SignalR 连接、自动刷新 token、`ISubsysEventCursorStore` 游标、重连补发/对账）与 `SubsysResourceClient`（grants/events/团队成员），接入方无需自写协议。
+- 后续可选：**服务端**按接入订阅过滤（当前先由客户端本地过滤）、Webhook 兜底、持久化事件审计、连接注册表与强制断连、事件指标（连接数/发布数/补发数/对账次数）。
+- 配套客户端：`clients/MoAI.Subsystem.Client` 已提供 `ISubsysEventClient`（SignalR 连接、自动刷新 token、`ISubsysEventCursorStore` 异步游标、`ISubsysEventDeduplicator` 去重、本地事件前缀过滤、重连补发/对账、`WaitForConnectedAsync`）与 `SubsysResourceClient`（grants/events/事件目录/心跳/用户/组织/团队成员），接入方无需自写协议。
+- 客户端宿主：`AddMoaiSubsysClient(...).AddMoaiSubsysEventWorker()` 随应用生命周期自动启动/停止事件连接；多实例若副作用必须只执行一次，仍应替换为共享去重器或 leader 连接。
 
 ## 10. 落地内容（已完成）
 
-1. `MoAI.Infra.Shared/Events` 契约 + Publisher（Redis Stream + MQ）+ Consumer + `SubsysEventHub` + Hub 认证方案 + `/api/subsys/events`。
+1. `MoAI.Infra.Shared/Events` 契约 + Publisher（Redis 分代索引 + MQ）+ Consumer + `SubsysEventHub` + Hub 认证方案 + `/api/subsys/events`。
 2. 接入自身事件 + 用户事件（先把身份/禁用/绑定这条最关键的链路打通）。
 3. 组织/团队事件 + `grants`、团队成员对账接口。
 4. `clients/MoAI.Subsystem.Client` 的 SignalR 事件客户端与 `lastEventId` 持久化示例。
 5. E2E 与 BDD/TDD 回填。
+6. 事件通道自描述（token/info 的 `events` 块）、事件目录 `/api/subsys/events/catalog`、REST 过滤（event/eventPrefix）与 `nextCursor`、心跳响应增强（2026-11-15）。
 
 ## 11. 验收（落地时）
 
@@ -353,8 +393,8 @@ public interface IAccessEventPublisher
 
 ## 12. 待定
 
-1. Redis Stream 已作为 V1 补发介质；是否落库 `access_event` 做持久审计待后续评估。
+1. Redis 分代索引（Hash+ZSet，按天分代）已作为 V1 补发介质；是否落库 `access_event` 做持久审计待后续评估。
 2. 系统级 `app` 是否与 `subsystem` 收完全相同的事件面（本文推荐相同；二者资源读权限本就一致）。
 3. 密钥重置是否要立即吊销已签发 token（需 `secret_version`）。
-4. 是否开放按接入订阅过滤（减少无关事件量）。
+4. 是否开放**服务端**按接入订阅过滤（减少无关事件量）；客户端本地过滤（`SubsysEventClientOptions.EventPrefixes/ExcludedEvents`）已可用，但事件仍会占网络与补发窗口。
 5. 事件风暴的消费端合并/限速策略。

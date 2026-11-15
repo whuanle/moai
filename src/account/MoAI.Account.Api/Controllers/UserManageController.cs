@@ -93,6 +93,21 @@ public class UserManageController : ControllerBase
     }
 
     /// <summary>
+    /// 强制下线用户（仅管理员可访问）：递增鉴权版本，使该用户全部已签发 token 立即失效；不改变禁用状态，用户可重新登录.
+    /// </summary>
+    /// <param name="id">用户 id.</param>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    [HttpPost("user/{id}/force_logout")]
+    public async Task<EmptyCommandResponse> ForceLogout(long id, CancellationToken ct)
+    {
+        await EnsureAdminAsync(ct);
+        var cmd = new ForceLogoutUserCommand { UserId = id };
+        _userContextProvider.SetUserContext(cmd);
+        return await _mediator.Send(cmd, ct);
+    }
+
+    /// <summary>
     /// 重置用户密码（仅管理员可访问），新密码需使用 RSA 公钥加密.
     /// </summary>
     /// <param name="id">用户 id.</param>

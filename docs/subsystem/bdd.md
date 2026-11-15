@@ -732,6 +732,17 @@ Feature: 委托 SSO 进入前预检（登录前拦截）
     When root 以指定团队范围创建子系统
     Then 团队范围与授权团队一并落库（不被默认值覆盖为全员可用）
 
+Feature: 子系统门户（用户面入口）
+  @SUB-S82 @auto:unit
+  Scenario: 有权限用户看到并可进入子系统
+    Given 管理员在「应用接入」中创建并启用了子系统，且配置了登录回调地址
+    When 用户所在团队在授权范围内（或按组织授权放通）请求可进入的子系统列表
+    Then 列表返回该子系统的 appid、名称、描述与头像
+    And 前端「子系统」菜单出现，点击进入走委托 SSO（/sso/authorize?client=<appid>）
+    When 子系统已停用、未配置回调（未开放登录）或用户未获授权
+    Then 该子系统不出现在列表中
+    And 一个可进入的子系统都没有时菜单不出现
+
 Feature: 系统级接入事件推送
   @SUB-S76 @auto:e2e
   Scenario: 机器端 Hub 建连
@@ -780,4 +791,60 @@ Feature: 系统级接入事件推送
     Then 返回团队范围/授权团队/组织授权、最近事件与成员清单
     When 不携带游标查询事件
     Then 返回需要全量对账
+
+  @SUB-S83 @auto:e2e
+  Scenario: 事件通道自描述
+    Given 系统级接入换取 token 或查询自省
+    Then 响应携带 events（hubPath/restPath/catalogPath/schemaVersion/retentionDays/maxReplay）
+    And token 与 info 回显同一组路径与版本
+    And 接入方可据此建立连接而无需硬编码 Hub 路径
+
+  @SUB-S84 @auto:e2e
+  Scenario: 事件目录
+    Given 系统级接入持有效凭据
+    When 请求事件目录
+    Then 返回全部事件名、受众（all/target/control）与 data 字段名
+    And 事件名唯一且统一 subsys. 前缀
+    And 控制事件 resync_required 以 control 受众登记
+
+  @SUB-S85 @auto:e2e
+  Scenario: 事件补发过滤与分页游标
+    Given 接入补发窗口内已有多个领域的事件
+    When 按 eventPrefix（如 subsys.user.）或 event 精确名查询
+    Then 只返回匹配事件（过滤先于条数截断）
+    When 命中数超过 limit
+    Then 返回 nextCursor 指向下一页且 hasMore=true
+    When event 与 eventPrefix 同时指定或 limit 越界
+    Then 返回 400
+
+  @SUB-S86 @auto:e2e
+  Scenario: 心跳响应增强
+    Given 接入实例发送心跳
+    When 心跳被服务端接受
+    Then 响应回显 serverTime、在线实例数、判定窗口 60s 与建议间隔 20s
+    And 在线实例数与自省接口口径一致
+
+  @SUB-S87 @auto:unit
+  Scenario: 客户端事件处理
+    Given 接入引用 MoAI.Subsystem.Client
+    When 服务端重复投递同一事件、或配置了本地事件前缀白名单
+    Then 客户端按事件 id 去重且过滤事件仍推进游标
+    And 事件载荷读取支持字符串/数字双形态 ID、数组与 truncated 标记
+    And 事件与心跳后台宿主随应用生命周期启动/停止
+
+  @SUB-S88 @auto:unit
+  Scenario: 客户端资源与错误语义
+    Given 接入引用 MoAI.Subsystem.Client
+    When 查询自省、心跳、事件页/目录、用户/组织/团队对账
+    Then 请求形状与查询参数符合协作面契约
+    And 非 2xx 统一转换为带 error.type/error.code 的 SubsysException
+
+  @SUB-S89 @auto:e2e
+  Scenario: 用户会话吊销事件
+    Given 系统级接入已建立事件连接
+    When 用户被禁用/启用
+    Then 收到 subsys.user.status_changed，data 含 disabled 与递增后的 authVersion
+    When 管理员对用户执行强制下线
+    Then 收到 subsys.user.session_revoked，data 含 userId/userName/authVersion/reason=force_logout
+    And 接入方可按 authVersion 清理本地保存的该用户会话
 ```

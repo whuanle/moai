@@ -6,6 +6,7 @@ import { OAuthLogin } from '@/pages/auth/OAuthLogin'
 import { Register } from '@/pages/auth/Register'
 import { ForgotPassword } from '@/pages/auth/ForgotPassword'
 import { AppPlaza } from '@/pages/apps/AppPlaza'
+import { SubsystemPortal } from '@/pages/subsystems/SubsystemPortal'
 import { DesignSystemPreview } from '@/pages/DesignSystemPreview'
 import { Settings } from '@/pages/settings/Settings'
 import { AccountPage } from '@/pages/account/AccountPage'
@@ -54,6 +55,8 @@ export const router = createBrowserRouter([
       // 概览页已下线，旧地址重定向到应用市场
       { path: 'dashboard', element: <Navigate to="/apps" replace /> },
       { path: 'apps', element: <AppPlaza /> },
+      // 子系统门户：仅展示当前用户获授权可进入的子系统（启用且已开放委托登录），无权限时后端返回空列表
+      { path: 'subsystems', element: <SubsystemPortal /> },
       { path: 'prompts', element: <PromptCenter /> },
       { path: 'prompts/new', element: <PromptEditor /> },
       { path: 'prompts/:promptId/edit', element: <PromptEditor /> },

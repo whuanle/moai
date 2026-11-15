@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.JsonWebTokens;
+using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Extensions;
@@ -69,8 +70,19 @@ public class UserContextProvider : IUserContextProvider
         var email = user.FindFirstValue(ClaimTypes.Email);
         var userTypeRaw = user.FindFirstValue(JwtRegisteredClaimNames.Typ);
 
-        // 自定义控制位 claim（如 mfa_pending，强制两步验证期间签发）回填 Properties，供授权中间件读取
+        // 自定义控制位 claim（mfa_pending/auth_version）回填 Properties，供授权中间件读取
+        var properties = new Dictionary<string, string>();
         var mfaPending = user.FindFirstValue("mfa_pending");
+        if (string.Equals(mfaPending, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            properties["mfa_pending"] = "true";
+        }
+
+        var authVersion = user.FindFirstValue(AppConst.AuthVersionClaim);
+        if (!string.IsNullOrEmpty(authVersion))
+        {
+            properties[AppConst.AuthVersionClaim] = authVersion;
+        }
 
         return new DefaultUserContext
         {
@@ -80,9 +92,7 @@ public class UserContextProvider : IUserContextProvider
             NickName = nickName ?? string.Empty,
             Email = email ?? string.Empty,
             UserType = string.IsNullOrWhiteSpace(userTypeRaw) ? UserType.None : userTypeRaw.JsonToObject<UserType>(),
-            Properties = string.Equals(mfaPending, "true", StringComparison.OrdinalIgnoreCase)
-                ? new Dictionary<string, string> { ["mfa_pending"] = "true" }
-                : new Dictionary<string, string>()
+            Properties = properties
         };
     }
 }

@@ -2,8 +2,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Exceptions;
-using MoAI.Infra.Models;
 using MoAI.Subsystem.Commands;
+using MoAI.Subsystem.Commands.Responses;
 using MoAI.Subsystem.Models;
 using MoAI.Subsystem.Queries;
 using MoAI.Subsystem.Queries.Responses;
@@ -59,14 +59,15 @@ public class SubsystemOpenController : ControllerBase
     }
 
     /// <summary>
-    /// 接入心跳（多实例存活探针）：按 instanceId 记录 Redis 在场，判定窗口内未续期视为离线.
+    /// 接入心跳（多实例存活探针）：按 instanceId 记录 Redis 在场，判定窗口内未续期视为离线；
+    /// 响应回显服务端时间、在线实例数与窗口口径.
     /// </summary>
     /// <param name="req">心跳请求体.</param>
     /// <param name="ct">取消令牌.</param>
-    /// <returns>返回 <see cref="EmptyCommandResponse"/>.</returns>
+    /// <returns>返回 <see cref="SubsystemHeartbeatCommandResponse"/>.</returns>
     [HttpPost("heartbeat")]
     [AllowAnonymous]
-    public async Task<EmptyCommandResponse> Heartbeat([FromBody] SubsystemHeartbeatCommand req, CancellationToken ct)
+    public async Task<SubsystemHeartbeatCommandResponse> Heartbeat([FromBody] SubsystemHeartbeatCommand req, CancellationToken ct)
     {
         var caller = RequireCaller();
         req.SubsystemId = caller.Id;
@@ -100,22 +101,44 @@ public class SubsystemOpenController : ControllerBase
     }
 
     /// <summary>
-    /// 查询当前接入可见的最近事件（REST 补发兜底）.
+    /// 查询事件目录（机器可读的事件名/受众/载荷字段），接入方可据此生成订阅与校验规则.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QuerySubsysEventCatalogCommandResponse"/>.</returns>
+    [HttpGet("events/catalog")]
+    [AllowAnonymous]
+    public Task<QuerySubsysEventCatalogCommandResponse> EventCatalog(CancellationToken ct)
+    {
+        var caller = RequireCaller();
+        return _mediator.Send(new QuerySubsysEventCatalogCommand { SubsystemId = caller.Id }, ct);
+    }
+
+    /// <summary>
+    /// 查询当前接入可见的最近事件（REST 补发兜底）；可按事件名/前缀过滤，响应回显下一页游标.
     /// </summary>
     /// <param name="afterId">上次收到的事件 id，可选.</param>
-    /// <param name="limit">返回条数上限.</param>
+    /// <param name="limit">返回条数上限（1~500）.</param>
+    /// <param name="event">精确事件名过滤，可选（如 subsys.user.created）.</param>
+    /// <param name="eventPrefix">事件名前缀过滤，可选（如 subsys.team.）；与 event 互斥.</param>
     /// <param name="ct">取消令牌.</param>
     /// <returns>返回 <see cref="QuerySubsysEventsCommandResponse"/>.</returns>
     [HttpGet("events")]
     [AllowAnonymous]
-    public Task<QuerySubsysEventsCommandResponse> Events([FromQuery] string? afterId, [FromQuery] int limit = 200, CancellationToken ct = default)
+    public Task<QuerySubsysEventsCommandResponse> Events(
+        [FromQuery] string? afterId,
+        [FromQuery] int limit = 200,
+        [FromQuery] string? @event = null,
+        [FromQuery] string? eventPrefix = null,
+        CancellationToken ct = default)
     {
-        var caller = RequireCaller();
+        // 命令在 Action 内构造（SubsystemId 不接受外部注入）；参数校验由 Handler 统一守卫
         return _mediator.Send(new QuerySubsysEventsCommand
         {
-            SubsystemId = caller.Id,
+            SubsystemId = RequireCaller().Id,
             AfterId = afterId,
             Limit = limit,
+            Event = @event,
+            EventPrefix = eventPrefix,
         }, ct);
     }
 

@@ -101,10 +101,12 @@ public class AccessEventStore
     /// <param name="limit">返回上限.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>补发结果.</returns>
-    public async Task<(IReadOnlyList<AccessEventItem> Items, bool HasMore, bool ResyncRequired, string? OldestId)> ReadAsync(
+    public async Task<AccessEventReadResult> ReadAsync(
         Guid appId,
         string? afterId,
         int limit,
+        string? eventName = null,
+        string? eventPrefix = null,
         CancellationToken cancellationToken = default)
     {
         limit = Math.Clamp(limit, 1, 500);
@@ -113,13 +115,13 @@ public class AccessEventStore
 
         if (string.IsNullOrWhiteSpace(afterId))
         {
-            return (Array.Empty<AccessEventItem>(), false, true, await GetOldestIdAsync(epoch, indexKey));
+            return new AccessEventReadResult([], false, true, await GetOldestIdAsync(epoch, indexKey), null);
         }
 
         if (!TryParseCursor(afterId, out var cursorEpoch, out var cursorSeq) || cursorEpoch != epoch)
         {
             // 跨天/旧格式游标：代已切换，直接全量对账
-            return (Array.Empty<AccessEventItem>(), false, true, await GetOldestIdAsync(epoch, indexKey));
+            return new AccessEventReadResult([], false, true, await GetOldestIdAsync(epoch, indexKey), null);
         }
 
         try
@@ -128,27 +130,29 @@ public class AccessEventStore
             if (!currentSeq.HasValue || (long)currentSeq < cursorSeq)
             {
                 // Redis 键被清理/重建，旧游标失效
-                return (Array.Empty<AccessEventItem>(), false, true, await GetOldestIdAsync(epoch, indexKey));
+                return new AccessEventReadResult([], false, true, await GetOldestIdAsync(epoch, indexKey), null);
             }
 
-            var members = await _database.SortedSetRangeByScoreAsync(
+            // 过滤（受众/回声/事件名）发生在取 limit 之前：先扫描窗口内最多 MaxCursorScan 条，再按匹配结果裁剪，
+            // 避免「前 200 条都被过滤掉 → 明明有匹配事件却返回空页」。
+            var members = await _database.SortedSetRangeByScoreWithScoresAsync(
                 indexKey,
                 cursorSeq + 1,
                 double.PositiveInfinity,
                 Exclude.None,
                 Order.Ascending,
                 0,
-                Math.Min(MaxCursorScan, limit + 1));
+                MaxCursorScan);
 
             if (members.Length == 0)
             {
-                return (Array.Empty<AccessEventItem>(), false, false, await GetOldestIdAsync(epoch, indexKey));
+                return new AccessEventReadResult([], false, false, await GetOldestIdAsync(epoch, indexKey), null);
             }
 
-            var hasMore = members.Length > limit;
-            var selected = hasMore ? members[..(int)limit] : members;
-            var values = await _database.HashGetAsync(latestKey, selected);
-            var items = new List<AccessEventItem>(selected.Length);
+            var fields = members.Select(x => x.Element).ToArray();
+            var values = await _database.HashGetAsync(latestKey, fields);
+            var matched = new List<AccessEventItem>(members.Length);
+            var appIdText = appId.ToString("N");
 
             for (var i = 0; i < values.Length; i++)
             {
@@ -173,27 +177,57 @@ public class AccessEventStore
                 }
 
                 if (record.Audience == (int)AccessEventAudience.TargetApp
-                    && !string.Equals(record.Target, appId.ToString("N"), StringComparison.OrdinalIgnoreCase))
+                    && !string.Equals(record.Target, appIdText, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
                 if (record.Suppress
-                    && string.Equals(record.Item.Source, appId.ToString("N"), StringComparison.OrdinalIgnoreCase))
+                    && string.Equals(record.Item.Source, appIdText, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                items.Add(record.Item);
+                if (!MatchesEventFilter(record.Item.Event, eventName, eventPrefix))
+                {
+                    continue;
+                }
+
+                matched.Add(record.Item);
             }
 
-            return (items, hasMore, false, await GetOldestIdAsync(epoch, indexKey));
+            var moreThanLimit = matched.Count > limit;
+            var selected = moreThanLimit ? matched.GetRange(0, limit) : matched;
+            var reachedScanCap = members.Length >= MaxCursorScan;
+
+            // 达到扫描上限但匹配数未超限：仍有未扫描事件，游标推进到本次扫描末尾，下一次继续取。
+            var hasMore = moreThanLimit || reachedScanCap;
+            var nextCursor = moreThanLimit
+                ? selected[^1].Id
+                : reachedScanCap ? $"{epoch}:{(long)members[^1].Score}" : null;
+
+            return new AccessEventReadResult(selected, hasMore, false, await GetOldestIdAsync(epoch, indexKey), nextCursor);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "读取接入事件补发索引失败，要求全量对账. AppId={AppId}", appId);
-            return (Array.Empty<AccessEventItem>(), false, true, null);
+            return new AccessEventReadResult([], false, true, null, null);
         }
+    }
+
+    private static bool MatchesEventFilter(string eventName, string? filterName, string? filterPrefix)
+    {
+        if (!string.IsNullOrEmpty(filterName) && !string.Equals(eventName, filterName, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(filterPrefix) && !eventName.StartsWith(filterPrefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private async Task<string?> GetOldestIdAsync(string epoch, RedisKey indexKey)
@@ -211,7 +245,8 @@ public class AccessEventStore
 
     private static (RedisKey Latest, RedisKey Index, RedisKey Seq) Keys(string epoch)
     {
-        var prefix = $"{KeyPrefix}:{epoch}";
+        // {epoch} 作为 hash tag，保证 latest/index/seq 在 Redis Cluster 下落在同一 slot，Lua 多键脚本才能执行
+        var prefix = $"{KeyPrefix}:{{{epoch}}}";
         return ($"{prefix}:latest", $"{prefix}:index", $"{prefix}:seq");
     }
 
@@ -247,3 +282,18 @@ public class AccessEventStore
         public bool Suppress { get; set; }
     }
 }
+
+/// <summary>
+/// 事件补发读取结果.
+/// </summary>
+/// <param name="Items">匹配的可见事件（按 id 升序）.</param>
+/// <param name="HasMore">是否还有更多（含「扫描上限截断」与「命中数超 limit」）.</param>
+/// <param name="ResyncRequired">游标失效/跨代/Redis 不可用，要求全量对账.</param>
+/// <param name="OldestId">当前代窗口最早事件 id.</param>
+/// <param name="NextCursor">下一页游标（无更多时为空；命中数超限时为最后一条返回事件 id，否则为扫描边界）.</param>
+public sealed record AccessEventReadResult(
+    IReadOnlyList<AccessEventItem> Items,
+    bool HasMore,
+    bool ResyncRequired,
+    string? OldestId,
+    string? NextCursor);

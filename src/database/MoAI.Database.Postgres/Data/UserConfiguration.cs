@@ -68,6 +68,10 @@ internal partial class UserConfiguration : IEntityTypeConfiguration<UserEntity>
         entity.Property(e => e.IsTotpEnabled)
             .HasComment("是否启用两步验证")
             .HasColumnName("is_totp_enabled");
+        entity.Property(e => e.AuthVersion)
+            .HasDefaultValueSql("'0'::bigint")
+            .HasComment("鉴权版本：禁用/启用、强制下线、改密等安全事件时递增")
+            .HasColumnName("auth_version");
         entity.Property(e => e.NickName)
             .HasMaxLength(50)
             .HasComment("昵称")

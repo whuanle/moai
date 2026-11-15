@@ -1,13 +1,13 @@
 using FluentValidation;
 using MediatR;
-using MoAI.Infra.Models;
+using MoAI.Subsystem.Commands.Responses;
 
 namespace MoAI.Subsystem.Commands;
 
 /// <summary>
 /// 系统级接入心跳（机器面，接入 token 鉴权）：按实例记录 Redis 在场（ZSET），判定窗口内未续期视为离线.
 /// </summary>
-public class SubsystemHeartbeatCommand : IRequest<EmptyCommandResponse>, IModelValidator<SubsystemHeartbeatCommand>
+public class SubsystemHeartbeatCommand : IRequest<SubsystemHeartbeatCommandResponse>, IModelValidator<SubsystemHeartbeatCommand>
 {
     /// <summary>
     /// 接入 id（由服务端从认证上下文回填，不接受请求体注入）.

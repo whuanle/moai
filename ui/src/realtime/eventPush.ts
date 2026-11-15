@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { feedback, themePresets } from '@/design-system'
 import { getMessages } from '@/api/message'
 import { Env } from '@/config/env'
+import i18n from '@/i18n'
 import { useAppStore } from '@/store/app'
 import { useNotificationStore } from '@/store/notification'
 
@@ -15,6 +16,8 @@ export interface EventPushPayload {
 
 /** 事件名（对齐后端 MoAI.Message.Models.EventNames） */
 export const EVENT_MESSAGE_NEW = 'message.new'
+/** 登录态已吊销（禁用/启用/强制下线/改密） */
+export const EVENT_AUTH_REVOKED = 'auth.revoked'
 
 type EventHandler = (payload: EventPushPayload) => void
 
@@ -65,6 +68,16 @@ function handleEvent(payload: EventPushPayload): void {
     } catch {
       // 业务处理器异常不阻断其它处理器
     }
+  }
+
+  // 服务端已吊销登录态：立即清本地 token/连接并回登录页，避免继续用旧 token 打接口
+  if (payload.event === EVENT_AUTH_REVOKED) {
+    useAppStore.getState().clearUserInfo()
+    void stopEventPush()
+    feedback.error(i18n.t('auth.sessionRevoked'))
+    if (navigateRef) navigateRef('/login')
+    else window.location.href = '/login'
+    return
   }
 
   if (payload.event !== EVENT_MESSAGE_NEW) return

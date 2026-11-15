@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
+using MoAI.Infra;
 using MoAI.Infra.Defaults;
 using MoAI.Infra.Exceptions;
 using MoAI.Auth.Commands;
@@ -66,6 +67,16 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             throw new BusinessException("用户已被禁用") { StatusCode = 401 };
         }
 
+        // 鉴权版本不一致 = 会话已被吊销（禁用/启用/强制下线/改密）：refresh token 不能续出新 token
+        var tokenAuthVersion = claims.TryGetValue(AppConst.AuthVersionClaim, out var authVersionClaim)
+                               && long.TryParse(authVersionClaim.Value, out var parsedVersion)
+            ? parsedVersion
+            : 0;
+        if (tokenAuthVersion != user.AuthVersion)
+        {
+            throw new BusinessException("登录状态已失效，请重新登录") { StatusCode = 401 };
+        }
+
         List<string> roles = new List<string>();
 
         var isRoot = await _databaseContext.Settings.AnyAsync(x => x.Key == "root" && x.Value == user.Id.ToString());
@@ -96,7 +107,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
                 : new Dictionary<string, string>()
         };
 
-        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
+        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext, user.AuthVersion);
 
         var result = new RefreshTokenCommandResponse
         {

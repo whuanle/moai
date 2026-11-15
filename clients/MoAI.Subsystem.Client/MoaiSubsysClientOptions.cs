@@ -29,6 +29,12 @@ public class MoaiSubsysClientOptions
     /// <summary>access token 提前刷新窗口（秒）。到期前该窗口内的请求会先刷新 token，默认 300（5 分钟）。机器 token 服务端有效期 2 小时。</summary>
     public int RefreshSkewSeconds { get; set; } = 300;
 
+    /// <summary>事件客户端配置：Hub 路径、去重窗口、重连退避与本地事件过滤。</summary>
+    public SubsysEventClientOptions Events { get; set; } = new();
+
+    /// <summary>心跳配置：实例标识、间隔与上报版本。</summary>
+    public SubsysHeartbeatOptions Heartbeat { get; set; } = new();
+
     /// <summary>是否 appid 直连模式：应用接入（appid 以 moai-sa- 开头）且未配置 Secret 时，直接以 appid 作为 Bearer 凭据，不再走 token 换取。</summary>
     public bool IsAppIdDirect => string.IsNullOrWhiteSpace(Secret);
 }

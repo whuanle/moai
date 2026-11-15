@@ -41,11 +41,40 @@ public static class AccessEventPublisherExtensions
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>Task.</returns>
     public static Task PublishUserStatusChangedAsync(this IAccessEventPublisher publisher, long userId, string userName, bool disabled, CancellationToken cancellationToken = default)
+        => publisher.PublishUserStatusChangedAsync(userId, userName, disabled, 0, cancellationToken);
+
+    /// <summary>发布用户启用/禁用事件（广播），携带新的鉴权版本供接入方比对本地会话.</summary>
+    /// <param name="publisher">发布器.</param>
+    /// <param name="userId">用户 id.</param>
+    /// <param name="userName">用户名.</param>
+    /// <param name="disabled">是否禁用.</param>
+    /// <param name="authVersion">新的鉴权版本.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>Task.</returns>
+    public static Task PublishUserStatusChangedAsync(this IAccessEventPublisher publisher, long userId, string userName, bool disabled, long authVersion, CancellationToken cancellationToken = default)
         => publisher.PublishAsync(AccessEventNames.UserStatusChanged, AccessEventAudience.AllSystemApps, data: new Dictionary<string, object?>
         {
             ["userId"] = userId.ToString(),
             ["userName"] = userName,
             ["disabled"] = disabled,
+            ["authVersion"] = authVersion.ToString(),
+        }, cancellationToken: cancellationToken);
+
+    /// <summary>发布用户会话强制吊销事件（广播）：接入方应清理本地缓存的该用户会话，旧 token 不再可用.</summary>
+    /// <param name="publisher">发布器.</param>
+    /// <param name="userId">用户 id.</param>
+    /// <param name="userName">用户名.</param>
+    /// <param name="authVersion">新的鉴权版本.</param>
+    /// <param name="reason">吊销原因（force_logout/password_changed 等）.</param>
+    /// <param name="cancellationToken">取消令牌.</param>
+    /// <returns>Task.</returns>
+    public static Task PublishUserSessionRevokedAsync(this IAccessEventPublisher publisher, long userId, string userName, long authVersion, string reason, CancellationToken cancellationToken = default)
+        => publisher.PublishAsync(AccessEventNames.UserSessionRevoked, AccessEventAudience.AllSystemApps, data: new Dictionary<string, object?>
+        {
+            ["userId"] = userId.ToString(),
+            ["userName"] = userName,
+            ["authVersion"] = authVersion.ToString(),
+            ["reason"] = reason,
         }, cancellationToken: cancellationToken);
 
     /// <summary>发布用户组织角色变更事件（广播）.</summary>

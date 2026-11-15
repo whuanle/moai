@@ -1,3 +1,5 @@
+using MoAI.Subsystem.Models;
+
 namespace MoAI.Subsystem.Queries.Responses;
 
 /// <summary>
@@ -24,4 +26,9 @@ public class SubsystemTokenCommandResponse
     /// token 类型，固定 Bearer.
     /// </summary>
     public string TokenType { get; init; } = "Bearer";
+
+    /// <summary>
+    /// 事件通道自描述：Hub 路径、信封版本、补发窗口上限.
+    /// </summary>
+    public AccessEventInfo Events { get; init; } = SubsystemEventContract.Default;
 }

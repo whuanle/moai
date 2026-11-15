@@ -36,4 +36,10 @@ public static class AppConst
     /// AI 应用调试埋点事件源名（系统设置 Debug=true 时，AI 侧 UseOpenTelemetry 与可观察性 AddSource 必须配对使用）.
     /// </summary>
     public const string AiTraceSourceName = "AAA";
+
+    /// <summary>
+    /// 用户鉴权版本 token 声明：签发时写入用户当前 <c>user.auth_version</c>，每次请求与分布式安全态比对，
+    /// 不一致即视为会话已吊销（禁用/启用/强制下线/改密后立即失效）.
+    /// </summary>
+    public const string AuthVersionClaim = "auth_version";
 }

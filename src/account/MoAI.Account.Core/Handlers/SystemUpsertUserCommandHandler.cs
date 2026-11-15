@@ -11,6 +11,8 @@ using MoAI.Database;
 using MoAI.Infra.Events;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Helpers;
+using MoAI.Message.Models;
+using MoAI.Message.Services;
 
 namespace MoAI.Account.Handlers;
 
@@ -25,8 +27,10 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
 
     private readonly DatabaseContext _databaseContext;
     private readonly IUserAccountService _userAccountService;
+    private readonly IUserSecurityStateService _securityStateService;
     private readonly IEnumerable<IUserRegistrationHook> _registrationHooks;
     private readonly IAccessEventPublisher _eventPublisher;
+    private readonly IEventPushService _eventPushService;
     private readonly ILogger<SystemUpsertUserCommandHandler> _logger;
 
     /// <summary>
@@ -34,20 +38,26 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
     /// </summary>
     /// <param name="databaseContext">数据库上下文.</param>
     /// <param name="userAccountService">用户账号服务.</param>
+    /// <param name="securityStateService">用户安全态分布式缓存.</param>
     /// <param name="registrationHooks">注册增强钩子（组织默认角色等）.</param>
     /// <param name="eventPublisher">接入事件发布器.</param>
+    /// <param name="eventPushService">站内用户实时事件推送.</param>
     /// <param name="logger">日志.</param>
     public SystemUpsertUserCommandHandler(
         DatabaseContext databaseContext,
         IUserAccountService userAccountService,
+        IUserSecurityStateService securityStateService,
         IEnumerable<IUserRegistrationHook> registrationHooks,
         IAccessEventPublisher eventPublisher,
+        IEventPushService eventPushService,
         ILogger<SystemUpsertUserCommandHandler> logger)
     {
         _databaseContext = databaseContext;
         _userAccountService = userAccountService;
+        _securityStateService = securityStateService;
         _registrationHooks = registrationHooks;
         _eventPublisher = eventPublisher;
+        _eventPushService = eventPushService;
         _logger = logger;
     }
 
@@ -59,6 +69,7 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
         {
             var user = await _databaseContext.Users
                 .FirstOrDefaultAsync(x => x.UserName == request.UserName, cancellationToken);
+            var wasDisable = user?.IsDisable;
 
             // 先校验第三方绑定可行性再落用户：绑定冲突（已绑他人/同渠道换绑）不应留下半成品用户或半更新状态
             await EnsureOauthBindingAvailableAsync(user?.Id, request, cancellationToken);
@@ -68,7 +79,22 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
                 : await CreateAsync(request, cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-            await PublishChangeEventsAsync(request, result, cancellationToken);
+
+            // 提交后再写穿透安全态与发事件：事务内写缓存会在回滚时留下脏安全态
+            var security = await _databaseContext.Users
+                .AsNoTracking()
+                .Where(x => x.Id == result.UserId)
+                .Select(x => new { x.IsDisable, x.IsDeleted, x.AuthVersion })
+                .FirstAsync(cancellationToken);
+            await _securityStateService.SetAsync(result.UserId, security.IsDisable, security.IsDeleted > 0, security.AuthVersion, cancellationToken);
+            await PublishChangeEventsAsync(request, result, security.AuthVersion, cancellationToken);
+
+            // 仅状态实际变化时吊销站内在线会话，避免外部同步每次携带相同 isDisable 造成反复踢下线
+            if (wasDisable.HasValue && request.IsDisable.HasValue && wasDisable.Value != request.IsDisable.Value)
+            {
+                await NotifySessionRevokedAsync(request, result.UserId, security.AuthVersion, cancellationToken);
+            }
+
             return result;
         }
         catch
@@ -117,6 +143,12 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
 
         if (request.IsDisable.HasValue)
         {
+            if (request.IsDisable.Value != user.IsDisable)
+            {
+                // 状态切换吊销既有会话（与站内用户管理同口径）
+                user.AuthVersion++;
+            }
+
             user.IsDisable = request.IsDisable.Value;
         }
 
@@ -306,14 +338,14 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
         return hashedPassword;
     }
 
-    private async Task PublishChangeEventsAsync(SystemUpsertUserCommand request, SystemUpsertUserCommandResponse result, CancellationToken cancellationToken)
+    private async Task PublishChangeEventsAsync(SystemUpsertUserCommand request, SystemUpsertUserCommandResponse result, long authVersion, CancellationToken cancellationToken)
     {
         if (result.Created)
         {
             await _eventPublisher.PublishUserCreatedAsync(result.UserId, request.UserName, cancellationToken);
             if (request.IsDisable == true)
             {
-                await _eventPublisher.PublishUserStatusChangedAsync(result.UserId, request.UserName, true, cancellationToken);
+                await _eventPublisher.PublishUserStatusChangedAsync(result.UserId, request.UserName, true, authVersion, cancellationToken);
             }
         }
         else
@@ -341,13 +373,41 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
 
             if (request.IsDisable.HasValue)
             {
-                await _eventPublisher.PublishUserStatusChangedAsync(result.UserId, request.UserName, request.IsDisable.Value, cancellationToken);
+                await _eventPublisher.PublishUserStatusChangedAsync(result.UserId, request.UserName, request.IsDisable.Value, authVersion, cancellationToken);
             }
         }
 
         if (result.OauthBound && request.OauthProviderId is Guid providerId)
         {
             await _eventPublisher.PublishUserOAuthLinkedAsync(result.UserId, providerId, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// 系统接口禁用/启用用户时同步通知站内在线会话（与站内用户管理同口径）；推送失败只记日志.
+    /// </summary>
+    private async Task NotifySessionRevokedAsync(SystemUpsertUserCommand request, long userId, long authVersion, CancellationToken cancellationToken)
+    {
+        if (!request.IsDisable.HasValue)
+        {
+            return;
+        }
+
+        try
+        {
+            await _eventPushService.PushToUsersAsync(
+                [userId],
+                EventNames.AuthRevoked,
+                new Dictionary<string, string>
+                {
+                    ["reason"] = request.IsDisable.Value ? "disabled" : "enabled",
+                    ["authVersion"] = authVersion.ToString(),
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "系统同步用户状态时会话吊销事件推送失败. UserId={UserId}", userId);
         }
     }
 

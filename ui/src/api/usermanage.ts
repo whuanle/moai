@@ -70,3 +70,9 @@ export async function resetUserTwoFactor(id: number): Promise<void> {
   const client = getApiClient()
   await client.api.usermanage.user.byId(String(id)).reset_2fa.put()
 }
+
+/** 强制下线用户（管理员）：递增鉴权版本，使该用户全部已签发 token 立即失效，不改变禁用状态 */
+export async function forceLogoutUser(id: number): Promise<void> {
+  const client = getApiClient()
+  await client.api.usermanage.user.byId(String(id)).force_logout.post()
+}

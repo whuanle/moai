@@ -243,7 +243,7 @@ public class SubsystemSsoHandlerTests
         Assert.NotEmpty(authorized.Code);
 
         var tokenProvider = new Mock<ISubsystemTokenProvider>();
-        tokenProvider.Setup(x => x.GenerateUserTokens(It.IsAny<AccessAppEntity>(), It.Is<long>(id => id == 10)))
+        tokenProvider.Setup(x => x.GenerateUserTokens(It.IsAny<AccessAppEntity>(), It.Is<long>(id => id == 10), It.IsAny<long>()))
             .Returns(("access-1", "refresh-1", 7200));
         var exchangeHandler = new SubsystemSsoExchangeCommandHandler(db.Context, codeStore, tokenProvider.Object);
         var exchanged = await exchangeHandler.Handle(new SubsystemSsoExchangeCommand
@@ -318,7 +318,7 @@ public class SubsystemSsoHandlerTests
         using var db = TestSqliteContext.Create();
         var subsystem = await SeedSubsystemAsync(db.Context);
         var tokenProvider = new Mock<ISubsystemTokenProvider>();
-        tokenProvider.Setup(x => x.TryValidateUserRefreshToken(It.IsAny<string>(), out It.Ref<Guid>.IsAny, out It.Ref<long>.IsAny)).Returns(false);
+        tokenProvider.Setup(x => x.TryValidateUserRefreshToken(It.IsAny<string>(), out It.Ref<Guid>.IsAny, out It.Ref<long>.IsAny, out It.Ref<long>.IsAny)).Returns(false);
         var handler = new SubsystemSsoRefreshCommandHandler(db.Context, tokenProvider.Object);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoRefreshCommand
@@ -337,10 +337,10 @@ public class SubsystemSsoHandlerTests
         var user = await SeedUserAsync(db.Context, 10);
 
         var tokenProvider = new Mock<ISubsystemTokenProvider>();
-        tokenProvider.Setup(x => x.TryValidateUserRefreshToken(FakeRefreshA, out It.Ref<Guid>.IsAny, out It.Ref<long>.IsAny))
-            .Callback(new TryValidateUserRefreshTokenCallback((string _, out Guid sid, out long uid) => { sid = subsystem.Id; uid = 10; }))
+        tokenProvider.Setup(x => x.TryValidateUserRefreshToken(FakeRefreshA, out It.Ref<Guid>.IsAny, out It.Ref<long>.IsAny, out It.Ref<long>.IsAny))
+            .Callback(new TryValidateUserRefreshTokenCallback((string _, out Guid sid, out long uid, out long version) => { sid = subsystem.Id; uid = 10; version = user.AuthVersion; }))
             .Returns(true);
-        tokenProvider.Setup(x => x.GenerateUserTokens(It.IsAny<AccessAppEntity>(), 10)).Returns(("access-2", "refresh-2", 7200));
+        tokenProvider.Setup(x => x.GenerateUserTokens(It.IsAny<AccessAppEntity>(), 10, It.IsAny<long>())).Returns(("access-2", "refresh-2", 7200));
         var handler = new SubsystemSsoRefreshCommandHandler(db.Context, tokenProvider.Object);
 
         var response = await handler.Handle(new SubsystemSsoRefreshCommand
@@ -353,7 +353,7 @@ public class SubsystemSsoHandlerTests
         Assert.Equal(user.UserName, response.UserName);
     }
 
-    private delegate void TryValidateUserRefreshTokenCallback(string token, out Guid subsystemId, out long userId);
+    private delegate void TryValidateUserRefreshTokenCallback(string token, out Guid subsystemId, out long userId, out long authVersion);
 
     [Fact]
     public async Task Authorize_SpecifiedTeams_TeamMiss_ButOrgGrantHit_Passes()

@@ -1,4 +1,5 @@
 using MoAI.Database.Enums;
+using MoAI.Subsystem.Models;
 
 namespace MoAI.Subsystem.Queries.Responses;
 
@@ -56,4 +57,9 @@ public class QuerySubsysAppInfoCommandResponse
     /// 在线实例数（心跳判定窗口内有心跳的实例个数）.
     /// </summary>
     public int OnlineInstances { get; init; }
+
+    /// <summary>
+    /// 事件通道自描述：Hub 路径、REST 补发路径、信封版本与窗口上限.
+    /// </summary>
+    public AccessEventInfo Events { get; init; } = SubsystemEventContract.Default;
 }

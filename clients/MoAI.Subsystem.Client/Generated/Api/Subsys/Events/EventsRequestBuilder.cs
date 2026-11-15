@@ -3,6 +3,7 @@
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Abstractions;
+using MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.Catalog;
 using MoAI.Subsystem.Client.ApiSdk.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -17,12 +18,17 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class EventsRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>The catalog property</summary>
+        public global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.Catalog.CatalogRequestBuilder Catalog
+        {
+            get => new global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.Catalog.CatalogRequestBuilder(PathParameters, RequestAdapter);
+        }
         /// <summary>
         /// Instantiates a new <see cref="global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.EventsRequestBuilder"/> and sets the default values.
         /// </summary>
         /// <param name="pathParameters">Path parameters for the request</param>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public EventsRequestBuilder(Dictionary<string, object> pathParameters, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/api/subsys/events{?afterId*,limit*}", pathParameters)
+        public EventsRequestBuilder(Dictionary<string, object> pathParameters, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/api/subsys/events{?afterId*,event*,eventPrefix*,limit*}", pathParameters)
         {
         }
         /// <summary>
@@ -30,11 +36,11 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events
         /// </summary>
         /// <param name="rawUrl">The raw URL to use for the request builder.</param>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public EventsRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/api/subsys/events{?afterId*,limit*}", rawUrl)
+        public EventsRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/api/subsys/events{?afterId*,event*,eventPrefix*,limit*}", rawUrl)
         {
         }
         /// <summary>
-        /// 查询当前接入可见的最近事件（REST 补发兜底）.
+        /// 查询当前接入可见的最近事件（REST 补发兜底）；可按事件名/前缀过滤，响应回显下一页游标.
         /// </summary>
         /// <returns>A <see cref="global::MoAI.Subsystem.Client.ApiSdk.Models.QuerySubsysEventsCommandResponse"/></returns>
         /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
@@ -65,7 +71,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events
             return await RequestAdapter.SendAsync<global::MoAI.Subsystem.Client.ApiSdk.Models.QuerySubsysEventsCommandResponse>(requestInfo, global::MoAI.Subsystem.Client.ApiSdk.Models.QuerySubsysEventsCommandResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
-        /// 查询当前接入可见的最近事件（REST 补发兜底）.
+        /// 查询当前接入可见的最近事件（REST 补发兜底）；可按事件名/前缀过滤，响应回显下一页游标.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
@@ -93,7 +99,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events
             return new global::MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events.EventsRequestBuilder(rawUrl, RequestAdapter);
         }
         /// <summary>
-        /// 查询当前接入可见的最近事件（REST 补发兜底）.
+        /// 查询当前接入可见的最近事件（REST 补发兜底）；可按事件名/前缀过滤，响应回显下一页游标.
         /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
         public partial class EventsRequestBuilderGetQueryParameters 
@@ -108,7 +114,27 @@ namespace MoAI.Subsystem.Client.ApiSdk.Api.Subsys.Events
             [QueryParameter("afterId")]
             public string AfterId { get; set; }
 #endif
-            /// <summary>返回条数上限.</summary>
+            /// <summary>精确事件名过滤，可选（如 subsys.user.created）.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+            [QueryParameter("event")]
+            public string? Event { get; set; }
+#nullable restore
+#else
+            [QueryParameter("event")]
+            public string Event { get; set; }
+#endif
+            /// <summary>事件名前缀过滤，可选（如 subsys.team.）；与 event 互斥.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+            [QueryParameter("eventPrefix")]
+            public string? EventPrefix { get; set; }
+#nullable restore
+#else
+            [QueryParameter("eventPrefix")]
+            public string EventPrefix { get; set; }
+#endif
+            /// <summary>返回条数上限（1~500）.</summary>
             [QueryParameter("limit")]
             public int? Limit { get; set; }
         }

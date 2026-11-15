@@ -2004,6 +2004,7 @@ CREATE TABLE IF NOT EXISTS "user" (
     is_disable boolean NOT NULL,
     is_admin boolean NOT NULL,
     is_totp_enabled boolean NOT NULL,
+    auth_version bigint NOT NULL DEFAULT ('0'::bigint),
     password_salt character varying(1000) NOT NULL,
     is_deleted bigint NOT NULL DEFAULT ('0'::bigint),
     create_user_id bigint NOT NULL,
@@ -2023,6 +2024,7 @@ ALTER TABLE "user" ADD COLUMN IF NOT EXISTS totp_secret character varying(200);
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_disable boolean NOT NULL DEFAULT false;
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_totp_enabled boolean NOT NULL DEFAULT false;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS auth_version bigint NOT NULL DEFAULT ('0'::bigint);
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS password_salt character varying(1000) NOT NULL DEFAULT '';
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_deleted bigint NOT NULL DEFAULT ('0'::bigint);
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS create_user_id bigint NOT NULL DEFAULT 0;

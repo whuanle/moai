@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.JsonWebTokens;
+using MoAI.Account.Services;
 using MoAI.App.Models;
 using MoAI.App.Services;
 using MoAI.Database;
@@ -37,14 +38,17 @@ public class ExternalAuthenticationMiddleware : IMiddleware
     };
 
     private readonly IExternalAccessKeyService _externalAccessKeyService;
+    private readonly IUserSecurityStateService _userSecurityStateService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExternalAuthenticationMiddleware"/> class.
     /// </summary>
     /// <param name="externalAccessKeyService">key 直连解析服务.</param>
-    public ExternalAuthenticationMiddleware(IExternalAccessKeyService externalAccessKeyService)
+    /// <param name="userSecurityStateService">站内用户安全态分布式缓存（访问用户 token 吊销校验）.</param>
+    public ExternalAuthenticationMiddleware(IExternalAccessKeyService externalAccessKeyService, IUserSecurityStateService userSecurityStateService)
     {
         _externalAccessKeyService = externalAccessKeyService;
+        _userSecurityStateService = userSecurityStateService;
     }
 
     /// <inheritdoc/>
@@ -113,6 +117,24 @@ public class ExternalAuthenticationMiddleware : IMiddleware
             if (tokenContext == null)
             {
                 await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "authentication_error", "invalid_token", InvalidTokenMessage);
+                return;
+            }
+        }
+
+        // 访问用户 token（内部应用访问点身份穿透）承载真实站内用户：每请求比对共享安全态，
+        // 禁用/删除或鉴权版本落后（强制下线/改密）立即拒绝，不等 token 自然过期.
+        if (tokenContext.SubjectType == UserType.Normal && tokenContext.UserId > 0)
+        {
+            var securityState = await _userSecurityStateService.GetAsync(tokenContext.UserId, context.RequestAborted);
+            if (securityState.IsDeleted || securityState.IsDisable)
+            {
+                await WriteErrorAsync(context, StatusCodes.Status403Forbidden, "permission_error", "account_disabled", "The user account is disabled.");
+                return;
+            }
+
+            if (securityState.AuthVersion != tokenContext.AuthVersion)
+            {
+                await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "authentication_error", "session_revoked", "The session has been revoked; sign in again to obtain a new access token.");
                 return;
             }
         }

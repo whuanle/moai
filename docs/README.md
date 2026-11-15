@@ -36,7 +36,7 @@
 | [user-management](./user-management/) | UM | 管理员用户治理（列表/授权/禁用/重置密码）；[📘 HTML 操作指南](./user-management/manual.html)（含截图） |
 | [settings](./settings/) | SET | 系统设置项（SettingDefinitions 注册表） |
 | [oauthconnect](./oauthconnect/) | OC | 第三方登录连接器管理 |
-| [subsystem](./subsystem/) | SUB | 系统级接入合并模型（**子系统与应用接入同表同列表同接口** `/api/subsys/**`：appid+密钥/统一 token/多实例心跳在线（按实例 ZSET+在线实例数）/团队组织授权/委托 SSO；子系统=自填 appid+回调登录+在线监测，应用接入=moai-sa- 自动 appid 全量资源；资源范围分档已下线）；**事件推送**见 [access-events.md](./subsystem/access-events.md)（`/hub/subsys` 机器端 SignalR + 按 appId 分组 + Redis Stream 补发；事件带主体/关联 ID 与轻量上下文，超限退化计数，接收方回查） |
+| [subsystem](./subsystem/) | SUB | 系统级接入合并模型（**子系统与应用接入同表同列表同接口** `/api/subsys/**`：appid+密钥/统一 token/多实例心跳在线（按实例 ZSET+在线实例数）/团队组织授权/委托 SSO；子系统=自填 appid+回调登录+在线监测，应用接入=moai-sa- 自动 appid 全量资源；资源范围分档已下线）；**事件推送**见 [access-events.md](./subsystem/access-events.md)（`/hub/subsys` 机器端 SignalR + 按 appId 分组 + Redis 分代事件索引补发（同实体最新）；事件带主体/关联 ID 与轻量上下文，超限退化计数，接收方回查） |
 | [org](./org/) | ORG | 组织（**通讯录层级·授权维度，不隔离资源**；全局层级组织树 + path 物化路径前缀匹配 + 用户组织分配，仅管理员；非 OA/ERP 轻量定位）；统一组织授权已落地（org_grant 跨资源表 + IOrgGrantService + Redis 三 key 缓存，self/up/down 定向放通，管理面 /org/grant/*；子系统已接入，应用发布等消费方后续接入） |
 | [classify](./classify/) | CLS | 分类管理（plugin/app/kb 三类，仅管理员） |
 | [aiplugin-static](./aiplugin-static/) | STP | 静态插件（列表合并去重、运行抽屉、编辑写回） |
@@ -102,7 +102,7 @@ node local-dev/prompt-e2e.mjs                # PT 40 场景
 node local-dev/skill-userconfig-e2e.mjs      # SKL 41 用例
 node local-dev/team-agent-e2e.mjs            # AG 54 场景
 node local-dev/message-e2e.mjs               # MSG 9 场景（MQ 场景管理口不可达时 SKIP；发送链路见 tests/MoAI.Message.Tests）
-node local-dev/subsys-event-e2e.mjs           # EVT 28（系统级接入事件推送；需后端运行中）
+node local-dev/subsys-event-e2e.mjs           # EVT 30（系统级接入事件推送；需后端运行中）
 # 前端
 cd ui && npm run typecheck && npm run lint && npm run test
 ```

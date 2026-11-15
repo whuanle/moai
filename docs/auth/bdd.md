@@ -89,6 +89,13 @@ Feature: 令牌刷新
     When 以其请求续签
     Then 返回未授权（401）提示用户已被禁用
 
+  @AUTH-S54 @auto:e2e
+  Scenario: 鉴权版本落后拒绝续签
+    Given 用户被禁用、启用或强制下线导致 auth_version 递增
+    When 以其递增前签发的 refresh token 请求续签
+    Then 返回未授权（401）提示登录状态已失效
+    And 旧 access token 在鉴权中间件同样被拒绝（401）
+
 Feature: 第三方登录（OAuth）
   @AUTH-S13 @auto:e2e
   Scenario: 获取第三方登录方式列表

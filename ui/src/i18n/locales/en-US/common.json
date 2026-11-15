@@ -37,6 +37,7 @@
     "platform": "Platform",
     "chat": "AI Assistant",
     "apps": "App Plaza",
+    "subsystems": "Subsystems",
     "wiki": "Knowledge Base",
     "team": "Teams",
     "plugin": "Plugins",
@@ -72,6 +73,7 @@
     "register": "Register",
     "oauthLogin": "Sign in with",
     "loginSuccess": "Signed in successfully",
+    "sessionRevoked": "Your session has expired. Please sign in again.",
     "oauthCallback": "Signing in, please wait...",
     "oauthBindTitle": "Link account",
     "oauthBindDesc": "This {{name}} account is not linked to a local account yet. Register and sign in now?",
@@ -780,7 +782,10 @@
     "colUpdate": "Updated",
     "resetTwoFactor": "Reset 2FA",
     "resetTwoFactorConfirm": "Reset two-factor authentication for {{name}}? They must bind again at next sign-in",
-    "resetTwoFactorSuccess": "Two-factor authentication reset"
+    "resetTwoFactorSuccess": "Two-factor authentication reset",
+    "forceLogout": "Force sign-out",
+    "forceLogoutConfirm": "Force sign-out {{name}}? All active sessions will be invalidated immediately; the user can sign in again.",
+    "forceLogoutSuccess": "User signed out from all sessions"
   },
   "plugins": {
     "tabCustom": "Custom Plugins",
@@ -3519,6 +3524,11 @@
     "redirecting": "Authorized, redirecting to {{name}}…",
     "errorTitle": "Delegated sign-in failed",
     "backToApps": "Back to Apps"
+  },
+  "subsystemPortal": {
+    "empty": "No subsystems available",
+    "emptyHint": "Once an administrator enables a subsystem in Integrations and grants it to your team or organization, it will appear here.",
+    "enter": "Enter"
   },
   "memoryMgmt": {
     "tabApps": "App Memories",

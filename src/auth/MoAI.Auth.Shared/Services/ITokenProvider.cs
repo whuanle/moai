@@ -12,9 +12,10 @@ public interface ITokenProvider
     /// <summary>
     /// 生成 JWT Access Token 和 Refresh Token.
     /// </summary>
-    /// <param name="userContext"></param>
+    /// <param name="userContext">用户上下文.</param>
+    /// <param name="authVersion">用户当前鉴权版本（写入 token，供每请求吊销比对）.</param>
     /// <returns>token.</returns>
-    (string AccessToken, string RefreshToken) GenerateTokens(UserContext userContext);
+    (string AccessToken, string RefreshToken) GenerateTokens(UserContext userContext, long authVersion = 0);
 
     /// <summary>
     /// 从 token 解析用户信息.

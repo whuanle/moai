@@ -15,6 +15,7 @@ public class UserAccountService : IUserAccountService
     private readonly DatabaseContext _databaseContext;
     private readonly IRedisDatabase _redisDatabase;
     private readonly IStorageService _storageService;
+    private readonly IUserSecurityStateService _securityStateService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UserAccountService"/> class.
@@ -22,20 +23,27 @@ public class UserAccountService : IUserAccountService
     /// <param name="databaseContext"></param>
     /// <param name="redisDatabase"></param>
     /// <param name="storageService"></param>
-    public UserAccountService(DatabaseContext databaseContext, IRedisDatabase redisDatabase, IStorageService storageService)
+    /// <param name="securityStateService">用户安全态分布式缓存.</param>
+    public UserAccountService(DatabaseContext databaseContext, IRedisDatabase redisDatabase, IStorageService storageService, IUserSecurityStateService securityStateService)
     {
         _databaseContext = databaseContext;
         _redisDatabase = redisDatabase;
         _storageService = storageService;
+        _securityStateService = securityStateService;
     }
 
     /// <inheritdoc/>
     public async Task<UserStateInfo> GetUserStateAsync(long userId, CancellationToken cancellationToken)
     {
         var key = $"userstate:{userId}";
+        var securityState = await _securityStateService.GetAsync(userId, cancellationToken);
         var userState = await _redisDatabase.GetAsync<UserStateInfo>(key);
         if (userState != null && !string.IsNullOrWhiteSpace(userState.UserName))
         {
+            // 安全字段不信任资料缓存：每次以共享安全态覆盖，避免并发回填把禁用/鉴权版本写成旧值
+            userState.IsDisable = securityState.IsDisable;
+            userState.IsDeleted = securityState.IsDeleted;
+            userState.AuthVersion = securityState.AuthVersion;
             return userState;
         }
 
@@ -48,7 +56,8 @@ public class UserAccountService : IUserAccountService
             {
                 IsDeleted = true,
                 IsDisable = true,
-                UserId = userId
+                UserId = userId,
+                AuthVersion = securityState.AuthVersion
             };
         }
         else
@@ -66,12 +75,13 @@ public class UserAccountService : IUserAccountService
                 Email = user.Email,
                 NickName = user.NickName,
                 Phone = user.Phone,
-                IsDisable = user.IsDisable,
+                IsDisable = securityState.IsDisable,
                 IsAdmin = user.IsAdmin || isRoot,
                 IsRoot = isRoot,
-                IsDeleted = user.IsDeleted > 0,
+                IsDeleted = securityState.IsDeleted,
                 Avatar = avatar,
-                TwoFactorEnabled = user.IsTotpEnabled
+                TwoFactorEnabled = user.IsTotpEnabled,
+                AuthVersion = securityState.AuthVersion
             };
         }
 

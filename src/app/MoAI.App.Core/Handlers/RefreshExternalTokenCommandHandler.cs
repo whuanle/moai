@@ -5,6 +5,7 @@ using MoAI.App.Models;
 using MoAI.App.Queries.Responses;
 using MoAI.App.Services;
 using MoAI.Database;
+using MoAI.Infra;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 
@@ -75,6 +76,12 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
         if (user.IsDisable)
         {
             throw new BusinessException("用户已被禁用，token 已吊销.") { StatusCode = 403 };
+        }
+
+        // 强制下线/禁用/启用后旧 refresh token 的鉴权版本落后，不允许再续出访问用户 token
+        if (tokenContext.AuthVersion != user.AuthVersion)
+        {
+            throw new BusinessException("登录状态已失效，token 已吊销.") { StatusCode = 401 };
         }
 
         var app = await _databaseContext.Apps

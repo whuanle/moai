@@ -1,6 +1,7 @@
 // 系统级接入事件推送 E2E（@SUB-S76 起）
 // 覆盖：/hub/subsys 机器 token 建连 / onReady / 用户事件 / 组织事件 / 团队事件 /
-//       grants 对账 / events REST 补发 / 停用最终事件 / 停用后 REST 拒绝。
+//       grants 对账 / events REST 补发与事件名·前缀过滤·nextCursor / 事件目录 / 通道自描述 / 心跳增强 /
+//       停用最终事件 / 停用后 REST 拒绝。
 // 前置：后端运行中（默认 http://127.0.0.1:5210，可用 SUBSYS_BASE 覆盖）。
 import crypto from 'node:crypto'
 import { createRequire } from 'node:module'
@@ -75,6 +76,28 @@ async function main() {
   const tokenRes = await api('POST', '/api/subsys/token', { body: { appId: appKey, secret } })
   check('EVT-02 换取机器 token', tokenRes.status === 200 && !!tokenRes.json?.accessToken, `${tokenRes.status} ${tokenRes.text.slice(0, 120)}`)
   const token = tokenRes.json?.accessToken
+  check('EVT-31 token 回显事件通道自描述', tokenRes.json?.events?.hubPath === '/hub/subsys'
+    && tokenRes.json?.events?.restPath === '/api/subsys/events'
+    && tokenRes.json?.events?.schemaVersion === 1
+    && tokenRes.json?.events?.retentionDays === 2, JSON.stringify(tokenRes.json?.events))
+
+  const catalog = await api('GET', '/api/subsys/events/catalog', { token })
+  check('EVT-32 事件目录（事件名/受众/载荷字段）', catalog.status === 200
+    && (catalog.json?.items ?? []).length >= 20
+    && (catalog.json?.items ?? []).every((x) => x.event.startsWith('subsys.') && Array.isArray(x.dataFields))
+    && (catalog.json?.items ?? []).some((x) => x.event === 'subsys.resync_required' && x.audience === 'control'),
+  `${catalog.status} ${catalog.text.slice(0, 160)}`)
+
+  const heartbeat = await api('POST', '/api/subsys/heartbeat', { token, body: { instanceId: `evt-${TS}`, version: 'e2e' } })
+  check('EVT-33 心跳回显在线实例数与窗口口径', heartbeat.status === 200
+    && heartbeat.json?.onlineInstances >= 1
+    && heartbeat.json?.windowSeconds === 60
+    && heartbeat.json?.recommendedIntervalSeconds === 20, `${heartbeat.status} ${heartbeat.text.slice(0, 160)}`)
+
+  const info = await api('GET', '/api/subsys/info', { token })
+  check('EVT-34 自省回显事件通道与在线实例数', info.status === 200
+    && info.json?.events?.catalogPath === '/api/subsys/events/catalog'
+    && info.json?.onlineInstances >= 1, `${info.status} ${info.text.slice(0, 160)}`)
 
   const events = []
   let ready = null
@@ -137,6 +160,46 @@ async function main() {
   const disable = await api('PUT', `/api/subsys/system/users/${userId}/disable`, { token, body: { isDisable: true } })
   const statusEvent = await waitEvent('subsys.user.status_changed')
   check('EVT-07 收到 user.status_changed(disabled)', disable.status === 200 && statusEvent?.data?.disabled === true, JSON.stringify(statusEvent))
+  check('EVT-30 事件 id 为分代序号格式', /^\d{8}:\d+$/.test(statusEvent?.id ?? ''), statusEvent?.id)
+  check('EVT-39 status_changed 携带 authVersion', Number(statusEvent?.data?.authVersion) > 0, JSON.stringify(statusEvent))
+
+  // 强制下线：鉴权版本递增并广播 session_revoked，接入方可据此清理本地会话
+  const forceLogout = await api('POST', `/api/usermanage/user/${userId}/force_logout`, { token: root })
+  const revokedEvent = await waitEvent('subsys.user.session_revoked')
+  check('EVT-40 收到 user.session_revoked（authVersion 递增）',
+    forceLogout.status === 200
+      && revokedEvent?.data?.userId === String(userId)
+      && revokedEvent?.data?.reason === 'force_logout'
+      && Number(revokedEvent?.data?.authVersion) > Number(statusEvent?.data?.authVersion),
+    `${forceLogout.status} ${JSON.stringify(revokedEvent)}`)
+
+  // 同一用户禁用→启用→禁用：补发只保留最新一条 status_changed
+  await api('PUT', `/api/subsys/system/users/${userId}/disable`, { token, body: { isDisable: false } })
+  await api('PUT', `/api/subsys/system/users/${userId}/disable`, { token, body: { isDisable: true } })
+  const statusPage = await api('GET', `/api/subsys/events?limit=100&afterId=${encodeURIComponent(createdEvent.id)}`, { token })
+  const statusItems = (statusPage.json?.items ?? []).filter((x) => x.event === 'subsys.user.status_changed' && x.data?.userId === String(userId))
+  check('EVT-29 同实体事件压缩为最新一条', statusPage.status === 200 && statusItems.length === 1 && statusItems[0].data?.disabled === true, JSON.stringify(statusItems))
+
+  const filtered = await api('GET', `/api/subsys/events?limit=100&eventPrefix=subsys.user.&afterId=${encodeURIComponent(createdEvent.id)}`, { token })
+  const filteredItems = filtered.json?.items ?? []
+  check('EVT-35 事件按前缀过滤（过滤先于截断）', filtered.status === 200
+    && filteredItems.length > 0
+    && filteredItems.every((x) => x.event.startsWith('subsys.user.')), `${filtered.status} ${filtered.text.slice(0, 160)}`)
+
+  const exact = await api('GET', `/api/subsys/events?limit=100&event=${encodeURIComponent('subsys.user.updated')}&afterId=${encodeURIComponent(createdEvent.id)}`, { token })
+  check('EVT-36 事件按名称精确过滤', exact.status === 200
+    && (exact.json?.items ?? []).length > 0
+    && (exact.json?.items ?? []).every((x) => x.event === 'subsys.user.updated'), `${exact.status} ${exact.text.slice(0, 160)}`)
+
+  const badLimit = await api('GET', `/api/subsys/events?limit=0&afterId=${encodeURIComponent(createdEvent.id)}`, { token })
+  check('EVT-37 事件补发 limit 越界 400', badLimit.status === 400, `${badLimit.status}`)
+
+  const replay = await api('GET', `/api/subsys/events?limit=1&afterId=${encodeURIComponent(createdEvent.id)}`, { token })
+  check('EVT-38 事件补发回显下一页游标', replay.status === 200
+    && (replay.json?.items ?? []).length === 1
+    && replay.json?.hasMore === true
+    && replay.json?.nextCursor === replay.json?.items?.[0]?.id,
+  `${replay.status} ${replay.text.slice(0, 160)}`)
 
   const role = await api('POST', '/api/subsys/system/org/roles', { token, body: { name: `事件组织-${TS}` } })
   const roleId = Number(role.json?.orgRoleId)

@@ -190,6 +190,27 @@ export async function setSubsystemOrgGrants(subsystemId: string, grants: Array<{
   })
 }
 
+/** 当前用户可进入的子系统（用户面门户项，与生成客户端 QueryMySubsystemsCommandResponseItem 对齐） */
+export interface AvailableSubsystemItem {
+  subsystemId?: string | null
+  /** 子系统标识（appid），前端据此拼 /sso/authorize?client= 进入 */
+  key?: string | null
+  name?: string | null
+  description?: string | null
+  /** 子系统头像 ObjectKey，空串=未设置（拼装 /static 地址展示） */
+  avatarPath?: string | null
+}
+
+/**
+ * 查询当前用户可进入的子系统（登录用户）：仅返回启用中、已开放委托登录，
+ * 且经「团队范围 ∪ 组织授权」放通的子系统，与 SSO 预检/签发同口径。
+ */
+export async function getAvailableSubsystems(): Promise<AvailableSubsystemItem[]> {
+  const client = getApiClient()
+  const res = await client.api.subsystem.available.get()
+  return (res?.items ?? []) as AvailableSubsystemItem[]
+}
+
 /** 委托 SSO 进入前预检结果（reason 原因码：ok/login_required/unavailable/callback_mismatch/no_grants/not_authorized） */
 export interface SubsystemSsoAccessResult {
   /** 当前访问者是否可继续进入子系统（匿名时仅代表系统级可用性） */

@@ -12,8 +12,15 @@ MoAI.Subsystem.Client/
 ├─ SubsysAuthRetryHandler.cs               ← 401 作废缓存重试一次 + 错误转换（业务管道用）
 ├─ SubsysClientServiceCollectionExtensions.cs ← AddMoaiSubsysClient(...) DI 注册
 ├─ SubsysClientFactory.cs                  ← 静态工厂（用户委托 token 等固定凭据场景）
-├─ Events/                                 ← SignalR 事件客户端（/hub/subsys、lastEventId、断线重连）
-├─ Resources/                              ← 授权快照/事件补发/团队成员补充接口
+├─ Events/                                 ← SignalR 事件客户端（/hub/subsys、lastEventId、去重、本地过滤、断线重连）
+│  ├─ SubsysEventNames.cs                  ← 事件名常量（与服务端 append-only 目录一致）
+│  ├─ SubsysEventItemExtensions.cs         ← data 读取助手（字符串/数字双形态 ID、数组、truncated）
+│  └─ ISubsysEventDeduplicator.cs          ← 事件 id 去重窗口（默认 LRU 2048）
+├─ SubsysEventClientOptions.cs             ← 事件客户端配置（Hub 路径/去重/退避/本地过滤）
+├─ SubsysEventWorker.cs                    ← 事件后台宿主（随应用 Start/Stop）
+├─ SubsysHeartbeatOptions.cs               ← 心跳配置（实例标识/间隔/版本）
+├─ SubsysHeartbeatWorker.cs                ← 心跳后台宿主（自动上报在线）
+├─ Resources/                              ← 授权快照/事件补发与目录/心跳/用户·组织·团队对账
 └─ SubsysException.cs                      ← 失败异常（状态码 + error.type/error.code）
 ```
 
@@ -43,9 +50,21 @@ builder.Services.AddMoaiSubsysClient(o =>
   "MoaiSubsys": {
     "BaseUrl": "https://moai.example.com",
     "AppId": "my-subsystem",
-    "Secret": "******"
+    "Secret": "******",
+    "Events": {
+      "DedupeCapacity": 2048,
+      "EventPrefixes": ["subsys.user.", "subsys.team."]
+    }
   }
 }
+```
+
+需要事件长连接随应用自动启停时再加一行：
+
+```csharp
+builder.Services.AddMoaiSubsysClient(builder.Configuration)
+    .AddMoaiSubsysEventWorker()      // 事件长连接随应用启停
+    .AddMoaiSubsysHeartbeatWorker(); // 心跳（多实例在线）随应用启停
 ```
 
 > **BaseUrl 填主机根地址**，不要带 `/api` 路径——协作面端点以 `/api/subsys/**` 开头，由客户端自动拼接（注册时强校验，带路径会在启动时报错）。
@@ -131,11 +150,13 @@ await userClient.Api.Subsys.System.Users.List.GetAsync();
 
 ## 6. 实时事件订阅（推荐）
 
-`AddMoaiSubsysClient` 同时注册 `ISubsysEventClient` 与 `SubsysResourceClient`。事件客户端主动外连 MoAI
+`AddMoaiSubsysClient` 同时注册 `ISubsysEventClient`、`ISubsysEventDeduplicator` 与 `SubsysResourceClient`。事件客户端主动外连 MoAI
 `/hub/subsys`，按 appId 分组接收，断线自动重连并按 `lastEventId` 补发；游标失效时触发 `ResyncRequired`。
 
+### 6.1 订阅与处理
+
 ```csharp
-public sealed class MyEventHandler(ISubsysEventClient events, SubsysResourceClient resources, SubsysClient client)
+public sealed class MyEventHandler(ISubsysEventClient events, SubsysResourceClient resources)
 {
     public async Task StartAsync(CancellationToken ct)
     {
@@ -144,42 +165,97 @@ public sealed class MyEventHandler(ISubsysEventClient events, SubsysResourceClie
             // 事件只带主体/关联 ID 与轻量上下文，详情按需回查
             switch (e.Event)
             {
-                case "subsys.user.status_changed":
-                    // e.Data 内含 userId/disabled，可直接更新本地状态
+                case SubsysEventNames.UserStatusChanged:
+                    var userId = e.GetDataInt64("userId");
+                    var disabled = e.GetDataBool("disabled");
                     break;
-                case "subsys.team.member_added":
-                    var teamId = e.Data?.GetProperty("teamId").GetString();
-                    var members = await resources.GetTeamUsersAsync(long.Parse(teamId!));
+                case SubsysEventNames.TeamMemberAdded:
+                    var teamId = e.GetDataInt64("teamId");
+                    var userIds = e.GetDataStrings("userIds"); // 超 50 个时为空，改看 e.IsTruncated()
+                    var members = await resources.GetTeamUsersAsync(teamId!.Value);
                     break;
             }
         };
         events.ResyncRequired += async reason =>
         {
             // 首次连接/游标过期/补发超限：按业务做全量对账
+            var info = await resources.GetInfoAsync();
             var grants = await resources.GetGrantsAsync();
-            var users = await client.Api.Subsys.System.Users.List.GetAsync();
-            // ...
+            // 用户/组织/团队分页对账见下方补充资源接口
         };
+        events.Disconnected += async ex => { /* 观测/告警；自动重连已内置 */ };
 
         await events.StartAsync(ct);
+        await events.WaitForConnectedAsync(TimeSpan.FromSeconds(10), ct);
     }
 }
 ```
 
-游标默认保存在进程内；需要跨重启续传时注册自己的 `ISubsysEventCursorStore`（Redis/数据库）：
+- 载荷读取统一走 `SubsysEventItemExtensions`：ID 兼容字符串/数字形态，数组/计数/`truncated` 无需手写 `JsonElement`。
+- **去重内建**：按事件 id 的 LRU 窗口（默认 2048，`Events.DedupeCapacity`，0=关闭）。只在事件成功处理后登记，处理失败不推进游标也不登记，下次补发会重试。
+- **过滤内建**：`Events.EventPrefixes` / `ExcludedEvents` / `ExcludedEventPrefixes` 本地筛选回调；被过滤事件仍推进游标，避免重连反复补发。
+- **进程内游标**默认实现；跨重启续传可替换 `ISubsysEventCursorStore`（Redis/数据库），并覆写 `GetLastEventIdAsync/SaveLastEventIdAsync/ClearLastEventIdAsync` 避免同步阻塞：
 
 ```csharp
 services.AddSingleton<ISubsysEventCursorStore, MyRedisCursorStore>();
 ```
 
+### 6.2 事件目录与 REST 补发
+
+服务端事件契约可自描述，客户端无需硬编码：
+
+```csharp
+var info = await resources.GetInfoAsync();
+Console.WriteLine($"{info.Events.HubPath} / schema v{info.Events.SchemaVersion} / 保留 {info.Events.RetentionDays} 天");
+
+var catalog = await resources.GetEventCatalogAsync();
+foreach (var descriptor in catalog.Items)
+{
+    Console.WriteLine($"{descriptor.Event} [{descriptor.Audience}] {string.Join(",", descriptor.DataFields)}");
+}
+
+// 按领域/事件名过滤补发（过滤发生在服务端取 limit 之前）
+var page = await resources.QueryEventsAsync(afterId: cursor, limit: 200, eventName: null, eventPrefix: SubsysEventNames.TeamPrefix);
+foreach (var e in page.Items) { /* ... */ }
+cursor = page.NextCursor ?? cursor;
+
+// 或自动翻页（resyncRequired / 无更多时结束）
+await foreach (var e in resources.ReadEventsAsync(afterId: cursor, eventPrefix: SubsysEventNames.UserPrefix))
+{
+    // ...
+}
+```
+
+- 响应 `nextCursor`：有更多时与末条 id 一致；达到服务端单次扫描上限但命中不足时也可能回填扫描边界，按它翻页即可。
+- `nextCursor` 为空表示没有更多；`resyncRequired=true` 表示游标失效，应走全量对账而不是继续翻页。
+- 事件目录只列字段名（值仍需按需回查）；客户端仍应忽略未知事件/未知字段（append-only 演进）。
+
 补充资源接口：
 
-- `SubsysResourceClient.GetGrantsAsync()` → `/api/subsys/grants`（团队范围/授权团队/组织授权）
-- `SubsysResourceClient.GetEventsAsync(afterId, limit)` → `/api/subsys/events`（REST 补发兜底）
-- `SubsysResourceClient.GetTeamUsersAsync(teamId)` → `/api/subsys/system/teams/{teamId}/users`（成员对账）
+- `GetGrantsAsync()` → `/api/subsys/grants`（团队范围/授权团队/组织授权）
+- `GetInfoAsync()` → `/api/subsys/info`（身份/状态/在线实例数/事件通道自描述）
+- `GetEventsAsync(afterId, limit)` / `QueryEventsAsync(...)` / `ReadEventsAsync(...)` → `/api/subsys/events`（REST 补发兜底 + 过滤 + 翻页）
+- `GetEventCatalogAsync()` → `/api/subsys/events/catalog`（事件目录）
+- `HeartbeatAsync(instanceId, version)` → `/api/subsys/heartbeat`（回显在线实例数/窗口/建议间隔）
+- `GetUserAsync(userId)` / `ListUsersAsync(pageNo, pageSize, searchText)` → `/api/subsys/system/users/*`
+- `ListOrgRolesAsync(search)` / `GetUserOrgRolesAsync(userId)` / `GetOrgRoleUsersAsync(roleId, search)` → `/api/subsys/system/org/*`
+- `ListTeamsAsync()` / `GetTeamUsersAsync(teamId)` → `/api/subsys/system/teams/*`
+- 全部资源接口非 2xx 统一抛 `SubsysException`（与 Kiota 管道同口径）。
 
-> 子系统多实例建议：每个实例都可连接事件；若副作用必须只执行一次，用事件 `Id` 做共享去重，或只让 leader 实例连接。
-> 事件处理失败不会推进游标，下次重连会重新补发。
+> 子系统多实例建议：每个实例都可连接事件；若副作用必须只执行一次，用事件 `Id` 做共享去重（替换 `ISubsysEventDeduplicator`），或只让 leader 实例连接。
+> 事件处理失败不会推进游标，下次重连会重新补发；`ResyncRequired` 后游标与去重窗口都会清空。
+
+### 6.3 心跳（多实例在线）
+
+不注册 `AddMoaiSubsysHeartbeatWorker()` 时也可手工调用：
+
+```csharp
+var beat = await resources.HeartbeatAsync(instanceId: "node-a", version: "1.2.3");
+// beat.OnlineInstances：本次心跳计入后的在线实例数
+// beat.RecommendedIntervalSeconds：建议间隔（默认 20s，服务端窗口 60s）
+```
+
+自动宿主会：首次启动立即上报 → 按服务端建议/配置间隔续期 → 401/403/网络异常只记日志并继续下一轮；实例标识未配置时按「机器名-进程 id-随机后缀」自动生成并保持稳定。
 
 ## 接口变更后：重新生成
 
@@ -201,6 +277,16 @@ node clients/sync-api.mjs http://127.0.0.1:5210/openapi/subsys.json
 | `Secret` | moai-sa- 可空 | - | 接入密钥；moai-sa- 前缀 appid 留空走直连 |
 | `TimeoutSeconds` | - | 100 | HTTP 请求超时 |
 | `RefreshSkewSeconds` | - | 300 | 提前刷新窗口（秒） |
+| `Events.HubPath` | - | `/hub/subsys` | 事件 Hub 路径（可由 `info.events.hubPath` 覆盖） |
+| `Events.DedupeCapacity` | - | 2048 | 事件 id 去重窗口；0=关闭 |
+| `Events.ReconnectInitialDelaySeconds` | - | 2 | 重连初始退避（秒） |
+| `Events.ReconnectMaxDelaySeconds` | - | 30 | 重连最大退避（秒） |
+| `Events.EventPrefixes` | - | 空（全部） | 本地事件前缀白名单 |
+| `Events.ExcludedEvents` | - | 空 | 本地排除的事件名 |
+| `Events.ExcludedEventPrefixes` | - | 空 | 本地排除的事件前缀 |
+| `Heartbeat.InstanceId` | - | 自动生成 | 实例标识（1~64 字符，进程内稳定） |
+| `Heartbeat.IntervalSeconds` | - | 0 | 心跳间隔；0=跟随服务端建议（20s） |
+| `Heartbeat.Version` | - | - | 上报版本号 |
 
 ## 本地测试
 
@@ -208,4 +294,4 @@ node clients/sync-api.mjs http://127.0.0.1:5210/openapi/subsys.json
 dotnet test tests/MoAI.Subsystem.Client.Tests
 ```
 
-12 个用例覆盖：token 换取/主动刷新/轮换失败回退、appid 直连、401 重试、403 错误语义、heartbeat 请求形状、DI 装配、授权快照/事件补发/团队成员补充接口与事件游标，全部走内存桩 handler，无需真实后端。
+34 个用例覆盖：token 换取/主动刷新/轮换失败回退、appid 直连、401 重试、403 错误语义、heartbeat 请求形状、DI 装配、授权快照/事件补发/事件目录/自省/用户/组织/团队补充接口、事件游标异步默认实现、事件载荷读取（双形态 ID/数组/truncated）、事件去重窗口、本地过滤与重连退避、事件与心跳后台宿主启停、资源接口错误语义，全部走内存桩 handler，无需真实后端。

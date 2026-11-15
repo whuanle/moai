@@ -29,6 +29,7 @@
 | @SUB-S72 | 同上（SUB-111：指定团队且团队/组织授权均为空直接 no_grants） | PASS 117/117（2026-11-15） |
 | @SUB-S74 | [SsoAuthorize.test.tsx](../../ui/src/pages/sso/__tests__/SsoAuthorize.test.tsx)（11 例：预检不可用/未授权停在本页不跳登录不回跳、需登录先登录并清理过期登录态、放行后才签发委托码、预检/签发失败提示） | PASS 11/11（2026-11-15） |
 | @SUB-S75 | MoAI.Subsystem.Tests（CreateSubsysAppCommandHandlerTests 指定团队范围落库断言；SubsystemSsoHandlerTests 预检 10 例） | PASS 63/63（2026-11-15） |
+| @SUB-S82 | MoAI.Subsystem.Tests（QueryMySubsystemsCommandHandlerTests 5 例：停用/未配置回调/应用接入行过滤、指定团队授权、组织授权并集、匿名空列表、头像回显）+ [SubsystemPortal.test.tsx](../../ui/src/pages/subsystems/__tests__/SubsystemPortal.test.tsx)（4 例：列表/空态/进入携带 appid/加载失败空态）+ [local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)（SUB-112 ~ SUB-116） | PASS（2026-11-15，单测 71/71、vitest 4/4、E2E 122/122） |
 
 ## 场景映射表（SAA）
 
@@ -57,20 +58,28 @@
 | 组织授权并集门禁/委托/回显、SSO 全链（含应用接入行 404）、进入前预检（匿名/登录态/回调/无授权） | 同上（SubsystemSsoHandlerTests 25 例） | PASS 63/63（2026-11-15） |
 | 团队可用列表（仅 appType=subsystem） | 同上（QueryTeamAvailableSubsystemsCommandHandlerTests 4 例） | PASS 45/45（2026-11-01） |
 | 统一表回归 | teamres-key-e2e.mjs（TR-S8 应用接入 key 换 token 携 secret、TR-S27 资源 key 不可换 token、TR-S29 伪造/旧前缀 401）+ org-e2e 回归 | 全绿（2026-11-04，TR 31/31、ORG 53/53；原 team-apikey-scope-e2e TA-40~42 随 scope 体系退役删除，TA 编号不复用） |
-| @SUB-S76 | [local-dev/subsys-event-e2e.mjs](../../local-dev/subsys-event-e2e.mjs)（EVT-03/26/27） | PASS 28/28（2026-11-15） |
-| @SUB-S77 | 同上（EVT-05~07/10） | PASS 28/28（2026-11-15） |
-| @SUB-S78 | 同上（EVT-09/12/13） | PASS 28/28（2026-11-15） |
-| @SUB-S79 | 同上（EVT-15/18/19/24/25/28） | PASS 28/28（2026-11-15） |
-| @SUB-S80 | 同上（EVT-16/17/20/21） | PASS 28/28（2026-11-15） |
-| @SUB-S81 | 同上（EVT-14/15/16/17） | PASS 28/28（2026-11-15） |
+| @SUB-S76 | [local-dev/subsys-event-e2e.mjs](../../local-dev/subsys-event-e2e.mjs)（EVT-03/26/27） | PASS 30/30（2026-11-15） |
+| @SUB-S77 | 同上（EVT-05~07/10/29/30） | PASS 30/30（2026-11-15） |
+| @SUB-S78 | 同上（EVT-09/12/13） | PASS 30/30（2026-11-15） |
+| @SUB-S79 | 同上（EVT-15/18/19/24/25/28） | PASS 30/30（2026-11-15） |
+| @SUB-S80 | 同上（EVT-16/17/20/21） | PASS 30/30（2026-11-15） |
+| @SUB-S81 | 同上（EVT-14/15/16/17） | PASS 30/30（2026-11-15） |
+| @SUB-S83 | [local-dev/subsys-event-e2e.mjs](../../local-dev/subsys-event-e2e.mjs)（EVT-31/34：token 与 info 回显 events.hubPath/restPath/catalogPath/schemaVersion/retentionDays/maxReplay） | PASS 38/38（2026-11-15） |
+| @SUB-S84 | 同上（EVT-32：事件目录 ≥20 项、统一前缀、resync_required 为 control） | PASS 38/38（2026-11-15） |
+| @SUB-S85 | 同上（EVT-35~38：前缀/精确过滤先于截断、limit 越界 400、nextCursor） | PASS 38/38（2026-11-15） |
+| @SUB-S86 | 同上（EVT-33/34：心跳回显 onlineInstances/windowSeconds=60/recommendedIntervalSeconds=20） | PASS 38/38（2026-11-15） |
+| @SUB-S87 | [MoAI.Subsystem.Client.Tests](../../tests/MoAI.Subsystem.Client.Tests/)（SubsysEventItemExtensionsTests 4 例 + SubsysEventDeduplicatorTests 6 例 + SubsysEventWorkerTests 1 例 + SubsysHeartbeatWorkerTests 2 例：双形态 ID/数组/truncated/去重窗口/过滤/退避/宿主启停/心跳上报） | PASS 34/34（2026-11-15） |
+| @SUB-S88 | 同上（SubsysResourceClientTests 13 例：自省 events 回显/事件过滤与 nextCursor/翻页/错误语义/心跳请求体/分页搜索/团队与目录/异步游标） | PASS 34/34（2026-11-15） |
+| @SUB-S89 | [local-dev/subsys-event-e2e.mjs](../../local-dev/subsys-event-e2e.mjs)（EVT-39/40：status_changed 带 authVersion、强制下线收到 session_revoked 且版本递增） | PASS 40/40（2026-11-15） |
+| 事件契约单测 | [MoAI.Subsystem.Tests](../../tests/MoAI.Subsystem.Tests/)（SubsystemEventContractTests 3 例：目录唯一性与前缀、目录查询版本/窗口、心跳响应口径） | PASS 71/71（2026-11-15） |
 
 ## 回归命令
 
 ```bash
 node local-dev/subsystem-e2e.mjs              # 需后端运行中（默认 :5000），零外部依赖
-node local-dev/subsys-event-e2e.mjs           # @SUB-S76~S81 事件推送 28 断言（SignalR + Redis Stream + 协作面对账）
+node local-dev/subsys-event-e2e.mjs           # @SUB-S76~S86 事件推送 38 断言（SignalR + Redis 分代事件索引 + 协作面对账 + 事件目录/过滤/心跳/自描述）
 node local-dev/system-access-app-e2e.mjs http://127.0.0.1:5000   # 应用接入 + 系统资源接口（合并模型后同为 :5000）
-dotnet test tests/MoAI.Subsystem.Tests        # 后端单测（63 例）
+dotnet test tests/MoAI.Subsystem.Tests        # 后端单测（71 例）
 node local-dev/subsys-demo-seed.mjs           # demo 数据重建 + 功能验证（11 例）
 cd ui && npx vitest run src/pages/admin/__tests__/AdminAccessApps.test.tsx src/pages/admin/__tests__/AdminIntegrations.test.tsx src/pages/teams/apps/__tests__/TeamAccessApps.test.tsx
 ```

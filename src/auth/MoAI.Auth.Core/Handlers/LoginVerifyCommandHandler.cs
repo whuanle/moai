@@ -89,7 +89,7 @@ public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, Log
                 : new Dictionary<string, string>()
         };
 
-        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
+        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext, user.AuthVersion);
 
         return new LoginCommandResponse
         {

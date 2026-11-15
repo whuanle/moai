@@ -21,17 +21,19 @@ public interface ISubsystemTokenProvider
     /// </summary>
     /// <param name="subsysApp">接入实体（子系统行）.</param>
     /// <param name="userId">MoAI 用户 id.</param>
+    /// <param name="authVersion">用户当前鉴权版本（写入 token，刷新时比对吊销）.</param>
     /// <returns>返回 access/refresh token 与有效期（秒）.</returns>
-    (string AccessToken, string RefreshToken, int ExpiresIn) GenerateUserTokens(AccessAppEntity subsysApp, long userId);
+    (string AccessToken, string RefreshToken, int ExpiresIn) GenerateUserTokens(AccessAppEntity subsysApp, long userId, long authVersion);
 
     /// <summary>
-    /// 校验用户委托 refresh token，成功时返回绑定的接入 id 与用户 id.
+    /// 校验用户委托 refresh token，成功时返回绑定的接入 id、用户 id 与签发时的鉴权版本.
     /// </summary>
     /// <param name="token">refresh token 原文.</param>
     /// <param name="subsysAppId">绑定的接入 id.</param>
     /// <param name="userId">绑定的用户 id.</param>
+    /// <param name="authVersion">签发时的鉴权版本（历史 token 无声明时为 0）.</param>
     /// <returns>有效返回 true.</returns>
-    bool TryValidateUserRefreshToken(string token, out Guid subsysAppId, out long userId);
+    bool TryValidateUserRefreshToken(string token, out Guid subsysAppId, out long userId, out long authVersion);
 
     /// <summary>
     /// 签发机器面 access/refresh token 对（refresh 用于免重发密钥的轮换续期）.

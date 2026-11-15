@@ -34,6 +34,8 @@ vi.mock('@/api/usermanage', () => ({
   setUserAdmin: vi.fn().mockResolvedValue(undefined),
   setUserDisable: vi.fn().mockResolvedValue(undefined),
   resetUserPassword: vi.fn().mockResolvedValue(undefined),
+  resetUserTwoFactor: vi.fn().mockResolvedValue(undefined),
+  forceLogoutUser: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/api/auth', () => ({
@@ -93,5 +95,6 @@ describe('UsersPanel', () => {
     expect(bobRowButtons).toContain('设为管理员')
     expect(bobRowButtons).toContain('禁用')
     expect(bobRowButtons).toContain('重置密码')
+    expect(bobRowButtons).toContain('强制下线')
   })
 })

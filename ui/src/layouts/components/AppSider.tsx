@@ -2,6 +2,7 @@ import {
   ApiOutlined,
   ApartmentOutlined,
   BellOutlined,
+  ClusterOutlined,
   DatabaseOutlined,
   DeploymentUnitOutlined,
   AppstoreAddOutlined,
@@ -21,6 +22,7 @@ import {
 } from '@ant-design/icons'
 import { Avatar, Badge, Button, Dropdown, Layout, Select, Tooltip, Typography, theme as antdTheme } from 'antd'
 import type { MenuProps } from 'antd'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import { AppLogo } from '@/layouts/components/AppLogo'
@@ -28,6 +30,7 @@ import { useMenuBadges } from '@/layouts/useMenuBadges'
 import { useSystemName } from '@/layouts/useSystemLogo'
 import './AppSider.css'
 import { themePresetList, themePresets, type ThemeKey } from '@/design-system/theme'
+import { getAvailableSubsystems, type AvailableSubsystemItem } from '@/api/subsystem'
 import {
   useAppStore,
   type Locale,
@@ -67,6 +70,7 @@ const adminNav: NavItem[] = [
 
 const pathToKey: Record<string, string> = {
   '/apps': 'apps',
+  '/subsystems': 'subsystems',
   '/prompts': 'promptMarket',
   '/prompt-market': 'promptMarket',
   '/skills': 'skillMarket',
@@ -104,6 +108,24 @@ export function AppSider() {
   const clearUserInfo = useAppStore((state) => state.clearUserInfo)
   const isAdmin = useAppStore((state) => state.userInfo?.isAdmin === true)
   const isRoot = useAppStore((state) => state.userInfo?.isRoot === true)
+
+  // 子系统门户入口：后端按「团队范围 ∪ 组织授权」下发可进入的子系统，非空才展示菜单（无权限用户看不到）
+  const [subsystems, setSubsystems] = useState<AvailableSubsystemItem[]>([])
+  useEffect(() => {
+    let disposed = false
+    getAvailableSubsystems()
+      .then((items) => {
+        if (!disposed) setSubsystems(items)
+      })
+      .catch(() => {
+        // 401/网络错误静默：菜单不展示，页面访问时全局中间件提示
+        if (!disposed) setSubsystems([])
+      })
+    return () => {
+      disposed = true
+    }
+  }, [])
+
   const unreadCount = useNotificationStore((state) => state.unreadCount)
   // 一级菜单不再展示知识库/知识图谱，统一从团队详情分区进入
   // 提示词编辑器等 /prompts 子路径归入「提示词市场」高亮，技能中心（市场/我的）归入「技能市场」高亮
@@ -173,6 +195,12 @@ export function AppSider() {
 
   // settings 与子系统管理仅 root 可见（root 必然 isAdmin）
   const visibleAdminNav = adminNav.filter((item) => (item.key !== 'settings' && item.key !== 'adminIntegrations') || isRoot)
+
+  // 平台区分组：有可进入的子系统时追加「子系统」入口（放在团队之后，避免挤占默认入口顺序）
+  const platformNav: NavItem[] =
+    subsystems.length > 0
+      ? [...mainNav, { key: 'subsystems', icon: <ClusterOutlined />, labelKey: 'nav.subsystems', path: '/subsystems' }]
+      : mainNav
 
   // 自定义导航：替代 antd Menu
   // 风格：整栏统一底色 + 大号中性图标 + 浅主色渐变底激活态（明显但不深）、浅色 hover（token 生成，8 套预设自适应）
@@ -266,7 +294,7 @@ export function AppSider() {
         } as React.CSSProperties}
       >
         {renderGroupLabel('nav.platform')}
-        {mainNav.map(renderNavItem)}
+        {platformNav.map(renderNavItem)}
         {isAdmin && (
           <>
             {renderGroupDivider()}

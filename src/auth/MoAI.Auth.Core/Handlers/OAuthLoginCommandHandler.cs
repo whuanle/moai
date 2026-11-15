@@ -107,6 +107,12 @@ state=STATE
             };
         }
 
+        // 禁用账号不允许通过第三方登录（与账号密码登录同口径）
+        if (userEntity.IsDisable)
+        {
+            throw new BusinessException("用户已被禁用") { StatusCode = 401 };
+        }
+
         // 已有绑定记录则直接登录.
         // OAuth 登录跳过 TOTP 挑战（外部认证已足够），但强制 2FA 且未绑定时仍签发受限 token
         var mfaPending = await _loginSecurityService.IsForced2faAsync(cancellationToken) && !userEntity.IsTotpEnabled;
@@ -137,7 +143,7 @@ state=STATE
                 : new Dictionary<string, string>()
         };
 
-        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
+        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext, userEntity.AuthVersion);
 
         var result = new LoginCommandResponse
         {

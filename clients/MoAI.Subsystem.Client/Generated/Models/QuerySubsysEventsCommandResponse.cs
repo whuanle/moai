@@ -23,6 +23,14 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public List<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventItem> Items { get; set; }
 #endif
+        /// <summary>下一页游标：有更多时与 Items 末条一致（或为扫描边界），无更多时为空.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public string? NextCursor { get; set; }
+#nullable restore
+#else
+        public string NextCursor { get; set; }
+#endif
         /// <summary>当前窗口最早事件 id（可空）.</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -31,8 +39,12 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public string OldestId { get; set; }
 #endif
-        /// <summary>游标已失效（被 Stream 窗口裁掉），应走全量对账.</summary>
+        /// <summary>游标已失效（被补发窗口裁掉/跨天/Redis 丢失），应走全量对账.</summary>
         public bool? ResyncRequired { get; set; }
+        /// <summary>补发索引保留天数.</summary>
+        public int? RetentionDays { get; set; }
+        /// <summary>事件信封版本.</summary>
+        public int? SchemaVersion { get; set; }
         /// <summary>
         /// Creates a new instance of the appropriate class based on discriminator value
         /// </summary>
@@ -53,8 +65,11 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             {
                 { "hasMore", n => { HasMore = n.GetBoolValue(); } },
                 { "items", n => { Items = n.GetCollectionOfObjectValues<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventItem>(global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventItem.CreateFromDiscriminatorValue)?.AsList(); } },
+                { "nextCursor", n => { NextCursor = n.GetStringValue(); } },
                 { "oldestId", n => { OldestId = n.GetStringValue(); } },
                 { "resyncRequired", n => { ResyncRequired = n.GetBoolValue(); } },
+                { "retentionDays", n => { RetentionDays = n.GetIntValue(); } },
+                { "schemaVersion", n => { SchemaVersion = n.GetIntValue(); } },
             };
         }
         /// <summary>
@@ -66,8 +81,11 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             _ = writer ?? throw new ArgumentNullException(nameof(writer));
             writer.WriteBoolValue("hasMore", HasMore);
             writer.WriteCollectionOfObjectValues<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventItem>("items", Items);
+            writer.WriteStringValue("nextCursor", NextCursor);
             writer.WriteStringValue("oldestId", OldestId);
             writer.WriteBoolValue("resyncRequired", ResyncRequired);
+            writer.WriteIntValue("retentionDays", RetentionDays);
+            writer.WriteIntValue("schemaVersion", SchemaVersion);
         }
     }
 }

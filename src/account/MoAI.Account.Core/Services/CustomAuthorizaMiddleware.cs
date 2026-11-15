@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Queries;
 using MoAI.Account.Queries.Responses;
+using MoAI.Infra;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 
@@ -83,6 +84,24 @@ public class CustomAuthorizaMiddleware : IMiddleware
                 return;
             }
 
+            // 鉴权版本不一致 = 会话已被吊销（禁用/启用/强制下线/改密）：旧 access token 立即失效，
+            // 前端 401 续期也会被 refresh_token 版本校验拒绝，最终回到登录页.
+            if (userState != null
+                && userContext.IsAuthenticated
+                && userContext.UserId > 0
+                && userContext.UserType == UserType.Normal
+                && ReadAuthVersion(userContext) != userState.AuthVersion)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new BusinessValidationResult
+                {
+                    Code = StatusCodes.Status401Unauthorized,
+                    RequestId = context.TraceIdentifier,
+                    Detail = "登录状态已失效，请重新登录",
+                });
+                return;
+            }
+
             // 强制两步验证：登录时未绑定 2FA 的用户（token 携带 mfa_pending）只放行绑定流程相关接口，
             // 绑定成功后用户态缓存已失效（TwoFactorEnabled=true），旧 token 立即恢复完整访问，无需重新登录.
             if (userState != null
@@ -103,6 +122,17 @@ public class CustomAuthorizaMiddleware : IMiddleware
         }
 
         await next(context);
+    }
+
+    /// <summary>
+    /// 读取 token 中的鉴权版本：历史 token 无该声明时按 0 处理（升级前签发、且用户从未触发过版本递增时仍有效）.
+    /// </summary>
+    private static long ReadAuthVersion(UserContext userContext)
+    {
+        return userContext.Properties.TryGetValue(AppConst.AuthVersionClaim, out var value)
+               && long.TryParse(value, out var version)
+            ? version
+            : 0;
     }
 
     /// <summary>

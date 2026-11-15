@@ -38,14 +38,17 @@ async function register(userName, password) {
   return r.status
 }
 
-async function login(userName, password) {
+async function loginTokens(userName, password) {
   const r = await fetch(`${BASE}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userName, password: enc(password) }),
   })
-  const body = await r.json()
-  return body?.accessToken ?? null
+  return (await r.json()) ?? null
+}
+
+async function login(userName, password) {
+  return (await loginTokens(userName, password))?.accessToken ?? null
 }
 
 async function api(token, path, method = 'GET', payload) {
@@ -165,11 +168,32 @@ check('禁用后请求被拦截 403', bobDisabled.status === 403)
 
 const enableBob = await api(adminToken, `/api/usermanage/user/${bobItem.id}/isdisable`, 'PUT', { isDisable: false })
 check('root 启用 bob', enableBob.status === 200)
+check('启用后禁用前旧 token 仍无效 401', (await api(bobToken, '/api/usermanage/users')).status === 401)
 bobToken = await login(bobName, 'bob12345')
-check('启用后恢复', (await api(bobToken, '/api/usermanage/users')).status === 200)
+check('启用后重新登录恢复', (await api(bobToken, '/api/usermanage/users')).status === 200)
 
 const disableRoot = await api(bobToken, '/api/usermanage/user/1/isdisable', 'PUT', { isDisable: true })
 check('不能禁用 root 400', disableRoot.status === 400)
+
+// ---------- Feature: 强制下线（鉴权版本递增） ----------
+const beforeForce = await loginTokens(bobName, 'bob12345')
+const forceSelf = await api(adminToken, '/api/usermanage/user/1/force_logout', 'POST')
+check('不能强制下线自己 400', forceSelf.status === 400)
+const forceRootByAdmin = await api(bobToken, '/api/usermanage/user/1/force_logout', 'POST')
+check('管理员不能强制下线 root 403', forceRootByAdmin.status === 403)
+
+const forceBob = await api(adminToken, `/api/usermanage/user/${bobItem.id}/force_logout`, 'POST')
+check('root 强制下线 bob', forceBob.status === 200)
+const oldAccessAfterForce = await api(beforeForce.accessToken, '/api/usermanage/users')
+check('强制下线后旧 access token 立即失效 401', oldAccessAfterForce.status === 401)
+const refreshAfterForce = await fetch(`${BASE}/api/auth/refresh_token`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ refreshToken: beforeForce.refreshToken }),
+})
+check('强制下线后旧 refresh token 401', refreshAfterForce.status === 401)
+bobToken = await login(bobName, 'bob12345')
+check('强制下线后可重新登录', Boolean(bobToken))
 
 // ---------- Feature: 重置密码 ----------
 const weakReset = await api(adminToken, `/api/usermanage/user/${bobItem.id}/password`, 'PUT', { newPassword: enc('1234') })

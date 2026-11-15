@@ -1,6 +1,6 @@
 using MediatR;
-using MoAI.Infra.Models;
 using MoAI.Subsystem.Commands;
+using MoAI.Subsystem.Commands.Responses;
 using MoAI.Subsystem.Core.Services;
 
 namespace MoAI.Subsystem.Handlers;
@@ -8,7 +8,7 @@ namespace MoAI.Subsystem.Handlers;
 /// <summary>
 /// <inheritdoc cref="SubsystemHeartbeatCommand"/>
 /// </summary>
-public class SubsystemHeartbeatCommandHandler : IRequestHandler<SubsystemHeartbeatCommand, EmptyCommandResponse>
+public class SubsystemHeartbeatCommandHandler : IRequestHandler<SubsystemHeartbeatCommand, SubsystemHeartbeatCommandResponse>
 {
     private readonly ISubsystemOnlineService _onlineService;
 
@@ -22,9 +22,17 @@ public class SubsystemHeartbeatCommandHandler : IRequestHandler<SubsystemHeartbe
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SubsystemHeartbeatCommand request, CancellationToken cancellationToken)
+    public async Task<SubsystemHeartbeatCommandResponse> Handle(SubsystemHeartbeatCommand request, CancellationToken cancellationToken)
     {
         await _onlineService.TouchAsync(request.SubsystemId, request.InstanceId, cancellationToken);
-        return EmptyCommandResponse.Default;
+
+        // 续期后立即回读在线实例数（读脚本会顺带清理窗口外实例），接入方无需再单独查 info。
+        var onlineInstances = await _onlineService.GetOnlineInstanceCountAsync(request.SubsystemId);
+
+        return new SubsystemHeartbeatCommandResponse
+        {
+            ServerTime = DateTimeOffset.UtcNow,
+            OnlineInstances = onlineInstances,
+        };
     }
 }

@@ -3,6 +3,7 @@ import {
   CheckCircleOutlined,
   EyeOutlined,
   KeyOutlined,
+  LogoutOutlined,
   SafetyOutlined,
   SearchOutlined,
   StopOutlined,
@@ -18,6 +19,7 @@ import { refreshUserProfile } from '@/api/auth'
 import { resolveStorageUrl } from '@/utils/storage'
 import { formatDateTime } from '@/utils/datetime'
 import {
+  forceLogoutUser,
   getUsers,
   getUserDetail,
   resetUserPassword,
@@ -161,6 +163,15 @@ export function UsersPanel() {
     }
   }
 
+  const handleForceLogout = async (record: UserListItem) => {
+    try {
+      await forceLogoutUser(Number(record.id))
+      feedback.success(t('users.forceLogoutSuccess'))
+    } catch {
+      // 错误已由全局请求中间件统一提示
+    }
+  }
+
   const renderRole = (record: UserListItem) => {
     if (record.isRoot) return <Tag color="gold">{t('users.roleRoot')}</Tag>
     if (record.isAdmin) return <Tag color="blue">{t('users.roleAdmin')}</Tag>
@@ -233,7 +244,7 @@ export function UsersPanel() {
       {
         title: t('users.colActions'),
         key: 'actions',
-        width: 340,
+        width: 430,
         fixed: 'right',
         render: (_, record) => {
           const protectedRow = isProtected(record)
@@ -303,6 +314,16 @@ export function UsersPanel() {
                 >
                   <Button type="link" size="small" danger icon={<SafetyOutlined />} aria-label={t('users.resetTwoFactor')}>
                     {t('users.resetTwoFactor')}
+                  </Button>
+                </Popconfirm>
+              )}
+              {!protectedRow && (
+                <Popconfirm
+                  title={t('users.forceLogoutConfirm', { name: record.userName ?? '' })}
+                  onConfirm={() => void handleForceLogout(record)}
+                >
+                  <Button type="link" size="small" icon={<LogoutOutlined />} aria-label={t('users.forceLogout')}>
+                    {t('users.forceLogout')}
                   </Button>
                 </Popconfirm>
               )}

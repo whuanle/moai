@@ -66,6 +66,30 @@ public static class SubsysClientServiceCollectionExtensions
         return AddCore(services);
     }
 
+    /// <summary>
+    /// 注册事件后台宿主（<see cref="SubsysEventWorker"/>）：随应用生命周期自动 Start/Stop 事件客户端。
+    /// 需先调用 <see cref="AddMoaiSubsysClient(IServiceCollection, Action{MoaiSubsysClientOptions})"/>。
+    /// </summary>
+    /// <param name="services">服务集合。</param>
+    /// <returns>服务集合（链式）。</returns>
+    public static IServiceCollection AddMoaiSubsysEventWorker(this IServiceCollection services)
+    {
+        services.AddHostedService<SubsysEventWorker>();
+        return services;
+    }
+
+    /// <summary>
+    /// 注册心跳后台宿主（<see cref="SubsysHeartbeatWorker"/>）：按配置/服务端建议间隔自动上报在线。
+    /// 需先调用 <see cref="AddMoaiSubsysClient(IServiceCollection, Action{MoaiSubsysClientOptions})"/>。
+    /// </summary>
+    /// <param name="services">服务集合。</param>
+    /// <returns>服务集合（链式）。</returns>
+    public static IServiceCollection AddMoaiSubsysHeartbeatWorker(this IServiceCollection services)
+    {
+        services.AddHostedService<SubsysHeartbeatWorker>();
+        return services;
+    }
+
     private static IServiceCollection AddCore(IServiceCollection services)
     {
         services.AddHttpClient();
@@ -104,8 +128,10 @@ public static class SubsysClientServiceCollectionExtensions
         });
         services.AddSingleton<SubsysClient>();
 
-        // 事件客户端：SignalR 长连接 + lastEventId 游标 + 断线重连；资源客户端补齐授权/事件/成员对账接口
+        // 事件客户端：SignalR 长连接 + lastEventId 游标 + 去重 + 断线重连；资源客户端补齐授权/事件/成员对账接口
         services.TryAddSingleton<ISubsysEventCursorStore, InMemorySubsysEventCursorStore>();
+        services.AddSingleton<ISubsysEventDeduplicator>(static sp =>
+            new InMemorySubsysEventDeduplicator(sp.GetRequiredService<IOptions<MoaiSubsysClientOptions>>().Value.Events.DedupeCapacity));
         services.AddSingleton<ISubsysEventClient, SubsysEventClient>();
         services.AddSingleton<SubsysResourceClient>();
         return services;

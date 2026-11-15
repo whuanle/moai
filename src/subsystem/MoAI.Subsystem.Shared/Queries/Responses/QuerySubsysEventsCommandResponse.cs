@@ -13,9 +13,18 @@ public class QuerySubsysEventsCommandResponse
     /// <summary>是否还有更多事件.</summary>
     public bool HasMore { get; init; }
 
-    /// <summary>游标已失效（被 Stream 窗口裁掉），应走全量对账.</summary>
+    /// <summary>游标已失效（被补发窗口裁掉/跨天/Redis 丢失），应走全量对账.</summary>
     public bool ResyncRequired { get; init; }
 
     /// <summary>当前窗口最早事件 id（可空）.</summary>
     public string? OldestId { get; init; }
+
+    /// <summary>下一页游标：有更多时与 <see cref="Items"/> 末条一致（或为扫描边界），无更多时为空.</summary>
+    public string? NextCursor { get; init; }
+
+    /// <summary>事件信封版本.</summary>
+    public int SchemaVersion { get; init; }
+
+    /// <summary>补发索引保留天数.</summary>
+    public int RetentionDays { get; init; }
 }

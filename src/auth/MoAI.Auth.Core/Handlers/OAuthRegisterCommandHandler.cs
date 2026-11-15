@@ -149,7 +149,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
                 : new Dictionary<string, string>()
         };
 
-        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
+        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext, user.AuthVersion);
 
         var result = new LoginCommandResponse
         {

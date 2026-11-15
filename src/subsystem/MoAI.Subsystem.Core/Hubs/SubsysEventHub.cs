@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra.Events;
+using MoAI.Subsystem.Models;
 using MoAI.Subsystem.Services;
 
 namespace MoAI.Subsystem.Hubs;
@@ -19,17 +20,17 @@ public class SubsysEventHub : Hub
     private const string OnEvent = "onEvent";
     private const string OnReady = "onReady";
 
-    private readonly AccessEventStream _eventStream;
+    private readonly AccessEventStore _eventStore;
     private readonly ILogger<SubsysEventHub> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SubsysEventHub"/> class.
     /// </summary>
-    /// <param name="eventStream">事件补发窗口.</param>
+    /// <param name="eventStore">事件补发索引.</param>
     /// <param name="logger">日志.</param>
-    public SubsysEventHub(AccessEventStream eventStream, ILogger<SubsysEventHub> logger)
+    public SubsysEventHub(AccessEventStore eventStore, ILogger<SubsysEventHub> logger)
     {
-        _eventStream = eventStream;
+        _eventStore = eventStore;
         _logger = logger;
     }
 
@@ -59,7 +60,11 @@ public class SubsysEventHub : Hub
 
         if (!string.IsNullOrWhiteSpace(lastEventId))
         {
-            var result = await _eventStream.ReadAsync(appId, lastEventId, 200, Context.ConnectionAborted);
+            var result = await _eventStore.ReadAsync(
+                appId,
+                lastEventId,
+                SubsystemEventContract.MaxReplay,
+                cancellationToken: Context.ConnectionAborted);
             foreach (var item in result.Items)
             {
                 await Clients.Caller.SendAsync(OnEvent, item, Context.ConnectionAborted);

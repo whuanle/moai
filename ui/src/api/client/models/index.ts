@@ -4397,6 +4397,24 @@ export function createQueryMyMemoryOverviewResponseFromDiscriminatorValue(parseN
 /**
  * Creates a new instance of the appropriate class based on discriminator value
  * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryMySubsystemsCommandResponse}
+ */
+// @ts-ignore
+export function createQueryMySubsystemsCommandResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryMySubsystemsCommandResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {QueryMySubsystemsCommandResponseItem}
+ */
+// @ts-ignore
+export function createQueryMySubsystemsCommandResponseItemFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoQueryMySubsystemsCommandResponseItem;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
  * @returns {QueryNotificationChannelsCommandResponse}
  */
 // @ts-ignore
@@ -11338,6 +11356,30 @@ export function deserializeIntoQueryMyMemoryOverviewResponse(queryMyMemoryOvervi
  * @returns {Record<string, (node: ParseNode) => void>}
  */
 // @ts-ignore
+export function deserializeIntoQueryMySubsystemsCommandResponse(queryMySubsystemsCommandResponse: Partial<QueryMySubsystemsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "items": n => { queryMySubsystemsCommandResponse.items = n.getCollectionOfObjectValues<QueryMySubsystemsCommandResponseItem>(createQueryMySubsystemsCommandResponseItemFromDiscriminatorValue); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoQueryMySubsystemsCommandResponseItem(queryMySubsystemsCommandResponseItem: Partial<QueryMySubsystemsCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "avatarPath": n => { queryMySubsystemsCommandResponseItem.avatarPath = n.getStringValue(); },
+        "description": n => { queryMySubsystemsCommandResponseItem.description = n.getStringValue(); },
+        "key": n => { queryMySubsystemsCommandResponseItem.key = n.getStringValue(); },
+        "name": n => { queryMySubsystemsCommandResponseItem.name = n.getStringValue(); },
+        "subsystemId": n => { queryMySubsystemsCommandResponseItem.subsystemId = n.getGuidValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
 export function deserializeIntoQueryNotificationChannelsCommandResponse(queryNotificationChannelsCommandResponse: Partial<QueryNotificationChannelsCommandResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "items": n => { queryNotificationChannelsCommandResponse.items = n.getCollectionOfObjectValues<QueryNotificationChannelsCommandResponseItem>(createQueryNotificationChannelsCommandResponseItemFromDiscriminatorValue); },
@@ -12084,6 +12126,7 @@ export function deserializeIntoQueryTeamAllCommandResponse(queryTeamAllCommandRe
 export function deserializeIntoQueryTeamAllCommandResponseItem(queryTeamAllCommandResponseItem: Partial<QueryTeamAllCommandResponseItem> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "avatar": n => { queryTeamAllCommandResponseItem.avatar = n.getStringValue(); },
+        "description": n => { queryTeamAllCommandResponseItem.description = n.getStringValue(); },
         "isDisable": n => { queryTeamAllCommandResponseItem.isDisable = n.getBooleanValue(); },
         "memberCount": n => { queryTeamAllCommandResponseItem.memberCount = n.getNumberValue(); },
         "name": n => { queryTeamAllCommandResponseItem.name = n.getStringValue(); },
@@ -14848,6 +14891,7 @@ export function deserializeIntoUpdateWikiWorkflowCommand(updateWikiWorkflowComma
 // @ts-ignore
 export function deserializeIntoUserStateInfo(userStateInfo: Partial<UserStateInfo> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "authVersion": n => { userStateInfo.authVersion = n.getStringValue(); },
         "avatar": n => { userStateInfo.avatar = n.getStringValue(); },
         "email": n => { userStateInfo.email = n.getStringValue(); },
         "isAdmin": n => { userStateInfo.isAdmin = n.getBooleanValue(); },
@@ -19556,6 +19600,40 @@ export interface QueryMyMemoryOverviewResponse extends Parsable {
     global?: MyMemoryGlobalSummary | null;
 }
 /**
+ * 当前用户可进入的子系统列表查询结果.
+ */
+export interface QueryMySubsystemsCommandResponse extends Parsable {
+    /**
+     * 可进入的子系统列表.
+     */
+    items?: QueryMySubsystemsCommandResponseItem[] | null;
+}
+/**
+ * 可进入的子系统列表项（用户面门户展示用）.
+ */
+export interface QueryMySubsystemsCommandResponseItem extends Parsable {
+    /**
+     * 子系统头像 objectKey，空串=未设置（前端拼装 /static 地址展示）.
+     */
+    avatarPath?: string | null;
+    /**
+     * 描述.
+     */
+    description?: string | null;
+    /**
+     * 子系统标识（appid，前端据此拼 /sso/authorize?client= 进入）.
+     */
+    key?: string | null;
+    /**
+     * 子系统名称.
+     */
+    name?: string | null;
+    /**
+     * 子系统 id.
+     */
+    subsystemId?: Guid | null;
+}
+/**
  * 通知渠道列表响应.
  */
 export interface QueryNotificationChannelsCommandResponse extends Parsable {
@@ -20736,6 +20814,10 @@ export interface QueryTeamAllCommandResponseItem extends Parsable {
      * 团队头像（存储 ObjectKey，前端拼装 /static 地址展示）.
      */
     avatar?: string | null;
+    /**
+     * 团队简介.
+     */
+    description?: string | null;
     /**
      * 是否禁用.
      */
@@ -26522,6 +26604,30 @@ export function serializeQueryMyMemoryOverviewResponse(writer: SerializationWrit
  * @param writer Serialization writer to use to serialize this model
  */
 // @ts-ignore
+export function serializeQueryMySubsystemsCommandResponse(writer: SerializationWriter, queryMySubsystemsCommandResponse: Partial<QueryMySubsystemsCommandResponse> | undefined | null = {}) : void {
+    if (queryMySubsystemsCommandResponse) {
+        writer.writeCollectionOfObjectValues<QueryMySubsystemsCommandResponseItem>("items", queryMySubsystemsCommandResponse.items, serializeQueryMySubsystemsCommandResponseItem);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeQueryMySubsystemsCommandResponseItem(writer: SerializationWriter, queryMySubsystemsCommandResponseItem: Partial<QueryMySubsystemsCommandResponseItem> | undefined | null = {}) : void {
+    if (queryMySubsystemsCommandResponseItem) {
+        writer.writeStringValue("avatarPath", queryMySubsystemsCommandResponseItem.avatarPath);
+        writer.writeStringValue("description", queryMySubsystemsCommandResponseItem.description);
+        writer.writeStringValue("key", queryMySubsystemsCommandResponseItem.key);
+        writer.writeStringValue("name", queryMySubsystemsCommandResponseItem.name);
+        writer.writeGuidValue("subsystemId", queryMySubsystemsCommandResponseItem.subsystemId);
+    }
+}
+/**
+ * Serializes information the current object
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
 export function serializeQueryNotificationChannelsCommandResponse(writer: SerializationWriter, queryNotificationChannelsCommandResponse: Partial<QueryNotificationChannelsCommandResponse> | undefined | null = {}) : void {
     if (queryNotificationChannelsCommandResponse) {
         writer.writeCollectionOfObjectValues<QueryNotificationChannelsCommandResponseItem>("items", queryNotificationChannelsCommandResponse.items, serializeQueryNotificationChannelsCommandResponseItem);
@@ -27268,6 +27374,7 @@ export function serializeQueryTeamAllCommandResponse(writer: SerializationWriter
 export function serializeQueryTeamAllCommandResponseItem(writer: SerializationWriter, queryTeamAllCommandResponseItem: Partial<QueryTeamAllCommandResponseItem> | undefined | null = {}) : void {
     if (queryTeamAllCommandResponseItem) {
         writer.writeStringValue("avatar", queryTeamAllCommandResponseItem.avatar);
+        writer.writeStringValue("description", queryTeamAllCommandResponseItem.description);
         writer.writeBooleanValue("isDisable", queryTeamAllCommandResponseItem.isDisable);
         writer.writeNumberValue("memberCount", queryTeamAllCommandResponseItem.memberCount);
         writer.writeStringValue("name", queryTeamAllCommandResponseItem.name);
@@ -30032,6 +30139,7 @@ export function serializeUpdateWikiWorkflowCommand(writer: SerializationWriter, 
 // @ts-ignore
 export function serializeUserStateInfo(writer: SerializationWriter, userStateInfo: Partial<UserStateInfo> | undefined | null = {}) : void {
     if (userStateInfo) {
+        writer.writeStringValue("authVersion", userStateInfo.authVersion);
         writer.writeStringValue("avatar", userStateInfo.avatar);
         writer.writeStringValue("email", userStateInfo.email);
         writer.writeBooleanValue("isAdmin", userStateInfo.isAdmin);
@@ -33182,6 +33290,10 @@ export interface UpdateWikiWorkflowCommand extends Parsable {
  * UserStateInfo.
  */
 export interface UserStateInfo extends Parsable {
+    /**
+     * 当前鉴权版本：token 携带签发时的版本，与当前值不一致即视为会话已吊销.
+     */
+    authVersion?: string | null;
     /**
      * 头像地址.
      */

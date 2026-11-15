@@ -21,6 +21,14 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
 #else
         public string AccessToken { get; set; }
 #endif
+        /// <summary>事件通道自描述：Hub 路径、信封版本、补发窗口上限.</summary>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo? Events { get; set; }
+#nullable restore
+#else
+        public global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo Events { get; set; }
+#endif
         /// <summary>有效期（秒）.</summary>
         public int? ExpiresIn { get; set; }
         /// <summary>刷新 token（JWT），用于过期前轮换续期，免重发 appid+密钥.</summary>
@@ -58,6 +66,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "accessToken", n => { AccessToken = n.GetStringValue(); } },
+                { "events", n => { Events = n.GetObjectValue<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo>(global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo.CreateFromDiscriminatorValue); } },
                 { "expiresIn", n => { ExpiresIn = n.GetIntValue(); } },
                 { "refreshToken", n => { RefreshToken = n.GetStringValue(); } },
                 { "tokenType", n => { TokenType = n.GetStringValue(); } },
@@ -71,6 +80,7 @@ namespace MoAI.Subsystem.Client.ApiSdk.Models
         {
             _ = writer ?? throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("accessToken", AccessToken);
+            writer.WriteObjectValue<global::MoAI.Subsystem.Client.ApiSdk.Models.AccessEventInfo>("events", Events);
             writer.WriteIntValue("expiresIn", ExpiresIn);
             writer.WriteStringValue("refreshToken", RefreshToken);
             writer.WriteStringValue("tokenType", TokenType);

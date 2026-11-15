@@ -64,4 +64,9 @@ public class UserStateInfo
     /// 是否待绑定两步验证（系统强制 2FA 且 token 携带 mfa_pending 且尚未绑定）：仅 /account/userinfo 响应中回填.
     /// </summary>
     public bool MfaPending { get; set; }
+
+    /// <summary>
+    /// 当前鉴权版本：token 携带签发时的版本，与当前值不一致即视为会话已吊销.
+    /// </summary>
+    public long AuthVersion { get; set; }
 }

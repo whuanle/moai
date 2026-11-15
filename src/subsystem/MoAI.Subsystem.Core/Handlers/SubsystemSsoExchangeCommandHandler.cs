@@ -57,7 +57,7 @@ public class SubsystemSsoExchangeCommandHandler : IRequestHandler<SubsystemSsoEx
         var subsystem = await _databaseContext.AccessApps
             .Where(x => x.Level == MoAI.Database.Enums.AccessAppLevel.System)
             .FirstAsync(x => x.Id == request.SubsystemId, cancellationToken);
-        return BuildResponse(_tokenProvider.GenerateUserTokens(subsystem, user.Id), user);
+        return BuildResponse(_tokenProvider.GenerateUserTokens(subsystem, user.Id, user.AuthVersion), user);
     }
 
     /// <summary>

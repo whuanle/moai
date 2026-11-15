@@ -51,6 +51,20 @@ public class SubsystemController : ControllerBase
     }
 
     /// <summary>
+    /// 查询当前用户可进入的子系统列表（登录用户，用户面门户）：仅返回启用中、已开放委托登录，
+    /// 且经「团队范围 ∪ 组织授权」判定放通的子系统，与 SSO 预检/签发同口径.
+    /// </summary>
+    /// <param name="ct">取消令牌.</param>
+    /// <returns>返回 <see cref="QueryMySubsystemsCommandResponse"/>.</returns>
+    [HttpGet("available")]
+    public async Task<QueryMySubsystemsCommandResponse> Available(CancellationToken ct)
+    {
+        var command = new QueryMySubsystemsCommand();
+        _userContextProvider.SetUserContext(command);
+        return await _mediator.Send(command, ct);
+    }
+
+    /// <summary>
     /// 创建系统级接入（仅 root），成功后返回 appid 与密钥原文（均仅此一次）.
     /// </summary>
     /// <param name="req">创建请求体.</param>

@@ -31,13 +31,13 @@ public class SubsystemSsoRefreshCommandHandler : IRequestHandler<SubsystemSsoRef
     /// <inheritdoc/>
     public async Task<SubsystemSsoExchangeCommandResponse> Handle(SubsystemSsoRefreshCommand request, CancellationToken cancellationToken)
     {
-        if (!_tokenProvider.TryValidateUserRefreshToken(request.RefreshToken, out var subsystemId, out var userId)
+        if (!_tokenProvider.TryValidateUserRefreshToken(request.RefreshToken, out var subsystemId, out var userId, out var authVersion)
             || subsystemId != request.SubsystemId)
         {
             throw new BusinessException("refresh token 无效或已过期.") { StatusCode = 401 };
         }
 
-        // 刷新时按数据库当前状态重验：用户被删/禁用立即失效
+        // 刷新时按数据库当前状态重验：用户被删/禁用立即失效；鉴权版本落后（强制下线/禁用/启用/改密）同样拒绝
         var user = await _databaseContext.Users
             .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
         if (user == null || user.IsDisable)
@@ -45,9 +45,14 @@ public class SubsystemSsoRefreshCommandHandler : IRequestHandler<SubsystemSsoRef
             throw new BusinessException("用户不存在或已禁用.") { StatusCode = 403 };
         }
 
+        if (authVersion != user.AuthVersion)
+        {
+            throw new BusinessException("登录状态已失效，请重新登录.") { StatusCode = 401 };
+        }
+
         var subsystem = await _databaseContext.AccessApps
             .Where(x => x.Level == MoAI.Database.Enums.AccessAppLevel.System)
             .FirstAsync(x => x.Id == request.SubsystemId, cancellationToken);
-        return SubsystemSsoExchangeCommandHandler.BuildResponse(_tokenProvider.GenerateUserTokens(subsystem, user.Id), user);
+        return SubsystemSsoExchangeCommandHandler.BuildResponse(_tokenProvider.GenerateUserTokens(subsystem, user.Id, user.AuthVersion), user);
     }
 }

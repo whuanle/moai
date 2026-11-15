@@ -33,7 +33,7 @@ public class TokenProvider : ITokenProvider
     }
 
     /// <inheritdoc/>
-    public (string AccessToken, string RefreshToken) GenerateTokens(UserContext userContext)
+    public (string AccessToken, string RefreshToken) GenerateTokens(UserContext userContext, long authVersion = 0)
     {
         var claims = new List<Claim>
         {
@@ -43,6 +43,7 @@ public class TokenProvider : ITokenProvider
             new Claim(JwtRegisteredClaimNames.Email, userContext.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new Claim(JwtRegisteredClaimNames.Typ, userContext.UserType.ToJsonString()),
+            new Claim(AppConst.AuthVersionClaim, authVersion.ToString()),
             new Claim("token_type", "access_token")
         };
 
@@ -78,6 +79,7 @@ public class TokenProvider : ITokenProvider
         {
             new Claim(JwtRegisteredClaimNames.Sub, userContext.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
+            new Claim(AppConst.AuthVersionClaim, authVersion.ToString()),
             new Claim("token_type", "refresh_token")
         };
 

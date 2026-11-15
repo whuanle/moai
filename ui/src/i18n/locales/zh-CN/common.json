@@ -37,6 +37,7 @@
     "platform": "平台",
     "chat": "全量 AI",
     "apps": "应用广场",
+    "subsystems": "子系统",
     "wiki": "知识库",
     "team": "团队",
     "plugin": "插件",
@@ -72,6 +73,7 @@
     "register": "立即注册",
     "oauthLogin": "第三方账号登录",
     "loginSuccess": "登录成功",
+    "sessionRevoked": "登录状态已失效，请重新登录",
     "oauthCallback": "正在登录，请稍候...",
     "oauthBindTitle": "绑定账号",
     "oauthBindDesc": "检测到该{{name}}账号尚未绑定本平台账号，是否一键注册并登录？",
@@ -780,7 +782,10 @@
     "colUpdate": "更新",
     "resetTwoFactor": "重置2FA",
     "resetTwoFactorConfirm": "确认重置 {{name}} 的两步验证？重置后该用户下次登录需重新绑定",
-    "resetTwoFactorSuccess": "已重置两步验证"
+    "resetTwoFactorSuccess": "已重置两步验证",
+    "forceLogout": "强制下线",
+    "forceLogoutConfirm": "确认强制下线 {{name}}？该用户全部已登录会话将立即失效，可重新登录。",
+    "forceLogoutSuccess": "已强制下线该用户"
   },
   "team": {
     "title": "团队",
@@ -3519,6 +3524,11 @@
     "redirecting": "授权成功，正在跳转到 {{name}}…",
     "errorTitle": "无法完成委托登录",
     "backToApps": "返回应用广场"
+  },
+  "subsystemPortal": {
+    "empty": "暂无可进入的子系统",
+    "emptyHint": "管理员在「应用接入」中启用子系统并授权给你所在的团队或组织后，这里会显示可进入的子系统。",
+    "enter": "进入"
   },
   "memoryMgmt": {
     "tabApps": "应用记忆",

@@ -79,4 +79,16 @@ public sealed class SubsysEventPage
     /// <summary>当前窗口最早事件 id.</summary>
     [JsonPropertyName("oldestId")]
     public string? OldestId { get; set; }
+
+    /// <summary>下一页游标（有更多时回填；无更多时为空）.</summary>
+    [JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; }
+
+    /// <summary>事件信封版本.</summary>
+    [JsonPropertyName("schemaVersion")]
+    public int SchemaVersion { get; set; }
+
+    /// <summary>补发索引保留天数.</summary>
+    [JsonPropertyName("retentionDays")]
+    public int RetentionDays { get; set; }
 }

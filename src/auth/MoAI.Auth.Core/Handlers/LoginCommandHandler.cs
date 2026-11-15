@@ -199,7 +199,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
                 : new Dictionary<string, string>()
         };
 
-        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext);
+        var (accessToken, refreshToken) = _tokenProvider.GenerateTokens(userContext, user.AuthVersion);
 
         var result = new LoginCommandResponse
         {

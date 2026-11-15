@@ -81,7 +81,8 @@ public class ExternalTokenProvider : IExternalTokenProvider
             accessAppId: null,
             appId: app.Id,
             externalUserId: null,
-            nickname: string.IsNullOrEmpty(user.NickName) ? user.UserName : user.NickName);
+            nickname: string.IsNullOrEmpty(user.NickName) ? user.UserName : user.NickName,
+            authVersion: user.AuthVersion);
     }
 
     /// <inheritdoc/>
@@ -139,6 +140,10 @@ public class ExternalTokenProvider : IExternalTokenProvider
         long externalId = subjectType == UserType.External && long.TryParse(subjectId, out var externalIdParsed) ? externalIdParsed : 0;
         long userId = subjectType == UserType.Normal && long.TryParse(subjectId, out var userIdParsed) ? userIdParsed : 0;
 
+        var authVersion = claimMap.TryGetValue(AppConst.AuthVersionClaim, out var authVersionValue) && long.TryParse(authVersionValue, out var parsedAuthVersion)
+            ? parsedAuthVersion
+            : 0;
+
         return new ExternalTokenContext
         {
             SubjectType = subjectType,
@@ -150,6 +155,7 @@ public class ExternalTokenProvider : IExternalTokenProvider
             AppId = appId,
             ExternalUserId = claimMap.GetValueOrDefault(ExternalAuthDefaults.ClaimExternalUserId),
             Nickname = claimMap.GetValueOrDefault(JwtRegisteredClaimNames.Nickname),
+            AuthVersion = authVersion,
         };
     }
 
@@ -192,7 +198,8 @@ public class ExternalTokenProvider : IExternalTokenProvider
         Guid? accessAppId,
         Guid? appId,
         string? externalUserId,
-        string? nickname)
+        string? nickname,
+        long authVersion = 0)
     {
         var signingCredentials = new SigningCredentials(new RsaSecurityKey(_rsaProvider.GetPrivateRsa()), SecurityAlgorithms.RsaSha256);
         var audience = ExternalAuthDefaults.BuildAudience(_systemOptions.Server);
@@ -206,6 +213,11 @@ public class ExternalTokenProvider : IExternalTokenProvider
             new(ExternalAuthDefaults.ClaimTeamId, teamId.ToString()),
             new(ExternalAuthDefaults.ClaimTokenType, ExternalAuthDefaults.TokenTypeAccess),
         };
+
+        if (authVersion > 0)
+        {
+            accessClaims.Add(new Claim(AppConst.AuthVersionClaim, authVersion.ToString()));
+        }
         if (accessAppId != null)
         {
             accessClaims.Add(new Claim(ExternalAuthDefaults.ClaimAccessAppId, accessAppId.Value.ToString()));
@@ -249,6 +261,11 @@ public class ExternalTokenProvider : IExternalTokenProvider
         if (appId != null)
         {
             refreshClaims.Add(new Claim(ExternalAuthDefaults.ClaimAppId, appId.Value.ToString()));
+        }
+
+        if (authVersion > 0)
+        {
+            refreshClaims.Add(new Claim(AppConst.AuthVersionClaim, authVersion.ToString()));
         }
         var refreshTokenDescriptor = new SecurityTokenDescriptor
         {

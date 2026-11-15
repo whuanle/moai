@@ -13,10 +13,11 @@
 |---|---|
 | 密码传输 | 前端 `GET /common/serverinfo` 取 `rsaPublic`（`IRsaProvider`，Base64 DER），RSA PKCS1 加密上报，服务端解密（`ui/src/utils/rsa.ts`）。同一 RSA 密钥兼用于 JWT 签名 |
 | 密码存储 | PBKDF2（`src/infra/MoAI.Infra.Shared/Helpers/PBKDF2Helper.cs`）：迭代 10000、SHA256、salt 128 字节、输出 128 字节，哈希与 salt Base64 落库 |
-| Access Token | RS256；Issuer/Audience = `SystemOptions.Server`；claims 含 `sub/name/nickname/email/jti/typ` + `Properties`（角色）；有效期 Release 30 分钟、DEBUG 条件编译 7 天 |
-| Refresh Token | 仅 `sub/jti/token_type=refresh_token`；7 天；`/auth/refresh_token` 强制校验类型（[@AUTH-S10](./bdd.md#auth-s10)） |
+| Access Token | RS256；Issuer/Audience = `SystemOptions.Server`；claims 含 `sub/name/nickname/email/jti/typ/auth_version` + `Properties`（角色）；有效期 Release 30 分钟、DEBUG 条件编译 7 天 |
+| Refresh Token | 含 `sub/jti/token_type=refresh_token/auth_version`；7 天；`/auth/refresh_token` 强制校验类型与版本（[@AUTH-S10](./bdd.md#auth-s10)） |
 | 登录防爆破 | Redis `moai:login:fail:{userName}`（库默认 `moai:` 前缀），失败 INCR + 5 分钟 TTL，≥5 次 403；全部验证通过后清零（[@AUTH-S3](./bdd.md#auth-s3)） |
-| 用户态缓存 | `IUserAccountService`（`src/account`，Redis 1h）供鉴权中间件读取；OAuth 注册改写用户名后失效 |
+| 用户态缓存 | `IUserAccountService`（`src/account`，Redis 1h）+ `IUserSecurityStateService`（禁用/删除/`auth_version`，全实例共享）供鉴权中间件读取；OAuth 注册改写用户名后失效 |
+| 会话吊销 | 每个 token 携带签发时 `auth_version`；禁用/启用/强制下线递增 `user.auth_version`，中间件与 refresh 比对不一致即 401；旧 token 不因启用恢复 |
 | 角色注入 | root = `setting.key="root"` 的 value=用户 id；否则 `IsAdmin==true` → admin。随 `Properties` 写入 token，业务判权走用户态缓存不重复解 JWT |
 
 ## 组件
@@ -50,10 +51,10 @@ ui/src/                 api/auth.ts、pages/auth/{Login,Register,ForgotPassword,
 | POST | `/auth/register` | 五字段（+可选 emailCode）→ 新用户 id；Handler 解密后校验强度（`(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,20}$`）；注册验证码开启时先校验邮箱验证码 |
 | POST | `/auth/email_code/send` | purpose（register/resetPassword；login 用途拒绝）+ email + 策略命中时的 captchaId/captchaCode → 发送验证码；注册用途需 SMTP+开关双开启且邮箱未占用（409），找回用途需 SMTP 启用（未注册 404）；发码成功计入 IP 发码限流与 sendct 计数（驱动 after_fail 策略） |
 | POST | `/auth/reset_password` | email + 6 位验证码 + RSA 新密码 → 重置密码；需 SMTP 邮件服务启用 |
-| POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId`；强制 2FA 未绑定时同样附 mfa_pending（OAuth 跳过 TOTP 挑战，外部认证已足够） |
+| POST | `/auth/oauth_login` | code + oAuthId → 已绑定直通 / 未绑定返回 `tempOAuthBindId`；已绑定但用户被禁用 → 401（与账号密码登录同口径）；强制 2FA 未绑定时同样附 mfa_pending（OAuth 跳过 TOTP 挑战，外部认证已足够） |
 | POST | `/auth/oauth_register` | tempOAuthBindId → 一键注册并登录 |
 | GET | `/auth/oauth_prividers` | 匿名；可选 `redirectUrl`（登录页来源），回调地址跟随该来源，未携带回退 `WebUI`；返回各提供商拼好的授权地址 |
-| POST | `/auth/refresh_token` | 仅 refresh_token 类型可用；刷新时按当前用户态重估 mfa_pending（绑定后新令牌不再携带） |
+| POST | `/auth/refresh_token` | 仅 refresh_token 类型可用；刷新时按当前用户态重估 mfa_pending（绑定后新令牌不再携带）；用户禁用或 `auth_version` 落后 → 401，不续发新令牌 |
 
 响应要点：`expiresIn` 为 **Access Token 过期时刻的 Unix 毫秒时间戳**（注释写"秒"，实现是毫秒，前端按毫秒解析）；`tokenType` 固定 `Bearer`。
 

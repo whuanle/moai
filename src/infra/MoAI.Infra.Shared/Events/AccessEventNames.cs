@@ -14,6 +14,9 @@ public static class AccessEventNames
     /// <summary>用户启用/禁用.</summary>
     public const string UserStatusChanged = "subsys.user.status_changed";
 
+    /// <summary>用户会话被强制吊销（强制下线/改密等）：data.authVersion 为新的鉴权版本.</summary>
+    public const string UserSessionRevoked = "subsys.user.session_revoked";
+
     /// <summary>用户组织角色集合整体覆盖.</summary>
     public const string UserOrgRolesChanged = "subsys.user.org_roles_changed";
 

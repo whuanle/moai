@@ -55,6 +55,11 @@ public class ExternalTokenContext
     public string? Nickname { get; init; }
 
     /// <summary>
+    /// 访问用户 token（站内用户身份穿透）签发时的鉴权版本；其余 token 为 0.
+    /// </summary>
+    public long AuthVersion { get; init; }
+
+    /// <summary>
     /// 是否为 key 直连认证：请求头直接携带 key（moai-ac- / moai-tr-），
     /// 而非换取的外部 token；会话面端点据此为 key 直连解析直连会话身份.
     /// </summary>

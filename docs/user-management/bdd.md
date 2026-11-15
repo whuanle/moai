@@ -80,10 +80,11 @@ Feature: 禁用与启用
     And bob 的下一个请求被拦截并提示账号已被禁用
 
   @UM-S13 @auto:e2e
-  Scenario: 启用恢复访问
+  Scenario: 启用后需重新登录
     Given bob 处于禁用状态
     When 管理员启用 bob
-    Then bob 恢复正常访问
+    Then bob 可以重新登录
+    And 禁用前签发的旧 token 仍然无效（鉴权版本已递增）
 
   @UM-S14 @auto:e2e
   Scenario: 管理员不能禁用另一个管理员
@@ -106,6 +107,20 @@ Feature: 禁用与启用
   Scenario: 不能禁用自己
     When 管理员禁用自己的账号
     Then 返回请求错误（400）
+
+  @UM-S30 @auto:e2e
+  Scenario: 管理员强制下线用户
+    Given bob 已登录并持有 access/refresh token
+    When 管理员对 bob 执行强制下线
+    Then 操作成功且不改变 bob 的禁用状态
+    And bob 的旧 access token 下一次请求返回未授权（401）
+    And bob 的旧 refresh token 续签返回未授权（401）
+    And bob 可重新登录获得新 token
+
+  @UM-S31 @auto:e2e
+  Scenario: 强制下线目标保护
+    When 管理员强制下线 root、自己或另一个管理员（非 root 操作）
+    Then 分别返回 403/400/403
 
 Feature: 重置密码
   @UM-S18 @auto:e2e

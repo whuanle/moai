@@ -4,6 +4,8 @@
 // @ts-ignore
 import { createBusinessValidationResultFromDiscriminatorValue, createUserStateInfoFromDiscriminatorValue, type BusinessValidationResult, type UserStateInfo } from '../../../../models/index.js';
 // @ts-ignore
+import { Force_logoutRequestBuilderRequestsMetadata, type Force_logoutRequestBuilder } from './force_logout/index.js';
+// @ts-ignore
 import { IsadminRequestBuilderRequestsMetadata, type IsadminRequestBuilder } from './isadmin/index.js';
 // @ts-ignore
 import { IsdisableRequestBuilderRequestsMetadata, type IsdisableRequestBuilder } from './isdisable/index.js';
@@ -18,6 +20,10 @@ import { type BaseRequestBuilder, type KeysToExcludeForNavigationMetadata, type 
  * Builds and executes requests for operations under /api/usermanage/user/{id}
  */
 export interface UserItemRequestBuilder extends BaseRequestBuilder<UserItemRequestBuilder> {
+    /**
+     * The force_logout property
+     */
+    get force_logout(): Force_logoutRequestBuilder;
     /**
      * The isadmin property
      */
@@ -60,6 +66,9 @@ export const UserItemRequestBuilderUriTemplate = "{+baseurl}/api/usermanage/user
  * Metadata for all the navigation properties in the request builder.
  */
 export const UserItemRequestBuilderNavigationMetadata: Record<Exclude<keyof UserItemRequestBuilder, KeysToExcludeForNavigationMetadata>, NavigationMetadata> = {
+    force_logout: {
+        requestsMetadata: Force_logoutRequestBuilderRequestsMetadata,
+    },
     isadmin: {
         requestsMetadata: IsadminRequestBuilderRequestsMetadata,
     },

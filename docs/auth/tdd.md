@@ -28,6 +28,7 @@
 | @AUTH-S45 | 同上脚本分级递进段（图形码先行/策略命中发码需过码/一码一登录/失败计数保留与清零时机） | PASS 67/67（2026-11-03） |
 | @AUTH-S48 ~ @AUTH-S53 | [local-dev/auth-captcha-e2e.mjs](../../local-dev/auth-captcha-e2e.mjs)（40 断言：captcha/new 结构与 SVG 自绘/三模式 policy 回显/同码错 3 次作废/不区分大小写/一码一登录/图形码错误不计登录失败/阈值 3 分级递进/注册与找回发码面首发免费再发过码且只验不消费/限流 429；前置 E2E_REDIS 指向 Redis 直连） | PASS 40/40（2026-11-03） |
 | @AUTH-S3 | [local-dev/auth-lockout-check.mjs](../../local-dev/auth-lockout-check.mjs)（改造后 8 断言：预清理残留计数、5 错→403、Redis 直连清 key→恢复 200，替换原 docker exec 依赖） | PASS 8/8（2026-11-03） |
+| @AUTH-S54 | [local-dev/user-management-e2e.mjs](../../local-dev/user-management-e2e.mjs)（强制下线后旧 access 401 + 旧 refresh 401；禁用/启用版本递增） | PASS 44/44（2026-11-15） |
 
 ## 回归命令（后端运行于 :5000，E2E_REDIS 指向实例 Redis）
 
