@@ -205,7 +205,7 @@ jobs:
             -e GITHUB_SHA -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e DEPLOY_ONLY \
             -e MINI_SSH_USER -e MINI_SSH_RSA -e MINI_SSH_HOST -e MINI_SSH_PORT -e MINI_SSH_KNOWN_HOST \
             -e MOAI_APP_DIR -e MOAI_IMAGE_REF="$IMAGE_REF" \
-            -e ZOT_REGISTRY_TARGET -e ZOT_USERNAME -e ZOT_PASSWORD \
+            -e ZOT_REGISTRY_TARGET -e ZOT_REGISTRY_URL -e ZOT_USERNAME -e ZOT_PASSWORD \
             node:22-bookworm-slim bash -s <<'SH'
           set -euo pipefail
 
@@ -298,8 +298,8 @@ jobs:
 
           # 2) 执行目标机部署脚本（登录 Zot → pull → 复用/完整栈切换 → 探活回滚）
           {
-            printf 'export MOAI_IMAGE_REF=%q MOAI_APP_DIR=%q MOAI_PULL=1 ZOT_REGISTRY_TARGET=%q ZOT_USERNAME=%q ZOT_PASSWORD=%q\n' \
-              "$MOAI_IMAGE_REF" "$MOAI_APP_DIR" "$ZOT_REGISTRY_TARGET" "$ZOT_USERNAME" "$ZOT_PASSWORD"
+            printf 'export MOAI_IMAGE_REF=%q MOAI_APP_DIR=%q MOAI_PULL=1 ZOT_REGISTRY_TARGET=%q ZOT_REGISTRY_URL=%q ZOT_USERNAME=%q ZOT_PASSWORD=%q\n' \
+              "$MOAI_IMAGE_REF" "$MOAI_APP_DIR" "$ZOT_REGISTRY_TARGET" "$ZOT_REGISTRY_URL" "$ZOT_USERNAME" "$ZOT_PASSWORD"
             cat /tmp/moai-src/deploy/gitea/remote-deploy.sh
           } | rssh bash
           SH

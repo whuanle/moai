@@ -11,7 +11,8 @@
 #   MOAI_IMAGE_REF        必填，完整镜像引用
 #   MOAI_APP_DIR          部署目录，默认 $HOME/moai
 #   MOAI_PULL             1=先登录并 docker pull（默认），0=镜像已在本地
-#   ZOT_REGISTRY_TARGET   Zot host:port（纯 HTTP 时自动加入 insecure-registries）
+#   ZOT_REGISTRY_URL      registry 完整地址（如 http://192.168.50.193:5011），纯 HTTP 时据此写 insecure-registries
+#   ZOT_REGISTRY_TARGET   Zot host:port（部署机视角；缺省用 ZOT_REGISTRY_URL 推导）
 #   ZOT_USERNAME / ZOT_PASSWORD   Zot 凭据
 #
 # 行为：
@@ -100,34 +101,92 @@ fi
 
 # ---------- 拉取镜像（Zot 为纯 HTTP LAN registry） ----------
 if [ "$PULL" = "1" ]; then
-  if [ -n "${ZOT_REGISTRY_TARGET:-}" ]; then
-    # 幂等确保 daemon 把 Zot 当 insecure registry（HTTP）
-    sudo install -d -m 755 /etc/docker
-    if [ -f /etc/docker/daemon.json ]; then
-      sudo cp -f /etc/docker/daemon.json "/etc/docker/daemon.json.bak.$(date +%s)"
+  # registry 地址：优先 ZOT_REGISTRY_URL（完整 URL，带 http:// 时纯 HTTP），
+  # 其次 ZOT_REGISTRY_TARGET / 镜像引用里的 host:port。
+  REGISTRY_HOSTPORT=""
+  if [ -n "${ZOT_REGISTRY_URL:-}" ]; then
+    REGISTRY_HOSTPORT="${ZOT_REGISTRY_URL#*://}"
+    REGISTRY_HOSTPORT="${REGISTRY_HOSTPORT%%/*}"
+  elif [ -n "${ZOT_REGISTRY_TARGET:-}" ]; then
+    REGISTRY_HOSTPORT="$ZOT_REGISTRY_TARGET"
+  else
+    REGISTRY_HOSTPORT="${IMAGE_REF%%/*}"
+  fi
+
+  # 预检：先确认部署机到 registry 的 TCP/HTTP 可达，避免 docker 报
+  # "Head https://...: i/o timeout" 这种既误导又难查的错误。
+  probe_registry_http() {
+    local hostport="$1" host="${1%%:*}" port="${1##*:}"
+    if command -v curl >/dev/null 2>&1; then
+      curl -s -o /dev/null --max-time 5 -w '%{http_code}' "http://${hostport}/v2/" 2>/dev/null || echo 000
+    elif command -v wget >/dev/null 2>&1; then
+      wget -q -O /dev/null --timeout=5 "http://${hostport}/v2/" >/dev/null 2>&1 && echo 200 || echo 000
     else
-      printf '{}\n' | sudo tee /etc/docker/daemon.json >/dev/null
+      timeout 5 bash -c "cat < /dev/null > /dev/tcp/${host}/${port}" >/dev/null 2>&1 && echo 200 || echo 000
     fi
-    sudo python3 - "$ZOT_REGISTRY_TARGET" <<'PY'
+  }
+
+  PROBE_CODE="$(probe_registry_http "$REGISTRY_HOSTPORT")"
+  case "$PROBE_CODE" in
+    000)
+      echo "!! 部署机访问不到 registry：http://${REGISTRY_HOSTPORT}/v2/ 连接失败（超时/拒绝）"
+      echo "   排查：registry 是否监听该地址、防火墙/安全组、部署机到该网段的路由（VPN/专线）"
+      echo "   若部署机视角的地址不同，请设置仓库变量 ZOT_REGISTRY_TARGET（host:port）指向可达地址"
+      exit 3
+      ;;
+    400)
+      echo "!! ${REGISTRY_HOSTPORT} 端口可达，但对 HTTP 探测返回 400：该端口可能是 HTTPS 或代理"
+      echo "   若 registry 实际是纯 HTTP，请确认 ZOT_REGISTRY_URL 的 scheme 与端口"
+      exit 3
+      ;;
+    *)
+      echo "==> registry 可达：http://${REGISTRY_HOSTPORT}（HTTP ${PROBE_CODE}）"
+      ;;
+  esac
+
+  # 幂等确保 daemon 把 registry 当 insecure registry（纯 HTTP）
+  INSECURE_HOSTPORTS="$REGISTRY_HOSTPORT"
+  if [ -n "${ZOT_REGISTRY_TARGET:-}" ] && [ "$ZOT_REGISTRY_TARGET" != "$REGISTRY_HOSTPORT" ]; then
+    INSECURE_HOSTPORTS="$INSECURE_HOSTPORTS $ZOT_REGISTRY_TARGET"
+  fi
+
+  sudo install -d -m 755 /etc/docker
+  if [ -f /etc/docker/daemon.json ]; then
+    sudo cp -f /etc/docker/daemon.json "/etc/docker/daemon.json.bak.$(date +%s)"
+  else
+    printf '{}\n' | sudo tee /etc/docker/daemon.json >/dev/null
+  fi
+  # shellcheck disable=SC2086
+  sudo python3 - $INSECURE_HOSTPORTS <<'PY'
 import json, pathlib, sys
 path = pathlib.Path('/etc/docker/daemon.json')
 config = json.loads(path.read_text() or '{}')
 registries = config.setdefault('insecure-registries', [])
-if sys.argv[1] not in registries:
-    registries.append(sys.argv[1])
+for hostport in sys.argv[1:]:
+    if hostport and hostport not in registries:
+        registries.append(hostport)
 path.write_text(json.dumps(config, indent=2) + '\n')
 PY
-    sudo dockerd --validate --config-file=/etc/docker/daemon.json >/dev/null
-    sudo systemctl kill --signal=HUP --kill-whom=main docker || sudo systemctl reload docker
+  sudo dockerd --validate --config-file=/etc/docker/daemon.json >/dev/null
+
+  registry_known() {
+    docker info --format '{{json .RegistryConfig.IndexConfigs}}' | grep -F "$REGISTRY_HOSTPORT" >/dev/null 2>&1
+  }
+  sudo systemctl kill --signal=HUP --kill-whom=main docker || sudo systemctl reload docker || true
+  for _ in $(seq 1 10); do
+    registry_known && break
+    sleep 1
+  done
+  if ! registry_known; then
+    # insecure-registries 在部分 docker 版本上不是 SIGHUP 可重载项，退化为重启
+    echo "==> daemon 未识别 ${REGISTRY_HOSTPORT} 为 insecure registry，重启 docker 生效"
+    sudo systemctl restart docker
     for _ in $(seq 1 15); do
-      if docker info --format '{{json .RegistryConfig.IndexConfigs}}' | grep -F "${ZOT_REGISTRY_TARGET}" >/dev/null; then
-        break
-      fi
+      registry_known && break
       sleep 1
     done
-    docker info --format '{{json .RegistryConfig.IndexConfigs}}' | grep -F "${ZOT_REGISTRY_TARGET}" >/dev/null \
-      || { echo "!! Docker daemon 未识别 ${ZOT_REGISTRY_TARGET} 为 insecure registry"; exit 1; }
   fi
+  registry_known || { echo "!! Docker daemon 未识别 ${REGISTRY_HOSTPORT} 为 insecure registry"; exit 1; }
 
   REGISTRY_HOST="${IMAGE_REF%%/*}"
   DOCKER_CONFIG_DIR="$(mktemp -d)"
@@ -140,7 +199,19 @@ PY
   fi
   export DOCKER_CONFIG="$DOCKER_CONFIG_DIR"
   echo "==> 拉取 ${IMAGE_REF}"
-  docker pull "$IMAGE_REF"
+  for attempt in 1 2 3; do
+    if docker pull "$IMAGE_REF"; then
+      break
+    fi
+    if [ "$attempt" = "3" ]; then
+      echo "!! 拉取 ${IMAGE_REF} 失败（已重试 3 次）"
+      echo "   daemon insecure-registries：$(docker info --format '{{json .RegistryConfig.IndexConfigs}}' 2>/dev/null || echo '?')"
+      echo "   部署机探测 http://${REGISTRY_HOSTPORT}/v2/ 返回 HTTP ${PROBE_CODE}"
+      exit 1
+    fi
+    echo "==> 拉取失败，$((attempt * 3))s 后重试（$attempt/3）"
+    sleep $((attempt * 3))
+  done
 fi
 
 docker image inspect "$IMAGE_REF" >/dev/null 2>&1 || { echo "!! 目标机没有镜像 ${IMAGE_REF}"; exit 1; }

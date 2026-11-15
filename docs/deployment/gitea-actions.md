@@ -194,7 +194,9 @@ git push gitea v0.1.0
 | 作业一直 queued | 没有 `linux_local` 标签的 runner | `--labels linux_local` 注册，或改 `runs-on` 与之匹配 |
 | 构建卡在拉基础镜像 | Docker Hub 出口受限 | 确认 buildkitd 配置里的 `docker.m.daocloud.io` 镜像可用 |
 | push 报 `http: server gave HTTP response to HTTPS client` | registry 纯 HTTP 未声明 | buildkitd 配置已含 `[registry."<host>"].http = true / insecure = true`；确认 `ZOT_REGISTRY` 与实际一致 |
+| 目标机 pull 报 `Head "https://<registry>/v2/...": i/o timeout` | 部署机根本连不到该 registry（与 http/https 无关）：部署机与构建机不在同一网段/路由时，构建机视角的地址部署机不可达 | 先看作业日志里 `!! 部署机访问不到 registry` 的预检结果；把仓库变量 `ZOT_REGISTRY_TARGET` 设成**部署机可达**的同一 Zot 地址（host:port），或让 registry 在该网络上可达 |
 | 目标机 pull 报 401 | registry 凭据错误 | 检查 `ZOT_USERNAME`/`ZOT_PASSWORD`；脚本用临时 `DOCKER_CONFIG`，不污染 `~/.docker` |
+| 目标机 pull 报 `server gave HTTP response to HTTPS client` | registry 是纯 HTTP，但部署机 daemon 没把它当 insecure registry | 脚本会按 `ZOT_REGISTRY_URL` 推导 host:port 写入 `insecure-registries`（HUP 不生效时自动重启 docker）；确认 `ZOT_REGISTRY_URL`（如 `http://<host>:5011`）与实际一致 |
 | 目标机 pull 报 `http: server gave HTTP response` | 部署机侧 registry 未声明 insecure | 用 `ZOT_REGISTRY_TARGET` 指定部署机视角地址；脚本会自动写 `daemon.json` 并 reload |
 | `moai 网络存在但找不到 redis 容器` | 共享基础设施未启动或未加入 `moai` 网络 | 先起共享实例；`docker network inspect moai` 核对 |
 | 部署后端口从 8080 变 8081 | `.env` 明确写了 `MOAI_PORT=8081` | 脚本只在为空时沿用旧端口，改成目标端口后重跑 |

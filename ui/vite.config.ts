@@ -112,6 +112,12 @@ export default defineConfig(({ mode }) => {
         target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
+      // 后端静态资源（Logo/头像等）由 Kestrel 的 /static 路由提供，开发期一并代理，
+      // 否则外部子系统按本前端地址拼 /static 的图片会落到 SPA fallback（返回 index.html）
+      '/static': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
       // 悬浮对话组件以 script 源（本站）调用后端 API，开发期代理到后端（生产为同源部署，无需代理）
       '/api': {
         target: 'http://127.0.0.1:5000',
