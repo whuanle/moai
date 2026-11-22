@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -36,7 +36,7 @@ public class QueryWikiDocumentsCommandHandler : IRequestHandler<QueryWikiDocumen
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiDocumentsCommandResponse> Handle(QueryWikiDocumentsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiDocumentsCommandResponse> Handle(QueryWikiDocumentsCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.WikiId, cancellationToken);
 

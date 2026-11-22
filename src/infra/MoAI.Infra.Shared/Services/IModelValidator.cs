@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace MediatR;
+namespace Mediator;
 
 /// <summary>
 /// 模型验证.

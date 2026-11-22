@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.OauthConnect.Queries.Responses;
 
 namespace MoAI.OauthConnect.Queries;

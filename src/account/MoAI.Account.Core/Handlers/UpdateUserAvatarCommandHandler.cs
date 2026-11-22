@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Account.Services;
@@ -32,7 +32,7 @@ public class UpdateUserAvatarCommandHandler : IRequestHandler<UpdateUserAvatarCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateUserAvatarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateUserAvatarCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.ObjectKey))
         {

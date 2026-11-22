@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Org.Commands;
@@ -24,7 +24,7 @@ public class SetOrgGrantsCommandHandler : IRequestHandler<SetOrgGrantsCommand, S
     }
 
     /// <inheritdoc/>
-    public async Task<SetOrgGrantsCommandResponse> Handle(SetOrgGrantsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SetOrgGrantsCommandResponse> Handle(SetOrgGrantsCommand request, CancellationToken cancellationToken)
     {
         var resourceType = OrgGrantGuard.ParseResourceType(request.ResourceType);
         if (string.IsNullOrWhiteSpace(request.ResourceId) || request.ResourceId.Length > 64)

@@ -65,8 +65,8 @@ public class QueryTeamAvailableSubsystemsCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var handler = CreateHandler(db.Context, null);
 
-        var ex = await Assert.ThrowsAsync<MoAI.Infra.Exceptions.BusinessException>(() =>
-            handler.Handle(new QueryTeamAvailableSubsystemsCommand { TeamId = 1, ContextUserId = 10 }, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<MoAI.Infra.Exceptions.BusinessException>(async () =>
+            await handler.Handle(new QueryTeamAvailableSubsystemsCommand { TeamId = 1, ContextUserId = 10 }, CancellationToken.None));
         Assert.Equal(404, ex.StatusCode);
     }
 

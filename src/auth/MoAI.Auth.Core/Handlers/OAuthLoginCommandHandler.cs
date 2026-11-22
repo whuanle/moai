@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Defaults;
@@ -58,7 +58,7 @@ state=STATE
     }
 
     /// <inheritdoc/>
-    public async Task<OAuthLoginCommandResponse> Handle(OAuthLoginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<OAuthLoginCommandResponse> Handle(OAuthLoginCommand request, CancellationToken cancellationToken)
     {
         // 登录风控：IP 封禁期内的请求直接拒绝
         await _loginRiskService.CheckIpBanAsync(request.ContextClientIp ?? string.Empty, cancellationToken);

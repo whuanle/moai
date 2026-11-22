@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -34,7 +34,7 @@ public class QuerySubsysAppsCommandHandler : IRequestHandler<QuerySubsysAppsComm
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySubsysAppsCommandResponse> Handle(QuerySubsysAppsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySubsysAppsCommandResponse> Handle(QuerySubsysAppsCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.AccessApps.Where(x => x.Level == AccessAppLevel.System);
         if (request.AppType.HasValue)
@@ -154,7 +154,7 @@ public class QuerySubsysAppInfoCommandHandler : IRequestHandler<QuerySubsysAppIn
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySubsysAppInfoCommandResponse> Handle(QuerySubsysAppInfoCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySubsysAppInfoCommandResponse> Handle(QuerySubsysAppInfoCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System)

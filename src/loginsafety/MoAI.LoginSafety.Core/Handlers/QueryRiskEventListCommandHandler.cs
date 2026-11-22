@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.LoginSafety.Commands;
@@ -23,7 +23,7 @@ public class QueryRiskEventListCommandHandler : IRequestHandler<QueryRiskEventLi
     }
 
     /// <inheritdoc/>
-    public async Task<QueryRiskEventListCommandResponse> Handle(QueryRiskEventListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryRiskEventListCommandResponse> Handle(QueryRiskEventListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.LoginRiskEvents.AsNoTracking().AsQueryable();
 

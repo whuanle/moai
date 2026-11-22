@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -43,7 +43,7 @@ public class CreateAppSessionCommandHandler : IRequestHandler<CreateAppSessionCo
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateAppSessionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateAppSessionCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
 

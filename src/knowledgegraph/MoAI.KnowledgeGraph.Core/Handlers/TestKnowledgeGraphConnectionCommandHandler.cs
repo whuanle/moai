@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Seed;
@@ -40,7 +40,7 @@ public class TestKnowledgeGraphConnectionCommandHandler : IRequestHandler<TestKn
     }
 
     /// <inheritdoc/>
-    public async Task<TestKnowledgeGraphConnectionCommandResponse> Handle(TestKnowledgeGraphConnectionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<TestKnowledgeGraphConnectionCommandResponse> Handle(TestKnowledgeGraphConnectionCommand request, CancellationToken cancellationToken)
     {
         var stored = await ResolveStoredConnectionAsync(cancellationToken);
 

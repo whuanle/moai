@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
 

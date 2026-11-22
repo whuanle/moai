@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using Maomi;
-using MediatR;
+using Mediator;
 
 namespace MoAI.Statistics.Services;
 

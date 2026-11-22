@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using Maomi;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

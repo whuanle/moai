@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Commands;
 using MoAI.Database;
@@ -24,7 +24,7 @@ public class UpdateAIModelVisibilityCommandHandler : IRequestHandler<UpdateAIMod
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateAIModelVisibilityCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateAIModelVisibilityCommand request, CancellationToken cancellationToken)
     {
         var model = await _databaseContext.AiModels
             .FirstOrDefaultAsync(x => x.Id == request.ModelId, cancellationToken);

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -36,7 +36,7 @@ public class TestNotificationTemplateCommandHandler : IRequestHandler<TestNotifi
     }
 
     /// <inheritdoc/>
-    public async Task<TestNotificationTemplateCommandResponse> Handle(TestNotificationTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<TestNotificationTemplateCommandResponse> Handle(TestNotificationTemplateCommand request, CancellationToken cancellationToken)
     {
         // 按试发渠道类型分发动态收件人：SMTP 记邮箱、短信记手机号，其它渠道忽略
         var toEmail = false;

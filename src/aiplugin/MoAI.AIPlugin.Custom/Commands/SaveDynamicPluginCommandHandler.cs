@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Models;
@@ -34,7 +34,7 @@ public class SaveDynamicPluginCommandHandler : IRequestHandler<SaveDynamicPlugin
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveDynamicPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveDynamicPluginCommand request, CancellationToken cancellationToken)
     {
         var template = _registry.Get(request.TempleteKey);
         if (template == null || !template.IsDynamic)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -32,7 +32,7 @@ public class CreateOrgRoleCommandHandler : IRequestHandler<CreateOrgRoleCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<CreateOrgRoleCommandResponse> Handle(CreateOrgRoleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CreateOrgRoleCommandResponse> Handle(CreateOrgRoleCommand request, CancellationToken cancellationToken)
     {
         var parent = await OrgRoleTreeGuard.FindParentAsync(_databaseContext, request.ParentId, cancellationToken);
         await OrgRoleTreeGuard.EnsureNoDuplicateNameAsync(_databaseContext, request.ParentId, request.Name, null, cancellationToken);

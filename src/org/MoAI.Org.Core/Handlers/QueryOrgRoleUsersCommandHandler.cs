@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -28,7 +28,7 @@ public class QueryOrgRoleUsersCommandHandler : IRequestHandler<QueryOrgRoleUsers
     }
 
     /// <inheritdoc/>
-    public async Task<QueryOrgRoleUsersCommandResponse> Handle(QueryOrgRoleUsersCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryOrgRoleUsersCommandResponse> Handle(QueryOrgRoleUsersCommand request, CancellationToken cancellationToken)
     {
         var roleExists = await _databaseContext.OrgRoles
             .AnyAsync(x => x.Id == request.RoleId, cancellationToken);

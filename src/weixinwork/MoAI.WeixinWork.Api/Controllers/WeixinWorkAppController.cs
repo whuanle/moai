@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -40,7 +40,7 @@ public class WeixinWorkAppController : ControllerBase
     public Task<QueryWeixinWorkAppsCommandResponse> QueryWeixinWorkApps([FromQuery] QueryWeixinWorkAppsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class WeixinWorkAppController : ControllerBase
     public Task<SimpleGuid> CreateWeixinWorkApp([FromBody] CreateWeixinWorkAppCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>

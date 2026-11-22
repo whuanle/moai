@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Message.Commands;
@@ -25,7 +25,7 @@ public class DeleteMessageCommandHandler : IRequestHandler<DeleteMessageCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteMessageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteMessageCommand request, CancellationToken cancellationToken)
     {
         // 仅允许删除本人的消息（软删除，由框架写入 is_deleted）
         await _databaseContext.SoftDeleteAsync(_databaseContext.Messages

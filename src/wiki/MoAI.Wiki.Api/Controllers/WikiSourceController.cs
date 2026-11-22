@@ -1,5 +1,5 @@
 using System;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Helpers;
 using MoAI.Infra.Models;
@@ -42,7 +42,7 @@ public class WikiSourceController : ControllerBase
     public Task<SimpleGuid> CreateSource(long wikiId, [FromBody] CreateWikiSourceCommand req, CancellationToken ct)
     {
         req.SetProperty(x => x.WikiId, wikiId);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public class WikiSourceController : ControllerBase
     public Task<QueryWikiSourcesCommandResponse> QuerySources(long wikiId, [FromQuery] QueryWikiSourcesCommand req, CancellationToken ct)
     {
         req.SetProperty(x => x.WikiId, wikiId);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public class WikiSourceController : ControllerBase
     {
         req.SetProperty(x => x.WikiId, wikiId);
         req.SetProperty(x => x.SourceId, sourceId);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -88,7 +88,7 @@ public class WikiSourceController : ControllerBase
         // 无请求体的删除命令由 Controller 构造，需显式回填用户上下文（自动填充过滤器只处理入参）
         var req = new DeleteWikiSourceCommand { WikiId = wikiId, SourceId = sourceId };
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public class WikiSourceController : ControllerBase
     {
         req.SetProperty(x => x.WikiId, wikiId);
         req.SetProperty(x => x.SourceId, sourceId);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -120,6 +120,6 @@ public class WikiSourceController : ControllerBase
     {
         req.SetProperty(x => x.WikiId, wikiId);
         req.SetProperty(x => x.SourceId, sourceId);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 }

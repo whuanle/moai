@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Queries;
 using MoAI.AIChannel.Queries.Responses;
@@ -23,7 +23,7 @@ public class QueryAIModelListCommandHandler : IRequestHandler<QueryAIModelListCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAIModelListCommandResponse> Handle(QueryAIModelListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAIModelListCommandResponse> Handle(QueryAIModelListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.AiModels.AsQueryable();
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class GetWikiDocumentContentCommandHandler : IRequestHandler<GetWikiDocum
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(GetWikiDocumentContentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(GetWikiDocumentContentCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.WikiId, cancellationToken);
 

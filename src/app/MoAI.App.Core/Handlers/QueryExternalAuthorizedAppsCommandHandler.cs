@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -23,7 +23,7 @@ public class QueryExternalAuthorizedAppsCommandHandler : IRequestHandler<QueryEx
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalAuthorizedAppsCommandResponse> Handle(QueryExternalAuthorizedAppsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalAuthorizedAppsCommandResponse> Handle(QueryExternalAuthorizedAppsCommand request, CancellationToken cancellationToken)
     {
         // 团队级授权：返回 token 归属团队下全部已发布且未禁用的外部应用
         var rows = await _databaseContext.Apps

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Account.Queries;
 using MoAI.Account.Queries.Responses;
 using MoAI.Account.Services;
@@ -22,7 +22,7 @@ public class QueryUserViewUserInfoCommandHandler : IRequestHandler<QueryUserView
     }
 
     /// <inheritdoc/>
-    public async Task<UserStateInfo> Handle(QueryUserViewUserInfoCommand request, CancellationToken cancellationToken)
+    public async ValueTask<UserStateInfo> Handle(QueryUserViewUserInfoCommand request, CancellationToken cancellationToken)
     {
         return await _userAccountService.GetUserStateAsync(request.ContextUserId, cancellationToken);
     }

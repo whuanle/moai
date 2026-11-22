@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -30,7 +30,7 @@ public class QueryAppsCommandHandler : IRequestHandler<QueryAppsCommand, QueryAp
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppsCommandResponse> Handle(QueryAppsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppsCommandResponse> Handle(QueryAppsCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

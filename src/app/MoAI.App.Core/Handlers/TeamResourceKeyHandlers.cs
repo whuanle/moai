@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Queries;
@@ -32,7 +32,7 @@ public class CreateTeamResourceKeyCommandHandler : IRequestHandler<CreateTeamRes
     }
 
     /// <inheritdoc/>
-    public async Task<CreateTeamResourceKeyCommandResponse> Handle(CreateTeamResourceKeyCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CreateTeamResourceKeyCommandResponse> Handle(CreateTeamResourceKeyCommand request, CancellationToken cancellationToken)
     {
         await EnsureTeamAdminAsync(request.TeamId, request.ContextUserId, cancellationToken);
 
@@ -145,7 +145,7 @@ public class QueryTeamResourceKeysCommandHandler : IRequestHandler<QueryTeamReso
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamResourceKeysCommandResponse> Handle(QueryTeamResourceKeysCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamResourceKeysCommandResponse> Handle(QueryTeamResourceKeysCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)
@@ -203,7 +203,7 @@ public class ResetTeamResourceKeyCommandHandler : IRequestHandler<ResetTeamResou
     }
 
     /// <inheritdoc/>
-    public async Task<ResetTeamResourceKeyCommandResponse> Handle(ResetTeamResourceKeyCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ResetTeamResourceKeyCommandResponse> Handle(ResetTeamResourceKeyCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.TeamResourceKeys
             .FirstOrDefaultAsync(x => x.Id == request.TeamResourceKeyId, cancellationToken);

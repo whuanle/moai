@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.Services;
 using MoAI.App.Queries;
@@ -30,7 +30,7 @@ public class QueryAppSessionContextUsageCommandHandler : IRequestHandler<QueryAp
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppSessionContextUsageCommandResponse> Handle(QueryAppSessionContextUsageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppSessionContextUsageCommandResponse> Handle(QueryAppSessionContextUsageCommand request, CancellationToken cancellationToken)
     {
         var session = await _databaseContext.AppAgentSessions
             .Where(x => x.Id == request.SessionId)

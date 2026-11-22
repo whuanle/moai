@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Variable.Commands;
@@ -35,7 +35,7 @@ public class VariableController : ControllerBase
     [HttpPost]
     public Task<SimpleLong> CreateVariable([FromBody] CreateVariableCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public class VariableController : ControllerBase
     [HttpDelete("{id}")]
     public Task<EmptyCommandResponse> DeleteVariable(long id, CancellationToken ct)
     {
-        return _mediator.Send(new DeleteVariableCommand { VariableId = id }, ct);
+        return _mediator.Send(new DeleteVariableCommand { VariableId = id }, ct).AsTask();
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class VariableController : ControllerBase
     [HttpGet("list")]
     public Task<QueryVariablesCommandResponse> QueryVariables([FromQuery] QueryVariablesCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ public class VariableController : ControllerBase
     [HttpGet("{id}")]
     public Task<QueryVariableCommandResponse> QueryVariable(long id, CancellationToken ct)
     {
-        return _mediator.Send(new QueryVariableCommand { VariableId = id }, ct);
+        return _mediator.Send(new QueryVariableCommand { VariableId = id }, ct).AsTask();
     }
 
     /// <summary>
@@ -97,6 +97,6 @@ public class VariableController : ControllerBase
     [HttpPost("substitute")]
     public Task<SubstituteVariableCommandResponse> Substitute([FromBody] SubstituteVariableCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 }

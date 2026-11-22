@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
 
@@ -25,7 +25,7 @@ public class QueryExternalNodeKeysCommandHandler : IRequestHandler<QueryExternal
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalNodeKeysResponse> Handle(QueryExternalNodeKeysCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalNodeKeysResponse> Handle(QueryExternalNodeKeysCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         var (items, _) = await _store.ListNodeKeysAsync(request.KnowledgeGraphId, request.PageNo, request.PageSize, cancellationToken);

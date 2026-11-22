@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -23,7 +23,7 @@ public class QueryPublicationPendingCountCommandHandler : IRequestHandler<QueryP
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPublicationPendingCountCommandResponse> Handle(QueryPublicationPendingCountCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPublicationPendingCountCommandResponse> Handle(QueryPublicationPendingCountCommand request, CancellationToken cancellationToken)
     {
         var count = await _databaseContext.PublicationReviews.AsNoTracking()
             .CountAsync(x => x.State == (int)PublicationState.Pending, cancellationToken);

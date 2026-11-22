@@ -1,5 +1,5 @@
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -34,7 +34,7 @@ public class DeleteKnowledgeGraphNodeCommandHandler : IRequestHandler<DeleteKnow
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteKnowledgeGraphNodeCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var deleted = await _store.DeleteNodeAsync(request.KnowledgeGraphId, request.NodeId, cancellationToken);

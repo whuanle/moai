@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -34,7 +34,7 @@ public class CreateTeamAgentCommandHandler : IRequestHandler<CreateTeamAgentComm
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateTeamAgentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateTeamAgentCommand request, CancellationToken cancellationToken)
     {
         await TeamAgentAccessGuard.EnsureCanManageAsync(request.TeamId, request.ContextUserId, _userAccountService, _teamService, cancellationToken);
 

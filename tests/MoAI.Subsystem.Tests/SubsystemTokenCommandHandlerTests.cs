@@ -80,7 +80,7 @@ public class SubsystemTokenCommandHandlerTests
         await SetSecretAsync(db, "report", TestSecret);
         var handler = CreateHandler(db.Context);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = "wrong" }, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = "wrong" }, CancellationToken.None));
         Assert.Equal(401, ex.StatusCode);
     }
 
@@ -92,7 +92,7 @@ public class SubsystemTokenCommandHandlerTests
         await SetSecretAsync(db, "report", TestSecret);
         var handler = CreateHandler(db.Context);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemTokenCommand { AppId = "nope", Secret = TestSecret }, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemTokenCommand { AppId = "nope", Secret = TestSecret }, CancellationToken.None));
         Assert.Equal(401, ex.StatusCode);
     }
 
@@ -104,7 +104,7 @@ public class SubsystemTokenCommandHandlerTests
         await SetSecretAsync(db, "report", TestSecret);
         var handler = CreateHandler(db.Context);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = TestSecret }, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = TestSecret }, CancellationToken.None));
         Assert.Equal(403, ex.StatusCode);
     }
 
@@ -123,7 +123,7 @@ public class SubsystemTokenCommandHandlerTests
         Assert.True(cipher.TryReveal(updated.Secret, out var newSecret));
 
         var handler = CreateHandler(db.Context);
-        var oldEx = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = TestSecret }, CancellationToken.None));
+        var oldEx = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = TestSecret }, CancellationToken.None));
         Assert.Equal(401, oldEx.StatusCode);
 
         await handler.Handle(new SubsystemTokenCommand { AppId = "report", Secret = newSecret }, CancellationToken.None);

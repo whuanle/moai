@@ -1,5 +1,5 @@
 using System;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.AIChannel.Commands;
 using MoAI.AIChannel.Queries;

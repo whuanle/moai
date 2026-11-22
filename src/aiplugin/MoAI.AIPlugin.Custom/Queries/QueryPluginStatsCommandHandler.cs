@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Queries;
@@ -40,7 +40,7 @@ public class QueryPluginStatsCommandHandler : IRequestHandler<QueryPluginStatsCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPluginStatsCommandResponse> Handle(QueryPluginStatsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPluginStatsCommandResponse> Handle(QueryPluginStatsCommand request, CancellationToken cancellationToken)
     {
         // 全团队汇总：系统侧（team_id=0）+ 全部团队自有插件
         var plugins = await _databaseContext.Plugins

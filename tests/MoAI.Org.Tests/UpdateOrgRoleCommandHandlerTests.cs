@@ -81,7 +81,7 @@ public class UpdateOrgRoleCommandHandlerTests
 
         // 把 A(1) 移到 C(3) 之下：C 是 A 的后代，成环
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 1, Name = "集团A", ParentId = 3 }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 1, Name = "集团A", ParentId = 3 }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }
@@ -94,7 +94,7 @@ public class UpdateOrgRoleCommandHandlerTests
         var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 2 }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 2 }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }
@@ -109,7 +109,7 @@ public class UpdateOrgRoleCommandHandlerTests
         var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 4 }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 2, Name = "销售部", ParentId = 4 }, CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
     }
@@ -121,7 +121,7 @@ public class UpdateOrgRoleCommandHandlerTests
         var handler = new UpdateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 999, Name = "不存在", ParentId = null }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleCommand { OrgRoleId = 999, Name = "不存在", ParentId = null }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }

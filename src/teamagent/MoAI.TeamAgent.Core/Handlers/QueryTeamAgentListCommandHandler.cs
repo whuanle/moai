@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -32,7 +32,7 @@ public class QueryTeamAgentListCommandHandler : IRequestHandler<QueryTeamAgentLi
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamAgentListCommandResponse> Handle(QueryTeamAgentListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamAgentListCommandResponse> Handle(QueryTeamAgentListCommand request, CancellationToken cancellationToken)
     {
         var role = await TeamAgentAccessGuard.EnsureTeamMemberAsync(request.TeamId, request.ContextUserId, _teamService, cancellationToken);
 

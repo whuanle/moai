@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class QueryWikiSourceDocumentsCommandHandler : IRequestHandler<QueryWikiS
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiSourceDocumentsCommandResponse> Handle(QueryWikiSourceDocumentsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiSourceDocumentsCommandResponse> Handle(QueryWikiSourceDocumentsCommand request, CancellationToken cancellationToken)
     {
         var source = await _databaseContext.WikiSources
             .FirstOrDefaultAsync(x => x.Id == request.SourceId && x.WikiId == request.WikiId, cancellationToken);

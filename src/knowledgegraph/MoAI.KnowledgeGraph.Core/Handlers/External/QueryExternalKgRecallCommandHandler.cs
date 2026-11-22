@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Models;
@@ -28,7 +28,7 @@ public class QueryExternalKgRecallCommandHandler : IRequestHandler<QueryExternal
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalKgRecallCommandResponse> Handle(QueryExternalKgRecallCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalKgRecallCommandResponse> Handle(QueryExternalKgRecallCommand request, CancellationToken cancellationToken)
     {
         var graph = await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         if (!string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))

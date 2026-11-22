@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -30,7 +30,7 @@ public class QueryAppAccessPointCommandHandler : IRequestHandler<QueryAppAccessP
     }
 
     /// <inheritdoc/>
-    public async Task<AppAccessPointConfigResponse> Handle(QueryAppAccessPointCommand request, CancellationToken cancellationToken)
+    public async ValueTask<AppAccessPointConfigResponse> Handle(QueryAppAccessPointCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

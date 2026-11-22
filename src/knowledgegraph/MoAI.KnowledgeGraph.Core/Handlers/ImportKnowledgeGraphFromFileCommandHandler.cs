@@ -1,5 +1,5 @@
 using Hangfire;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -40,7 +40,7 @@ public class ImportKnowledgeGraphFromFileCommandHandler : IRequestHandler<Import
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(ImportKnowledgeGraphFromFileCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(ImportKnowledgeGraphFromFileCommand request, CancellationToken cancellationToken)
     {
         // 导入即写节点/边：仅托管图 Admin+（接入图只读 409 由授权器拦截）
         var (graph, _) = await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);

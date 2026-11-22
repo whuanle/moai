@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -29,7 +29,7 @@ public class SubsystemSsoRefreshCommandHandler : IRequestHandler<SubsystemSsoRef
     }
 
     /// <inheritdoc/>
-    public async Task<SubsystemSsoExchangeCommandResponse> Handle(SubsystemSsoRefreshCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubsystemSsoExchangeCommandResponse> Handle(SubsystemSsoRefreshCommand request, CancellationToken cancellationToken)
     {
         if (!_tokenProvider.TryValidateUserRefreshToken(request.RefreshToken, out var subsystemId, out var userId, out var authVersion)
             || subsystemId != request.SubsystemId)

@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -39,7 +39,7 @@ public class PromptController : ControllerBase
     public Task<SimpleInt> CreatePrompt([FromBody] CreatePromptCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public class PromptController : ControllerBase
             AvatarPath = req.AvatarPath,
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class PromptController : ControllerBase
     {
         var cmd = new DeletePromptCommand { PromptId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public class PromptController : ControllerBase
     {
         var cmd = new UpdatePromptAvatarCommand { PromptId = id, ObjectKey = req.ObjectKey };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public class PromptController : ControllerBase
     public Task<QueryPromptListCommandResponse> QueryMyList([FromQuery] QueryUserPromptListCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -117,7 +117,7 @@ public class PromptController : ControllerBase
     public Task<QueryPromptListCommandResponse> QueryTeamList([FromQuery] QueryTeamPromptListCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ public class PromptController : ControllerBase
     public Task<QueryPromptListCommandResponse> QueryTopUsed([FromQuery] QueryTopUsedPromptsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public class PromptController : ControllerBase
     {
         var cmd = new QueryPromptCommand { PromptId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -157,6 +157,6 @@ public class PromptController : ControllerBase
     [HttpGet("market_list")]
     public Task<QueryPromptListCommandResponse> QueryMarketList([FromQuery] QueryPromptMarketListCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 }

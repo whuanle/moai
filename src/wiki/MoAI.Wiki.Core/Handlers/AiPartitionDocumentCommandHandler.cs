@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -46,7 +46,7 @@ public class AiPartitionDocumentCommandHandler : IRequestHandler<AiPartitionDocu
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(AiPartitionDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(AiPartitionDocumentCommand request, CancellationToken cancellationToken)
     {
         var document = await EnsureMemberAndLoadDocumentAsync(request.WikiId, request.DocumentId, cancellationToken);
 

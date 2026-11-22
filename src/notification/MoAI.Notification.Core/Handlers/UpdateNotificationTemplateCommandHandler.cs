@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -26,7 +26,7 @@ public class UpdateNotificationTemplateCommandHandler : IRequestHandler<UpdateNo
     }
 
     /// <inheritdoc/>
-    public async Task<MoAI.Infra.Models.EmptyCommandResponse> Handle(UpdateNotificationTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<MoAI.Infra.Models.EmptyCommandResponse> Handle(UpdateNotificationTemplateCommand request, CancellationToken cancellationToken)
     {
         if (NotificationTemplateVariableParser.Parse(request.Variables, out var parseError) == null)
         {

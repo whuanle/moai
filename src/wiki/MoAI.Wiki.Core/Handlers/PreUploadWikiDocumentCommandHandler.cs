@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -42,7 +42,7 @@ public class PreUploadWikiDocumentCommandHandler : IRequestHandler<PreUploadWiki
     }
 
     /// <inheritdoc/>
-    public async Task<PreUploadWikiDocumentCommandResponse> Handle(PreUploadWikiDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PreUploadWikiDocumentCommandResponse> Handle(PreUploadWikiDocumentCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.WikiId, cancellationToken);
 

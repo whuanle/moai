@@ -64,7 +64,7 @@ public class CreateOrgRoleCommandHandlerTests
         var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 999 }, CancellationToken.None));
+            async () => await handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 999 }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }
@@ -79,7 +79,7 @@ public class CreateOrgRoleCommandHandlerTests
         var handler = new CreateOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 10 }, CancellationToken.None));
+            async () => await handler.Handle(new CreateOrgRoleCommand { Name = "销售部", ParentId = 10 }, CancellationToken.None));
 
         Assert.Equal(409, ex.StatusCode);
     }

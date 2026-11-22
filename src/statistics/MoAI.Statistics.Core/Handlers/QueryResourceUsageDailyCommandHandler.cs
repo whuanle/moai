@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Statistics.Queries;
@@ -27,7 +27,7 @@ public class QueryResourceUsageDailyCommandHandler : IRequestHandler<QueryResour
     }
 
     /// <inheritdoc/>
-    public async Task<QueryResourceUsageDailyCommandResponse> Handle(QueryResourceUsageDailyCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryResourceUsageDailyCommandResponse> Handle(QueryResourceUsageDailyCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.ResourceUsageDailies
             .AsNoTracking()

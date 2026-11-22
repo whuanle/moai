@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -29,7 +29,7 @@ public class DeleteMyMemoryCommandHandler : IRequestHandler<DeleteMyMemoryComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteMyMemoryCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteMyMemoryCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken)

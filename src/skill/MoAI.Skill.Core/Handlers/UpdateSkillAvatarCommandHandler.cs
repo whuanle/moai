@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class UpdateSkillAvatarCommandHandler : IRequestHandler<UpdateSkillAvatar
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateSkillAvatarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateSkillAvatarCommand request, CancellationToken cancellationToken)
     {
         var skill = await _databaseContext.Skills
             .FirstOrDefaultAsync(x => x.Id == request.SkillId, cancellationToken);

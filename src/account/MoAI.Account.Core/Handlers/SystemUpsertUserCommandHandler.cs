@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
@@ -62,7 +62,7 @@ public class SystemUpsertUserCommandHandler : IRequestHandler<SystemUpsertUserCo
     }
 
     /// <inheritdoc/>
-    public async Task<SystemUpsertUserCommandResponse> Handle(SystemUpsertUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SystemUpsertUserCommandResponse> Handle(SystemUpsertUserCommand request, CancellationToken cancellationToken)
     {
         await using var transaction = await _databaseContext.Database.BeginTransactionAsync(cancellationToken);
         try

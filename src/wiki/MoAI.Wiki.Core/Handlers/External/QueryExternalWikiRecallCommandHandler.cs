@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.Wiki.External;
 using MoAI.Wiki.Services;
 
@@ -28,7 +28,7 @@ public class QueryExternalWikiRecallCommandHandler : IRequestHandler<QueryExtern
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalWikiRecallCommandResponse> Handle(QueryExternalWikiRecallCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalWikiRecallCommandResponse> Handle(QueryExternalWikiRecallCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

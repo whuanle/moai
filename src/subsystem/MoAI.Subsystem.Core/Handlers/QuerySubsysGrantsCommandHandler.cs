@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class QuerySubsysGrantsCommandHandler : IRequestHandler<QuerySubsysGrants
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySubsysGrantsCommandResponse> Handle(QuerySubsysGrantsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySubsysGrantsCommandResponse> Handle(QuerySubsysGrantsCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.AccessApps
             .AsNoTracking()

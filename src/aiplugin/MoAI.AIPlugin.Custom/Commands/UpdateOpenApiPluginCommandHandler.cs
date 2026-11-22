@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AIPlugin.Commands;
@@ -41,7 +41,7 @@ public class UpdateOpenApiPluginCommandHandler : IRequestHandler<UpdateOpenApiPl
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateOpenApiPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateOpenApiPluginCommand request, CancellationToken cancellationToken)
     {
         var pluginEntity = await _databaseContext.Plugins
             .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);

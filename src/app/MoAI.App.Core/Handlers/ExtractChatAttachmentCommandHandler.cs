@@ -1,5 +1,5 @@
 using Maomi.ToMarkdown;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using MoAI.App.Commands;
 using MoAI.Infra.Exceptions;
@@ -40,7 +40,7 @@ public class ExtractChatAttachmentCommandHandler : IRequestHandler<ExtractChatAt
     }
 
     /// <inheritdoc/>
-    public async Task<ExtractChatAttachmentResponse> Handle(ExtractChatAttachmentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExtractChatAttachmentResponse> Handle(ExtractChatAttachmentCommand request, CancellationToken cancellationToken)
     {
         StorageFileReadResult file;
         try

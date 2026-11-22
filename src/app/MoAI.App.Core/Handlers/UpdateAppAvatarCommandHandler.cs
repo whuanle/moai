@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -29,7 +29,7 @@ public class UpdateAppAvatarCommandHandler : IRequestHandler<UpdateAppAvatarComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateAppAvatarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateAppAvatarCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);

@@ -108,7 +108,7 @@ public class SubsystemSsoHandlerTests
         await SeedMemberAsync(db.Context, 1, 10);
 
         var handler = new SubsystemSsoAuthorizeCommandHandler(db.Context, FakeCodeStore(), FakeOrgGrants());
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoAuthorizeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemSsoAuthorizeCommand
         {
             SubsystemKey = subsystem.Key,
             ContextUserId = 10,
@@ -166,7 +166,7 @@ public class SubsystemSsoHandlerTests
         var subsystem = await SeedSubsystemAsync(db.Context, callback: "");
         var handler = new SubsystemSsoAuthorizeCommandHandler(db.Context, FakeCodeStore(), FakeOrgGrants());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoAuthorizeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemSsoAuthorizeCommand
         {
             SubsystemKey = subsystem.Key,
             ContextUserId = 10,
@@ -182,7 +182,7 @@ public class SubsystemSsoHandlerTests
         await TestSeeds.SeedSubsysAppAsync(db.Context, "moai-sa-AppRow", AccessAppType.App, callback: "https://erp.local/cb");
         var handler = new SubsystemSsoAuthorizeCommandHandler(db.Context, FakeCodeStore(), FakeOrgGrants());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoAuthorizeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemSsoAuthorizeCommand
         {
             SubsystemKey = "moai-sa-AppRow",
             ContextUserId = 10,
@@ -201,7 +201,7 @@ public class SubsystemSsoHandlerTests
         await SeedMemberAsync(db.Context, 1, 10);
         var handler = new SubsystemSsoAuthorizeCommandHandler(db.Context, FakeCodeStore(), FakeOrgGrants());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoAuthorizeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemSsoAuthorizeCommand
         {
             SubsystemKey = subsystem.Key,
             ContextUserId = 10,
@@ -216,7 +216,7 @@ public class SubsystemSsoHandlerTests
         var subsystem = await SeedSubsystemAsync(db.Context);
         var handler = new SubsystemSsoAuthorizeCommandHandler(db.Context, FakeCodeStore(), FakeOrgGrants());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoAuthorizeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemSsoAuthorizeCommand
         {
             SubsystemKey = subsystem.Key,
             ContextUserId = 10,
@@ -258,7 +258,7 @@ public class SubsystemSsoHandlerTests
         Assert.Equal("u10", exchanged.UserName);
 
         // 委托码一次性：重放 401
-        var replay = await Assert.ThrowsAsync<BusinessException>(() => exchangeHandler.Handle(new SubsystemSsoExchangeCommand
+        var replay = await Assert.ThrowsAsync<BusinessException>(async () => await exchangeHandler.Handle(new SubsystemSsoExchangeCommand
         {
             SubsystemId = subsystem.Id,
             Code = authorized.Code,
@@ -281,7 +281,7 @@ public class SubsystemSsoHandlerTests
 
         // 子系统 B 拿 A 签发的委托码兑换：绑定校验拒绝
         var exchangeHandler = new SubsystemSsoExchangeCommandHandler(db.Context, codeStore, Mock.Of<ISubsystemTokenProvider>());
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => exchangeHandler.Handle(new SubsystemSsoExchangeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await exchangeHandler.Handle(new SubsystemSsoExchangeCommand
         {
             SubsystemId = subsystemB.Id,
             Code = authorized.Code,
@@ -304,7 +304,7 @@ public class SubsystemSsoHandlerTests
         var authorized = await authorizeHandler.Handle(new SubsystemSsoAuthorizeCommand { SubsystemKey = subsystem.Key, ContextUserId = 10 }, CancellationToken.None);
 
         var exchangeHandler = new SubsystemSsoExchangeCommandHandler(db.Context, codeStore, Mock.Of<ISubsystemTokenProvider>());
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => exchangeHandler.Handle(new SubsystemSsoExchangeCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await exchangeHandler.Handle(new SubsystemSsoExchangeCommand
         {
             SubsystemId = subsystem.Id,
             Code = authorized.Code,
@@ -321,7 +321,7 @@ public class SubsystemSsoHandlerTests
         tokenProvider.Setup(x => x.TryValidateUserRefreshToken(It.IsAny<string>(), out It.Ref<Guid>.IsAny, out It.Ref<long>.IsAny, out It.Ref<long>.IsAny)).Returns(false);
         var handler = new SubsystemSsoRefreshCommandHandler(db.Context, tokenProvider.Object);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SubsystemSsoRefreshCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SubsystemSsoRefreshCommand
         {
             SubsystemId = subsystem.Id,
             RefreshToken = FakeRefreshBad,
@@ -397,7 +397,7 @@ public class SubsystemSsoHandlerTests
         using var db = TestSqliteContext.Create();
         var handler = new SetSubsystemOrgGrantsCommandHandler(db.Context, Mock.Of<IOrgGrantService>());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new SetSubsystemOrgGrantsCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new SetSubsystemOrgGrantsCommand
         {
             SubsystemId = Guid.CreateVersion7(),
             Grants = [new SubsystemOrgGrantItem { OrgRoleId = 1, Scope = OrgGrantScope.Down }],
@@ -466,7 +466,7 @@ public class SubsystemSsoHandlerTests
         var app = await TestSeeds.SeedSubsysAppAsync(db.Context, "moai-sa-AppRow", AccessAppType.App);
         var handler = new QuerySubsystemOrgGrantsCommandHandler(db.Context, Mock.Of<IOrgGrantService>());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new QuerySubsystemOrgGrantsCommand { SubsystemId = app.Id }, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new QuerySubsystemOrgGrantsCommand { SubsystemId = app.Id }, CancellationToken.None));
         Assert.Equal(404, ex.StatusCode);
     }
 

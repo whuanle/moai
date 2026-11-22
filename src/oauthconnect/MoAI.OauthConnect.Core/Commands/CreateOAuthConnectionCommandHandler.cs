@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -35,7 +35,7 @@ public class CreateOAuthConnectionCommandHandler : IRequestHandler<CreateOAuthCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(CreateOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
         var exist = await _databaseContext.OauthConnections
             .AnyAsync(x => x.Name == request.Name, cancellationToken);

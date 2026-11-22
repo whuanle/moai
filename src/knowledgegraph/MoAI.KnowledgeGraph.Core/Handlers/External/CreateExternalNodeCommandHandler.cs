@@ -1,5 +1,5 @@
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -39,7 +39,7 @@ public class CreateExternalNodeCommandHandler : IRequestHandler<CreateExternalNo
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(CreateExternalNodeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(CreateExternalNodeCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 

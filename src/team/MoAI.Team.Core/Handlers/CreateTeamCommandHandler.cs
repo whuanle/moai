@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -38,7 +38,7 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Simpl
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
     {
         var exist = await _databaseContext.Teams
             .AnyAsync(x => x.Name == request.Name, cancellationToken);

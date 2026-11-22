@@ -92,7 +92,7 @@ public class CreateSubsysAppCommandHandlerTests
             TeamScope = SubsystemTeamScope.AllTeams,
         }, CancellationToken.None);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new CreateSubsysAppCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new CreateSubsysAppCommand
         {
             AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
             Key = "report",
@@ -108,7 +108,7 @@ public class CreateSubsysAppCommandHandlerTests
         using var db = TestSqliteContext.Create();
         var handler = new CreateSubsysAppCommandHandler(db.Context, TestSeeds.CreateCipher(), TestSeeds.CreateCodec());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new CreateSubsysAppCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new CreateSubsysAppCommand
         {
             AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
             Key = "report",
@@ -200,7 +200,7 @@ public class CreateSubsysAppCommandHandlerTests
         await db.Context.SaveChangesAsync();
         var handler = new CreateSubsysAppCommandHandler(db.Context, TestSeeds.CreateCipher(), TestSeeds.CreateCodec());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new CreateSubsysAppCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new CreateSubsysAppCommand
         {
             AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
             Key = "report",
@@ -210,7 +210,7 @@ public class CreateSubsysAppCommandHandlerTests
         }, CancellationToken.None));
         Assert.Equal(404, ex.StatusCode);
 
-        var exGhost = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new CreateSubsysAppCommand
+        var exGhost = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new CreateSubsysAppCommand
         {
             AppType = MoAI.Database.Enums.AccessAppType.Subsystem,
             Key = "report",

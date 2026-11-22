@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -34,7 +34,7 @@ public class TakedownPublicationCommandHandler : IRequestHandler<TakedownPublica
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(TakedownPublicationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(TakedownPublicationCommand request, CancellationToken cancellationToken)
     {
         int teamId;
         long resourceOwnerId = 0;

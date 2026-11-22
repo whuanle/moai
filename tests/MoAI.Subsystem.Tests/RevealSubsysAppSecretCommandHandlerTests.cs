@@ -83,7 +83,7 @@ public class RevealSubsysAppSecretCommandHandlerTests
         var (rsa, _) = FakeRsa();
         var handler = new RevealSubsysAppSecretCommandHandler(db.Context, TestSeeds.CreateCipher(), rsa);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new RevealSubsysAppSecretCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new RevealSubsysAppSecretCommand
         {
             Id = entity.Id,
             EncryptedKey = "whatever-cipher",
@@ -103,7 +103,7 @@ public class RevealSubsysAppSecretCommandHandlerTests
         rsa.Setup(x => x.Decrypt(It.IsAny<string>(), null)).Returns(Convert.ToBase64String(shortKey));
         var handler = new RevealSubsysAppSecretCommandHandler(db.Context, cipher, rsa.Object);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new RevealSubsysAppSecretCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new RevealSubsysAppSecretCommand
         {
             Id = appId,
             EncryptedKey = "whatever-cipher",
@@ -118,7 +118,7 @@ public class RevealSubsysAppSecretCommandHandlerTests
         var (rsa, _) = FakeRsa();
         var handler = new RevealSubsysAppSecretCommandHandler(db.Context, TestSeeds.CreateCipher(), rsa);
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new RevealSubsysAppSecretCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new RevealSubsysAppSecretCommand
         {
             Id = Guid.CreateVersion7(),
             EncryptedKey = "whatever-cipher",

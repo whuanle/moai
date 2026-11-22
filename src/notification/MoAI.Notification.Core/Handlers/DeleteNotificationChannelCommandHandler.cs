@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -25,7 +25,7 @@ public class DeleteNotificationChannelCommandHandler : IRequestHandler<DeleteNot
     }
 
     /// <inheritdoc/>
-    public async Task<MoAI.Infra.Models.EmptyCommandResponse> Handle(DeleteNotificationChannelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<MoAI.Infra.Models.EmptyCommandResponse> Handle(DeleteNotificationChannelCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.NotificationChannels
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);

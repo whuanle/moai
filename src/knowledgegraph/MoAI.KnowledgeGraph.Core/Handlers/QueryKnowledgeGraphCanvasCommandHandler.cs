@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
@@ -27,7 +27,7 @@ public class QueryKnowledgeGraphCanvasCommandHandler : IRequestHandler<QueryKnow
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphCanvasCommandResponse> Handle(QueryKnowledgeGraphCanvasCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphCanvasCommandResponse> Handle(QueryKnowledgeGraphCanvasCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var limit = request.Limit < 1 ? 200 : Math.Min(request.Limit, 500);

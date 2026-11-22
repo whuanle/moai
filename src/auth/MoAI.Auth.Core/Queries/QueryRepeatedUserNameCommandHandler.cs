@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
@@ -18,7 +18,7 @@ public class QueryRepeatedUserNameCommandHandler : IRequestHandler<QueryRepeated
         _dbContext = dbContext;
     }
 
-    public async Task<SimpleBool> Handle(QueryRepeatedUserNameCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleBool> Handle(QueryRepeatedUserNameCommand request, CancellationToken cancellationToken)
     {
         var existingUser = await _dbContext.Users
         .Where(u => u.UserName == request.UserName || u.Email == request.UserName || u.Phone == request.UserName)

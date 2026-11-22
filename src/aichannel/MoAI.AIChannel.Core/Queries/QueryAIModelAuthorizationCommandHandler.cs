@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Queries;
 using MoAI.AIChannel.Queries.Responses;
@@ -24,7 +24,7 @@ public class QueryAIModelAuthorizationCommandHandler : IRequestHandler<QueryAIMo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAIModelAuthorizationCommandResponse> Handle(QueryAIModelAuthorizationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAIModelAuthorizationCommandResponse> Handle(QueryAIModelAuthorizationCommand request, CancellationToken cancellationToken)
     {
         var model = await _databaseContext.AiModels
             .FirstOrDefaultAsync(x => x.Id == request.ModelId, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Queries.Responses;
@@ -31,7 +31,7 @@ public class ResetAccessAppSecretCommandHandler : IRequestHandler<ResetAccessApp
     }
 
     /// <inheritdoc/>
-    public async Task<ResetAccessAppSecretCommandResponse> Handle(ResetAccessAppSecretCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ResetAccessAppSecretCommandResponse> Handle(ResetAccessAppSecretCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.Team)

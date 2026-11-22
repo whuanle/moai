@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -36,7 +36,7 @@ public class SubsystemTokenCommandHandler : IRequestHandler<SubsystemTokenComman
     }
 
     /// <inheritdoc/>
-    public async Task<SubsystemTokenCommandResponse> Handle(SubsystemTokenCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubsystemTokenCommandResponse> Handle(SubsystemTokenCommand request, CancellationToken cancellationToken)
     {
         // 公网暴力枚举防护：按 (IP, appid) 与 IP 两维度限制失败次数，超限窗口内直接 429 不再校验
         var clientIp = _rateLimiter.GetClientIp();
@@ -85,7 +85,7 @@ public class SubsystemTokenRefreshCommandHandler : IRequestHandler<SubsystemToke
     }
 
     /// <inheritdoc/>
-    public async Task<SubsystemTokenCommandResponse> Handle(SubsystemTokenRefreshCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubsystemTokenCommandResponse> Handle(SubsystemTokenRefreshCommand request, CancellationToken cancellationToken)
     {
         // refresh token 无状态不落库，吊销 = 刷新时按数据库当前状态重验（停用 403/删除或 appid 不匹配 401），刷新即轮换
         if (!_subsystemTokenProvider.TryValidateMachineRefreshToken(request.RefreshToken, out var appId, out var appKey))

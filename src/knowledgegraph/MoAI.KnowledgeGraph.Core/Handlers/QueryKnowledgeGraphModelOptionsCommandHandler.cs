@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -37,7 +37,7 @@ public class QueryKnowledgeGraphModelOptionsCommandHandler : IRequestHandler<Que
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphModelOptionsCommandResponse> Handle(QueryKnowledgeGraphModelOptionsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphModelOptionsCommandResponse> Handle(QueryKnowledgeGraphModelOptionsCommand request, CancellationToken cancellationToken)
     {
         var userId = _userContextProvider.GetUserContext().UserId;
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);

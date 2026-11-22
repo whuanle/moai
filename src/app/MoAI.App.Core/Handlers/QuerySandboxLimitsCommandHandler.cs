@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
 using MoAI.Infra.Models;
@@ -23,7 +23,7 @@ public class QuerySandboxLimitsCommandHandler : IRequestHandler<QuerySandboxLimi
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySandboxLimitsCommandResponse> Handle(QuerySandboxLimitsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySandboxLimitsCommandResponse> Handle(QuerySandboxLimitsCommand request, CancellationToken cancellationToken)
     {
         var limits = await _sandboxSettingsService.GetLimitsAsync(cancellationToken);
 

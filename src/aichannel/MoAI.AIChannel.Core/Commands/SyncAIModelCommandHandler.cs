@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Commands;
 using MoAI.AIChannel.Models;
@@ -34,7 +34,7 @@ public class SyncAIModelCommandHandler : IRequestHandler<SyncAIModelCommand, Syn
     }
 
     /// <inheritdoc/>
-    public async Task<SyncAIModelCommandResponse> Handle(SyncAIModelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SyncAIModelCommandResponse> Handle(SyncAIModelCommand request, CancellationToken cancellationToken)
     {
         var channel = await _databaseContext.AiChannels
             .FirstOrDefaultAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);

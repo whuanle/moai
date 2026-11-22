@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Auth.Commands;
 using MoAI.Auth.Models;
 using MoAI.Auth.Services;
@@ -45,7 +45,7 @@ public class SendEmailCodeCommandHandler : IRequestHandler<SendEmailCodeCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SendEmailCodeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SendEmailCodeCommand request, CancellationToken cancellationToken)
     {
         // 登录验证码由登录页一体化端点（/auth/login_code/send）发送，公共匿名端点拒绝，防止向任意邮箱轰炸验证码
         if (request.Purpose == EmailCodePurpose.Login)

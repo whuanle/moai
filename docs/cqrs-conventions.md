@@ -91,7 +91,7 @@ MoAI.{Domain}.Api/
 注意请求模型需要继承 `IModelValidator<T>` ，编写验证模型请求参数是否正确，提前拦截无效请求。
 
 ```csharp
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 
 namespace MoAI.{Domain}.Commands;
@@ -154,7 +154,7 @@ public class CompleteFileUploadCommand : IRequest<EmptyCommandResponse>, IModelV
 Query 如果是搜索、模糊查询，则参数可以可为空，但是注意长度等。
 
 ```csharp
-using MediatR;
+using Mediator;
 using MoAI.{Domain}.Queries.Responses;
 
 namespace MoAI.{Domain}.Queries;
@@ -181,7 +181,7 @@ public class Query{Entity}Command : IRequest<Query{Entity}CommandResponse>, IMod
 ### Command Handler 实现
 
 ```csharp
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -202,7 +202,7 @@ public class {Action}{Entity}CommandHandler : IRequestHandler<{Action}{Entity}Co
         _databaseContext = databaseContext;
     }
 
-    public async Task<EmptyCommandResponse> Handle({Action}{Entity}Command request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle({Action}{Entity}Command request, CancellationToken cancellationToken)
     {
         // 业务逻辑实现
         return EmptyCommandResponse.Default;
@@ -213,7 +213,7 @@ public class {Action}{Entity}CommandHandler : IRequestHandler<{Action}{Entity}Co
 ### Query Handler 实现
 
 ```csharp
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.{Domain}.Queries.Responses;
@@ -232,7 +232,7 @@ public class Query{Entity}CommandHandler : IRequestHandler<Query{Entity}Command,
         _databaseContext = databaseContext;
     }
 
-    public async Task<Query{Entity}QueryResponse> Handle(Query{Entity}Query request, CancellationToken cancellationToken)
+    public async ValueTask<Query{Entity}QueryResponse> Handle(Query{Entity}Query request, CancellationToken cancellationToken)
     {
         // 查询逻辑实现
         return new Query{Entity}QueryResponse();
@@ -243,7 +243,7 @@ public class Query{Entity}CommandHandler : IRequestHandler<Query{Entity}Command,
 ### Controller 实现
 
 ```csharp
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;

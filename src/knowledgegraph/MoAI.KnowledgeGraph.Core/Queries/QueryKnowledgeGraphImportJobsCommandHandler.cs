@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -29,7 +29,7 @@ public class QueryKnowledgeGraphImportJobsCommandHandler : IRequestHandler<Query
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphImportJobsCommandResponse> Handle(QueryKnowledgeGraphImportJobsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphImportJobsCommandResponse> Handle(QueryKnowledgeGraphImportJobsCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 
@@ -67,7 +67,7 @@ public class QueryKnowledgeGraphImportJobCommandHandler : IRequestHandler<QueryK
     }
 
     /// <inheritdoc/>
-    public async Task<KnowledgeGraphImportJobItem> Handle(QueryKnowledgeGraphImportJobCommand request, CancellationToken cancellationToken)
+    public async ValueTask<KnowledgeGraphImportJobItem> Handle(QueryKnowledgeGraphImportJobCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 

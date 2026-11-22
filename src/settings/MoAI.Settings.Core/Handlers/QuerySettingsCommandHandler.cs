@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Settings.Queries;
 using MoAI.Settings.Queries.Responses;
 using MoAI.Settings.Services;
@@ -22,8 +22,8 @@ public class QuerySettingsCommandHandler : IRequestHandler<QuerySettingsCommand,
     }
 
     /// <inheritdoc/>
-    public Task<QuerySettingsCommandResponse> Handle(QuerySettingsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySettingsCommandResponse> Handle(QuerySettingsCommand request, CancellationToken cancellationToken)
     {
-        return _settingsService.GetSettingsAsync(cancellationToken);
+        return await _settingsService.GetSettingsAsync(cancellationToken);
     }
 }

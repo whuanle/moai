@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -38,7 +38,7 @@ public class WikiController : ControllerBase
     [HttpPost]
     public Task<SimpleLong> CreateWiki([FromBody] CreateWikiCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class WikiController : ControllerBase
     [HttpGet("list")]
     public Task<QueryWikisCommandResponse> QueryWikis([FromQuery] long teamId, CancellationToken ct)
     {
-        return _mediator.Send(new QueryWikisCommand { TeamId = teamId }, ct);
+        return _mediator.Send(new QueryWikisCommand { TeamId = teamId }, ct).AsTask();
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class WikiController : ControllerBase
     [HttpGet("files/search")]
     public Task<QueryWikiTeamFilesCommandResponse> QueryWikiTeamFiles([FromQuery] QueryWikiTeamFilesCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public class WikiController : ControllerBase
     [HttpGet("upload-limit")]
     public Task<QueryWikiUploadLimitCommandResponse> QueryWikiUploadLimit(CancellationToken ct)
     {
-        return _mediator.Send(new QueryWikiUploadLimitCommand(), ct);
+        return _mediator.Send(new QueryWikiUploadLimitCommand(), ct).AsTask();
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public class WikiController : ControllerBase
     [HttpGet("{id}")]
     public Task<QueryWikiCommandResponse> QueryWiki(long id, CancellationToken ct)
     {
-        return _mediator.Send(new QueryWikiCommand { WikiId = id }, ct);
+        return _mediator.Send(new QueryWikiCommand { WikiId = id }, ct).AsTask();
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public class WikiController : ControllerBase
     {
         var cmd = new QueryWikiMcpConfigCommand { WikiId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -130,7 +130,7 @@ public class WikiController : ControllerBase
     {
         var cmd = new UpdateWikiMcpConfigCommand { WikiId = id, IsMcpEnabled = req.IsMcpEnabled };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -142,7 +142,7 @@ public class WikiController : ControllerBase
     [HttpDelete("{id}")]
     public Task<EmptyCommandResponse> DeleteWiki(long id, CancellationToken ct)
     {
-        return _mediator.Send(new DeleteWikiCommand { WikiId = id }, ct);
+        return _mediator.Send(new DeleteWikiCommand { WikiId = id }, ct).AsTask();
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ public class WikiController : ControllerBase
     public Task<EmptyCommandResponse> UpdateWikiAvatar(long id, [FromBody] UpdateWikiAvatarCommand req, CancellationToken ct)
     {
         var cmd = new UpdateWikiAvatarCommand { WikiId = id, ObjectKey = req.ObjectKey };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -168,7 +168,7 @@ public class WikiController : ControllerBase
     [HttpGet("model-options")]
     public Task<QueryWikiModelOptionsCommandResponse> QueryWikiModelOptions([FromQuery] int teamId, CancellationToken ct)
     {
-        return _mediator.Send(new QueryWikiModelOptionsCommand { TeamId = teamId }, ct);
+        return _mediator.Send(new QueryWikiModelOptionsCommand { TeamId = teamId }, ct).AsTask();
     }
 
     /// <summary>
@@ -195,7 +195,7 @@ public class WikiController : ControllerBase
             ContextWindow = req.ContextWindow,
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -216,7 +216,7 @@ public class WikiController : ControllerBase
             EmbeddingModelId = req.EmbeddingModelId,
             EmbeddingDimensions = req.EmbeddingDimensions,
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -237,7 +237,7 @@ public class WikiController : ControllerBase
             Dimensions = req.Dimensions,
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -251,7 +251,7 @@ public class WikiController : ControllerBase
     {
         var cmd = new QueryWikiModelMigrationStatusCommand { WikiId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -273,7 +273,7 @@ public class WikiController : ControllerBase
             Embedding = req.Embedding,
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -293,6 +293,6 @@ public class WikiController : ControllerBase
             WikiId = id,
             RerankModelId = req.RerankModelId,
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 }

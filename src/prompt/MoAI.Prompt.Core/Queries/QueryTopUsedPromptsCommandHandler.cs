@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -31,7 +31,7 @@ public class QueryTopUsedPromptsCommandHandler : IRequestHandler<QueryTopUsedPro
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPromptListCommandResponse> Handle(QueryTopUsedPromptsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPromptListCommandResponse> Handle(QueryTopUsedPromptsCommand request, CancellationToken cancellationToken)
     {
         // 与 team_list 一致：仅团队成员可查（非成员 404，避免跨团队枚举提示词）
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);

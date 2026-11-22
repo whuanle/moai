@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.Database;
@@ -29,7 +29,7 @@ public class UpdatePluginTeamAuthorizationCommandHandler : IRequestHandler<Updat
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdatePluginTeamAuthorizationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdatePluginTeamAuthorizationCommand request, CancellationToken cancellationToken)
     {
         var plugin = await _databaseContext.Plugins
             .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);

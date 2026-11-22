@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class DeleteTeamAgentCommandHandler : IRequestHandler<DeleteTeamAgentComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteTeamAgentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteTeamAgentCommand request, CancellationToken cancellationToken)
     {
         var agent = await _databaseContext.TeamAgents
             .FirstOrDefaultAsync(x => x.Id == request.AgentId, cancellationToken)

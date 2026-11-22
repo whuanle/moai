@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -31,7 +31,7 @@ public class QueryNotificationTemplatesCommandHandler : IRequestHandler<QueryNot
     }
 
     /// <inheritdoc/>
-    public async Task<QueryNotificationTemplatesCommandResponse> Handle(QueryNotificationTemplatesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryNotificationTemplatesCommandResponse> Handle(QueryNotificationTemplatesCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.NotificationTemplates.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(request.Search))

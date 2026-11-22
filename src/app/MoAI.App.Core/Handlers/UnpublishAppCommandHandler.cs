@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class UnpublishAppCommandHandler : IRequestHandler<UnpublishAppCommand, E
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UnpublishAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UnpublishAppCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
 

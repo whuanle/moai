@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Services;
@@ -55,7 +55,7 @@ public class RunTeamPluginCommandHandler : IRequestHandler<RunTeamPluginCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<PluginRunResult> Handle(RunTeamPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PluginRunResult> Handle(RunTeamPluginCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

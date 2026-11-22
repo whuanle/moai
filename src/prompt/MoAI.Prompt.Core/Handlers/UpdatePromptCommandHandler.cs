@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Classify;
 using MoAI.Database;
@@ -30,7 +30,7 @@ public class UpdatePromptCommandHandler : IRequestHandler<UpdatePromptCommand, E
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdatePromptCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdatePromptCommand request, CancellationToken cancellationToken)
     {
         var prompt = await _databaseContext.Prompts
             .FirstOrDefaultAsync(x => x.Id == request.PromptId, cancellationToken);

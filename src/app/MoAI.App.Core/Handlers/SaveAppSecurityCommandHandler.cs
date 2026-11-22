@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -34,7 +34,7 @@ public class SaveAppSecurityCommandHandler : IRequestHandler<SaveAppSecurityComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveAppSecurityCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveAppSecurityCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);

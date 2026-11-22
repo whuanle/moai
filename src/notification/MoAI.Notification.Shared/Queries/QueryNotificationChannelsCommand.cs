@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Database.Enums;
 using MoAI.Infra.Models;
 

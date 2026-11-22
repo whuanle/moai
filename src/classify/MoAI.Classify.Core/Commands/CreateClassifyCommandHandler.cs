@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Classify.Commands;
 using MoAI.Database;
@@ -25,7 +25,7 @@ public class CreateClassifyCommandHandler : IRequestHandler<CreateClassifyComman
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleInt> Handle(CreateClassifyCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleInt> Handle(CreateClassifyCommand request, CancellationToken cancellationToken)
     {
         var exist = await _databaseContext.Classifies
             .AnyAsync(x => x.Type == request.Type && x.Name == request.Name && x.IsDeleted == 0, cancellationToken);

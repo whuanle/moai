@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -34,7 +34,7 @@ public class DeleteTeamTimerCommandHandler : IRequestHandler<DeleteTeamTimerComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteTeamTimerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteTeamTimerCommand request, CancellationToken cancellationToken)
     {
         var timer = await _databaseContext.TeamTimers
             .FirstOrDefaultAsync(x => x.Id == request.TimerId, cancellationToken)

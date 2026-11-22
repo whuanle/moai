@@ -1,5 +1,5 @@
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
@@ -33,7 +33,7 @@ public class DeleteExternalNodesByKeysCommandHandler : IRequestHandler<DeleteExt
     }
 
     /// <inheritdoc/>
-    public async Task<DeleteExternalNodesByKeysResponse> Handle(DeleteExternalNodesByKeysCommand request, CancellationToken cancellationToken)
+    public async ValueTask<DeleteExternalNodesByKeysResponse> Handle(DeleteExternalNodesByKeysCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 

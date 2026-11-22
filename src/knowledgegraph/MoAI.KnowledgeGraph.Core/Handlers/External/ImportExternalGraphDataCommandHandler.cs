@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
 
@@ -25,7 +25,7 @@ public class ImportExternalGraphDataCommandHandler : IRequestHandler<ImportExter
     }
 
     /// <inheritdoc/>
-    public async Task<ExternalImportResponse> Handle(ImportExternalGraphDataCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExternalImportResponse> Handle(ImportExternalGraphDataCommand request, CancellationToken cancellationToken)
     {
         // 导入即写图：非本团队 404、接入图只读 409 由授权器拦截
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);

@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -50,7 +50,7 @@ public partial class ExtractSkillPackageCommandHandler : IRequestHandler<Extract
     private static partial Regex EntryPathRegex();
 
     /// <inheritdoc/>
-    public async Task<ExtractSkillPackageCommandResponse> Handle(ExtractSkillPackageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExtractSkillPackageCommandResponse> Handle(ExtractSkillPackageCommand request, CancellationToken cancellationToken)
     {
         var zipFile = await _databaseContext.Files
             .FirstOrDefaultAsync(x => x.Id == request.FileId, cancellationToken);

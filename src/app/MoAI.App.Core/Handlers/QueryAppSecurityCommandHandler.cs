@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -32,7 +32,7 @@ public class QueryAppSecurityCommandHandler : IRequestHandler<QueryAppSecurityCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppSecurityCommandResponse> Handle(QueryAppSecurityCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppSecurityCommandResponse> Handle(QueryAppSecurityCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.App.Commands;
 using MoAI.App.Queries;
@@ -39,7 +39,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAgentCompactionDefaultsCommand();
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAgentMemoryDefaultsCommand();
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public class AppController : ControllerBase
     public Task<SimpleGuid> CreateApp([FromBody] CreateAppCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppFeatureCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -117,7 +117,7 @@ public class AppController : ControllerBase
     {
         var cmd = new UpdateAppFeatureCommand { AppId = id, IsAcpA2aEnabled = req.IsAcpA2aEnabled };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -176,7 +176,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppAgentConfigCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -225,7 +225,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppSecurityCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -268,7 +268,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppSecurityEventsCommand { AppId = id, PageNo = pageNo, PageSize = pageSize, Scope = scope, Keyword = keyword };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -279,7 +279,7 @@ public class AppController : ControllerBase
     [HttpGet("sandbox-limits")]
     public Task<QuerySandboxLimitsCommandResponse> QuerySandboxLimits(CancellationToken ct)
     {
-        return _mediator.Send(new QuerySandboxLimitsCommand(), ct);
+        return _mediator.Send(new QuerySandboxLimitsCommand(), ct).AsTask();
     }
 
     /// <summary>
@@ -293,7 +293,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppAccessPointCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -350,7 +350,7 @@ public class AppController : ControllerBase
     public Task<QueryAppsCommandResponse> QueryApps([FromQuery] QueryAppsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -363,7 +363,7 @@ public class AppController : ControllerBase
     public Task<QueryAppsCommandResponse> QueryExternalApps([FromQuery] QueryExternalAppsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -380,7 +380,7 @@ public class AppController : ControllerBase
             ClassifyId = req.ClassifyId
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -394,7 +394,7 @@ public class AppController : ControllerBase
     {
         var cmd = new FavoriteAppCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -408,7 +408,7 @@ public class AppController : ControllerBase
     {
         var cmd = new UnfavoriteAppCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -422,7 +422,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -446,7 +446,7 @@ public class AppController : ControllerBase
             PageSize = req.PageSize
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -461,7 +461,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppLogMessagesCommand { AppId = id, SessionId = sessionId };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -475,7 +475,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppUsageCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -490,7 +490,7 @@ public class AppController : ControllerBase
     {
         var cmd = new QueryAppUsageTrendCommand { AppId = id, Days = req.Days };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -502,6 +502,6 @@ public class AppController : ControllerBase
     [HttpPost("chat-attachment/extract")]
     public Task<ExtractChatAttachmentResponse> ExtractChatAttachment([FromBody] ExtractChatAttachmentCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 }

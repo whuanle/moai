@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -26,7 +26,7 @@ public class QueryPromptMarketListCommandHandler : IRequestHandler<QueryPromptMa
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPromptListCommandResponse> Handle(QueryPromptMarketListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPromptListCommandResponse> Handle(QueryPromptMarketListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Prompts
             .AsNoTracking()

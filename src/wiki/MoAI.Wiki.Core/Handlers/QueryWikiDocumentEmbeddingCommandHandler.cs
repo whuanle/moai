@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -52,7 +52,7 @@ public class QueryWikiDocumentEmbeddingCommandHandler : IRequestHandler<QueryWik
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiDocumentEmbeddingCommandResponse> Handle(QueryWikiDocumentEmbeddingCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiDocumentEmbeddingCommandResponse> Handle(QueryWikiDocumentEmbeddingCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

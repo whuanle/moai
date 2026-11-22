@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Workflow.Commands;
 using MoAI.App.Workflow.Definition;
@@ -49,7 +49,7 @@ public class DebugRunAppWorkflowCommandHandler : IRequestHandler<DebugRunAppWork
     }
 
     /// <inheritdoc/>
-    public async Task<DebugRunAppWorkflowResponse> Handle(DebugRunAppWorkflowCommand request, CancellationToken cancellationToken)
+    public async ValueTask<DebugRunAppWorkflowResponse> Handle(DebugRunAppWorkflowCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);

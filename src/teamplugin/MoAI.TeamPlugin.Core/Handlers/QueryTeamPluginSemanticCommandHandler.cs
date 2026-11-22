@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Queries;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class QueryTeamPluginSemanticCommandHandler : IRequestHandler<QueryTeamPl
     }
 
     /// <inheritdoc/>
-    public async Task<AIPlugin.Queries.Responses.QueryPluginSemanticCommandResponse> Handle(QueryTeamPluginSemanticCommand request, CancellationToken cancellationToken)
+    public async ValueTask<AIPlugin.Queries.Responses.QueryPluginSemanticCommandResponse> Handle(QueryTeamPluginSemanticCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)

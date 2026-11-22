@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -32,7 +32,7 @@ public class QueryTeamSkillListCommandHandler : IRequestHandler<QueryTeamSkillLi
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySkillListCommandResponse> Handle(QueryTeamSkillListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySkillListCommandResponse> Handle(QueryTeamSkillListCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -27,7 +27,7 @@ public class QueryPublicationReviewListCommandHandler : IRequestHandler<QueryPub
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPublicationReviewListResponse> Handle(QueryPublicationReviewListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPublicationReviewListResponse> Handle(QueryPublicationReviewListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.PublicationReviews.AsNoTracking().AsQueryable();
 

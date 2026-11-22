@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
@@ -50,7 +50,7 @@ public class QueryKnowledgeGraphRecallTestCommandHandler : IRequestHandler<Query
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphRecallTestCommandResponse> Handle(QueryKnowledgeGraphRecallTestCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphRecallTestCommandResponse> Handle(QueryKnowledgeGraphRecallTestCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         if (!string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))

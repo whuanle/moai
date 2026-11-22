@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands.Responses;
 using MoAI.AIPlugin.Services;
@@ -46,7 +46,7 @@ public class PreUploadTeamOpenApiFileCommandHandler : IRequestHandler<PreUploadT
     }
 
     /// <inheritdoc/>
-    public async Task<PreUploadOpenApiFilePluginCommandResponse> Handle(PreUploadTeamOpenApiFileCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PreUploadOpenApiFilePluginCommandResponse> Handle(PreUploadTeamOpenApiFileCommand request, CancellationToken cancellationToken)
     {
         await EnsureManagerAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

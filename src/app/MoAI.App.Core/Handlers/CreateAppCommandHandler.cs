@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Classify;
@@ -31,7 +31,7 @@ public class CreateAppCommandHandler : IRequestHandler<CreateAppCommand, SimpleG
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateAppCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

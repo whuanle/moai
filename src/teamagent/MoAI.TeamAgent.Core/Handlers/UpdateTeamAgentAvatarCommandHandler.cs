@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class UpdateTeamAgentAvatarCommandHandler : IRequestHandler<UpdateTeamAge
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateTeamAgentAvatarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateTeamAgentAvatarCommand request, CancellationToken cancellationToken)
     {
         var agent = await _databaseContext.TeamAgents
             .FirstOrDefaultAsync(x => x.Id == request.AgentId, cancellationToken)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -34,7 +34,7 @@ public class SubsystemSsoAuthorizeCommandHandler : IRequestHandler<SubsystemSsoA
     }
 
     /// <inheritdoc/>
-    public async Task<SubsystemSsoAuthorizeCommandResponse> Handle(SubsystemSsoAuthorizeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubsystemSsoAuthorizeCommandResponse> Handle(SubsystemSsoAuthorizeCommand request, CancellationToken cancellationToken)
     {
         var subsystem = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System && x.AppType == AccessAppType.Subsystem)

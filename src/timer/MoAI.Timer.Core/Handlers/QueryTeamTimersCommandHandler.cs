@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -44,7 +44,7 @@ public class QueryTeamTimersCommandHandler : IRequestHandler<QueryTeamTimersComm
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamTimersCommandResponse> Handle(QueryTeamTimersCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamTimersCommandResponse> Handle(QueryTeamTimersCommand request, CancellationToken cancellationToken)
     {
         await TeamTimerGuards.EnsureTeamMemberAsync(_teamService, request.TeamId, request.ContextUserId, cancellationToken);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.App.Workflow.Queries;
@@ -37,7 +37,7 @@ public class QueryAppWorkflowInstancesCommandHandler : IRequestHandler<QueryAppW
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppWorkflowInstancesCommandResponse> Handle(QueryAppWorkflowInstancesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppWorkflowInstancesCommandResponse> Handle(QueryAppWorkflowInstancesCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

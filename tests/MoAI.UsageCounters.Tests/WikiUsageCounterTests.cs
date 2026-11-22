@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Hangfire.Services;
 using MoAI.Wiki.Services;
 using Moq;

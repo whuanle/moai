@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Variable.Commands.Responses;
 using MoAI.Variable.Queries.Responses;
 

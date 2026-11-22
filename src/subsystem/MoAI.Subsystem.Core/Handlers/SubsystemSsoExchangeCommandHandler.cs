@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class SubsystemSsoExchangeCommandHandler : IRequestHandler<SubsystemSsoEx
     }
 
     /// <inheritdoc/>
-    public async Task<SubsystemSsoExchangeCommandResponse> Handle(SubsystemSsoExchangeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubsystemSsoExchangeCommandResponse> Handle(SubsystemSsoExchangeCommand request, CancellationToken cancellationToken)
     {
         // 一次性原子消费：不存在/已使用/过期一律 401，且不区分原因避免探测
         var payload = await _codeStore.ConsumeAsync(request.Code);

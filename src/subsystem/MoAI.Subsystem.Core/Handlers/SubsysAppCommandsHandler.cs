@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -36,7 +36,7 @@ public class CreateSubsysAppCommandHandler : IRequestHandler<CreateSubsysAppComm
     }
 
     /// <inheritdoc/>
-    public async Task<CreateSubsysAppCommandResponse> Handle(CreateSubsysAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CreateSubsysAppCommandResponse> Handle(CreateSubsysAppCommand request, CancellationToken cancellationToken)
     {
         bool isSubsystem = request.AppType == AccessAppType.Subsystem;
         var entityId = Guid.CreateVersion7();
@@ -134,7 +134,7 @@ public class UpdateSubsysAppCommandHandler : IRequestHandler<UpdateSubsysAppComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateSubsysAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateSubsysAppCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System)
@@ -266,7 +266,7 @@ public class ResetSubsysAppSecretCommandHandler : IRequestHandler<ResetSubsysApp
     }
 
     /// <inheritdoc/>
-    public async Task<ResetSubsysAppSecretCommandResponse> Handle(ResetSubsysAppSecretCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ResetSubsysAppSecretCommandResponse> Handle(ResetSubsysAppSecretCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System)
@@ -313,7 +313,7 @@ public class DeleteSubsysAppCommandHandler : IRequestHandler<DeleteSubsysAppComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteSubsysAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteSubsysAppCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System)

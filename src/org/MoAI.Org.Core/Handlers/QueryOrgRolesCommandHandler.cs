@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -28,7 +28,7 @@ public class QueryOrgRolesCommandHandler : IRequestHandler<QueryOrgRolesCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<QueryOrgRolesCommandResponse> Handle(QueryOrgRolesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryOrgRolesCommandResponse> Handle(QueryOrgRolesCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.OrgRoles.AsQueryable();
         if (!string.IsNullOrWhiteSpace(request.Search))

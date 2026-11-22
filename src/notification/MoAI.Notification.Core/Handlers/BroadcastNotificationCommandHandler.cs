@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -39,7 +39,7 @@ public class BroadcastNotificationCommandHandler : IRequestHandler<BroadcastNoti
     }
 
     /// <inheritdoc/>
-    public async Task<BroadcastNotificationCommandResponse> Handle(BroadcastNotificationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<BroadcastNotificationCommandResponse> Handle(BroadcastNotificationCommand request, CancellationToken cancellationToken)
     {
         await ValidateRecipientsAsync(request, cancellationToken);
 

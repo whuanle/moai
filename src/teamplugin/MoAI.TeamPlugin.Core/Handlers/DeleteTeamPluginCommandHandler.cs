@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.Database;
@@ -39,7 +39,7 @@ public class DeleteTeamPluginCommandHandler : IRequestHandler<DeleteTeamPluginCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteTeamPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteTeamPluginCommand request, CancellationToken cancellationToken)
     {
         await EnsureManagerAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

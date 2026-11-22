@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class QueryTeamAvailableSubsystemsCommandHandler : IRequestHandler<QueryT
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamAvailableSubsystemsCommandResponse> Handle(QueryTeamAvailableSubsystemsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamAvailableSubsystemsCommandResponse> Handle(QueryTeamAvailableSubsystemsCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)

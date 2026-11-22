@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -38,7 +38,7 @@ public class QueryVariablesCommandHandler : IRequestHandler<QueryVariablesComman
     }
 
     /// <inheritdoc/>
-    public async Task<QueryVariablesCommandResponse> Handle(QueryVariablesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryVariablesCommandResponse> Handle(QueryVariablesCommand request, CancellationToken cancellationToken)
     {
         var userId = _userContextProvider.GetUserContext().UserId;
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);

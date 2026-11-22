@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -34,7 +34,7 @@ public class QueryWikiCommandHandler : IRequestHandler<QueryWikiCommand, QueryWi
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiCommandResponse> Handle(QueryWikiCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiCommandResponse> Handle(QueryWikiCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Auth.Models;
 using MoAI.Auth.Queries;
@@ -30,7 +30,7 @@ public class QueryChallengePolicyQueryHandler : IRequestHandler<QueryChallengePo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryChallengePolicyQueryResponse> Handle(QueryChallengePolicyQuery request, CancellationToken cancellationToken)
+    public async ValueTask<QueryChallengePolicyQueryResponse> Handle(QueryChallengePolicyQuery request, CancellationToken cancellationToken)
     {
         var ip = request.ContextClientIp ?? string.Empty;
         var userName = request.UserName?.Trim() ?? string.Empty;

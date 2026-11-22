@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -24,7 +24,7 @@ public class UpdateAppSessionTitleCommandHandler : IRequestHandler<UpdateAppSess
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateAppSessionTitleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateAppSessionTitleCommand request, CancellationToken cancellationToken)
     {
         var session = await _databaseContext.AppAgentSessions
             .FirstOrDefaultAsync(x => x.Id == request.SessionId, cancellationToken);

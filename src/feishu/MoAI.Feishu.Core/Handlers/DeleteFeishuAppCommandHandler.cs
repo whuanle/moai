@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class DeleteFeishuAppCommandHandler : IRequestHandler<DeleteFeishuAppComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteFeishuAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteFeishuAppCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.FeishuApps
             .FirstOrDefaultAsync(x => x.Id == request.FeishuAppId, cancellationToken);

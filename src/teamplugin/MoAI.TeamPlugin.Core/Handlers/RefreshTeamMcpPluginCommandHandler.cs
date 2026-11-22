@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AIPlugin.Models;
@@ -50,7 +50,7 @@ public class RefreshTeamMcpPluginCommandHandler : IRequestHandler<RefreshTeamMcp
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(RefreshTeamMcpPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(RefreshTeamMcpPluginCommand request, CancellationToken cancellationToken)
     {
         await EnsureManagerAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

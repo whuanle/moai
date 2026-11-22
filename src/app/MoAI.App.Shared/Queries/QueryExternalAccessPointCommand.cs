@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using MediatR;
+using Mediator;
 using MoAI.App.Queries.Responses;
 
 namespace MoAI.App.Queries;

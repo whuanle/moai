@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Queries.Responses;
 using MoAI.AIPlugin.Services;
@@ -31,7 +31,7 @@ public class QueryPluginToolsCommandHandler : IRequestHandler<QueryPluginToolsCo
     }
 
     /// <inheritdoc/>
-    public Task<QueryPluginToolsCommandResponse> Handle(QueryPluginToolsCommand request, CancellationToken cancellationToken)
+    public ValueTask<QueryPluginToolsCommandResponse> Handle(QueryPluginToolsCommand request, CancellationToken cancellationToken)
     {
         var plugin = ResolveTemplate(request.Key)
             ?? throw new BusinessException("插件不存在") { StatusCode = 404 };
@@ -46,7 +46,7 @@ public class QueryPluginToolsCommandHandler : IRequestHandler<QueryPluginToolsCo
             }).ToList()
             : BuildSingleToolItem(plugin);
 
-        return Task.FromResult(new QueryPluginToolsCommandResponse
+        return ValueTask.FromResult(new QueryPluginToolsCommandResponse
         {
             Key = plugin.Key,
             Name = plugin.Name,

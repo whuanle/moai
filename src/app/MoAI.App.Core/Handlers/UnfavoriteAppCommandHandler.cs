@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -23,7 +23,7 @@ public class UnfavoriteAppCommandHandler : IRequestHandler<UnfavoriteAppCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UnfavoriteAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UnfavoriteAppCommand request, CancellationToken cancellationToken)
     {
         // 不校验应用状态：应用下架/停用后仍允许取消收藏（清理遗留收藏）；未收藏幂等返回成功
         var favorite = await _databaseContext.AppFavorites

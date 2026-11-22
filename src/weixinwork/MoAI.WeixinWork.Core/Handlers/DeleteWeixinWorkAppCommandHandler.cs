@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class DeleteWeixinWorkAppCommandHandler : IRequestHandler<DeleteWeixinWor
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteWeixinWorkAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteWeixinWorkAppCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.WeixinWorkApps
             .FirstOrDefaultAsync(x => x.Id == request.WeixinWorkAppId, cancellationToken);

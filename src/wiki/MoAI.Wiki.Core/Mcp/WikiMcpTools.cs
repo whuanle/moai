@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using MoAI.App.Models;

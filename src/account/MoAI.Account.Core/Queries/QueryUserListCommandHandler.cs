@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Account.Queries;
@@ -31,7 +31,7 @@ public class QueryUserListCommandHandler : IRequestHandler<QueryUserListCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<QueryUserListCommandResponse> Handle(QueryUserListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryUserListCommandResponse> Handle(QueryUserListCommand request, CancellationToken cancellationToken)
     {
         var rootValue = await _databaseContext.Settings
             .Where(s => s.Key == "root")

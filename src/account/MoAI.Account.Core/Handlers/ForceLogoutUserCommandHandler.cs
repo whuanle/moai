@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
@@ -50,7 +50,7 @@ public class ForceLogoutUserCommandHandler : IRequestHandler<ForceLogoutUserComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ForceLogoutUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ForceLogoutUserCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users
             .FirstOrDefaultAsync(u => u.Id == request.UserId && u.IsDeleted == 0, cancellationToken);

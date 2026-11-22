@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -32,7 +32,7 @@ public class QueryPublicationTeamListCommandHandler : IRequestHandler<QueryPubli
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPublicationReviewListResponse> Handle(QueryPublicationTeamListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPublicationReviewListResponse> Handle(QueryPublicationTeamListCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

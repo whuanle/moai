@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -30,7 +30,7 @@ public class QueryAppAgentConfigCommandHandler : IRequestHandler<QueryAppAgentCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppAgentConfigCommandResponse> Handle(QueryAppAgentConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppAgentConfigCommandResponse> Handle(QueryAppAgentConfigCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);

@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AIPlugin.Commands;
@@ -41,7 +41,7 @@ public class ImportOpenApiPluginCommandHandler : IRequestHandler<ImportOpenApiPl
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(ImportOpenApiPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(ImportOpenApiPluginCommand request, CancellationToken cancellationToken)
     {
         var fileEntity = await _databaseContext.Files
             .FirstOrDefaultAsync(x => x.Id == request.FileId, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Models;
@@ -31,7 +31,7 @@ public class RefreshExternalTokenCommandHandler : IRequestHandler<RefreshExterna
     }
 
     /// <inheritdoc/>
-    public async Task<ExternalTokenCommandResponse> Handle(RefreshExternalTokenCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExternalTokenCommandResponse> Handle(RefreshExternalTokenCommand request, CancellationToken cancellationToken)
     {
         if (!_externalTokenProvider.TryParseRefreshToken(request.RefreshToken, out var tokenContext) || tokenContext == null)
         {

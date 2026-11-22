@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Workflow.Commands;
 using MoAI.App.Workflow.Definition;
@@ -42,7 +42,7 @@ public class SaveAppWorkflowDraftCommandHandler : IRequestHandler<SaveAppWorkflo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveAppWorkflowDraftCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveAppWorkflowDraftCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);

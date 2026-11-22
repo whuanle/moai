@@ -31,7 +31,8 @@
     <PackageVersion Include="Maomi.ToMarkdown" Version="1.0.0-alpha.2" />
     <PackageVersion Include="Maomi.ToMarkdown.Token" Version="1.0.0-alpha.2" />
     <PackageVersion Include="Markdig" Version="0.43.0" />
-    <PackageVersion Include="MediatR" Version="14.2.0" />
+    <PackageVersion Include="Mediator.Abstractions" Version="3.0.2" />
+    <PackageVersion Include="Mediator.SourceGenerator" Version="3.0.2" />
     <PackageVersion Include="Microsoft.Agents.AI" Version="1.20.0" />
     <PackageVersion Include="Microsoft.Agents.AI.Anthropic" Version="1.20.0-preview.260831.1" />
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.20.0" />
@@ -88,7 +89,7 @@
     <PackageVersion Include="Maomi.Core" Version="2.3.0" />
     <PackageVersion Include="Maomi.FeishuWss" Version="1.0.0" />
     <PackageVersion Include="Maomi.I18n" Version="2.2.1" />
-    <PackageVersion Include="Maomi.MQ.RabbitMQ.MediatR" Version="2.0.1" />
+    <PackageVersion Include="Maomi.MQ.RabbitMQ.Mediator" Version="2.4.0" />
     <PackageVersion Include="MailKit" Version="4.18.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.11" />

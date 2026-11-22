@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Message.Commands;
@@ -26,7 +26,7 @@ public class ReadMessageCommandHandler : IRequestHandler<ReadMessageCommand, Emp
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ReadMessageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ReadMessageCommand request, CancellationToken cancellationToken)
     {
         // 仅允许标记本人且未读的消息，软删除行被全局过滤器排除
         await _databaseContext.WhereUpdateAsync(

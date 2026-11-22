@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
@@ -59,7 +59,7 @@ public class OAuthRegisterCommandHandler : IRequestHandler<OAuthRegisterCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<LoginCommandResponse> Handle(OAuthRegisterCommand request, CancellationToken cancellationToken)
+    public async ValueTask<LoginCommandResponse> Handle(OAuthRegisterCommand request, CancellationToken cancellationToken)
     {
         // 绑定 OAuth 用户信息
         var redisKey = $"oauth:bind:{request.TempOAuthBindId}";

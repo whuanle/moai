@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -30,7 +30,7 @@ public class SaveAppAccessPointCommandHandler : IRequestHandler<SaveAppAccessPoi
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveAppAccessPointCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveAppAccessPointCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

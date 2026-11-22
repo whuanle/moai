@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -30,7 +30,7 @@ public class UpdateOAuthConnectionCommandHandler : IRequestHandler<UpdateOAuthCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateOAuthConnectionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
         var connection = await _databaseContext.OauthConnections
             .FirstOrDefaultAsync(x => x.Id == request.OAuthConnectionId && x.IsDeleted == 0, cancellationToken);

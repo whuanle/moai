@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -34,7 +34,7 @@ public class AddTeamUsersCommandHandler : IRequestHandler<AddTeamUsersCommand, A
     }
 
     /// <inheritdoc/>
-    public async Task<AddTeamUsersCommandResponse> Handle(AddTeamUsersCommand request, CancellationToken cancellationToken)
+    public async ValueTask<AddTeamUsersCommandResponse> Handle(AddTeamUsersCommand request, CancellationToken cancellationToken)
     {
         var userIds = request.UserIds.Distinct().ToList();
 

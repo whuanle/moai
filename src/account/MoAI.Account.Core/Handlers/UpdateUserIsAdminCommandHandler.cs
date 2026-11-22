@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Database;
@@ -28,7 +28,7 @@ public class UpdateUserIsAdminCommandHandler : IRequestHandler<UpdateUserIsAdmin
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateUserIsAdminCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateUserIsAdminCommand request, CancellationToken cancellationToken)
     {
         var user = await GetUserOrDefaultAsync(request.UserId, cancellationToken);
         if (user == null)

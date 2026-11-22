@@ -71,7 +71,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
         var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgUserRolesCommand { UserId = 999, RoleIds = [1] }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgUserRolesCommand { UserId = 999, RoleIds = [1] }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }
@@ -84,7 +84,7 @@ public class UpdateOrgUserRolesCommandHandlerTests
         var handler = new UpdateOrgUserRolesCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgUserRolesCommand { UserId = 100, RoleIds = [1, 999] }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgUserRolesCommand { UserId = 100, RoleIds = [1, 999] }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }

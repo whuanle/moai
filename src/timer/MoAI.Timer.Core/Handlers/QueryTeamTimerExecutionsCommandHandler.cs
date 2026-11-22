@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -31,7 +31,7 @@ public class QueryTeamTimerExecutionsCommandHandler : IRequestHandler<QueryTeamT
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamTimerExecutionsCommandResponse> Handle(QueryTeamTimerExecutionsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamTimerExecutionsCommandResponse> Handle(QueryTeamTimerExecutionsCommand request, CancellationToken cancellationToken)
     {
         // 定时器被软删除后历史仍可查看：IgnoreQueryFilters 取回（含已删除）以完成团队归属校验
         var timer = await _databaseContext.TeamTimers

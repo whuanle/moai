@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.KnowledgeGraph.External;
@@ -23,7 +23,7 @@ public class QueryExternalGraphsCommandHandler : IRequestHandler<QueryExternalGr
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalGraphsResponse> Handle(QueryExternalGraphsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalGraphsResponse> Handle(QueryExternalGraphsCommand request, CancellationToken cancellationToken)
     {
         // 外部接口只暴露 managed（平台托管）图谱，connected 图谱不对外；
         // 资源 key（moai-tr-）绑定单一图谱时只返回该图.

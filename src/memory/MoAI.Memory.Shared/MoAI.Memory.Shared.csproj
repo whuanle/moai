@@ -14,7 +14,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" />
-		<PackageReference Include="MediatR" />
+		<PackageReference Include="Mediator.Abstractions" />
 	</ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -38,7 +38,7 @@ public class PreUploadExternalWikiDocumentCommandHandler : IRequestHandler<PreUp
     }
 
     /// <inheritdoc/>
-    public async Task<PreUploadWikiDocumentCommandResponse> Handle(PreUploadExternalWikiDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PreUploadWikiDocumentCommandResponse> Handle(PreUploadExternalWikiDocumentCommand request, CancellationToken cancellationToken)
     {
         await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Models;
@@ -32,7 +32,7 @@ public class ExternalTokenCommandHandler : IRequestHandler<ExternalTokenCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<ExternalTokenCommandResponse> Handle(ExternalTokenCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExternalTokenCommandResponse> Handle(ExternalTokenCommand request, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(request.AccessAppKey))
         {

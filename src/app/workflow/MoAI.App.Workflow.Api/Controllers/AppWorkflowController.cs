@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.App.Workflow.Commands;
 using MoAI.App.Workflow.Queries;
@@ -39,7 +39,7 @@ public class AppWorkflowController : ControllerBase
     public Task<EmptyCommandResponse> SaveDraft([FromBody] SaveAppWorkflowDraftCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class AppWorkflowController : ControllerBase
     public Task<EmptyCommandResponse> Publish([FromBody] PublishAppWorkflowCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public class AppWorkflowController : ControllerBase
     public Task<DebugRunAppWorkflowResponse> DebugRun([FromBody] DebugRunAppWorkflowCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class AppWorkflowController : ControllerBase
     {
         var cmd = new QueryAppWorkflowConfigCommand { AppId = appId, TeamId = teamId };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public class AppWorkflowController : ControllerBase
     {
         var cmd = new QueryAppAgentOptionsCommand { AppId = appId, TeamId = teamId };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public class AppWorkflowController : ControllerBase
     public Task<QueryAppWorkflowInstancesCommandResponse> QueryInstances([FromQuery] QueryAppWorkflowInstancesCommand cmd, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -124,6 +124,6 @@ public class AppWorkflowController : ControllerBase
     {
         var cmd = new QueryAppWorkflowInstanceCommand { AppId = appId, TeamId = teamId, InstanceId = instanceId };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 }

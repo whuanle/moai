@@ -1,5 +1,5 @@
 using System;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -34,7 +34,7 @@ public class GenerateExternalDocumentChunksMetadataCommandHandler : IRequestHand
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleInt> Handle(GenerateExternalDocumentChunksMetadataCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleInt> Handle(GenerateExternalDocumentChunksMetadataCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

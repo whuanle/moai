@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -39,7 +39,7 @@ public class GenerateDocumentChunkMetadataCommandHandler : IRequestHandler<Gener
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleInt> Handle(GenerateDocumentChunkMetadataCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleInt> Handle(GenerateDocumentChunkMetadataCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

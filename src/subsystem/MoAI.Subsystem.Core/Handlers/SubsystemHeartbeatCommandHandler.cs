@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Subsystem.Commands;
 using MoAI.Subsystem.Commands.Responses;
 using MoAI.Subsystem.Core.Services;
@@ -22,7 +22,7 @@ public class SubsystemHeartbeatCommandHandler : IRequestHandler<SubsystemHeartbe
     }
 
     /// <inheritdoc/>
-    public async Task<SubsystemHeartbeatCommandResponse> Handle(SubsystemHeartbeatCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubsystemHeartbeatCommandResponse> Handle(SubsystemHeartbeatCommand request, CancellationToken cancellationToken)
     {
         await _onlineService.TouchAsync(request.SubsystemId, request.InstanceId, cancellationToken);
 

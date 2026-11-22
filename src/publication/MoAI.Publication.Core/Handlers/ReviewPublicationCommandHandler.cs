@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -30,7 +30,7 @@ public class ReviewPublicationCommandHandler : IRequestHandler<ReviewPublication
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ReviewPublicationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ReviewPublicationCommand request, CancellationToken cancellationToken)
     {
         var publicationReview = await _databaseContext.PublicationReviews
             .FirstOrDefaultAsync(x => x.Id == request.PublicationId, cancellationToken);

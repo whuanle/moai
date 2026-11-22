@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 
 namespace MoAI.KnowledgeGraph.Commands;

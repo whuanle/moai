@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Commands;
 using MoAI.AIChannel.Services;
@@ -26,7 +26,7 @@ public class ImportAIModelCommandHandler : IRequestHandler<ImportAIModelCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ImportAIModelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ImportAIModelCommand request, CancellationToken cancellationToken)
     {
         if (request.Items.Count == 0)
         {

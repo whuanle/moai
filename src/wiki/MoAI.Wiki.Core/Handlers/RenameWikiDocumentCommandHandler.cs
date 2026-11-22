@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class RenameWikiDocumentCommandHandler : IRequestHandler<RenameWikiDocume
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(RenameWikiDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(RenameWikiDocumentCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.WikiId, cancellationToken);
 

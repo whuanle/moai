@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -30,7 +30,7 @@ public class QueryTeamCommandHandler : IRequestHandler<QueryTeamCommand, QueryTe
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamCommandResponse> Handle(QueryTeamCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamCommandResponse> Handle(QueryTeamCommand request, CancellationToken cancellationToken)
     {
         var team = await _databaseContext.Teams
             .FirstOrDefaultAsync(x => x.Id == request.TeamId, cancellationToken);

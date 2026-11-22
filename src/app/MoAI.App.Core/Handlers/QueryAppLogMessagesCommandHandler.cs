@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -33,7 +33,7 @@ public class QueryAppLogMessagesCommandHandler : IRequestHandler<QueryAppLogMess
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppLogMessagesCommandResponse> Handle(QueryAppLogMessagesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppLogMessagesCommandResponse> Handle(QueryAppLogMessagesCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

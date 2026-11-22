@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
@@ -42,7 +42,7 @@ public class OAuthBindExistAccountCommandHandler : IRequestHandler<OAuthBindExis
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(OAuthBindExistAccountCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(OAuthBindExistAccountCommand request, CancellationToken cancellationToken)
     {
         var userContext = _userContextProvider.GetUserContext();
 

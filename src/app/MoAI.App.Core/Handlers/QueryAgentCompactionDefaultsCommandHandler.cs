@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.AI;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -11,11 +11,11 @@ namespace MoAI.App.Handlers;
 public class QueryAgentCompactionDefaultsCommandHandler : IRequestHandler<QueryAgentCompactionDefaultsCommand, QueryAgentCompactionDefaultsResponse>
 {
     /// <inheritdoc/>
-    public Task<QueryAgentCompactionDefaultsResponse> Handle(QueryAgentCompactionDefaultsCommand request, CancellationToken cancellationToken)
+    public ValueTask<QueryAgentCompactionDefaultsResponse> Handle(QueryAgentCompactionDefaultsCommand request, CancellationToken cancellationToken)
     {
         // 内置默认值与 MoAI.AI.Models.AppAgentExecutionSettings 属性初始值一致（应用未显式配置字段时的运行时合并基线）；
         // 模式与比例常量统一取自 AppCompactionPolicy（运行时 AppCompactionStrategyFactory 同源）
-        return Task.FromResult(new QueryAgentCompactionDefaultsResponse
+        return ValueTask.FromResult(new QueryAgentCompactionDefaultsResponse
         {
             CompactionMode = AppCompactionPolicy.ModeAuto,
             ToolEvictionRatio = AppCompactionPolicy.ToolEvictionRatio,

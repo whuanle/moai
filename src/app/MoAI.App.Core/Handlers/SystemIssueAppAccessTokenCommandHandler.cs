@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.App.Commands;
@@ -36,7 +36,7 @@ public class SystemIssueAppAccessTokenCommandHandler : IRequestHandler<SystemIss
         _mediator = mediator;
     }
 
-    public async Task<SystemIssueAppAccessTokenCommandResponse> Handle(SystemIssueAppAccessTokenCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SystemIssueAppAccessTokenCommandResponse> Handle(SystemIssueAppAccessTokenCommand request, CancellationToken cancellationToken)
     {
         // 1. 第三方登录渠道必须存在（软删除由全局过滤器排除）
         var providerExists = await _databaseContext.OauthConnections

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI.Models;
 using MoAI.App.Queries;
@@ -25,7 +25,7 @@ public class QueryAgentMemoryDefaultsCommandHandler : IRequestHandler<QueryAgent
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAgentMemoryDefaultsResponse> Handle(QueryAgentMemoryDefaultsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAgentMemoryDefaultsResponse> Handle(QueryAgentMemoryDefaultsCommand request, CancellationToken cancellationToken)
     {
         // 平台记忆设置回显：向量化模型/维度统一在系统设置（MEMORY_*），应用面板只读展示；
         // 跨应用记忆开关（MEMORY_GLOBAL_ENABLED）供应用面板联动禁用「允许用户接入全局记忆」

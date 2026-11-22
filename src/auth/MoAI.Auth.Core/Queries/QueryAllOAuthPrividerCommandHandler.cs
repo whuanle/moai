@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra;
@@ -31,7 +31,7 @@ public class QueryAllOAuthPrividerCommandHandler : IRequestHandler<QueryAllOAuth
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAllOAuthPrividerCommandResponse> Handle(QueryAllOAuthPrividerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAllOAuthPrividerCommandResponse> Handle(QueryAllOAuthPrividerCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.OauthConnections
             .Where(c => c.IsDeleted == 0 && c.IsVisible)

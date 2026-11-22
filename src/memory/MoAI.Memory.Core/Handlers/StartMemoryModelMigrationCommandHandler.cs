@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -44,7 +44,7 @@ public class StartMemoryModelMigrationCommandHandler : IRequestHandler<StartMemo
     }
 
     /// <inheritdoc/>
-    public async Task<StartMemoryModelMigrationCommandResponse> Handle(StartMemoryModelMigrationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<StartMemoryModelMigrationCommandResponse> Handle(StartMemoryModelMigrationCommand request, CancellationToken cancellationToken)
     {
         var currentModelValue = await ResolveSettingValueAsync(SettingDefinitions.MemoryEmbeddingModelKey, cancellationToken);
         if (string.IsNullOrWhiteSpace(currentModelValue))

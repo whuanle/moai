@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class UpdateTeamUserRoleCommandHandler : IRequestHandler<UpdateTeamUserRo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateTeamUserRoleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateTeamUserRoleCommand request, CancellationToken cancellationToken)
     {
         if (request.UserId == request.ContextUserId)
         {

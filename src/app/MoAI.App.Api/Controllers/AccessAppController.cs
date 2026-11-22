@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.App.Commands;
 using MoAI.App.Queries;
@@ -39,7 +39,7 @@ public class AccessAppController : ControllerBase
     public Task<QueryAccessAppsCommandResponse> QueryAccessApps([FromQuery] QueryAccessAppsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class AccessAppController : ControllerBase
     public Task<CreateAccessAppCommandResponse> CreateAccessApp([FromBody] CreateAccessAppCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public class AccessAppController : ControllerBase
     {
         var cmd = new ResetAccessAppSecretCommand { AccessAppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>

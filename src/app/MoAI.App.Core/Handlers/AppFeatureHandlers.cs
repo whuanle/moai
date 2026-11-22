@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Queries;
@@ -69,7 +69,7 @@ public class UpdateAppFeatureCommandHandler : IRequestHandler<UpdateAppFeatureCo
     }
 
     /// <inheritdoc/>
-    public async Task<AppFeatureResponse> Handle(UpdateAppFeatureCommand request, CancellationToken cancellationToken)
+    public async ValueTask<AppFeatureResponse> Handle(UpdateAppFeatureCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
         if (app == null)
@@ -121,7 +121,7 @@ public class QueryAppFeatureCommandHandler : IRequestHandler<QueryAppFeatureComm
     }
 
     /// <inheritdoc/>
-    public async Task<AppFeatureResponse> Handle(QueryAppFeatureCommand request, CancellationToken cancellationToken)
+    public async ValueTask<AppFeatureResponse> Handle(QueryAppFeatureCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
         if (app == null)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -49,7 +49,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, S
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         // 使用 RSA 解密还原密码
         string restorePassword = default!;

@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Classify;
@@ -39,7 +39,7 @@ public class CreateSkillCommandHandler : IRequestHandler<CreateSkillCommand, Sim
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateSkillCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateSkillCommand request, CancellationToken cancellationToken)
     {
         await SkillAccessGuard.EnsureCanCreateAsync(request.TeamId, request.ContextUserId, _userAccountService, _teamService, cancellationToken);
 

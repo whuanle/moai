@@ -1,5 +1,5 @@
 using Hangfire;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -30,7 +30,7 @@ public class RetryKnowledgeGraphImportJobCommandHandler : IRequestHandler<RetryK
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(RetryKnowledgeGraphImportJobCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(RetryKnowledgeGraphImportJobCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 
@@ -72,7 +72,7 @@ public class CancelKnowledgeGraphImportJobCommandHandler : IRequestHandler<Cance
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(CancelKnowledgeGraphImportJobCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(CancelKnowledgeGraphImportJobCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 

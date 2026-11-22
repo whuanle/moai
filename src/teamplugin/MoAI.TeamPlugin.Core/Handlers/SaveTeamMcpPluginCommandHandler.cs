@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AIPlugin.Models;
@@ -53,7 +53,7 @@ public class SaveTeamMcpPluginCommandHandler : IRequestHandler<SaveTeamMcpPlugin
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(SaveTeamMcpPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(SaveTeamMcpPluginCommand request, CancellationToken cancellationToken)
     {
         await EnsureManagerAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

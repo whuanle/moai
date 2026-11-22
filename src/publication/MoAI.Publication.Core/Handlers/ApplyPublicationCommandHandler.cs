@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -33,7 +33,7 @@ public class ApplyPublicationCommandHandler : IRequestHandler<ApplyPublicationCo
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(ApplyPublicationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(ApplyPublicationCommand request, CancellationToken cancellationToken)
     {
         int teamId;
         string resourceName;

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -53,7 +53,7 @@ public class CompleteWikiDocumentCommandHandler : IRequestHandler<CompleteWikiDo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(CompleteWikiDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(CompleteWikiDocumentCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.WikiId, cancellationToken);
 

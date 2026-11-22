@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class QuerySkillCommandHandler : IRequestHandler<QuerySkillCommand, Query
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySkillCommandResponse> Handle(QuerySkillCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySkillCommandResponse> Handle(QuerySkillCommand request, CancellationToken cancellationToken)
     {
         var skill = await _databaseContext.Skills.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == request.SkillId, cancellationToken)

@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -36,7 +36,7 @@ public class CreateTeamTimerCommandHandler : IRequestHandler<CreateTeamTimerComm
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateTeamTimerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateTeamTimerCommand request, CancellationToken cancellationToken)
     {
         await TeamTimerGuards.EnsureTeamAdminAsync(_teamService, request.TeamId, request.ContextUserId, cancellationToken);
 

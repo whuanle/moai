@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -37,7 +37,7 @@ public class QueryWeixinWorkAppsCommandHandler : IRequestHandler<QueryWeixinWork
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWeixinWorkAppsCommandResponse> Handle(QueryWeixinWorkAppsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWeixinWorkAppsCommandResponse> Handle(QueryWeixinWorkAppsCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

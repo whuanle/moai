@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
 using MoAI.Storage.Models;
@@ -23,7 +23,7 @@ public class PreUploadTempFileCommandHandler : IRequestHandler<PreUploadTempFile
     }
 
     /// <inheritdoc/>
-    public async Task<PreUploadFileCommandResponse> Handle(PreUploadTempFileCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PreUploadFileCommandResponse> Handle(PreUploadTempFileCommand request, CancellationToken cancellationToken)
     {
         var objectKey = FileStoreHelper.GetObjectKey(request.SHA256, request.FileName, "temp");
 

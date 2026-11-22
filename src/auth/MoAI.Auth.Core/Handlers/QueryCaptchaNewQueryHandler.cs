@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Auth.Queries;
 using MoAI.Auth.Queries.Responses;
 using MoAI.Auth.Services;
@@ -29,7 +29,7 @@ public class QueryCaptchaNewQueryHandler : IRequestHandler<QueryCaptchaNewQuery,
     }
 
     /// <inheritdoc/>
-    public async Task<QueryCaptchaNewQueryResponse> Handle(QueryCaptchaNewQuery request, CancellationToken cancellationToken)
+    public async ValueTask<QueryCaptchaNewQueryResponse> Handle(QueryCaptchaNewQuery request, CancellationToken cancellationToken)
     {
         await _rateLimiter.HitAsync("captcha_new", request.ContextClientIp ?? string.Empty, GenerateIpLimit, GenerateIpWindow, cancellationToken);
 

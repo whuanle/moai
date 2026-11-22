@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Queries.Responses;
 using MoAI.Database;
@@ -22,7 +22,7 @@ public class QueryUserBoundAccountsCommandHandler : IRequestHandler<QueryUserBou
     }
 
     /// <inheritdoc/>
-    public async Task<QueryUserBoundAccountsCommandResponse> Handle(QueryUserBoundAccountsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryUserBoundAccountsCommandResponse> Handle(QueryUserBoundAccountsCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.UserOauthConnections
             .Where(x => x.UserId == request.ContextUserId)

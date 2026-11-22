@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.App.Commands;
 using MoAI.App.Queries;
@@ -40,7 +40,7 @@ public class AppSessionController : ControllerBase
     {
         var cmd = new QueryAppSessionsCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public class AppSessionController : ControllerBase
     {
         var cmd = new QueryAppSessionMessagesCommand { SessionId = sessionId };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class AppSessionController : ControllerBase
     {
         var cmd = new QueryAppSessionContextUsageCommand { SessionId = sessionId };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -185,6 +185,6 @@ public class AppSessionController : ControllerBase
     {
         var cmd = new QueryAppUserConfigCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 }

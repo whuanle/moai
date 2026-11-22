@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -23,7 +23,7 @@ public class QueryNotificationFailedCountCommandHandler : IRequestHandler<QueryN
     }
 
     /// <inheritdoc/>
-    public async Task<QueryNotificationFailedCountCommandResponse> Handle(QueryNotificationFailedCountCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryNotificationFailedCountCommandResponse> Handle(QueryNotificationFailedCountCommand request, CancellationToken cancellationToken)
     {
         var count = await _databaseContext.NotificationLogs.AsNoTracking()
             .CountAsync(x => x.Status == (int)NotificationSendStatus.Failed, cancellationToken);

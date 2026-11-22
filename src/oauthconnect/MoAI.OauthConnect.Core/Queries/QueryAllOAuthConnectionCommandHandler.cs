@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -31,7 +31,7 @@ public class QueryAllOAuthConnectionCommandHandler : IRequestHandler<QueryAllOAu
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAllOAuthConnectionCommandResponse> Handle(QueryAllOAuthConnectionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAllOAuthConnectionCommandResponse> Handle(QueryAllOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.OauthConnections
             .Select(x => new QueryAllOAuthConnectionCommandResponseItem

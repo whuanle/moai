@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
@@ -38,7 +38,7 @@ public class OAuthBindAccountByCodeCommandHandler : IRequestHandler<OAuthBindAcc
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(OAuthBindAccountByCodeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(OAuthBindAccountByCodeCommand request, CancellationToken cancellationToken)
     {
         // 解析第三方授权 code，得到统一用户标识
         var oauthBindUserProfile = default(OAuthBindUserProfile);

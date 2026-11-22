@@ -1,5 +1,5 @@
 using System;
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -41,7 +41,7 @@ public class TeamAgentController : ControllerBase
     public Task<QueryTeamAgentListCommandResponse> QueryList([FromQuery] QueryTeamAgentListCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class TeamAgentController : ControllerBase
     {
         var cmd = new QueryTeamAgentDetailCommand { AgentId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public class TeamAgentController : ControllerBase
     [HttpPost]
     public Task<SimpleGuid> CreateTeamAgent([FromBody] CreateTeamAgentCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class TeamAgentController : ControllerBase
     {
         var cmd = new SeedTeamAgentBuiltinCommand();
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class TeamAgentController : ControllerBase
     {
         var cmd = new UpdateTeamAgentAvatarCommand { AgentId = id, ObjectKey = req.ObjectKey };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -136,7 +136,7 @@ public class TeamAgentController : ControllerBase
     {
         var cmd = new SetTeamAgentEnabledCommand { AgentId = id, Enabled = req.Enabled };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -150,6 +150,6 @@ public class TeamAgentController : ControllerBase
     {
         var cmd = new DeleteTeamAgentCommand { AgentId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 }

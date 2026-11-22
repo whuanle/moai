@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using MoAI.Storage.Commands;
@@ -19,7 +19,7 @@ public class CompleteUploadController : ControllerBase
     /// <summary>
     /// Initializes a new instance of the <see cref="CompleteUploadController"/> class.
     /// </summary>
-    /// <param name="mediator">MediatR.</param>
+    /// <param name="mediator">Mediator.</param>
     public CompleteUploadController(IMediator mediator)
     {
         _mediator = mediator;

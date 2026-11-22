@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.Database;
 using MoAI.Infra.Models;
 using MoAI.Message.Commands;
@@ -26,7 +26,7 @@ public class ReadAllMessageCommandHandler : IRequestHandler<ReadAllMessageComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ReadAllMessageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ReadAllMessageCommand request, CancellationToken cancellationToken)
     {
         await _databaseContext.WhereUpdateAsync(
             _databaseContext.Messages

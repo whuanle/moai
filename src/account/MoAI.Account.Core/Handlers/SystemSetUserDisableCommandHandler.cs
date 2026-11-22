@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Account.Commands;
@@ -50,7 +50,7 @@ public class SystemSetUserDisableCommandHandler : IRequestHandler<SystemSetUserD
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SystemSetUserDisableCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SystemSetUserDisableCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);

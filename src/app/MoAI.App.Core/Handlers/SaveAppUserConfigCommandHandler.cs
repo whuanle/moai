@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Services;
@@ -35,7 +35,7 @@ public class SaveAppUserConfigCommandHandler : IRequestHandler<SaveAppUserConfig
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveAppUserConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveAppUserConfigCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken)
             ?? throw new BusinessException("应用不存在.") { StatusCode = 404 };

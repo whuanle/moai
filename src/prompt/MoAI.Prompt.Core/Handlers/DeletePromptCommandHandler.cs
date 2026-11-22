@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class DeletePromptCommandHandler : IRequestHandler<DeletePromptCommand, E
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeletePromptCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeletePromptCommand request, CancellationToken cancellationToken)
     {
         var prompt = await _databaseContext.Prompts
             .FirstOrDefaultAsync(x => x.Id == request.PromptId, cancellationToken);

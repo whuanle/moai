@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Queries.Responses;
 using MoAI.KnowledgeGraph.Services;
@@ -25,7 +25,7 @@ public class QueryExternalEdgesCommandHandler : IRequestHandler<QueryExternalEdg
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphEdgesCommandResponse> Handle(QueryExternalEdgesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphEdgesCommandResponse> Handle(QueryExternalEdgesCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         var pageNo = request.PageNo < 1 ? 1 : request.PageNo;

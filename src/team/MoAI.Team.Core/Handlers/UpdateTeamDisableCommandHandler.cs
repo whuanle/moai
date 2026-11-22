@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Events;
@@ -28,7 +28,7 @@ public class UpdateTeamDisableCommandHandler : IRequestHandler<UpdateTeamDisable
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateTeamDisableCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateTeamDisableCommand request, CancellationToken cancellationToken)
     {
         var team = await _databaseContext.Teams
             .FirstOrDefaultAsync(x => x.Id == request.TeamId, cancellationToken);

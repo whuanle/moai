@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.AIPlugin.Models;
@@ -38,7 +38,7 @@ public class QueryPluginManageListCommandHandler : IRequestHandler<QueryPluginMa
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPluginManageListCommandResponse> Handle(QueryPluginManageListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPluginManageListCommandResponse> Handle(QueryPluginManageListCommand request, CancellationToken cancellationToken)
     {
         // 系统插件管理页只看系统侧记录（TeamId=0）；团队自有插件（TeamId=团队ID）只在团队插件页管理
         var plugins = await _databaseContext.Plugins

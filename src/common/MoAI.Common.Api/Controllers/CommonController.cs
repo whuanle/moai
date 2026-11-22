@@ -1,6 +1,6 @@
 #pragma warning disable CA1822 // 将成员标记为 static
 
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Common.Queries;
@@ -50,6 +50,6 @@ public class CommonController : ControllerBase
     [AllowAnonymous]
     public Task<QueryServerInfoCommandResponse> ServerInfo(CancellationToken ct)
     {
-        return _mediator.Send(new QueryServerInfoCommand { }, ct);
+        return _mediator.Send(new QueryServerInfoCommand { }, ct).AsTask();
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Services;
@@ -40,7 +40,7 @@ public class QueryTeamPluginsCommandHandler : IRequestHandler<QueryTeamPluginsCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamPluginsCommandResponse> Handle(QueryTeamPluginsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamPluginsCommandResponse> Handle(QueryTeamPluginsCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)

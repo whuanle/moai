@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -35,7 +35,7 @@ public class WikiSourceSyncJobCommandHandler : IRequestHandler<WikiSourceSyncJob
     }
 
     /// <inheritdoc/>
-    public async Task<RecuringJobResponse> Handle(WikiSourceSyncJobCommand request, CancellationToken cancellationToken)
+    public async ValueTask<RecuringJobResponse> Handle(WikiSourceSyncJobCommand request, CancellationToken cancellationToken)
     {
         var sourceId = request.Params?.SourceId ?? Guid.Empty;
         if (sourceId == Guid.Empty)

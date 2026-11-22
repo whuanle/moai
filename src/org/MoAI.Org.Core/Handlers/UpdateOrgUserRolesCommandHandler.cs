@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -33,7 +33,7 @@ public class UpdateOrgUserRolesCommandHandler : IRequestHandler<UpdateOrgUserRol
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateOrgUserRolesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateOrgUserRolesCommand request, CancellationToken cancellationToken)
     {
         var userExists = await _databaseContext.Users
             .AnyAsync(x => x.Id == request.UserId, cancellationToken);

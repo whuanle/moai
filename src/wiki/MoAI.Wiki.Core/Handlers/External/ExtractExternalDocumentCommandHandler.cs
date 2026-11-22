@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -34,7 +34,7 @@ public class ExtractExternalDocumentCommandHandler : IRequestHandler<ExtractExte
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ExtractExternalDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ExtractExternalDocumentCommand request, CancellationToken cancellationToken)
     {
         var document = await AuthorizeAndLoadDocumentAsync(request.WikiId, request.Caller.TeamId, request.DocumentId, cancellationToken);
         await _processingService.ExtractAsync(document.WikiId, document.Id, cancellationToken);

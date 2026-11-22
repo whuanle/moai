@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Auth.Queries.Responses;
 using MoAI.Infra.Models;
 

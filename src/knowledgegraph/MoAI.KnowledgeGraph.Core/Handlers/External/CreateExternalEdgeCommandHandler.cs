@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -31,7 +31,7 @@ public class CreateExternalEdgeCommandHandler : IRequestHandler<CreateExternalEd
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(CreateExternalEdgeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(CreateExternalEdgeCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 

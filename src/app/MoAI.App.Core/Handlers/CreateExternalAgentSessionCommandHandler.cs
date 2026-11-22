@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Services;
@@ -32,7 +32,7 @@ public class CreateExternalAgentSessionCommandHandler : IRequestHandler<CreateEx
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateExternalAgentSessionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateExternalAgentSessionCommand request, CancellationToken cancellationToken)
     {
         // 访问用户 token → 真实站内用户 id（会话落 UserType.Normal，与站内账号合并）；
         // 外部用户 token / key 直连身份 → external_user.id（会话落 UserType.External）

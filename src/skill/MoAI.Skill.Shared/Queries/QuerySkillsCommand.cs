@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Skill.Queries.Responses;
 
 namespace MoAI.Skill.Queries;

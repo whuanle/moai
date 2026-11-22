@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class DeleteDingTalkAppCommandHandler : IRequestHandler<DeleteDingTalkApp
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteDingTalkAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteDingTalkAppCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.DingTalkApps
             .FirstOrDefaultAsync(x => x.Id == request.DingTalkAppId, cancellationToken);

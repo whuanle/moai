@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -28,7 +28,7 @@ public class LiftIpBanCommandHandler : IRequestHandler<LiftIpBanCommand, EmptyCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(LiftIpBanCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(LiftIpBanCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.LoginIpBans
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);

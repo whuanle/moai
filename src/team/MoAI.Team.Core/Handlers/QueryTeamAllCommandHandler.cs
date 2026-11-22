@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Team.Queries;
@@ -23,7 +23,7 @@ public class QueryTeamAllCommandHandler : IRequestHandler<QueryTeamAllCommand, Q
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamAllCommandResponse> Handle(QueryTeamAllCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamAllCommandResponse> Handle(QueryTeamAllCommand request, CancellationToken cancellationToken)
     {
         var teams = await _databaseContext.Teams
             .OrderBy(x => x.Id)

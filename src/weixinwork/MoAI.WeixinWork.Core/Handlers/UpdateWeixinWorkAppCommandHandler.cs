@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class UpdateWeixinWorkAppCommandHandler : IRequestHandler<UpdateWeixinWor
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateWeixinWorkAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateWeixinWorkAppCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.WeixinWorkApps
             .FirstOrDefaultAsync(x => x.Id == request.WeixinWorkAppId, cancellationToken);

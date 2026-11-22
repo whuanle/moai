@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -45,7 +45,7 @@ public class QueryExternalDocumentEmbeddingCommandHandler : IRequestHandler<Quer
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiDocumentEmbeddingCommandResponse> Handle(QueryExternalDocumentEmbeddingCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiDocumentEmbeddingCommandResponse> Handle(QueryExternalDocumentEmbeddingCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

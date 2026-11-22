@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class RevealSubsysAppSecretCommandHandler : IRequestHandler<RevealSubsysA
     }
 
     /// <inheritdoc/>
-    public async Task<RevealSubsysAppSecretCommandResponse> Handle(RevealSubsysAppSecretCommand request, CancellationToken cancellationToken)
+    public async ValueTask<RevealSubsysAppSecretCommandResponse> Handle(RevealSubsysAppSecretCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System)

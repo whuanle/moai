@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Account.Services;
@@ -35,7 +35,7 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users.FirstOrDefaultAsync(x => x.Id == request.ContextUserId, cancellationToken);
         if (user == null)

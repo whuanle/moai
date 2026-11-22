@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Account.Services;
@@ -33,7 +33,7 @@ public class UpdateUserInfoCommandHandler : IRequestHandler<UpdateUserInfoComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateUserInfoCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateUserInfoCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users.FirstOrDefaultAsync(x => x.Id == request.ContextUserId, cancellationToken);
         if (user == null)

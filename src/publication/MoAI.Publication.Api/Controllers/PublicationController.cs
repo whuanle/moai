@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Services;
 using MoAI.Infra.Exceptions;
@@ -44,7 +44,7 @@ public class PublicationController : ControllerBase
     public Task<SimpleLong> Apply([FromBody] ApplyPublicationCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public class PublicationController : ControllerBase
     public Task<EmptyCommandResponse> Withdraw([FromBody] WithdrawPublicationCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class PublicationController : ControllerBase
     public Task<EmptyCommandResponse> Takedown([FromBody] TakedownPublicationCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public class PublicationController : ControllerBase
     public Task<QueryPublicationReviewListResponse> QueryTeamList([FromQuery] QueryPublicationTeamListCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     private async Task EnsureAdminAsync(CancellationToken ct)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Storage.Commands;
 using MoAI.Storage.Helpers;
 using MoAI.Storage.Models;
@@ -23,7 +23,7 @@ public class CompleteFileUploadCommandHandler : IRequestHandler<CompleteFileUplo
     }
 
     /// <inheritdoc/>
-    public async Task<CompleteFileUploadCommandResponse> Handle(CompleteFileUploadCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CompleteFileUploadCommandResponse> Handle(CompleteFileUploadCommand request, CancellationToken cancellationToken)
     {
         var objectKey = await _storageService.CompleteAsync(request.FileId, request.IsSuccess, cancellationToken);
 

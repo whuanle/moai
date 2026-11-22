@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Commands.Responses;
@@ -36,7 +36,7 @@ public class PreUploadOpenApiFilePluginCommandHandler : IRequestHandler<PreUploa
     }
 
     /// <inheritdoc/>
-    public async Task<PreUploadOpenApiFilePluginCommandResponse> Handle(PreUploadOpenApiFilePluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PreUploadOpenApiFilePluginCommandResponse> Handle(PreUploadOpenApiFilePluginCommand request, CancellationToken cancellationToken)
     {
         await EnsurePluginNameUniquenessAsync(request.PluginName, cancellationToken);
 

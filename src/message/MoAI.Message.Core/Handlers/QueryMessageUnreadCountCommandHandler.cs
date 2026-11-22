@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
@@ -26,7 +26,7 @@ public class QueryMessageUnreadCountCommandHandler : IRequestHandler<QueryMessag
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(QueryMessageUnreadCountCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(QueryMessageUnreadCountCommand request, CancellationToken cancellationToken)
     {
         var count = await _databaseContext.Messages
             .AsNoTracking()

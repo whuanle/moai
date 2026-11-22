@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Auth.Commands;
 using MoAI.Auth.Commands.Responses;
@@ -35,7 +35,7 @@ public class SetupTwoFactorCommandHandler : IRequestHandler<SetupTwoFactorComman
     }
 
     /// <inheritdoc/>
-    public async Task<SetupTwoFactorCommandResponse> Handle(SetupTwoFactorCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SetupTwoFactorCommandResponse> Handle(SetupTwoFactorCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users
             .FirstOrDefaultAsync(u => u.Id == request.ContextUserId && u.IsDeleted == 0, cancellationToken);

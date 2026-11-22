@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
@@ -52,7 +52,7 @@ public class StartWikiModelMigrationCommandHandler : IRequestHandler<StartWikiMo
     }
 
     /// <inheritdoc/>
-    public async Task<StartWikiModelMigrationCommandResponse> Handle(StartWikiModelMigrationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<StartWikiModelMigrationCommandResponse> Handle(StartWikiModelMigrationCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

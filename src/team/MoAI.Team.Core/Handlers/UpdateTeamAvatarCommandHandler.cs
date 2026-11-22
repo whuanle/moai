@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class UpdateTeamAvatarCommandHandler : IRequestHandler<UpdateTeamAvatarCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateTeamAvatarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateTeamAvatarCommand request, CancellationToken cancellationToken)
     {
         // 仅允许引用已完成上传并登记的文件，防止任意伪造 objectKey（与用户头像同规则）
         var fileExists = await _databaseContext.Files

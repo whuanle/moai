@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -30,7 +30,7 @@ public class QueryNotificationLogsCommandHandler : IRequestHandler<QueryNotifica
     }
 
     /// <inheritdoc/>
-    public async Task<QueryNotificationLogsCommandResponse> Handle(QueryNotificationLogsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryNotificationLogsCommandResponse> Handle(QueryNotificationLogsCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.NotificationLogs.AsNoTracking();
         if (request.ChannelId > 0)

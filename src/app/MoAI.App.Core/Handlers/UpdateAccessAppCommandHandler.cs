@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.Database;
@@ -29,7 +29,7 @@ public class UpdateAccessAppCommandHandler : IRequestHandler<UpdateAccessAppComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateAccessAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateAccessAppCommand request, CancellationToken cancellationToken)
     {
         var entity = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.Team)

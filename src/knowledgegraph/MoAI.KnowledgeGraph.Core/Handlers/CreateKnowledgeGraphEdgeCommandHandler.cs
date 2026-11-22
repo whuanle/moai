@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -31,7 +31,7 @@ public class CreateKnowledgeGraphEdgeCommandHandler : IRequestHandler<CreateKnow
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(CreateKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(CreateKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.KnowledgeGraph.Models;
@@ -35,7 +35,7 @@ public class QueryKnowledgeGraphsCommandHandler : IRequestHandler<QueryKnowledge
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphsCommandResponse> Handle(QueryKnowledgeGraphsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphsCommandResponse> Handle(QueryKnowledgeGraphsCommand request, CancellationToken cancellationToken)
     {
         var role = await _authorizer.RequireTeamRoleAsync(request.TeamId, adminOnly: false, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);

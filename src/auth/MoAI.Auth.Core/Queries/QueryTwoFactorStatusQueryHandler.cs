@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Auth.Queries;
 using MoAI.Auth.Queries.Responses;
@@ -26,7 +26,7 @@ public class QueryTwoFactorStatusQueryHandler : IRequestHandler<QueryTwoFactorSt
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTwoFactorStatusQueryResponse> Handle(QueryTwoFactorStatusQuery request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTwoFactorStatusQueryResponse> Handle(QueryTwoFactorStatusQuery request, CancellationToken cancellationToken)
     {
         var enabled = await _databaseContext.Users
             .Where(u => u.Id == request.ContextUserId && u.IsDeleted == 0)

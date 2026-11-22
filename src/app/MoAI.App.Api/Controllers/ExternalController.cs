@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.App.Commands;
@@ -43,7 +43,7 @@ public class ExternalController : ControllerBase
     [HttpPost("token")]
     public Task<ExternalTokenCommandResponse> Token([FromBody] ExternalTokenCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class ExternalController : ControllerBase
     [HttpPost("token/refresh")]
     public Task<ExternalTokenCommandResponse> Refresh([FromBody] RefreshExternalTokenCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -134,7 +134,7 @@ public class ExternalController : ControllerBase
     [HttpGet("app/{appId:guid}/access-point")]
     public Task<ExternalAccessPointResponse> QueryAccessPoint([FromRoute] Guid appId, CancellationToken ct)
     {
-        return _mediator.Send(new QueryExternalAccessPointCommand { AppId = appId }, ct);
+        return _mediator.Send(new QueryExternalAccessPointCommand { AppId = appId }, ct).AsTask();
     }
 
     private Models.ExternalTokenContext RequireTokenContext()

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.App.Queries.Responses;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;

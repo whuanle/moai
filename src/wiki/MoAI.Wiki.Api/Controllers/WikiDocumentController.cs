@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -49,7 +49,7 @@ public class WikiDocumentController : ControllerBase
             IncludeFileTypes = req.IncludeFileTypes,
             ExcludeFileTypes = req.ExcludeFileTypes
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public class WikiDocumentController : ControllerBase
             FileSize = req.FileSize,
             SHA256 = req.SHA256
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public class WikiDocumentController : ControllerBase
             FileId = req.FileId,
             FileName = req.FileName
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public class WikiDocumentController : ControllerBase
             WikiId = wikiId,
             DocumentIds = req.DocumentIds
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public class WikiDocumentController : ControllerBase
     [HttpGet("{documentId}/download")]
     public Task<SimpleString> Download(long wikiId, long documentId, CancellationToken ct)
     {
-        return _mediator.Send(new DownloadWikiDocumentCommand { WikiId = wikiId, DocumentId = documentId }, ct);
+        return _mediator.Send(new DownloadWikiDocumentCommand { WikiId = wikiId, DocumentId = documentId }, ct).AsTask();
     }
 
     /// <summary>
@@ -134,7 +134,7 @@ public class WikiDocumentController : ControllerBase
     [HttpGet("{documentId}/images")]
     public Task<QueryWikiDocumentImagesCommandResponse> QueryImages(long wikiId, long documentId, CancellationToken ct)
     {
-        return _mediator.Send(new QueryWikiDocumentImagesCommand { WikiId = wikiId, DocumentId = documentId }, ct);
+        return _mediator.Send(new QueryWikiDocumentImagesCommand { WikiId = wikiId, DocumentId = documentId }, ct).AsTask();
     }
 
     /// <summary>
@@ -148,7 +148,7 @@ public class WikiDocumentController : ControllerBase
     [HttpGet("{documentId}/images/{imageId}/download")]
     public Task<SimpleString> DownloadImage(long wikiId, long documentId, long imageId, CancellationToken ct)
     {
-        return _mediator.Send(new DownloadWikiDocumentImageCommand { WikiId = wikiId, DocumentId = documentId, ImageId = imageId }, ct);
+        return _mediator.Send(new DownloadWikiDocumentImageCommand { WikiId = wikiId, DocumentId = documentId, ImageId = imageId }, ct).AsTask();
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public class WikiDocumentController : ControllerBase
     [HttpGet("{documentId}/content")]
     public Task<SimpleString> GetContent(long wikiId, long documentId, CancellationToken ct)
     {
-        return _mediator.Send(new GetWikiDocumentContentCommand { WikiId = wikiId, DocumentId = documentId }, ct);
+        return _mediator.Send(new GetWikiDocumentContentCommand { WikiId = wikiId, DocumentId = documentId }, ct).AsTask();
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public class WikiDocumentController : ControllerBase
             DocumentId = documentId,
             FileName = req.FileName
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -194,7 +194,7 @@ public class WikiDocumentController : ControllerBase
     [HttpPost("{documentId}/extract")]
     public Task<EmptyCommandResponse> Extract(long wikiId, long documentId, CancellationToken ct)
     {
-        return _mediator.Send(new ExtractDocumentContentCommand { WikiId = wikiId, DocumentId = documentId }, ct);
+        return _mediator.Send(new ExtractDocumentContentCommand { WikiId = wikiId, DocumentId = documentId }, ct).AsTask();
     }
 
     /// <summary>
@@ -219,7 +219,7 @@ public class WikiDocumentController : ControllerBase
             SizeUnit = req.SizeUnit,
             TokenEncodingOrModel = req.TokenEncodingOrModel,
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -240,7 +240,7 @@ public class WikiDocumentController : ControllerBase
             AiModelId = req.AiModelId,
             PromptTemplate = req.PromptTemplate,
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -265,7 +265,7 @@ public class WikiDocumentController : ControllerBase
             StrategyType = req.StrategyType,
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -289,7 +289,7 @@ public class WikiDocumentController : ControllerBase
             StrategyType = req.StrategyType,
         };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -310,7 +310,7 @@ public class WikiDocumentController : ControllerBase
             IsEmbedSourceText = req.IsEmbedSourceText,
             IsEmbedMetadata = req.IsEmbedMetadata,
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -345,7 +345,7 @@ public class WikiDocumentController : ControllerBase
             EmbedSourceText = req.EmbedSourceText,
             EmbedMetadata = req.EmbedMetadata,
         };
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -358,6 +358,6 @@ public class WikiDocumentController : ControllerBase
     [HttpGet("{documentId}/embedding")]
     public Task<QueryWikiDocumentEmbeddingCommandResponse> QueryEmbedding(long wikiId, long documentId, CancellationToken ct)
     {
-        return _mediator.Send(new QueryWikiDocumentEmbeddingCommand { WikiId = wikiId, DocumentId = documentId }, ct);
+        return _mediator.Send(new QueryWikiDocumentEmbeddingCommand { WikiId = wikiId, DocumentId = documentId }, ct).AsTask();
     }
 }

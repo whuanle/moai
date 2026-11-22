@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -28,7 +28,7 @@ public class UpdateOrgRoleOrderCommandHandler : IRequestHandler<UpdateOrgRoleOrd
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateOrgRoleOrderCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateOrgRoleOrderCommand request, CancellationToken cancellationToken)
     {
         var role = await _databaseContext.OrgRoles
             .FirstOrDefaultAsync(x => x.Id == request.OrgRoleId, cancellationToken);

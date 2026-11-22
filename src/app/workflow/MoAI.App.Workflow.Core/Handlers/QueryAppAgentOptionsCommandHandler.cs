@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Workflow.Queries;
 using MoAI.App.Workflow.Queries.Responses;
@@ -30,7 +30,7 @@ public class QueryAppAgentOptionsCommandHandler : IRequestHandler<QueryAppAgentO
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppAgentOptionsCommandResponse> Handle(QueryAppAgentOptionsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppAgentOptionsCommandResponse> Handle(QueryAppAgentOptionsCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken);
