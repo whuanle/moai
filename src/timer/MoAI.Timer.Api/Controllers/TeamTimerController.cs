@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -38,7 +38,7 @@ public class TeamTimerController : ControllerBase
     [HttpPost]
     public Task<SimpleGuid> CreateTimer([FromBody] CreateTeamTimerCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class TeamTimerController : ControllerBase
             RetryIntervalSeconds = req.RetryIntervalSeconds,
             ContextUserId = _userContextProvider.GetUserContext().UserId,
             ContextUserType = _userContextProvider.GetUserContext().UserType
-        }, ct);
+        }, ct).AsTask();
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class TeamTimerController : ControllerBase
         {
             TimerId = id,
             ContextUserId = _userContextProvider.GetUserContext().UserId
-        }, ct);
+        }, ct).AsTask();
     }
 
     /// <summary>
@@ -96,7 +96,7 @@ public class TeamTimerController : ControllerBase
         {
             TimerId = id,
             ContextUserId = _userContextProvider.GetUserContext().UserId
-        }, ct);
+        }, ct).AsTask();
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public class TeamTimerController : ControllerBase
     [HttpGet("list")]
     public Task<QueryTeamTimersCommandResponse> QueryTimers([FromQuery] QueryTeamTimersCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -127,6 +127,6 @@ public class TeamTimerController : ControllerBase
             TimerId = id,
             PageNo = pageNo,
             PageSize = pageSize
-        }, ct);
+        }, ct).AsTask();
     }
 }

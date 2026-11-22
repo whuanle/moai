@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class SetSkillDisableCommandHandler : IRequestHandler<SetSkillDisableComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SetSkillDisableCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SetSkillDisableCommand request, CancellationToken cancellationToken)
     {
         var skill = await _databaseContext.Skills.FirstOrDefaultAsync(x => x.Id == request.SkillId, cancellationToken)
             ?? throw new BusinessException("技能不存在.") { StatusCode = 404 };

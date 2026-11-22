@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries.Responses;
 

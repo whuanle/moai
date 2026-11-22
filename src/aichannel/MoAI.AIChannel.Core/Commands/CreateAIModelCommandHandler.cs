@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Commands;
 using MoAI.AIChannel.Services;
@@ -26,7 +26,7 @@ public class CreateAIModelCommandHandler : IRequestHandler<CreateAIModelCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(CreateAIModelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(CreateAIModelCommand request, CancellationToken cancellationToken)
     {
         var channelExist = await _databaseContext.AiChannels
             .AnyAsync(x => x.Id == request.ChannelId && x.IsDeleted == 0 && x.TeamId == request.TeamId, cancellationToken);

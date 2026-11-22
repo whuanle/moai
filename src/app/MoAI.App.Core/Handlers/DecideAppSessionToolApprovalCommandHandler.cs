@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AI;
 using MoAI.AI.Services;
@@ -36,7 +36,7 @@ public class DecideAppSessionToolApprovalCommandHandler : IRequestHandler<Decide
     }
 
     /// <inheritdoc/>
-    public async Task<DecideAppSessionToolApprovalResponse> Handle(DecideAppSessionToolApprovalCommand request, CancellationToken cancellationToken)
+    public async ValueTask<DecideAppSessionToolApprovalResponse> Handle(DecideAppSessionToolApprovalCommand request, CancellationToken cancellationToken)
     {
         var ownerId = await _databaseContext.AppAgentSessions
             .Where(x => x.Id == request.SessionId)

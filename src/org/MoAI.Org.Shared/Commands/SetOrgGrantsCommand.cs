@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 using MoAI.Org.Queries.Responses;
 using MoAI.Org.Services;

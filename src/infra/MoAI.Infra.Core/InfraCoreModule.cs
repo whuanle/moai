@@ -3,7 +3,7 @@ using Maomi;
 using Maomi.MQ;
 using Maomi.MQ.Filters;
 using Maomi.MQ.Models;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -1,7 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 
 namespace MoAI.TeamAgent.Commands;

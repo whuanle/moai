@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Auth.Commands;
 using MoAI.Auth.Models;
@@ -44,7 +44,7 @@ public class SendLoginCodeCommandHandler : IRequestHandler<SendLoginCodeCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SendLoginCodeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SendLoginCodeCommand request, CancellationToken cancellationToken)
     {
         var ip = request.ContextClientIp ?? string.Empty;
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 using MoAI.Memory.Queries;
 using MoAI.Memory.Queries.Responses;
@@ -22,7 +22,7 @@ public class QueryMyGlobalMemoriesCommandHandler : IRequestHandler<QueryMyGlobal
     }
 
     /// <inheritdoc/>
-    public async Task<QueryMyGlobalMemoriesCommandResponse> Handle(QueryMyGlobalMemoriesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryMyGlobalMemoriesCommandResponse> Handle(QueryMyGlobalMemoriesCommand request, CancellationToken cancellationToken)
     {
         var settings = await _memoryService.GetPlatformSettingsAsync(cancellationToken);
         var (items, total) = await _memoryService.ListGlobalMineAsync(request.ContextUserId, request.Page, request.PageSize, request.Keywords, cancellationToken);

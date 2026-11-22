@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Storage.Models;
 
 namespace MoAI.Skill.Commands;

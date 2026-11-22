@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Statistics.Services;
 using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
@@ -26,11 +26,11 @@ public class IncrementResourceUsageCommandHandler : IRequestHandler<IncrementRes
     }
 
     /// <inheritdoc/>
-    public async Task Handle(IncrementResourceUsageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(IncrementResourceUsageCommand request, CancellationToken cancellationToken)
     {
         if (request.Counters.Count == 0)
         {
-            return;
+            return Unit.Value;
         }
 
         _validator.ValidateAndThrow(request);
@@ -53,5 +53,6 @@ public class IncrementResourceUsageCommandHandler : IRequestHandler<IncrementRes
             Script,
             [new RedisKey($"counter:{request.Name}")],
             arguments);
+        return Unit.Value;
     }
 }

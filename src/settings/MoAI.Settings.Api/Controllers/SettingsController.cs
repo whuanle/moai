@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Services;
 using MoAI.Infra.Exceptions;

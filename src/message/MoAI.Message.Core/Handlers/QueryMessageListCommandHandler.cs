@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -30,7 +30,7 @@ public class QueryMessageListCommandHandler : IRequestHandler<QueryMessageListCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryMessageListCommandResponse> Handle(QueryMessageListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryMessageListCommandResponse> Handle(QueryMessageListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Messages
             .AsNoTracking()

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.LoginSafety.Commands;
@@ -23,7 +23,7 @@ public class QueryIpBanListCommandHandler : IRequestHandler<QueryIpBanListComman
     }
 
     /// <inheritdoc/>
-    public async Task<QueryIpBanListCommandResponse> Handle(QueryIpBanListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryIpBanListCommandResponse> Handle(QueryIpBanListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.LoginIpBans.AsNoTracking().AsQueryable();
 

@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
@@ -52,7 +52,7 @@ public class QueryKnowledgeGraphText2CypherCommandHandler : IRequestHandler<Quer
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphText2CypherCommandResponse> Handle(QueryKnowledgeGraphText2CypherCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphText2CypherCommandResponse> Handle(QueryKnowledgeGraphText2CypherCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         if (!string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))

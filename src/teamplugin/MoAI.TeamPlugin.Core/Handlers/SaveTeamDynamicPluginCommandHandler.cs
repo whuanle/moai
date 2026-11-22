@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Services;
@@ -44,7 +44,7 @@ public class SaveTeamDynamicPluginCommandHandler : IRequestHandler<SaveTeamDynam
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveTeamDynamicPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveTeamDynamicPluginCommand request, CancellationToken cancellationToken)
     {
         await EnsureManagerAsync(request, cancellationToken);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.LoginSafety.Commands;
@@ -22,7 +22,7 @@ public class QueryRiskEventUnreadCountCommandHandler : IRequestHandler<QueryRisk
     }
 
     /// <inheritdoc/>
-    public async Task<QueryRiskEventUnreadCountCommandResponse> Handle(QueryRiskEventUnreadCountCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryRiskEventUnreadCountCommandResponse> Handle(QueryRiskEventUnreadCountCommand request, CancellationToken cancellationToken)
     {
         var count = await _databaseContext.LoginRiskEvents.AsNoTracking()
             .CountAsync(x => !x.IsRead, cancellationToken);

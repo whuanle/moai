@@ -3,7 +3,7 @@
 using Hangfire;
 using Hangfire.Common;
 using Maomi;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MoAI.Hangfire.Models;

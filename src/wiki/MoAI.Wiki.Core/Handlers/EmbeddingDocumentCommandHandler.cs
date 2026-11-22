@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -50,7 +50,7 @@ public class EmbeddingDocumentCommandHandler : IRequestHandler<EmbeddingDocument
     }
 
     /// <inheritdoc/>
-    public async Task<EmbeddingDocumentCommandResponse> Handle(EmbeddingDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmbeddingDocumentCommandResponse> Handle(EmbeddingDocumentCommand request, CancellationToken cancellationToken)
     {
         if (!request.IsEmbedSourceText && !request.IsEmbedMetadata)
         {

@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.DingTalk.Commands;
 using MoAI.DingTalk.Queries;
@@ -40,7 +40,7 @@ public class DingTalkAppController : ControllerBase
     public Task<QueryDingTalkAppsCommandResponse> QueryDingTalkApps([FromQuery] QueryDingTalkAppsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class DingTalkAppController : ControllerBase
     public Task<SimpleGuid> CreateDingTalkApp([FromBody] CreateDingTalkAppCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>

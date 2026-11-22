@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Queries;
 using MoAI.Account.Services;
@@ -27,7 +27,7 @@ public class QueryUserInfoCommandHandler : IRequestHandler<QueryUserInfoCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<Queries.Responses.UserStateInfo> Handle(QueryUserInfoCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Queries.Responses.UserStateInfo> Handle(QueryUserInfoCommand request, CancellationToken cancellationToken)
     {
         var exist = await _databaseContext.Users
             .AnyAsync(u => u.Id == request.UserId && u.IsDeleted == 0, cancellationToken);

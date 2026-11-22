@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Queries;
 using MoAI.AIChannel.Queries.Responses;
@@ -23,7 +23,7 @@ public class QueryTeamAvailableModelsCommandHandler : IRequestHandler<QueryTeamA
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamAvailableModelsCommandResponse> Handle(QueryTeamAvailableModelsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamAvailableModelsCommandResponse> Handle(QueryTeamAvailableModelsCommand request, CancellationToken cancellationToken)
     {
         var teamId = request.TeamId;
         var authorizedModelIds = await _databaseContext.AiModelAuthorizations

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class UpdateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Up
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 using MoAI.Settings.Commands;
 using MoAI.Settings.Services;
@@ -22,8 +22,8 @@ public class SaveSettingCommandHandler : IRequestHandler<SaveSettingCommand, Emp
     }
 
     /// <inheritdoc/>
-    public Task<EmptyCommandResponse> Handle(SaveSettingCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveSettingCommand request, CancellationToken cancellationToken)
     {
-        return _settingsService.SaveSettingAsync(request, cancellationToken);
+        return await _settingsService.SaveSettingAsync(request, cancellationToken);
     }
 }

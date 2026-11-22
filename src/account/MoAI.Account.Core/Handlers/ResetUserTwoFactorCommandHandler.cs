@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Account.Services;
@@ -28,7 +28,7 @@ public class ResetUserTwoFactorCommandHandler : IRequestHandler<ResetUserTwoFact
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ResetUserTwoFactorCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ResetUserTwoFactorCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users
             .FirstOrDefaultAsync(u => u.Id == request.UserId && u.IsDeleted == 0, cancellationToken);

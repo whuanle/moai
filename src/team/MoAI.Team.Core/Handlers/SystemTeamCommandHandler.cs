@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -31,7 +31,7 @@ public class SystemCreateTeamCommandHandler : IRequestHandler<SystemCreateTeamCo
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(SystemCreateTeamCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(SystemCreateTeamCommand request, CancellationToken cancellationToken)
     {
         var exist = await _databaseContext.Teams
             .AnyAsync(x => x.Name == request.Name, cancellationToken);
@@ -79,7 +79,7 @@ public class SystemAddTeamUserCommandHandler : IRequestHandler<SystemAddTeamUser
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SystemAddTeamUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SystemAddTeamUserCommand request, CancellationToken cancellationToken)
     {
         var teamExist = await _databaseContext.Teams
             .AnyAsync(x => x.Id == request.TeamId, cancellationToken);
@@ -159,7 +159,7 @@ public class SystemRemoveTeamUserCommandHandler : IRequestHandler<SystemRemoveTe
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SystemRemoveTeamUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SystemRemoveTeamUserCommand request, CancellationToken cancellationToken)
     {
         var member = await _databaseContext.TeamUsers
             .FirstOrDefaultAsync(x => x.TeamId == request.TeamId && x.UserId == request.UserId, cancellationToken);

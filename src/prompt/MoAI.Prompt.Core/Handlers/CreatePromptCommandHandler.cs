@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Classify;
 using MoAI.Database;
@@ -31,7 +31,7 @@ public class CreatePromptCommandHandler : IRequestHandler<CreatePromptCommand, S
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleInt> Handle(CreatePromptCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleInt> Handle(CreatePromptCommand request, CancellationToken cancellationToken)
     {
         if (request.PromptClassId > 0)
         {

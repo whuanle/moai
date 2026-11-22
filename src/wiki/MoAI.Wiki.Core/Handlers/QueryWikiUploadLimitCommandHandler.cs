@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Settings.Services;
 using MoAI.Wiki.Queries;
 using MoAI.Wiki.Queries.Responses;
@@ -22,7 +22,7 @@ public class QueryWikiUploadLimitCommandHandler : IRequestHandler<QueryWikiUploa
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiUploadLimitCommandResponse> Handle(QueryWikiUploadLimitCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiUploadLimitCommandResponse> Handle(QueryWikiUploadLimitCommand request, CancellationToken cancellationToken)
     {
         var maxFileSizeMb = await _wikiSettingsService.GetMaxFileSizeMbAsync(cancellationToken);
         var allowedFileTypes = await _wikiSettingsService.GetAllowedFileTypesAsync(cancellationToken);

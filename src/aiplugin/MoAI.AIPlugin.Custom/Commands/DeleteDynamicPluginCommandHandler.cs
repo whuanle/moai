@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.Database;
@@ -26,7 +26,7 @@ public class DeleteDynamicPluginCommandHandler : IRequestHandler<DeleteDynamicPl
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteDynamicPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteDynamicPluginCommand request, CancellationToken cancellationToken)
     {
         var dynamicEntity = await _databaseContext.PluginDynamics
             .FirstOrDefaultAsync(x => x.PluginKey == request.PluginKey && x.IsDeleted == 0, cancellationToken);

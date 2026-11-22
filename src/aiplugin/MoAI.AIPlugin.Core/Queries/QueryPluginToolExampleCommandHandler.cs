@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Queries.Responses;
 using MoAI.AIPlugin.Services;
 using MoAI.Infra.Exceptions;
@@ -29,7 +29,7 @@ public class QueryPluginToolExampleCommandHandler : IRequestHandler<QueryPluginT
     }
 
     /// <inheritdoc/>
-    public Task<QueryPluginToolExampleCommandResponse> Handle(QueryPluginToolExampleCommand request, CancellationToken cancellationToken)
+    public ValueTask<QueryPluginToolExampleCommandResponse> Handle(QueryPluginToolExampleCommand request, CancellationToken cancellationToken)
     {
         var plugin = QueryPluginToolsCommandHandler.ResolveTemplate(_registry, _dynamicResolver, request.Key)
             ?? throw new BusinessException("插件不存在") { StatusCode = 404 };
@@ -39,7 +39,7 @@ public class QueryPluginToolExampleCommandHandler : IRequestHandler<QueryPluginT
                 ?? throw new BusinessException($"工具不存在：{request.ToolKey}") { StatusCode = 404 }
             : PluginTypeHelper.GetStaticExample(plugin.PluginType, "GetParamsExampleValue");
 
-        return Task.FromResult(new QueryPluginToolExampleCommandResponse
+        return ValueTask.FromResult(new QueryPluginToolExampleCommandResponse
         {
             ToolKey = plugin.IsMultiTool ? plugin.FindTool(request.ToolKey)!.Key : RunToolKey,
             ParamsExample = example,

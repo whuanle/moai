@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class QueryWikiTeamFilesCommandHandler : IRequestHandler<QueryWikiTeamFil
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiTeamFilesCommandResponse> Handle(QueryWikiTeamFilesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiTeamFilesCommandResponse> Handle(QueryWikiTeamFilesCommand request, CancellationToken cancellationToken)
     {
         var userId = _userContextProvider.GetUserContext().UserId;
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);

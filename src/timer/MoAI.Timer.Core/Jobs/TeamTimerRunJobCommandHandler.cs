@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -31,7 +31,7 @@ public class TeamTimerRunJobCommandHandler : IRequestHandler<TeamTimerRunJobComm
     }
 
     /// <inheritdoc/>
-    public async Task<RecuringJobResponse> Handle(TeamTimerRunJobCommand request, CancellationToken cancellationToken)
+    public async ValueTask<RecuringJobResponse> Handle(TeamTimerRunJobCommand request, CancellationToken cancellationToken)
     {
         var timerId = request.Params?.TimerId ?? Guid.Empty;
         if (timerId == Guid.Empty)

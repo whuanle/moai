@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Queries.Responses;
 using MoAI.AIPlugin.Services;
 using MoAI.Infra.Exceptions;
@@ -33,7 +33,7 @@ public class QueryTeamDynamicTemplatesCommandHandler : IRequestHandler<QueryTeam
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPluginListCommandResponse> Handle(QueryTeamDynamicTemplatesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPluginListCommandResponse> Handle(QueryTeamDynamicTemplatesCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)

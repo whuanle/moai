@@ -1,7 +1,7 @@
 using System;
 using System.Text.Json;
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -41,7 +41,7 @@ public class EmbedExternalDocumentCommandHandler : IRequestHandler<EmbedExternal
     }
 
     /// <inheritdoc/>
-    public async Task<EmbeddingDocumentCommandResponse> Handle(EmbedExternalDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmbeddingDocumentCommandResponse> Handle(EmbedExternalDocumentCommand request, CancellationToken cancellationToken)
     {
         if (!request.IsEmbedSourceText && !request.IsEmbedMetadata)
         {

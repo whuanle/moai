@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;

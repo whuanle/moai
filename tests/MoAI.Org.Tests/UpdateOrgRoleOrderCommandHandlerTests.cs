@@ -65,7 +65,7 @@ public class UpdateOrgRoleOrderCommandHandlerTests
 
         // 11 是 10 的子组织，不是根层同级
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 1, ParentId = null, PrevOrgRoleId = 11 }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 1, ParentId = null, PrevOrgRoleId = 11 }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }
@@ -78,7 +78,7 @@ public class UpdateOrgRoleOrderCommandHandlerTests
         var handler = new UpdateOrgRoleOrderCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 1, ParentId = null, PrevOrgRoleId = 1 }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 1, ParentId = null, PrevOrgRoleId = 1 }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }
@@ -109,7 +109,7 @@ public class UpdateOrgRoleOrderCommandHandlerTests
         var handler = new UpdateOrgRoleOrderCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 1, ParentId = 2, PrevOrgRoleId = null }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 1, ParentId = 2, PrevOrgRoleId = null }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }
@@ -122,7 +122,7 @@ public class UpdateOrgRoleOrderCommandHandlerTests
         var handler = new UpdateOrgRoleOrderCommandHandler(db.Context, new InMemoryOrgGrantCache());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 999, ParentId = null, PrevOrgRoleId = null }, CancellationToken.None));
+            async () => await handler.Handle(new UpdateOrgRoleOrderCommand { OrgRoleId = 999, ParentId = null, PrevOrgRoleId = null }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }

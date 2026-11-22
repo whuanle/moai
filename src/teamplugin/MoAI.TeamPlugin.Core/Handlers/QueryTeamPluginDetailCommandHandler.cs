@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.AIPlugin.Models;
@@ -38,7 +38,7 @@ public class QueryTeamPluginDetailCommandHandler : IRequestHandler<QueryTeamPlug
     }
 
     /// <inheritdoc/>
-    public async Task<QueryCustomPluginDetailCommandResponse> Handle(QueryTeamPluginDetailCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryCustomPluginDetailCommandResponse> Handle(QueryTeamPluginDetailCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

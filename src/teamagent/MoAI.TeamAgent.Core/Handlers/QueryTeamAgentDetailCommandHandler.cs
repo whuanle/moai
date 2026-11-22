@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class QueryTeamAgentDetailCommandHandler : IRequestHandler<QueryTeamAgent
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamAgentDetailCommandResponse> Handle(QueryTeamAgentDetailCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamAgentDetailCommandResponse> Handle(QueryTeamAgentDetailCommand request, CancellationToken cancellationToken)
     {
         var agent = await _databaseContext.TeamAgents
             .AsNoTracking()

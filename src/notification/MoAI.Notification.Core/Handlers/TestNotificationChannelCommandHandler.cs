@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -33,7 +33,7 @@ public class TestNotificationChannelCommandHandler : IRequestHandler<TestNotific
     }
 
     /// <inheritdoc/>
-    public async Task<TestNotificationChannelCommandResponse> Handle(TestNotificationChannelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<TestNotificationChannelCommandResponse> Handle(TestNotificationChannelCommand request, CancellationToken cancellationToken)
     {
         NotificationChannelEntity channel;
         if (request.Id > 0)

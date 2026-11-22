@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Commands;
 using MoAI.Infra.Models;
 

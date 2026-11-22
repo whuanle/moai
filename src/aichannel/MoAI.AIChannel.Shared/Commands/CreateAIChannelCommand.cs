@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.AIChannel.Models;
 using MoAI.Infra.Models;
 

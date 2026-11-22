@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -74,7 +74,7 @@ public class BatchRunWikiDocumentWorkflowCommandHandler : IRequestHandler<BatchR
     }
 
     /// <inheritdoc/>
-    public async Task<BatchRunWikiDocumentWorkflowCommandResponse> Handle(BatchRunWikiDocumentWorkflowCommand request, CancellationToken cancellationToken)
+    public async ValueTask<BatchRunWikiDocumentWorkflowCommandResponse> Handle(BatchRunWikiDocumentWorkflowCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

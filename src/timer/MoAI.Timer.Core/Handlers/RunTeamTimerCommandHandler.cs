@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Hangfire;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -38,7 +38,7 @@ public class RunTeamTimerCommandHandler : IRequestHandler<RunTeamTimerCommand, S
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(RunTeamTimerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(RunTeamTimerCommand request, CancellationToken cancellationToken)
     {
         var timer = await _databaseContext.TeamTimers
             .FirstOrDefaultAsync(x => x.Id == request.TimerId, cancellationToken)

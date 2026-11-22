@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Commands;
 using MoAI.App.Services;
@@ -29,7 +29,7 @@ public class FavoriteAppCommandHandler : IRequestHandler<FavoriteAppCommand, Emp
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(FavoriteAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(FavoriteAppCommand request, CancellationToken cancellationToken)
     {
         // 仅允许收藏应用广场可见的应用：已发布、已公开、未禁用、非外部（与广场列表过滤同口径）
         var app = await _databaseContext.Apps.AsNoTracking()

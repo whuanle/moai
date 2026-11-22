@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -41,7 +41,7 @@ public class QueryFeishuAppsCommandHandler : IRequestHandler<QueryFeishuAppsComm
     }
 
     /// <inheritdoc/>
-    public async Task<QueryFeishuAppsCommandResponse> Handle(QueryFeishuAppsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryFeishuAppsCommandResponse> Handle(QueryFeishuAppsCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

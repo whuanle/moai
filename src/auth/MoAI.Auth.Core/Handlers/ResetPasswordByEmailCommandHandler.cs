@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using MoAI.Account.Services;
@@ -43,7 +43,7 @@ public class ResetPasswordByEmailCommandHandler : IRequestHandler<ResetPasswordB
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ResetPasswordByEmailCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ResetPasswordByEmailCommand request, CancellationToken cancellationToken)
     {
         if (!await _emailCodeService.IsPasswordResetEnabledAsync(cancellationToken))
         {

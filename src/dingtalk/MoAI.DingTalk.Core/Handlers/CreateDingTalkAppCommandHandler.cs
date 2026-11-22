@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -34,7 +34,7 @@ public class CreateDingTalkAppCommandHandler : IRequestHandler<CreateDingTalkApp
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(CreateDingTalkAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(CreateDingTalkAppCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

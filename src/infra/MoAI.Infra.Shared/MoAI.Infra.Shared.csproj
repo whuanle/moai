@@ -7,7 +7,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Maomi.Core" />
-		<PackageReference Include="MediatR" />
+		<PackageReference Include="Mediator.Abstractions" />
 		<PackageReference Include="FluentValidation" />
 		<PackageReference Include="Microsoft.IdentityModel.Tokens" />
 		<PackageReference Include="Maomi.MQ.RabbitMQ" />

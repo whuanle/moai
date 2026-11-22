@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -41,7 +41,7 @@ public class QueryAppUsageTrendCommandHandler : IRequestHandler<QueryAppUsageTre
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppUsageTrendCommandResponse> Handle(QueryAppUsageTrendCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppUsageTrendCommandResponse> Handle(QueryAppUsageTrendCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

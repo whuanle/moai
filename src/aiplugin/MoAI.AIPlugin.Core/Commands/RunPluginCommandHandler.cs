@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Services;
@@ -42,7 +42,7 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
     }
 
     /// <inheritdoc/>
-    public async Task<PluginRunResult> Handle(RunPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PluginRunResult> Handle(RunPluginCommand request, CancellationToken cancellationToken)
     {
         var context = new PluginRunContext
         {
@@ -76,8 +76,8 @@ public class RunPluginCommandHandler : IRequestHandler<RunPluginCommand, PluginR
             return await _executor.ExecuteAsync(plugin, request.RequestJson, request.ConfigJson, context, cancellationToken, request.Function).ConfigureAwait(false);
     }
 
-    private Task RecordUsageAsync(string key, CancellationToken cancellationToken)
+    private async Task RecordUsageAsync(string key, CancellationToken cancellationToken)
     {
-        return _mediator.Send(new IncrementPluginUsageCommand { Key = key }, cancellationToken);
+        await _mediator.Send(new IncrementPluginUsageCommand { Key = key }, cancellationToken);
     }
 }

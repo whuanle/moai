@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hangfire;
-using MediatR;
+using Mediator;
 using MoAI.Settings.Models;
 using MoAI.Settings.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -140,8 +140,8 @@ public class ResourceUsageFlushJobHandler
         return values;
     }
 
-    private Task RestoreAsync(string name, IReadOnlyDictionary<string, long> values)
+    private async Task RestoreAsync(string name, IReadOnlyDictionary<string, long> values)
     {
-        return _mediator.Send(new IncrementResourceUsageCommand { Name = name, Counters = values });
+        await _mediator.Send(new IncrementResourceUsageCommand { Name = name, Counters = values });
     }
 }

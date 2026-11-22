@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -27,7 +27,7 @@ public class QueryExternalNodeByKeyCommandHandler : IRequestHandler<QueryExterna
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphNodeCommandResponse> Handle(QueryExternalNodeByKeyCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphNodeCommandResponse> Handle(QueryExternalNodeByKeyCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         var node = await _store.GetNodeByKeyAsync(request.KnowledgeGraphId, request.Key, cancellationToken)

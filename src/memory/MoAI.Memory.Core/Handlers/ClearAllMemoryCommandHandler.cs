@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 using MoAI.Memory.Commands;
 using MoAI.Memory.Services;
@@ -22,7 +22,7 @@ public class ClearAllMemoryCommandHandler : IRequestHandler<ClearAllMemoryComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ClearAllMemoryCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ClearAllMemoryCommand request, CancellationToken cancellationToken)
     {
         await _memoryService.ClearAllAsync(cancellationToken);
         return EmptyCommandResponse.Default;

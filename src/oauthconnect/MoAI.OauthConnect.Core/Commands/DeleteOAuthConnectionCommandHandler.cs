@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -24,7 +24,7 @@ public class DeleteOAuthConnectionCommandHandler : IRequestHandler<DeleteOAuthCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteOAuthConnectionCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteOAuthConnectionCommand request, CancellationToken cancellationToken)
     {
         var connection = await _databaseContext.OauthConnections
             .FirstOrDefaultAsync(x => x.Id == request.OAuthConnectionId && x.IsDeleted == 0, cancellationToken);

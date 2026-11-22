@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Skill.Queries;
@@ -23,7 +23,7 @@ public class QuerySkillOptionsCommandHandler : IRequestHandler<QuerySkillOptions
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySkillOptionsCommandResponse> Handle(QuerySkillOptionsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySkillOptionsCommandResponse> Handle(QuerySkillOptionsCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.Skills.AsNoTracking()
             .Where(x => !x.IsDisable)

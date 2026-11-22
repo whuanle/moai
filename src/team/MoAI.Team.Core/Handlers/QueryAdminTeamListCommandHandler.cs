@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -32,7 +32,7 @@ public class QueryAdminTeamListCommandHandler : IRequestHandler<QueryAdminTeamLi
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAdminTeamListCommandResponse> Handle(QueryAdminTeamListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAdminTeamListCommandResponse> Handle(QueryAdminTeamListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Teams.AsQueryable();
 

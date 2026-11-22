@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.Subsystem.Models;
 using MoAI.Subsystem.Queries;
@@ -24,7 +24,7 @@ public class QuerySubsysEventsCommandHandler : IRequestHandler<QuerySubsysEvents
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySubsysEventsCommandResponse> Handle(QuerySubsysEventsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySubsysEventsCommandResponse> Handle(QuerySubsysEventsCommand request, CancellationToken cancellationToken)
     {
         // 机器面 Action 为简化绑定在内部构造命令，自动化校验不会覆盖该路径，这里统一守卫参数语义
         if (request.SubsystemId == Guid.Empty)

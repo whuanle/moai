@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -38,7 +38,7 @@ public class SyncWikiSourceCommandHandler : IRequestHandler<SyncWikiSourceComman
     }
 
     /// <inheritdoc/>
-    public async Task<SyncWikiSourceCommandResponse> Handle(SyncWikiSourceCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SyncWikiSourceCommandResponse> Handle(SyncWikiSourceCommand request, CancellationToken cancellationToken)
     {
         var source = await _databaseContext.WikiSources
             .FirstOrDefaultAsync(x => x.Id == request.SourceId && x.WikiId == request.WikiId, cancellationToken);

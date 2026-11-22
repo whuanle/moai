@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -34,7 +34,7 @@ public class QueryWikisCommandHandler : IRequestHandler<QueryWikisCommand, Query
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikisCommandResponse> Handle(QueryWikisCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikisCommandResponse> Handle(QueryWikisCommand request, CancellationToken cancellationToken)
     {
         var userId = _userContextProvider.GetUserContext().UserId;
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);

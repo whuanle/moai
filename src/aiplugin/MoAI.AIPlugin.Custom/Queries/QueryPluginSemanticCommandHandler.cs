@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.AIPlugin.Queries;
@@ -41,7 +41,7 @@ public class QueryPluginSemanticCommandHandler : IRequestHandler<QueryPluginSema
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPluginSemanticCommandResponse> Handle(QueryPluginSemanticCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPluginSemanticCommandResponse> Handle(QueryPluginSemanticCommand request, CancellationToken cancellationToken)
     {
         var plugin = await _databaseContext.Plugins
             .AsNoTracking()

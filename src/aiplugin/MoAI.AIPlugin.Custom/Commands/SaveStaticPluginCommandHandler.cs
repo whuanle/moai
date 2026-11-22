@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Models;
@@ -34,7 +34,7 @@ public class SaveStaticPluginCommandHandler : IRequestHandler<SaveStaticPluginCo
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveStaticPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveStaticPluginCommand request, CancellationToken cancellationToken)
     {
         var plugin = _registry.Get(request.PluginKey);
         if (plugin == null || plugin.IsDynamic)

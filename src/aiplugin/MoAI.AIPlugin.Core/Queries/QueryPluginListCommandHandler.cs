@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Queries.Responses;
 using MoAI.AIPlugin.Services;
 
@@ -29,7 +29,7 @@ public class QueryPluginListCommandHandler : IRequestHandler<QueryPluginListComm
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPluginListCommandResponse> Handle(QueryPluginListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPluginListCommandResponse> Handle(QueryPluginListCommand request, CancellationToken cancellationToken)
     {
         var plugins = _registry.GetAll();
         var metas = await _templateMetaProvider

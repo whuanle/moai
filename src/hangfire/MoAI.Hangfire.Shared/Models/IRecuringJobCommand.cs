@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 
 namespace MoAI.Hangfire.Models;
 

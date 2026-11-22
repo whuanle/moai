@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.Database;
@@ -24,7 +24,7 @@ public class UpdatePluginAvatarCommandHandler : IRequestHandler<UpdatePluginAvat
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdatePluginAvatarCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdatePluginAvatarCommand request, CancellationToken cancellationToken)
     {
         // 仅允许引用已完成上传并登记的文件，防止任意伪造 objectKey（与提示词/用户头像同规则）
         var fileExists = await _databaseContext.Files

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -37,7 +37,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     }
 
     /// <inheritdoc/>
-    public async Task<RefreshTokenCommandResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    public async ValueTask<RefreshTokenCommandResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         var tokenValidationResult = await _tokenProvider.ValidateTokenAsync(request.RefreshToken);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -72,7 +72,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginCommandRes
     /// <param name="request">命令请求.</param>
     /// <param name="cancellationToken">取消令牌.</param>
     /// <returns>登录结果.</returns>
-    public async Task<LoginCommandResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<LoginCommandResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         // 登录风控：IP 封禁期内的请求直接拒绝（R1/R2 自动封禁或管理员手动封禁）
         await _loginRiskService.CheckIpBanAsync(request.ContextClientIp ?? string.Empty, cancellationToken);

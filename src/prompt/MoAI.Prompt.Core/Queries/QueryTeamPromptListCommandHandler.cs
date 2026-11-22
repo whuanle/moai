@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -31,7 +31,7 @@ public class QueryTeamPromptListCommandHandler : IRequestHandler<QueryTeamPrompt
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPromptListCommandResponse> Handle(QueryTeamPromptListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPromptListCommandResponse> Handle(QueryTeamPromptListCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

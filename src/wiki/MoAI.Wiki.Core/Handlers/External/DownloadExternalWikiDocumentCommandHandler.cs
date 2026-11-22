@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class DownloadExternalWikiDocumentCommandHandler : IRequestHandler<Downlo
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(DownloadExternalWikiDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(DownloadExternalWikiDocumentCommand request, CancellationToken cancellationToken)
     {
         await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

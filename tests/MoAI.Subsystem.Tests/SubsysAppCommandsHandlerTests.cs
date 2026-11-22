@@ -105,7 +105,7 @@ public class SubsysAppCommandsHandlerTests
         Assert.Equal("images/old.png", entity!.AvatarPath);
 
         // 未登记/未完成上传的 objectKey 404（防伪造）
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new UpdateSubsysAppCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new UpdateSubsysAppCommand
         {
             Id = created.Id,
             Name = "a",
@@ -143,7 +143,7 @@ public class SubsysAppCommandsHandlerTests
         using var db = TestSqliteContext.Create();
         var handler = new UpdateSubsysAppCommandHandler(db.Context, Mock.Of<ISubsystemOnlineService>(), new NullAccessEventPublisher());
 
-        var ex = await Assert.ThrowsAsync<BusinessException>(() => handler.Handle(new UpdateSubsysAppCommand
+        var ex = await Assert.ThrowsAsync<BusinessException>(async () => await handler.Handle(new UpdateSubsysAppCommand
         {
             Id = Guid.NewGuid(),
             Name = "x",

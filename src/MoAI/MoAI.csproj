@@ -9,6 +9,10 @@
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
 		<PackageReference Include="Maomi.I18n.AspNetCore" />
 		<PackageReference Include="Maomi.MQ.Instrumentation" />
+		<PackageReference Include="Mediator.SourceGenerator">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
 		<PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Condition=" '$(Configuration)' == 'Debug1' ">

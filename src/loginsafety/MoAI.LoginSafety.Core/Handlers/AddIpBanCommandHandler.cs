@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -29,7 +29,7 @@ public class AddIpBanCommandHandler : IRequestHandler<AddIpBanCommand, EmptyComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(AddIpBanCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(AddIpBanCommand request, CancellationToken cancellationToken)
     {
         var active = await _databaseContext.LoginIpBans
             .AnyAsync(x => x.Ip == request.Ip && !x.IsLifted && x.ExpireTime > DateTimeOffset.Now, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.App.Commands;
@@ -39,6 +39,6 @@ public class SystemAppAccessController : ControllerBase
     public Task<SystemIssueAppAccessTokenCommandResponse> Issue([FromBody] SystemIssueAppAccessTokenCommand req, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 }

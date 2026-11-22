@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
 using MoAI.KnowledgeGraph.Services;
@@ -25,7 +25,7 @@ public class QueryKnowledgeGraphNodesCommandHandler : IRequestHandler<QueryKnowl
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphNodesCommandResponse> Handle(QueryKnowledgeGraphNodesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphNodesCommandResponse> Handle(QueryKnowledgeGraphNodesCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var pageNo = request.PageNo < 1 ? 1 : request.PageNo;

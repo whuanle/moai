@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class RemoveTeamUserCommandHandler : IRequestHandler<RemoveTeamUserComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(RemoveTeamUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(RemoveTeamUserCommand request, CancellationToken cancellationToken)
     {
         var member = await _databaseContext.TeamUsers
             .FirstAsync(x => x.TeamId == request.TeamId && x.UserId == request.UserId, cancellationToken);

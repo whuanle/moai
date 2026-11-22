@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -33,7 +33,7 @@ public class CreateKnowledgeGraphRelationTypeCommandHandler : IRequestHandler<Cr
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(CreateKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(CreateKnowledgeGraphRelationTypeCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);

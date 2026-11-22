@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.KnowledgeGraph.External;
@@ -30,7 +30,7 @@ public class QueryExternalGraphSchemaCommandHandler : IRequestHandler<QueryExter
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalGraphSchemaCommandResponse> Handle(QueryExternalGraphSchemaCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalGraphSchemaCommandResponse> Handle(QueryExternalGraphSchemaCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         // 内部 schema 查询无系统设置门禁，外部版保持同语义；managed 图 schema 直接读 PG 类型表并附带图库计数.

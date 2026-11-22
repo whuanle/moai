@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.External;
@@ -26,7 +26,7 @@ public class DeleteExternalEdgeCommandHandler : IRequestHandler<DeleteExternalEd
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteExternalEdgeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteExternalEdgeCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
         var deleted = await _store.DeleteEdgeAsync(request.KnowledgeGraphId, request.EdgeId, cancellationToken);

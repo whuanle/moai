@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Org.Queries;
 using MoAI.Org.Queries.Responses;
 using MoAI.Org.Services;
@@ -22,7 +22,7 @@ public class QueryOrgGrantsCommandHandler : IRequestHandler<QueryOrgGrantsComman
     }
 
     /// <inheritdoc/>
-    public async Task<QueryOrgGrantsCommandResponse> Handle(QueryOrgGrantsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryOrgGrantsCommandResponse> Handle(QueryOrgGrantsCommand request, CancellationToken cancellationToken)
     {
         var resourceType = OrgGrantGuard.ParseResourceType(request.ResourceType);
         var items = await _orgGrantService.GetGrantsAsync(resourceType, request.ResourceId, cancellationToken);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -47,7 +47,7 @@ public class QueryWikiSourcesCommandHandler : IRequestHandler<QueryWikiSourcesCo
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiSourcesCommandResponse> Handle(QueryWikiSourcesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiSourcesCommandResponse> Handle(QueryWikiSourcesCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

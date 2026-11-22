@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -30,7 +30,7 @@ public class CreateExternalEdgesBatchCommandHandler : IRequestHandler<CreateExte
     }
 
     /// <inheritdoc/>
-    public async Task<ExternalBatchResponse> Handle(CreateExternalEdgesBatchCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExternalBatchResponse> Handle(CreateExternalEdgesBatchCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
 

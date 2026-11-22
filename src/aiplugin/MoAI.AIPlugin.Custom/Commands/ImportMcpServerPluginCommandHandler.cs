@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AIPlugin.Commands;
@@ -39,7 +39,7 @@ public class ImportMcpServerPluginCommandHandler : IRequestHandler<ImportMcpServ
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleGuid> Handle(ImportMcpServerPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleGuid> Handle(ImportMcpServerPluginCommand request, CancellationToken cancellationToken)
     {
         IReadOnlyCollection<PluginFunctionEntity> pluginFunctionEntities;
         IReadOnlyDictionary<string, McpToolHints> toolHints;

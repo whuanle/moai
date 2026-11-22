@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.KnowledgeGraph.External;
@@ -31,7 +31,7 @@ public class DeleteExternalEdgesByRefsCommandHandler : IRequestHandler<DeleteExt
     }
 
     /// <inheritdoc/>
-    public async Task<DeleteExternalEdgesByRefsResponse> Handle(DeleteExternalEdgesByRefsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<DeleteExternalEdgesByRefsResponse> Handle(DeleteExternalEdgesByRefsCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
         var kgId = request.KnowledgeGraphId;

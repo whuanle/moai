@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Infra;
 using MoAI.Infra.Models;
 using MoAI.Storage.Helpers;

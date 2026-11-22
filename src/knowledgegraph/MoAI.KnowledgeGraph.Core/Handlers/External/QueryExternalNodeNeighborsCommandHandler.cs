@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -26,7 +26,7 @@ public class QueryExternalNodeNeighborsCommandHandler : IRequestHandler<QueryExt
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphCanvasCommandResponse> Handle(QueryExternalNodeNeighborsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphCanvasCommandResponse> Handle(QueryExternalNodeNeighborsCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: false, cancellationToken);
         var limit = request.Limit < 1 ? 100 : Math.Min(request.Limit, 500);

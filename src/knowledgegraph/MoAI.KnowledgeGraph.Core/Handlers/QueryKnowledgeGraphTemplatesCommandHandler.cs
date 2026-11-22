@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -11,7 +11,7 @@ namespace MoAI.KnowledgeGraph.Handlers;
 public class QueryKnowledgeGraphTemplatesCommandHandler : IRequestHandler<QueryKnowledgeGraphTemplatesCommand, QueryKnowledgeGraphTemplatesCommandResponse>
 {
     /// <inheritdoc/>
-    public Task<QueryKnowledgeGraphTemplatesCommandResponse> Handle(QueryKnowledgeGraphTemplatesCommand request, CancellationToken cancellationToken)
+    public ValueTask<QueryKnowledgeGraphTemplatesCommandResponse> Handle(QueryKnowledgeGraphTemplatesCommand request, CancellationToken cancellationToken)
     {
         var items = KnowledgeGraphTemplates.All
             .Select(x => new KnowledgeGraphTemplateItem
@@ -24,6 +24,6 @@ public class QueryKnowledgeGraphTemplatesCommandHandler : IRequestHandler<QueryK
             })
             .ToList();
 
-        return Task.FromResult(new QueryKnowledgeGraphTemplatesCommandResponse { Items = items });
+        return ValueTask.FromResult(new QueryKnowledgeGraphTemplatesCommandResponse { Items = items });
     }
 }

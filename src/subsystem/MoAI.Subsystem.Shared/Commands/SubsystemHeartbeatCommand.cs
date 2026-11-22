@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Subsystem.Commands.Responses;
 
 namespace MoAI.Subsystem.Commands;

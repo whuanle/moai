@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class WithdrawPublicationCommandHandler : IRequestHandler<WithdrawPublica
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(WithdrawPublicationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(WithdrawPublicationCommand request, CancellationToken cancellationToken)
     {
         var publicationReview = await _databaseContext.PublicationReviews
             .FirstOrDefaultAsync(x => x.Id == request.PublicationId, cancellationToken);

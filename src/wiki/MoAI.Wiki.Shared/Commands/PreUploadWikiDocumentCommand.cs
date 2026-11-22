@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 
 namespace MoAI.Wiki.Commands;
 

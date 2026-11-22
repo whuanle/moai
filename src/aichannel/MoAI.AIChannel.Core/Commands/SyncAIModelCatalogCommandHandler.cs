@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.Logging;
 using MoAI.AIChannel.Commands;
 using MoAI.AIChannel.Models;
@@ -60,7 +60,7 @@ public class SyncAIModelCatalogCommandHandler : IRequestHandler<SyncAIModelCatal
     }
 
     /// <inheritdoc/>
-    public async Task<SyncAIModelCatalogCommandResponse> Handle(SyncAIModelCatalogCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SyncAIModelCatalogCommandResponse> Handle(SyncAIModelCatalogCommand request, CancellationToken cancellationToken)
     {
         var endpoint = ParseEndpoint(_platformEndpoint);
         var latestUrl = new Uri(endpoint, LatestCatalogPath);

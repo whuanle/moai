@@ -10,7 +10,7 @@ namespace MoAI.Modules;
 [InjectModule<ConfigureSignalRModule>]
 [InjectModule<ConfigureMVCModule>]
 [InjectModule<OpenApiModule>]
-[InjectModule<ConfigureMediatRModule>]
+[InjectModule<ConfigureMediatorModule>]
 [InjectModule<ConfigureOpenTelemetryModule>]
 public class ApiModule : IModule
 {

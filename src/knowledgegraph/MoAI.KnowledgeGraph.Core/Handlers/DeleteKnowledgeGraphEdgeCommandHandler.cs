@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.KnowledgeGraph.Commands;
@@ -26,7 +26,7 @@ public class DeleteKnowledgeGraphEdgeCommandHandler : IRequestHandler<DeleteKnow
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         var deleted = await _store.DeleteEdgeAsync(request.KnowledgeGraphId, request.EdgeId, cancellationToken);

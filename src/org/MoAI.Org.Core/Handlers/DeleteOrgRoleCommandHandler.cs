@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class DeleteOrgRoleCommandHandler : IRequestHandler<DeleteOrgRoleCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteOrgRoleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteOrgRoleCommand request, CancellationToken cancellationToken)
     {
         var role = await _databaseContext.OrgRoles
             .FirstOrDefaultAsync(x => x.Id == request.OrgRoleId, cancellationToken);

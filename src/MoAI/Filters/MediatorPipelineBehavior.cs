@@ -1,38 +1,38 @@
-﻿using Maomi;
-using MediatR;
+using Maomi;
+using Mediator;
 using MoAI.Infra;
 using System.Diagnostics;
 
 namespace MoAI.Filters;
 
 /// <summary>
-/// MediatR 管道行为.
+/// Mediator 管道行为.
 /// </summary>
 /// <typeparam name="TRequest">Command.</typeparam>
 /// <typeparam name="TResponse">Response.</typeparam>
-public class MediatRPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-        where TRequest : IRequest<TResponse>
+public class MediatorPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+        where TRequest : notnull, IMessage
 {
-    private readonly ILogger<MediatRPipelineBehavior<TRequest, TResponse>> _logger;
+    private readonly ILogger<MediatorPipelineBehavior<TRequest, TResponse>> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MediatRPipelineBehavior{TRequest, TResponse}"/> class.
+    /// Initializes a new instance of the <see cref="MediatorPipelineBehavior{TRequest, TResponse}"/> class.
     /// </summary>
     /// <param name="logger"></param>
-    public MediatRPipelineBehavior(ILogger<MediatRPipelineBehavior<TRequest, TResponse>> logger)
+    public MediatorPipelineBehavior(ILogger<MediatorPipelineBehavior<TRequest, TResponse>> logger)
     {
         _logger = logger;
     }
 
     /// <inheritdoc/>
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async ValueTask<TResponse> Handle(TRequest request, MessageHandlerDelegate<TRequest, TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
 
         using var activity = AppConst.ActivitySource.StartActivity($"{requestName}");
 
-        activity?.SetTag("mediatr.request_type", typeof(TRequest).Name);
-        activity?.SetTag("mediatr.response_type", typeof(TResponse).Name);
+        activity?.SetTag("mediator.request_type", typeof(TRequest).Name);
+        activity?.SetTag("mediator.response_type", typeof(TResponse).Name);
 
         LogHandling(_logger, requestName);
 
@@ -40,7 +40,7 @@ public class MediatRPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TR
 
         try
         {
-            var response = await next();
+            var response = await next(request, cancellationToken);
             stopwatch.Stop();
 
             LogHandled(_logger, requestName, stopwatch.ElapsedMilliseconds);
@@ -62,17 +62,17 @@ public class MediatRPipelineBehavior<TRequest, TResponse> : IPipelineBehavior<TR
     private static readonly Action<ILogger, string, Exception?> _logHandling = LoggerMessage.Define<string>(
         LogLevel.Debug,
         new EventId(0, nameof(Handle)),
-        "Handling MediatR request {RequestName}");
+        "Handling Mediator request {RequestName}");
 
     private static readonly Action<ILogger, string, double, Exception?> _logHandled = LoggerMessage.Define<string, double>(
         LogLevel.Information,
         new EventId(1, nameof(Handle)),
-        "Handled MediatR request {RequestName} successfully in {Duration}ms");
+        "Handled Mediator request {RequestName} successfully in {Duration}ms");
 
     private static readonly Action<ILogger, string, double, Exception?> _logFailure = LoggerMessage.Define<string, double>(
         LogLevel.Error,
         new EventId(2, nameof(Handle)),
-        "Failed to handle MediatR request {RequestName} after {Duration}ms");
+        "Failed to handle Mediator request {RequestName} after {Duration}ms");
 
     private static void LogHandling(ILogger logger, string requestName) =>
         _logHandling(logger, requestName, null);

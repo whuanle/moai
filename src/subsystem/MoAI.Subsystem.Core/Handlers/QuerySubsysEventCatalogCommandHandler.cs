@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Subsystem.Models;
 using MoAI.Subsystem.Queries;
 using MoAI.Subsystem.Queries.Responses;
@@ -11,9 +11,9 @@ namespace MoAI.Subsystem.Handlers;
 public class QuerySubsysEventCatalogCommandHandler : IRequestHandler<QuerySubsysEventCatalogCommand, QuerySubsysEventCatalogCommandResponse>
 {
     /// <inheritdoc/>
-    public Task<QuerySubsysEventCatalogCommandResponse> Handle(QuerySubsysEventCatalogCommand request, CancellationToken cancellationToken)
+    public ValueTask<QuerySubsysEventCatalogCommandResponse> Handle(QuerySubsysEventCatalogCommand request, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new QuerySubsysEventCatalogCommandResponse
+        return ValueTask.FromResult(new QuerySubsysEventCatalogCommandResponse
         {
             SchemaVersion = SubsystemEventContract.SchemaVersion,
             RetentionDays = SubsystemEventContract.RetentionDays,

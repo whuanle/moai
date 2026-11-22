@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Database.Enums;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
@@ -33,7 +33,7 @@ public class SubstituteVariableCommandHandler : IRequestHandler<SubstituteVariab
     }
 
     /// <inheritdoc/>
-    public async Task<SubstituteVariableCommandResponse> Handle(SubstituteVariableCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SubstituteVariableCommandResponse> Handle(SubstituteVariableCommand request, CancellationToken cancellationToken)
     {
         var userId = _userContextProvider.GetUserContext().UserId;
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, userId, cancellationToken);

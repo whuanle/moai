@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Timer.Queries.Responses;
 
 namespace MoAI.Timer.Queries;

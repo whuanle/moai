@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Commands;
 using MoAI.Database;
@@ -25,7 +25,7 @@ public class UpdateAIModelAuthorizationCommandHandler : IRequestHandler<UpdateAI
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateAIModelAuthorizationCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateAIModelAuthorizationCommand request, CancellationToken cancellationToken)
     {
         var model = await _databaseContext.AiModels
             .FirstOrDefaultAsync(x => x.Id == request.ModelId, cancellationToken);

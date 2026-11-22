@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Services;
 using MoAI.Database;
@@ -71,7 +71,7 @@ public class UpdateWikiMcpConfigCommandHandler : IRequestHandler<UpdateWikiMcpCo
     }
 
     /// <inheritdoc/>
-    public async Task<WikiMcpConfigResponse> Handle(UpdateWikiMcpConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<WikiMcpConfigResponse> Handle(UpdateWikiMcpConfigCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId, cancellationToken);
@@ -128,7 +128,7 @@ public class QueryWikiMcpConfigCommandHandler : IRequestHandler<QueryWikiMcpConf
     }
 
     /// <inheritdoc/>
-    public async Task<WikiMcpConfigResponse> Handle(QueryWikiMcpConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<WikiMcpConfigResponse> Handle(QueryWikiMcpConfigCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId, cancellationToken);

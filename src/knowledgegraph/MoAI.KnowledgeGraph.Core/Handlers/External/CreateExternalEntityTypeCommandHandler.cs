@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -33,7 +33,7 @@ public class CreateExternalEntityTypeCommandHandler : IRequestHandler<CreateExte
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(CreateExternalEntityTypeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(CreateExternalEntityTypeCommand request, CancellationToken cancellationToken)
     {
         await _externalAuthorizer.AuthorizeAsync(request.KnowledgeGraphId, request.Caller.TeamId, write: true, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);

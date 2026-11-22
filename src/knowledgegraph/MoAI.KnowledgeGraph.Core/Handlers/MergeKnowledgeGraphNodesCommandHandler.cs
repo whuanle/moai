@@ -1,5 +1,5 @@
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -42,7 +42,7 @@ public class MergeKnowledgeGraphNodesCommandHandler : IRequestHandler<MergeKnowl
     }
 
     /// <inheritdoc/>
-    public async Task<MergeKnowledgeGraphNodesCommandResponse> Handle(MergeKnowledgeGraphNodesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<MergeKnowledgeGraphNodesCommandResponse> Handle(MergeKnowledgeGraphNodesCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 

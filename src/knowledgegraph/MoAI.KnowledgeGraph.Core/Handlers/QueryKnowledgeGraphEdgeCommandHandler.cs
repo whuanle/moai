@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -26,7 +26,7 @@ public class QueryKnowledgeGraphEdgeCommandHandler : IRequestHandler<QueryKnowle
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphEdgeCommandResponse> Handle(QueryKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphEdgeCommandResponse> Handle(QueryKnowledgeGraphEdgeCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var edge = await _store.GetEdgeAsync(request.KnowledgeGraphId, request.EdgeId, cancellationToken)

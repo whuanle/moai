@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
 using MoAI.Infra.Services;
@@ -44,7 +44,7 @@ public class AppMemoryController : ControllerBase
     {
         var cmd = new QueryMyMemoriesCommand { AppId = id, Page = page, PageSize = pageSize, Keywords = keyword };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public class AppMemoryController : ControllerBase
     {
         var cmd = new QueryAppMemoryStatsCommand { AppId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>

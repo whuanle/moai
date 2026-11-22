@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -30,7 +30,7 @@ public class QueryMySubsystemsCommandHandler : IRequestHandler<QueryMySubsystems
     }
 
     /// <inheritdoc/>
-    public async Task<QueryMySubsystemsCommandResponse> Handle(QueryMySubsystemsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryMySubsystemsCommandResponse> Handle(QueryMySubsystemsCommand request, CancellationToken cancellationToken)
     {
         // 用户面门户仅服务登录用户；无用户上下文时返回空列表（兜底，正常由内部 JWT 鉴权拦截）
         if (request.ContextUserId <= 0)

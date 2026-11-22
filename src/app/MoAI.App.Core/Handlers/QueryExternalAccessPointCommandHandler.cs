@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -30,7 +30,7 @@ public class QueryExternalAccessPointCommandHandler : IRequestHandler<QueryExter
     }
 
     /// <inheritdoc/>
-    public async Task<ExternalAccessPointResponse> Handle(QueryExternalAccessPointCommand request, CancellationToken cancellationToken)
+    public async ValueTask<ExternalAccessPointResponse> Handle(QueryExternalAccessPointCommand request, CancellationToken cancellationToken)
     {
         var rows = await _databaseContext.Apps
             .Where(x => x.Id == request.AppId)

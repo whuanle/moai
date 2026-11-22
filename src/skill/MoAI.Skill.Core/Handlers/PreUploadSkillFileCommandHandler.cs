@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.Skill.Commands;
 using MoAI.Storage.Commands;
@@ -24,7 +24,7 @@ public class PreUploadSkillFileCommandHandler : IRequestHandler<PreUploadSkillFi
     }
 
     /// <inheritdoc/>
-    public async Task<PreUploadSkillFileCommandResponse> Handle(PreUploadSkillFileCommand request, CancellationToken cancellationToken)
+    public async ValueTask<PreUploadSkillFileCommandResponse> Handle(PreUploadSkillFileCommand request, CancellationToken cancellationToken)
     {
         var extension = Path.GetExtension(request.FileName);
         if (string.IsNullOrEmpty(extension) || !FileStoreHelper.SkillPackageFormats.Any(x => string.Equals(x, extension, StringComparison.OrdinalIgnoreCase)))

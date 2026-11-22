@@ -115,7 +115,7 @@ public class QueryOrgRolesCommandHandlerTests
         var handler = new QueryOrgRoleUsersCommandHandler(db.Context, Mock.Of<IUserInfoFillService>());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new QueryOrgRoleUsersCommand { RoleId = 999 }, CancellationToken.None));
+            async () => await handler.Handle(new QueryOrgRoleUsersCommand { RoleId = 999 }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }
@@ -142,7 +142,7 @@ public class QueryOrgRolesCommandHandlerTests
         var handler = new QueryUserOrgRolesCommandHandler(db.Context);
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new QueryUserOrgRolesCommand { UserId = 999 }, CancellationToken.None));
+            async () => await handler.Handle(new QueryUserOrgRolesCommand { UserId = 999 }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }

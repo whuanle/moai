@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -34,7 +34,7 @@ public class UpdateWikiWorkflowCommandHandler : IRequestHandler<UpdateWikiWorkfl
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateWikiWorkflowCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateWikiWorkflowCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

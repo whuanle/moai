@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
@@ -23,7 +23,7 @@ public class MarkRiskEventReadCommandHandler : IRequestHandler<MarkRiskEventRead
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(MarkRiskEventReadCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(MarkRiskEventReadCommand request, CancellationToken cancellationToken)
     {
         var events = await _databaseContext.LoginRiskEvents
             .Where(x => !x.IsRead && request.EventIds.Contains(x.Id))

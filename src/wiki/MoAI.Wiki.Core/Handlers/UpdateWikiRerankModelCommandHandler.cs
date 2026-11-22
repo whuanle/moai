@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -38,7 +38,7 @@ public class UpdateWikiRerankModelCommandHandler : IRequestHandler<UpdateWikiRer
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateWikiRerankModelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateWikiRerankModelCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -29,7 +29,7 @@ public class QueryPublicAppsCommandHandler : IRequestHandler<QueryPublicAppsComm
     }
 
     /// <inheritdoc/>
-    public async Task<QueryPublicAppsCommandResponse> Handle(QueryPublicAppsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryPublicAppsCommandResponse> Handle(QueryPublicAppsCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Apps
             .Where(x => !x.IsExternal && x.IsPublic && !x.IsDisable && x.PublishStatus == 1);

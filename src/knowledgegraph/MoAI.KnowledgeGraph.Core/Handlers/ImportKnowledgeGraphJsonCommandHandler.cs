@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.Commands;
 using MoAI.KnowledgeGraph.External;
 using MoAI.KnowledgeGraph.Services;
@@ -27,7 +27,7 @@ public class ImportKnowledgeGraphJsonCommandHandler : IRequestHandler<ImportKnow
     }
 
     /// <inheritdoc/>
-    public async Task<External.ExternalImportResponse> Handle(ImportKnowledgeGraphJsonCommand request, CancellationToken cancellationToken)
+    public async ValueTask<External.ExternalImportResponse> Handle(ImportKnowledgeGraphJsonCommand request, CancellationToken cancellationToken)
     {
         // 导入即写节点/边：仅托管图 Admin+（接入图只读 409 由授权器拦截），与 AI 导入同权限口径
         await _authorizer.AuthorizeManagedAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);

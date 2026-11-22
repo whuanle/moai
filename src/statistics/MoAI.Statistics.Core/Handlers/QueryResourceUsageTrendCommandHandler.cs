@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Statistics.Queries;
@@ -38,7 +38,7 @@ public class QueryResourceUsageTrendCommandHandler : IRequestHandler<QueryResour
     }
 
     /// <inheritdoc/>
-    public async Task<QueryResourceUsageTrendCommandResponse> Handle(QueryResourceUsageTrendCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryResourceUsageTrendCommandResponse> Handle(QueryResourceUsageTrendCommand request, CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
         var endDate = request.EndDate ?? today;

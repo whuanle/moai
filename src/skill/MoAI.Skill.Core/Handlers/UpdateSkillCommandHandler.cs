@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Classify;
@@ -37,7 +37,7 @@ public class UpdateSkillCommandHandler : IRequestHandler<UpdateSkillCommand, Emp
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateSkillCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateSkillCommand request, CancellationToken cancellationToken)
     {
         var skill = await _databaseContext.Skills.FirstOrDefaultAsync(x => x.Id == request.SkillId, cancellationToken)
             ?? throw new BusinessException("技能不存在.") { StatusCode = 404 };

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Services;
 using MoAI.Subsystem.Queries;

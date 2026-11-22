@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class SetSubsystemOrgGrantsCommandHandler : IRequestHandler<SetSubsystemO
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SetSubsystemOrgGrantsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SetSubsystemOrgGrantsCommand request, CancellationToken cancellationToken)
     {
         var subsystem = await _databaseContext.AccessApps
             .Where(x => x.Level == AccessAppLevel.System && x.AppType == AccessAppType.Subsystem)

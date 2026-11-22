@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.Infra.Models;
 using MoAI.Memory.Commands;
@@ -22,7 +22,7 @@ public class DeleteMyGlobalMemoryCommandHandler : IRequestHandler<DeleteMyGlobal
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteMyGlobalMemoryCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteMyGlobalMemoryCommand request, CancellationToken cancellationToken)
     {
         var deleted = await _memoryService.DeleteGlobalAsync(request.ContextUserId, request.MemoryId, cancellationToken);
         if (!deleted)

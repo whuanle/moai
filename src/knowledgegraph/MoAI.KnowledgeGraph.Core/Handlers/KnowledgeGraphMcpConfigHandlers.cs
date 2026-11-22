@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Services;
 using MoAI.Database;
@@ -69,7 +69,7 @@ public class UpdateKnowledgeGraphMcpConfigCommandHandler : IRequestHandler<Updat
     }
 
     /// <inheritdoc/>
-    public async Task<KnowledgeGraphMcpConfigResponse> Handle(UpdateKnowledgeGraphMcpConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<KnowledgeGraphMcpConfigResponse> Handle(UpdateKnowledgeGraphMcpConfigCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
 
@@ -112,7 +112,7 @@ public class QueryKnowledgeGraphMcpConfigCommandHandler : IRequestHandler<QueryK
     }
 
     /// <inheritdoc/>
-    public async Task<KnowledgeGraphMcpConfigResponse> Handle(QueryKnowledgeGraphMcpConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<KnowledgeGraphMcpConfigResponse> Handle(QueryKnowledgeGraphMcpConfigCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: true, cancellationToken);
         return await KnowledgeGraphMcpConfigResponseMapper.BuildAsync(_databaseContext, graph, cancellationToken);

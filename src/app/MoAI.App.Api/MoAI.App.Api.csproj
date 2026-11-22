@@ -6,6 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\infra\MoAI.Infra.Api\MoAI.Infra.Api.csproj" />
 		<ProjectReference Include="..\..\account\MoAI.Account.Shared\MoAI.Account.Shared.csproj" />
 		<ProjectReference Include="..\MoAI.App.Shared\MoAI.App.Shared.csproj" />

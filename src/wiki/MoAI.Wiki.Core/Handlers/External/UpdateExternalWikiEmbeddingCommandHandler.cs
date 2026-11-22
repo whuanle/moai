@@ -1,5 +1,5 @@
 using System;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -30,7 +30,7 @@ public class UpdateExternalWikiEmbeddingCommandHandler : IRequestHandler<UpdateE
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateExternalWikiEmbeddingCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateExternalWikiEmbeddingCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

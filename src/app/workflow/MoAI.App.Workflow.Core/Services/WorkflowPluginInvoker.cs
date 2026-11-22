@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 using Maomi;
-using MediatR;
+using Mediator;
 using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Models;
 using MoAI.App.Workflow.Nodes;

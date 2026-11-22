@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -32,7 +32,7 @@ public class QueryKnowledgeGraphSchemaCommandHandler : IRequestHandler<QueryKnow
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphSchemaCommandResponse> Handle(QueryKnowledgeGraphSchemaCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphSchemaCommandResponse> Handle(QueryKnowledgeGraphSchemaCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
 

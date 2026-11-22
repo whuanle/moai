@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Services;
 using MoAI.Database;
@@ -57,7 +57,7 @@ public class QueryWikiRecallTestCommandHandler : IRequestHandler<QueryWikiRecall
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiRecallTestCommandResponse> Handle(QueryWikiRecallTestCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiRecallTestCommandResponse> Handle(QueryWikiRecallTestCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _databaseContext.Wikis
             .FirstOrDefaultAsync(x => x.Id == request.WikiId && x.IsDeleted == 0, cancellationToken);

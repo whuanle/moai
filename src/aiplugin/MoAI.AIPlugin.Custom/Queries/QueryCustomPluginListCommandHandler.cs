@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.AIPlugin.Models;
@@ -29,7 +29,7 @@ public class QueryCustomPluginListCommandHandler : IRequestHandler<QueryCustomPl
     }
 
     /// <inheritdoc/>
-    public async Task<QueryCustomPluginBaseListCommandResponse> Handle(QueryCustomPluginListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryCustomPluginBaseListCommandResponse> Handle(QueryCustomPluginListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Plugins.Where(x => x.TeamId == 0).AsQueryable();
 

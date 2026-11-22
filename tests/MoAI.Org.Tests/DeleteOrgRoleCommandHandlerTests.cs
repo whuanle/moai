@@ -22,7 +22,7 @@ public class DeleteOrgRoleCommandHandlerTests
         var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 1 }, CancellationToken.None));
+            async () => await handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 1 }, CancellationToken.None));
 
         Assert.Equal(400, ex.StatusCode);
     }
@@ -50,7 +50,7 @@ public class DeleteOrgRoleCommandHandlerTests
         var handler = new DeleteOrgRoleCommandHandler(db.Context, new InMemoryOrgGrantCache(), new NullAccessEventPublisher());
 
         var ex = await Assert.ThrowsAsync<BusinessException>(
-            () => handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 999 }, CancellationToken.None));
+            async () => await handler.Handle(new DeleteOrgRoleCommand { OrgRoleId = 999 }, CancellationToken.None));
 
         Assert.Equal(404, ex.StatusCode);
     }

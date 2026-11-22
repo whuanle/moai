@@ -1,5 +1,5 @@
 using Maomi.MQ;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.Database;
@@ -48,7 +48,7 @@ public class CreateKnowledgeGraphCommandHandler : IRequestHandler<CreateKnowledg
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleLong> Handle(CreateKnowledgeGraphCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleLong> Handle(CreateKnowledgeGraphCommand request, CancellationToken cancellationToken)
     {
         await _authorizer.RequireTeamRoleAsync(request.TeamId, adminOnly: true, cancellationToken);
 

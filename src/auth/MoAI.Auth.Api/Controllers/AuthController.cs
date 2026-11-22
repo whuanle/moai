@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Auth.Commands;
@@ -80,7 +80,7 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public Task<QueryCaptchaNewQueryResponse> NewCaptcha([FromQuery] QueryCaptchaNewQuery req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public Task<QueryChallengePolicyQueryResponse> QueryChallengePolicy([FromQuery] QueryChallengePolicyQuery req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public class AuthController : ControllerBase
     {
         var cmd = new QueryTwoFactorStatusQuery();
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>

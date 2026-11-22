@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -34,7 +34,7 @@ public class AdminTransferTeamOwnerCommandHandler : IRequestHandler<AdminTransfe
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(AdminTransferTeamOwnerCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(AdminTransferTeamOwnerCommand request, CancellationToken cancellationToken)
     {
         var teamExist = await _databaseContext.Teams
             .AnyAsync(x => x.Id == request.TeamId, cancellationToken);

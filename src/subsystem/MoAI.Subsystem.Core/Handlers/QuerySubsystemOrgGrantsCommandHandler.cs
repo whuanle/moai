@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class QuerySubsystemOrgGrantsCommandHandler : IRequestHandler<QuerySubsys
     }
 
     /// <inheritdoc/>
-    public async Task<QuerySubsystemOrgGrantsCommandResponse> Handle(QuerySubsystemOrgGrantsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QuerySubsystemOrgGrantsCommandResponse> Handle(QuerySubsystemOrgGrantsCommand request, CancellationToken cancellationToken)
     {
         // 组织授权是子系统专属配置：应用接入行不存在该维度，404
         var subsystem = await _databaseContext.AccessApps

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -33,7 +33,7 @@ public class QueryVariableCommandHandler : IRequestHandler<QueryVariableCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<QueryVariableCommandResponse> Handle(QueryVariableCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryVariableCommandResponse> Handle(QueryVariableCommand request, CancellationToken cancellationToken)
     {
         var variable = await _databaseContext.TeamVariables
             .FirstOrDefaultAsync(x => x.Id == request.VariableId, cancellationToken);

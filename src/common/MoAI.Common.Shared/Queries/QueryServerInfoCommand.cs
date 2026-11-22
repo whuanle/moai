@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using MoAI.Common.Queries.Response;
 
 namespace MoAI.Common.Queries;

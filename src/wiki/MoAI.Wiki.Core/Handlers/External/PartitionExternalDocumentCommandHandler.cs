@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -34,7 +34,7 @@ public class PartitionExternalDocumentCommandHandler : IRequestHandler<Partition
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(PartitionExternalDocumentCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(PartitionExternalDocumentCommand request, CancellationToken cancellationToken)
     {
         var document = await AuthorizeAndLoadDocumentAsync(request.WikiId, request.Caller.TeamId, request.DocumentId, cancellationToken);
         await _processingService.PartitionAsync(

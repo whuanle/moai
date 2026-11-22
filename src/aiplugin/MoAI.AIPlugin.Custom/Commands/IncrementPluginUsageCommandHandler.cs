@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.AIPlugin.Services;
@@ -29,7 +29,7 @@ public class IncrementPluginUsageCommandHandler : IRequestHandler<IncrementPlugi
     }
 
     /// <inheritdoc/>
-    public async Task Handle(IncrementPluginUsageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Unit> Handle(IncrementPluginUsageCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Plugins
             .AsNoTracking()
@@ -51,7 +51,7 @@ public class IncrementPluginUsageCommandHandler : IRequestHandler<IncrementPlugi
 
         if (pluginId == null)
         {
-            return;
+            return Unit.Value;
         }
 
         try
@@ -64,5 +64,6 @@ public class IncrementPluginUsageCommandHandler : IRequestHandler<IncrementPlugi
             // 使用统计失败不阻塞插件调用
         }
 #pragma warning restore CA1031
+        return Unit.Value;
     }
 }

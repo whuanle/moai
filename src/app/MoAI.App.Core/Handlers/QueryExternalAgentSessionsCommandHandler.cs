@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.App.Queries;
 using MoAI.App.Queries.Responses;
@@ -24,7 +24,7 @@ public class QueryExternalAgentSessionsCommandHandler : IRequestHandler<QueryExt
     }
 
     /// <inheritdoc/>
-    public async Task<QueryExternalAgentSessionsCommandResponse> Handle(QueryExternalAgentSessionsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryExternalAgentSessionsCommandResponse> Handle(QueryExternalAgentSessionsCommand request, CancellationToken cancellationToken)
     {
         var (identityId, _) = ExternalAppAccessValidator.EnsureSessionIdentity(request.Context);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -29,7 +29,7 @@ public class QueryExternalWikiCommandHandler : IRequestHandler<QueryExternalWiki
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiCommandResponse> Handle(QueryExternalWikiCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiCommandResponse> Handle(QueryExternalWikiCommand request, CancellationToken cancellationToken)
     {
         var wiki = await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

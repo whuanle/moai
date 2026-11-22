@@ -8,7 +8,7 @@
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" />
 		<PackageReference Include="Maomi.Core" />
-		<PackageReference Include="MediatR" />
+		<PackageReference Include="Mediator.Abstractions" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Commands;
 using MoAI.Database;
@@ -28,7 +28,7 @@ public class UnbindUserOAuthCommandHandler : IRequestHandler<UnbindUserOAuthComm
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UnbindUserOAuthCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UnbindUserOAuthCommand request, CancellationToken cancellationToken)
     {
         var record = await _databaseContext.UserOauthConnections
             .FirstOrDefaultAsync(x => x.UserId == request.ContextUserId && x.ProviderId == request.ProviderId, cancellationToken);

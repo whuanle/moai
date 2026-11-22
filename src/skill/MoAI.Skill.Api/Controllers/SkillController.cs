@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Services;
 using MoAI.Infra.Exceptions;
@@ -58,7 +58,7 @@ public class SkillController : ControllerBase
     public Task<QuerySkillListCommandResponse> QueryMyList([FromQuery] QueryMySkillListCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class SkillController : ControllerBase
     public Task<QuerySkillListCommandResponse> QueryTeamList([FromQuery] QueryTeamSkillListCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class SkillController : ControllerBase
     [HttpGet("market_list")]
     public Task<QuerySkillListCommandResponse> QueryMarketList([FromQuery] QuerySkillMarketListCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ public class SkillController : ControllerBase
     {
         var cmd = new QuerySkillCommand { SkillId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -111,7 +111,7 @@ public class SkillController : ControllerBase
     {
         var cmd = new QuerySkillFileDownloadCommand { SkillId = id };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -126,7 +126,7 @@ public class SkillController : ControllerBase
     {
         var cmd = new QuerySkillOptionsCommand { TeamId = teamId, IncludePersonal = includePersonal };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -176,7 +176,7 @@ public class SkillController : ControllerBase
     {
         var cmd = new UpdateSkillAvatarCommand { SkillId = id, ObjectKey = req.ObjectKey };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -241,7 +241,7 @@ public class SkillController : ControllerBase
     [HttpPost("file/extract")]
     public Task<ExtractSkillPackageCommandResponse> ExtractPackage([FromBody] ExtractSkillPackageCommand req, CancellationToken ct)
     {
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     private async Task EnsureAdminAsync(CancellationToken ct)

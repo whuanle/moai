@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -34,7 +34,7 @@ public class AddTeamUserCommandHandler : IRequestHandler<AddTeamUserCommand, Emp
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(AddTeamUserCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(AddTeamUserCommand request, CancellationToken cancellationToken)
     {
         var targetRole = await _databaseContext.TeamUsers
             .Where(x => x.TeamId == request.TeamId && x.UserId == request.UserId)

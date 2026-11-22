@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.AIChannel.Models;
@@ -28,7 +28,7 @@ public class QueryAIChannelListCommandHandler : IRequestHandler<QueryAIChannelLi
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAIChannelListCommandResponse> Handle(QueryAIChannelListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAIChannelListCommandResponse> Handle(QueryAIChannelListCommand request, CancellationToken cancellationToken)
     {
         var items = await _databaseContext.AiChannels
             .Where(x => x.TeamId == request.TeamId)

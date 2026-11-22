@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Auth.Commands;
 using MoAI.Auth.Commands.Responses;
@@ -50,7 +50,7 @@ public class LoginVerifyCommandHandler : IRequestHandler<LoginVerifyCommand, Log
     }
 
     /// <inheritdoc/>
-    public async Task<LoginCommandResponse> Handle(LoginVerifyCommand request, CancellationToken cancellationToken)
+    public async ValueTask<LoginCommandResponse> Handle(LoginVerifyCommand request, CancellationToken cancellationToken)
     {
         // 票据一次性消费：防重放、防多端并发用同一票据
         var payload = await _challengeService.ConsumeTicketAsync(request.LoginTicket, cancellationToken);

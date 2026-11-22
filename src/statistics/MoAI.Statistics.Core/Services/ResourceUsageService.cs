@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using MoAI.Statistics.Services;
 
 namespace MoAI.Statistics.Services;

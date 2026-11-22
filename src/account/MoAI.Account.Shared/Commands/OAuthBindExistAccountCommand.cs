@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 
 namespace MoAI.Account.Commands;

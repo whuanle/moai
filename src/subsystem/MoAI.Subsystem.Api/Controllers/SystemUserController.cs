@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Commands;
@@ -41,7 +41,7 @@ public class SystemUserController : ControllerBase
     public Task<SystemUpsertUserCommandResponse> Upsert([FromBody] SystemUpsertUserCommand req, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public class SystemUserController : ControllerBase
     public Task<QueryUserListCommandResponse> List([FromQuery] int pageNo = 1, [FromQuery] int pageSize = 20, [FromQuery] string? searchText = null, CancellationToken ct = default)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryUserListCommand { PageNo = pageNo, PageSize = pageSize, SearchText = searchText }, ct);
+        return _mediator.Send(new QueryUserListCommand { PageNo = pageNo, PageSize = pageSize, SearchText = searchText }, ct).AsTask();
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class SystemUserController : ControllerBase
     public Task<UserStateInfo> Get([FromRoute] long userId, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryUserInfoCommand { UserId = userId }, ct);
+        return _mediator.Send(new QueryUserInfoCommand { UserId = userId }, ct).AsTask();
     }
 
     /// <summary>

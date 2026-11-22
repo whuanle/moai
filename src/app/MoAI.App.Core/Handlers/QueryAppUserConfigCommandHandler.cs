@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Models;
 using MoAI.App.Queries;
@@ -37,7 +37,7 @@ public class QueryAppUserConfigCommandHandler : IRequestHandler<QueryAppUserConf
     }
 
     /// <inheritdoc/>
-    public async Task<QueryAppUserConfigCommandResponse> Handle(QueryAppUserConfigCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryAppUserConfigCommandResponse> Handle(QueryAppUserConfigCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken)
             ?? throw new BusinessException("应用不存在.") { StatusCode = 404 };

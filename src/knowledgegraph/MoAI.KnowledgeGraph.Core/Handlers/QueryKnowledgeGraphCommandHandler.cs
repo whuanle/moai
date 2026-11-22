@@ -1,5 +1,5 @@
 using System.Text.Json;
-using MediatR;
+using Mediator;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
 using MoAI.KnowledgeGraph.Queries.Responses;
@@ -28,7 +28,7 @@ public class QueryKnowledgeGraphCommandHandler : IRequestHandler<QueryKnowledgeG
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphCommandResponse> Handle(QueryKnowledgeGraphCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphCommandResponse> Handle(QueryKnowledgeGraphCommand request, CancellationToken cancellationToken)
     {
         var (graph, role) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         var settings = await _settingsService.GetAsync(cancellationToken);

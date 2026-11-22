@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -31,7 +31,7 @@ public class QueryExternalWikiDocumentsCommandHandler : IRequestHandler<QueryExt
     }
 
     /// <inheritdoc/>
-    public async Task<QueryWikiDocumentsCommandResponse> Handle(QueryExternalWikiDocumentsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryWikiDocumentsCommandResponse> Handle(QueryExternalWikiDocumentsCommand request, CancellationToken cancellationToken)
     {
         await _externalWikiAuthorizer.AuthorizeAsync(request.WikiId, request.Caller.TeamId, cancellationToken);
 

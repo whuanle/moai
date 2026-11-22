@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
@@ -26,7 +26,7 @@ public class QueryMyMemoryOverviewCommandHandler : IRequestHandler<QueryMyMemory
     }
 
     /// <inheritdoc/>
-    public async Task<QueryMyMemoryOverviewResponse> Handle(QueryMyMemoryOverviewCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryMyMemoryOverviewResponse> Handle(QueryMyMemoryOverviewCommand request, CancellationToken cancellationToken)
     {
         var shards = await _databaseContext.AppMemoryShards.AsNoTracking()
             .Where(x => x.UserId == request.ContextUserId && x.MemoryCount > 0 && x.AppId != MemoryGlobalScope.GlobalAppId)

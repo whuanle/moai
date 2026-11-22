@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoAI.AIPlugin.Commands;
@@ -39,7 +39,7 @@ public class UpdateMcpServerPluginCommandHandler : IRequestHandler<UpdateMcpServ
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateMcpServerPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateMcpServerPluginCommand request, CancellationToken cancellationToken)
     {
         var pluginEntity = await _databaseContext.Plugins
             .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.App.Commands;
 using MoAI.App.Queries.Responses;
 using MoAI.App.Services;
@@ -31,7 +31,7 @@ public class CreateAccessAppCommandHandler : IRequestHandler<CreateAccessAppComm
     }
 
     /// <inheritdoc/>
-    public async Task<CreateAccessAppCommandResponse> Handle(CreateAccessAppCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CreateAccessAppCommandResponse> Handle(CreateAccessAppCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
 

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -33,7 +33,7 @@ public class DeleteVariableCommandHandler : IRequestHandler<DeleteVariableComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteVariableCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteVariableCommand request, CancellationToken cancellationToken)
     {
         var variable = await _databaseContext.TeamVariables
             .FirstOrDefaultAsync(x => x.Id == request.VariableId, cancellationToken);

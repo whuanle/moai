@@ -1,6 +1,6 @@
 ﻿using System;
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Statistics.Queries.Responses;
 
 namespace MoAI.Statistics.Queries;

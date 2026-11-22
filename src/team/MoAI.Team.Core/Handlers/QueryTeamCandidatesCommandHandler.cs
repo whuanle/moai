@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Storage.Services;
@@ -27,7 +27,7 @@ public class QueryTeamCandidatesCommandHandler : IRequestHandler<QueryTeamCandid
     }
 
     /// <inheritdoc/>
-    public async Task<QueryTeamCandidatesCommandResponse> Handle(QueryTeamCandidatesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryTeamCandidatesCommandResponse> Handle(QueryTeamCandidatesCommand request, CancellationToken cancellationToken)
     {
         var existingMemberIds = await _databaseContext.TeamUsers
             .Where(x => x.TeamId == request.TeamId && x.IsDeleted == 0)

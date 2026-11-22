@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -24,7 +24,7 @@ public class QueryUserOrgRolesCommandHandler : IRequestHandler<QueryUserOrgRoles
     }
 
     /// <inheritdoc/>
-    public async Task<QueryUserOrgRolesCommandResponse> Handle(QueryUserOrgRolesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryUserOrgRolesCommandResponse> Handle(QueryUserOrgRolesCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users
             .Where(x => x.Id == request.UserId)

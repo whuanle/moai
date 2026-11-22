@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Common.Queries.Response;
 using MoAI.Database;
@@ -33,7 +33,7 @@ public class QueryServerInfoCommandHandler : IRequestHandler<QueryServerInfoComm
     }
 
     /// <inheritdoc/>
-    public async Task<QueryServerInfoCommandResponse> Handle(QueryServerInfoCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryServerInfoCommandResponse> Handle(QueryServerInfoCommand request, CancellationToken cancellationToken)
     {
         var endpoint = new Uri(new Uri(_systemOptions.Server), IStorageService.StaticRoutePrefix.TrimStart('/'));
 

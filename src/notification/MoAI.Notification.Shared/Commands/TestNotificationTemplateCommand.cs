@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using MoAI.Notification.Models;
 
 namespace MoAI.Notification.Commands;

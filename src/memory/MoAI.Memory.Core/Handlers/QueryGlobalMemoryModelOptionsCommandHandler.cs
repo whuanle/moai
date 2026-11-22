@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Models;
@@ -25,7 +25,7 @@ public class QueryGlobalMemoryModelOptionsCommandHandler : IRequestHandler<Query
     }
 
     /// <inheritdoc/>
-    public async Task<QueryGlobalMemoryModelOptionsResponse> Handle(QueryGlobalMemoryModelOptionsCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryGlobalMemoryModelOptionsResponse> Handle(QueryGlobalMemoryModelOptionsCommand request, CancellationToken cancellationToken)
     {
         // 全局记忆按 teamId=0 解析模型，仅公开且启用中的 embedding 模型（渠道须启用）可选
         var items = await _databaseContext.AiModels.AsNoTracking()

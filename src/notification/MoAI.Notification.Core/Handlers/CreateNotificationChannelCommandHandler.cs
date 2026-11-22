@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -27,7 +27,7 @@ public class CreateNotificationChannelCommandHandler : IRequestHandler<CreateNot
     }
 
     /// <inheritdoc/>
-    public async Task<CreateNotificationChannelCommandResponse> Handle(CreateNotificationChannelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CreateNotificationChannelCommandResponse> Handle(CreateNotificationChannelCommand request, CancellationToken cancellationToken)
     {
         var configError = NotificationChannelConfigs.Validate(request.Type, request.Config);
         if (configError != null)

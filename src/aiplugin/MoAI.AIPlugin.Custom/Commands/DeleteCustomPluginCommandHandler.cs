@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIPlugin.Commands;
 using MoAI.Database;
@@ -30,7 +30,7 @@ public class DeleteCustomPluginCommandHandler : IRequestHandler<DeleteCustomPlug
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(DeleteCustomPluginCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(DeleteCustomPluginCommand request, CancellationToken cancellationToken)
     {
         var pluginEntity = await _databaseContext.Plugins
             .FirstOrDefaultAsync(x => x.Id == request.PluginId, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -36,7 +36,7 @@ public class DownloadWikiDocumentImageCommandHandler : IRequestHandler<DownloadW
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleString> Handle(DownloadWikiDocumentImageCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleString> Handle(DownloadWikiDocumentImageCommand request, CancellationToken cancellationToken)
     {
         await EnsureMemberAsync(request.WikiId, cancellationToken);
 

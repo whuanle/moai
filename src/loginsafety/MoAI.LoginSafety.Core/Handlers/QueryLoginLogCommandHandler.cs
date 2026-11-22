@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.LoginSafety.Commands;
@@ -23,7 +23,7 @@ public class QueryLoginLogCommandHandler : IRequestHandler<QueryLoginLogCommand,
     }
 
     /// <inheritdoc/>
-    public async Task<QueryLoginLogCommandResponse> Handle(QueryLoginLogCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryLoginLogCommandResponse> Handle(QueryLoginLogCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.LoginLogs.AsNoTracking().AsQueryable();
 

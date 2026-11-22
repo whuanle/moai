@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Feishu.Commands;
 using MoAI.Feishu.Queries;
@@ -40,7 +40,7 @@ public class FeishuAppController : ControllerBase
     public Task<QueryFeishuAppsCommandResponse> QueryFeishuApps([FromQuery] QueryFeishuAppsCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class FeishuAppController : ControllerBase
     public Task<SimpleGuid> CreateFeishuApp([FromBody] CreateFeishuAppCommand req, CancellationToken ct)
     {
         _userContextProvider.SetUserContext(req);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>

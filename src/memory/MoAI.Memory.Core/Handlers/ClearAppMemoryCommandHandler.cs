@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -30,7 +30,7 @@ public class ClearAppMemoryCommandHandler : IRequestHandler<ClearAppMemoryComman
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ClearAppMemoryCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ClearAppMemoryCommand request, CancellationToken cancellationToken)
     {
         var app = await _databaseContext.Apps.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == request.AppId, cancellationToken)

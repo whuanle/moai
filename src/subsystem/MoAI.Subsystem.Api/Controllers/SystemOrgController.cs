@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Models;
@@ -39,7 +39,7 @@ public class SystemOrgController : ControllerBase
     public Task<QueryOrgRolesCommandResponse> Roles([FromQuery] string? search, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryOrgRolesCommand { Search = search }, ct);
+        return _mediator.Send(new QueryOrgRolesCommand { Search = search }, ct).AsTask();
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public class SystemOrgController : ControllerBase
     public Task<CreateOrgRoleCommandResponse> CreateRole([FromBody] CreateOrgRoleCommand req, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class SystemOrgController : ControllerBase
     public Task<EmptyCommandResponse> DeleteRole([FromRoute] int orgRoleId, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new DeleteOrgRoleCommand { OrgRoleId = orgRoleId }, ct);
+        return _mediator.Send(new DeleteOrgRoleCommand { OrgRoleId = orgRoleId }, ct).AsTask();
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ public class SystemOrgController : ControllerBase
     public Task<QueryOrgRoleUsersCommandResponse> RoleUsers([FromRoute] int roleId, [FromQuery] string? search, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryOrgRoleUsersCommand { RoleId = roleId, Search = search }, ct);
+        return _mediator.Send(new QueryOrgRoleUsersCommand { RoleId = roleId, Search = search }, ct).AsTask();
     }
 
     /// <summary>
@@ -111,7 +111,7 @@ public class SystemOrgController : ControllerBase
     public Task<QueryUserOrgRolesCommandResponse> UserRoles([FromRoute] long userId, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryUserOrgRolesCommand { UserId = userId }, ct);
+        return _mediator.Send(new QueryUserOrgRolesCommand { UserId = userId }, ct).AsTask();
     }
 
     /// <summary>

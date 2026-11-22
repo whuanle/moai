@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Infra.Exceptions;
@@ -97,7 +97,7 @@ public class SubsystemOpenController : ControllerBase
     public Task<QuerySubsysGrantsCommandResponse> Grants(CancellationToken ct)
     {
         var caller = RequireCaller();
-        return _mediator.Send(new QuerySubsysGrantsCommand { SubsystemId = caller.Id }, ct);
+        return _mediator.Send(new QuerySubsysGrantsCommand { SubsystemId = caller.Id }, ct).AsTask();
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public class SubsystemOpenController : ControllerBase
     public Task<QuerySubsysEventCatalogCommandResponse> EventCatalog(CancellationToken ct)
     {
         var caller = RequireCaller();
-        return _mediator.Send(new QuerySubsysEventCatalogCommand { SubsystemId = caller.Id }, ct);
+        return _mediator.Send(new QuerySubsysEventCatalogCommand { SubsystemId = caller.Id }, ct).AsTask();
     }
 
     /// <summary>
@@ -139,7 +139,7 @@ public class SubsystemOpenController : ControllerBase
             Limit = limit,
             Event = @event,
             EventPrefix = eventPrefix,
-        }, ct);
+        }, ct).AsTask();
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using MoAI.Account.Commands;
@@ -34,7 +34,7 @@ public class ResetUserPasswordCommandHandler : IRequestHandler<ResetUserPassword
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ResetUserPasswordCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ResetUserPasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _databaseContext.Users
             .FirstOrDefaultAsync(u => u.Id == request.UserId && u.IsDeleted == 0, cancellationToken);

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Exceptions;
 using MoAI.KnowledgeGraph.Models;
 using MoAI.KnowledgeGraph.Queries;
@@ -27,7 +27,7 @@ public class QueryKnowledgeGraphSearchCommandHandler : IRequestHandler<QueryKnow
     }
 
     /// <inheritdoc/>
-    public async Task<QueryKnowledgeGraphSearchCommandResponse> Handle(QueryKnowledgeGraphSearchCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryKnowledgeGraphSearchCommandResponse> Handle(QueryKnowledgeGraphSearchCommand request, CancellationToken cancellationToken)
     {
         var (graph, _) = await _authorizer.AuthorizeAsync(request.KnowledgeGraphId, adminOnly: false, cancellationToken);
         if (!string.Equals(graph.Mode, KnowledgeGraphModes.Managed, StringComparison.Ordinal))

@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Statistics.Queries;
@@ -26,7 +26,7 @@ public class QueryResourceUsageNamesCommandHandler : IRequestHandler<QueryResour
     }
 
     /// <inheritdoc/>
-    public async Task<QueryResourceUsageNamesCommandResponse> Handle(QueryResourceUsageNamesCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryResourceUsageNamesCommandResponse> Handle(QueryResourceUsageNamesCommand request, CancellationToken cancellationToken)
     {
         var names = await _databaseContext.ResourceUsageTotals
             .AsNoTracking()

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.AIChannel.Commands;
 using MoAI.Database;
@@ -23,7 +23,7 @@ public class BatchUpdateAIModelCommandHandler : IRequestHandler<BatchUpdateAIMod
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(BatchUpdateAIModelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(BatchUpdateAIModelCommand request, CancellationToken cancellationToken)
     {
         var models = await _databaseContext.AiModels
             .Where(x => request.ModelIds.Contains(x.Id) && x.IsDeleted == 0)

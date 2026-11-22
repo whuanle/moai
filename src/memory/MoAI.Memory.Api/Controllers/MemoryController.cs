@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Account.Services;
 using MoAI.Infra.Exceptions;
@@ -45,7 +45,7 @@ public class MemoryController : ControllerBase
     {
         var cmd = new QueryMyMemoryOverviewCommand();
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public class MemoryController : ControllerBase
     {
         var cmd = new QueryMyGlobalMemoriesCommand { Page = page, PageSize = pageSize, Keywords = keyword };
         _userContextProvider.SetUserContext(cmd);
-        return _mediator.Send(cmd, ct);
+        return _mediator.Send(cmd, ct).AsTask();
     }
 
     /// <summary>

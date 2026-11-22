@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Database;
@@ -32,7 +32,7 @@ public class SeedTeamAgentBuiltinCommandHandler : IRequestHandler<SeedTeamAgentB
     }
 
     /// <inheritdoc/>
-    public async Task<SimpleInt> Handle(SeedTeamAgentBuiltinCommand request, CancellationToken cancellationToken)
+    public async ValueTask<SimpleInt> Handle(SeedTeamAgentBuiltinCommand request, CancellationToken cancellationToken)
     {
         var userState = await _userAccountService.GetUserStateAsync(request.ContextUserId, cancellationToken);
         if (!userState.IsAdmin)

@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Account.Services;
 using MoAI.Classify.Queries;
@@ -27,7 +27,7 @@ public class QueryClassifyListCommandHandler : IRequestHandler<QueryClassifyList
     }
 
     /// <inheritdoc/>
-    public async Task<QueryClassifyListCommandResponse> Handle(QueryClassifyListCommand request, CancellationToken cancellationToken)
+    public async ValueTask<QueryClassifyListCommandResponse> Handle(QueryClassifyListCommand request, CancellationToken cancellationToken)
     {
         var query = _databaseContext.Classifies.AsQueryable();
 

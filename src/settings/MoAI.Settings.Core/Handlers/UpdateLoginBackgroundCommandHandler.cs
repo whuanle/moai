@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Seed;
@@ -29,7 +29,7 @@ public class UpdateLoginBackgroundCommandHandler : IRequestHandler<UpdateLoginBa
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(UpdateLoginBackgroundCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(UpdateLoginBackgroundCommand request, CancellationToken cancellationToken)
     {
         // ObjectKey 为空表示恢复默认背景，清空设置值；非空时仅允许引用已完成上传并登记的文件，防止伪造 objectKey
         if (!string.IsNullOrWhiteSpace(request.ObjectKey))

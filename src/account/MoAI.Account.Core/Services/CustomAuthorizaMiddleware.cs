@@ -1,6 +1,6 @@
 #pragma warning disable CA1031 // 不捕获常规异常类型
 
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

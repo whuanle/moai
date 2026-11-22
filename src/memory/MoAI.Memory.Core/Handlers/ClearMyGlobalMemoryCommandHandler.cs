@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using MoAI.Infra.Models;
 using MoAI.Memory.Commands;
 using MoAI.Memory.Services;
@@ -21,7 +21,7 @@ public class ClearMyGlobalMemoryCommandHandler : IRequestHandler<ClearMyGlobalMe
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(ClearMyGlobalMemoryCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(ClearMyGlobalMemoryCommand request, CancellationToken cancellationToken)
     {
         await _memoryService.ClearGlobalUserAsync(request.ContextUserId, cancellationToken);
         return EmptyCommandResponse.Default;

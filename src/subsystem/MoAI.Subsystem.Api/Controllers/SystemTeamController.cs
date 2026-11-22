@@ -1,4 +1,4 @@
-using MediatR;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoAI.Database.Enums;
@@ -39,7 +39,7 @@ public class SystemTeamController : ControllerBase
     public Task<QueryTeamAllCommandResponse> List(CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryTeamAllCommand(), ct);
+        return _mediator.Send(new QueryTeamAllCommand(), ct).AsTask();
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public class SystemTeamController : ControllerBase
     public Task<SimpleLong> Create([FromBody] SystemCreateTeamCommand req, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(req, ct);
+        return _mediator.Send(req, ct).AsTask();
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class SystemTeamController : ControllerBase
     public Task<QueryTeamUsersCommandResponse> Users([FromRoute] long teamId, CancellationToken ct)
     {
         SystemFaceGuard.RequireCaller(HttpContext);
-        return _mediator.Send(new QueryTeamUsersCommand { TeamId = teamId }, ct);
+        return _mediator.Send(new QueryTeamUsersCommand { TeamId = teamId }, ct).AsTask();
     }
 
     /// <summary>

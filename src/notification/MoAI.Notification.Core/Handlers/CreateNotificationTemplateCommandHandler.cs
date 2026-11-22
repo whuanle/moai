@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Entities;
@@ -27,7 +27,7 @@ public class CreateNotificationTemplateCommandHandler : IRequestHandler<CreateNo
     }
 
     /// <inheritdoc/>
-    public async Task<CreateNotificationTemplateCommandResponse> Handle(CreateNotificationTemplateCommand request, CancellationToken cancellationToken)
+    public async ValueTask<CreateNotificationTemplateCommandResponse> Handle(CreateNotificationTemplateCommand request, CancellationToken cancellationToken)
     {
         if (NotificationTemplateVariableParser.Parse(request.Variables, out var parseError) == null)
         {

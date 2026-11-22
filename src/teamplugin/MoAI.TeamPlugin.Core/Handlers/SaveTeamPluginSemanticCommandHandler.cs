@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Database.Enums;
@@ -35,7 +35,7 @@ public class SaveTeamPluginSemanticCommandHandler : IRequestHandler<SaveTeamPlug
     }
 
     /// <inheritdoc/>
-    public async Task<EmptyCommandResponse> Handle(SaveTeamPluginSemanticCommand request, CancellationToken cancellationToken)
+    public async ValueTask<EmptyCommandResponse> Handle(SaveTeamPluginSemanticCommand request, CancellationToken cancellationToken)
     {
         var myRole = await _teamService.GetMyRoleAsync(request.TeamId, request.ContextUserId, cancellationToken);
         if (myRole == null)

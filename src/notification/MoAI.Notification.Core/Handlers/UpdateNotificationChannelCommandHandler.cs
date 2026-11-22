@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using MoAI.Database;
 using MoAI.Infra.Exceptions;
@@ -27,7 +27,7 @@ public class UpdateNotificationChannelCommandHandler : IRequestHandler<UpdateNot
     }
 
     /// <inheritdoc/>
-    public async Task<MoAI.Infra.Models.EmptyCommandResponse> Handle(UpdateNotificationChannelCommand request, CancellationToken cancellationToken)
+    public async ValueTask<MoAI.Infra.Models.EmptyCommandResponse> Handle(UpdateNotificationChannelCommand request, CancellationToken cancellationToken)
     {
         var configError = NotificationChannelConfigs.Validate(request.Type, request.Config);
         if (configError != null)
