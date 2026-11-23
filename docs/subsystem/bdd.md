@@ -307,6 +307,13 @@ Feature: 委托 SSO 登录
     When 用户未登录
     Then 先跳转 MoAI 登录页，登录成功后回到本页继续
 
+  @SUB-S90 @auto:vitest
+  Scenario: 未登录经第三方 OAuth 登录后继续委托回跳
+    Given 用户经 /sso/authorize 引导到登录页并选择第三方 OAuth（飞书等）登录
+    When 第三方授权完成登录（已绑定直通或未绑定一键注册确认）
+    Then 回到委托 SSO 跳转页继续签发委托码并回跳子系统
+    And 回跳目标仅接受本站相对路径（离开本站前暂存、登录成功消费即清除；不安全目标兜底应用广场）
+
   @SUB-S44 @auto:vitest
   Scenario: 跳转页错误处理
     When 缺少 client 参数或签发失败（未开放/未授权）

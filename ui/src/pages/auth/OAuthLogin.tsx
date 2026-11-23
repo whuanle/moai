@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { resolveErrorMessage, useFeedback } from '@/design-system'
 import { applyLoginResponse, oauthLogin, oauthRegister } from '@/api/auth'
 import { oauthBindByCode } from '@/api/account'
-import { notifyOAuthBindResult, parseOAuthState } from '@/utils/oauth'
+import { notifyOAuthBindResult, parseOAuthState, consumePendingRedirect } from '@/utils/oauth'
 
 interface PendingBind {
   tempOAuthBindId: string
@@ -70,7 +70,8 @@ export function OAuthLogin() {
         if (res?.isBindUser && res.loginCommandResponse) {
           applyLoginResponse(res.loginCommandResponse)
           feedback.success(t('auth.loginSuccess'))
-          navigate('/apps', { replace: true })
+          // 登录页进入第三方 OAuth 前暂存的回跳目标（如 /sso/authorize?client=...），消费即清除
+          navigate(consumePendingRedirect() ?? '/apps', { replace: true })
           return
         }
         if (res?.tempOAuthBindId) {
@@ -96,7 +97,8 @@ export function OAuthLogin() {
     try {
       await oauthRegister(pendingBind.tempOAuthBindId)
       feedback.success(t('auth.loginSuccess'))
-      navigate('/apps', { replace: true })
+      // 首次注册成功同样消费登录前暂存的回跳目标，与已绑定登录同口径
+      navigate(consumePendingRedirect() ?? '/apps', { replace: true })
     } catch {
       // 错误已由全局请求中间件统一提示
     } finally {

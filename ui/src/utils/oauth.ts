@@ -54,6 +54,59 @@ export function toBindAuthorizeUrl(url: string | null | undefined): string {
 }
 
 /**
+ * 登录后回跳目标暂存键（sessionStorage）.
+ * <para>
+ * 登录页携带 `redirect` 参数时，走第三方 OAuth 登录会离开本站再回跳，
+ * URL 参数无法跨第三方授权流程保留，因此在离开前暂存，
+ * 回调页登录/注册成功后消费并回跳（与密码登录读 URL 参数同口径）。
+ * </para>
+ */
+export const PENDING_REDIRECT_STORAGE_KEY = 'moai:pendingRedirect'
+
+/**
+ * 校验登录后回跳目标：仅允许本站相对路径（`/` 开头且非 `//` 协议相对地址），防止开放重定向.
+ */
+export function isSafeRedirectTarget(target: string | null | undefined): target is string {
+  return !!target && target.startsWith('/') && !target.startsWith('//')
+}
+
+/**
+ * 暂存登录后回跳目标（仅接受本站相对路径）.
+ */
+export function stashPendingRedirect(target: string | null | undefined): void {
+  if (!isSafeRedirectTarget(target)) return
+  try {
+    sessionStorage.setItem(PENDING_REDIRECT_STORAGE_KEY, target)
+  } catch {
+    // 隐私模式等场景下 sessionStorage 不可用：放弃暂存，登录后回应用广场
+  }
+}
+
+/**
+ * 消费暂存的登录后回跳目标：读取即清除，仅返回安全目标（不安全或不存在返回 null）.
+ */
+export function consumePendingRedirect(): string | null {
+  try {
+    const target = sessionStorage.getItem(PENDING_REDIRECT_STORAGE_KEY)
+    sessionStorage.removeItem(PENDING_REDIRECT_STORAGE_KEY)
+    return isSafeRedirectTarget(target) ? target : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 清除暂存的登录后回跳目标（不读取）.
+ */
+export function clearPendingRedirect(): void {
+  try {
+    sessionStorage.removeItem(PENDING_REDIRECT_STORAGE_KEY)
+  } catch {
+    // 忽略存储不可用
+  }
+}
+
+/**
  * 向主页面通知绑定结果.
  * <para>
  * 仅在弹窗模式（存在 opener 且同源）下有效；否则不发送。

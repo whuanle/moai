@@ -49,7 +49,7 @@ src/subsystem/
                             SubsystemSsoController（/subsystem/sso/check 匿名预检 + /subsystem/sso/code 用户面）、TeamSubsystemController（/team/{teamId}/subsystem/list 团队面）
 ui/src/                      api/subsystem.ts、pages/admin/AdminAccessApps.tsx（/admin/integrations 单列表，root）、pages/subsystems/SubsystemPortal.tsx（/subsystems 用户面门户）
 tests/MoAI.Subsystem.Tests/  Handler 单测（sqlite 内存库，63 例）
-ui/src/pages/sso/SsoAuthorize.tsx（/sso/authorize 公开跳转页）
+ui/src/pages/sso/SsoAuthorize.tsx（/sso/authorize 公开跳转页；未登录跳登录页携带 redirect——密码登录读 URL 参数回跳，第三方 OAuth 登录经 utils/oauth.ts sessionStorage 暂存/消费回跳目标（2026-11-23 修复飞书登录后不回跳子系统））
 ```
 
 ## 统一鉴权（SubsysAccessMiddleware，/api/subsys/**）

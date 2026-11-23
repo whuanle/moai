@@ -18,6 +18,7 @@ import {
   type OAuthProviderItem,
 } from '@/api/auth'
 import type { UserInfo } from '@/store/app'
+import { clearPendingRedirect, stashPendingRedirect } from '@/utils/oauth'
 import { AppLogo } from '@/layouts/components/AppLogo'
 import { useLoginBackgroundSrc, useSystemName } from '@/layouts/useSystemLogo'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -119,6 +120,8 @@ export function Login() {
     // 支持登录后回跳（仅本站相对路径，如 /sso/authorize?client=...），其余回应用广场
     const params = new URLSearchParams(window.location.search)
     const redirect = params.get('redirect')
+    // 密码登录直接消费 URL 参数；清掉可能残留的第三方 OAuth 暂存，避免串场
+    clearPendingRedirect()
     const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/apps'
     navigate(safeRedirect, { replace: true })
   }
@@ -359,7 +362,12 @@ export function Login() {
                     shape="circle"
                     size="large"
                     onClick={() => {
-                      if (item.redirectUrl) window.location.href = item.redirectUrl
+                      if (item.redirectUrl) {
+                        // 第三方 OAuth 登录会离开本站再回跳，URL 上的 redirect 参数带不过去，
+                        // 暂存到 sessionStorage 供回调页（/oauth/login）登录成功后消费回跳
+                        stashPendingRedirect(new URLSearchParams(window.location.search).get('redirect'))
+                        window.location.href = item.redirectUrl
+                      }
                     }}
                   >
                     {item.iconUrl ? (

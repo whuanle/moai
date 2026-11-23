@@ -19,7 +19,7 @@
 | @AUTH-S25 | URL 拼接部分见 [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs)（login_type/appid/agentid 断言）；真实换码链路 @manual（需企业微信真实应用凭据） | PASS 17/17（URL 部分，2026-10-27） |
 | @AUTH-S14 | [local-dev/oauth-weixinwork-smoke.mjs](../../local-dev/oauth-weixinwork-smoke.mjs)（穿透来源跟随 + ftp 协议 400） | PASS 20/20（2026-10-27，死代码已修复并重设计为跟随登录页来源） |
 | @AUTH-S13、@AUTH-S14 | 缺陷修复回归：授权 `redirect_uri` 误拼 `?redirectUri=` 后缀与飞书换 token 不一致（登录/绑定均报「第三方接口错误」，根因见 [SOP 排障](./sop.md)）；删后缀 + 删伪 PKCE `code_verifier`；URL 级断言（origin/pathname）与冒烟脚本兼容，真实飞书换 token @manual（重启后端后浏览器复测） | build 0 error（2026-10-27） |
-| @AUTH-S20 ~ @AUTH-S23 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)；轮 11 独立验证 auth 前端链路） | PASS（2026-09-01/09-02） |
+| @AUTH-S20 ~ @AUTH-S23 | @manual 浏览器走查（[SOP 第 4 节](./sop.md)；轮 11 独立验证 auth 前端链路）；@AUTH-S22 已绑定/未绑定分支另见 [OAuthLogin.test.tsx](../../ui/src/pages/auth/__tests__/OAuthLogin.test.tsx)（映射在 [subsystem tdd @SUB-S90](../subsystem/tdd.md#场景映射表sub)） | PASS（2026-09-01/09-02；vitest 5/5 2026-11-23） |
 | @AUTH-S26 ~ @AUTH-S35 | [local-dev/auth-email-code-e2e.mjs](../../local-dev/auth-email-code-e2e.mjs)（34 断言：serverinfo 双开关回显/未启用拒绝/未注册 404/发码与 60 秒冷却 429/缺码·错码 400/一次性与错 5 次作废/默认与自定义模板插值/重置后旧密码 401 新密码登录/关闭 SMTP 全链路拒绝；内置 SMTP 桩，快照恢复设置） | PASS 34/34（2026-10-29） |
 | @AUTH-S33 ~ @AUTH-S35（前端部分） | `ui/src/pages/auth/__tests__/Register.test.tsx`（验证码区按开关显隐 4/4）、`ui/src/pages/auth/__tests__/ForgotPassword.test.tsx`（未启用提示禁用/启用完整表单 3/3） | PASS 7/7（2026-10-29） |
 | @AUTH-S36 ~ @AUTH-S42 | [local-dev/auth-2fa-e2e.mjs](../../local-dev/auth-2fa-e2e.mjs)（策略基线/TOTP 绑定全流程与错码/登录挑战一次性票据与防重放/关闭/强制 2FA 受限 token 与白名单与旧 token 立即恢复/强制期间禁关/root 重置与目标保护/邮箱验证码三模式；原 54 断言含 S42 两段式，S42 已于 2026-11-03 退役拆分至 S43~S46） | PASS 54/54（2026-11-01，S42 部分已退役） |

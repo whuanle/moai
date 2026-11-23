@@ -28,6 +28,7 @@
 | @SUB-S71、@SUB-S73 | [local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)（SUB-104 ~ SUB-110：未开放登录/不存在统一 unavailable 不 401、匿名可用 login_required、redirect_uri 指定入口、未注册 callback_mismatch、授权用户 ok、未授权 not_authorized） | PASS 117/117（2026-11-15） |
 | @SUB-S72 | 同上（SUB-111：指定团队且团队/组织授权均为空直接 no_grants） | PASS 117/117（2026-11-15） |
 | @SUB-S74 | [SsoAuthorize.test.tsx](../../ui/src/pages/sso/__tests__/SsoAuthorize.test.tsx)（11 例：预检不可用/未授权停在本页不跳登录不回跳、需登录先登录并清理过期登录态、放行后才签发委托码、预检/签发失败提示） | PASS 11/11（2026-11-15） |
+| @SUB-S90 | [OAuthLogin.test.tsx](../../ui/src/pages/auth/__tests__/OAuthLogin.test.tsx)（5 例：无暂存回应用广场/消费暂存回 SSO 跳转页且读取即清除/不安全目标兜底应用广场/未绑定一键注册成功同口径消费/登录失败不清暂存）+ [oauth.test.ts](../../ui/src/utils/__tests__/oauth.test.ts)（暂存工具 9 例：安全校验/暂存消费/清除/state 编解码回归） | PASS 14/14（2026-11-23） |
 | @SUB-S75 | MoAI.Subsystem.Tests（CreateSubsysAppCommandHandlerTests 指定团队范围落库断言；SubsystemSsoHandlerTests 预检 10 例） | PASS 63/63（2026-11-15） |
 | @SUB-S82 | MoAI.Subsystem.Tests（QueryMySubsystemsCommandHandlerTests 5 例：停用/未配置回调/应用接入行过滤、指定团队授权、组织授权并集、匿名空列表、头像回显）+ [SubsystemPortal.test.tsx](../../ui/src/pages/subsystems/__tests__/SubsystemPortal.test.tsx)（4 例：列表/空态/进入携带 appid/加载失败空态）+ [local-dev/subsystem-e2e.mjs](../../local-dev/subsystem-e2e.mjs)（SUB-112 ~ SUB-116） | PASS（2026-11-15，单测 71/71、vitest 4/4、E2E 122/122） |
 
